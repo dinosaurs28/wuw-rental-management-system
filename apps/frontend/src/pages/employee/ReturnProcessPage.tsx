@@ -210,6 +210,7 @@ export default function ReturnProcessPage() {
 
   // ── Damage ─────────────────────────────────────────────────────────────────
   const [hasDamage, setHasDamage] = useState<boolean | null>(null);
+  const [damageChargeType, setDamageChargeType] = useState<"PENALTY" | "COMPENSATION" | null>(null);
   const [damages, setDamages] = useState<DamageItem[]>([]);
   const [activeDamage, setActiveDamage] = useState<Partial<DamageItem>>({ severity: "Minor", photos: [] });
   const [showDamageForm, setShowDamageForm] = useState(false);
@@ -455,6 +456,10 @@ export default function ReturnProcessPage() {
       toast.error("Please add at least one damage entry");
       return;
     }
+    if (!damageChargeType) {
+      toast.error("Please select a damage type (Penalty or Compensation)");
+      return;
+    }
     reportDamageMutation.mutate({
       bookingId,
       odo: parseFloat(endOdometer) || 0,
@@ -464,6 +469,7 @@ export default function ReturnProcessPage() {
         : damages.some((d) => d.severity === "Moderate")
           ? "Moderate"
           : "Minor",
+      chargeType: damageChargeType,
       damageImageIds: damages.flatMap((d) => d.photos.map((p) => p.publicId)),
       notes: { damages },
       returnImageIds: returnPhotos.map((p) => p.publicId),
@@ -477,6 +483,32 @@ export default function ReturnProcessPage() {
         "Front Bumper", "Rear Bumper", "Left Front Door", "Left Rear Door",
         "Right Front Door", "Right Rear Door", "Hood", "Roof", "Trunk", "Wheels", "Interior",
       ];
+
+  // ── Legacy flow hooks (must be unconditional — declared before any early return) ──
+  const [legacyShowCompleteDialog, setLegacyShowCompleteDialog] = useState(false);
+  const [legacyShowReportDialog, setLegacyShowReportDialog] = useState(false);
+  const [legacyHasDamage, setLegacyHasDamage] = useState(false);
+  const [legacyDamages] = useState<DamageItem[]>([]);
+  const [legacySubmissionResult, setLegacySubmissionResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const completeReturnMutation = useMutation({
+    mutationFn: (data: { returnImageIds: string[]; requireManagerConfirmation?: boolean }) =>
+      bookingService.completeReturn(bookingId!, data),
+    onSuccess: (data: any) => {
+      setLegacySubmissionResult({ success: true, message: data.message || "Return completed" });
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || "Failed to complete return"),
+  });
+
+  const legacyReportDamageMutation = useMutation({
+    mutationFn: (data: any) => bookingService.reportDamage(data),
+    onSuccess: (data: any) => {
+      setLegacySubmissionResult({ success: true, message: data.message || "Damage report submitted" });
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || "Failed to submit damage report"),
+  });
 
   // ── Loading / Error ────────────────────────────────────────────────────────
   if (isLoading) {
@@ -1175,9 +1207,48 @@ export default function ReturnProcessPage() {
                 )}
 
                 {damages.length > 0 && (
+                  <div className="rounded-lg border-2 border-dashed border-orange-200 bg-orange-50/40 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-orange-900">
+                      Damage Type <span className="text-red-500">*</span>
+                    </p>
+                    <p className="text-xs text-orange-700">
+                      Select how this damage will be charged. This cannot be changed after submission.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDamageChargeType("PENALTY")}
+                        className={cn(
+                          "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
+                          damageChargeType === "PENALTY"
+                            ? "border-red-500 bg-red-50 text-red-800"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-red-300"
+                        )}
+                      >
+                        <span className="text-sm font-semibold">Damage Penalty</span>
+                        <span className="text-xs opacity-80">Customer at fault — GST applicable</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDamageChargeType("COMPENSATION")}
+                        className={cn(
+                          "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
+                          damageChargeType === "COMPENSATION"
+                            ? "border-blue-500 bg-blue-50 text-blue-800"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
+                        )}
+                      >
+                        <span className="text-sm font-semibold">Damage Compensation</span>
+                        <span className="text-xs opacity-80">Insurance / coverage — no GST</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {damages.length > 0 && (
                   <Button
                     className="w-full bg-[#FF5F00] hover:bg-[#e65600] text-white"
-                    disabled={reportDamageMutation.isPending}
+                    disabled={reportDamageMutation.isPending || !damageChargeType}
                     onClick={handleSubmitDamage}
                   >
                     {reportDamageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
@@ -1227,33 +1298,9 @@ export default function ReturnProcessPage() {
     frozenConfig?.extraKmEnabled ||
     frozenConfig?.extraTimeEnabled ||
     frozenConfig?.fuelModuleEnabled ||
-    frozenConfig?.fastagModuleEnabled
+    frozenConfig?.fastagModuleEnabled ||
+    booking?.effectiveFreeKmLimit !== null  // km charges via pricing rules even without frozenConfig
   );
-
-  const [legacyShowCompleteDialog, setLegacyShowCompleteDialog] = useState(false);
-  const [legacyShowReportDialog, setLegacyShowReportDialog] = useState(false);
-  const [legacyHasDamage, setLegacyHasDamage] = useState(false);
-  const [legacyDamages] = useState<DamageItem[]>([]);
-  const [legacySubmissionResult, setLegacySubmissionResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  const completeReturnMutation = useMutation({
-    mutationFn: (data: { returnImageIds: string[]; requireManagerConfirmation?: boolean }) =>
-      bookingService.completeReturn(bookingId!, data),
-    onSuccess: (data: any) => {
-      setLegacySubmissionResult({ success: true, message: data.message || "Return completed" });
-      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-    },
-    onError: (err: any) => toast.error(err.response?.data?.message || "Failed to complete return"),
-  });
-
-  const legacyReportDamageMutation = useMutation({
-    mutationFn: (data: any) => bookingService.reportDamage(data),
-    onSuccess: (data: any) => {
-      setLegacySubmissionResult({ success: true, message: data.message || "Damage report submitted" });
-      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-    },
-    onError: (err: any) => toast.error(err.response?.data?.message || "Failed to submit damage report"),
-  });
 
   if (legacySubmissionResult?.success) {
     return (
@@ -1342,6 +1389,20 @@ export default function ReturnProcessPage() {
               </Label>
               <Input type="number" min="0" placeholder="e.g. 12850" className="h-11 max-w-xs" value={endOdometer}
                 onChange={(e) => { setEndOdometer(e.target.value); setReturnSession(null); }} />
+              {/* Km overrun summary */}
+              {freeKmLimit !== null && endOdometer && kmDriven !== null && (
+                <div className={`mt-2 p-3 rounded-lg border text-sm ${kmOverLimit > 0 ? "bg-orange-50 border-orange-200" : "bg-green-50 border-green-200"}`}>
+                  <p className="font-medium">{kmDriven.toFixed(1)} km driven &nbsp;·&nbsp; {freeKmLimit} km included</p>
+                  {kmOverLimit > 0 ? (
+                    <p className="text-orange-700 font-semibold mt-0.5">
+                      +{kmOverLimit.toFixed(1)} km over limit
+                      {suggestedExtraKmCharge !== null && ` · suggested ₹${suggestedExtraKmCharge}`}
+                    </p>
+                  ) : (
+                    <p className="text-green-700 mt-0.5">Within free km limit ✓</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">

@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
+import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import Decimal from "decimal.js";
 
 const pricingEngine = new PricingEngineService();
@@ -309,6 +310,42 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       grandAdvanceAmount += Number(v.advancePayAmount ?? 0);
     }
 
+    // Pre-price group vehicles so grand totals are correct before payment initiation.
+    // All vehicles in a group share the same pricing rules, so this representative
+    // pricing matches what the transaction will compute for the atomically resolved vehicle.
+    if (resolvedGroupKeys.length > 0) {
+      for (const gk of resolvedGroupKeys) {
+        const gkParsed = parseGroupKey(gk)!;
+        const repVehicle = await prisma.vehicle.findFirst({
+          where: {
+            make: gkParsed.make,
+            model: gkParsed.model,
+            categoryId: gkParsed.categoryId,
+            branchId: gkParsed.branchId,
+            status: "AVAILABLE",
+            deletedAt: null,
+            insuranceExpiry: { gt: new Date() },
+          },
+          select: { id: true, branchId: true, advancePayAmount: true },
+          orderBy: { odo: "asc" },
+        });
+        if (!repVehicle) {
+          return res.status(StatusCode.CONFLICT).json({ message: `No vehicles available for group ${gk}` });
+        }
+        const pr = await pricingEngine.calculateBookingPrice(
+          repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, couponCode?.toUpperCase(),
+        );
+        grandBaseTotal     += Number(pr.basePrice.toString());
+        grandDiscountTotal += Number(pr.discountAmount.toString());
+        grandTaxTotal      += Number(pr.taxAmount.toString());
+        grandCGSTTotal     += Number(pr.cgstAmount.toString());
+        grandSGSTTotal     += Number(pr.sgstAmount.toString());
+        grandDeposit       += Number(pr.deposit.toString());
+        grandFinalTotal    += Number(pr.finalTotal.add(pr.deposit).toString());
+        grandAdvanceAmount += Number(repVehicle.advancePayAmount ?? 0);
+      }
+    }
+
     grandBaseTotal = Number(grandBaseTotal.toFixed(2));
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandTaxTotal = Number(grandTaxTotal.toFixed(2));
@@ -373,6 +410,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         },
       );
     }
+
+    // Freeze branch charge config so return-flow employees see the correct modules
+    const frozenChargeConfig = bookingBranchId
+      ? await chargeConfigService.freezeChargeConfig(bookingBranchId)
+      : null;
+
     const booking = await prisma.$transaction(async (tx) => {
       // Atomically resolve each groupKey to a specific vehicle within the transaction
       for (const gk of resolvedGroupKeys) {
@@ -391,7 +434,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         }
       }
 
-      // Re-price the resolved group vehicles and add them to items
+      // Re-price the resolved group vehicles and add them to items.
+      // Grand totals were already computed from representative vehicles before payment
+      // initiation — do NOT add to them again here to avoid double-counting.
       for (const v of resolvedGroupVehicles) {
         const pricingResult = await pricingEngine.calculateBookingPrice(
           v.id,
@@ -438,15 +483,6 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             extraKmRate:   Number(pricingResult.extraKmRate.toString()),
           },
         });
-
-        grandBaseTotal      += baseTotal;
-        grandDiscountTotal  += discountAmount;
-        grandTaxTotal       += taxAmount;
-        grandCGSTTotal      += cgstAmount;
-        grandSGSTTotal      += sgstAmount;
-        grandDeposit        += deposit;
-        grandFinalTotal     += finalTotal;
-        grandAdvanceAmount  += Number(v.advancePayAmount ?? 0);
       }
 
       const newBooking = await tx.booking.create({
@@ -479,6 +515,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           advanceAmount: isAdvancePayment ? grandAdvanceAmount : 0,
           remainingBalance: remainingBalance,
           transactionId,
+          ...(frozenChargeConfig ? { frozenChargeConfig: frozenChargeConfig as any } : {}),
           pricingSnapshot: {
             items,
             totals: {

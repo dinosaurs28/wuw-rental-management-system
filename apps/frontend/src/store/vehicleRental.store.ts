@@ -424,6 +424,10 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           apiFinalTotal: 0,
           selectedKycFilePublicId: null,
           paymentType: null,
+          paymentFlow: "FULL",
+          advancePayAmount: 0,
+          couponCode: null,
+          couponDiscountAmount: 0,
           holdId: null,
           holdExpiresAt: null,
           transactionId: null,
@@ -530,8 +534,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       },
 
       hasVehicleSelected: () => {
-        const { selectedVehicleId, selectedGroupKey, name, startDate, endDate } = get();
-        return !!((selectedVehicleId || selectedGroupKey) && name && startDate && endDate);
+        const { selectedVehicleId, selectedGroupKey, name } = get();
+        return !!((selectedVehicleId || selectedGroupKey) && name);
       },
     }),
     {

@@ -28,6 +28,7 @@ import EmployeeCustomerSelectPage from "@/pages/employee/booking/EmployeeCustome
 import EmployeeCreateCustomerPage from "@/pages/employee/booking/EmployeeCreateCustomerPage";
 import EmployeeVehicleListingPage from "@/pages/employee/booking/EmployeeVehicleListingPage";
 import { EmployeeVehicleDetailsPage } from "@/pages/employee/booking/EmployeeVehicleDetailsPage";
+import { EmployeeVehicleGroupDetailsPage } from "@/pages/employee/booking/EmployeeVehicleGroupDetailsPage";
 import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBookingSummaryPage";
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
@@ -319,6 +320,10 @@ function App() {
           <Route
             path="/employee/vehicles"
             element={<EmployeeVehicleListingPage />}
+          />
+          <Route
+            path="/employee/vehicle/group/:groupKey"
+            element={<EmployeeVehicleGroupDetailsPage />}
           />
           <Route
             path="/employee/vehicle/:id"

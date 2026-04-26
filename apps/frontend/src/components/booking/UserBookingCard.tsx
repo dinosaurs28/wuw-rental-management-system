@@ -172,6 +172,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
         bookingId={booking.bookingId}
+        bookingStatus={booking.status}
       />
 
       {/* Extension Modal — temporarily disabled

@@ -138,7 +138,10 @@ export const DamageReviewPage = () => {
 
   if (!report) return null;
 
-  const balance = report.booking.deposit - finalCost;
+  const gstRate = report.financialHint.gstRate ?? 18;
+  const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
+  const totalDamage = finalCost + taxAmount;
+  const balance = report.booking.deposit - totalDamage;
   const isRefund = balance >= 0;
 
   return (
@@ -254,6 +257,8 @@ export const DamageReviewPage = () => {
                   setFinalCost={setFinalCost}
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}
+                  chargeType={report.chargeType}
+                  gstRate={gstRate}
                 />
 
                 <VehicleDisposition
@@ -306,20 +311,22 @@ export const DamageReviewPage = () => {
 
                   <div className="space-y-3 py-4 text-sm bg-gray-50 p-4 rounded-md">
                     <div className="flex justify-between">
-                      <span>Total Damage Cost:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(finalCost)}
-                      </span>
+                      <span>Base Damage Cost:</span>
+                      <span className="font-semibold">{formatCurrency(finalCost)}</span>
+                    </div>
+                    {report.chargeType === "PENALTY" && taxAmount > 0 && (
+                      <div className="flex justify-between text-orange-700">
+                        <span>GST ({gstRate}%):</span>
+                        <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span>Total Damage Due:</span>
+                      <span className="text-red-700">{formatCurrency(totalDamage)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Settlement Type:</span>
-                      <span
-                        className={
-                          isRefund
-                            ? "text-green-600 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
+                      <span className={isRefund ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
                         {isRefund ? "REFUND" : "COLLECTION DUE"}
                       </span>
                     </div>

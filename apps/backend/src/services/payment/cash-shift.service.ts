@@ -185,12 +185,22 @@ class CashShiftService {
       include: { employee: { select: { name: true } } },
     });
     if (!shift) return null;
+
+    // Sum cash collected but not yet confirmed by manager
+    const pending = await prisma.paymentTransaction.aggregate({
+      where: { cashShiftId: shift.id, status: "COLLECTED" },
+      _sum: { cashAmount: true },
+    });
+
+    const pendingTotal = new Decimal(pending._sum.cashAmount?.toString() ?? "0");
+
     return {
       ...shift,
       employeeName: (shift as any).employee.name,
       expectedTotal: shift.expectedTotal.toString(),
       actualTotal: shift.actualTotal.toString(),
       discrepancy: shift.discrepancy.toString(),
+      pendingTotal: pendingTotal.toFixed(2),
     };
   }
 

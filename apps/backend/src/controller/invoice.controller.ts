@@ -4,6 +4,7 @@ import {
   queueInvoiceGeneration,
   getInvoiceJobStatus,
 } from "../utils/invoice-generation.queue.js";
+import { finalizeInvoice } from "../services/invoice-finalization.service.js";
 
 /**
  * MAIN ENDPOINT: Download Invoice
@@ -246,6 +247,71 @@ export async function getInvoiceStatus(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       message: "Failed to get invoice status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
+
+/**
+ * Force-regenerate Invoice PDF
+ * POST /api/invoices/regenerate
+ * Nulls the cached PDF and queues a fresh generation job.
+ */
+export async function regenerateInvoice(req: Request, res: Response) {
+  try {
+    const { bookingId } = req.body;
+    const userPublicId = req.public_Id;
+
+    if (!userPublicId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: "bookingId is required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { publicId: userPublicId },
+      select: { customerProfile: { select: { id: true } } },
+    });
+    if (!user?.customerProfile) {
+      return res.status(404).json({ success: false, message: "Customer profile not found" });
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: parseInt(bookingId) },
+      include: { invoice: true },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+    if (booking.customerId !== user.customerProfile.id) {
+      return res.status(403).json({ success: false, message: "Unauthorized access" });
+    }
+    if (!booking.invoice) {
+      return res.status(400).json({ success: false, message: "No invoice exists for this booking" });
+    }
+
+    // Rebuild InvoiceItem rows from LedgerEntry/ChargeEntry, update invoice
+    // totals, null the cached PDF, and queue fresh PDF generation — all in one call.
+    await finalizeInvoice(booking.id);
+
+    console.log(
+      `[Invoice Controller] Regeneration queued - Invoice ${booking.invoice.id} for booking ${booking.id}`,
+    );
+
+    return res.status(202).json({
+      success: true,
+      generating: true,
+      invoiceId: booking.invoice.id,
+      statusUrl: `/invoices/status/${booking.invoice.id}`,
+      message: "Regenerating invoice PDF...",
+    });
+  } catch (error) {
+    console.error("[Invoice Controller] Error in regenerateInvoice:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to regenerate invoice",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

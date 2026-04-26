@@ -8,6 +8,8 @@ import {
   DepositMethod,
   InvoiceStatus,
   Role,
+  PaymentMethod,
+  PaymentPurpose,
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
@@ -159,6 +161,32 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
           method: DepositMethod.CASH,
           status: PaymentStatus.SUCCESS,
           amount: paymentAmount,
+        },
+      });
+
+      // Link to the employee's open cash shift for handover tracking
+      const activeShift = await (tx as any).cashShift.findFirst({
+        where: { employeeId: booking.createdById, status: "OPEN" },
+        select: { id: true },
+      });
+
+      // PaymentTransaction record — COLLECTED so the branch manager must verify
+      // the cash handover before it becomes CONFIRMED in financials.
+      await tx.paymentTransaction.create({
+        data: {
+          publicId:        createID(),
+          idempotencyKey:  `initial:${transactionId}`,
+          bookingId:       booking.id,
+          branchId:        booking.branchId,
+          purpose:         booking.isAdvancePayment ? PaymentPurpose.ADVANCE : PaymentPurpose.FULL_PAYMENT,
+          method:          PaymentMethod.CASH,
+          status:          "COLLECTED",
+          totalAmount:     paymentAmount,
+          cashAmount:      paymentAmount,
+          onlineAmount:    0,
+          collectedById:   booking.createdById,
+          collectedAt:     new Date(),
+          cashShiftId:     activeShift?.id ?? null,
         },
       });
     });

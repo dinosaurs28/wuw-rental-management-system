@@ -139,6 +139,7 @@ export const ReviewConfirmPage = () => {
                     <p className="text-sm font-medium text-zinc-700">Have a coupon code?</p>
                     <CouponInput
                       vehiclePublicId={selectedVehicleId ?? undefined}
+                      groupKey={selectedGroupKey ?? undefined}
                       startAt={startDate ? `${startDate}T${startTime}:00.000Z` : undefined}
                       endAt={endDate ? `${endDate}T${endTime}:00.000Z` : undefined}
                       appliedCode={couponCode}

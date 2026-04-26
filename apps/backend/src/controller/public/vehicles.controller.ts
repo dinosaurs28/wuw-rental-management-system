@@ -404,17 +404,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       availableCount = bookableVehicles.length;
     }
 
-    // Collect deduplicated images from all vehicles (up to 10)
-    const seenUrls = new Set<string>();
-    const allImages: string[] = [];
-    for (const v of groupVehicles) {
-      for (const img of v.images) {
-        const url = img.file.url;
-        if (!seenUrls.has(url)) { seenUrls.add(url); allImages.push(url); }
-        if (allImages.length >= 10) break;
-      }
-      if (allImages.length >= 10) break;
-    }
+    // Use images from the representative vehicle only
+    const allImages: string[] = representativeVehicle.images.map((img) => img.file.url);
 
     // Compute pricing from the representative vehicle
     let pricingDetails: any = null;

@@ -9,6 +9,8 @@ import {
   InvoiceStatus,
   DepositMethod,
   VehicleReturnDisposition,
+  PaymentPurpose,
+  PaymentMethod,
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
@@ -255,6 +257,7 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
       select: {
         publicId: true,
         status: true,
+        chargeType: true,
         estimatedCost: true,
         notes: true,
         createdAt: true,
@@ -263,6 +266,11 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
             publicId: true,
             totalDeposit: true,
             branchId: true,
+            branch: {
+              select: {
+                gstRule: { select: { cgstRate: true, sgstRate: true } },
+              },
+            },
           },
         },
         vehicle: {
@@ -301,10 +309,15 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
       });
     }
 
+    const gstRule = report.booking.branch.gstRule;
+    const cgstRate = gstRule ? Number(gstRule.cgstRate) : 9;
+    const sgstRate = gstRule ? Number(gstRule.sgstRate) : 9;
+
     // Transform response to match strict format
     const responseData = {
       damageReportId: report.publicId,
       status: report.status,
+      chargeType: report.chargeType ?? "PENALTY",
       booking: {
         bookingId: report.booking.publicId,
         deposit: Number(report.booking.totalDeposit),
@@ -315,11 +328,12 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         model: report.vehicle.model,
         currentStatus: report.vehicle.status,
       },
-      damageDetails: report.notes, // JSON object as is
+      damageDetails: report.notes,
       images: report.photos.map((p) => ({ url: p.file.url })),
       financialHint: {
         deposit: Number(report.booking.totalDeposit),
         estimatedCost: Number(report.estimatedCost),
+        gstRate: cgstRate + sgstRate,
       },
     };
 
@@ -342,7 +356,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       });
     }
 
-    const { disposition, finalCost, paymentMethod, chargeType } = validation.data;
+    const { disposition, finalCost, paymentMethod } = validation.data;
     const damageReportId = req.params.damageReportId;
     const managerId = req.public_Id;
     const branchId = req.branch_Id;
@@ -389,9 +403,9 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
     // 3. Financial Calculation
     const depositAmount = Number(booking.totalDeposit);
-    
-    // Determine the active charge type (defaults to PENALTY if not provided, or fallback to the report's current chargeType)
-    const activeChargeType = chargeType ?? damageReport.chargeType ?? "PENALTY";
+
+    // chargeType is authoritative from what staff set during damage report creation
+    const activeChargeType = damageReport.chargeType ?? "PENALTY";
     
     // Calculate the tax
     const taxCalculation = await damageChargeService.calculateDamageTax(
@@ -479,6 +493,28 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
             },
           });
         }
+
+        // Record fine as settled from deposit in financials
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            idempotencyKey: `damage-settled:${damageReport.publicId}`,
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            purpose: PaymentPurpose.DAMAGE_FEE,
+            method: PaymentMethod.CASH,
+            status: "CONFIRMED",
+            totalAmount: fineAmountInclTax.toFixed(2),
+            cashAmount: fineAmountInclTax.toFixed(2),
+            onlineAmount: "0.00",
+            collectedById: managerUser.id,
+            collectedAt: new Date(),
+            confirmedById: managerUser.id,
+            confirmedAt: new Date(),
+            notes: `Damage fine settled from deposit — report ${damageReport.publicId}`,
+          },
+        });
+
         isFullySettled = true;
       } else {
         // Due Amount
@@ -499,6 +535,25 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                 status: PaymentStatus.SUCCESS,
               },
             });
+
+            await tx.paymentTransaction.create({
+              data: {
+                publicId: createID(),
+                idempotencyKey: `damage-cash:${damageReport.publicId}`,
+                bookingId: booking.id,
+                branchId: booking.branchId,
+                purpose: PaymentPurpose.DAMAGE_FEE,
+                method: PaymentMethod.CASH,
+                status: "COLLECTED",
+                totalAmount: dueAmount.toFixed(2),
+                cashAmount: dueAmount.toFixed(2),
+                onlineAmount: "0.00",
+                collectedById: managerUser.id,
+                collectedAt: new Date(),
+                notes: `Damage fine collected (cash) — report ${damageReport.publicId}`,
+              },
+            });
+
             isFullySettled = true;
           }
         } else if (paymentMethod === "ONLINE_RAZORPAY") {
@@ -512,6 +567,24 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                 // Store transaction ID for verification mapping
                 razorpayOrderId: onlineTransactionId,
                 status: PaymentStatus.CREATED,
+              },
+            });
+
+            await tx.paymentTransaction.create({
+              data: {
+                publicId: createID(),
+                idempotencyKey: `damage-online:${damageReport.publicId}`,
+                bookingId: booking.id,
+                branchId: booking.branchId,
+                purpose: PaymentPurpose.DAMAGE_FEE,
+                method: PaymentMethod.ONLINE,
+                status: "INITIATED",
+                totalAmount: dueAmount.toFixed(2),
+                cashAmount: "0.00",
+                onlineAmount: dueAmount.toFixed(2),
+                onlineTransactionRef: onlineTransactionId,
+                collectedById: managerUser.id,
+                notes: `Damage fine (online pending) — report ${damageReport.publicId}`,
               },
             });
           }
@@ -676,6 +749,15 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
             razorpayPaymentId:
               statusResponse.data?.paymentInstrument?.cardTransactionId ||
               "ONLINE_SUCCESS", // Store provider ref
+          },
+        });
+
+        // Confirm the PaymentTransaction in financials
+        await tx.paymentTransaction.updateMany({
+          where: { onlineTransactionRef: transactionId },
+          data: {
+            status: "CONFIRMED",
+            confirmedAt: new Date(),
           },
         });
 

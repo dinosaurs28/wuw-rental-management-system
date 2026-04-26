@@ -9,6 +9,8 @@ import {
   DepositMethod,
   InvoiceStatus,
   Role,
+  PaymentMethod,
+  PaymentPurpose,
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
@@ -145,6 +147,24 @@ export const checkPayment = async (req: Request, res: Response) => {
             method: method,
             status: PaymentStatus.SUCCESS,
             amount: paymentAmount,
+          },
+        });
+
+        // PaymentTransaction record so the settlement engine counts this payment in alreadyPaid
+        await tx.paymentTransaction.create({
+          data: {
+            publicId:            createID(),
+            idempotencyKey:      `initial:${transactionId}`,
+            bookingId:           booking.id,
+            branchId:            booking.branchId,
+            purpose:             booking.isAdvancePayment ? PaymentPurpose.ADVANCE : PaymentPurpose.FULL_PAYMENT,
+            method:              isCash ? PaymentMethod.CASH : PaymentMethod.ONLINE,
+            status:              "CONFIRMED",
+            totalAmount:         paymentAmount,
+            cashAmount:          isCash ? paymentAmount : 0,
+            onlineAmount:        isCash ? 0 : paymentAmount,
+            onlineTransactionRef: isCash ? null : transactionId,
+            onlineGateway:       isCash ? null : "PHONEPE",
           },
         });
       });

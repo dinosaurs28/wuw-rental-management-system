@@ -317,12 +317,21 @@ export default function StaffPickupsPage() {
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<HandoverFormValues>({
     resolver: zodResolver(handoverSchema),
     defaultValues: { fuelLevel: "", requireManagerConfirmation: false },
     mode: "onChange",
   });
+
+  // Auto-populate odometer from the vehicle's current odo reading
+  useEffect(() => {
+    const odo = booking?.items?.[0]?.vehicle?.odo;
+    if (odo != null && odo > 0) {
+      setValue("odo", odo, { shouldValidate: true });
+    }
+  }, [booking, setValue]);
 
   // --- MUTATIONS ---
   const verifyKycMutation = useMutation({

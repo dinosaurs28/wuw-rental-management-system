@@ -129,8 +129,11 @@ export const VehicleGroupDetailsPage = () => {
   const handleBookVehicle = useCallback(() => {
     if (!groupKey || !group) return;
 
-    const currentState = useVehicleRentalStore.getState();
-    currentState.clearVehicleSelection();
+    // Capture raw date strings before clearVehicleSelection wipes them
+    const savedStartDate = startDate;
+    const savedEndDate   = endDate;
+
+    useVehicleRentalStore.getState().clearVehicleSelection();
 
     // Store the group key instead of a specific vehicle ID
     setGroupKey(groupKey);
@@ -144,10 +147,9 @@ export const VehicleGroupDetailsPage = () => {
       branch:   group.branch,
     });
 
-    const currentStartDate = currentState.getStartDate();
-    const currentEndDate   = currentState.getEndDate();
-    if (currentStartDate) setStartDate(currentStartDate);
-    if (currentEndDate)   setEndDate(currentEndDate);
+    // Restore dates (clearVehicleSelection wiped them)
+    if (savedStartDate) setStartDate(new Date(savedStartDate));
+    if (savedEndDate)   setEndDate(new Date(savedEndDate));
 
     setPricePerDay(group.pricing?.daily || 0);
     setDeposit(group.deposit || 0);
@@ -173,6 +175,8 @@ export const VehicleGroupDetailsPage = () => {
     group,
     isAuthenticated,
     paymentFlow,
+    startDate,
+    endDate,
     setGroupKey,
     setVehicleFullDetails,
     setStartDate,

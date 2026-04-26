@@ -15,14 +15,25 @@ interface BookingQRModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookingId: string;
+  bookingStatus?: string;
+}
+
+// QR value encodes intent so the employee scanner can pre-determine the route.
+// The scanner always does a live API verify before navigating.
+function getQrValue(bookingId: string, bookingStatus?: string): string {
+  if (bookingStatus === "CONFIRMED") return `pickup:${bookingId}`;
+  if (bookingStatus === "PICKED_UP") return `return:${bookingId}`;
+  return bookingId; // HOLD / CANCELLED / RETURNED — plain ID, scanner handles gracefully
 }
 
 export function BookingQRModal({
   isOpen,
   onClose,
   bookingId,
+  bookingStatus,
 }: BookingQRModalProps) {
   const [copied, setCopied] = useState(false);
+  const qrValue = getQrValue(bookingId, bookingStatus);
 
   const handleCopyBookingId = async () => {
     try {
@@ -49,7 +60,7 @@ export function BookingQRModal({
           {/* QR Code */}
           <div className="rounded-lg bg-white p-4 shadow-sm border">
             <QRCodeSVG
-              value={bookingId}
+              value={qrValue}
               size={200}
               level="H"
               includeMargin={true}
