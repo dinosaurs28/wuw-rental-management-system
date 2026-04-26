@@ -1,202 +1,311 @@
 import { prisma } from "@repo/database/client";
 
+// ─── Section model ─────────────────────────────────────────────────────────────
+
+export type SectionType =
+  | "VEHICLE_RENTAL"
+  | "DAMAGE_PENALTY"
+  | "ADDITIONAL_CHARGES"
+  | "DAMAGE_COMPENSATION";
+
+export interface InvoiceSectionItem {
+  description: string;
+  quantity?: number;  // days, km, hours
+  unitRate?: number;  // per-day, per-km rate
+  discount?: number;  // monetary discount on this item
+  amount: number;     // base amount (before GST)
+  isTaxable: boolean;
+  notes?: string;
+}
+
+export interface InvoiceSection {
+  type: SectionType;
+  title: string;
+  items: InvoiceSectionItem[];
+  subtotalBeforeTax: number;
+  discount: number;
+  cgst: number;
+  sgst: number;
+  taxTotal: number;
+  sectionTotal: number;  // subtotalBeforeTax - discount + taxTotal
+}
+
 export interface InvoiceData {
   invoiceNumber: string;
   invoiceDate: Date;
 
-  // Company/Branch Details
+  // Branch / Company
   companyName: string;
   companyAddress: string;
   companyPhone: string;
   companyEmail: string;
   gstNumber: string;
 
-  // Customer Details
+  // Customer
   customerName: string;
   customerEmail: string;
   customerPhone: string;
   customerAddress: string;
 
-  // Booking Details
+  // Booking
   bookingId: number;
   bookingPublicId: string;
   startDate: Date;
   endDate: Date;
   days: number;
 
-  // Line Items
-  items: {
-    description: string;
-    days: number;
-    rate: number;
-    discount: number;
-    taxRate: number;
-    cgst: number;
-    sgst: number;
-    amount: number;
-  }[];
+  // GST rates from branch rule
+  cgstRate: number;
+  sgstRate: number;
 
-  // Totals
-  subtotal: number;
+  // Sections — drives all PDF pages
+  taxableSections: InvoiceSection[];     // VEHICLE_RENTAL + DAMAGE_PENALTY
+  nonTaxableSections: InvoiceSection[];  // ADDITIONAL_CHARGES + DAMAGE_COMPENSATION
+
+  // Pre-computed summary totals
+  subtotalBeforeTax: number;
   totalDiscount: number;
-  totalTax: number;
-  cgstAmount: number;
-  sgstAmount: number;
-  damageCharges: number;
+  totalCgst: number;
+  totalSgst: number;
   grandTotal: number;
+
+  // Payment info for summary page
+  paymentStatus: string;
+  paymentMethod?: string;
+  safetyDepositApplied: number;
 }
 
-/**
- * Transforms booking data into invoice-ready format
- * @param bookingId - The booking ID to transform
- * @returns Structured invoice data
- */
+// ─── Classification ────────────────────────────────────────────────────────────
+
+const ADDITIONAL_CHARGE_TYPES = new Set([
+  "EXTRA_KM",
+  "EXTRA_TIME",
+  "FUEL_DEFICIT",
+  "FASTAG",
+  "GRACE_ADJUSTMENT",
+]);
+
+function classifyChargeType(chargeType: string | null | undefined): SectionType {
+  if (!chargeType) return "ADDITIONAL_CHARGES";
+  if (chargeType === "DAMAGE_PENALTY") return "DAMAGE_PENALTY";
+  if (chargeType === "DAMAGE_COMPENSATION") return "DAMAGE_COMPENSATION";
+  if (ADDITIONAL_CHARGE_TYPES.has(chargeType)) return "ADDITIONAL_CHARGES";
+  return "ADDITIONAL_CHARGES"; // safe fallback for unknown types
+}
+
+function buildSection(
+  type: SectionType,
+  title: string,
+  items: InvoiceSectionItem[],
+  cgstRate: number,
+  sgstRate: number,
+  sectionDiscount = 0,
+): InvoiceSection {
+  const subtotalBeforeTax = items.reduce((s, i) => s + i.amount, 0);
+
+  let cgst = 0;
+  let sgst = 0;
+
+  for (const item of items) {
+    if (item.isTaxable) {
+      cgst += item.amount * (cgstRate / 100);
+      sgst += item.amount * (sgstRate / 100);
+    }
+  }
+
+  return {
+    type,
+    title,
+    items,
+    subtotalBeforeTax,
+    discount: sectionDiscount,
+    cgst,
+    sgst,
+    taxTotal: cgst + sgst,
+    sectionTotal: subtotalBeforeTax - sectionDiscount + cgst + sgst,
+  };
+}
+
+// ─── Transformer ───────────────────────────────────────────────────────────────
+
 export async function transformBookingToInvoiceData(
   bookingId: number,
 ): Promise<InvoiceData> {
-  try {
-    console.log(`[Invoice Data Transformer] Transforming booking ${bookingId}`);
+  console.log(`[Invoice Data Transformer] Transforming booking ${bookingId}`);
 
-    // Fetch booking with all required relations
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
-        branch: {
-          include: {
-            gstRule: true,
-          },
-        },
-        items: {
-          include: {
-            vehicle: {
-              include: {
-                category: true,
-              },
-            },
-          },
-        },
-        invoice: {
-          include: {
-            items: true,
-          },
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      customer: { include: { user: true } },
+      branch: { include: { gstRule: true } },
+      items: { include: { vehicle: { include: { category: true } } } },
+      invoice: {
+        include: {
+          items: true,
+          payments: { orderBy: { createdAt: "desc" }, take: 1 },
         },
       },
-    });
+    },
+  });
 
-    if (!booking) {
-      throw new Error(`Booking ${bookingId} not found`);
-    }
+  if (!booking) throw new Error(`Booking ${bookingId} not found`);
+  if (!booking.invoice) throw new Error(`Invoice not found for booking ${bookingId}`);
 
-    if (!booking.invoice) {
-      throw new Error(`Invoice not found for booking ${bookingId}`);
-    }
+  // ── GST rates ────────────────────────────────────────────────────────────────
+  const cgstRate = booking.branch.gstRule
+    ? Number(booking.branch.gstRule.cgstRate)
+    : 9;
+  const sgstRate = booking.branch.gstRule
+    ? Number(booking.branch.gstRule.sgstRate)
+    : 9;
 
-    // Build customer address
-    const customer = booking.customer;
-    const customerAddress = [
-      customer.addressLine1,
-      customer.city,
-      customer.state,
-      customer.zipCode,
-      customer.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
+  // ── SECTION 1: Vehicle Rental (from BookingItems) ─────────────────────────────
+  const rentalItems: InvoiceSectionItem[] = booking.items.map((item) => {
+    const baseTotal = Number(item.baseTotal);
+    const discountAmount = Number(item.discountAmount);
+    const netAmount = baseTotal - discountAmount;
 
-    // Build line items
-    const items = booking.items.map((item) => ({
+    return {
       description: `${item.vehicle.make} ${item.vehicle.model} (${item.vehicle.regNo})`,
-      days: item.days,
-      rate: Number(item.baseTotal) / item.days,
-      discount: Number(item.discountAmount),
-      taxRate: Number(item.taxRate),
-      cgst: Number(item.cgstAmount),
-      sgst: Number(item.sgstAmount),
-      amount: Number(item.finalTotal),
-    }));
+      quantity: item.days,
+      unitRate: item.days > 0 ? baseTotal / item.days : baseTotal,
+      discount: discountAmount,
+      amount: netAmount, // net of discount, before GST
+      isTaxable: true,
+    };
+  });
 
-    // GST details from branch
-    const gstNumber = booking.branch.gstRule?.gstNumber || "N/A";
+  const rentalDiscount = rentalItems.reduce((s, i) => s + (i.discount ?? 0), 0);
+  const vehicleRentalSection = buildSection(
+    "VEHICLE_RENTAL",
+    "Vehicle Rental",
+    rentalItems,
+    cgstRate,
+    sgstRate,
+    rentalDiscount,
+  );
 
-    // Map additional invoice items (like Damage Charges)
-    const gstRatePerComponent = booking.branch.gstRule ? Number(booking.branch.gstRule.cgstRate) : 9;
-    
-    booking.invoice.items.forEach((invItem) => {
-      const isTaxable = invItem.isTaxable;
-      const amount = Number(invItem.amount);
-      const taxComponent = isTaxable ? amount * (gstRatePerComponent / 100) : 0;
-      
-      items.push({
-        description: invItem.label,
-        days: 1,
-        rate: amount,
-        discount: 0,
-        taxRate: isTaxable ? gstRatePerComponent * 2 : 0,
-        cgst: taxComponent,
-        sgst: taxComponent,
-        amount: amount + taxComponent * 2,
-      });
-    });
+  // ── Classify InvoiceItems into bucket arrays ────────────────────────────────
+  const penaltyItems: InvoiceSectionItem[] = [];
+  const compensationItems: InvoiceSectionItem[] = [];
+  const additionalItems: InvoiceSectionItem[] = [];
 
-    // Calculate total tax from items (CGST + SGST)
-    const totalCgst = items.reduce((sum, item) => sum + item.cgst, 0);
-    const totalSgst = items.reduce((sum, item) => sum + item.sgst, 0);
-    const totalTax = totalCgst + totalSgst;
+  for (const invItem of booking.invoice.items) {
+    const amount = Number(invItem.amount);
+    const sectionType = classifyChargeType(invItem.chargeType ?? undefined);
 
-    const invoiceData: InvoiceData = {
-      invoiceNumber:
-        booking.invoice.invoiceNumber ||
-        `INV/${new Date().getFullYear()}/${bookingId.toString().padStart(5, "0")}`,
-      invoiceDate: booking.invoice.createdAt,
-
-      // Company/Branch Details
-      companyName: booking.branch?.name || "Unknown Branch",
-      companyAddress: booking.branch?.address || "N/A",
-      companyPhone: booking.branch?.phone || process.env.COMPANY_PHONE || "N/A",
-      companyEmail: process.env.COMPANY_EMAIL || "info@company.com",
-      gstNumber: gstNumber,
-
-      // Customer Details
-      customerName: customer.user?.name || "Guest",
-      customerEmail: customer.user?.email || "N/A",
-      customerPhone: customer.user?.phone || customer.alternatePhone || "N/A",
-      customerAddress: customerAddress || "N/A",
-
-      // Booking Details
-      bookingId: booking.id,
-      bookingPublicId: booking.publicId,
-      startDate: booking.startAt,
-      endDate: booking.endAt,
-      days: booking.days,
-
-      // Line Items
-      items: items,
-
-      // Totals
-      subtotal: Number(booking.invoice.subtotal),
-      totalDiscount: Number(booking.invoice.discount),
-      totalTax: totalTax,
-      cgstAmount: totalCgst,
-      sgstAmount: totalSgst,
-      damageCharges: Number(booking.invoice.damageCharges),
-      grandTotal: Number(booking.invoice.total),
+    const sectionItem: InvoiceSectionItem = {
+      description: invItem.label,
+      amount,
+      isTaxable: invItem.isTaxable,
     };
 
-    console.log(
-      `[Invoice Data Transformer] Successfully transformed booking ${bookingId}`,
-    );
-
-    return invoiceData;
-  } catch (error) {
-    console.error("[Invoice Data Transformer] ❌ CRITICAL ERROR:", error);
-    if (error instanceof Error) {
-      console.error("[Invoice Data Transformer] Stack:", error.stack);
-    }
-    throw error;
+    if (sectionType === "DAMAGE_PENALTY") penaltyItems.push(sectionItem);
+    else if (sectionType === "DAMAGE_COMPENSATION") compensationItems.push(sectionItem);
+    else additionalItems.push(sectionItem);
   }
+
+  // ── SECTION 2: Damage Penalty (taxable, conditional) ─────────────────────────
+  const taxableSections: InvoiceSection[] = [vehicleRentalSection];
+
+  if (penaltyItems.length > 0) {
+    taxableSections.push(
+      buildSection("DAMAGE_PENALTY", "Damage Penalty", penaltyItems, cgstRate, sgstRate),
+    );
+  }
+
+  // ── SECTION 3: Additional Charges + Damage Compensation (non-taxable page) ───
+  const nonTaxableSections: InvoiceSection[] = [];
+
+  if (additionalItems.length > 0) {
+    nonTaxableSections.push(
+      buildSection(
+        "ADDITIONAL_CHARGES",
+        "Additional Return Charges",
+        additionalItems,
+        cgstRate,
+        sgstRate,
+      ),
+    );
+  }
+
+  if (compensationItems.length > 0) {
+    nonTaxableSections.push(
+      buildSection(
+        "DAMAGE_COMPENSATION",
+        "Damage Compensation",
+        compensationItems,
+        cgstRate,
+        sgstRate,
+      ),
+    );
+  }
+
+  // ── Grand totals ──────────────────────────────────────────────────────────────
+  const allSections = [...taxableSections, ...nonTaxableSections];
+  const totalDiscount = allSections.reduce((s, sec) => s + sec.discount, 0);
+  const totalCgst = allSections.reduce((s, sec) => s + sec.cgst, 0);
+  const totalSgst = allSections.reduce((s, sec) => s + sec.sgst, 0);
+  const subtotalBeforeTax = allSections.reduce(
+    (s, sec) => s + sec.subtotalBeforeTax - sec.discount,
+    0,
+  );
+
+  // ── Payment info ──────────────────────────────────────────────────────────────
+  const latestPayment = booking.invoice.payments[0];
+  const paymentMethod = latestPayment?.method ? String(latestPayment.method) : undefined;
+
+  // ── Customer address ──────────────────────────────────────────────────────────
+  const customer = booking.customer;
+  const customerAddress =
+    [customer.addressLine1, customer.city, customer.state, customer.zipCode]
+      .filter(Boolean)
+      .join(", ") || "N/A";
+
+  console.log(
+    `[Invoice Data Transformer] Booking ${bookingId}: ` +
+      `${taxableSections.length} taxable section(s), ` +
+      `${nonTaxableSections.length} non-taxable section(s).`,
+  );
+
+  return {
+    invoiceNumber:
+      booking.invoice.invoiceNumber ||
+      `INV/${new Date().getFullYear()}/${bookingId.toString().padStart(5, "0")}`,
+    invoiceDate: booking.invoice.createdAt,
+
+    companyName: booking.branch.name || "Unknown Branch",
+    companyAddress: booking.branch.address || "N/A",
+    companyPhone: booking.branch.phone || process.env.COMPANY_PHONE || "N/A",
+    companyEmail: process.env.COMPANY_EMAIL || "info@company.com",
+    gstNumber: booking.branch.gstRule?.gstNumber || "N/A",
+
+    customerName: customer.user?.name || "Guest",
+    customerEmail: customer.user?.email || "N/A",
+    customerPhone:
+      customer.user?.phone || customer.alternatePhone || "N/A",
+    customerAddress,
+
+    bookingId: booking.id,
+    bookingPublicId: booking.publicId,
+    startDate: booking.startAt,
+    endDate: booking.endAt,
+    days: booking.days,
+
+    cgstRate,
+    sgstRate,
+
+    taxableSections,
+    nonTaxableSections,
+
+    subtotalBeforeTax,
+    totalDiscount,
+    totalCgst,
+    totalSgst,
+    grandTotal: Number(booking.invoice.total),
+
+    paymentStatus: String(booking.invoice.status),
+    paymentMethod,
+    safetyDepositApplied: Number(booking.safetyDeposit ?? 0),
+  };
 }

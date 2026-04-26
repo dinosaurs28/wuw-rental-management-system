@@ -162,9 +162,7 @@ export function TransactionsTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">
-                        {txn.status === "CONFIRMED" && txn.confirmedByName
-                          ? txn.confirmedByName
-                          : txn.employeeName ?? "—"}
+                        {txn.employeeName ?? "—"}
                       </td>
                     </tr>
                   );

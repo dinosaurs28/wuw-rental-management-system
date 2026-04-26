@@ -10,6 +10,7 @@ interface Pricing {
 
 interface EmployeeBookingState {
   selectedVehicleId: string | null;
+  selectedGroupKey: string | null;
   startDate: Date | null;
   endDate: Date | null;
   startTime: string;
@@ -20,6 +21,7 @@ interface EmployeeBookingState {
 
   // Actions
   setVehicle: (vehicleId: string) => void;
+  setGroupKey: (groupKey: string | null) => void;
   setDates: (start: Date, end: Date) => void;
   setStartTime: (time: string) => void;
   setEndTime: (time: string) => void;
@@ -33,6 +35,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
   persist(
     (set) => ({
       selectedVehicleId: null,
+      selectedGroupKey: null,
       startDate: null,
       endDate: null,
       startTime: "10:00",
@@ -41,7 +44,8 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       pricing: null,
       customerKycId: null,
 
-      setVehicle: (vehicleId) => set({ selectedVehicleId: vehicleId }),
+      setVehicle: (vehicleId) => set({ selectedVehicleId: vehicleId, selectedGroupKey: null }),
+      setGroupKey: (groupKey) => set({ selectedGroupKey: groupKey, selectedVehicleId: null }),
       setDates: (start, end) => set({ startDate: start, endDate: end }),
       setStartTime: (time) => set({ startTime: time }),
       setEndTime: (time) => set({ endTime: time }),
@@ -51,6 +55,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       reset: () =>
         set({
           selectedVehicleId: null,
+          selectedGroupKey: null,
           startDate: null,
           endDate: null,
           startTime: "10:00",

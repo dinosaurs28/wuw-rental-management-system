@@ -81,11 +81,13 @@ function CloseShiftModal({
   open,
   shiftPublicId,
   expectedTotal,
+  pendingTotal,
   onClose,
 }: {
   open: boolean;
   shiftPublicId: string;
   expectedTotal?: string;
+  pendingTotal?: string;
   onClose: () => void;
 }) {
   const { setActiveShift } = usePaymentStore();
@@ -133,15 +135,21 @@ function CloseShiftModal({
           <DialogTitle>Close Cash Shift</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          {expectedTotal && (
-            <div className="bg-neutral-50 rounded-lg px-4 py-3 text-sm">
-              <span className="text-neutral-500">Expected cash total: </span>
-              <span className="font-semibold">₹ {expectedTotal}</span>
-              <p className="text-xs text-neutral-400 mt-1">
-                Based on confirmed transactions during this shift
-              </p>
+          <div className="bg-neutral-50 rounded-lg px-4 py-3 text-sm space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-neutral-500">Confirmed cash</span>
+              <span className="font-semibold">₹ {expectedTotal ?? "0.00"}</span>
             </div>
-          )}
+            {pendingTotal && parseFloat(pendingTotal) > 0 && (
+              <div className="flex justify-between text-amber-700">
+                <span>Pending (awaiting manager)</span>
+                <span className="font-semibold">₹ {parseFloat(pendingTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            <p className="text-xs text-neutral-400 pt-0.5">
+              Enter the total physical cash you are handing over.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="actualTotal">
               Actual cash counted <span className="text-red-500">*</span>
@@ -258,20 +266,30 @@ export function ShiftBanner() {
                 : "bg-green-50 border-b border-green-200"
             }
           >
-            <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <span
-                  className={`text-base ${isDiscrepancy ? "text-red-500" : "text-green-500"}`}
-                >
+            <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                <span className={`text-base ${isDiscrepancy ? "text-red-500" : "text-green-500"}`}>
                   {isDiscrepancy ? "⚠" : "●"}
                 </span>
-                <span
-                  className={isDiscrepancy ? "text-red-800" : "text-green-800"}
-                >
+                <span className={isDiscrepancy ? "text-red-800" : "text-green-800"}>
                   {isDiscrepancy
                     ? "Shift: Discrepancy Flagged"
                     : `Shift Open — Started at ${formatTime(activeShift.openedAt)}`}
                 </span>
+                {!isDiscrepancy && (
+                  <>
+                    {activeShift.pendingTotal && parseFloat(activeShift.pendingTotal) > 0 && (
+                      <span className="text-amber-700 bg-amber-100 rounded px-2 py-0.5 text-xs font-medium">
+                        Pending: ₹{parseFloat(activeShift.pendingTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+                    {activeShift.expectedTotal && parseFloat(activeShift.expectedTotal) > 0 && (
+                      <span className="text-green-700 bg-green-100 rounded px-2 py-0.5 text-xs font-medium">
+                        Confirmed: ₹{parseFloat(activeShift.expectedTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
               {!isDiscrepancy && (
                 <Button
@@ -297,6 +315,7 @@ export function ShiftBanner() {
           open={closeShiftModal}
           shiftPublicId={activeShift.publicId}
           expectedTotal={activeShift.expectedTotal}
+          pendingTotal={activeShift.pendingTotal}
           onClose={() => setCloseShiftModal(false)}
         />
       )}

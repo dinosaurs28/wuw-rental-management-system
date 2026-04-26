@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Shield } from "lucide-react";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentTypeSelector } from "@/components/verification/DocumentTypeSelector";
 import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
 import { UploadedDocumentsGrid } from "@/components/verification/UploadedDocumentsGrid";
@@ -26,35 +25,15 @@ export const InlineKycUpload = ({
     selectedDocumentType,
     uploadedDocuments,
     isUploading,
-    isFetching,
     deletingDocumentId,
     setSelectedDocumentType,
-    setUploadedDocuments,
     addDocument,
     removeDocument,
     setIsUploading,
-    setIsFetching,
     setDeletingDocumentId,
   } = useKycStore();
 
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  // Fetch existing documents on mount
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      setIsFetching(true);
-      try {
-        const response = await kycService.getDocuments();
-        setUploadedDocuments(response.data);
-      } catch {
-        toast.error("Failed to load documents");
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    fetchDocuments();
-  }, [setUploadedDocuments, setIsFetching]);
 
   const handleFileSelect = useCallback(
     async (file: File) => {
@@ -160,19 +139,11 @@ export const InlineKycUpload = ({
 
       {/* Uploaded Documents */}
       <section>
-        {isFetching ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <UploadedDocumentsGrid
-            documents={uploadedDocuments}
-            onDeleteDocument={handleDeleteDocument}
-            deletingDocumentId={deletingDocumentId}
-          />
-        )}
+        <UploadedDocumentsGrid
+          documents={uploadedDocuments}
+          onDeleteDocument={handleDeleteDocument}
+          deletingDocumentId={deletingDocumentId}
+        />
       </section>
 
       {/* Footer */}

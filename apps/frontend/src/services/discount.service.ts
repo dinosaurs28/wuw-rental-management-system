@@ -212,7 +212,8 @@ export const adminDiscountService = {
 export const discountPublicService = {
   validateCoupon: async (params: {
     couponCode: string;
-    vehiclePublicId: string;
+    vehiclePublicId?: string;
+    groupKey?: string;
     startAt: string;
     endAt: string;
   }): Promise<{ data: CouponValidation }> => {

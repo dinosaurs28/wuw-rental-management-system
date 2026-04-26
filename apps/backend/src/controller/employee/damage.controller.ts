@@ -7,6 +7,7 @@ import {
   VehicleReturnDisposition,
   DamageReportStatus,
   VehicleStatus,
+  DamageChargeType,
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { createDamageReportSchema } from "@repo/schemas";
@@ -94,6 +95,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
       odo,
       fuelLevel,
       severity,
+      chargeType,
       damageImageIds,
       notes,
       returnImageIds,
@@ -170,6 +172,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
           vehicleId: vehicleId,
           status: DamageReportStatus.PENDING,
           severity: severity,
+          chargeType: chargeType as DamageChargeType,
           estimatedCost: 0,
           notes: notes ?? {},
         },
