@@ -39,6 +39,17 @@ class CashShiftService {
       },
     });
 
+    // Retroactively link any COLLECTED transactions this employee collected
+    // before a shift was open (cashShiftId was null at collection time).
+    await prisma.paymentTransaction.updateMany({
+      where: {
+        collectedById: actor.actorId,
+        status: "COLLECTED",
+        cashShiftId: null,
+      },
+      data: { cashShiftId: shift.id },
+    });
+
     await auditService.log({
       actorId: actor.actorId,
       actorName: actor.actorName,
@@ -185,6 +196,13 @@ class CashShiftService {
       include: { employee: { select: { name: true } } },
     });
     if (!shift) return null;
+
+    // Link any orphaned COLLECTED transactions collected while no shift was open.
+    // This handles the case where cash was confirmed before the shift was opened.
+    await prisma.paymentTransaction.updateMany({
+      where: { collectedById: shift.employeeId, status: "COLLECTED", cashShiftId: null },
+      data: { cashShiftId: shift.id },
+    });
 
     // Sum cash collected but not yet confirmed by manager
     const pending = await prisma.paymentTransaction.aggregate({

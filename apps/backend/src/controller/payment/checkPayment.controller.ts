@@ -150,7 +150,22 @@ export const checkPayment = async (req: Request, res: Response) => {
           },
         });
 
-        // PaymentTransaction record so the settlement engine counts this payment in alreadyPaid
+        // Cash collected by an employee always requires manager approval (COLLECTED)
+        // before it is counted as received — regardless of cashConfirmationEnabled.
+        // Online payments confirm immediately.
+        let activeShiftId: number | null = null;
+
+        if (isCash) {
+          const activeShift = await (tx as any).cashShift.findFirst({
+            where: { employeeId: booking.createdById, status: "OPEN" },
+            select: { id: true },
+          });
+          activeShiftId = activeShift?.id ?? null;
+        }
+
+        const txnStatus = isCash ? "COLLECTED" : "CONFIRMED";
+        const now = new Date();
+
         await tx.paymentTransaction.create({
           data: {
             publicId:            createID(),
@@ -159,14 +174,20 @@ export const checkPayment = async (req: Request, res: Response) => {
             branchId:            booking.branchId,
             purpose:             booking.isAdvancePayment ? PaymentPurpose.ADVANCE : PaymentPurpose.FULL_PAYMENT,
             method:              isCash ? PaymentMethod.CASH : PaymentMethod.ONLINE,
-            status:              "CONFIRMED",
+            status:              txnStatus,
             totalAmount:         paymentAmount,
             cashAmount:          isCash ? paymentAmount : 0,
             onlineAmount:        isCash ? 0 : paymentAmount,
             onlineTransactionRef: isCash ? null : transactionId,
             onlineGateway:       isCash ? null : "PHONEPE",
+            collectedById:       isCash ? booking.createdById : null,
+            collectedAt:         isCash ? now : null,
+            confirmedById:       txnStatus === "CONFIRMED" ? booking.createdById : null,
+            confirmedAt:         txnStatus === "CONFIRMED" ? now : null,
+            cashShiftId:         activeShiftId,
           },
         });
+
       });
 
       // Clear Redis holds outside the transaction (Redis is not transactional)
