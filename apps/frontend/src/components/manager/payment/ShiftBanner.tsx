@@ -90,7 +90,7 @@ function CloseShiftModal({
   pendingTotal?: string;
   onClose: () => void;
 }) {
-  const { setActiveShift } = usePaymentStore();
+  const { setActiveShift, setActiveShiftLoaded } = usePaymentStore();
   const [actualTotal, setActualTotal] = useState("");
   const [explanation, setExplanation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,6 +120,7 @@ function CloseShiftModal({
         toast.success("Shift closed successfully.");
       }
       setActiveShift(null);
+      setActiveShiftLoaded(false); // trigger re-fetch to get fresh server state
       onClose();
     } catch {
       toast.error("Failed to close shift. Please try again.");
@@ -213,6 +214,7 @@ export function ShiftBanner() {
     usePaymentStore();
   const [openShiftModal, setOpenShiftModal] = useState(false);
   const [closeShiftModal, setCloseShiftModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (activeShiftLoaded) return;
@@ -224,6 +226,19 @@ export function ShiftBanner() {
       })
       .catch(() => setActiveShiftLoaded(true));
   }, [activeShiftLoaded, setActiveShift, setActiveShiftLoaded]);
+
+  const handleOpenCloseModal = async () => {
+    setRefreshing(true);
+    try {
+      const fresh = await employeePaymentService.getActiveShift();
+      setActiveShift(fresh);
+    } catch {
+      // non-fatal — open modal with existing data
+    } finally {
+      setRefreshing(false);
+      setCloseShiftModal(true);
+    }
+  };
 
   if (!activeShiftLoaded) return null;
 
@@ -296,9 +311,10 @@ export function ShiftBanner() {
                   size="sm"
                   variant="outline"
                   className="h-8 text-xs font-semibold border-green-300 text-green-700 hover:bg-green-100"
-                  onClick={() => setCloseShiftModal(true)}
+                  onClick={handleOpenCloseModal}
+                  disabled={refreshing}
                 >
-                  Close Shift
+                  {refreshing ? "Refreshing…" : "Close Shift"}
                 </Button>
               )}
             </div>

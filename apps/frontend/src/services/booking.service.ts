@@ -513,4 +513,5 @@ export const bookingService = {
 
     return response.data;
   },
+
 };

@@ -71,17 +71,6 @@ export const EmployeeBookingSummaryPage = () => {
         const response =
           await bookingService.createEmployeeBooking(bookingPayload);
 
-        // If CASH, we might want to redirect immediately or show success here as per new flow
-        // The new flow guidelines say:
-        // "If location.state.bookingPayload... Call createEmployeeBooking... On Success: render actual summary."
-        // But wait, for CASH, the previous logic was to redirect to Status Page.
-        // For ONLINE, stay here with Pay Now button.
-
-        // Let's check response.
-        if (!response.data.paymentURL) {
-          // Cash Payment - Stay on page and show success/redirect button
-        }
-
         setBookingData(response);
         if (response.data?.expiresAt) {
           setHoldExpiresAt(response.data.expiresAt);
@@ -309,7 +298,7 @@ export const EmployeeBookingSummaryPage = () => {
             ) : (
               <div className="space-y-3">
                 <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
-                  Cash Payment Confirmed
+                  Cash Payment — Confirm Collection
                 </div>
                 <Button
                   className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"

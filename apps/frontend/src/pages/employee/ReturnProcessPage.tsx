@@ -1096,9 +1096,18 @@ export default function ReturnProcessPage() {
                 </div>
               </div>
             ) : hasDamage === false ? (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <p className="text-sm font-medium">No damage reported. Return process is complete.</p>
+              <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <p className="text-sm font-medium">No damage reported. Return process is complete.</p>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-green-700 underline underline-offset-2 hover:text-green-900 shrink-0 ml-3"
+                  onClick={() => setHasDamage(null)}
+                >
+                  Change
+                </button>
               </div>
             ) : hasDamage === true && (
               <div className="space-y-4">
@@ -1106,9 +1115,30 @@ export default function ReturnProcessPage() {
                   <p className="text-sm font-semibold text-orange-700 flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" /> Damage Report
                   </p>
-                  <Button size="sm" variant="outline" onClick={() => setShowDamageForm(true)}>
-                    + Add Damage
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground text-xs h-8"
+                      onClick={() => {
+                        // Clean up any uploaded photos before resetting
+                        damages.forEach((item) =>
+                          item.photos.forEach((p) => deleteDamageImageMutation.mutate(p.publicId)),
+                        );
+                        activeDamage.photos?.forEach((p) => deleteDamageImageMutation.mutate(p.publicId));
+                        setDamages([]);
+                        setActiveDamage({ severity: "Minor", photos: [] });
+                        setShowDamageForm(false);
+                        setDamageChargeType(null);
+                        setHasDamage(null);
+                      }}
+                    >
+                      ← No Damage
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowDamageForm(true)}>
+                      + Add Damage
+                    </Button>
+                  </div>
                 </div>
 
                 {showDamageForm && (
