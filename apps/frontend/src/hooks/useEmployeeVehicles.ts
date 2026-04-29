@@ -1,8 +1,9 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { employeeService } from "../services/employee.service";
+import type { PublicVehicle } from "@/services/vehicle.service";
 
 interface EmployeeVehiclesResponse {
-  data: any[]; // defining loosely or import Vehicle type if available, strict typing is better but 'any[]' solves the immediate error
+  data: PublicVehicle[];
   pagination: {
     total: number;
     limit: number;

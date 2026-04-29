@@ -36,6 +36,8 @@ const ACEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/heic",
+  "image/heif",
   "application/pdf",
 ];
 
@@ -219,7 +221,7 @@ export const UploadKycDialog = ({
                             id="dropzone-file"
                             type="file"
                             className="hidden"
-                            accept={ACEPTED_IMAGE_TYPES.join(",")}
+                            accept="image/*,application/pdf"
                             onChange={(e) => handleFileChange(e, onChange)}
                             {...fieldProps}
                           />

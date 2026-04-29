@@ -57,7 +57,13 @@ export const VehicleCard = ({
     if (startDateTime) params.set("start", startDateTime);
     if (endDateTime) params.set("end", endDateTime);
     const query = params.toString();
-    navigate(`${basePath}/${vehicle.publicId}${query ? `?${query}` : ""}`);
+
+    // Grouped public vehicles use groupKey; manager/employee vehicles use publicId
+    if ("groupKey" in vehicle) {
+      navigate(`${basePath}/group/${encodeURIComponent(vehicle.groupKey)}${query ? `?${query}` : ""}`);
+    } else {
+      navigate(`${basePath}/${(vehicle as any).publicId}${query ? `?${query}` : ""}`);
+    }
   };
 
   const hasPricingDetails =
@@ -95,16 +101,32 @@ export const VehicleCard = ({
             </span>
           </div>
         )}
+        {/* Available Count Badge (public grouped vehicles only) */}
+        {"availableCount" in vehicle && (
+          <div className="absolute bottom-4 right-4 z-10">
+            <span
+              className={`px-3 py-1.5 text-[10px] font-black tracking-[0.15em] backdrop-blur-md text-white rounded-full uppercase ${
+                vehicle.availableCount >= 3
+                  ? "bg-emerald-500/80"
+                  : vehicle.availableCount >= 1
+                  ? "bg-yellow-500/80"
+                  : "bg-red-500/80"
+              }`}
+            >
+              {vehicle.availableCount} available
+            </span>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-6 space-y-4 relative z-10">
         {/* Make + Model */}
         <div className="space-y-1">
-          <h3 className="text-xl md:text-2xl font-serif font-black text-zinc-900 truncate group-hover:text-orange-600 transition-colors">
+          <h3 className="text-xl md:text-2xl font-serif font-black text-zinc-900 leading-tight group-hover:text-orange-600 transition-colors">
             {vehicle.make} {vehicle.model}
           </h3>
           {/* Branch */}
-          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5 truncate">
+          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
             {vehicle.branch}
           </p>

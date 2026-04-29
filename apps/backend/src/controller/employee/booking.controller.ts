@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import { parseGroupKey } from "./vehicle.controller.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -125,6 +126,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
   try {
     const {
       vehicles,
+      group_key,
       customer_public_id,
       customer_kyc_id,
       start,
@@ -132,8 +134,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       payment_type,
     } = req.body;
 
+    const hasVehicles = Array.isArray(vehicles) && vehicles.length > 0;
+    const hasGroupKey = typeof group_key === "string" && group_key.length > 0;
+
     if (
-      !Array.isArray(vehicles) ||
+      (!hasVehicles && !hasGroupKey) ||
       !customer_public_id ||
       !customer_kyc_id ||
       !start ||
@@ -180,8 +185,50 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const startDate = TimezoneService.toPrisma(startDateDt);
     const endDate = TimezoneService.toPrisma(endDateDt);
 
+    // ── Resolve vehicle list: explicit IDs or pick from group ────────────────
+    let resolvedVehicleIds: string[] = hasVehicles ? vehicles : [];
+
+    if (hasGroupKey && !hasVehicles) {
+      const parsed = parseGroupKey(group_key);
+      if (!parsed) {
+        return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key format" });
+      }
+      const { make, model, categoryId, branchId } = parsed;
+
+      // Ensure the group belongs to this branch
+      if (branchId !== req.branch_Id) {
+        return res.status(StatusCode.FORBIDDEN).json({ message: "Group not accessible from this branch" });
+      }
+
+      // Find an available vehicle from the group for the requested dates
+      const candidates = await prisma.vehicle.findMany({
+        where: { make, model, categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
+        select: { id: true, publicId: true },
+        orderBy: { odo: "asc" },
+      });
+
+      if (candidates.length === 0) {
+        return res.status(StatusCode.CONFLICT).json({ message: "No vehicles available in this group" });
+      }
+
+      const vehicleIdToPublicId = new Map(candidates.map((v) => [v.id, v.publicId]));
+      const unavailableIds = await getUnavailableVehicleIds(
+        candidates.map((v) => v.id),
+        startDate,
+        endDate,
+        vehicleIdToPublicId,
+      );
+
+      const available = candidates.filter((v) => !unavailableIds.has(v.id));
+      if (available.length === 0) {
+        return res.status(StatusCode.CONFLICT).json({ message: "No vehicles in this group are available for the selected dates" });
+      }
+
+      resolvedVehicleIds = [available[0]!.publicId];
+    }
+
     const vehiclesData = await prisma.vehicle.findMany({
-      where: { publicId: { in: vehicles } },
+      where: { publicId: { in: resolvedVehicleIds } },
       include: {
         category: true,
         branch: { include: { pricingSetting: true } },
@@ -189,7 +236,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       },
     });
 
-    if (vehiclesData.length !== vehicles.length) {
+    if (vehiclesData.length !== resolvedVehicleIds.length) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Some vehicles not found" });
     }
 
@@ -404,35 +451,36 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         })),
       });
 
-      await staffActivityService.logFromRequest(
-        req,
-        {
-          actionType:  StaffActionType.CREATED,
-          entityType:  StaffEntityType.BOOKING,
-          entityRef:   newBooking.publicId,
-          description: `Booking ${newBooking.publicId} created`,
-        },
-        tx,
-      );
-
-      await auditService.log({
-        actorId: staff.id,
-        actorName: staff.name,
-        actorRole: staff.role,
-        actorBranchId: staff.branchId ?? undefined,
-        action: "BOOKING_CREATED",
-        category: AuditCategory.BOOKING,
-        description: `Booking created for customer ${customer.name} from ${startDate.toISOString()} to ${endDate.toISOString()}`,
-        entity: "Booking",
-        entityId: newBooking.publicId,
-        entityLabel: newBooking.publicId,
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-        after: { status: newBooking.status, totalFinal: grandFinalTotal, vehicles },
-      }, tx);
-
       return newBooking;
-    });
+    }, { timeout: 10000 });
+
+    // Staff activity log is non-critical — run outside the transaction so its
+    // internal prisma.user lookup doesn't compete for connections while the
+    // transaction is open (which caused P2028 timeouts).
+    staffActivityService.logFromRequest(req, {
+      actionType:  StaffActionType.CREATED,
+      entityType:  StaffEntityType.BOOKING,
+      entityRef:   booking.publicId,
+      description: `Booking ${booking.publicId} created`,
+    }).catch((err) => console.error("[createEmployeeBooking] Staff activity log error (non-fatal):", err));
+
+    // Audit log is non-critical — run after the transaction commits to avoid
+    // holding the transaction open while the audit service does its own DB write.
+    auditService.log({
+      actorId: staff.id,
+      actorName: staff.name,
+      actorRole: staff.role,
+      actorBranchId: staff.branchId ?? undefined,
+      action: "BOOKING_CREATED",
+      category: AuditCategory.BOOKING,
+      description: `Booking created for customer ${customer.name} from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+      entity: "Booking",
+      entityId: booking.publicId,
+      entityLabel: booking.publicId,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      after: { status: booking.status, totalFinal: grandFinalTotal, vehicles: resolvedVehicleIds },
+    }).catch((err) => console.error("[createEmployeeBooking] Audit log error (non-fatal):", err));
 
     // ── Targeted cache invalidation (TASK-019) ────────────────────────────────
     // Replaces SCAN/DEL of all public:vehicles:* with per-vehicle key deletion.

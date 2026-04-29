@@ -1,8 +1,11 @@
 import axios from "../lib/axios";
 
+export type DamageChargeType = "PENALTY" | "COMPENSATION";
+
 export interface DamageReport {
   damageReportId: string;
   status: string;
+  chargeType: DamageChargeType;
   booking: {
     bookingId: string;
     deposit: number;
@@ -13,11 +16,12 @@ export interface DamageReport {
     model: string;
     currentStatus: string;
   };
-  damageDetails: Record<string, any>; // Dynamic JSON
+  damageDetails: Record<string, any>;
   images: { url: string }[];
   financialHint: {
     deposit: number;
     estimatedCost: number;
+    gstRate: number;
   };
 }
 

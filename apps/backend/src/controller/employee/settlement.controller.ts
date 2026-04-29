@@ -19,6 +19,7 @@ import {
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
 import { generateReturnReceipt } from "../../services/receipt-generator.service.js";
+import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 
 /**
  * Compute and return the settlement outcome for employee review.
@@ -227,6 +228,11 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
         paymentMethod,
       },
     });
+
+    // Finalize invoice — sync InvoiceItems with return charges and rebuild PDF
+    finalizeInvoice(booking.id).catch((err) =>
+      console.error("[ConfirmSettlement] Invoice finalization error:", err),
+    );
 
     // Generate return receipt asynchronously — fire and forget (non-blocking)
     generateReturnReceipt(booking.id, {

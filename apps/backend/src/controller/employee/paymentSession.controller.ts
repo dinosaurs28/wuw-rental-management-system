@@ -34,6 +34,7 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -245,7 +246,18 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
     let returnedVehicleIds: number[] = [];
 
-    if (method === "CASH") {
+    if (amount === 0) {
+      // Zero-balance session: complete immediately without creating a PaymentTransaction.
+      // A ₹0 record would pollute financial reports with meaningless rows.
+      await prisma.$transaction(async (tx) => {
+        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
+        await (tx as any).booking.update({
+          where: { id: session.bookingId },
+          data: { activePaymentSessionId: null },
+        });
+        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+      }, { timeout: 15000 });
+    } else if (method === "CASH") {
       await prisma.$transaction(async (tx) => {
         // Add PAYMENT ledger entry (negative = money in)
         await ledgerService.addEntry(
@@ -260,6 +272,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
           { idempotencyKey, referenceType: "CASH_PAYMENT" },
           tx as any,
         );
+
+        // Link to the employee's open cash shift so the manager can track handover
+        const activeShift = await (tx as any).cashShift.findFirst({
+          where: { employeeId: actor.id, status: "OPEN" },
+          select: { id: true },
+        });
 
         // Create backward-compat PaymentTransaction (COLLECTED — awaits manager cash confirmation)
         await tx.paymentTransaction.create({
@@ -276,6 +294,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
             onlineAmount: "0.00",
             collectedById: actor.id,
             collectedAt: new Date(),
+            cashShiftId: activeShift?.id ?? null,
             notes: notes ?? null,
           },
         });
@@ -346,6 +365,13 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }, { timeout: 15000 });
     }
 
+    // Rebuild and regenerate invoice after RETURN session completes
+    if (session.sessionType === PaymentSessionType.RETURN) {
+      finalizeInvoice(session.bookingId).catch((err) =>
+        console.error("[record-payment] Invoice finalization error:", err),
+      );
+    }
+
     // Audit + activity outside transaction
     await auditService.log({
       actorId: actor.id,
@@ -413,7 +439,7 @@ export const RecordRefund = async (req: Request, res: Response) => {
         LedgerEntryType.REFUND,
         LedgerEntryClassification.PAYMENT,
         Math.abs(amount),
-        notes ?? `Refund of ₹${amount} issued`,
+        notes ?? `Cash refund of ₹${amount}`,
         actor.id,
         String(actor.role),
         { idempotencyKey, referenceType: "REFUND" },
@@ -440,6 +466,23 @@ export const RecordRefund = async (req: Request, res: Response) => {
         },
       });
 
+      // Create a RefundRequest so the branch manager can see and acknowledge the refund.
+      // CASH refunds need manager acknowledgment (PENDING_APPROVAL); online refunds auto-approve.
+      await (tx as any).refundRequest.create({
+        data: {
+          publicId: createID(),
+          bookingId: session.bookingId,
+          branchId: session.branchId,
+          amount: amount.toFixed(2),
+          reason: notes ?? "Deposit refund on vehicle return",
+          method: method as any,
+          status: method === "CASH" ? "PENDING_APPROVAL" : "APPROVED",
+          requestedById: actor.id,
+          approvedById: method !== "CASH" ? actor.id : null,
+          approvedAt: method !== "CASH" ? new Date() : null,
+        },
+      });
+
       await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
       await (tx as any).booking.update({
         where: { id: session.bookingId },
@@ -455,6 +498,13 @@ export const RecordRefund = async (req: Request, res: Response) => {
       } catch (redisErr) {
         console.warn("[record-refund] Cache invalidation failed (non-fatal):", redisErr);
       }
+    }
+
+    // Rebuild and regenerate invoice after RETURN session completes
+    if (session.sessionType === PaymentSessionType.RETURN) {
+      finalizeInvoice(session.bookingId).catch((err) =>
+        console.error("[record-refund] Invoice finalization error:", err),
+      );
     }
 
     await auditService.log({
@@ -669,6 +719,14 @@ async function runPostCompletionHooks(
     await tx.vehicle.updateMany({
       where: { id: { in: vehicleIds } },
       data: { status: VehicleStatus.AVAILABLE },
+    });
+
+    // Bust the cached PDF synchronously inside the transaction so any
+    // download request that arrives before finalizeInvoice completes
+    // sees a null invoicePdfFileId and is forced to wait for regeneration.
+    await (tx as any).invoice.updateMany({
+      where: { bookingId },
+      data: { invoicePdfFileId: null, generatedAt: null },
     });
 
     return vehicleIds;

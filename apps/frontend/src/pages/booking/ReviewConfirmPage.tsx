@@ -31,6 +31,7 @@ export const ReviewConfirmPage = () => {
   // Get all booking state from store
   const {
     selectedVehicleId,
+    selectedGroupKey,
     startDate,
     endDate,
     startTime,
@@ -66,7 +67,7 @@ export const ReviewConfirmPage = () => {
   // Handle Confirm & Pay click - just validate and navigate
   const handleConfirmAndPay = () => {
     if (
-      !selectedVehicleId ||
+      (!selectedVehicleId && !selectedGroupKey) ||
       !startDate ||
       !endDate ||
       !selectedKycFilePublicId ||
@@ -138,6 +139,7 @@ export const ReviewConfirmPage = () => {
                     <p className="text-sm font-medium text-zinc-700">Have a coupon code?</p>
                     <CouponInput
                       vehiclePublicId={selectedVehicleId ?? undefined}
+                      groupKey={selectedGroupKey ?? undefined}
                       startAt={startDate ? `${startDate}T${startTime}:00.000Z` : undefined}
                       endAt={endDate ? `${endDate}T${endTime}:00.000Z` : undefined}
                       appliedCode={couponCode}

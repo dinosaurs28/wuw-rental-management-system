@@ -68,3 +68,31 @@ export async function invalidateVehiclePricing(
   const keys = vehicleIds.map(vehiclePricingKey);
   await redis.del(...keys);
 }
+
+/**
+ * Invalidate all grouped listing caches.
+ * Call after any vehicle status/availability change so listing availableCount stays accurate.
+ * Uses SCAN to avoid KEYS issues on Redis Cluster.
+ */
+export async function invalidateGroupListingCache(
+  redis: { scan: (...args: any[]) => Promise<any>; del: (...keys: string[]) => Promise<any> },
+  groupKey?: string,
+): Promise<void> {
+  try {
+    const patterns = [
+      "public:vehicles:grouped:*",
+      ...(groupKey ? [`public:vehicles:group:${groupKey}:*`] : ["public:vehicles:group:*"]),
+    ];
+
+    for (const pattern of patterns) {
+      let cursor = "0";
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+        cursor = nextCursor;
+        if (keys.length > 0) await redis.del(...keys);
+      } while (cursor !== "0");
+    }
+  } catch (err) {
+    console.warn("[cache] invalidateGroupListingCache failed (non-fatal):", err);
+  }
+}

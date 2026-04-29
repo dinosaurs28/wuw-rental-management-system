@@ -7,12 +7,18 @@ import { z } from "zod";
 
 const pricingEngine = new PricingEngineService();
 
-const validateSchema = z.object({
-  couponCode: z.string().min(1).max(50),
-  vehiclePublicId: z.string().min(1),
-  startAt: z.string().min(1),
-  endAt: z.string().min(1),
-});
+const validateSchema = z
+  .object({
+    couponCode: z.string().min(1).max(50),
+    vehiclePublicId: z.string().min(1).optional(),
+    groupKey: z.string().min(1).optional(),
+    startAt: z.string().min(1),
+    endAt: z.string().min(1),
+  })
+  .refine((d) => d.vehiclePublicId || d.groupKey, {
+    message: "Either vehiclePublicId or groupKey is required",
+    path: ["vehiclePublicId"],
+  });
 
 /**
  * POST /api/public/discount/validate
@@ -27,12 +33,30 @@ export const ValidateCoupon = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.format() });
     }
 
-    const { couponCode, vehiclePublicId, startAt, endAt } = parsed.data;
+    const { couponCode, vehiclePublicId, groupKey, startAt, endAt } = parsed.data;
 
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { publicId: vehiclePublicId },
-      select: { id: true, branchId: true, categoryId: true },
-    });
+    let vehicle: { id: number; branchId: number; categoryId: number } | null = null;
+
+    if (vehiclePublicId) {
+      vehicle = await prisma.vehicle.findUnique({
+        where: { publicId: vehiclePublicId },
+        select: { id: true, branchId: true, categoryId: true },
+      });
+    } else if (groupKey) {
+      // groupKey format: make__model__categoryId__branchId
+      const parts = groupKey.split("__");
+      const categoryId = parseInt(parts[2] ?? "", 10);
+      const branchId = parseInt(parts[3] ?? "", 10);
+      if (isNaN(categoryId) || isNaN(branchId)) {
+        return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key" });
+      }
+      vehicle = await prisma.vehicle.findFirst({
+        where: { branchId, categoryId, status: "AVAILABLE" },
+        select: { id: true, branchId: true, categoryId: true },
+        orderBy: { odo: "asc" },
+      });
+    }
+
     if (!vehicle) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Vehicle not found" });
     }

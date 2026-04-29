@@ -4,15 +4,21 @@ export const getVehicleDetailsSchema = z.object({
   id: z.string().min(16, "Vehicle ID length is invalid."),
 });
 
-export const bookingSummarySchema = z.object({
-  vehicles: z.array(z.string().min(1)),
-  start: z.string().min(1),
-  end: z.string().min(1),
-  file_public_id: z.string().min(1),
-  payment_type: z.enum(["CASH", "ONLINE"]),
-  payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
-  couponCode: z.string().min(1).max(50).optional(),
-});
+export const bookingSummarySchema = z
+  .object({
+    vehicles: z.array(z.string().min(1)).optional().default([]),
+    groupKeys: z.array(z.string().min(1)).optional().default([]),
+    start: z.string().min(1),
+    end: z.string().min(1),
+    file_public_id: z.string().min(1),
+    payment_type: z.enum(["CASH", "ONLINE"]),
+    payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
+    couponCode: z.string().min(1).max(50).optional(),
+  })
+  .refine(
+    (data) => (data.vehicles.length + (data.groupKeys?.length ?? 0)) > 0,
+    { message: "At least one vehicle or group key is required", path: ["vehicles"] },
+  );
 
 export const createVehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),
@@ -77,9 +83,12 @@ export const createDamageReportSchema = z.object({
     .min(0)
     .max(100, "Fuel level must be between 0 and 100"),
   severity: z.string().min(1, "Severity is required"),
+  chargeType: z.enum(["PENALTY", "COMPENSATION"], {
+    required_error: "Damage type is required",
+  }),
   damageImageIds: z.array(z.string().min(1)),
   returnImageIds: z.array(z.string().min(1)),
-  notes: z.record(z.any()).optional(), // Structured JSON notes
+  notes: z.record(z.any()).optional(),
 });
 
 export const closeDamageReportSchema = z.object({
