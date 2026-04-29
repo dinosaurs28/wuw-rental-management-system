@@ -17,7 +17,8 @@ export const Login = async (req: Request, res: Response) => {
     });
   }
 
-  const { email, password } = Validation.data;
+  const { password } = Validation.data;
+  const email = Validation.data.email.toLowerCase().trim();
 
   try {
     const user = await prisma.user.findFirst({

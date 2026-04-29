@@ -123,6 +123,7 @@ export interface CashShift {
   closedAt?: string;
   expectedTotal?: string;
   actualTotal?: string;
+  pendingTotal?: string;
   discrepancyExplanation?: string;
   managerNote?: string;
   status: ShiftStatus;

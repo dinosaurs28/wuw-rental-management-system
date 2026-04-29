@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getPublicVehicles,
   getPublicVehiclesDetails,
+  getVehicleGroupDetails,
 } from "../../controller/public/vehicles.controller.js";
 import { kycCheck } from "../../middlewares/kycCheck.middlewares.js";
 import { createBookingSummary } from "../../controller/booking/getBookInfo.controller.js";
@@ -15,6 +16,7 @@ router.get("/branches", getPublicBranches);
 router.post("/discount/validate", ValidateCoupon);
 router.get("/categories", getPublicCategories);
 router.get("/vehicles", getPublicVehicles);
+router.get("/vehicles/group/:groupKey", getVehicleGroupDetails);
 router.get("/vehicles/:id", getPublicVehiclesDetails);
 router
   .route("/vehicles/booking")

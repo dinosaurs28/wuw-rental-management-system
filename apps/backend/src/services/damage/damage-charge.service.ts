@@ -64,7 +64,7 @@ export class DamageChargeService {
       },
     });
 
-    // 2. Update the Invoice totals
+    // 2. Update the Invoice totals and invalidate cached PDF
     const finalAmountInclTax = amount + taxAmount;
 
     await tx.invoice.update({
@@ -73,6 +73,8 @@ export class DamageChargeService {
         damageCharges: { increment: amount },
         tax: { increment: taxAmount },
         total: { increment: finalAmountInclTax },
+        invoicePdfFileId: null,
+        generatedAt: null,
       },
     });
 

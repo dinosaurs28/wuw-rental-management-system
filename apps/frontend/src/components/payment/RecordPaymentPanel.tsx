@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Method = "CASH" | "ONLINE";
@@ -32,8 +33,20 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
   const [gateway, setGateway] = useState<Gateway>("UPI");
 
   const netPayable = parseFloat(session.netPayable);
+  const isZeroBalance = netPayable === 0;
   const isRefund = netPayable < 0;
   const amount = Math.abs(netPayable);
+
+  const zeroMutation = useMutation({
+    mutationFn: () =>
+      paymentSessionService.recordPayment(session.publicId, {
+        method: "CASH",
+        amount: 0,
+        idempotencyKey,
+        notes: "No payment required — zero balance",
+      }),
+    onSuccess,
+  });
 
   const payMutation = useMutation({
     mutationFn: () =>
@@ -73,6 +86,31 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
 
   if (session.status !== "AWAITING_PAYMENT" && session.status !== "PAYMENT_INITIATED") {
     return null;
+  }
+
+  // Zero-balance: no money changes hands — skip the payment form entirely
+  if (isZeroBalance) {
+    return (
+      <div className={cn("rounded-lg border bg-card shadow-sm", className)}>
+        <div className="px-4 py-4 space-y-3">
+          <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2.5 text-sm">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span className="font-medium">No payment required — charges are fully covered.</span>
+          </div>
+          <Button
+            className="w-full"
+            disabled={zeroMutation.isPending}
+            onClick={() => zeroMutation.mutate()}
+          >
+            {zeroMutation.isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing…</>
+            ) : (
+              "Complete — No Payment Needed"
+            )}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

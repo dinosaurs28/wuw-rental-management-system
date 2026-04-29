@@ -4,7 +4,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import axios from "axios";
+import apiClient from "@/lib/axios";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +43,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
 
   // Fetch insurance alert count once on mount
   useEffect(() => {
-    axios.get("/api/insurance-alerts/counts", { withCredentials: true })
+    apiClient.get("/insurance-alerts/counts")
       .then((res) => setInsuranceAlertCount(res.data?.data?.total ?? 0))
       .catch(() => {/* non-fatal */ });
   }, []);

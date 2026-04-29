@@ -7,6 +7,7 @@ import { discountPublicService } from "@/services/discount.service";
 
 interface CouponInputProps {
   vehiclePublicId?: string;
+  groupKey?: string;
   startAt?: string;
   endAt?: string;
   appliedCode: string | null;
@@ -30,6 +31,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export function CouponInput({
   vehiclePublicId,
+  groupKey,
   startAt,
   endAt,
   appliedCode,
@@ -50,13 +52,13 @@ export function CouponInput({
     setLoading(true);
 
     try {
-      // If we have vehicle context, validate with pricing preview
-      if (vehiclePublicId && startAt && endAt) {
+      const hasContext = (vehiclePublicId || groupKey) && startAt && endAt;
+      if (hasContext) {
         const res = await discountPublicService.validateCoupon({
           couponCode: code,
-          vehiclePublicId,
-          startAt,
-          endAt,
+          ...(vehiclePublicId ? { vehiclePublicId } : { groupKey }),
+          startAt: startAt!,
+          endAt: endAt!,
         });
 
         if (!res.data.valid) {
@@ -69,9 +71,8 @@ export function CouponInput({
         setInputValue("");
         toast.success(`Coupon ${code} applied! Saved ₹${res.data.discountAmount}`);
       } else {
-        // No vehicle context — just apply the code without validation preview
-        onApply(code);
-        setInputValue("");
+        // No vehicle or date context — cannot validate
+        setError("Please select rental dates before applying a coupon.");
       }
     } catch {
       setError("Couldn't validate coupon. Please try again.");

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Calendar as CalendarIcon, QrCode } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, QrCode, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
@@ -101,10 +101,65 @@ export default function EmployeeDashboardPage() {
     }
   };
 
-  const handleQrScan = (data: string | null) => {
-    if (data) {
-      toast.success(`Scanned: ${data}`);
-      navigate(`/staff/pickups/${data}`);
+  const handleQrScan = async (data: string | null) => {
+    if (!data) return;
+
+    // Parse optional prefix written by BookingQRModal
+    let scannedIntent: "pickup" | "return" | null = null;
+    let bookingId = data;
+    if (data.startsWith("pickup:")) {
+      scannedIntent = "pickup";
+      bookingId = data.slice("pickup:".length);
+    } else if (data.startsWith("return:")) {
+      scannedIntent = "return";
+      bookingId = data.slice("return:".length);
+    }
+
+    try {
+      const booking = await employeeService.scanBooking(bookingId);
+      const { status, customerName, vehicleName } = booking;
+      const label = vehicleName ? `${vehicleName} · ${customerName}` : customerName;
+
+      switch (status) {
+        case "CONFIRMED":
+          if (scannedIntent === "return") {
+            toast.info(`QR is from before pickup — opening pickup for ${label}`);
+          }
+          navigate(`/staff/pickups/${bookingId}`);
+          break;
+
+        case "PICKED_UP":
+          if (scannedIntent === "pickup") {
+            toast.info(`Vehicle already picked up — opening return for ${label}`);
+          }
+          navigate(`/employee/dashboard/return/${bookingId}`);
+          break;
+
+        case "HOLD":
+          toast.warning(`Booking for ${label} is pending payment confirmation. Ask the customer to complete payment.`);
+          break;
+
+        case "RETURNED":
+        case "COMPLETED":
+          toast.info(`Booking for ${label} has already been completed.`);
+          break;
+
+        case "CANCELLED":
+          toast.error(`Booking for ${label} has been cancelled.`);
+          break;
+
+        default:
+          toast.error(`Booking status "${status}" cannot be processed at this station.`);
+      }
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404) {
+        toast.error("Invalid QR code — booking not found.");
+      } else if (status === 401 || status === 403) {
+        toast.error("You are not authorised to access this booking.");
+      } else {
+        toast.error("Failed to verify booking. Please try again.");
+      }
     }
   };
 
@@ -187,29 +242,41 @@ export default function EmployeeDashboardPage() {
           transition={{ delay: 0.2 }}
           className="space-y-6"
         >
-          <div className="flex bg-muted/30 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
-            <button
-              onClick={() => setFilter("PICKUP")}
-              className={cn(
-                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                filter === "PICKUP"
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+          <div className="flex items-center gap-2">
+            <div className="flex bg-muted/30 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
+              <button
+                onClick={() => setFilter("PICKUP")}
+                className={cn(
+                  "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                  filter === "PICKUP"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Pickups
+              </button>
+              <button
+                onClick={() => setFilter("RETURN")}
+                className={cn(
+                  "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                  filter === "RETURN"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Returns
+              </button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              disabled={isLoading}
+              className="h-9 w-9 p-0 shrink-0"
+              title="Refresh"
             >
-              Pickups
-            </button>
-            <button
-              onClick={() => setFilter("RETURN")}
-              className={cn(
-                "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                filter === "RETURN"
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Returns
-            </button>
+              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+            </Button>
           </div>
 
           <div className="overflow-hidden rounded-lg border bg-background shadow-sm">

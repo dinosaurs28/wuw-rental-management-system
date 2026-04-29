@@ -8,6 +8,7 @@ import OtpPage from "./pages/auth/OtpPage";
 import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
+import VehicleGroupDetailsPage from "./pages/VehicleGroupDetailsPage";
 import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
 import { PersonalInformationPage } from "./pages/profile/PersonalInformationPage";
 import { ReviewConfirmPage } from "./pages/booking/ReviewConfirmPage";
@@ -27,6 +28,7 @@ import EmployeeCustomerSelectPage from "@/pages/employee/booking/EmployeeCustome
 import EmployeeCreateCustomerPage from "@/pages/employee/booking/EmployeeCreateCustomerPage";
 import EmployeeVehicleListingPage from "@/pages/employee/booking/EmployeeVehicleListingPage";
 import { EmployeeVehicleDetailsPage } from "@/pages/employee/booking/EmployeeVehicleDetailsPage";
+import { EmployeeVehicleGroupDetailsPage } from "@/pages/employee/booking/EmployeeVehicleGroupDetailsPage";
 import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBookingSummaryPage";
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
@@ -97,6 +99,7 @@ function App() {
         {/* Public Routes - No auth required */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/vehicle/group/:groupKey" element={<VehicleGroupDetailsPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
         <Route path="/terms" element={<ExternalRedirect to="/legal/terms.html" />} />
         <Route path="/privacy" element={<ExternalRedirect to="/legal/privacy.html" />} />
@@ -317,6 +320,10 @@ function App() {
           <Route
             path="/employee/vehicles"
             element={<EmployeeVehicleListingPage />}
+          />
+          <Route
+            path="/employee/vehicle/group/:groupKey"
+            element={<EmployeeVehicleGroupDetailsPage />}
           />
           <Route
             path="/employee/vehicle/:id"

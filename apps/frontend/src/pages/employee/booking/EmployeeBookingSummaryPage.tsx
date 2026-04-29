@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeft, Car, ArrowRight, Tag } from "lucide-react";
+import { ArrowLeft, Car, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,8 +17,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { bookingService } from "@/services/booking.service";
-import { CouponInput } from "@/components/discount/CouponInput";
-import { employeeDiscountService } from "@/services/discount.service";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 
 export const EmployeeBookingSummaryPage = () => {
@@ -34,7 +32,6 @@ export const EmployeeBookingSummaryPage = () => {
     location.state?.bookingData || null,
   );
   const [loading, setLoading] = useState(!location.state?.bookingData);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
@@ -73,17 +70,6 @@ export const EmployeeBookingSummaryPage = () => {
       try {
         const response =
           await bookingService.createEmployeeBooking(bookingPayload);
-
-        // If CASH, we might want to redirect immediately or show success here as per new flow
-        // The new flow guidelines say:
-        // "If location.state.bookingPayload... Call createEmployeeBooking... On Success: render actual summary."
-        // But wait, for CASH, the previous logic was to redirect to Status Page.
-        // For ONLINE, stay here with Pay Now button.
-
-        // Let's check response.
-        if (!response.data.paymentURL) {
-          // Cash Payment - Stay on page and show success/redirect button
-        }
 
         setBookingData(response);
         if (response.data?.expiresAt) {
@@ -298,36 +284,6 @@ export const EmployeeBookingSummaryPage = () => {
           </div>
         </div>
 
-        {/* Coupon Code */}
-        {bookingData?.data?.publicId && (
-          <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-orange-500" />
-              <h3 className="font-semibold text-sm">Coupon Code (optional)</h3>
-            </div>
-            <CouponInput
-              appliedCode={appliedCoupon}
-              onApply={async (code) => {
-                try {
-                  await employeeDiscountService.applyCoupon(bookingData.data.publicId, code);
-                  setAppliedCoupon(code);
-                  toast.success(`Coupon ${code} applied to booking.`);
-                } catch (err: any) {
-                  toast.error(err?.response?.data?.message || "Failed to apply coupon.");
-                }
-              }}
-              onRemove={async () => {
-                try {
-                  await employeeDiscountService.removeCoupon(bookingData.data.publicId);
-                  setAppliedCoupon(null);
-                  toast.success("Coupon removed.");
-                } catch (err: any) {
-                  toast.error(err?.response?.data?.message || "Failed to remove coupon.");
-                }
-              }}
-            />
-          </div>
-        )}
 
         {/* Payment Action */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
@@ -342,7 +298,7 @@ export const EmployeeBookingSummaryPage = () => {
             ) : (
               <div className="space-y-3">
                 <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
-                  Cash Payment Confirmed
+                  Cash Payment — Confirm Collection
                 </div>
                 <Button
                   className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"

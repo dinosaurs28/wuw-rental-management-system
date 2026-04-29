@@ -3,11 +3,13 @@ import { Login } from "../../controller/employee/login.controller.js";
 import {
   searchVehicles,
   getEmployeeVehicleDetails,
+  getEmployeeVehicleGroupDetails,
 } from "../../controller/employee/vehicle.controller.js";
 import {
   createEmployeeBooking,
   GetBookingDetails,
 } from "../../controller/employee/booking.controller.js";
+import { ScanBooking } from "../../controller/employee/scanBooking.controller.js";
 import { getEmployeeVehicleCategories } from "../../controller/employee/vehicle.controller.js";
 import { cancelEmployeeHold } from "../../controller/employee/cancelHold.controller.js";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares.js";
@@ -77,6 +79,7 @@ const router: Router = Router();
 
 router.post("/auth/login", Login);
 router.get("/booking", EmployeeCheck, BookingController);
+router.get("/booking/:bookingId/scan", EmployeeCheck, ScanBooking);
 router.get("/return", EmployeeCheck, returnController);
 router.get("/kyc/:bookingId", EmployeeCheck, GetBookingKyc);
 router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc);
@@ -120,6 +123,7 @@ router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus);
 router.delete("/walkin/kyc", EmployeeCheck, DeleteKycDocument);
 router.get("/vehicles/categories", EmployeeCheck, getEmployeeVehicleCategories);
 router.get("/vehicles/search", EmployeeCheck, searchVehicles);
+router.get("/vehicles/group/:groupKey", EmployeeCheck, getEmployeeVehicleGroupDetails);
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails);
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking);
 router.delete("/booking/hold/:holdId", EmployeeCheck, cancelEmployeeHold);

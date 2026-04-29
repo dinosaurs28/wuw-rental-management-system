@@ -60,15 +60,12 @@ export const EmployeeBookingStatusPage = () => {
         setRetryCount(retryCountRef.current);
 
         if (retryCountRef.current >= MAX_RETRY_COUNT) {
-          // Max retries reached, show pending UI
           setStatus("pending");
           startCountdown();
         } else {
-          // Retry after delay
           setTimeout(checkPaymentStatus, RETRY_DELAY_MS);
         }
       } else {
-        // Failed
         setStatus("failed");
         setErrorMessage(
           response.message || "Payment failed. Please try again.",
@@ -94,7 +91,6 @@ export const EmployeeBookingStatusPage = () => {
       return;
     }
 
-    // Wait 3 seconds before checking payment status (slightly faster than customer facing)
     const timer = setTimeout(() => {
       checkPaymentStatus();
     }, 3000);

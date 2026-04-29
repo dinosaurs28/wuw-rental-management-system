@@ -60,5 +60,28 @@ export const employeeService = {
     );
     return response.data;
   },
+
+  getVehicleGroupDetails: async (
+    groupKey: string,
+    startDate?: string,
+    endDate?: string,
+  ) => {
+    const response = await apiClient.get(
+      `/employee/vehicles/group/${encodeURIComponent(groupKey)}`,
+      { params: { start: startDate, end: endDate } },
+    );
+    return response.data;
+  },
+
+  scanBooking: async (bookingId: string): Promise<{
+    publicId: string;
+    status: string;
+    customerName: string;
+    vehicleName: string | null;
+    regNo: string | null;
+  }> => {
+    const response = await apiClient.get(`/employee/booking/${bookingId}/scan`);
+    return response.data.data;
+  },
 };
 
