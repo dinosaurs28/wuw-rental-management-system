@@ -74,7 +74,7 @@ export const DocumentUploadZone = ({
       >
         {/* Subtle animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-        <input {...getInputProps()} capture="environment" />
+        <input {...getInputProps()} />
 
         {isUploading ? (
           <div className="flex flex-col items-center gap-4 relative z-10">
