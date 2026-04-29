@@ -12,6 +12,7 @@ import type { SignInInput, SignUpInput } from "@/services/auth.service";
 import { authService } from "@/services/auth.service";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "motion/react";
+import { Eye, EyeOff } from "lucide-react";
 // Icons
 // import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
@@ -23,6 +24,8 @@ export default function SignInPage({
   defaultTab = "sign-in",
 }: SignInPageProps) {
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   const { mutate: signIn, isPending: isSignInPending } = useSignIn();
   const { mutate: signUp, isPending: isSignUpPending } = useSignUp();
@@ -165,13 +168,23 @@ export default function SignInPage({
                         Forgot?
                       </a>
                     </div>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
-                      {...signInForm.register("password")}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showSignInPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 pr-12 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
+                        {...signInForm.register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignInPassword((v) => !v)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showSignInPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                     {signInForm.formState.errors.password && (
                       <p className="text-[10px] font-bold pl-4 text-red-500">
                         {signInForm.formState.errors.password.message}
@@ -263,13 +276,23 @@ export default function SignInPage({
                     >
                       Password
                     </Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
-                      {...signUpForm.register("password")}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignUpPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 pr-12 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
+                        {...signUpForm.register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpPassword((v) => !v)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showSignUpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                     {signUpForm.formState.errors.password && (
                       <p className="text-[10px] font-bold pl-4 text-red-500">
                         {signUpForm.formState.errors.password.message}
