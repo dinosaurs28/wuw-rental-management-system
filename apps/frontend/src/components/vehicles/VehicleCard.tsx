@@ -122,11 +122,11 @@ export const VehicleCard = ({
       <CardContent className="p-6 space-y-4 relative z-10">
         {/* Make + Model */}
         <div className="space-y-1">
-          <h3 className="text-xl md:text-2xl font-serif font-black text-zinc-900 truncate group-hover:text-orange-600 transition-colors">
+          <h3 className="text-xl md:text-2xl font-serif font-black text-zinc-900 leading-tight group-hover:text-orange-600 transition-colors">
             {vehicle.make} {vehicle.model}
           </h3>
           {/* Branch */}
-          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5 truncate">
+          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
             {vehicle.branch}
           </p>
