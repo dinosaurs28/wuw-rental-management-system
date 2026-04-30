@@ -86,18 +86,15 @@ export interface ManagerVehicle {
   publicId: string;
   make: string;
   model: string;
+  regNo: string;
+  status: string;
   category: {
     name: string;
   };
-  branch: string;
-  status?: string;
-  regNo?: string;
-  imageUrl: VehicleImage[];
+  images: VehicleImage[];
   customPricing?: {
-    price24Hour: number;
+    price24Hour: string | number;
   };
-  hasFastag?: boolean;
-  fastagNumber?: string;
 }
 
 // Legacy alias for backward compatibility

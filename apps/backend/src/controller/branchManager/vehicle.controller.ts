@@ -607,16 +607,23 @@ export const GetVehicles = async (req: Request, res: Response) => {
         take: Number(limit),
         skip: Number(offset),
         orderBy: { createdAt: "desc" },
-        include: {
+        select: {
+          publicId: true,
+          make: true,
+          model: true,
+          regNo: true,
+          status: true,
           images: {
             where: { isThumbnail: true },
             take: 1,
-            select: {
-              file: { select: { url: true } },
-            },
+            select: { file: { select: { url: true } } },
           },
-          customPricing: true,
-          category: true, // Include category to show name if needed
+          customPricing: {
+            select: { price24Hour: true },
+          },
+          category: {
+            select: { name: true },
+          },
         },
       }),
     ]);
