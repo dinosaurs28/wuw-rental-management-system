@@ -19,7 +19,10 @@ export const VehicleCard = ({
 }: VehicleCardProps) => {
   const navigate = useNavigate();
 
-  const imageUrl = vehicle.imageUrl?.[0]?.file?.url;
+  const imageUrl =
+    "images" in vehicle
+      ? vehicle.images?.[0]?.file?.url
+      : vehicle.imageUrl?.[0]?.file?.url;
 
   // Helper to get category name from either type
   const getCategoryName = () => {
@@ -126,10 +129,12 @@ export const VehicleCard = ({
             {vehicle.make} {vehicle.model}
           </h3>
           {/* Branch */}
-          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
-            {vehicle.branch}
-          </p>
+          {"branch" in vehicle && vehicle.branch && (
+            <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+              {vehicle.branch}
+            </p>
+          )}
         </div>
 
         {/* Price and CTA */}
