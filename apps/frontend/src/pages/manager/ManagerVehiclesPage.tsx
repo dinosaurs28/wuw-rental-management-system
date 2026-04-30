@@ -247,9 +247,9 @@ export const ManagerVehiclesPage = () => {
                         <TableRow key={vehicle.publicId}>
                           <TableCell>
                             <div className="w-16 h-12 bg-neutral-100 rounded overflow-hidden">
-                              {vehicle.imageUrl?.[0]?.file?.url ? (
+                              {vehicle.images?.[0]?.file?.url ? (
                                 <img
-                                  src={vehicle.imageUrl[0].file.url}
+                                  src={vehicle.images[0].file.url}
                                   alt={vehicle.model}
                                   className="w-full h-full object-cover"
                                 />
@@ -336,9 +336,9 @@ export const ManagerVehiclesPage = () => {
                       className="bg-white p-4 rounded-lg border shadow-sm flex gap-4"
                     >
                       <div className="w-24 h-24 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {vehicle.imageUrl?.[0]?.file?.url ? (
+                        {vehicle.images?.[0]?.file?.url ? (
                           <img
-                            src={vehicle.imageUrl[0].file.url}
+                            src={vehicle.images[0].file.url}
                             alt={vehicle.model}
                             className="w-full h-full object-cover"
                           />
@@ -349,9 +349,9 @@ export const ManagerVehiclesPage = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium text-neutral-900 truncate">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-medium text-neutral-900 break-words leading-snug">
                               {vehicle.make} {vehicle.model}
                             </h3>
                             <p className="text-sm text-neutral-500">
