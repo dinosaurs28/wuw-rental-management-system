@@ -98,6 +98,14 @@ export const Footer = () => {
                     Privacy
                   </a>
                 </li>
+                <li>
+                  <Link
+                    to="/refund-policy"
+                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
+                  >
+                    Refund Policy
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

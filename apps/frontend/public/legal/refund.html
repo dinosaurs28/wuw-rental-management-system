@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Refund Policy - WUW Rentals" />
+    <meta name="keywords" content="Refund Policy, Car Rental, WUW Rentals" />
+    <meta name="author" content="WUW Rentals" />
+    <title>Refund Policy - WUW Rentals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --text-main: #18181b;
+            --text-muted: #52525b;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(228, 228, 231, 0.8);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #fcfcfd;
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 4rem;
+        }
+
+        .bg-mesh {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(125deg, #f8fafc 0%, #f1f5f9 100%);
+            z-index: -1;
+        }
+        .bg-circle {
+            position: fixed; width: 500px; height: 500px; border-radius: 50%;
+            filter: blur(80px); z-index: -1; opacity: 0.15;
+        }
+        .circle-1 { top: -100px; left: -100px; background: var(--primary); }
+        .circle-2 { bottom: -100px; right: -100px; background: #6366f1; }
+
+        .header { padding: 2rem 1rem; max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { display: inline-flex; align-items: center; text-decoration: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; transition: all 0.2s ease; }
+        .back-btn:hover { color: var(--primary); transform: translateX(-4px); }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+        .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 3rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+
+        h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; color: #09090b; text-transform: uppercase; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 1rem; color: #18181b; display: flex; align-items: center; gap: 0.75rem; }
+        h2::before { content: ""; display: block; width: 4px; height: 24px; background: var(--primary); border-radius: 2px; }
+
+        p { margin-bottom: 1.25rem; color: var(--text-muted); font-size: 1.05rem; line-height: 1.7; }
+        b { color: var(--text-main); font-weight: 600; }
+
+        ul { margin-bottom: 1.5rem; padding-left: 1.5rem; }
+        li { color: var(--text-muted); font-size: 1.05rem; margin-bottom: 0.5rem; }
+
+        .no-refund-banner {
+            background: #fff7ed;
+            border: 2px solid #fed7aa;
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin: 1.5rem 0 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .no-refund-banner .icon {
+            font-size: 1.75rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .no-refund-banner .banner-text strong {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #c2410c;
+            margin-bottom: 0.25rem;
+        }
+        .no-refund-banner .banner-text span {
+            font-size: 0.975rem;
+            color: #92400e;
+        }
+
+        .footer { text-align: center; margin-top: 4rem; color: var(--text-muted); font-size: 0.875rem; }
+
+        @media (max-width: 768px) {
+            .card { padding: 1.5rem; border-radius: 16px; }
+            h1 { font-size: 2rem; }
+            .header { padding: 1.5rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+    <div class="bg-circle circle-1"></div>
+    <div class="bg-circle circle-2"></div>
+
+    <header class="header">
+        <a href="/" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back to Home
+        </a>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <h1>Refund Policy</h1>
+            <p>
+                This Refund Policy applies to all rentals and transactions conducted with
+                <b>M/S What U Want Rentals</b> (hereinafter referred to as "WUW Rentals"),
+                a proprietorship registered in Udupi district of Karnataka State.
+                Please read this policy carefully before completing any booking or payment.
+            </p>
+
+            <div class="no-refund-banner">
+                <div class="icon">⚠️</div>
+                <div class="banner-text">
+                    <strong>All Sales Are Final — No Refunds</strong>
+                    <span>WUW Rentals does not offer refunds on any rental payments, deposits, or fees once a booking is confirmed.</span>
+                </div>
+            </div>
+
+            <h2>No Refund Policy</h2>
+            <p>
+                <b>WUW Rentals operates a strict no-refund policy.</b> All payments made
+                toward vehicle rentals — including but not limited to rental fees, security
+                deposits, advance payments, extension charges, and any other fees — are
+                <b>non-refundable</b> once a booking has been confirmed.
+            </p>
+            <p>
+                By completing a booking and making payment, the User expressly acknowledges
+                and agrees to this no-refund policy.
+            </p>
+
+            <h2>Scope of This Policy</h2>
+            <p>This policy applies to all of the following, without exception:</p>
+            <ul>
+                <li>Cancellations initiated by the User at any time after booking confirmation.</li>
+                <li>Early returns — no refund will be issued for unused rental days.</li>
+                <li>No-shows or failure to pick up the reserved vehicle.</li>
+                <li>Bookings cancelled due to the User's ineligibility (e.g., missing documents, license issues).</li>
+                <li>Security deposits withheld for damage, violations, or outstanding dues.</li>
+                <li>Payments made for extensions, upgrades, or additional services.</li>
+            </ul>
+
+            <h2>Security Deposits</h2>
+            <p>
+                Security deposits collected at the time of booking or vehicle pickup are
+                held against potential damages, traffic violations, fuel discrepancies,
+                late returns, or any outstanding dues. The deposit amount or any portion
+                thereof may be forfeited in accordance with WUW Rentals' terms and
+                conditions. <b>No portion of the security deposit is guaranteed to be
+                returned.</b>
+            </p>
+
+            <h2>Vehicle Unavailability</h2>
+            <p>
+                In the rare event that WUW Rentals is unable to provide the booked vehicle
+                due to circumstances solely within WUW Rentals' control (e.g., mechanical
+                failure with no suitable substitute available), WUW Rentals may, at its
+                sole discretion, offer a credit toward a future booking or an alternate
+                vehicle. <b>This does not constitute a right to a cash refund.</b>
+            </p>
+
+            <h2>Dispute Resolution</h2>
+            <p>
+                Any disputes arising from this Refund Policy shall be governed by the laws
+                of India and subject to the exclusive jurisdiction of courts in Udupi,
+                Karnataka. Disputes may also be referred to arbitration in accordance with
+                the Arbitration and Conciliation Act, 1996.
+            </p>
+
+            <h2>Contact Information</h2>
+            <p>
+                For any questions regarding this Refund Policy, please contact us:<br><br>
+                <b>Address:</b> No. 16, Ananth Nagar, Manipal, Udupi, Karnataka - 576104<br>
+                <b>Phone:</b> +91-8000800468<br>
+                <b>Email:</b> support@whatuwant.in
+            </p>
+        </div>
+
+        <div class="footer">
+            &copy; 2026 WUW Rentals. All rights reserved.
+        </div>
+    </main>
+</body>
+</html>

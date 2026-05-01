@@ -87,6 +87,7 @@ const ExternalRedirect = ({ to }: { to: string }) => {
 import { TermsPage } from "./pages/legal/TermsPage";
 import { PrivacyPage } from "./pages/legal/PrivacyPage";
 import { FaqPage } from "./pages/legal/FaqPage";
+import { RefundPolicyPage } from "./pages/legal/RefundPolicyPage";
 import { ContactPage } from "./pages/ContactPage";
 
 function App() {
@@ -107,6 +108,7 @@ function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/faq" element={<FaqPage />} />
+        <Route path="/refund-policy" element={<RefundPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/portal" element={<PortalPage />} />
         <Route path="/links" element={<Navigate to="/portal" replace />} />
