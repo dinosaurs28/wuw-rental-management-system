@@ -98,10 +98,14 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export type KycType = 'DL' | 'AADHAAR' | 'PAN' | 'STUDENT_ID';
+export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface KycDocument {
   publicId: string;
-  fileType: string;
-  url: string;
+  type: KycType;
+  status: KycStatus;
+  file: { url: string; mimeType?: string };
   createdAt: string;
 }
 
@@ -110,5 +114,11 @@ export interface UserProfile {
   email: string;
   phone: string | null;
   dob: string | null;
-  publicId: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  country: string;
+  zipCode: string;
+  alternatePhone: string;
+  isProfileCompleted: boolean;
 }

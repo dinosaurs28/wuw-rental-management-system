@@ -106,8 +106,10 @@ export const Login = async (req: Request, res: Response) => {
     });
     return res.status(StatusCode.OK).json({
       message: "Login Successful",
+      token,
       user: {
         id: user.publicId,
+        publicId: user.publicId,
         name: user.name,
         email: user.email,
         role: user.role,

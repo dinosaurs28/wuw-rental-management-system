@@ -5,18 +5,18 @@ import { Colors } from '../../constants/colors';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: { name: string; icon: IoniconName }[] = [
-  { name: 'index',   icon: 'grid-outline' },
-  { name: 'trips',   icon: 'car-outline' },
-  { name: 'saved',   icon: 'heart-outline' },
-  { name: 'profile', icon: 'person-outline' },
+const TABS: { name: string; icon: IoniconName; activeIcon: IoniconName }[] = [
+  { name: 'dashboard', icon: 'home-outline',        activeIcon: 'home' },
+  { name: 'bookings',  icon: 'calendar-outline',    activeIcon: 'calendar' },
+  { name: 'scan',      icon: 'qr-code-outline',     activeIcon: 'qr-code' },
+  { name: 'profile',   icon: 'person-outline',      activeIcon: 'person' },
 ];
 
-function TabIcon({ focused, icon }: { focused: boolean; icon: IoniconName }) {
+function TabIcon({ focused, icon, activeIcon }: { focused: boolean; icon: IoniconName; activeIcon: IoniconName }) {
   return (
     <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
       <Ionicons
-        name={icon}
+        name={focused ? activeIcon : icon}
         size={22}
         color={focused ? Colors.orange : Colors.ink3}
       />
@@ -24,7 +24,7 @@ function TabIcon({ focused, icon }: { focused: boolean; icon: IoniconName }) {
   );
 }
 
-export default function TabLayout() {
+export default function EmployeeTabLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -38,9 +38,7 @@ export default function TabLayout() {
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
+        tabBarItemStyle: { paddingVertical: 6 },
       }}
     >
       {TABS.map((tab) => (
@@ -49,7 +47,7 @@ export default function TabLayout() {
           name={tab.name}
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon focused={focused} icon={tab.icon} />
+              <TabIcon focused={focused} icon={tab.icon} activeIcon={tab.activeIcon} />
             ),
           }}
         />
@@ -66,7 +64,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapActive: {
-    backgroundColor: '#ff6a1f14',
-  },
+  iconWrapActive: { backgroundColor: '#ff6a1f14' },
 });

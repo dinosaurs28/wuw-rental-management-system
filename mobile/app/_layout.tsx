@@ -26,6 +26,7 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const isLoaded = useAuthStore((s) => s.isLoaded);
   const router = useRouter();
   const segments = useSegments();
@@ -33,10 +34,17 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoaded || segments.length === 0) return;
     const inAuthGroup = segments[0] === '(auth)';
-    if (!token && !inAuthGroup) {
-      router.replace('/(auth)/welcome');
+    const inEmployeeGroup = segments[0] === '(employee)' || segments[0] === 'employee';
+
+    if (!token) {
+      if (!inAuthGroup) router.replace('/(auth)/welcome');
+      return;
     }
-  }, [token, isLoaded, segments]);
+
+    if (user?.role === 'STAFF' && !inEmployeeGroup) {
+      router.replace('/(employee)/dashboard');
+    }
+  }, [token, isLoaded, segments, user?.role]);
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bg }}>

@@ -90,6 +90,13 @@ export default function Welcome() {
           >
             <Text style={styles.ghostBtnText}>I already have an account</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.staffLink}
+            onPress={() => router.push('/(auth)/employee-sign-in')}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.staffLinkText}>Staff Portal</Text>
+          </TouchableOpacity>
         </View>
 
       </View>
@@ -211,6 +218,13 @@ const styles = StyleSheet.create({
 
   /* CTAs */
   ctas: { gap: 12 },
+  staffLink: { alignItems: 'center', paddingTop: 4 },
+  staffLinkText: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.2)',
+    letterSpacing: 0.5,
+  },
   primaryBtn: {
     backgroundColor: Colors.orange,
     borderRadius: 999,
