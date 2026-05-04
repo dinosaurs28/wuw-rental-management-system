@@ -18,13 +18,17 @@ export const EmployeeCheck = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const token = req.cookies;
-  if (!token.accessToken) {
+  const cookieToken = req.cookies?.accessToken;
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const rawToken = cookieToken || bearerToken;
+
+  if (!rawToken) {
     return res.status(StatusCode.FORBIDDEN).json({
       message: "The Access Token Is Missing Please login Again",
     });
   }
-  const isverfied = (await jwtverfiy(token.accessToken)) as jwtinterface;
+  const isverfied = (await jwtverfiy(rawToken)) as jwtinterface;
   if (!isverfied) {
     return res.status(StatusCode.UNAUTHORIZED).json({
       message:

@@ -2,8 +2,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,12 +11,17 @@ import {
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
 import { vehiclesApi } from '../lib/api';
 import CarCard from '../components/cars/CarCard';
 import type { Vehicle } from '../types/api';
 
-const CATEGORIES = ['All', 'SUV', 'Sedan', 'Truck', 'Luxury', 'EV', 'Convertible', 'Van'];
+const CATEGORIES = [
+  { label: 'All',  value: 'All' },
+  { label: 'Bike', value: 'Bike' },
+  { label: 'Car',  value: 'Car' },
+];
 
 export default function Search() {
   const router = useRouter();
@@ -36,7 +39,11 @@ export default function Search() {
         category: selectedCat === 'All' ? undefined : selectedCat,
         limit: 40,
       }),
-    select: (res) => (res.data.data as Vehicle[]) ?? [],
+    select: (res) => {
+      const all = (res.data.data as Vehicle[]) ?? [];
+      const seen = new Set<string>();
+      return all.filter((v) => { if (seen.has(v.publicId)) return false; seen.add(v.publicId); return true; });
+    },
     enabled: submitted,
   });
 
@@ -45,13 +52,13 @@ export default function Search() {
       {/* Search bar row */}
       <View style={styles.topRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-          <Text style={styles.backIcon}>←</Text>
+          <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <View style={styles.searchBarWrap}>
-          <Text style={styles.searchIcon}>🔎</Text>
+          <Ionicons name="search-outline" size={17} color={Colors.ink3} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Make, model, category…"
+            placeholder="Make, model…"
             placeholderTextColor={Colors.ink3}
             value={searchText}
             onChangeText={setSearchText}
@@ -60,33 +67,28 @@ export default function Search() {
             autoFocus
           />
           {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearchText(''); setSubmitted(false); }}>
-              <Text style={styles.clearIcon}>✕</Text>
+            <TouchableOpacity onPress={() => { setSearchText(''); setSubmitted(false); }} hitSlop={8}>
+              <Ionicons name="close-circle" size={17} color={Colors.ink4} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Category filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chips}
-        style={styles.chipsScroll}
-      >
+      <View style={styles.chips}>
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
-            key={cat}
-            style={[styles.chip, selectedCat === cat && styles.chipActive]}
-            onPress={() => { setSelectedCat(cat); setSubmitted(true); }}
+            key={cat.value}
+            style={[styles.chip, selectedCat === cat.value && styles.chipActive]}
+            onPress={() => { setSelectedCat(cat.value); setSubmitted(true); }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.chipText, selectedCat === cat && styles.chipTextActive]}>
-              {cat}
+            <Text style={[styles.chipText, selectedCat === cat.value && styles.chipTextActive]}>
+              {cat.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       {/* Results */}
       {!submitted ? (
@@ -112,7 +114,7 @@ export default function Search() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.noResults}>
-                <Text style={styles.noResultsText}>No cars match your search.</Text>
+                <Text style={styles.noResultsText}>No vehicles match your search.</Text>
               </View>
             }
             renderItem={({ item }) => <CarCard vehicle={item} />}
@@ -134,7 +136,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontSize: 22, color: Colors.ink },
   searchBarWrap: {
     flex: 1,
     flexDirection: 'row',
@@ -147,7 +148,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.hairline,
   },
-  searchIcon: { fontSize: 15 },
   searchInput: {
     flex: 1,
     fontFamily: Fonts.body,
@@ -155,9 +155,7 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     padding: 0,
   },
-  clearIcon: { fontSize: 14, color: Colors.ink3, padding: 4 },
-  chipsScroll: { maxHeight: 48 },
-  chips: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
+  chips: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,

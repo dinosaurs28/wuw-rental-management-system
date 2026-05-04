@@ -16,9 +16,14 @@ import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import CarCard from '../../components/cars/CarCard';
+import Avatar from '../../components/ui/Avatar';
 import type { Vehicle } from '../../types/api';
 
-const CATEGORIES = ['All', 'SUV', 'Sedan', 'Truck', 'Luxury', 'EV', 'Convertible'];
+const CATEGORIES = [
+  { label: 'All',  value: 'All' },
+  { label: 'Bike', value: 'Bike' },
+  { label: 'Car',  value: 'Car' },
+];
 
 export default function Browse() {
   const router = useRouter();
@@ -54,12 +59,8 @@ export default function Browse() {
           <Text style={styles.greeting}>Hi, {firstName}</Text>
           <Text style={styles.greetingSub}>Find your perfect drive</Text>
         </View>
-        <TouchableOpacity
-          style={styles.avatarCircle}
-          onPress={() => router.push('/(tabs)/profile')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.avatarText}>{firstName[0]?.toUpperCase()}</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.8}>
+          <Avatar seed={user?.name ?? firstName} size={42} />
         </TouchableOpacity>
       </View>
 
@@ -87,13 +88,13 @@ export default function Browse() {
       >
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
-            key={cat}
-            style={[styles.chip, selectedCategory === cat && styles.chipActive]}
-            onPress={() => setSelectedCategory(cat)}
+            key={cat.value}
+            style={[styles.chip, selectedCategory === cat.value && styles.chipActive]}
+            onPress={() => setSelectedCategory(cat.value)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextActive]}>
-              {cat}
+            <Text style={[styles.chipText, selectedCategory === cat.value && styles.chipTextActive]}>
+              {cat.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -102,10 +103,10 @@ export default function Browse() {
       {/* Section label */}
       <View style={styles.sectionRow}>
         <Text style={styles.sectionLabel}>
-          {selectedCategory === 'All' ? 'Available now' : selectedCategory}
+          {selectedCategory === 'All' ? 'Available now' : CATEGORIES.find(c => c.value === selectedCategory)?.label ?? selectedCategory}
         </Text>
         {vehiclesData && (
-          <Text style={styles.sectionCount}>{vehiclesData.length} cars</Text>
+          <Text style={styles.sectionCount}>{vehiclesData.length} vehicle{vehiclesData.length !== 1 ? 's' : ''}</Text>
         )}
       </View>
 
@@ -154,19 +155,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.ink3,
     marginTop: 2,
-  },
-  avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 16,
-    color: Colors.white,
   },
   searchBar: {
     marginHorizontal: 20,
