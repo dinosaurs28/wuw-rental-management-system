@@ -175,6 +175,7 @@ export const emailAuthControllerSignin = async (
             email: response.email,
             role: response.role,
             publicId: response.publicId,
+            accessToken: token,
           },
         });
     }
