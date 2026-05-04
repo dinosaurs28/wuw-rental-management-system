@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "WUW Cars",
+    "slug": "wuw-cars",
+    "version": "1.0.0",
+    "scheme": "wuw",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wuw.cars"
+    },
+    "android": {
+      "package": "com.wuw.cars"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
