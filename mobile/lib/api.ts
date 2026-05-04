@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 || err.response?.status === 403) {
+    if (err.response?.status === 401) {
       useAuthStore.getState().signOut();
     }
     return Promise.reject(err);
@@ -69,4 +69,57 @@ export const userApi = {
   updateProfile: (data: Record<string, unknown>) =>
     api.put('/api/user/profile', data),
   kyc: () => api.get('/api/user/kyc'),
+  uploadKyc: (formData: FormData) =>
+    api.post('/api/user/kyc', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteKyc: (publicId: string, customerPublicId: string) =>
+    api.delete('/api/user/kyc', { data: { id: publicId, customer_public_id: customerPublicId } }),
+};
+
+// ─── employee ─────────────────────────────────────────────────────────────
+
+export const employeeApi = {
+  login: (email: string, password: string) =>
+    api.post('/api/employee/auth/login', { email, password }),
+  dashboardStats: () => api.get('/api/employee/dashboard/stats'),
+  getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
+  openShift: () => api.post('/api/employee/payment/shifts'),
+  closeShift: (publicId: string, body: { actualTotal: number; discrepancyExplanation?: string }) =>
+    api.post(`/api/employee/payment/shifts/${publicId}/close`, body),
+  listPickups: (params?: { date?: string }) =>
+    api.get('/api/employee/booking', { params }),
+  listReturns: (params?: { date?: string }) =>
+    api.get('/api/employee/return', { params }),
+  scanBooking: (bookingId: string) =>
+    api.get(`/api/employee/booking/${bookingId}/scan`),
+  searchCustomer: (query: string) =>
+    api.get('/api/employee/customer/search', { params: { q: query } }),
+  getCustomer: (publicId: string) =>
+    api.get(`/api/employee/customer/${publicId}`),
+  getPickupDetails: (bookingId: string) =>
+    api.get(`/api/employee/pickup/${bookingId}`),
+  uploadPickupImage: (formData: FormData) =>
+    api.post('/api/employee/pickup/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deletePickupImage: (publicId: string) =>
+    api.delete(`/api/employee/pickup/image/${publicId}`),
+  completePickup: (bookingId: string, body: {
+    odo: number;
+    fuelLevel: number;
+    pickupImageIds?: string[];
+    requireManagerConfirmation?: boolean;
+  }) => api.post(`/api/employee/pickup/${bookingId}`, body),
+  getReturnDetails: (bookingId: string) =>
+    api.get(`/api/employee/return/${bookingId}`),
+  uploadReturnImage: (formData: FormData) =>
+    api.post('/api/employee/return/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  completeReturn: (bookingId: string, body: {
+    odo: number;
+    fuelLevel: number;
+    returnImageIds?: string[];
+  }) => api.post(`/api/employee/return/${bookingId}/complete`, body),
 };

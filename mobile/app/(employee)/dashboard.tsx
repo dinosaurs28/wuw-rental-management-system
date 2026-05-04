@@ -1,0 +1,439 @@
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts } from '../../constants/colors';
+import { employeeApi } from '../../lib/api';
+import { useAuthStore } from '../../store/auth';
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+interface DashboardStats {
+  todaysPickups: number;
+  todaysReturns: number;
+  activeRentals: number;
+}
+
+interface Shift {
+  publicId: string;
+  status: string;
+  openedAt: string;
+}
+
+function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
+  return (
+    <View style={[styles.statCard, { borderTopColor: color }]}>
+      <View style={[styles.statIconWrap, { backgroundColor: color + '15' }]}>
+        <Ionicons name={icon} size={18} color={color} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function QuickAction({
+  label,
+  icon,
+  onPress,
+  accent,
+}: {
+  label: string;
+  icon: IoniconName;
+  onPress: () => void;
+  accent?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.quickAction, accent && styles.quickActionAccent]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.qaIcon, accent && styles.qaIconAccent]}>
+        <Ionicons name={icon} size={20} color={accent ? Colors.white : Colors.ink2} />
+      </View>
+      <Text style={[styles.qaLabel, accent && styles.qaLabelAccent]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+export default function EmployeeDashboard() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
+
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<DashboardStats>({
+    queryKey: ['employee', 'dashboard-stats'],
+    queryFn: async () => {
+      const res = await employeeApi.dashboardStats();
+      return res.data as DashboardStats;
+    },
+    staleTime: 60_000,
+  });
+
+  const { data: shiftData, isLoading: shiftLoading, refetch: refetchShift } = useQuery<Shift | null>({
+    queryKey: ['employee', 'active-shift'],
+    queryFn: async () => {
+      const res = await employeeApi.getActiveShift();
+      return (res.data?.data ?? null) as Shift | null;
+    },
+    staleTime: 30_000,
+  });
+
+  const openShiftMutation = useMutation({
+    mutationFn: () => employeeApi.openShift(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+    },
+  });
+
+  const refreshing = statsLoading || shiftLoading;
+
+  const onRefresh = () => {
+    refetchStats();
+    refetchShift();
+  };
+
+  return (
+    <ScrollView
+      style={[styles.root, { paddingTop: insets.top }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.orange} />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hi, {firstName}</Text>
+          <Text style={styles.role}>Fleet Executive</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={() => router.push('/(employee)/scan')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="qr-code-outline" size={20} color={Colors.ink2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Shift Status Card */}
+      <View style={styles.shiftCard}>
+        {shiftLoading ? (
+          <ActivityIndicator color={Colors.orange} size="small" />
+        ) : shiftData ? (
+          <View style={styles.shiftActive}>
+            <View style={styles.shiftActiveLeft}>
+              <View style={styles.shiftDot} />
+              <View>
+                <Text style={styles.shiftActiveTitle}>Shift Active</Text>
+                <Text style={styles.shiftActiveTime}>
+                  Started at {formatTime(shiftData.openedAt)}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.closeShiftBtn}
+              onPress={() => router.push('/employee/shift/close')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.closeShiftText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.shiftInactive}>
+            <View>
+              <Text style={styles.shiftInactiveTitle}>No Active Shift</Text>
+              <Text style={styles.shiftInactiveSub}>Open a shift to start collecting cash</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.openShiftBtn}
+              onPress={() => router.push('/employee/shift/open')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={16} color={Colors.white} />
+              <Text style={styles.openShiftText}>Open Shift</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Stats */}
+      <Text style={styles.sectionTitle}>Today</Text>
+      {statsLoading ? (
+        <View style={styles.statsLoader}>
+          <ActivityIndicator color={Colors.orange} />
+        </View>
+      ) : (
+        <View style={styles.statsRow}>
+          <StatCard
+            label="Pickups"
+            value={stats?.todaysPickups ?? 0}
+            icon="arrow-up-circle-outline"
+            color="#ff6a1f"
+          />
+          <StatCard
+            label="Returns"
+            value={stats?.todaysReturns ?? 0}
+            icon="arrow-down-circle-outline"
+            color="#3b82f6"
+          />
+          <StatCard
+            label="Active"
+            value={stats?.activeRentals ?? 0}
+            icon="car-outline"
+            color="#10b981"
+          />
+        </View>
+      )}
+
+      {/* Quick Actions */}
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <View style={styles.actionsGrid}>
+        <QuickAction
+          label="Pickup Queue"
+          icon="arrow-up-circle-outline"
+          onPress={() => router.push('/(employee)/bookings')}
+          accent
+        />
+        <QuickAction
+          label="Return Queue"
+          icon="arrow-down-circle-outline"
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns' } })}
+        />
+        <QuickAction
+          label="Scan Booking"
+          icon="qr-code-outline"
+          onPress={() => router.push('/(employee)/scan')}
+        />
+        <QuickAction
+          label="Customer Search"
+          icon="people-outline"
+          onPress={() => router.push('/employee/customer/search')}
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.bg },
+  content: { paddingBottom: 100 },
+
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+  greeting: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 22,
+    color: Colors.ink,
+    letterSpacing: -0.5,
+  },
+  role: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.orange,
+    marginTop: 2,
+  },
+  headerRight: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Shift Card */
+  shiftCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  shiftActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shiftActiveLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  shiftDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#10b981',
+  },
+  shiftActiveTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 15,
+    color: Colors.ink,
+  },
+  shiftActiveTime: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+    marginTop: 2,
+  },
+  closeShiftBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e53e3e30',
+    backgroundColor: '#e53e3e0d',
+  },
+  closeShiftText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: '#e53e3e',
+  },
+
+  shiftInactive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  shiftInactiveTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 15,
+    color: Colors.ink,
+  },
+  shiftInactiveSub: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+    marginTop: 2,
+  },
+  openShiftBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.orange,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  openShiftText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.white,
+  },
+
+  /* Stats */
+  sectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.ink3,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 28,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    borderTopWidth: 3,
+    gap: 6,
+  },
+  statIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 26,
+    color: Colors.ink,
+    letterSpacing: -0.8,
+  },
+  statLabel: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+  },
+  statsLoader: { height: 100, justifyContent: 'center', alignItems: 'center' },
+
+  /* Quick Actions */
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  quickAction: {
+    width: '47.5%',
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    gap: 10,
+  },
+  quickActionAccent: {
+    backgroundColor: Colors.ink,
+    borderColor: Colors.ink,
+  },
+  qaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qaIconAccent: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  qaLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.ink,
+    lineHeight: 20,
+  },
+  qaLabelAccent: { color: Colors.white },
+});

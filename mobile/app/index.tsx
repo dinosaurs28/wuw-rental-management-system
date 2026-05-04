@@ -3,5 +3,8 @@ import { useAuthStore } from '../store/auth';
 
 export default function Index() {
   const token = useAuthStore((s) => s.token);
-  return <Redirect href={token ? '/(tabs)' : '/(auth)/welcome'} />;
+  const user = useAuthStore((s) => s.user);
+  if (!token) return <Redirect href="/(auth)/welcome" />;
+  if (user?.role === 'STAFF') return <Redirect href="/(employee)/dashboard" />;
+  return <Redirect href="/(tabs)" />;
 }
