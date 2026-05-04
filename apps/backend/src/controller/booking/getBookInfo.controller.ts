@@ -316,6 +316,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     if (resolvedGroupKeys.length > 0) {
       for (const gk of resolvedGroupKeys) {
         const gkParsed = parseGroupKey(gk)!;
+        console.log(`[booking] resolving group key: ${gk} → make:${gkParsed.make} model:${gkParsed.model} categoryId:${gkParsed.categoryId} branchId:${gkParsed.branchId}`);
         const repVehicle = await prisma.vehicle.findFirst({
           where: {
             make: gkParsed.make,
@@ -332,9 +333,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         if (!repVehicle) {
           return res.status(StatusCode.CONFLICT).json({ message: `No vehicles available for group ${gk}` });
         }
+        console.log(`[booking] repVehicle id:${repVehicle.id} branchId:${repVehicle.branchId}`);
         const pr = await pricingEngine.calculateBookingPrice(
           repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, couponCode?.toUpperCase(),
         );
+        console.log(`[booking] pricing for vehicle ${repVehicle.id}: base:${pr.basePrice} discount:${pr.discountAmount} tax:${pr.taxAmount} deposit:${pr.deposit} finalTotal:${pr.finalTotal}`);
         grandBaseTotal     += Number(pr.basePrice.toString());
         grandDiscountTotal += Number(pr.discountAmount.toString());
         grandTaxTotal      += Number(pr.taxAmount.toString());
@@ -372,6 +375,15 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     const chargeAmount = isAdvancePayment ? grandAdvanceAmount : grandFinalTotal;
+
+    console.log(`[booking] pricing summary — base:${grandBaseTotal} discount:${grandDiscountTotal} tax:${grandTaxTotal} deposit:${grandDeposit} finalTotal:${grandFinalTotal} chargeAmount:${chargeAmount}`);
+
+    if (chargeAmount <= 0) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: `Pricing error: calculated charge is ₹${chargeAmount}. Please ensure branch pricing or vehicle custom pricing is configured for this vehicle category.`,
+      });
+    }
+
     const remainingBalance = isAdvancePayment
       ? Number((grandFinalTotal - grandAdvanceAmount).toFixed(2))
       : 0;
@@ -396,7 +408,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         console.error("Error initiating payment:", error);
         return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
-          message: error.message || "Failed to initiate payment gateway",
+          message: `Payment failed (charge: ₹${chargeAmount}): ${error.message || "Failed to initiate payment gateway"}`,
         });
       }
     } else {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -46,25 +47,50 @@ function LineItem({ label, value, bold }: { label: string; value: string; bold?:
 export default function Checkout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+  const { vehicleId, start, end } = useLocalSearchParams<{ vehicleId: string; start?: string; end?: string }>();
 
-  const tomorrow = new Date(Date.now() + 86400 * 1000);
-  const dayAfter = new Date(Date.now() + 2 * 86400 * 1000);
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  const [startDate] = useState(tomorrow);
-  const [endDate] = useState(dayAfter);
+  const [startDate] = useState(() => start ? new Date(start) : new Date(Date.now() + 86400 * 1000));
+  const [endDate] = useState(() => end ? new Date(end) : new Date(Date.now() + 2 * 86400 * 1000));
   const [loading, setLoading] = useState(false);
 
+  const isGroupKey = !!vehicleId && vehicleId.includes('__');
+
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
-    queryKey: ['vehicle', vehicleId],
+    queryKey: ['vehicle', vehicleId, startDate.toISOString(), endDate.toISOString()],
     queryFn: () =>
-      vehiclesApi.detail(vehicleId!, {
-        start: tomorrow.toISOString(),
-        end: dayAfter.toISOString(),
-      }),
-    select: (res) => res.data.data as VehicleDetail,
+      isGroupKey
+        ? vehiclesApi.groupDetail(vehicleId!, {
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+          })
+        : vehiclesApi.detail(vehicleId!, {
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+          }),
+    select: (res) => {
+      const d = res.data.data as any;
+      if (!isGroupKey) return d as VehicleDetail;
+      const images: string[] = (d.imageUrl ?? d.images ?? [])
+        .map((img: any) => (typeof img === 'string' ? img : img?.file?.url ?? null))
+        .filter(Boolean);
+      return {
+        publicId: d.groupKey,
+        make: d.make,
+        model: d.model,
+        category: d.category,
+        branch: d.branch,
+        images,
+        pricing: { daily: d.pricing?.daily ?? null },
+        availability: d.availability,
+        status: 'AVAILABLE',
+        deposit: d.deposit ?? 0,
+        advancePayAmount: Number(d.advancePayAmount ?? 0),
+        pricingDetails: d.pricingDetails ?? null,
+      } as VehicleDetail;
+    },
     enabled: !!vehicleId,
   });
 
@@ -92,11 +118,11 @@ export default function Checkout() {
     setLoading(true);
     try {
       const res = await api.post('/api/public/vehicles/booking', {
-        vehicles: [vehicle.publicId],
-        groupKeys: [],
+        vehicles: isGroupKey ? [] : [vehicle.publicId],
+        groupKeys: isGroupKey ? [vehicle.publicId] : [],
         start: startDate.toISOString(),
         end: endDate.toISOString(),
-        file_public_id: kyc[0]!.publicId,
+        file_public_id: kyc[0]!.file.publicId,
         payment_type: 'ONLINE',
         payment_flow: 'FULL',
       });
@@ -139,17 +165,13 @@ export default function Checkout() {
     );
   }
 
-  const days = Math.max(
-    1,
-    Math.round((endDate.getTime() - startDate.getTime()) / 86400000),
-  );
-  const daily = vehicle.pricing?.daily ?? 0;
-  const subtotal = daily * days;
-  const deposit = vehicle.pricingDetails?.deposit ?? 0;
-  const tax = vehicle.pricingDetails
-    ? vehicle.pricingDetails.taxAmount
-    : Math.round(subtotal * 0.18);
-  const total = subtotal + deposit + tax;
+  const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
+  const pd = vehicle.pricingDetails;
+  const daily = pd?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
+  const subtotal = pd ? (pd.finalTotal - (pd.deposit ?? 0)) : daily * days;
+  const deposit = pd?.deposit ?? 0;
+  const tax = pd?.taxAmount ?? Math.round(subtotal * 0.18);
+  const total = pd?.finalTotal ?? (subtotal + deposit + tax);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -169,7 +191,11 @@ export default function Checkout() {
         {/* Car summary */}
         <View style={styles.section}>
           <View style={styles.carRow}>
-            <View style={styles.carThumb} />
+            {vehicle.images?.[0] ? (
+              <Image source={{ uri: vehicle.images[0] }} style={styles.carThumb} resizeMode="cover" />
+            ) : (
+              <View style={[styles.carThumb, styles.carThumbPlaceholder]} />
+            )}
             <View style={styles.carInfo}>
               <Text style={styles.carName}>
                 {vehicle.make} {vehicle.model}
@@ -205,17 +231,16 @@ export default function Checkout() {
         <Text style={styles.sectionTitle}>Price breakdown</Text>
         <View style={styles.priceCard}>
           <LineItem
-            label={`₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
-            value={`₹${subtotal.toLocaleString('en-IN')}`}
+            label={pd ? `Base rate (${days} night${days !== 1 ? 's' : ''})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
+            value={`₹${(pd?.basePrice ?? daily * days).toLocaleString('en-IN')}`}
           />
+          {(pd?.discountAmount ?? 0) > 0 && (
+            <LineItem label="Discount" value={`-₹${pd.discountAmount.toLocaleString('en-IN')}`} />
+          )}
           <LineItem label="Deposit (refundable)" value={`₹${deposit.toLocaleString('en-IN')}`} />
-          <LineItem label="GST" value={`₹${tax.toLocaleString('en-IN')}`} />
+          <LineItem label={`GST${pd ? ` (${pd.taxRate}%)` : ''}`} value={`₹${tax.toLocaleString('en-IN')}`} />
           <View style={styles.divider} />
-          <LineItem
-            label="Total"
-            value={`₹${total.toLocaleString('en-IN')}`}
-            bold
-          />
+          <LineItem label="Total" value={`₹${total.toLocaleString('en-IN')}`} bold />
         </View>
 
         <Text style={styles.disclaimer}>
@@ -282,7 +307,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 48,
     borderRadius: 10,
-    backgroundColor: '#1a1a1a',
+    overflow: 'hidden',
+  },
+  carThumbPlaceholder: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
   },
   carInfo: { flex: 1 },
   carName: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
