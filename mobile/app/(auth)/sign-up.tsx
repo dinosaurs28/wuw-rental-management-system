@@ -1,0 +1,205 @@
+import { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Toast from '../../components/ui/Toast';
+import { useRouter } from 'expo-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, Fonts } from '../../constants/colors';
+import { authApi } from '../../lib/api';
+import { Ionicons } from '@expo/vector-icons';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+
+const schema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email'),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
+});
+type FormData = z.infer<typeof schema>;
+
+export default function SignUp() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const onSubmit = async (data: FormData) => {
+    setLoading(true);
+    try {
+      await authApi.signUp(data.name, data.email, data.password);
+      setToast({ title: 'Account created!', message: 'Sign in to get started.', type: 'success' });
+      setTimeout(() => router.replace('/(auth)/sign-in'), 1800);
+    } catch (err: any) {
+      setToast({
+        title: 'Sign up failed',
+        message: err.response?.data?.message ?? 'Something went wrong. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.bg }}>
+    <Toast
+      visible={!!toast}
+      title={toast?.title ?? ''}
+      message={toast?.message}
+      type={toast?.type ?? 'error'}
+      onDismiss={() => setToast(null)}
+    />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.inner,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+        </TouchableOpacity>
+
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>
+            Create your{'\n'}
+            <Text style={styles.titleAccent}>account.</Text>
+          </Text>
+          <Text style={styles.subtitle}>
+            Join WUW and access our curated fleet.
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          <Input
+            control={control}
+            name="name"
+            label="Full name"
+            placeholder="Jane Smith"
+            autoCapitalize="words"
+            autoComplete="name"
+            error={errors.name?.message}
+          />
+          <Input
+            control={control}
+            name="email"
+            label="Email"
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            error={errors.email?.message}
+          />
+          <Input
+            control={control}
+            name="password"
+            label="Password"
+            placeholder="Min 6 chars, 1 uppercase, 1 special"
+            secureTextEntry
+            autoComplete="new-password"
+            error={errors.password?.message}
+          />
+        </View>
+
+        <Button
+          title="Create account"
+          onPress={handleSubmit(onSubmit)}
+          loading={loading}
+        />
+
+        <Text style={styles.terms}>
+          By continuing you agree to our{' '}
+          <Text style={styles.termsLink}>Terms</Text> &{' '}
+          <Text style={styles.termsLink}>Privacy Policy</Text>.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.switchRow}
+          onPress={() => router.replace('/(auth)/sign-in')}
+        >
+          <Text style={styles.switchText}>
+            Already have an account?{' '}
+            <Text style={styles.switchLink}>Sign in</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: Colors.bg },
+  inner: { paddingHorizontal: 24, flexGrow: 1 },
+  back: { marginBottom: 32, width: 36, height: 36, justifyContent: 'center' },
+  backIcon: { fontSize: 24, color: Colors.ink },
+  titleBlock: { marginBottom: 36 },
+  title: {
+    fontFamily: Fonts.display,
+    fontSize: 38,
+    color: Colors.ink,
+    lineHeight: 44,
+    letterSpacing: -1.2,
+  },
+  titleAccent: {
+    fontFamily: Fonts.displayItalic,
+    color: Colors.orange,
+  },
+  subtitle: {
+    fontFamily: Fonts.body,
+    fontSize: 15,
+    color: Colors.ink3,
+    marginTop: 10,
+    lineHeight: 22,
+  },
+  form: { gap: 16, marginBottom: 28 },
+  terms: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.ink2,
+  },
+  switchRow: { marginTop: 20, alignItems: 'center' },
+  switchText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.ink3,
+  },
+  switchLink: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.orange,
+  },
+});
