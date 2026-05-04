@@ -30,7 +30,9 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value ?? '—'}</Text>
+      <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="middle">
+        {value ?? '—'}
+      </Text>
     </View>
   );
 }
@@ -207,7 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
   },
-  infoLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
-  infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink, maxWidth: '60%', textAlign: 'right' },
+  infoLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3, flexShrink: 0 },
+  infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink, flex: 1, textAlign: 'right', marginLeft: 16 },
   divider: { height: 1, backgroundColor: Colors.hairline },
 });

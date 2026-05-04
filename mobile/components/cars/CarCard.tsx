@@ -9,16 +9,19 @@ const CARD_WIDTH = (width - 52) / 2;
 
 interface CarCardProps {
   vehicle: Vehicle;
+  onPress?: () => void;
 }
 
-export default function CarCard({ vehicle }: CarCardProps) {
+export default function CarCard({ vehicle, onPress }: CarCardProps) {
   const router = useRouter();
   const thumb = vehicle.images?.[0];
+
+  const handlePress = onPress ?? (() => router.push(`/vehicle/${vehicle.publicId}`));
 
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push(`/vehicle/${vehicle.publicId}`)}
+      onPress={handlePress}
       activeOpacity={0.88}
     >
       {/* Photo / Placeholder */}

@@ -25,6 +25,9 @@ export const Login = async (req: Request, res: Response) => {
       where: {
         email: email,
       },
+      include: {
+        branch: { select: { name: true, publicId: true } },
+      },
     });
 
     if (!user) {
@@ -113,6 +116,8 @@ export const Login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        branchName: user.branch?.name ?? null,
+        branchPublicId: user.branch?.publicId ?? null,
       },
     });
   } catch (error) {

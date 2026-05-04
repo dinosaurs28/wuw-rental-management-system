@@ -31,7 +31,7 @@ interface Shift {
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
   return (
-    <View style={[styles.statCard, { borderTopColor: color }]}>
+    <View style={styles.statCard}>
       <View style={[styles.statIconWrap, { backgroundColor: color + '15' }]}>
         <Ionicons name={icon} size={18} color={color} />
       </View>
@@ -124,9 +124,20 @@ export default function EmployeeDashboard() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Hi, {firstName}</Text>
-          <Text style={styles.role}>Fleet Executive</Text>
+          <View style={styles.headerMeta}>
+            <Text style={styles.role}>Fleet Executive</Text>
+            {user?.branchName && (
+              <>
+                <Text style={styles.metaDot}>·</Text>
+                <View style={styles.branchBadge}>
+                  <Ionicons name="location-outline" size={11} color={Colors.orange} />
+                  <Text style={styles.branchBadgeText}>{user.branchName}</Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -164,7 +175,7 @@ export default function EmployeeDashboard() {
           </View>
         ) : (
           <View style={styles.shiftInactive}>
-            <View>
+            <View style={styles.shiftInactiveText}>
               <Text style={styles.shiftInactiveTitle}>No Active Shift</Text>
               <Text style={styles.shiftInactiveSub}>Open a shift to start collecting cash</Text>
             </View>
@@ -250,17 +261,45 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
   },
+  headerLeft: { flex: 1 },
   greeting: {
     fontFamily: Fonts.displayBold,
     fontSize: 22,
     color: Colors.ink,
     letterSpacing: -0.5,
   },
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    flexWrap: 'wrap',
+  },
   role: {
     fontFamily: Fonts.body,
     fontSize: 13,
+    color: Colors.ink3,
+  },
+  metaDot: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.ink4,
+  },
+  branchBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ff6a1f12',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: '#ff6a1f25',
+  },
+  branchBadgeText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
     color: Colors.orange,
-    marginTop: 2,
   },
   headerRight: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   headerIconBtn: {
@@ -326,7 +365,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    flexWrap: 'nowrap',
   },
+  shiftInactiveText: { flex: 1 },
   shiftInactiveTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 15,
@@ -376,7 +417,6 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: Colors.hairline,
-    borderTopWidth: 3,
     gap: 6,
   },
   statIconWrap: {

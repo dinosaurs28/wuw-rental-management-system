@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,40 +16,84 @@ import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import CarCard from '../../components/cars/CarCard';
+import VehicleQuickView from '../../components/cars/VehicleQuickView';
 import Avatar from '../../components/ui/Avatar';
 import type { Vehicle } from '../../types/api';
 
-const CATEGORIES = [
-  { label: 'All',  value: 'All' },
-  { label: 'Bike', value: 'Bike' },
-  { label: 'Car',  value: 'Car' },
-];
+interface Branch {
+  publicId: string;
+  name: string;
+}
+
+
+function normalizeGroup(g: any): Vehicle {
+  const images: string[] = (g.imageUrl ?? [])
+    .map((img: any) => img?.file?.url ?? null)
+    .filter(Boolean);
+  return {
+    publicId: g.groupKey,
+    make: g.make,
+    model: g.model,
+    category: g.category,
+    branch: g.branch,
+    availableCount: g.availableCount,
+    images,
+    pricing: { daily: g.pricing?.daily ?? null },
+    availability: true,
+  };
+}
 
 export default function Browse() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const insets = useSafeAreaInsets();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
 
-  const { data: vehiclesData, isLoading } = useQuery({
-    queryKey: ['vehicles', selectedCategory],
-    queryFn: () =>
-      vehiclesApi.list({
-        category: selectedCategory === 'All' ? undefined : selectedCategory,
-        limit: 30,
-      }),
-    select: (res) => {
-      const all = (res.data.data as Vehicle[]) ?? [];
-      const seen = new Set<string>();
-      return all.filter((v) => {
-        if (seen.has(v.publicId)) return false;
-        seen.add(v.publicId);
-        return true;
-      });
+  const { data: branches, isLoading: branchesLoading } = useQuery<Branch[]>({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const res = await vehiclesApi.branches();
+      return (res.data?.data ?? []) as Branch[];
     },
+    staleTime: 5 * 60_000,
   });
 
+  useEffect(() => {
+    if (branches && branches.length > 0 && !selectedBranch) {
+      setSelectedBranch(branches[0]);
+    }
+  }, [branches]);
+
+  const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
+    queryKey: ['vehicles-all'],
+    queryFn: () => vehiclesApi.list({ limit: 100 }),
+    select: (res) => {
+      const groups = (res.data?.data ?? []) as any[];
+      const seen = new Set<string>();
+      return groups
+        .filter(g => {
+          if (!g.groupKey || seen.has(g.groupKey)) return false;
+          seen.add(g.groupKey);
+          return true;
+        })
+        .map(normalizeGroup);
+    },
+    staleTime: 30_000,
+    enabled: !!selectedBranch,
+  });
+
+  const vehiclesData = useMemo(() => {
+    if (!allVehicles) return undefined;
+    return allVehicles.filter(v => {
+      if (selectedCategory && v.category !== selectedCategory) return false;
+      return true;
+    });
+  }, [allVehicles, selectedCategory]);
+
   const firstName = user?.name?.split(' ')[0] ?? 'there';
+  const isLoading = branchesLoading || (!!selectedBranch && vehiclesLoading);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -79,57 +123,138 @@ export default function Browse() {
         </View>
       </TouchableOpacity>
 
-      {/* Category chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chips}
-        style={styles.chipsScroll}
-      >
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.value}
-            style={[styles.chip, selectedCategory === cat.value && styles.chipActive]}
-            onPress={() => setSelectedCategory(cat.value)}
-            activeOpacity={0.8}
+      {/* Branch selector */}
+      {branchesLoading ? (
+        <View style={styles.branchLoaderRow}>
+          <ActivityIndicator size="small" color={Colors.orange} />
+        </View>
+      ) : branches && branches.length > 0 ? (
+        <View style={styles.branchSection}>
+          <View style={styles.branchLabelRow}>
+            <Ionicons name="location-outline" size={13} color={Colors.ink3} />
+            <Text style={styles.branchLabel}>Select Branch</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.branchChips}
           >
-            <Text style={[styles.chipText, selectedCategory === cat.value && styles.chipTextActive]}>
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            {branches.map((branch) => {
+              const active = selectedBranch?.publicId === branch.publicId;
+              return (
+                <TouchableOpacity
+                  key={branch.publicId}
+                  style={[styles.branchChip, active && styles.branchChipActive]}
+                  onPress={() => setSelectedBranch(active ? null : branch)}
+                  activeOpacity={0.8}
+                >
+                  {active && (
+                    <Ionicons name="checkmark-circle" size={13} color={Colors.white} />
+                  )}
+                  <Text style={[styles.branchChipText, active && styles.branchChipTextActive]}>
+                    {branch.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
 
-      {/* Section label */}
-      <View style={styles.sectionRow}>
-        <Text style={styles.sectionLabel}>
-          {selectedCategory === 'All' ? 'Available now' : CATEGORIES.find(c => c.value === selectedCategory)?.label ?? selectedCategory}
-        </Text>
-        {vehiclesData && (
-          <Text style={styles.sectionCount}>{vehiclesData.length} vehicle{vehiclesData.length !== 1 ? 's' : ''}</Text>
-        )}
-      </View>
-
-      {/* Car grid */}
-      {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
+      {/* No branch selected — prompt */}
+      {!selectedBranch ? (
+        <View style={styles.noBranchState}>
+          <View style={styles.noBranchIcon}>
+            <Ionicons name="location-outline" size={32} color={Colors.orange} />
+          </View>
+          <Text style={styles.noBranchTitle}>Choose a branch</Text>
+          <Text style={styles.noBranchSub}>
+            Select a branch above to see available vehicles near you.
+          </Text>
+        </View>
       ) : (
-        <FlatList
-          data={vehiclesData ?? []}
-          keyExtractor={(v, i) => v.publicId ? `${v.publicId}-${i}` : String(i)}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.grid}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No cars available</Text>
-              <Text style={styles.emptySubtitle}>Check back soon or try a different category.</Text>
-            </View>
-          }
-          renderItem={({ item }) => <CarCard vehicle={item} />}
-        />
+        <>
+          {/* Category chips — always show All; show others once vehicles loaded */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+            style={styles.chipsScroll}
+          >
+            {/* All chip — always rendered */}
+            <TouchableOpacity
+              key="__all__"
+              style={[styles.chip, selectedCategory === null && styles.chipActive]}
+              onPress={() => setSelectedCategory(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.chipText, selectedCategory === null && styles.chipTextActive]}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {/* Dynamic category chips */}
+            {[...new Set((allVehicles ?? []).map(v => v.category).filter(Boolean))].sort().map((name) => (
+              <TouchableOpacity
+                key={name}
+                style={[styles.chip, selectedCategory === name && styles.chipActive]}
+                onPress={() => setSelectedCategory(name)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, selectedCategory === name && styles.chipTextActive]}>
+                  {name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Section label */}
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionLabel}>
+              {selectedCategory == null ? 'Available now' : selectedCategory}
+            </Text>
+            {vehiclesData && (
+              <Text style={styles.sectionCount}>
+                {vehiclesData.length} vehicle{vehiclesData.length !== 1 ? 's' : ''}
+              </Text>
+            )}
+          </View>
+
+          {/* Car grid */}
+          {isLoading ? (
+            <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
+          ) : (
+            <FlatList
+              data={vehiclesData ?? []}
+              keyExtractor={(v, i) => v.publicId ? `${v.publicId}-${i}` : String(i)}
+              numColumns={2}
+              columnWrapperStyle={styles.row}
+              contentContainerStyle={styles.grid}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <Text style={styles.emptyTitle}>No vehicles available</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Try a different category or check back soon.
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <CarCard
+                  vehicle={item}
+                  onPress={() => setQuickViewVehicle(item)}
+                />
+              )}
+            />
+          )}
+        </>
       )}
+
+      {/* Quick view bottom sheet */}
+      <VehicleQuickView
+        vehicle={quickViewVehicle}
+        onClose={() => setQuickViewVehicle(null)}
+      />
     </View>
   );
 }
@@ -193,9 +318,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Branch selector
+  branchLoaderRow: { paddingVertical: 8, alignItems: 'center' },
+  branchSection: { marginBottom: 4 },
+  branchLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  branchLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.ink3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  branchChips: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
+  branchChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  branchChipActive: {
+    backgroundColor: Colors.ink,
+    borderColor: Colors.ink,
+  },
+  branchChipText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 13,
+    color: Colors.ink2,
+  },
+  branchChipTextActive: { color: Colors.white },
+
+  // No branch state
+  noBranchState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 48,
+    gap: 12,
+    paddingBottom: 80,
+  },
+  noBranchIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: '#ff6a1f0e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#ff6a1f20',
+  },
+  noBranchTitle: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 20,
+    color: Colors.ink,
+    letterSpacing: -0.4,
+  },
+  noBranchSub: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.ink3,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  // Categories
   chipsScroll: { maxHeight: 44 },
   chips: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
   chip: {
+    flexShrink: 0,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
@@ -206,6 +408,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: Colors.black, borderColor: Colors.black },
   chipText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
   chipTextActive: { color: Colors.white },
+
   sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
