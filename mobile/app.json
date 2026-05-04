@@ -35,6 +35,12 @@
         {
           "photosPermission": "WUW needs access to your photos to upload KYC documents."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "WUW needs camera access to scan booking QR codes."
+        }
       ]
     ],
     "experiments": {

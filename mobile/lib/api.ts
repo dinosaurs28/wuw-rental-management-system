@@ -44,6 +44,8 @@ export const vehiclesApi = {
     api.get('/api/public/vehicles', { params }),
   detail: (id: string, params?: { start?: string; end?: string }) =>
     api.get(`/api/public/vehicles/${id}`, { params }),
+  groupDetail: (groupKey: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/public/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
   categories: () => api.get('/api/public/categories'),
   branches: () => api.get('/api/public/branches'),
 };
@@ -117,9 +119,8 @@ export const employeeApi = {
     api.post('/api/employee/return/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  completeReturn: (bookingId: string, body: {
-    odo: number;
-    fuelLevel: number;
+  completeReturn: (bookingId: string, body?: {
     returnImageIds?: string[];
-  }) => api.post(`/api/employee/return/${bookingId}/complete`, body),
+    requireManagerConfirmation?: boolean;
+  }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
 };

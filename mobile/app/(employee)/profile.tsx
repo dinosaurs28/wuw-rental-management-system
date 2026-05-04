@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth';
 import Avatar from '../../components/ui/Avatar';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -42,75 +43,90 @@ export default function EmployeeProfile() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const [showSignOut, setShowSignOut] = useState(false);
 
-  const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/welcome');
-        },
-      },
-    ]);
+  const handleSignOut = async () => {
+    setShowSignOut(false);
+    await signOut();
+    router.replace('/(auth)/welcome');
   };
 
   return (
-    <ScrollView
-      style={[styles.root, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-      </View>
+    <>
+      <ScrollView
+        style={[styles.root, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+        </View>
 
-      {/* Identity card */}
-      <View style={styles.idCard}>
-        <Avatar seed={user?.name ?? 'employee'} size={56} />
-        <View style={styles.idInfo}>
-          <Text style={styles.idName}>{user?.name ?? '—'}</Text>
-          <Text style={styles.idEmail}>{user?.email ?? '—'}</Text>
-          <View style={styles.roleBadge}>
-            <Ionicons name="shield-checkmark-outline" size={12} color={Colors.orange} />
-            <Text style={styles.roleText}>Fleet Executive</Text>
+        {/* Identity card */}
+        <View style={styles.idCard}>
+          <Avatar seed={user?.name ?? 'employee'} size={56} />
+          <View style={styles.idInfo}>
+            <Text style={styles.idName}>{user?.name ?? '—'}</Text>
+            <Text style={styles.idEmail}>{user?.email ?? '—'}</Text>
+            <View style={styles.roleBadge}>
+              <Ionicons name="shield-checkmark-outline" size={12} color={Colors.orange} />
+              <Text style={styles.roleText}>Fleet Executive</Text>
+            </View>
+            {user?.branchName && (
+              <View style={[styles.roleBadge, styles.branchBadge]}>
+                <Ionicons name="location-outline" size={12} color={Colors.ink3} />
+                <Text style={styles.branchText}>{user.branchName}</Text>
+              </View>
+            )}
           </View>
         </View>
-      </View>
 
-      {/* Menu */}
-      <View style={styles.menuSection}>
-        <Text style={styles.menuSectionLabel}>Shift Management</Text>
-        <View style={styles.menuCard}>
-          <MenuItem
-            icon="business-outline"
-            label="Open Shift"
-            onPress={() => router.push('/employee/shift/open')}
-          />
-          <View style={styles.divider} />
-          <MenuItem
-            icon="checkmark-circle-outline"
-            label="Close Current Shift"
-            onPress={() => router.push('/employee/shift/close')}
-          />
+        {/* Shift management */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Shift Management</Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="business-outline"
+              label="Open Shift"
+              onPress={() => router.push('/employee/shift/open')}
+            />
+            <View style={styles.divider} />
+            <MenuItem
+              icon="checkmark-circle-outline"
+              label="Close Current Shift"
+              onPress={() => router.push('/employee/shift/close')}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.menuSection}>
-        <Text style={styles.menuSectionLabel}>Account</Text>
-        <View style={styles.menuCard}>
-          <MenuItem
-            icon="log-out-outline"
-            label="Sign Out"
-            onPress={handleSignOut}
-            danger
-          />
+        {/* Account */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Account</Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="log-out-outline"
+              label="Sign Out"
+              onPress={() => setShowSignOut(true)}
+              danger
+            />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+
+      <ConfirmModal
+        visible={showSignOut}
+        icon="log-out-outline"
+        iconColor="#e53e3e"
+        title="Sign Out"
+        message="You'll need to log in again to access your shift and bookings."
+        confirmLabel="Sign Out"
+        confirmColor="#e53e3e"
+        cancelLabel="Stay"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOut(false)}
+      />
+    </>
   );
 }
 
@@ -142,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
-  idInfo: { flex: 1, gap: 3 },
+  idInfo: { flex: 1, gap: 4 },
   idName: {
     fontFamily: Fonts.displayBold,
     fontSize: 18,
@@ -171,6 +187,16 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,
     color: Colors.orange,
+    letterSpacing: 0.3,
+  },
+  branchBadge: {
+    backgroundColor: Colors.bg,
+    borderColor: Colors.hairline,
+  },
+  branchText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.ink3,
     letterSpacing: 0.3,
   },
 

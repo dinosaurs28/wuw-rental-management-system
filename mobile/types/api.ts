@@ -15,6 +15,7 @@ export interface VehicleDetail extends Vehicle {
   deposit: number;
   advancePayAmount: number;
   pricingDetails: PricingDetails | null;
+  availableCount?: number;
 }
 
 export interface PricingDetails {
@@ -70,6 +71,8 @@ export interface User {
   email: string;
   role: string;
   publicId: string;
+  branchName?: string | null;
+  branchPublicId?: string | null;
 }
 
 export interface Category {
@@ -105,7 +108,7 @@ export interface KycDocument {
   publicId: string;
   type: KycType;
   status: KycStatus;
-  file: { url: string; mimeType?: string };
+  file: { publicId: string; url: string; mimeType?: string };
   createdAt: string;
 }
 

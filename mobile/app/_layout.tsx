@@ -21,6 +21,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { queryClient } from '../lib/query-client';
 import { useAuthStore } from '../store/auth';
+import { useSavedStore } from '../store/saved';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,6 +57,7 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const loadFromStorage = useAuthStore((s) => s.loadFromStorage);
   const isLoaded = useAuthStore((s) => s.isLoaded);
+  const loadSaved = useSavedStore((s) => s.load);
 
   const [fontsLoaded] = useFonts({
     Fraunces_400Regular,
@@ -72,6 +74,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadFromStorage();
+    loadSaved();
   }, []);
 
   useEffect(() => {

@@ -15,34 +15,52 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
 import { vehiclesApi } from '../lib/api';
 import CarCard from '../components/cars/CarCard';
+import VehicleQuickView from '../components/cars/VehicleQuickView';
 import type { Vehicle } from '../types/api';
 
-const CATEGORIES = [
-  { label: 'All',  value: 'All' },
-  { label: 'Bike', value: 'Bike' },
-  { label: 'Car',  value: 'Car' },
-];
+function normalizeGroup(g: any): Vehicle {
+  const images: string[] = (g.imageUrl ?? [])
+    .map((img: any) => img?.file?.url ?? null)
+    .filter(Boolean);
+  return {
+    publicId: g.groupKey,
+    make: g.make,
+    model: g.model,
+    category: g.category,
+    branch: g.branch,
+    availableCount: g.availableCount,
+    images,
+    pricing: { daily: g.pricing?.daily ?? null },
+    availability: true,
+  };
+}
 
 export default function Search() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [searchText, setSearchText] = useState('');
-  const [selectedCat, setSelectedCat] = useState('All');
   const [submitted, setSubmitted] = useState(false);
+  const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['search', searchText, selectedCat],
+    queryKey: ['search', searchText],
     queryFn: () =>
       vehiclesApi.list({
         search: searchText || undefined,
-        category: selectedCat === 'All' ? undefined : selectedCat,
         limit: 40,
       }),
     select: (res) => {
-      const all = (res.data.data as Vehicle[]) ?? [];
+      const groups = (res.data?.data ?? []) as any[];
       const seen = new Set<string>();
-      return all.filter((v) => { if (seen.has(v.publicId)) return false; seen.add(v.publicId); return true; });
+      return groups
+        .filter(g => {
+          const key = g.groupKey;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .map(normalizeGroup);
     },
     enabled: submitted,
   });
@@ -74,28 +92,12 @@ export default function Search() {
         </View>
       </View>
 
-      {/* Category filter */}
-      <View style={styles.chips}>
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.value}
-            style={[styles.chip, selectedCat === cat.value && styles.chipActive]}
-            onPress={() => { setSelectedCat(cat.value); setSubmitted(true); }}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.chipText, selectedCat === cat.value && styles.chipTextActive]}>
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       {/* Results */}
       {!submitted ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Find your car</Text>
           <Text style={styles.emptySubtitle}>
-            Search by make, model, or pick a category above.
+            Search by make or model and press search.
           </Text>
         </View>
       ) : isLoading ? (
@@ -107,7 +109,7 @@ export default function Search() {
           </Text>
           <FlatList
             data={results ?? []}
-            keyExtractor={(v) => v.publicId}
+            keyExtractor={(v, i) => v.publicId ? `${v.publicId}-${i}` : String(i)}
             numColumns={2}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.grid}
@@ -117,10 +119,20 @@ export default function Search() {
                 <Text style={styles.noResultsText}>No vehicles match your search.</Text>
               </View>
             }
-            renderItem={({ item }) => <CarCard vehicle={item} />}
+            renderItem={({ item }) => (
+              <CarCard
+                vehicle={item}
+                onPress={() => setQuickViewVehicle(item)}
+              />
+            )}
           />
         </>
       )}
+
+      <VehicleQuickView
+        vehicle={quickViewVehicle}
+        onClose={() => setQuickViewVehicle(null)}
+      />
     </View>
   );
 }
@@ -155,18 +167,6 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     padding: 0,
   },
-  chips: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  chipActive: { backgroundColor: Colors.black, borderColor: Colors.black },
-  chipText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
-  chipTextActive: { color: Colors.white },
   resultCount: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 13,
