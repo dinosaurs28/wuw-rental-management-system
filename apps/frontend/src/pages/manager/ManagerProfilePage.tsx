@@ -48,7 +48,7 @@ export const ManagerProfilePage = () => {
                 Email
               </label>
               <p className="text-lg font-medium">
-                {user?.email || "manager@example.com"}
+                {user?.email || "support@whatuwantrental.in"}
               </p>
             </div>
             <div>
