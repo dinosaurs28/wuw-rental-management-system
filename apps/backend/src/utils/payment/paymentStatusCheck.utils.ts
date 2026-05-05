@@ -12,6 +12,7 @@ export const paymentStatusCheck = async (transactionId: string) => {
     const stringToHash = apiPath + SALT_KEY;
     const sha256 = createHash("sha256").update(stringToHash).digest("hex");
     const checksum = sha256 + "###" + SALT_INDEX;
+    console.log(`[paymentStatusCheck] calling PhonePe HOST=${HOST_URL} MERCHANT_ID=${MERCHANT_ID} transactionId=${transactionId}`);
     const options = {
       method: "GET",
       url: `${HOST_URL}${apiPath}`,
@@ -23,11 +24,13 @@ export const paymentStatusCheck = async (transactionId: string) => {
       },
     };
     const response = await axios.request(options);
+    console.log(`[paymentStatusCheck] PhonePe HTTP ${response.status} code=${response.data?.code} transactionId=${transactionId}`);
     return response.data;
   } catch (error: any) {
     console.error(
-      "Status Check Error:",
-      error.response ? error.response.data : error.message,
+      `[paymentStatusCheck] ERROR transactionId=${transactionId}:`,
+      error.response ? JSON.stringify(error.response.data) : error.message,
     );
+    // Return undefined — caller must handle null/undefined
   }
 };

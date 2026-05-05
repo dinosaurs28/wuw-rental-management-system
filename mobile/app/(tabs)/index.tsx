@@ -66,9 +66,12 @@ export default function Browse() {
     }
   }, [branches]);
 
+  const browseStart = new Date(Date.now() + 86_400_000).toISOString();
+  const browseEnd   = new Date(Date.now() + 2 * 86_400_000).toISOString();
+
   const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['vehicles-all'],
-    queryFn: () => vehiclesApi.list({ limit: 100 }),
+    queryKey: ['vehicles-all', browseStart.slice(0, 10)],
+    queryFn: () => vehiclesApi.list({ limit: 100, start: browseStart, end: browseEnd }),
     select: (res) => {
       const groups = (res.data?.data ?? []) as any[];
       const seen = new Set<string>();
@@ -86,13 +89,11 @@ export default function Browse() {
 
   const vehiclesData = useMemo(() => {
     if (!allVehicles) return undefined;
-    const branchName = selectedBranch?.name?.toLowerCase().trim();
     return allVehicles.filter(v => {
-      if (branchName && v.branch && v.branch.toLowerCase().trim() !== branchName) return false;
       if (selectedCategory && v.category !== selectedCategory) return false;
       return true;
     });
-  }, [allVehicles, selectedCategory, selectedBranch]);
+  }, [allVehicles, selectedCategory]);
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
   const isLoading = branchesLoading || (!!selectedBranch && vehiclesLoading);

@@ -21,6 +21,7 @@ import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKey
 export const checkPayment = async (req: Request, res: Response) => {
   try {
     const { transactionId } = req.params;
+    console.log(`[checkPayment] START transactionId=${transactionId}`);
 
     if (!transactionId) {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -37,17 +38,25 @@ export const checkPayment = async (req: Request, res: Response) => {
     });
 
     if (!booking) {
+      console.log(`[checkPayment] BOOKING NOT FOUND transactionId=${transactionId}`);
       return res.status(StatusCode.NOT_FOUND).json({
         message: "Booking not found for this transactionId",
       });
     }
+
+    console.log(`[checkPayment] booking found id=${booking.publicId} status=${booking.status} paymentStatus=${booking.paymentStatus}`);
+
     let paymentStatus;
     if (transactionId.startsWith("MT")) {
+      console.log(`[checkPayment] calling PhonePe status API for ${transactionId}`);
       paymentStatus = await paymentStatusCheck(transactionId);
+      console.log(`[checkPayment] PhonePe raw response:`, JSON.stringify(paymentStatus));
 
       if (!paymentStatus) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "Error while checking payment status",
+        console.warn(`[checkPayment] paymentStatusCheck returned null/undefined for ${transactionId} — treating as Pending`);
+        return res.status(StatusCode.OK).json({
+          status: "Pending",
+          message: "Payment gateway unreachable, please retry",
         });
       }
     }
@@ -56,8 +65,11 @@ export const checkPayment = async (req: Request, res: Response) => {
     const isOnlineSuccess = paymentStatus?.code === "PAYMENT_SUCCESS";
     const isOnlinePending = paymentStatus?.code === "PAYMENT_PENDING";
 
+    console.log(`[checkPayment] isCash=${isCash} isOnlineSuccess=${isOnlineSuccess} isOnlinePending=${isOnlinePending} code=${paymentStatus?.code}`);
+
     // Idempotency check - if already SUCCESS, return OK
     if (booking.paymentStatus === PaymentStatus.SUCCESS) {
+      console.log(`[checkPayment] idempotency hit — booking already confirmed bookingId=${booking.publicId}`);
       return res.status(StatusCode.OK).json({
         status: "Success",
         message: "Booking already confirmed",
@@ -72,6 +84,7 @@ export const checkPayment = async (req: Request, res: Response) => {
         select: { name: true, role: true, branchId: true },
       });
 
+      console.log(`[checkPayment] starting Prisma transaction to confirm booking=${booking.publicId}`);
       await prisma.$transaction(async (tx) => {
         const method = isCash
           ? DepositMethod.CASH
@@ -190,11 +203,18 @@ export const checkPayment = async (req: Request, res: Response) => {
 
       });
 
+      console.log(`[checkPayment] Prisma transaction committed OK for booking=${booking.publicId}`);
+
       // Clear Redis holds outside the transaction (Redis is not transactional)
       for (const item of booking.items) {
-        await redis.del(`vehicle_holds:${item.vehicle.publicId}`);
+        const vehicleHoldKey = `vehicle_holds:${item.vehicle.publicId}`;
+        await redis.srem(vehicleHoldKey, booking.publicId);
+        const remaining = await redis.scard(vehicleHoldKey);
+        if (remaining === 0) await redis.del(vehicleHoldKey);
+        console.log(`[checkPayment] cleared vehicle_holds:${item.vehicle.publicId}`);
       }
-      await redis.del(`hold:${booking.publicId}`);
+      await redis.del(booking.publicId);
+      console.log(`[checkPayment] cleared hold:${booking.publicId}`);
 
       // Audit log outside the transaction to avoid timeout
       await auditService.log({
@@ -213,6 +233,7 @@ export const checkPayment = async (req: Request, res: Response) => {
         after: { status: "CONFIRMED", paymentStatus: "SUCCESS", isAdvancePayment: booking.isAdvancePayment },
       });
 
+      console.log(`[checkPayment] SUCCESS booking=${booking.publicId} confirmed`);
       return res.status(StatusCode.OK).json({
         status: "Success",
         redirectURL: "FRONTEND_SUCCESS_URL",
@@ -228,12 +249,14 @@ export const checkPayment = async (req: Request, res: Response) => {
     }
 
     if (isOnlinePending) {
+      console.log(`[checkPayment] PENDING booking=${booking.publicId}`);
       return res.status(StatusCode.OK).json({
         status: "Pending",
         message: "Payment is still pending",
       });
     }
 
+    console.log(`[checkPayment] FAILED booking=${booking.publicId} code=${paymentStatus?.code} — cancelling`);
     await prisma.booking.update({
       where: { id: booking.id },
       data: {
@@ -242,14 +265,22 @@ export const checkPayment = async (req: Request, res: Response) => {
       },
     });
 
-    await redis.del(`hold:${booking.publicId}`);
+    // Clear both the booking hold and all per-vehicle holds so vehicles
+    // become immediately bookable again after a failed payment.
+    for (const item of booking.items) {
+      const vehicleHoldKey = `vehicle_holds:${item.vehicle.publicId}`;
+      await redis.srem(vehicleHoldKey, booking.publicId);
+      const remaining = await redis.scard(vehicleHoldKey);
+      if (remaining === 0) await redis.del(vehicleHoldKey);
+    }
+    await redis.del(booking.publicId);
 
     return res.status(StatusCode.OK).json({
       status: "Failed",
       redirectURL: "FRONTEND_FAILED_URL",
     });
   } catch (error) {
-    console.error("Error checking payment:", error);
+    console.error("[checkPayment] UNHANDLED ERROR:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal error while checking payment",
     });

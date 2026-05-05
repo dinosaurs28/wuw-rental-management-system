@@ -47,7 +47,21 @@ function TripCard({ trip }: { trip: BookingTrip }) {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {}}
+      onPress={() => router.push({
+        pathname: '/trip/[bookingId]',
+        params: {
+          bookingId:     trip.bookingId,
+          status:        trip.status,
+          make:          v?.make ?? '',
+          model:         v?.model ?? '',
+          thumbnail:     v?.thumbnail ?? '',
+          startAt:       trip.startAt,
+          endAt:         trip.endAt,
+          days:          String(trip.days),
+          total:         String(trip.total),
+          paymentStatus: trip.paymentStatus ?? '',
+        },
+      })}
       activeOpacity={0.88}
     >
       <View style={styles.cardPhoto}>
@@ -74,9 +88,12 @@ function TripCard({ trip }: { trip: BookingTrip }) {
         <Text style={styles.dates}>
           {formatDate(trip.startAt)} → {formatDate(trip.endAt)} · {trip.days}d
         </Text>
-        <Text style={styles.total}>
-          ₹{Number(trip.total).toLocaleString('en-IN')}
-        </Text>
+        <View style={styles.cardBottom}>
+          <Text style={styles.total}>
+            ₹{Number(trip.total).toLocaleString('en-IN')}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -84,18 +101,23 @@ function TripCard({ trip }: { trip: BookingTrip }) {
 
 export default function Trips() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<Tab>('active');
+  const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['bookings', activeTab],
-    queryFn: () => userApi.bookings(1, 20),
+    queryFn: async () => {
+      const res = await userApi.bookings(1, 20);
+      console.log(`[trips] API response status=${res.status} data=${JSON.stringify(res.data?.data?.map((b: any) => ({ id: b.bookingId, status: b.status, paymentStatus: b.paymentStatus })))}`);
+      return res;
+    },
     select: (res) => {
       const all: BookingTrip[] = res.data.data ?? [];
       if (activeTab === 'active') return all.filter((b) => b.status === 'PICKED_UP');
-      if (activeTab === 'upcoming') return all.filter((b) => b.status === 'CONFIRMED');
+      if (activeTab === 'upcoming') return all.filter((b) => b.status === 'CONFIRMED' || b.status === 'HOLD');
       return all.filter((b) => b.status === 'RETURNED' || b.status === 'CANCELLED');
     },
   });
+  if (error) console.error('[trips] query error:', error);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -228,11 +250,16 @@ const styles = StyleSheet.create({
     color: Colors.ink3,
     marginTop: 2,
   },
+  cardBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
   total: {
     fontFamily: Fonts.displayBold,
     fontSize: 15,
     color: Colors.ink,
-    marginTop: 4,
   },
   empty: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 40 },
   emptyIcon: {
