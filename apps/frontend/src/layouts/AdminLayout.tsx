@@ -252,7 +252,7 @@ export function AdminLayout() {
                       {user?.name || "Admin"}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || "admin@example.com"}
+                      {user?.email || "support@whatuwantrental.in"}
                     </p>
                   </div>
                 </DropdownMenuLabel>

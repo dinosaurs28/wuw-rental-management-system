@@ -55,6 +55,7 @@ export default function Checkout() {
   const [startDate] = useState(() => start ? new Date(start) : new Date(Date.now() + 86400 * 1000));
   const [endDate] = useState(() => end ? new Date(end) : new Date(Date.now() + 2 * 86400 * 1000));
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const isGroupKey = !!vehicleId && vehicleId.includes('__');
 
@@ -129,13 +130,41 @@ export default function Checkout() {
 
       const { holdId, data } = res.data;
       const paymentURL = data?.totals?.paymentURL;
+      const transactionId: string | undefined = data?.totals?.transactionId;
 
-      if (paymentURL) {
+      if (paymentURL && transactionId?.startsWith('MT')) {
         await WebBrowser.openBrowserAsync(paymentURL, {
           dismissButtonStyle: 'cancel',
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
         });
-        router.push({ pathname: '/booking/confirmation', params: { holdId } });
+
+        // Browser closed — verify payment status before proceeding
+        setVerifying(true);
+        let confirmed = false;
+        const MAX_ATTEMPTS = 5;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          const statusRes = await api.get(`/api/payment/status/${transactionId}`);
+          const { status } = statusRes.data;
+          if (status === 'Success') { confirmed = true; break; }
+          if (status === 'Failed') break;
+          // Pending — wait before retrying (skip wait on last attempt)
+          if (attempt < MAX_ATTEMPTS - 1) {
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+
+        if (confirmed) {
+          router.push({ pathname: '/booking/confirmation', params: { holdId } });
+        } else {
+          Alert.alert(
+            'Payment not completed',
+            'Your payment could not be verified. Your booking hold will expire in 10 minutes. Please check My Trips or contact support.',
+            [
+              { text: 'View My Trips', onPress: () => router.replace('/(tabs)/trips') },
+              { text: 'OK', style: 'cancel' },
+            ],
+          );
+        }
       } else {
         router.push({ pathname: '/booking/confirmation', params: { holdId } });
       }
@@ -146,6 +175,7 @@ export default function Checkout() {
       );
     } finally {
       setLoading(false);
+      setVerifying(false);
     }
   };
 
@@ -261,7 +291,12 @@ export default function Checkout() {
           activeOpacity={0.85}
         >
           {loading ? (
-            <ActivityIndicator color={Colors.white} size="small" />
+            <View style={styles.ctaBtnInner}>
+              <ActivityIndicator color={Colors.white} size="small" />
+              {verifying && (
+                <Text style={styles.ctaBtnVerifying}>Verifying payment…</Text>
+              )}
+            </View>
           ) : (
             <Text style={styles.ctaBtnText}>Confirm & pay →</Text>
           )}
@@ -426,6 +461,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ctaBtnLoading: { opacity: 0.8 },
+  ctaBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ctaBtnVerifying: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 13,
+    color: Colors.white,
+    opacity: 0.9,
+  },
   ctaBtnText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 15,

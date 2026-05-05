@@ -27,41 +27,8 @@ export const Footer = () => {
             <div className="hidden lg:block lg:col-span-1"></div>
 
 
-            {/* Company Links */}
-            <div className="md:col-span-4 lg:col-span-2 text-center md:text-left">
-              <h4 className="text-xs font-black text-zinc-900 mb-8 tracking-[0.2em] uppercase">
-                Company
-              </h4>
-              <ul className="space-y-5">
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Locations
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Careers
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
             {/* Support Links */}
-            <div className="md:col-span-4 lg:col-span-2 text-center md:text-left">
+            <div className="md:col-span-4 lg:col-span-4 text-center md:text-left">
               <h4 className="text-xs font-black text-zinc-900 mb-8 tracking-[0.2em] uppercase">
                 Support
               </h4>
