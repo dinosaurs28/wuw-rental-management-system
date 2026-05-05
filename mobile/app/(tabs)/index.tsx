@@ -66,18 +66,12 @@ export default function Browse() {
     }
   }, [branches]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const browseStart = useMemo(() => new Date(Date.now() + 86_400_000).toISOString(), [today]);
-  const browseEnd   = useMemo(() => new Date(Date.now() + 2 * 86_400_000).toISOString(), [today]);
+  const browseStart = new Date(Date.now() + 86_400_000).toISOString();
+  const browseEnd   = new Date(Date.now() + 2 * 86_400_000).toISOString();
 
   const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today],
-    queryFn: () => vehiclesApi.list({
-      limit: 100,
-      start: browseStart,
-      end: browseEnd,
-      branch: selectedBranch?.publicId,
-    }),
+    queryKey: ['vehicles-all', browseStart.slice(0, 10)],
+    queryFn: () => vehiclesApi.list({ limit: 100, start: browseStart, end: browseEnd }),
     select: (res) => {
       const groups = (res.data?.data ?? []) as any[];
       const seen = new Set<string>();

@@ -140,22 +140,12 @@ export default function Checkout() {
       console.log(`[checkout] booking created holdId=${holdId} transactionId=${transactionId} hasPaymentURL=${!!paymentURL}`);
 
       if (paymentURL && transactionId?.startsWith('MT')) {
-        const browserResult = await WebBrowser.openAuthSessionAsync(
+        await WebBrowser.openAuthSessionAsync(
           paymentURL,
           'wuw://payment/callback',
         );
 
-        // User dismissed without going through payment — bail out early
-        if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
-          Alert.alert(
-            'Payment cancelled',
-            'You closed the payment page. Your booking hold will expire in 10 minutes.',
-            [{ text: 'OK', style: 'cancel' }],
-          );
-          return;
-        }
-
-        // Browser closed after payment flow — verify status
+        // Browser closed — verify payment status before proceeding
         setVerifying(true);
         let confirmed = false;
         const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
