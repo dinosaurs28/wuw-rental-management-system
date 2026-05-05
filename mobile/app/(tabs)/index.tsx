@@ -86,11 +86,13 @@ export default function Browse() {
 
   const vehiclesData = useMemo(() => {
     if (!allVehicles) return undefined;
+    const branchName = selectedBranch?.name?.toLowerCase().trim();
     return allVehicles.filter(v => {
+      if (branchName && v.branch && v.branch.toLowerCase().trim() !== branchName) return false;
       if (selectedCategory && v.category !== selectedCategory) return false;
       return true;
     });
-  }, [allVehicles, selectedCategory]);
+  }, [allVehicles, selectedCategory, selectedBranch]);
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
   const isLoading = branchesLoading || (!!selectedBranch && vehiclesLoading);
@@ -235,7 +237,7 @@ export default function Browse() {
                 <View style={styles.empty}>
                   <Text style={styles.emptyTitle}>No vehicles available</Text>
                   <Text style={styles.emptySubtitle}>
-                    Try a different category or check back soon.
+                    Try a different branch or category, or check back soon.
                   </Text>
                 </View>
               }
