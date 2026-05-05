@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi, userApi, api } from '../../lib/api';
@@ -46,6 +46,7 @@ function LineItem({ label, value, bold }: { label: string; value: string; bold?:
 
 export default function Checkout() {
   const router = useRouter();
+  const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const { vehicleId, start, end } = useLocalSearchParams<{ vehicleId: string; start?: string; end?: string }>();
 
@@ -56,6 +57,11 @@ export default function Checkout() {
   const [endDate] = useState(() => end ? new Date(end) : new Date(Date.now() + 2 * 86400 * 1000));
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const isGroupKey = !!vehicleId && vehicleId.includes('__');
 
@@ -131,29 +137,41 @@ export default function Checkout() {
       const { holdId, data } = res.data;
       const paymentURL = data?.totals?.paymentURL;
       const transactionId: string | undefined = data?.totals?.transactionId;
+      console.log(`[checkout] booking created holdId=${holdId} transactionId=${transactionId} hasPaymentURL=${!!paymentURL}`);
 
       if (paymentURL && transactionId?.startsWith('MT')) {
-        await WebBrowser.openBrowserAsync(paymentURL, {
-          dismissButtonStyle: 'cancel',
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        });
+        await WebBrowser.openAuthSessionAsync(
+          paymentURL,
+          'wuw://payment/callback',
+        );
 
         // Browser closed — verify payment status before proceeding
         setVerifying(true);
         let confirmed = false;
-        const MAX_ATTEMPTS = 5;
+        const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
+        const MAX_ATTEMPTS = POLL_DELAYS.length + 1;
+        console.log(`[checkout] browser closed, starting payment verification transactionId=${transactionId} holdId=${holdId}`);
         for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-          const statusRes = await api.get(`/api/payment/status/${transactionId}`);
-          const { status } = statusRes.data;
-          if (status === 'Success') { confirmed = true; break; }
-          if (status === 'Failed') break;
-          // Pending — wait before retrying (skip wait on last attempt)
-          if (attempt < MAX_ATTEMPTS - 1) {
-            await new Promise(r => setTimeout(r, 2000));
+          if (!mountedRef.current) break;
+          try {
+            const statusRes = await api.get(`/api/payment/status/${transactionId}`);
+            const { status } = statusRes.data;
+            console.log(`[checkout] poll attempt=${attempt + 1}/${MAX_ATTEMPTS} status=${status}`);
+            if (status === 'Success') { confirmed = true; break; }
+            if (status === 'Failed') break;
+            const delay = POLL_DELAYS[attempt] ?? 5000;
+            if (attempt < MAX_ATTEMPTS - 1) await new Promise(r => setTimeout(r, delay));
+          } catch (pollErr: any) {
+            console.error(`[checkout] poll attempt=${attempt + 1} ERROR:`, pollErr?.response?.data ?? pollErr?.message);
+            const delay = POLL_DELAYS[attempt] ?? 5000;
+            if (attempt < MAX_ATTEMPTS - 1) await new Promise(r => setTimeout(r, delay));
           }
         }
+        console.log(`[checkout] polling done confirmed=${confirmed}`);
 
+        if (!mountedRef.current) return;
         if (confirmed) {
+          await qc.invalidateQueries({ queryKey: ['bookings'] });
           router.push({ pathname: '/booking/confirmation', params: { holdId } });
         } else {
           Alert.alert(
@@ -166,7 +184,17 @@ export default function Checkout() {
           );
         }
       } else {
-        router.push({ pathname: '/booking/confirmation', params: { holdId } });
+        // For cash bookings (no payment URL), navigate to confirmation
+        // For online bookings this path should never be reached — log a warning if it is
+        const isCashBooking = !paymentURL && !transactionId?.startsWith('MT');
+        if (isCashBooking) {
+          router.push({ pathname: '/booking/confirmation', params: { holdId } });
+        } else {
+          Alert.alert(
+            'Payment error',
+            'Could not initiate payment. Please try again or contact support.',
+          );
+        }
       }
     } catch (err: any) {
       Alert.alert(

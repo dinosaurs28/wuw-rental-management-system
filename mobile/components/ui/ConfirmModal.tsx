@@ -62,17 +62,17 @@ export default function ConfirmModal({
             <Text style={styles.title}>{title}</Text>
             {message ? <Text style={styles.message}>{message}</Text> : null}
 
-            <View style={styles.btnRow}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.75}>
-                <Text style={styles.cancelText}>{cancelLabel}</Text>
-              </TouchableOpacity>
-
+            <View style={styles.btnCol}>
               <TouchableOpacity
                 style={[styles.confirmBtn, { backgroundColor: confirmColor }]}
                 onPress={onConfirm}
                 activeOpacity={0.85}
               >
                 <Text style={styles.confirmText}>{confirmLabel}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.75}>
+                <Text style={styles.cancelText}>{cancelLabel}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -125,29 +125,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  btnRow: {
-    flexDirection: 'row',
-    gap: 10,
+  btnCol: {
+    flexDirection: 'column',
+    gap: 8,
     marginTop: 8,
     width: '100%',
   },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: 'center',
-    backgroundColor: Colors.bg,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  cancelText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 15,
-    color: Colors.ink2,
-  },
   confirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
+    width: '100%',
+    paddingVertical: 15,
     borderRadius: 14,
     alignItems: 'center',
   },
@@ -155,5 +141,16 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: 15,
     color: Colors.white,
+  },
+  cancelBtn: {
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 15,
+    color: Colors.ink3,
   },
 });

@@ -5,6 +5,7 @@ import { StatusCode } from "../../types/statusCode.js";
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
     const userPublicId = req.public_Id;
+    console.log(`[getUserBookings] userPublicId=${userPublicId}`);
 
     if (!userPublicId) {
       return res.status(StatusCode.UNAUTHORIZED).json({
@@ -20,7 +21,10 @@ export const getUserBookings = async (req: Request, res: Response) => {
       },
     });
 
+    console.log(`[getUserBookings] customerProfile=${JSON.stringify(user?.customerProfile)}`);
+
     if (!user?.customerProfile) {
+      console.error(`[getUserBookings] NO CUSTOMER PROFILE for userPublicId=${userPublicId}`);
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Customer profile not found",
       });
@@ -74,8 +78,11 @@ export const getUserBookings = async (req: Request, res: Response) => {
       },
     });
 
+    console.log(`[getUserBookings] customerId=${customerId} found ${bookings.length} bookings (totalCount=${totalCount})`);
+    bookings.forEach(b => console.log(`  booking publicId=${b.publicId} status=${b.status} paymentStatus=${b.paymentStatus}`));
+
     const data = bookings.map((booking) => ({
-      id: booking.id, // Numeric ID for backend operations (e.g., invoice generation)
+      id: booking.id,
       bookingId: booking.publicId,
       status: booking.status,
       paymentStatus: booking.paymentStatus,

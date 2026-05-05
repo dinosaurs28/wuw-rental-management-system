@@ -193,9 +193,12 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
 
     // Clear Redis holds outside the transaction (Redis is not transactional anyway)
     for (const item of booking.items) {
-      await redis.del(`vehicle_holds:${item.vehicle.publicId}`);
+      const vehicleHoldKey = `vehicle_holds:${item.vehicle.publicId}`;
+      await redis.srem(vehicleHoldKey, booking.publicId);
+      const remaining = await redis.scard(vehicleHoldKey);
+      if (remaining === 0) await redis.del(vehicleHoldKey);
     }
-    await redis.del(`hold:${booking.publicId}`);
+    await redis.del(booking.publicId);
 
     // Audit log outside the transaction to avoid timeout
     await auditService.log({

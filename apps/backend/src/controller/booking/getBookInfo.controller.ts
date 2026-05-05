@@ -115,13 +115,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
-      select: { id: true },
+      select: { id: true, customerKycs: { select: { customer: { select: { userId: true } } } } },
     });
 
     if (!kycFile) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid KYC document",
-      });
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC document" });
+    }
+
+    const kycOwner = kycFile.customerKycs?.[0]?.customer?.userId;
+    if (kycOwner && kycOwner !== userData.id) {
+      return res.status(StatusCode.FORBIDDEN).json({ message: "KYC document does not belong to your account" });
     }
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -169,7 +172,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     // ── Fetch directly-referenced vehicles ────────────────────────────────────
     const vehiclesData = await prisma.vehicle.findMany({
-      where: { publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] } },
+      where: {
+        publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] },
+        status: "AVAILABLE",
+        deletedAt: null,
+      },
       include: {
         category: true,
         branch: { include: { pricingSetting: true } },
@@ -398,6 +405,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         const paymentDetails = await initiatePhonePePayment(
           chargeAmount,
           customerRedirectUrl,
+          customerpubId,
         );
         if (!paymentDetails || !paymentDetails.merchantTransactionId) {
           throw new Error("Invalid payment details received");
