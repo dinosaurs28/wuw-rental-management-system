@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 17,
     alignItems: 'center',
-    shadowColor: Colors.orange,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -28,13 +28,6 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
             },
           },
         },
-        kycFile: {
-          select: {
-            publicId: true,
-            url: true,
-            mime: true,
-          },
-        },
       },
     });
 
@@ -43,37 +36,28 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         message: "Booking not found",
       });
     }
-    if (!booking.kycFile) {
-      return res.status(StatusCode.NOT_FOUND).json({
-        message: "No KYC document linked to this booking",
-      });
-    }
-
-    const kycRecord = await prisma.customerKyc.findFirst({
-      where: {
-        file: {
-          publicId: booking.kycFile.publicId,
-        },
-        customerId: booking.customer.id,
-      },
+    // Fetch ALL KYC documents for this customer, not just the booking-linked one
+    const allKycRecords = await prisma.customerKyc.findMany({
+      where: { customerId: booking.customer.id },
       select: {
+        publicId: true,
         type: true,
         status: true,
-        publicId: true,
-      },
-    });
-
-    const kycDocs = [
-      {
-        publicId: kycRecord?.publicId,
-        type: kycRecord?.type || "UNKNOWN",
-        status: kycRecord?.status || "UNKNOWN",
         file: {
-          url: booking.kycFile.url,
-          mime: booking.kycFile.mime,
+          select: { url: true, mime: true },
         },
       },
-    ];
+      orderBy: { createdAt: "asc" },
+    });
+
+    const kycDocs = allKycRecords
+      .filter((k) => k.file)
+      .map((k) => ({
+        publicId: k.publicId,
+        type: k.type || "UNKNOWN",
+        status: k.status || "UNKNOWN",
+        file: { url: k.file!.url, mime: k.file!.mime },
+      }));
 
     if (kycDocs.length === 0) {
       return res.status(StatusCode.NOT_FOUND).json({

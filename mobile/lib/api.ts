@@ -123,4 +123,8 @@ export const employeeApi = {
     returnImageIds?: string[];
     requireManagerConfirmation?: boolean;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
+  getBookingKyc: (bookingId: string) =>
+    api.get(`/api/employee/kyc/${bookingId}`),
+  verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>
+    api.patch(`/api/employee/kyc/${kycId}/status`, { status }),
 };

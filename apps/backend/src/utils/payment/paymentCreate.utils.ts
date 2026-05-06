@@ -12,8 +12,9 @@ const redirectUrl = process.env.REDIRECT_URL_PAY;
 export async function initiatePhonePePayment(
   amount: number,
   customBaseRedirectUrl?: string,
+  customerPublicId?: string,
 ) {
-  const transactionId = `MT-${uuidv4().toString().slice(0, 8)}`;
+  const transactionId = `MT-${uuidv4().replace(/-/g, '')}`;
 
   // Use custom redirect URL if provided, otherwise default to env var
   // valid redirectUrl MUST include the transactionId or handle
@@ -24,11 +25,11 @@ export async function initiatePhonePePayment(
   const payload = {
     merchantId: MERCHANT_ID,
     merchantTransactionId: transactionId,
-    merchantUserId: "MUID-" + uuidv4().toString().slice(0, 6),
+    merchantUserId: customerPublicId ? `MUID-${customerPublicId}` : `MUID-${uuidv4().replace(/-/g, '')}`,
     amount: Math.round(amount * 100),
     redirectUrl: finalRedirectUrl,
     redirectMode: "REDIRECT",
-    callbackUrl: finalRedirectUrl,
+    callbackUrl: process.env.BACKEND_CALLBACK_URL ? `${process.env.BACKEND_CALLBACK_URL}/api/payment/phonepe/webhook` : finalRedirectUrl,
     paymentInstrument: {
       type: "PAY_PAGE",
     },

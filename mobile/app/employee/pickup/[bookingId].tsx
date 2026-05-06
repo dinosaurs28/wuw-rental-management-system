@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -88,6 +90,9 @@ export default function PickupScreen() {
   const [fuelLevel, setFuelLevel] = useState<number>(50);
   const [done, setDone] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [kycExpanded, setKycExpanded] = useState<Record<string, boolean>>({});
+  const scrollRef = useRef<ScrollView>(null);
+  const odoRef = useRef<View>(null);
 
   const { data: booking, isLoading, isError } = useQuery<BookingDetail>({
     queryKey: ['employee', 'pickup', bookingId],
@@ -113,6 +118,28 @@ export default function PickupScreen() {
     },
     onError: () => {
       setShowConfirm(false);
+    },
+  });
+
+  const { data: kycData, isLoading: kycLoading } = useQuery({
+    queryKey: ['employee', 'kyc', bookingId],
+    queryFn: async () => {
+      const res = await employeeApi.getBookingKyc(bookingId as string);
+      return res.data as { customerName: string; kyc: Array<{ publicId: string; type: string; status: string; file: { url: string; mime: string } }> };
+    },
+    enabled: !!bookingId,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const kycMutation = useMutation({
+    mutationFn: ({ kycId, status }: { kycId: string; status: 'APPROVED' | 'REJECTED' }) =>
+      employeeApi.verifyKyc(kycId, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employee', 'kyc', bookingId] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to update document status.');
     },
   });
 
@@ -194,7 +221,8 @@ export default function PickupScreen() {
     <>
     <KeyboardAvoidingView
       style={[styles.root, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={insets.top}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -208,9 +236,11 @@ export default function PickupScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {/* Payment Warning */}
         {hasRemainingBalance && (
@@ -239,6 +269,97 @@ export default function PickupScreen() {
               )}
             </View>
           </View>
+        </View>
+
+        {/* KYC Document */}
+        <SectionHeader title="Identity Document" />
+        <View style={styles.card}>
+          {kycLoading ? (
+            <ActivityIndicator size="small" color={Colors.orange} />
+          ) : kycData?.kyc?.length ? (
+            kycData.kyc.map((doc) => {
+              const approved = doc.status === 'APPROVED';
+              const rejected = doc.status === 'REJECTED';
+              return (
+                <View key={doc.publicId}>
+                  <View style={styles.kycRow}>
+                    <View style={styles.kycRowLeft}>
+                      <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
+                        <Ionicons
+                          name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : 'card-outline'}
+                          size={20}
+                          color={approved ? '#10b981' : rejected ? '#e53e3e' : Colors.ink3}
+                        />
+                      </View>
+                      <View>
+                        <Text style={styles.kycType}>{doc.type.replace(/_/g, ' ')}</Text>
+                        <Text style={[styles.kycStatus, approved && { color: '#10b981' }, rejected && { color: '#e53e3e' }]}>
+                          {doc.status}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.kycViewBtn}
+                      onPress={() => setKycExpanded(v => ({ ...v, [doc.publicId]: !v[doc.publicId] }))}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.kycViewBtnText}>{kycExpanded[doc.publicId] ? 'Hide' : 'View'}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {kycExpanded[doc.publicId] && (
+                    <View style={styles.kycImageWrap}>
+                      <Image
+                        source={{ uri: doc.file.url }}
+                        style={styles.kycImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  )}
+
+                  {!approved && !rejected && (
+                    <View style={styles.kycActions}>
+                      <TouchableOpacity
+                        style={[styles.kycActionBtn, styles.kycRejectBtn]}
+                        onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'REJECTED' })}
+                        disabled={kycMutation.isPending}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close" size={14} color="#e53e3e" />
+                        <Text style={[styles.kycActionText, { color: '#e53e3e' }]}>Reject</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.kycActionBtn, styles.kycApproveBtn]}
+                        onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'APPROVED' })}
+                        disabled={kycMutation.isPending}
+                        activeOpacity={0.8}
+                      >
+                        {kycMutation.isPending
+                          ? <ActivityIndicator size="small" color="#10b981" />
+                          : <>
+                              <Ionicons name="checkmark" size={14} color="#10b981" />
+                              <Text style={[styles.kycActionText, { color: '#10b981' }]}>Approve</Text>
+                            </>
+                        }
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {approved && (
+                    <View style={styles.kycApprovedBanner}>
+                      <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                      <Text style={styles.kycApprovedBannerText}>Document verified</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.kycEmpty}>
+              <Ionicons name="document-outline" size={20} color={Colors.ink4} />
+              <Text style={styles.kycEmptyText}>No document linked to this booking</Text>
+            </View>
+          )}
         </View>
 
         {/* Vehicle */}
@@ -322,7 +443,7 @@ export default function PickupScreen() {
         <SectionHeader title="Record Vehicle State" />
         <View style={styles.card}>
           {/* Odometer */}
-          <View style={styles.fieldGroup}>
+          <View ref={odoRef} style={styles.fieldGroup}>
             <View style={styles.fieldLabel}>
               <Ionicons name="speedometer-outline" size={16} color={Colors.ink3} />
               <Text style={styles.fieldLabelText}>Odometer Reading (km)</Text>
@@ -335,6 +456,15 @@ export default function PickupScreen() {
               placeholderTextColor={Colors.ink4}
               keyboardType="numeric"
               returnKeyType="done"
+              onFocus={() => {
+                setTimeout(() => {
+                  odoRef.current?.measureLayout(
+                    scrollRef.current as any,
+                    (_x, y) => { scrollRef.current?.scrollTo({ y: y - 20, animated: true }); },
+                    () => {}
+                  );
+                }, 150);
+              }}
             />
           </View>
 
@@ -555,6 +685,70 @@ const styles = StyleSheet.create({
   errorState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   errorText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3 },
 
+  // KYC
+  kycRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  kycRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  kycIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kycIconApproved: { backgroundColor: '#10b98112', borderColor: '#10b98130' },
+  kycIconRejected: { backgroundColor: '#e53e3e12', borderColor: '#e53e3e30' },
+  kycType: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+  kycStatus: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 1 },
+  kycViewBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  kycViewBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  kycImageWrap: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    backgroundColor: '#f5f5f5',
+  },
+  kycImage: { width: '100%', height: 220 },
+  kycActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  kycActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  kycApproveBtn: { backgroundColor: '#10b98110', borderColor: '#10b98130' },
+  kycRejectBtn: { backgroundColor: '#e53e3e10', borderColor: '#e53e3e30' },
+  kycActionText: { fontFamily: Fonts.bodySemiBold, fontSize: 13 },
+  kycApprovedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: '#10b98110',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#10b98130',
+  },
+  kycApprovedBannerText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#10b981' },
+  kycEmpty: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  kycEmptyText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
+
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -574,7 +768,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.orange,
     borderRadius: 16,
     paddingVertical: 17,
-    shadowColor: Colors.orange,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

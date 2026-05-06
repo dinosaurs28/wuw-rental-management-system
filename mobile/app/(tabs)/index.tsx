@@ -66,9 +66,18 @@ export default function Browse() {
     }
   }, [branches]);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const browseStart = useMemo(() => new Date(Date.now() + 86_400_000).toISOString(), [today]);
+  const browseEnd   = useMemo(() => new Date(Date.now() + 2 * 86_400_000).toISOString(), [today]);
+
   const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['vehicles-all'],
-    queryFn: () => vehiclesApi.list({ limit: 100 }),
+    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today],
+    queryFn: () => vehiclesApi.list({
+      limit: 100,
+      start: browseStart,
+      end: browseEnd,
+      branch: selectedBranch?.publicId,
+    }),
     select: (res) => {
       const groups = (res.data?.data ?? []) as any[];
       const seen = new Set<string>();
@@ -86,13 +95,11 @@ export default function Browse() {
 
   const vehiclesData = useMemo(() => {
     if (!allVehicles) return undefined;
-    const branchName = selectedBranch?.name?.toLowerCase().trim();
     return allVehicles.filter(v => {
-      if (branchName && v.branch && v.branch.toLowerCase().trim() !== branchName) return false;
       if (selectedCategory && v.category !== selectedCategory) return false;
       return true;
     });
-  }, [allVehicles, selectedCategory, selectedBranch]);
+  }, [allVehicles, selectedCategory]);
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
   const isLoading = branchesLoading || (!!selectedBranch && vehiclesLoading);
@@ -177,15 +184,8 @@ export default function Browse() {
       ) : (
         <>
           {/* Category chips — always show All; show others once vehicles loaded */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chips}
-            style={styles.chipsScroll}
-          >
-            {/* All chip — always rendered */}
+          <View style={styles.chips}>
             <TouchableOpacity
-              key="__all__"
               style={[styles.chip, selectedCategory === null && styles.chipActive]}
               onPress={() => setSelectedCategory(null)}
               activeOpacity={0.8}
@@ -195,7 +195,6 @@ export default function Browse() {
               </Text>
             </TouchableOpacity>
 
-            {/* Dynamic category chips */}
             {[...new Set((allVehicles ?? []).map(v => v.category).filter(Boolean))].sort().map((name) => (
               <TouchableOpacity
                 key={name}
@@ -208,7 +207,7 @@ export default function Browse() {
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
 
           {/* Section label */}
           <View style={styles.sectionRow}>
@@ -396,10 +395,14 @@ const styles = StyleSheet.create({
   },
 
   // Categories
-  chipsScroll: { maxHeight: 44 },
-  chips: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 8,
+    paddingVertical: 4,
+  },
   chip: {
-    flexShrink: 0,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,

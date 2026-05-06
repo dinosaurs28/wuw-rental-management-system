@@ -292,7 +292,7 @@ export default function VehicleDetail() {
                     <PriceLine label="Discount" value={`-₹${pd.discountAmount.toLocaleString('en-IN')}`} valueColor="#2d9d61" />
                   )}
                   <View style={styles.priceDivider} />
-                  <PriceLine label="Total" value={`₹${pd.finalTotal.toLocaleString('en-IN')}`} bold />
+                  <PriceLine label="Total" value={`₹${(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}`} bold />
                 </View>
               </>
             ) : (
@@ -336,7 +336,7 @@ export default function VehicleDetail() {
           {pd ? (
             <>
               <Text style={styles.ctaPrice}>
-                ₹{pd.finalTotal.toLocaleString('en-IN')}
+                ₹{(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}
               </Text>
               <Text style={styles.ctaNote}>total · {nights} night{nights !== 1 ? 's' : ''}</Text>
             </>
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: Colors.orange, borderRadius: 16,
     paddingVertical: 15, paddingHorizontal: 24,
-    shadowColor: Colors.orange,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
   },

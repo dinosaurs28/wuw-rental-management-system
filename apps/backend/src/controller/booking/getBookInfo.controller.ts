@@ -115,13 +115,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
-      select: { id: true },
+      select: { id: true, customerKycs: { select: { customer: { select: { userId: true } } } } },
     });
 
     if (!kycFile) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid KYC document",
-      });
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC document" });
+    }
+
+    const kycOwner = kycFile.customerKycs?.[0]?.customer?.userId;
+    if (kycOwner && kycOwner !== userData.id) {
+      return res.status(StatusCode.FORBIDDEN).json({ message: "KYC document does not belong to your account" });
     }
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -169,7 +172,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     // ── Fetch directly-referenced vehicles ────────────────────────────────────
     const vehiclesData = await prisma.vehicle.findMany({
-      where: { publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] } },
+      where: {
+        publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] },
+        status: "AVAILABLE",
+        deletedAt: null,
+      },
       include: {
         category: true,
         branch: { include: { pricingSetting: true } },
@@ -392,12 +399,15 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let paymentURL: string;
     let encryptedFinalPrice: string | null = null;
     if (parsed.data.payment_type === "ONLINE") {
-      const redirectUrl = process.env.REDIRECT_URL_PAY;
-      const customerRedirectUrl = `${redirectUrl}/booking/status`;
+      // Mobile deep-link takes priority so PhonePe redirects back to the app directly.
+      // Falls back to the web frontend URL for web-initiated bookings.
+      const customerRedirectUrl = process.env.MOBILE_REDIRECT_URL
+        ?? `${process.env.REDIRECT_URL_PAY}/booking/status`;
       try {
         const paymentDetails = await initiatePhonePePayment(
           chargeAmount,
           customerRedirectUrl,
+          customerpubId,
         );
         if (!paymentDetails || !paymentDetails.merchantTransactionId) {
           throw new Error("Invalid payment details received");
