@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   confirmBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: Colors.orange, borderRadius: 16, paddingVertical: 15,
-    shadowColor: Colors.orange,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   confirmText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white, letterSpacing: 0.2 },
