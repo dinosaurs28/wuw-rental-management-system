@@ -140,12 +140,22 @@ export default function Checkout() {
       console.log(`[checkout] booking created holdId=${holdId} transactionId=${transactionId} hasPaymentURL=${!!paymentURL}`);
 
       if (paymentURL && transactionId?.startsWith('MT')) {
-        await WebBrowser.openAuthSessionAsync(
+        const browserResult = await WebBrowser.openAuthSessionAsync(
           paymentURL,
           'wuw://payment/callback',
         );
 
-        // Browser closed — verify payment status before proceeding
+        // User dismissed without going through payment — bail out early
+        if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
+          Alert.alert(
+            'Payment cancelled',
+            'You closed the payment page. Your booking hold will expire in 10 minutes.',
+            [{ text: 'OK', style: 'cancel' }],
+          );
+          return;
+        }
+
+        // Browser closed after payment flow — verify status
         setVerifying(true);
         let confirmed = false;
         const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
@@ -226,10 +236,11 @@ export default function Checkout() {
   const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
   const pd = vehicle.pricingDetails;
   const daily = pd?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
-  const subtotal = pd ? (pd.finalTotal - (pd.deposit ?? 0)) : daily * days;
+  // pd.finalTotal = base + tax (no deposit). Deposit is separate and added on top.
+  const subtotal = pd ? pd.basePrice : daily * days;
   const deposit = pd?.deposit ?? 0;
   const tax = pd?.taxAmount ?? Math.round(subtotal * 0.18);
-  const total = pd?.finalTotal ?? (subtotal + deposit + tax);
+  const total = pd ? (pd.finalTotal + deposit) : (subtotal + deposit + tax);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -480,7 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 15,
     paddingHorizontal: 24,
-    shadowColor: Colors.orange,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

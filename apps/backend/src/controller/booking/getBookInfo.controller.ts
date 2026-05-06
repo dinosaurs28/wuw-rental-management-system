@@ -399,8 +399,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let paymentURL: string;
     let encryptedFinalPrice: string | null = null;
     if (parsed.data.payment_type === "ONLINE") {
-      const redirectUrl = process.env.REDIRECT_URL_PAY;
-      const customerRedirectUrl = `${redirectUrl}/booking/status`;
+      // Mobile deep-link takes priority so PhonePe redirects back to the app directly.
+      // Falls back to the web frontend URL for web-initiated bookings.
+      const customerRedirectUrl = process.env.MOBILE_REDIRECT_URL
+        ?? `${process.env.REDIRECT_URL_PAY}/booking/status`;
       try {
         const paymentDetails = await initiatePhonePePayment(
           chargeAmount,
