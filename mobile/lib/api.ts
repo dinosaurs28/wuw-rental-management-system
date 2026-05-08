@@ -84,6 +84,10 @@ export const authApi = {
     api.post('/api/auth/email/signin', { email, password }),
   signUp: (name: string, email: string, password: string) =>
     api.post('/api/auth/email/signup', { name, email, password }),
+  // Mobile Google sign-in: client obtains an idToken via expo-auth-session,
+  // backend verifies and returns a JWT in the response body.
+  googleSignIn: (idToken: string) =>
+    api.post('/api/auth/google/mobile', { idToken }),
   me: () => api.get('/api/auth/me?google=true'),
 };
 

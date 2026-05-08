@@ -10,6 +10,7 @@ import {
 } from "../../controller/auth/email-verify.controller.js";
 import passport from "../../utils/passport/google.js";
 import { googleSignIn } from "../../controller/auth/google.controller.js";
+import { googleMobileSignIn } from "../../controller/auth/google-mobile.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { StatusCode } from "../../types/statusCode.js";
 
@@ -36,6 +37,10 @@ router.get(
   }),
   googleSignIn,
 );
+// Mobile-only: accepts an idToken and returns a JWT in the response body.
+// Distinct from /google + /google/callback which use the passport redirect
+// flow with httpOnly cookies (web-friendly only).
+router.post("/google/mobile", googleMobileSignIn);
 router.get("/me", authCheckJwt, ProfileInfo);
 router.get("/logout", authCheckJwt, (req, res) => {
   return res
