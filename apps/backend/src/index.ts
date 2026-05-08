@@ -81,7 +81,7 @@ app.use("/api/config", configRouter);
 app.get("/health", (req: Request, res: Response) => {
   return res.status(StatusCode.OK).json({
     uptime: process.uptime(),
-    message: "Server is running ",
+    message: "Server is running",
     date: new Date(),
   });
 });

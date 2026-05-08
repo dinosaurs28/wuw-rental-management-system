@@ -97,7 +97,7 @@ function App() {
       <AuthInitializer />
       <Toaster richColors position="top-center" />
       <Routes>
-        {/* Public Routes - No auth required */}
+        {/* Public Routes - No auth required  */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/group/:groupKey" element={<VehicleGroupDetailsPage />} />
