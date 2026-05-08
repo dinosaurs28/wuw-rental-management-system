@@ -129,7 +129,7 @@ export default function VehicleDetail() {
       {/* ── Hero ── */}
       <View style={[styles.hero, { height: HERO_HEIGHT }]}>
         {heroImage ? (
-          <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFillObject} resizeMode="contain" />
         ) : (
           <LinearGradient colors={['#1a1a1a', '#2d2d2d', '#111']} style={StyleSheet.absoluteFillObject}>
             <View style={styles.heroGlow} />

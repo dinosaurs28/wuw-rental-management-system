@@ -49,9 +49,14 @@ export default function SignIn() {
       await signIn(accessToken, user);
       router.replace('/(tabs)');
     } catch (err: any) {
-      const msg = err.response?.data?.message
-        ?? (err.code === 'ECONNREFUSED' || err.message?.includes('Network')
-          ? 'Cannot reach server. Check your connection.'
+      const serverMsg = err.response?.data?.message;
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      const isNetwork = !err.response && (err.code === 'ECONNREFUSED' || err.message?.includes('Network'));
+      const msg = serverMsg
+        ?? (isTimeout
+          ? 'Server is taking too long to respond. Try again in a moment.'
+          : isNetwork
+          ? 'Cannot reach the server. Check your internet and try again.'
           : 'Something went wrong. Please try again.');
       setToast({ title: 'Sign in failed', message: msg });
     } finally {

@@ -3,9 +3,13 @@ import { useAuthStore } from '../store/auth';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000') as string;
 
+if (__DEV__) {
+  console.log('[api] BASE_URL =', BASE_URL);
+}
+
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15_000,
+  timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -19,7 +23,29 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
+  async (err) => {
+    const cfg = err.config ?? {};
+    const isNetworkError = !err.response;
+
+    if (__DEV__ && isNetworkError) {
+      console.log(
+        '[api] network error',
+        cfg.method?.toUpperCase(),
+        (cfg.baseURL ?? '') + (cfg.url ?? ''),
+        '| code:', err.code,
+        '| message:', err.message,
+      );
+    }
+
+    // One automatic retry on network errors (transient cellular drops, DNS
+    // blips, TLS resumption hiccups). Never retry HTTP error responses —
+    // those are real and meaningful.
+    if (isNetworkError && !cfg.__retried) {
+      cfg.__retried = true;
+      await new Promise((r) => setTimeout(r, 1000));
+      return api.request(cfg);
+    }
+
     if (err.response?.status === 401) {
       useAuthStore.getState().signOut();
     }

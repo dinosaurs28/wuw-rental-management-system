@@ -237,9 +237,11 @@ export default function ReturnScreen() {
               <View style={styles.vehicleIcon}>
                 <Ionicons name="car-outline" size={22} color="#3b82f6" />
               </View>
-              <View>
-                <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
-                <Text style={styles.vehicleReg}>{vehicle.regNo}</Text>
+              <View style={styles.vehicleInfo}>
+                <Text style={styles.vehicleName} numberOfLines={2}>
+                  {vehicle.make} {vehicle.model}
+                </Text>
+                <Text style={styles.vehicleReg} numberOfLines={1}>{vehicle.regNo}</Text>
               </View>
             </View>
           )}
@@ -386,8 +388,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 12,
   },
-  back: { width: 36, height: 36, justifyContent: 'center' },
-  headerText: { flex: 1, gap: 2 },
+  back: { width: 36, height: 36, justifyContent: 'center', flexShrink: 0 },
+  headerText: { flex: 1, gap: 2, minWidth: 0 },
   title: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
   subtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
   returnBadge: {
@@ -397,6 +399,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#3b82f630',
+    flexShrink: 0,
   },
   returnBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: '#3b82f6' },
 
@@ -458,8 +461,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f612',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
+  vehicleInfo: { flex: 1, minWidth: 0 },
+  vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink, lineHeight: 21 },
   vehicleReg: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginTop: 2 },
 
   divider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 12 },

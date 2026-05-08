@@ -56,7 +56,7 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                 <Image
                   source={{ uri: vehicle.images[0] }}
                   style={styles.image}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               ) : (
                 <View style={styles.imagePlaceholder}>

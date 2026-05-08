@@ -371,9 +371,11 @@ export default function PickupScreen() {
                 <View style={styles.vehicleIcon}>
                   <Ionicons name="car-outline" size={22} color={Colors.orange} />
                 </View>
-                <View>
-                  <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
-                  <Text style={styles.vehicleReg}>{vehicle.regNo}</Text>
+                <View style={styles.vehicleInfo}>
+                  <Text style={styles.vehicleName} numberOfLines={2}>
+                    {vehicle.make} {vehicle.model}
+                  </Text>
+                  <Text style={styles.vehicleReg} numberOfLines={1}>{vehicle.regNo}</Text>
                 </View>
               </View>
               {vehicle.odo !== null && (
@@ -622,8 +624,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff6a1f12',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
+  vehicleInfo: { flex: 1, minWidth: 0 },
+  vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink, lineHeight: 21 },
   vehicleReg: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginTop: 2 },
 
   odoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -27,7 +27,7 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
       {/* Photo / Placeholder */}
       <View style={styles.photoContainer}>
         {thumb ? (
-          <Image source={{ uri: thumb }} style={styles.photo} resizeMode="cover" />
+          <Image source={{ uri: thumb }} style={styles.photo} resizeMode="contain" />
         ) : (
           <View style={styles.placeholder}>
             <Ionicons name="car-sport-outline" size={36} color="rgba(0,0,0,0.12)" />
@@ -75,11 +75,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.hairline,
   },
-  photoContainer: { position: 'relative' },
-  photo: { width: '100%', height: 130 },
+  photoContainer: { position: 'relative', height: 130, overflow: 'hidden', backgroundColor: '#f5f5f3' },
+  photo: { width: '100%', height: '100%' },
   placeholder: {
     width: '100%',
-    height: 130,
+    height: '100%',
     backgroundColor: '#f0f0ee',
     alignItems: 'center',
     justifyContent: 'center',

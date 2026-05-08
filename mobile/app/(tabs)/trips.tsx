@@ -100,6 +100,7 @@ function TripCard({ trip }: { trip: BookingTrip }) {
 }
 
 export default function Trips() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
@@ -107,7 +108,6 @@ export default function Trips() {
     queryKey: ['bookings', activeTab],
     queryFn: async () => {
       const res = await userApi.bookings(1, 20);
-      console.log(`[trips] API response status=${res.status} data=${JSON.stringify(res.data?.data?.map((b: any) => ({ id: b.bookingId, status: b.status, paymentStatus: b.paymentStatus })))}`);
       return res;
     },
     select: (res) => {
@@ -116,8 +116,15 @@ export default function Trips() {
       if (activeTab === 'upcoming') return all.filter((b) => b.status === 'CONFIRMED' || b.status === 'HOLD');
       return all.filter((b) => b.status === 'RETURNED' || b.status === 'CANCELLED');
     },
+    retry: (failureCount, err: any) => {
+      if (err?.response?.status === 400 || err?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
   });
-  if (error) console.error('[trips] query error:', error);
+
+  const errStatus = (error as any)?.response?.status;
+  const errMessage: string | undefined = (error as any)?.response?.data?.message;
+  const needsProfile = errStatus === 400 && /customer profile/i.test(errMessage ?? '');
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -144,6 +151,34 @@ export default function Trips() {
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
+      ) : needsProfile ? (
+        <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="person-circle-outline" size={32} color={Colors.ink4} />
+          </View>
+          <Text style={styles.emptyTitle}>Complete your profile</Text>
+          <Text style={styles.emptySubtitle}>
+            Add your details to start booking and view your trips here.
+          </Text>
+          <TouchableOpacity
+            style={styles.cta}
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ctaText}>Complete profile</Text>
+            <Ionicons name="arrow-forward" size={16} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+      ) : error ? (
+        <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="cloud-offline-outline" size={32} color={Colors.ink4} />
+          </View>
+          <Text style={styles.emptyTitle}>Couldn't load trips</Text>
+          <Text style={styles.emptySubtitle}>
+            {errMessage ?? 'Please check your connection and try again.'}
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={bookings ?? []}
@@ -286,5 +321,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.black,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    marginTop: 20,
+  },
+  ctaText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.white,
   },
 });

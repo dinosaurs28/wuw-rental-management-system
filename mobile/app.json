@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WUW Cars",
-    "slug": "wuw-cars",
+    "slug": "wuw",
     "version": "1.0.0",
     "scheme": "wuw",
     "orientation": "portrait",
@@ -9,14 +9,27 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#0a0a0a"
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#04040e"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wuw.cars"
     },
     "android": {
-      "package": "com.wuw.cars"
+      "package": "com.wuw.cars",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#04040e"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -24,6 +37,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-audio",
       [
         "expo-font",
         {
@@ -41,10 +55,26 @@
         {
           "cameraPermission": "WUW needs camera access to scan booking QR codes."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": false,
+            "networkSecurityConfig": "./android-network-security-config.xml"
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e96247c6-c93e-4d56-94d9-04431ef454ff"
+      }
+    },
+    "owner": "sushanshetty"
   }
 }
