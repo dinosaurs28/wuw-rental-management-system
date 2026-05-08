@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,6 +43,8 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
   const [uploading, setUploading] = useState<KycType | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const docsY = useRef(0);
 
   const { data: profile } = useQuery({
     queryKey: ['profile'],
@@ -150,32 +152,60 @@ export default function Profile() {
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.root}
         contentContainerStyle={[styles.inner, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header — avatar + name/email + edit chip */}
         <View style={styles.header}>
-          <View style={styles.avatarWrap}>
-            <Avatar seed={name} size={80} />
+          <Avatar seed={name} size={64} />
+          <View style={styles.headerInfo}>
+            <Text style={styles.name} numberOfLines={1}>{name}</Text>
+            <Text style={styles.email} numberOfLines={1}>{email}</Text>
           </View>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.email}>{email}</Text>
-
-          {/* Completion pill */}
-          <View style={styles.completionPill}>
-            <View style={[styles.completionDot, { backgroundColor: completedDocs > 0 ? '#059669' : Colors.orange }]} />
-            <Text style={styles.completionText}>
-              {completedDocs}/{DOC_TYPES.length} documents verified
-            </Text>
-          </View>
-
-          {/* Edit profile button */}
-          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/profile/edit')} activeOpacity={0.8}>
-            <Ionicons name="pencil-outline" size={14} color={Colors.ink2} />
-            <Text style={styles.editBtnText}>Edit profile</Text>
+          <TouchableOpacity
+            style={styles.editChip}
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            <Ionicons name="pencil" size={14} color={Colors.ink2} />
           </TouchableOpacity>
         </View>
+
+        {/* Verification status — tappable, scrolls to docs */}
+        <TouchableOpacity
+          style={styles.verifyCard}
+          onPress={() => scrollRef.current?.scrollTo({ y: docsY.current - 12, animated: true })}
+          activeOpacity={0.85}
+        >
+          <View
+            style={[
+              styles.verifyIcon,
+              { backgroundColor: completedDocs === DOC_TYPES.length ? '#ecfdf5' : '#ff6a1f12' },
+            ]}
+          >
+            <Ionicons
+              name={completedDocs === DOC_TYPES.length ? 'shield-checkmark' : 'shield-outline'}
+              size={18}
+              color={completedDocs === DOC_TYPES.length ? '#059669' : Colors.orange}
+            />
+          </View>
+          <View style={styles.verifyText}>
+            <Text style={styles.verifyTitle}>
+              {completedDocs === DOC_TYPES.length
+                ? 'Identity verified'
+                : `${completedDocs} of ${DOC_TYPES.length} documents verified`}
+            </Text>
+            <Text style={styles.verifySub}>
+              {completedDocs === DOC_TYPES.length
+                ? 'Your account is fully verified'
+                : 'Tap to upload remaining documents'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.ink3} />
+        </TouchableOpacity>
 
         {/* Account info card */}
         <Text style={styles.sectionTitle}>Account</Text>
@@ -189,7 +219,10 @@ export default function Profile() {
         </View>
 
         {/* KYC documents */}
-        <View style={styles.sectionRow}>
+        <View
+          style={styles.sectionRow}
+          onLayout={(e) => { docsY.current = e.nativeEvent.layout.y; }}
+        >
           <Text style={styles.sectionTitle}>Identity Documents</Text>
           {kycLoading && <ActivityIndicator size="small" color={Colors.orange} />}
         </View>
@@ -319,34 +352,67 @@ const styles = StyleSheet.create({
   inner: { paddingHorizontal: 20 },
 
   /* Header */
-  header: { alignItems: 'center', paddingVertical: 24 },
-  avatarWrap: { marginBottom: 14 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+  },
+  headerInfo: { flex: 1, minWidth: 0 },
   name: {
     fontFamily: Fonts.displayBold,
-    fontSize: 22,
+    fontSize: 20,
     color: Colors.ink,
     letterSpacing: -0.5,
   },
   email: {
     fontFamily: Fonts.body,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.ink3,
-    marginTop: 4,
+    marginTop: 2,
   },
-  completionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-    backgroundColor: Colors.surface,
+  editChip: {
+    width: 36,
+    height: 36,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  completionDot: { width: 7, height: 7, borderRadius: 4 },
-  completionText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink2 },
+
+  /* Verification status card */
+  verifyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    marginTop: 8,
+  },
+  verifyIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyText: { flex: 1, gap: 2 },
+  verifyTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.ink,
+  },
+  verifySub: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+  },
 
   /* Sections */
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 24 },
@@ -439,20 +505,6 @@ const styles = StyleSheet.create({
   },
   uploadBtnDisabled: { backgroundColor: Colors.ink4 },
   uploadBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.white },
-
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 14,
-    backgroundColor: Colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  editBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
 
   incompleteBanner: {
     flexDirection: 'row',

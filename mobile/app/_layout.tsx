@@ -2,6 +2,7 @@
 import '../lib/fetch-xhr-polyfill';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashScreen, Slot, useRouter, useSegments } from 'expo-router';
 import { Colors } from '../constants/colors';
 import { StatusBar } from 'expo-status-bar';
@@ -152,15 +153,17 @@ export default function RootLayout() {
   if (!fontsLoaded || !isLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <RootLayoutNav />
-      {showSplash && (
-        <SplashAnimation onDone={() => setShowSplash(false)} />
-      )}
-      {!showSplash && !isOnline && (
-        <NoInternetScreen onRetry={handleRetry} retrying={retrying} />
-      )}
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <RootLayoutNav />
+        {showSplash && (
+          <SplashAnimation onDone={() => setShowSplash(false)} />
+        )}
+        {!showSplash && !isOnline && (
+          <NoInternetScreen onRetry={handleRetry} retrying={retrying} />
+        )}
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

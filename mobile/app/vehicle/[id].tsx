@@ -241,13 +241,34 @@ export default function VehicleDetail() {
           )}
         </View>
 
-        {/* Stat pills */}
-        <View style={styles.statRow}>
-          <StatPill icon="layers-outline" label="Type" value={vehicle.category} />
-          {pd?.freeKmLimit ? <StatPill icon="speedometer-outline" label="Free km" value={`${pd.freeKmLimit} km/day`} /> : null}
-          {pd?.deposit ? <StatPill icon="shield-outline" label="Deposit" value={`₹${pd.deposit.toLocaleString('en-IN')}`} accent /> : null}
-          {pd?.extraKmRate ? <StatPill icon="navigate-outline" label="Extra km" value={`₹${pd.extraKmRate}/km`} /> : null}
-        </View>
+        {/* Stat strip */}
+        {(() => {
+          const cells = [
+            { icon: 'layers-outline' as IoniconName, label: 'Type', value: vehicle.category, accent: false, show: true },
+            { icon: 'speedometer-outline' as IoniconName, label: 'Free km', value: `${pd?.freeKmLimit ?? 0}/day`, accent: false, show: !!pd?.freeKmLimit },
+            { icon: 'shield-outline' as IoniconName, label: 'Deposit', value: `₹${pd?.deposit?.toLocaleString('en-IN') ?? 0}`, accent: true, show: !!pd?.deposit },
+            { icon: 'navigate-outline' as IoniconName, label: 'Extra km', value: `₹${pd?.extraKmRate ?? 0}/km`, accent: false, show: !!pd?.extraKmRate },
+          ].filter((c) => c.show);
+          return (
+            <View style={styles.statStrip}>
+              {cells.map((c, i) => (
+                <View
+                  key={c.label}
+                  style={[styles.statCell, i < cells.length - 1 && styles.statCellDivider]}
+                >
+                  <Ionicons name={c.icon} size={14} color={c.accent ? Colors.orange : Colors.ink3} />
+                  <Text style={styles.statCellLabel}>{c.label}</Text>
+                  <Text
+                    style={[styles.statCellValue, c.accent && styles.statCellValueAccent]}
+                    numberOfLines={1}
+                  >
+                    {c.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          );
+        })()}
 
         {/* Tabs */}
         <View style={styles.tabBar}>
@@ -381,18 +402,6 @@ export default function VehicleDetail() {
   );
 }
 
-function StatPill({ icon, label, value, accent }: { icon: IoniconName; label: string; value: string; accent?: boolean }) {
-  return (
-    <View style={[styles.statPill, accent && styles.statPillAccent]}>
-      <Ionicons name={icon} size={14} color={accent ? Colors.orange : Colors.ink3} />
-      <View>
-        <Text style={[styles.statPillLabel, accent && styles.statPillLabelAccent]}>{label}</Text>
-        <Text style={[styles.statPillValue, accent && styles.statPillValueAccent]}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
 function PriceLine({ label, value, bold, valueColor }: { label: string; value: string; bold?: boolean; valueColor?: string }) {
   return (
     <View style={styles.priceLine}>
@@ -508,22 +517,41 @@ const styles = StyleSheet.create({
   availText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#2d9d61' },
   availTextRed: { color: '#dc3545' },
 
-  // Stat pills
-  statRow: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: 16, paddingTop: 14, gap: 10,
+  // Stat strip
+  statStrip: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    overflow: 'hidden',
   },
-  statPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderWidth: 1, borderColor: Colors.hairline,
+  statCell: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: 'flex-start',
+    gap: 4,
   },
-  statPillAccent: { backgroundColor: '#fff5f0', borderColor: '#ff6a1f25' },
-  statPillLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.ink3, letterSpacing: 0.2 },
-  statPillLabelAccent: { color: '#ff6a1f99' },
-  statPillValue: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink, marginTop: 1 },
-  statPillValueAccent: { color: Colors.orange },
+  statCellDivider: {
+    borderRightWidth: 1,
+    borderRightColor: Colors.hairline,
+  },
+  statCellLabel: {
+    fontFamily: Fonts.body,
+    fontSize: 10,
+    color: Colors.ink3,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  statCellValue: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.ink,
+  },
+  statCellValueAccent: { color: Colors.orange },
 
   // Tabs
   tabBar: {

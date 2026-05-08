@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi, userApi, api } from '../../lib/api';
+import SwipeButton from '../../components/ui/SwipeButton';
 import type { VehicleDetail, KycDocument } from '../../types/api';
 
 function DateInput({
@@ -57,6 +58,7 @@ export default function Checkout() {
   const [endDate] = useState(() => end ? new Date(end) : new Date(Date.now() + 2 * 86400 * 1000));
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [swipeReset, setSwipeReset] = useState(0);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -201,6 +203,7 @@ export default function Checkout() {
         'Booking failed',
         err.response?.data?.message ?? 'Unable to complete booking. Please try again.',
       );
+      setSwipeReset((n) => n + 1);
     } finally {
       setLoading(false);
       setVerifying(false);
@@ -250,19 +253,34 @@ export default function Checkout() {
         {/* Car summary */}
         <View style={styles.section}>
           <View style={styles.carRow}>
-            {vehicle.images?.[0] ? (
-              <Image source={{ uri: vehicle.images[0] }} style={styles.carThumb} resizeMode="cover" />
-            ) : (
-              <View style={[styles.carThumb, styles.carThumbPlaceholder]} />
-            )}
-            <View style={styles.carInfo}>
-              <Text style={styles.carName}>
-                {vehicle.make} {vehicle.model}
-              </Text>
-              <Text style={styles.carMeta}>{vehicle.category} · {vehicle.branch}</Text>
+            <View style={styles.carThumbWrap}>
+              {vehicle.images?.[0] ? (
+                <Image source={{ uri: vehicle.images[0] }} style={styles.carThumb} resizeMode="contain" />
+              ) : (
+                <Ionicons name="car-sport-outline" size={28} color="rgba(0,0,0,0.18)" />
+              )}
             </View>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.editLink}>Edit</Text>
+            <View style={styles.carInfo}>
+              <Text style={styles.carMake} numberOfLines={1}>
+                {vehicle.make?.toUpperCase()}
+              </Text>
+              <Text style={styles.carModel} numberOfLines={1}>
+                {vehicle.model}
+              </Text>
+              <View style={styles.carMetaRow}>
+                <Ionicons name="location-outline" size={11} color={Colors.ink3} />
+                <Text style={styles.carMeta} numberOfLines={1}>
+                  {vehicle.branch} · {vehicle.category}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => router.back()}
+              hitSlop={8}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="pencil" size={14} color={Colors.ink2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -277,14 +295,14 @@ export default function Checkout() {
           <DateInput label="Return" value={fmt(endDate)} />
         </View>
 
-        {/* KYC status */}
-        <View style={[styles.kycBanner, kyc && kyc.length > 0 ? styles.kycOk : styles.kycMissing]}>
-          <Text style={[styles.kycText, kyc && kyc.length > 0 ? styles.kycTextOk : styles.kycTextMissing]}>
-            {kyc && kyc.length > 0
-              ? `Identity verified (${kyc.length} doc${kyc.length > 1 ? 's' : ''})`
-              : 'Upload a driving license to continue'}
-          </Text>
-        </View>
+        {/* KYC status — only shown when verified (the bottom CTA handles the missing case) */}
+        {kyc && kyc.length > 0 ? (
+          <View style={[styles.kycBanner, styles.kycOk]}>
+            <Text style={[styles.kycText, styles.kycTextOk]}>
+              Identity verified ({kyc.length} doc{kyc.length > 1 ? 's' : ''})
+            </Text>
+          </View>
+        ) : null}
 
         {/* Price breakdown */}
         <Text style={styles.sectionTitle}>Price breakdown</Text>
@@ -309,27 +327,34 @@ export default function Checkout() {
 
       {/* CTA */}
       <View style={[styles.cta, { paddingBottom: insets.bottom + 16 }]}>
-        <View>
+        <View style={styles.ctaSummary}>
+          <Text style={styles.ctaTotalNote}>Total · {days} day{days !== 1 ? 's' : ''}</Text>
           <Text style={styles.ctaTotal}>₹{total.toLocaleString('en-IN')}</Text>
-          <Text style={styles.ctaTotalNote}>total · {days}d</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.ctaBtn, loading && styles.ctaBtnLoading]}
-          onPress={handleBook}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          {loading ? (
-            <View style={styles.ctaBtnInner}>
-              <ActivityIndicator color={Colors.white} size="small" />
-              {verifying && (
-                <Text style={styles.ctaBtnVerifying}>Verifying payment…</Text>
-              )}
+        {!kyc || kyc.length === 0 ? (
+          <TouchableOpacity
+            style={styles.uploadBlocker}
+            onPress={() => router.push('/(tabs)/profile')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.uploadBlockerIcon}>
+              <Ionicons name="document-text-outline" size={20} color="#856404" />
             </View>
-          ) : (
-            <Text style={styles.ctaBtnText}>Confirm & pay →</Text>
-          )}
-        </TouchableOpacity>
+            <View style={styles.uploadBlockerText}>
+              <Text style={styles.uploadBlockerTitle}>Upload driving license</Text>
+              <Text style={styles.uploadBlockerSub}>Required to confirm your booking</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#856404" />
+          </TouchableOpacity>
+        ) : (
+          <SwipeButton
+            label="Slide to confirm & pay"
+            loadingLabel={verifying ? 'Verifying payment…' : 'Processing…'}
+            loading={loading}
+            onComplete={handleBook}
+            resetSignal={swipeReset}
+          />
+        )}
       </View>
     </View>
   );
@@ -366,22 +391,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.hairline,
   },
-  carRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  carThumb: {
-    width: 64,
-    height: 48,
-    borderRadius: 10,
+  carRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  carThumbWrap: {
+    width: 88,
+    height: 72,
+    borderRadius: 14,
     overflow: 'hidden',
+    backgroundColor: '#f6f6f4',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  carThumbPlaceholder: {
-    backgroundColor: Colors.surface,
+  carThumb: { width: '100%', height: '100%' },
+  carInfo: { flex: 1, gap: 2 },
+  carMake: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 9.5,
+    color: Colors.ink3,
+    letterSpacing: 1.4,
+  },
+  carModel: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 17,
+    color: Colors.ink,
+    letterSpacing: -0.4,
+    lineHeight: 21,
+  },
+  carMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  carMeta: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.ink3,
+    flexShrink: 1,
+  },
+  editBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.hairline,
   },
-  carInfo: { flex: 1 },
-  carName: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
-  carMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2 },
-  editLink: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange },
   sectionTitle: {
     fontFamily: Fonts.displayBold,
     fontSize: 16,
@@ -421,10 +477,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   kycOk: { backgroundColor: '#d4edda', borderColor: '#c3e6cb' },
-  kycMissing: { backgroundColor: '#fff3cd', borderColor: '#ffc107' },
   kycText: { fontFamily: Fonts.bodyMedium, fontSize: 13 },
   kycTextOk: { color: '#1a7035' },
-  kycTextMissing: { color: '#856404' },
   priceCard: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
@@ -463,11 +517,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.hairline,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
+    gap: 14,
+  },
+  ctaSummary: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
   },
   ctaTotal: {
     fontFamily: Fonts.displayBold,
@@ -475,32 +532,44 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     letterSpacing: -0.5,
   },
-  ctaTotalNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
-  ctaBtn: {
-    backgroundColor: Colors.orange,
-    borderRadius: 999,
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-    minWidth: 160,
+  ctaTotalNote: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.ink3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+  },
+  uploadBlocker: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffc107',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  ctaBtnLoading: { opacity: 0.8 },
-  ctaBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ctaBtnVerifying: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 13,
-    color: Colors.white,
-    opacity: 0.9,
+  uploadBlockerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#ffe299',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ctaBtnText: {
+  uploadBlockerText: { flex: 1 },
+  uploadBlockerTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 15,
-    color: Colors.white,
-    letterSpacing: 0.2,
+    color: '#856404',
+    letterSpacing: 0.1,
+  },
+  uploadBlockerSub: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: '#856404',
+    opacity: 0.85,
+    marginTop: 2,
   },
 });

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,13 +16,9 @@ import { vehiclesApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import CarCard from '../../components/cars/CarCard';
 import VehicleQuickView from '../../components/cars/VehicleQuickView';
+import BranchPicker, { type Branch } from '../../components/branch/BranchPicker';
 import Avatar from '../../components/ui/Avatar';
 import type { Vehicle } from '../../types/api';
-
-interface Branch {
-  publicId: string;
-  name: string;
-}
 
 
 function normalizeGroup(g: any): Vehicle {
@@ -50,6 +45,7 @@ export default function Browse() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
+  const [branchPickerOpen, setBranchPickerOpen] = useState(false);
 
   const { data: branches, isLoading: branchesLoading } = useQuery<Branch[]>({
     queryKey: ['branches'],
@@ -102,13 +98,33 @@ export default function Browse() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Hi, {firstName}</Text>
           <Text style={styles.greetingSub}>Find your perfect drive</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.8}>
-          <Avatar seed={user?.name ?? firstName} size={42} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {branchesLoading ? (
+            <View style={styles.branchPillLoading}>
+              <ActivityIndicator size="small" color={Colors.ink3} />
+            </View>
+          ) : branches && branches.length > 0 ? (
+            <TouchableOpacity
+              style={styles.branchPill}
+              onPress={() => setBranchPickerOpen(true)}
+              activeOpacity={0.8}
+              hitSlop={6}
+            >
+              <Ionicons name="location-outline" size={13} color={Colors.ink2} />
+              <Text style={styles.branchPillText} numberOfLines={1}>
+                {selectedBranch?.name ?? 'Branch'}
+              </Text>
+              <Ionicons name="chevron-down" size={13} color={Colors.ink3} />
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.8}>
+            <Avatar seed={user?.name ?? firstName} size={42} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search bar */}
@@ -126,44 +142,6 @@ export default function Browse() {
         </View>
       </TouchableOpacity>
 
-      {/* Branch selector */}
-      {branchesLoading ? (
-        <View style={styles.branchLoaderRow}>
-          <ActivityIndicator size="small" color={Colors.orange} />
-        </View>
-      ) : branches && branches.length > 0 ? (
-        <View style={styles.branchSection}>
-          <View style={styles.branchLabelRow}>
-            <Ionicons name="location-outline" size={13} color={Colors.ink3} />
-            <Text style={styles.branchLabel}>Select Branch</Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.branchChips}
-          >
-            {branches.map((branch) => {
-              const active = selectedBranch?.publicId === branch.publicId;
-              return (
-                <TouchableOpacity
-                  key={branch.publicId}
-                  style={[styles.branchChip, active && styles.branchChipActive]}
-                  onPress={() => setSelectedBranch(active ? null : branch)}
-                  activeOpacity={0.8}
-                >
-                  {active && (
-                    <Ionicons name="checkmark-circle" size={13} color={Colors.white} />
-                  )}
-                  <Text style={[styles.branchChipText, active && styles.branchChipTextActive]}>
-                    {branch.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : null}
-
       {/* No branch selected — prompt */}
       {!selectedBranch ? (
         <View style={styles.noBranchState}>
@@ -172,12 +150,16 @@ export default function Browse() {
           </View>
           <Text style={styles.noBranchTitle}>Choose a branch</Text>
           <Text style={styles.noBranchSub}>
-            Select a branch above to see available vehicles near you.
+            Tap the branch chip in the top right to choose your location.
           </Text>
         </View>
       ) : (
         <>
-          {/* Category chips — always show All; show others once vehicles loaded */}
+          {/* Vehicle type filter */}
+          <View style={styles.filterLabelRow}>
+            <Ionicons name="car-sport-outline" size={13} color={Colors.ink3} />
+            <Text style={styles.filterLabel}>Vehicle Type</Text>
+          </View>
           <View style={styles.chips}>
             <TouchableOpacity
               style={[styles.chip, selectedCategory === null && styles.chipActive]}
@@ -250,6 +232,15 @@ export default function Browse() {
         vehicle={quickViewVehicle}
         onClose={() => setQuickViewVehicle(null)}
       />
+
+      {/* Branch picker bottom sheet */}
+      <BranchPicker
+        visible={branchPickerOpen}
+        branches={branches ?? []}
+        selectedId={selectedBranch?.publicId ?? null}
+        onSelect={(b) => setSelectedBranch(b)}
+        onClose={() => setBranchPickerOpen(false)}
+      />
     </View>
   );
 }
@@ -259,10 +250,41 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
+    gap: 12,
+  },
+  headerLeft: { flex: 1, minWidth: 0 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  branchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: 140,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  branchPillText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 13,
+    color: Colors.ink,
+    flexShrink: 1,
+  },
+  branchPillLoading: {
+    width: 80,
+    height: 34,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   greeting: {
     fontFamily: Fonts.displayBold,
@@ -314,45 +336,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Branch selector
-  branchLoaderRow: { paddingVertical: 8, alignItems: 'center' },
-  branchSection: { marginBottom: 4 },
-  branchLabelRow: {
+  // Filter label (shared by Vehicle Type, future filters)
+  filterLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 20,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 8,
   },
-  branchLabel: {
+  filterLabel: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
     color: Colors.ink3,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  branchChips: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
-  branchChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 999,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  branchChipActive: {
-    backgroundColor: Colors.ink,
-    borderColor: Colors.ink,
-  },
-  branchChipText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 13,
-    color: Colors.ink2,
-  },
-  branchChipTextActive: { color: Colors.white },
 
   // No branch state
   noBranchState: {

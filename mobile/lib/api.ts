@@ -149,6 +149,51 @@ export const employeeApi = {
     returnImageIds?: string[];
     requireManagerConfirmation?: boolean;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
+  // Return-flow: pickup-time reference photos (shown read-only at return)
+  getPickupCaptures: (bookingId: string) =>
+    api.get(`/api/employee/return/${bookingId}/pickup-captures`),
+  // Return-flow: payment session (modern flow)
+  getReturnSession: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/return/session`),
+  computeReturnSession: (bookingId: string, body: {
+    endOdometer: number;
+    returnFuelLevel?: string;
+    extraKmCharge?: number;
+    fuelCharge?: number;
+    fastagAmount?: number;
+    fastagNotes?: string;
+    otherCharges?: { label: string; amount: number }[];
+    returnImageIds?: string[];
+  }) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
+  // Return-flow: payment / refund recording
+  recordPayment: (sessionPublicId: string, body: {
+    method: 'CASH' | 'ONLINE';
+    amount: number;
+    idempotencyKey: string;
+    notes?: string;
+    onlineTransactionRef?: string;
+    onlineGateway?: string;
+  }) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
+  recordRefund: (sessionPublicId: string, body: {
+    method: 'CASH' | 'ONLINE';
+    amount: number;
+    idempotencyKey: string;
+    notes?: string;
+  }) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
+  // Return-flow: damage report
+  uploadDamageImage: (formData: FormData) =>
+    api.post('/api/employee/damage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  reportDamage: (body: {
+    bookingId: string;
+    odo: number;
+    fuelLevel: number;
+    severity: string;
+    damageImageIds: string[];
+    notes: Record<string, any>;
+    returnImageIds: string[];
+  }) => api.post('/api/employee/damage/report', body),
   getBookingKyc: (bookingId: string) =>
     api.get(`/api/employee/kyc/${bookingId}`),
   verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>

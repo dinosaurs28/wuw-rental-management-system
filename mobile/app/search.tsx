@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -40,14 +40,21 @@ export default function Search() {
   const insets = useSafeAreaInsets();
 
   const [searchText, setSearchText] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [debouncedTerm, setDebouncedTerm] = useState('');
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
 
-  const { data: results, isLoading } = useQuery({
-    queryKey: ['search', searchText],
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTerm(searchText.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  const canSearch = debouncedTerm.length >= 3;
+
+  const { data: results, isFetching } = useQuery({
+    queryKey: ['search', debouncedTerm],
     queryFn: () =>
       vehiclesApi.list({
-        search: searchText || undefined,
+        search: debouncedTerm,
         limit: 40,
       }),
     select: (res) => {
@@ -62,8 +69,13 @@ export default function Search() {
         })
         .map(normalizeGroup);
     },
-    enabled: submitted,
+    enabled: canSearch,
+    staleTime: 30_000,
   });
+
+  const typingButTooShort = searchText.trim().length > 0 && searchText.trim().length < 3;
+  const showLoader = canSearch && isFetching;
+  const showResults = canSearch && !isFetching;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -81,28 +93,33 @@ export default function Search() {
             value={searchText}
             onChangeText={setSearchText}
             returnKeyType="search"
-            onSubmitEditing={() => setSubmitted(true)}
             autoFocus
+            autoCorrect={false}
+            autoCapitalize="none"
           />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearchText(''); setSubmitted(false); }} hitSlop={8}>
+          {showLoader ? (
+            <ActivityIndicator size="small" color={Colors.ink3} />
+          ) : searchText.length > 0 ? (
+            <TouchableOpacity onPress={() => setSearchText('')} hitSlop={8}>
               <Ionicons name="close-circle" size={17} color={Colors.ink4} />
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </View>
 
       {/* Results */}
-      {!submitted ? (
+      {!canSearch ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Find your car</Text>
+          <Text style={styles.emptyTitle}>
+            {typingButTooShort ? 'Keep typing…' : 'Find your car'}
+          </Text>
           <Text style={styles.emptySubtitle}>
-            Search by make or model and press search.
+            {typingButTooShort
+              ? 'Type at least 3 letters to search.'
+              : 'Search by make or model — results appear as you type.'}
           </Text>
         </View>
-      ) : isLoading ? (
-        <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
-      ) : (
+      ) : showResults ? (
         <>
           <Text style={styles.resultCount}>
             {results?.length ?? 0} result{results?.length !== 1 ? 's' : ''}
@@ -114,6 +131,7 @@ export default function Search() {
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.grid}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <View style={styles.noResults}>
                 <Text style={styles.noResultsText}>No vehicles match your search.</Text>
@@ -127,7 +145,7 @@ export default function Search() {
             )}
           />
         </>
-      )}
+      ) : null}
 
       <VehicleQuickView
         vehicle={quickViewVehicle}
