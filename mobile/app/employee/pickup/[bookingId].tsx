@@ -74,6 +74,15 @@ const FUEL_LEVELS: { label: string; value: number; flag: FuelLevel; icon: Ionico
   { label: 'Full',  value: 100, flag: 'FULL',          icon: 'battery-full-outline' },
 ];
 
+// Convert backend slot key like "left_side" / "fuel_gauge" to "Left Side" / "Fuel Gauge".
+function humanizeSlotName(s: string): string {
+  return s
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -618,92 +627,95 @@ export default function PickupScreen() {
 
           {/* KYC */}
           <SectionHeader title="Identity Document" />
-          <View style={styles.card}>
-            {kycLoading ? (
+          {kycLoading ? (
+            <View style={styles.card}>
               <ActivityIndicator size="small" color={Colors.orange} />
-            ) : kycData?.kyc?.length ? (
-              kycData.kyc.map((doc) => {
-                const approved = doc.status === 'APPROVED';
-                const rejected = doc.status === 'REJECTED';
-                return (
-                  <View key={doc.publicId}>
-                    <View style={styles.kycRow}>
-                      <View style={styles.kycRowLeft}>
-                        <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
-                          <Ionicons
-                            name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : 'card-outline'}
-                            size={20}
-                            color={approved ? '#10b981' : rejected ? '#e53e3e' : Colors.ink3}
-                          />
-                        </View>
-                        <View>
-                          <Text style={styles.kycType}>{doc.type.replace(/_/g, ' ')}</Text>
-                          <Text style={[styles.kycStatus, approved && { color: '#10b981' }, rejected && { color: '#e53e3e' }]}>
-                            {doc.status}
-                          </Text>
-                        </View>
+            </View>
+          ) : kycData?.kyc?.length ? (
+            kycData.kyc.map((doc) => {
+              const approved = doc.status === 'APPROVED';
+              const rejected = doc.status === 'REJECTED';
+              const expanded = !!kycExpanded[doc.publicId];
+              return (
+                <View
+                  key={doc.publicId}
+                  style={[
+                    styles.kycDocCard,
+                    approved && styles.kycDocCardApproved,
+                    rejected && styles.kycDocCardRejected,
+                  ]}
+                >
+                  <View style={styles.kycRow}>
+                    <View style={styles.kycRowLeft}>
+                      <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
+                        <Ionicons
+                          name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : 'card-outline'}
+                          size={20}
+                          color={approved ? '#10b981' : rejected ? '#e53e3e' : Colors.ink3}
+                        />
                       </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.kycType}>{doc.type.replace(/_/g, ' ')}</Text>
+                        <Text style={[styles.kycStatus, approved && { color: '#10b981' }, rejected && { color: '#e53e3e' }]}>
+                          {approved ? 'Verified' : rejected ? 'Rejected' : 'Pending review'}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.kycViewBtn}
+                      onPress={() => setKycExpanded((v) => ({ ...v, [doc.publicId]: !v[doc.publicId] }))}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name={expanded ? 'eye-off-outline' : 'eye-outline'} size={14} color={Colors.ink2} />
+                      <Text style={styles.kycViewBtnText}>{expanded ? 'Hide' : 'View'}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {expanded && (
+                    <View style={styles.kycImageWrap}>
+                      <Image source={{ uri: doc.file.url }} style={styles.kycImage} resizeMode="contain" />
+                    </View>
+                  )}
+
+                  {!approved && !rejected && (
+                    <View style={styles.kycActions}>
                       <TouchableOpacity
-                        style={styles.kycViewBtn}
-                        onPress={() => setKycExpanded((v) => ({ ...v, [doc.publicId]: !v[doc.publicId] }))}
+                        style={[styles.kycActionBtn, styles.kycRejectBtn]}
+                        onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'REJECTED' })}
+                        disabled={kycMutation.isPending}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.kycViewBtnText}>
-                          {kycExpanded[doc.publicId] ? 'Hide' : 'View'}
-                        </Text>
+                        <Ionicons name="close" size={14} color="#e53e3e" />
+                        <Text style={[styles.kycActionText, { color: '#e53e3e' }]}>Reject</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.kycActionBtn, styles.kycApproveBtn]}
+                        onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'APPROVED' })}
+                        disabled={kycMutation.isPending}
+                        activeOpacity={0.8}
+                      >
+                        {kycMutation.isPending ? (
+                          <ActivityIndicator size="small" color="#10b981" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark" size={14} color="#10b981" />
+                            <Text style={[styles.kycActionText, { color: '#10b981' }]}>Approve</Text>
+                          </>
+                        )}
                       </TouchableOpacity>
                     </View>
-
-                    {kycExpanded[doc.publicId] && (
-                      <View style={styles.kycImageWrap}>
-                        <Image source={{ uri: doc.file.url }} style={styles.kycImage} resizeMode="contain" />
-                      </View>
-                    )}
-
-                    {!approved && !rejected && (
-                      <View style={styles.kycActions}>
-                        <TouchableOpacity
-                          style={[styles.kycActionBtn, styles.kycRejectBtn]}
-                          onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'REJECTED' })}
-                          disabled={kycMutation.isPending}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="close" size={14} color="#e53e3e" />
-                          <Text style={[styles.kycActionText, { color: '#e53e3e' }]}>Reject</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.kycActionBtn, styles.kycApproveBtn]}
-                          onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'APPROVED' })}
-                          disabled={kycMutation.isPending}
-                          activeOpacity={0.8}
-                        >
-                          {kycMutation.isPending ? (
-                            <ActivityIndicator size="small" color="#10b981" />
-                          ) : (
-                            <>
-                              <Ionicons name="checkmark" size={14} color="#10b981" />
-                              <Text style={[styles.kycActionText, { color: '#10b981' }]}>Approve</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    {approved && (
-                      <View style={styles.kycApprovedBanner}>
-                        <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                        <Text style={styles.kycApprovedBannerText}>Document verified</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })
-            ) : (
+                  )}
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.card}>
               <View style={styles.kycEmpty}>
                 <Ionicons name="document-outline" size={20} color={Colors.ink4} />
                 <Text style={styles.kycEmptyText}>No document linked to this booking</Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Vehicle */}
           <SectionHeader title="Vehicle" />
@@ -787,35 +799,38 @@ export default function PickupScreen() {
             icon="camera-outline"
           >
             {captureConfig ? (
-              <View style={{ gap: 14 }}>
-                {captureConfig.fields.map((field) => {
-                  const photo = captureSlots[field.name] ?? null;
-                  return (
-                    <View key={field.name} style={styles.slotRow}>
-                      <View style={styles.slotHeader}>
-                        <Text style={styles.slotLabel}>
-                          {field.name}
-                          {field.required ? <Text style={styles.slotRequired}>  *</Text> : null}
-                        </Text>
-                        {photo ? (
-                          <View style={styles.slotDoneBadge}>
-                            <Ionicons name="checkmark" size={11} color={Colors.white} />
-                          </View>
-                        ) : null}
+              <View>
+                <View style={styles.slotGrid}>
+                  {captureConfig.fields.map((field) => {
+                    const photo = captureSlots[field.name] ?? null;
+                    return (
+                      <View key={field.name} style={styles.slotCell}>
+                        <View style={styles.slotHeader}>
+                          <Text style={styles.slotLabel} numberOfLines={1}>
+                            {humanizeSlotName(field.name)}
+                            {field.required ? <Text style={styles.slotRequired}> *</Text> : null}
+                          </Text>
+                          {photo ? (
+                            <View style={styles.slotDoneBadge}>
+                              <Ionicons name="checkmark" size={10} color={Colors.white} />
+                            </View>
+                          ) : null}
+                        </View>
+                        <PhotoUploader
+                          photos={photo ? [photo] : []}
+                          onUpload={(form) => uploadSlotPhoto(field.name, form)}
+                          onRemove={(p) => removeSlotPhoto(field.name, p)}
+                          fileNamePrefix={`pickup_${field.name.replace(/\s+/g, '_')}`}
+                          maxPhotos={1}
+                          disabled={!!session}
+                          tileSize="fill"
+                        />
                       </View>
-                      <PhotoUploader
-                        photos={photo ? [photo] : []}
-                        onUpload={(form) => uploadSlotPhoto(field.name, form)}
-                        onRemove={(p) => removeSlotPhoto(field.name, p)}
-                        fileNamePrefix={`pickup_${field.name.replace(/\s+/g, '_')}`}
-                        maxPhotos={1}
-                        disabled={!!session}
-                      />
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
                 {!requiredPhotosOk && (
-                  <View style={styles.blockerBanner}>
+                  <View style={[styles.blockerBanner, { marginTop: 14 }]}>
                     <Ionicons name="alert-circle" size={16} color="#856404" />
                     <Text style={styles.blockerText}>
                       Capture all required photos before starting payment.
@@ -1343,12 +1358,26 @@ const styles = StyleSheet.create({
   toggleBtnTextActive: { color: Colors.white },
 
   // Capture-config slots
-  slotRow: { gap: 8 },
-  slotHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  slotLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink },
+  slotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  slotCell: {
+    width: '47%',
+    gap: 8,
+  },
+  slotHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: 6,
+  },
+  slotLabel: {
+    fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.ink,
+    flex: 1, flexShrink: 1,
+  },
   slotRequired: { color: '#dc2626' },
   slotDoneBadge: {
-    width: 18, height: 18, borderRadius: 9,
+    width: 16, height: 16, borderRadius: 999,
     backgroundColor: '#10b981',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -1420,8 +1449,24 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3 },
 
   // KYC
-  kycRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  kycRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  kycDocCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    padding: 14,
+    marginBottom: 8,
+  },
+  kycDocCardApproved: {
+    backgroundColor: '#10b98108',
+    borderColor: '#10b98130',
+  },
+  kycDocCardRejected: {
+    backgroundColor: '#e53e3e08',
+    borderColor: '#e53e3e30',
+  },
+  kycRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  kycRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   kycIcon: {
     width: 40, height: 40, borderRadius: 12,
     backgroundColor: Colors.bg,
@@ -1433,7 +1478,8 @@ const styles = StyleSheet.create({
   kycType: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
   kycStatus: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 1 },
   kycViewBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: 10, backgroundColor: Colors.bg,
     borderWidth: 1, borderColor: Colors.hairline,
   },
@@ -1444,21 +1490,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   kycImage: { width: '100%', height: 220 },
-  kycActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  kycActions: {
+    flexDirection: 'row', gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
   kycActionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 10, borderRadius: 12, borderWidth: 1,
+    paddingVertical: 10, borderRadius: 10, borderWidth: 1,
   },
   kycApproveBtn: { backgroundColor: '#10b98110', borderColor: '#10b98130' },
   kycRejectBtn: { backgroundColor: '#e53e3e10', borderColor: '#e53e3e30' },
   kycActionText: { fontFamily: Fonts.bodySemiBold, fontSize: 13 },
-  kycApprovedBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    marginTop: 10, backgroundColor: '#10b98110',
-    borderRadius: 10, padding: 10,
-    borderWidth: 1, borderColor: '#10b98130',
-  },
-  kycApprovedBannerText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#10b981' },
   kycEmpty: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   kycEmptyText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
 

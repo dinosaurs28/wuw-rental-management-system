@@ -27,6 +27,8 @@ interface Props {
   fileNamePrefix?: string;
   maxPhotos?: number;
   disabled?: boolean;
+  /** Tile size in px. Pass `'fill'` for tiles to fill their container's width as a square. */
+  tileSize?: number | 'fill';
 }
 
 export default function PhotoUploader({
@@ -36,6 +38,7 @@ export default function PhotoUploader({
   fileNamePrefix = 'photo',
   maxPhotos = 8,
   disabled = false,
+  tileSize = 84,
 }: Props) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<UploadedPhoto | null>(null);
@@ -101,13 +104,19 @@ export default function PhotoUploader({
     ]);
   };
 
+  const fill = tileSize === 'fill';
+  const tileStyle = fill
+    ? { width: '100%' as const, aspectRatio: 1 }
+    : { width: tileSize as number, height: tileSize as number };
+  const gridStyle = fill ? styles.gridFill : styles.grid;
+
   return (
     <View>
-      <View style={styles.grid}>
+      <View style={gridStyle}>
         {photos.map((p) => (
           <TouchableOpacity
             key={p.publicId}
-            style={styles.thumbWrap}
+            style={[styles.thumbWrap, tileStyle]}
             onPress={() => setPreview(p)}
             activeOpacity={0.85}
           >
@@ -129,7 +138,7 @@ export default function PhotoUploader({
 
         {!reachedMax && !disabled && (
           <TouchableOpacity
-            style={[styles.thumbWrap, styles.addTile]}
+            style={[styles.thumbWrap, styles.addTile, tileStyle]}
             onPress={promptSource}
             disabled={uploading}
             activeOpacity={0.7}
@@ -180,6 +189,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  gridFill: {
+    width: '100%',
   },
   thumbWrap: {
     width: TILE,

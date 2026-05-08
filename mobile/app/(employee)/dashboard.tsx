@@ -330,10 +330,15 @@ export default function EmployeeDashboard() {
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionsGrid}>
         <QuickAction
+          label="New Booking"
+          icon="add-circle-outline"
+          onPress={() => router.push('/employee/booking/customer-select' as any)}
+          accent
+        />
+        <QuickAction
           label="Pickup Queue"
           icon="arrow-up-circle-outline"
           onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'pickups', date: selectedDateIso } })}
-          accent
         />
         <QuickAction
           label="Return Queue"

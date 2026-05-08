@@ -4,12 +4,14 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -102,6 +104,8 @@ export default function ReturnProcess() {
   const [session, setSession] = useState<ReturnSessionResponse['session'] | null>(null);
 
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [hasDamage, setHasDamage] = useState<boolean | null>(null);
   const [damageEntries, setDamageEntries] = useState<DamageEntry[]>([]);
@@ -398,6 +402,11 @@ export default function ReturnProcess() {
   const damageZones = isTwoWheeler ? TWO_WHEELER_DAMAGE_ZONES : CAR_DAMAGE_ZONES;
   const netPayable = session ? parseFloat(session.netPayable) : 0;
   const showPayment = computed && session && session.status !== 'COMPLETED' && Math.abs(netPayable) > 0;
+  const showZeroBalance = computed && !!session && Math.abs(netPayable) === 0 && session.status !== 'COMPLETED';
+  const showBreakdown = computed && !!breakdown;
+  // Damage section's visible step number depends on which conditional
+  // sections above it are currently rendered. Sections 1-3 are always shown.
+  const damageStepNumber = 4 + (showBreakdown ? 1 : 0) + (showPayment || showZeroBalance ? 1 : 0);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -485,7 +494,17 @@ export default function ReturnProcess() {
             {pickupCaptures && pickupCaptures.length > 0 ? (
               <View style={styles.refGrid}>
                 {pickupCaptures.map((p) => (
-                  <Image key={p.publicId} source={{ uri: p.url }} style={styles.refThumb} />
+                  <TouchableOpacity
+                    key={p.publicId}
+                    style={styles.refThumbWrap}
+                    onPress={() => setPreviewUrl(p.url)}
+                    activeOpacity={0.85}
+                  >
+                    <Image source={{ uri: p.url }} style={styles.refThumb} />
+                    <View style={styles.refExpandBadge}>
+                      <Ionicons name="expand-outline" size={12} color={Colors.white} />
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             ) : (
@@ -515,6 +534,7 @@ export default function ReturnProcess() {
             title="Charge details"
             subtitle="Capture odometer, fuel, and any extra charges"
             state={computed ? 'completed' : photosOk ? 'active' : 'locked'}
+            lockedHint="Add at least one return photo above to unlock"
           >
             <Text style={styles.fieldLabel}>End odometer (km)</Text>
             <TextInput
@@ -765,9 +785,9 @@ export default function ReturnProcess() {
             </SectionCard>
           ) : null}
 
-          {/* ─────────── Section 6: Damage report ─────────── */}
+          {/* ─────────── Section 6: Damage report (number adapts to visible sections above) ─ */}
           <SectionCard
-            step={6}
+            step={damageStepNumber}
             title="Vehicle condition"
             subtitle={
               damageSubmitted
@@ -897,6 +917,31 @@ export default function ReturnProcess() {
         isRefund={!!session?.isRefund}
         onSubmit={submitPayment}
       />
+
+      {/* Photo lightbox */}
+      <Modal
+        visible={!!previewUrl}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setPreviewUrl(null)}
+      >
+        <View style={styles.lightboxOverlay}>
+          <TouchableWithoutFeedback onPress={() => setPreviewUrl(null)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          {previewUrl ? (
+            <Image source={{ uri: previewUrl }} style={styles.lightboxImage} resizeMode="contain" />
+          ) : null}
+          <TouchableOpacity
+            style={styles.lightboxClose}
+            onPress={() => setPreviewUrl(null)}
+            hitSlop={10}
+          >
+            <Ionicons name="close" size={22} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -982,8 +1027,53 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.ink3 },
   infoValue: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink },
 
-  refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  refThumb: { width: 78, height: 78, borderRadius: 10, backgroundColor: '#f0f0ee' },
+  refGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  refThumbWrap: {
+    width: '31%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0ee',
+    position: 'relative',
+  },
+  refThumb: { width: '100%', height: '100%' },
+  refExpandBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxImage: {
+    width: '94%',
+    height: '76%',
+  },
+  lightboxClose: {
+    position: 'absolute',
+    top: 50,
+    right: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   muted: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.ink3 },
 
   fieldLabel: {

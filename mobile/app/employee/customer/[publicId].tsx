@@ -144,6 +144,20 @@ export default function CustomerDetailScreen() {
               </View>
             </View>
           )}
+
+          <TouchableOpacity
+            style={styles.startBookingBtn}
+            onPress={() =>
+              router.push(
+                `/employee/booking/customer-select?customerPublicId=${publicId}` as any,
+              )
+            }
+            activeOpacity={0.9}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={Colors.white} />
+            <Text style={styles.startBookingBtnText}>Start new booking</Text>
+            <Ionicons name="arrow-forward" size={16} color={Colors.white} />
+          </TouchableOpacity>
         </ScrollView>
       ) : null}
     </View>
@@ -212,4 +226,23 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3, flexShrink: 0 },
   infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink, flex: 1, textAlign: 'right', marginLeft: 16 },
   divider: { height: 1, backgroundColor: Colors.hairline },
+
+  startBookingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.orange,
+    borderRadius: 14,
+    paddingVertical: 15,
+    marginTop: 12,
+  },
+  startBookingBtnText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 15,
+    color: Colors.white,
+    letterSpacing: 0.2,
+    flex: 1,
+    textAlign: 'center',
+  },
 });

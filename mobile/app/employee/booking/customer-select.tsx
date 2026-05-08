@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,9 +45,34 @@ function toIso(d: Date, time = '10:00') {
 export default function EmployeeCustomerSelect() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { customerPublicId: preselectedId } = useLocalSearchParams<{
+    customerPublicId?: string;
+  }>();
+  const [showSearch, setShowSearch] = useState(false);
 
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
+
+  const { data: preselected, isLoading: preselectedLoading } = useQuery<CustomerResult | null>({
+    queryKey: ['employee', 'customer', preselectedId],
+    queryFn: async () => {
+      const res = await employeeApi.getCustomer(preselectedId as string);
+      const c = res.data?.data;
+      if (!c) return null;
+      return {
+        publicId: c.publicId ?? preselectedId!,
+        name: c.name,
+        email: c.email,
+        phone: c.phone ?? null,
+        customerProfile: c.customerProfile ?? (c.isProfileCompleted != null ? {
+          publicId: c.publicId ?? preselectedId!,
+          isProfileCompleted: c.isProfileCompleted,
+        } : null),
+      };
+    },
+    enabled: !!preselectedId && !showSearch,
+    staleTime: 60_000,
+  });
 
   const initialStart = useMemo(() => new Date(), []);
   const initialEnd = useMemo(() => {
@@ -126,7 +151,76 @@ export default function EmployeeCustomerSelect() {
         <Ionicons name="calendar-outline" size={18} color={Colors.orange} />
       </TouchableOpacity>
 
-      {/* Search bar */}
+      {/* Preselected customer card (when arriving from /employee/customer/[id]) */}
+      {preselectedId && !showSearch ? (
+        preselectedLoading ? (
+          <ActivityIndicator style={{ marginTop: 16 }} color={Colors.orange} />
+        ) : preselected ? (
+          <View style={{ paddingHorizontal: 20 }}>
+            <Text style={styles.preselectedLabel}>SELECTED CUSTOMER</Text>
+            <View style={styles.preselectedCard}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {preselected.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.customerInfo}>
+                <Text style={styles.customerName} numberOfLines={1}>
+                  {preselected.name}
+                </Text>
+                <Text style={styles.customerMeta} numberOfLines={1}>
+                  {preselected.phone ?? preselected.email}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.kycBadge,
+                  preselected.customerProfile?.isProfileCompleted ? styles.kycGreen : styles.kycAmber,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.kycText,
+                    preselected.customerProfile?.isProfileCompleted ? styles.kycTextGreen : styles.kycTextAmber,
+                  ]}
+                >
+                  {preselected.customerProfile?.isProfileCompleted ? 'Complete' : 'Incomplete'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.continueBtn}
+              onPress={() => handleSelectCustomer(preselected)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.continueBtnText}>Continue to vehicles</Text>
+              <Ionicons name="arrow-forward" size={16} color={Colors.white} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.changeCustomerLink}
+              onPress={() => setShowSearch(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="swap-horizontal-outline" size={14} color={Colors.ink3} />
+              <Text style={styles.changeCustomerText}>Change customer</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.emptyState, { paddingHorizontal: 32 }]}>
+            <Ionicons name="alert-circle-outline" size={36} color={Colors.ink4} />
+            <Text style={styles.emptyTitle}>Customer not found</Text>
+            <TouchableOpacity onPress={() => setShowSearch(true)} activeOpacity={0.7}>
+              <Text style={[styles.changeCustomerText, { marginTop: 8 }]}>Search instead</Text>
+            </TouchableOpacity>
+          </View>
+        )
+      ) : null}
+
+      {/* Search bar (hidden when preselected and not actively switching) */}
+      {(!preselectedId || showSearch) && (
+      <>
       <View style={styles.searchRow}>
         <View style={styles.searchWrap}>
           <Ionicons name="search-outline" size={17} color={Colors.ink3} />
@@ -229,6 +323,8 @@ export default function EmployeeCustomerSelect() {
             );
           }}
         />
+      )}
+      </>
       )}
 
       <DateRangePicker
@@ -390,6 +486,54 @@ const styles = StyleSheet.create({
   kycText: { fontFamily: Fonts.bodySemiBold, fontSize: 11 },
   kycTextGreen: { color: '#10b981' },
   kycTextAmber: { color: '#f59e0b' },
+
+  preselectedLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.ink3,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  preselectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    padding: 12,
+  },
+  continueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.orange,
+    borderRadius: 14,
+    paddingVertical: 15,
+    marginTop: 14,
+  },
+  continueBtnText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 15,
+    color: Colors.white,
+    letterSpacing: 0.2,
+  },
+  changeCustomerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+  },
+  changeCustomerText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 13,
+    color: Colors.ink3,
+  },
 
   emptyState: {
     alignItems: 'center',

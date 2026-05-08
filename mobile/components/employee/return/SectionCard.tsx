@@ -13,6 +13,8 @@ interface Props {
   state?: 'locked' | 'active' | 'completed';
   children?: ReactNode;
   rightSlot?: ReactNode;
+  /** Hint shown when locked, describing what the user needs to do to unlock. */
+  lockedHint?: string;
 }
 
 export default function SectionCard({
@@ -23,6 +25,7 @@ export default function SectionCard({
   state = 'active',
   children,
   rightSlot,
+  lockedHint,
 }: Props) {
   const locked = state === 'locked';
   const completed = state === 'completed';
@@ -31,12 +34,14 @@ export default function SectionCard({
     <View style={[styles.card, locked && styles.cardLocked]}>
       <View style={styles.header}>
         <View style={[styles.stepBadge, completed && styles.stepBadgeDone, locked && styles.stepBadgeLocked]}>
-          {completed ? (
+          {locked ? (
+            <Ionicons name="lock-closed" size={13} color={Colors.ink3} />
+          ) : completed ? (
             <Ionicons name="checkmark" size={14} color={Colors.white} />
           ) : icon ? (
-            <Ionicons name={icon} size={14} color={locked ? Colors.ink3 : Colors.white} />
+            <Ionicons name={icon} size={14} color={Colors.white} />
           ) : step != null ? (
-            <Text style={[styles.stepNumber, locked && styles.stepNumberLocked]}>{step}</Text>
+            <Text style={styles.stepNumber}>{step}</Text>
           ) : null}
         </View>
         <View style={styles.titleBlock}>
@@ -47,6 +52,13 @@ export default function SectionCard({
         </View>
         {rightSlot ? <View style={styles.right}>{rightSlot}</View> : null}
       </View>
+
+      {locked && lockedHint ? (
+        <View style={styles.unlockHint}>
+          <Ionicons name="arrow-up" size={13} color={Colors.ink3} />
+          <Text style={styles.unlockHintText}>{lockedHint}</Text>
+        </View>
+      ) : null}
 
       {!locked && children ? <View style={styles.body}>{children}</View> : null}
     </View>
@@ -102,5 +114,22 @@ const styles = StyleSheet.create({
   right: {},
   body: {
     marginTop: 14,
+  },
+  unlockHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  unlockHintText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 12,
+    color: Colors.ink3,
+    flex: 1,
   },
 });
