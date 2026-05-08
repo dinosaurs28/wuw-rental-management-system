@@ -139,6 +139,31 @@ export const employeeApi = {
     pickupImageIds?: string[];
     requireManagerConfirmation?: boolean;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
+  // Pickup-flow: capture-config & session
+  getPickupCaptureConfig: (bookingId: string) =>
+    api.get(`/api/employee/pickup/${bookingId}/capture-config`),
+  initiatePickupSession: (bookingId: string, body: {
+    overrideRemainingBalance?: number;
+    safetyDepositAmount?: number;
+    safetyDepositReason?: string;
+    extensionPublicId?: string;
+    discountCode?: string;
+    odo?: number;
+    fuelLevel?: number;
+    pickupFuelLevel?: 'EMPTY' | 'QUARTER' | 'HALF' | 'THREE_QUARTER' | 'FULL';
+    pickupImageIds?: string[];
+    captureImages?: { fileId: string; label: string }[];
+  }) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
+  getActivePickupSession: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/pickup-session`),
+  addDepositToPickupSession: (bookingId: string, body: { amount: number; reason: string }) =>
+    api.post(`/api/employee/bookings/${bookingId}/pickup-session/add-deposit`, body),
+  removeDepositFromPickupSession: (bookingId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-deposit`),
+  applyDiscountToPickupSession: (bookingId: string, body: { discountCode: string }) =>
+    api.post(`/api/employee/bookings/${bookingId}/pickup-session/apply-discount`, body),
+  removeDiscountFromPickupSession: (bookingId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
   uploadReturnImage: (formData: FormData) =>
