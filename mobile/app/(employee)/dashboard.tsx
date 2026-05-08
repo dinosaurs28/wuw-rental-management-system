@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -29,13 +30,47 @@ interface Shift {
   openedAt: string;
 }
 
-function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
+interface QueueBooking {
+  publicId: string;
+}
+
+const DATE_STRIP_RANGE: number[] = [-1, 0, 1, 2, 3, 4, 5];
+
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function dateForOffset(offset: number): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function dateChipLabel(offset: number, date: Date): { primary: string; secondary: string } {
+  if (offset === -1) return { primary: 'Yesterday', secondary: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) };
+  if (offset === 0) return { primary: 'Today', secondary: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) };
+  if (offset === 1) return { primary: 'Tomorrow', secondary: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) };
+  return {
+    primary: date.toLocaleDateString('en-IN', { weekday: 'short' }),
+    secondary: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+  };
+}
+
+function StatCard({ label, value, icon, color, loading }: { label: string; value: number; icon: IoniconName; color: string; loading?: boolean }) {
   return (
     <View style={styles.statCard}>
       <View style={[styles.statIconWrap, { backgroundColor: color + '15' }]}>
         <Ionicons name={icon} size={18} color={color} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
+      {loading ? (
+        <ActivityIndicator color={color} size="small" style={{ alignSelf: 'flex-start', height: 32 }} />
+      ) : (
+        <Text style={styles.statValue}>{value}</Text>
+      )}
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -81,6 +116,11 @@ export default function EmployeeDashboard() {
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
+  const [selectedOffset, setSelectedOffset] = useState<number>(0);
+  const selectedDate = useMemo(() => dateForOffset(selectedOffset), [selectedOffset]);
+  const selectedDateIso = useMemo(() => toIsoDate(selectedDate), [selectedDate]);
+  const isToday = selectedOffset === 0;
+
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['employee', 'dashboard-stats'],
     queryFn: async () => {
@@ -88,6 +128,38 @@ export default function EmployeeDashboard() {
       return res.data as DashboardStats;
     },
     staleTime: 60_000,
+  });
+
+  const { data: pickupsForDate, isLoading: pickupsForDateLoading, refetch: refetchPickupsForDate } = useQuery<QueueBooking[]>({
+    queryKey: ['employee', 'pickups', selectedDateIso],
+    queryFn: async () => {
+      try {
+        const res = await employeeApi.listPickups({ date: selectedDateIso });
+        return (res.data?.data ?? []) as QueueBooking[];
+      } catch (err: any) {
+        if (err.response?.status === 404) return [];
+        throw err;
+      }
+    },
+    enabled: !isToday,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const { data: returnsForDate, isLoading: returnsForDateLoading, refetch: refetchReturnsForDate } = useQuery<QueueBooking[]>({
+    queryKey: ['employee', 'returns', selectedDateIso],
+    queryFn: async () => {
+      try {
+        const res = await employeeApi.listReturns({ date: selectedDateIso });
+        return (res.data?.data ?? []) as QueueBooking[];
+      } catch (err: any) {
+        if (err.response?.status === 404) return [];
+        throw err;
+      }
+    },
+    enabled: !isToday,
+    staleTime: 30_000,
+    retry: false,
   });
 
   const { data: shiftData, isLoading: shiftLoading, refetch: refetchShift } = useQuery<Shift | null>({
@@ -106,12 +178,25 @@ export default function EmployeeDashboard() {
     },
   });
 
-  const refreshing = statsLoading || shiftLoading;
+  const refreshing = statsLoading || shiftLoading || pickupsForDateLoading || returnsForDateLoading;
 
   const onRefresh = () => {
     refetchStats();
     refetchShift();
+    if (!isToday) {
+      refetchPickupsForDate();
+      refetchReturnsForDate();
+    }
   };
+
+  const pickupsCount = isToday ? (stats?.todaysPickups ?? 0) : (pickupsForDate?.length ?? 0);
+  const returnsCount = isToday ? (stats?.todaysReturns ?? 0) : (returnsForDate?.length ?? 0);
+  const pickupsLoading = isToday ? statsLoading : pickupsForDateLoading;
+  const returnsLoading = isToday ? statsLoading : returnsForDateLoading;
+
+  const sectionTitle = isToday
+    ? 'Today'
+    : selectedDate.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' });
 
   return (
     <ScrollView
@@ -149,6 +234,30 @@ export default function EmployeeDashboard() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Date strip */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.dateStrip}
+      >
+        {DATE_STRIP_RANGE.map((offset) => {
+          const date = dateForOffset(offset);
+          const { primary, secondary } = dateChipLabel(offset, date);
+          const active = offset === selectedOffset;
+          return (
+            <TouchableOpacity
+              key={offset}
+              style={[styles.dateChip, active && styles.dateChipActive]}
+              onPress={() => setSelectedOffset(offset)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.dateChipPrimary, active && styles.dateChipPrimaryActive]}>{primary}</Text>
+              <Text style={[styles.dateChipSecondary, active && styles.dateChipSecondaryActive]}>{secondary}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* Shift Status Card */}
       <View style={styles.shiftCard}>
@@ -192,33 +301,30 @@ export default function EmployeeDashboard() {
       </View>
 
       {/* Stats */}
-      <Text style={styles.sectionTitle}>Today</Text>
-      {statsLoading ? (
-        <View style={styles.statsLoader}>
-          <ActivityIndicator color={Colors.orange} />
-        </View>
-      ) : (
-        <View style={styles.statsRow}>
-          <StatCard
-            label="Pickups"
-            value={stats?.todaysPickups ?? 0}
-            icon="arrow-up-circle-outline"
-            color="#ff6a1f"
-          />
-          <StatCard
-            label="Returns"
-            value={stats?.todaysReturns ?? 0}
-            icon="arrow-down-circle-outline"
-            color="#3b82f6"
-          />
-          <StatCard
-            label="Active"
-            value={stats?.activeRentals ?? 0}
-            icon="car-outline"
-            color="#10b981"
-          />
-        </View>
-      )}
+      <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+      <View style={styles.statsRow}>
+        <StatCard
+          label="Pickups"
+          value={pickupsCount}
+          icon="arrow-up-circle-outline"
+          color="#ff6a1f"
+          loading={pickupsLoading}
+        />
+        <StatCard
+          label="Returns"
+          value={returnsCount}
+          icon="arrow-down-circle-outline"
+          color="#3b82f6"
+          loading={returnsLoading}
+        />
+        <StatCard
+          label="Active"
+          value={stats?.activeRentals ?? 0}
+          icon="car-outline"
+          color="#10b981"
+          loading={statsLoading}
+        />
+      </View>
 
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -226,13 +332,13 @@ export default function EmployeeDashboard() {
         <QuickAction
           label="Pickup Queue"
           icon="arrow-up-circle-outline"
-          onPress={() => router.push('/(employee)/bookings')}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'pickups', date: selectedDateIso } })}
           accent
         />
         <QuickAction
           label="Return Queue"
           icon="arrow-down-circle-outline"
-          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns' } })}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns', date: selectedDateIso } })}
         />
         <QuickAction
           label="Scan Booking"
@@ -259,7 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   headerLeft: { flex: 1 },
   greeting: {
@@ -312,6 +418,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  /* Date strip */
+  dateStrip: {
+    paddingHorizontal: 20,
+    gap: 8,
+    paddingBottom: 20,
+  },
+  dateChip: {
+    minWidth: 76,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    gap: 2,
+  },
+  dateChipActive: {
+    backgroundColor: Colors.ink,
+    borderColor: Colors.ink,
+  },
+  dateChipPrimary: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.ink,
+  },
+  dateChipPrimaryActive: { color: Colors.white },
+  dateChipSecondary: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.ink3,
+  },
+  dateChipSecondaryActive: { color: 'rgba(255,255,255,0.75)' },
 
   /* Shift Card */
   shiftCard: {
@@ -438,7 +578,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.ink3,
   },
-  statsLoader: { height: 100, justifyContent: 'center', alignItems: 'center' },
 
   /* Quick Actions */
   actionsGrid: {

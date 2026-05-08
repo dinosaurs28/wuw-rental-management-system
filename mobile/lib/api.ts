@@ -223,4 +223,74 @@ export const employeeApi = {
     api.get(`/api/employee/kyc/${bookingId}`),
   verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>
     api.patch(`/api/employee/kyc/${kycId}/status`, { status }),
+
+  // ── walk-in customer onboarding ──────────────────────────────────────────
+  walkinInitiate: (body: { phone: string }) =>
+    api.post('/api/employee/walkin/initiate', body),
+  walkinVerify: (body: { customer_public_id: string; otp: string }) =>
+    api.post('/api/employee/walkin/verify', body),
+  walkinComplete: (body: {
+    customer_public_id: string;
+    name: string;
+    email: string;
+    dob?: string;
+    addressLine1: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+    alternatePhone?: string;
+    gender?: string;
+  }) => api.post('/api/employee/walkin/complete', body),
+  uploadWalkinKyc: (formData: FormData) =>
+    api.post('/api/employee/walkin/kyc/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteWalkinKyc: (publicId: string, customerPublicId: string) =>
+    api.delete('/api/employee/walkin/kyc', {
+      data: { id: publicId, customer_public_id: customerPublicId },
+    }),
+  getCustomerKyc: (customerPublicId: string) =>
+    api.get(`/api/employee/walkin/kyc/${customerPublicId}`),
+  verifyWalkinKyc: (kycPublicId: string, status: 'APPROVED' | 'REJECTED') =>
+    api.post('/api/employee/walkin/kyc/status', { fileId: kycPublicId, status }),
+
+  // ── booking-creation flow ────────────────────────────────────────────────
+  listEmployeeVehicles: (params?: {
+    search?: string;
+    category?: string;
+    sort?: 'price_low_to_high' | 'price_high_to_low';
+    start?: string;
+    end?: string;
+    limit?: number;
+    offset?: number;
+  }) => api.get('/api/employee/vehicles/search', { params }),
+  getEmployeeVehicle: (id: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/employee/vehicles/${id}`, { params }),
+  getEmployeeVehicleGroup: (
+    groupKey: string,
+    params?: { start?: string; end?: string },
+  ) =>
+    api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, {
+      params,
+    }),
+  getEmployeeVehicleCategories: () =>
+    api.get('/api/employee/vehicles/categories'),
+  createEmployeeBooking: (body: {
+    vehicles?: string[];
+    group_key?: string;
+    customer_public_id: string;
+    customer_kyc_id: string;
+    start: string;
+    end: string;
+    payment_type: 'CASH' | 'ONLINE';
+  }) => api.post('/api/employee/booking/create', body),
+  cancelEmployeeHold: (holdId: string) =>
+    api.delete(`/api/employee/booking/hold/${holdId}`),
+  verifyOnlinePayment: (transactionId: string) =>
+    api.get(`/api/payment/status/${transactionId}`),
+
+  // ── remaining-payment status polling ─────────────────────────────────────
+  verifyRemainingPayment: (transactionId: string) =>
+    api.get(`/api/employee/payment/remaining-status/${transactionId}`),
 };
