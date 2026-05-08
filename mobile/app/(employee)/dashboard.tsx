@@ -346,11 +346,6 @@ export default function EmployeeDashboard() {
           onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns', date: selectedDateIso } })}
         />
         <QuickAction
-          label="Scan Booking"
-          icon="qr-code-outline"
-          onPress={() => router.push('/(employee)/scan')}
-        />
-        <QuickAction
           label="Customer Search"
           icon="people-outline"
           onPress={() => router.push('/employee/customer/search')}

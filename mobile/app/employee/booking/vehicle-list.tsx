@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import CarCard from '../../../components/cars/CarCard';
+import type { Vehicle } from '../../../types/api';
 
 interface VehicleGroup {
   groupKey: string;
@@ -167,6 +169,7 @@ export default function EmployeeVehicleList() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipsRow}
+        style={styles.chipsScroll}
       >
         <TouchableOpacity
           style={[styles.chip, category === null && styles.chipActive]}
@@ -269,49 +272,23 @@ export default function EmployeeVehicleList() {
             ) : null
           }
           renderItem={({ item }) => {
-            const thumb = item.imageUrl?.[0]?.file?.url;
-            return (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleTap(item)}
-                activeOpacity={0.88}
-              >
-                <View style={styles.photoContainer}>
-                  {thumb ? (
-                    <Image source={{ uri: thumb }} style={styles.photo} resizeMode="cover" />
-                  ) : (
-                    <View style={styles.placeholder}>
-                      <Ionicons
-                        name="car-sport-outline"
-                        size={36}
-                        color="rgba(0,0,0,0.12)"
-                      />
-                    </View>
-                  )}
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{item.category}</Text>
-                  </View>
-                </View>
-                <View style={styles.info}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.make} {item.model}
-                  </Text>
-                  <View style={styles.row}>
-                    {item.pricing?.daily != null ? (
-                      <Text style={styles.price}>
-                        ₹{Number(item.pricing.daily).toLocaleString('en-IN')}
-                        <Text style={styles.perDay}>/day</Text>
-                      </Text>
-                    ) : (
-                      <Text style={styles.price}>—</Text>
-                    )}
-                    <View style={styles.availPill}>
-                      <Text style={styles.availText}>{item.availableCount} avail</Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
+            const vehicle: Vehicle = {
+              publicId: item.groupKey,
+              make: item.make,
+              model: item.model,
+              category: item.category,
+              branch: (item as any).branch ?? '',
+              images: ((item.imageUrl ?? []) as any[])
+                .map((img) => img?.file?.url)
+                .filter(Boolean),
+              pricing: {
+                daily:
+                  item.pricing?.daily != null ? Number(item.pricing.daily) : null,
+              },
+              availability: true,
+              availableCount: item.availableCount,
+            };
+            return <CarCard vehicle={vehicle} onPress={() => handleTap(item)} />;
           }}
         />
       )}
@@ -370,7 +347,8 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
-  chipsRow: { paddingHorizontal: 20, gap: 8, marginBottom: 8 },
+  chipsScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 8 },
+  chipsRow: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -391,6 +369,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 8,
     marginBottom: 12,
+    flexShrink: 0,
   },
   sortBtn: {
     paddingHorizontal: 12,

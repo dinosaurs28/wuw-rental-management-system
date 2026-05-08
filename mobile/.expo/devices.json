@@ -1,6 +1,10 @@
 {
   "devices": [
     {
+      "installationId": "FDA53391-64B5-4A94-833C-CD7051908BC7",
+      "lastUsed": 1778268934266
+    },
+    {
       "installationId": "f79dd9ce-6911-4e47-ac1e-b64b4dfb11b4",
       "lastUsed": 1778228196479
     }
