@@ -59,6 +59,7 @@ export interface VehicleListParams {
   category?: string;
   branch?: string;
   search?: string;
+  sort?: 'price_low_to_high' | 'price_high_to_low';
   start?: string;
   end?: string;
   limit?: number;
@@ -103,6 +104,44 @@ export const userApi = {
     }),
   deleteKyc: (publicId: string, customerPublicId: string) =>
     api.delete('/api/user/kyc', { data: { id: publicId, customer_public_id: customerPublicId } }),
+  // Customer-side hold cancellation (different from employeeApi.cancelEmployeeHold).
+  cancelHold: (holdId: string) =>
+    api.delete(`/api/user/booking/hold/${holdId}`),
+  // Customer-side payment status polling (thin wrapper over the public endpoint).
+  // Returns { status: 'Success' | 'Pending' | 'Failed', message?: string }
+  verifyPayment: (transactionId: string) =>
+    api.get(`/api/payment/status/${transactionId}`),
+};
+
+// ─── discount ─────────────────────────────────────────────────────────────
+
+export interface CouponValidateBody {
+  couponCode: string;
+  vehiclePublicId?: string;
+  groupKey?: string;
+  startAt: string;
+  endAt: string;
+}
+
+export interface CouponValidateValid {
+  valid: true;
+  couponCode: string;
+  discountAmount: string;
+  discountType?: string;
+  discountValue?: string;
+}
+
+export interface CouponValidateInvalid {
+  valid: false;
+  code: string;
+  reason: string;
+}
+
+export type CouponValidateResult = CouponValidateValid | CouponValidateInvalid;
+
+export const discountApi = {
+  validateCoupon: (body: CouponValidateBody) =>
+    api.post<{ data: CouponValidateResult }>('/api/public/discount/validate', body),
 };
 
 // ─── employee ─────────────────────────────────────────────────────────────

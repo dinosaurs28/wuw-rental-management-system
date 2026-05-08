@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Fonts } from '../../constants/colors';
 import { userApi } from '../../lib/api';
 import type { BookingTrip, BookingStatus } from '../../types/api';
+import WhatsappFab from '../../components/ui/WhatsappFab';
 
 type Tab = 'active' | 'upcoming' | 'past';
 
@@ -203,6 +204,7 @@ export default function Trips() {
           renderItem={({ item }) => <TripCard trip={item} />}
         />
       )}
+      <WhatsappFab bottom={insets.bottom + 96} />
     </View>
   );
 }

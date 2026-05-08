@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
+import WhatsappFab from '../../components/ui/WhatsappFab';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -190,6 +191,7 @@ export default function TripDetail() {
           </View>
         )}
       </ScrollView>
+      <WhatsappFab bookingId={bookingId} bottom={insets.bottom + 24} />
     </View>
   );
 }

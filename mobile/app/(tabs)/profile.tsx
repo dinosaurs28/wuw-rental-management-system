@@ -305,6 +305,43 @@ export default function Profile() {
           })}
         </View>
 
+        {/* Support */}
+        <Text style={styles.sectionTitle}>Support</Text>
+        <View style={styles.card}>
+          <LinkRow
+            icon="call-outline"
+            label="Contact us"
+            onPress={() => router.push('/contact' as any)}
+            last
+          />
+        </View>
+
+        {/* Legal */}
+        <Text style={styles.sectionTitle}>Legal</Text>
+        <View style={styles.card}>
+          <LinkRow
+            icon="document-text-outline"
+            label="Terms and Conditions"
+            onPress={() => router.push('/legal/terms' as any)}
+          />
+          <LinkRow
+            icon="lock-closed-outline"
+            label="Privacy Policy"
+            onPress={() => router.push('/legal/privacy' as any)}
+          />
+          <LinkRow
+            icon="help-circle-outline"
+            label="FAQ"
+            onPress={() => router.push('/legal/faq' as any)}
+          />
+          <LinkRow
+            icon="receipt-outline"
+            label="Refund Policy"
+            onPress={() => router.push('/legal/refund' as any)}
+            last
+          />
+        </View>
+
         {/* App */}
         <Text style={styles.sectionTitle}>App</Text>
         <View style={styles.card}>
@@ -318,6 +355,32 @@ export default function Profile() {
         </TouchableOpacity>
       </ScrollView>
     </View>
+  );
+}
+
+function LinkRow({
+  icon,
+  label,
+  onPress,
+  last,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.infoRow, last && styles.lastRow]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.infoIconWrap}>
+        <Ionicons name={icon} size={16} color={Colors.ink3} />
+      </View>
+      <Text style={[styles.infoValue, { flex: 1 }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={Colors.ink3} />
+    </TouchableOpacity>
   );
 }
 

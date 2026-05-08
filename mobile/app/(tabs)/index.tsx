@@ -38,6 +38,14 @@ function normalizeGroup(g: any): Vehicle {
   };
 }
 
+type SortKey = 'default' | 'price_low_to_high' | 'price_high_to_low';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'default',            label: 'Default' },
+  { key: 'price_low_to_high',  label: 'Price ↑' },
+  { key: 'price_high_to_low',  label: 'Price ↓' },
+];
+
 export default function Browse() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -46,6 +54,7 @@ export default function Browse() {
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('default');
 
   const { data: branches, isLoading: branchesLoading } = useQuery<Branch[]>({
     queryKey: ['branches'],
@@ -66,8 +75,13 @@ export default function Browse() {
   const browseEnd   = new Date(Date.now() + 2 * 86_400_000).toISOString();
 
   const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['vehicles-all', browseStart.slice(0, 10)],
-    queryFn: () => vehiclesApi.list({ limit: 100, start: browseStart, end: browseEnd }),
+    queryKey: ['vehicles-all', browseStart.slice(0, 10), sortKey],
+    queryFn: () => vehiclesApi.list({
+      limit: 100,
+      start: browseStart,
+      end: browseEnd,
+      ...(sortKey !== 'default' ? { sort: sortKey } : {}),
+    }),
     select: (res) => {
       const groups = (res.data?.data ?? []) as any[];
       const seen = new Set<string>();
@@ -180,6 +194,26 @@ export default function Browse() {
               >
                 <Text style={[styles.chipText, selectedCategory === name && styles.chipTextActive]}>
                   {name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Sort selector */}
+          <View style={styles.filterLabelRow}>
+            <Ionicons name="swap-vertical-outline" size={13} color={Colors.ink3} />
+            <Text style={styles.filterLabel}>Sort</Text>
+          </View>
+          <View style={styles.chips}>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.chip, sortKey === opt.key && styles.chipActive]}
+                onPress={() => setSortKey(opt.key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, sortKey === opt.key && styles.chipTextActive]}>
+                  {opt.label}
                 </Text>
               </TouchableOpacity>
             ))}

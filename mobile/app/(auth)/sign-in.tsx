@@ -119,6 +119,13 @@ export default function SignIn() {
             autoComplete="password"
             error={errors.password?.message}
           />
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => router.push('/(auth)/forgot-password')}
+            hitSlop={6}
+          >
+            <Text style={styles.forgotLink}>Forgot password?</Text>
+          </TouchableOpacity>
         </View>
 
         <Button
@@ -126,6 +133,14 @@ export default function SignIn() {
           onPress={handleSubmit(onSubmit)}
           loading={loading}
         />
+
+        <TouchableOpacity
+          style={styles.phoneRow}
+          onPress={() => router.push('/(auth)/phone')}
+        >
+          <Ionicons name="call-outline" size={18} color={Colors.ink2} style={{ marginRight: 8 }} />
+          <Text style={styles.phoneLink}>Sign in with phone</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.switchRow}
@@ -167,7 +182,25 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   form: { gap: 16, marginBottom: 28 },
-  switchRow: { marginTop: 24, alignItems: 'center' },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -4 },
+  forgotLink: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.orange,
+  },
+  phoneRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  phoneLink: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.ink2,
+  },
+  switchRow: { marginTop: 8, alignItems: 'center' },
   switchText: {
     fontFamily: Fonts.body,
     fontSize: 14,
