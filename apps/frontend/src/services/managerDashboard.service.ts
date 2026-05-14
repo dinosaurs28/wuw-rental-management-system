@@ -85,6 +85,30 @@ export interface Employee {
   status: "ACTIVE" | "INACTIVE";
 }
 
+export interface NoShowBooking {
+  publicId: string;
+  startAt: string;
+  endAt: string;
+  totalFinal: string;
+  isAdvancePayment: boolean;
+  advanceAmount: string | null;
+  remainingBalance: string | null;
+  depositMethod: string | null;
+  createdAt: string;
+  customer: {
+    publicId: string;
+    user: { name: string; phone: string | null; email: string };
+  };
+  items: {
+    vehicle: {
+      make: string;
+      model: string;
+      regNo: string;
+      images: { file: { url: string } }[];
+    };
+  }[];
+}
+
 export const managerDashboardService = {
   getDashboardStats: async () => {
     const response = await apiClient.get("/branchManager/dashboard/stats", {
@@ -206,6 +230,34 @@ export const managerDashboardService = {
       role: e.role,
       status: "ACTIVE",
     }));
+  },
+
+  getNoShowEligible: async (page = 1, limit = 20, graceHours = 0) => {
+    const response = await apiClient.get(
+      "/branchManager/dashboard/bookings/no-show-eligible",
+      { params: { page, limit, graceHours }, timeout: 10000 },
+    );
+    return response.data as {
+      success: boolean;
+      data: NoShowBooking[];
+      pagination: { total: number; page: number; limit: number; totalPages: number };
+      graceHours: number;
+    };
+  },
+
+  cancelNoShow: async (
+    bookingId: string,
+    reason: string,
+    refundCustomer = false,
+    refundMethod?: string,
+    refundAmount?: number,
+  ) => {
+    const response = await apiClient.post(
+      `/branchManager/dashboard/bookings/${bookingId}/cancel-no-show`,
+      { reason, refundCustomer, refundMethod, refundAmount },
+      { timeout: 10000 },
+    );
+    return response.data;
   },
 
   getInsuranceExpiryReports: async () => {

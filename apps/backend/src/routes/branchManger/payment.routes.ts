@@ -37,6 +37,12 @@ import {
   ListBranchShifts,
   ReconcileShift,
 } from "../../controller/branchManager/cash-shift.controller.js";
+import {
+  ListPendingPaymentBookings,
+  GetRecheckInfo,
+  RecheckPaymentWithGateway,
+  ManualConfirmPayment,
+} from "../../controller/branchManager/payment-recheck.controller.js";
 
 const router: Router = Router();
 
@@ -70,6 +76,12 @@ router.get("/refunds/:publicId", GetRefund);
 router.post("/refunds/:publicId/approve", ApproveRefund);
 router.post("/refunds/:publicId/reject", RejectRefund);
 router.post("/refunds/:publicId/complete", CompleteRefund);
+
+// Payment recheck
+router.get("/recheck", ListPendingPaymentBookings);
+router.get("/recheck/:bookingId", GetRecheckInfo);
+router.post("/recheck/:bookingId/gateway-check", RecheckPaymentWithGateway);
+router.post("/recheck/:bookingId/manual-confirm", ManualConfirmPayment);
 
 // Cash shifts
 router.post("/shifts", OpenShift);

@@ -176,7 +176,7 @@ export class AdvanceDepositService {
   /**
    * Handle no-show cancellation with invoice generation
    */
-  async handleNoShowCancellation(bookingId: number, cancelledBy: number, reason: string = "No Show"): Promise<{ booking: Booking; cancellationInvoice: CancellationInvoice }> {
+  async handleNoShowCancellation(bookingId: number, cancelledByPublicId: string, reason: string = "No Show"): Promise<{ booking: Booking; cancellationInvoice: CancellationInvoice }> {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: { customer: true }
@@ -213,9 +213,9 @@ export class AdvanceDepositService {
         }
       });
 
-      const cancelActor = await tx.user.findUnique({ where: { id: cancelledBy }, select: { name: true, role: true, branchId: true } });
+      const cancelActor = await tx.user.findUnique({ where: { publicId: cancelledByPublicId }, select: { id: true, name: true, role: true, branchId: true } });
       await auditService.log({
-        actorId: cancelledBy,
+        actorId: cancelActor?.id,
         actorName: cancelActor?.name ?? "Unknown",
         actorRole: cancelActor?.role ?? Role.STAFF,
         actorBranchId: cancelActor?.branchId ?? undefined,
@@ -225,7 +225,7 @@ export class AdvanceDepositService {
         description: `Booking ${bookingId} cancelled due to no-show`,
         entity: "Booking",
         entityId: bookingId.toString(),
-        metadata: { reason, cancelledBy },
+        metadata: { reason, cancelledByPublicId },
       }, tx);
 
       return { booking: updatedBooking, cancellationInvoice };

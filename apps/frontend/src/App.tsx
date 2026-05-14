@@ -49,6 +49,8 @@ import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
 import { FinancialsDashboardPage } from "./pages/manager/payment/FinancialsDashboardPage";
 import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
+import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
+import { NoShowCancellationsPage } from "./pages/manager/NoShowCancellationsPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
@@ -197,6 +199,14 @@ function App() {
           <Route
             path="/manager/payment/financials"
             element={<FinancialsDashboardPage />}
+          />
+          <Route
+            path="/manager/payment/recheck"
+            element={<PaymentRecheckPage />}
+          />
+          <Route
+            path="/manager/no-show"
+            element={<NoShowCancellationsPage />}
           />
           <Route
             path="/manager/payment/cash-confirmations"
