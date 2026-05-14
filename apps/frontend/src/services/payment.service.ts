@@ -325,7 +325,107 @@ export const paymentService = {
         { discrepancyExplanation }
       )
       .then((r) => r.data),
+
+  // Payment Recheck
+  listPendingPayments: (page = 1, limit = 20) =>
+    apiClient
+      .get<{ data: PendingPaymentBooking[]; pagination: { total: number; totalPages: number } }>(
+        `/branchManager/payment/recheck`,
+        { params: { page, limit } }
+      )
+      .then((r) => r.data),
+
+  getRecheckInfo: (bookingPublicId: string) =>
+    apiClient
+      .get<{ data: RecheckBookingInfo }>(
+        `/branchManager/payment/recheck/${bookingPublicId}`
+      )
+      .then((r) => r.data.data),
+
+  gatewayRecheck: (bookingPublicId: string) =>
+    apiClient
+      .post<GatewayCheckResult>(
+        `/branchManager/payment/recheck/${bookingPublicId}/gateway-check`
+      )
+      .then((r) => r.data),
+
+  manualConfirmPayment: (bookingPublicId: string, managerNote?: string) =>
+    apiClient
+      .post<{ success: boolean; message: string; newStatus: string }>(
+        `/branchManager/payment/recheck/${bookingPublicId}/manual-confirm`,
+        { managerNote }
+      )
+      .then((r) => r.data),
 };
+
+// ── Payment Recheck ───────────────────────────────────────────────────────────
+
+export type GatewayResult =
+  | "SUCCESS"
+  | "PENDING"
+  | "FAILED"
+  | "GATEWAY_UNREACHABLE"
+  | "ALREADY_SUCCESS";
+
+export interface RecheckBookingInfo {
+  publicId: string;
+  status: string;
+  paymentStatus: string;
+  transactionId: string | null;
+  totalFinal: string;
+  totalDeposit: string;
+  isAdvancePayment: boolean;
+  advanceAmount: string | null;
+  remainingBalance: string | null;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+  holdExpiresAt: string | null;
+  isRecheckable: boolean;
+  customer: {
+    publicId: string;
+    user: { name: string; email: string; phone: string | null };
+  };
+  items: {
+    vehicle: {
+      make: string;
+      model: string;
+      regNo: string;
+      images: { file: { url: string } }[];
+    };
+  }[];
+  paymentTransactions: {
+    publicId: string;
+    status: string;
+    method: string;
+    purpose: string;
+    totalAmount: string;
+    onlineTransactionRef: string | null;
+    onlineGateway: string | null;
+    createdAt: string;
+  }[];
+}
+
+export interface PendingPaymentBooking {
+  publicId: string;
+  transactionId: string | null;
+  totalFinal: string;
+  isAdvancePayment: boolean;
+  advanceAmount: string | null;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+  holdExpiresAt: string | null;
+  customer: { user: { name: string; phone: string | null } };
+  items: { vehicle: { make: string; model: string; regNo: string } }[];
+}
+
+export interface GatewayCheckResult {
+  gatewayResult: GatewayResult;
+  message: string;
+  newStatus?: string;
+  gatewayCode?: string;
+}
 
 // ── Employee Payment Service ──────────────────────────────────────────────────
 // Mirrors the subset of paymentService that employees are authorised to use.
