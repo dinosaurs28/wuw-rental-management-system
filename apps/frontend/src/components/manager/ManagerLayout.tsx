@@ -56,6 +56,8 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Employees", path: "/manager/employees" },
     { label: "Photo Capture", path: "/manager/capture-configs" },
     { label: "Financials", path: "/manager/payment/financials", badge: pendingCashCount + pendingRefundCount },
+    { label: "Payment Recheck", path: "/manager/payment/recheck" },
+    { label: "No-Show", path: "/manager/no-show" },
     { label: "Extensions", path: "/manager/payment/extensions" },
     { label: "Discounts", path: "/manager/payment/discounts" },
     { label: "Charge Settings", path: "/manager/charge-config" },

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, VehicleStatus } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleStatus, PaymentStatus } from "@repo/database/client";
 import { managerConfirmPickupSchema } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
@@ -8,7 +8,8 @@ import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKey
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
-import { financialStateService, branchPaymentConfigService } from "../../services/payment/index.js";
+import { financialStateService, branchPaymentConfigService, refundService } from "../../services/payment/index.js";
+import type { PaymentMethod } from "@repo/database/client";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -327,7 +328,7 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
 
 export const CancelNoShow = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  const { reason = "No Show" } = req.body;
+  const { reason = "No Show", refundCustomer = false, refundMethod, refundAmount } = req.body;
   const userId = req.public_Id as string;
   const branchId = req.branch_Id;
 
@@ -336,38 +337,70 @@ export const CancelNoShow = async (req: Request, res: Response) => {
       where: { publicId: bookingId, branchId: branchId },
     });
     if (!booking)
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: "Booking not found" });
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
 
     const result = await advanceDepositService.handleNoShowCancellation(
       booking.id,
-      userId as any,
+      userId,
       reason,
     );
+
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.CANCELLED,
       entityType: StaffEntityType.BOOKING,
       entityRef: booking.publicId,
       description: `Booking ${booking.publicId} cancelled due to no-show`,
-      metadata: { reason },
+      metadata: { reason, refundCustomer },
     });
+
+    let refundData: { publicId: string; status: string; amount: unknown } | null = null;
+
+    if (refundCustomer && refundMethod && refundAmount) {
+      const actor = await prisma.user.findUnique({
+        where: { publicId: userId },
+        select: { id: true, name: true, role: true, branch: { select: { name: true } } },
+      });
+      if (actor) {
+        const refund = await refundService.request(
+          booking.publicId,
+          Number(refundAmount),
+          `No-show cancellation refund: ${reason}`,
+          refundMethod as PaymentMethod,
+          {
+            actorId: actor.id,
+            actorName: actor.name,
+            actorRole: actor.role,
+            actorBranchId: branchId,
+            actorPublicId: userId,
+            branchName: actor.branch?.name ?? "Unknown",
+          },
+        );
+        refundData = { publicId: refund.publicId, status: refund.status, amount: refund.amount };
+
+        staffActivityService.logFromRequest(req, {
+          actionType: StaffActionType.REFUNDED,
+          entityType: StaffEntityType.REFUND_REQUEST,
+          entityRef: booking.publicId,
+          description: `Refund request of ₹${refundAmount} created for cancelled no-show booking ${booking.publicId}`,
+          metadata: { refundMethod, refundAmount },
+        });
+      }
+    }
+
     return res.status(StatusCode.OK).json({
       success: true,
-      message: "Booking cancelled as no-show",
-      data: result,
+      message: refundData
+        ? "Booking cancelled and refund request created"
+        : "Booking cancelled as no-show",
+      data: { ...result, refund: refundData },
     });
   } catch (error: any) {
     console.error("Cancel No Show Error:", error);
-    if (error.message.includes("not found"))
+    if (error.message?.includes("not found"))
       return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message.includes("cannot be cancelled"))
-      return res
-        .status(StatusCode.BAD_REQUEST)
-        .json({ message: error.message });
-    return res
-      .status(StatusCode.INTERNAL_SERVER_ERROR)
-      .json({ message: "Internal Server Error" });
+    if (error.message?.includes("cannot be cancelled"))
+      return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
   }
 };
 
@@ -864,5 +897,81 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     return res
       .status(StatusCode.INTERNAL_SERVER_ERROR)
       .json({ message: "Internal Server Error" });
+  }
+};
+
+export const GetNoShowEligibleBookings = async (req: Request, res: Response) => {
+  const branchId = req.branch_Id;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+
+  // Configurable grace period in hours — bookings are only flaggable for
+  // no-show after this many hours have elapsed past their scheduled startAt.
+  const graceHours = parseInt(req.query.graceHours as string) || 0;
+  const cutoff = new Date(Date.now() - graceHours * 60 * 60 * 1000);
+
+  try {
+    const where = {
+      branchId,
+      status: BookingStatus.CONFIRMED,
+      paymentStatus: PaymentStatus.SUCCESS,
+      startAt: { lt: cutoff },
+    };
+
+    const [total, bookings] = await Promise.all([
+      prisma.booking.count({ where }),
+      prisma.booking.findMany({
+        where,
+        select: {
+          publicId: true,
+          startAt: true,
+          endAt: true,
+          totalFinal: true,
+          isAdvancePayment: true,
+          advanceAmount: true,
+          remainingBalance: true,
+          depositMethod: true,
+          createdAt: true,
+          customer: {
+            select: {
+              publicId: true,
+              user: {
+                select: { name: true, phone: true, email: true },
+              },
+            },
+          },
+          items: {
+            select: {
+              vehicle: {
+                select: {
+                  make: true,
+                  model: true,
+                  regNo: true,
+                  images: {
+                    where: { isThumbnail: true },
+                    take: 1,
+                    select: { file: { select: { url: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { startAt: "asc" }, // most overdue first
+        take: limit,
+        skip,
+      }),
+    ]);
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: bookings,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      graceHours,
+    });
+  } catch (error) {
+    console.error("[GetNoShowEligibleBookings] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
   }
 };
