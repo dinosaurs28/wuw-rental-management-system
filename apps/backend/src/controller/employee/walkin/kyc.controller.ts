@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../../types/statusCode.js";
-import { prisma, KycType, KycStatus } from "@repo/database/client";
+import { prisma, KycType, KycSide, KycStatus } from "@repo/database/client";
 import { createID } from "../../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../../lib/r2.client.js";
@@ -13,7 +13,7 @@ const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 export const UploadWalkinKyc = async (req: Request, res: Response) => {
-  const { kyc_type } = req.body;
+  const { kyc_type, side } = req.body;
   // req.customer_id is populated by CheckCustomerPublicId middleware
   const customerId = req.customer_id;
   // req.public_Id is populated by EmployeeCheck middleware
@@ -41,6 +41,12 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
   if (!kyc_type || !Object.values(KycType).includes(kyc_type as KycType)) {
     return res.status(StatusCode.BAD_REQUEST).json({
       message: `Invalid or missing kyc_type. Allowed: ${Object.values(KycType).join(", ")}`,
+    });
+  }
+
+  if (!side || !Object.values(KycSide).includes(side as KycSide)) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      message: `Invalid or missing side. Allowed: ${Object.values(KycSide).join(", ")}`,
     });
   }
 
@@ -95,9 +101,10 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     // Check if KYC of this type already exists for customer
     const existingKyc = await prisma.customerKyc.findUnique({
       where: {
-        customerId_type: {
+        customerId_type_side: {
           customerId: customerId,
           type: kyc_type as KycType,
+          side: side as KycSide,
         },
       },
     });
@@ -107,8 +114,8 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
       kycRecord = await prisma.customerKyc.update({
         where: { id: existingKyc.id },
         data: {
-          fileId: fileRecord.id, // Update to new file
-          status: KycStatus.PENDING, // Reset status on new upload
+          fileId: fileRecord.id,
+          status: KycStatus.PENDING,
         },
       });
     } else {
@@ -117,6 +124,7 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
           publicId: kycPublicId,
           customerId: customerId,
           type: kyc_type as KycType,
+          side: side as KycSide,
           fileId: fileRecord.id,
           status: KycStatus.PENDING,
         },

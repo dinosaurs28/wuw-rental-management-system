@@ -308,7 +308,7 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
           description: `Gateway recheck confirmed payment for booking ${booking.publicId}`,
           metadata: { transactionId: booking.transactionId, gatewayCode: paymentStatus.code },
         }, tx);
-      });
+      }, { timeout: 15000 });
 
       for (const item of booking.items) {
         const key = `vehicle_holds:${item.vehicle.publicId}`;
@@ -484,7 +484,7 @@ export const ManualConfirmPayment = async (req: Request, res: Response) => {
           override: "MANUAL_MANAGER_OVERRIDE",
         },
       }, tx);
-    });
+    }, { timeout: 15000 });
 
     for (const item of booking.items) {
       const key = `vehicle_holds:${item.vehicle.publicId}`;

@@ -34,6 +34,11 @@ enum KycStatus {
   REJECTED
 }
 
+enum KycSide {
+  FRONT
+  BACK
+}
+
 enum VehicleStatus {
   AVAILABLE
   OUT_FOR_RENTAL
@@ -279,6 +284,7 @@ model CustomerKyc {
   publicId   String    @unique
   customerId Int
   type       KycType
+  side       KycSide   @default(FRONT)
   fileId     Int
   status     KycStatus @default(PENDING)
 
@@ -287,7 +293,7 @@ model CustomerKyc {
 
   createdAt DateTime @default(now())
 
-  @@unique([customerId, type])
+  @@unique([customerId, type, side])
   @@index([customerId])
   @@index([fileId])
 }

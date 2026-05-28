@@ -158,6 +158,10 @@ export const VehicleDetailsPage = () => {
     const currentStartDate = currentState.getStartDate();
     const currentEndDate = currentState.getEndDate();
 
+    // Capture payment plan before clearVehicleSelection resets it to defaults
+    const savedPaymentFlow   = currentState.paymentFlow;
+    const savedAdvanceAmount = currentState.advancePayAmount;
+
     // Clear previous vehicle selection from session storage
     currentState.clearVehicleSelection();
 
@@ -187,9 +191,11 @@ export const VehicleDetailsPage = () => {
       branch: getBranchName(vehicle.branch),
     });
 
-    // Set dates from current state (not stale closure values)
+    // Restore dates and payment plan (clearVehicleSelection wiped them)
     if (currentStartDate) setStartDate(currentStartDate);
     if (currentEndDate) setEndDate(currentEndDate);
+    currentState.setPaymentFlow(savedPaymentFlow);
+    currentState.setAdvancePayAmount(savedAdvanceAmount);
 
     // Set pricing
     setPricePerDay(vehicle.pricing?.daily || 0);

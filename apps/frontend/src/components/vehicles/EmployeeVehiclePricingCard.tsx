@@ -20,6 +20,7 @@ interface EmployeeVehiclePricingCardProps {
   onBookVehicle: () => void;
   isRefetching?: boolean;
   disabled?: boolean;
+  hasCompleteKyc?: boolean;
 }
 
 const periodTypeLabels: Record<string, string> = {
@@ -34,6 +35,7 @@ export const EmployeeVehiclePricingCard = ({
   onBookVehicle,
   isRefetching = false,
   disabled = false,
+  hasCompleteKyc = false,
 }: EmployeeVehiclePricingCardProps) => {
   const {
     startDate: storeStartDate,
@@ -95,7 +97,7 @@ export const EmployeeVehiclePricingCard = ({
   };
 
   const canBook =
-    isAvailable && startDate && endDate && !isRefetching && !disabled;
+    isAvailable && startDate && endDate && !isRefetching && !disabled && hasCompleteKyc;
 
   return (
     <Card className="overflow-hidden border border-zinc-200 shadow-lg">
@@ -357,10 +359,12 @@ export const EmployeeVehiclePricingCard = ({
                 <Loader2 className="size-4 animate-spin" />
                 Updating...
               </span>
-            ) : isAvailable ? (
-              "Proceed to Booking"
-            ) : (
+            ) : !isAvailable ? (
               "Currently Unavailable"
+            ) : !hasCompleteKyc ? (
+              "Select KYC Document"
+            ) : (
+              "Proceed to Booking"
             )}
           </Button>
         </div>

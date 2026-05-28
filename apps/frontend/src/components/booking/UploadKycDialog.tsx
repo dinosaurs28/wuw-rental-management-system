@@ -45,6 +45,9 @@ const uploadKycSchema = z.object({
   type: z.enum(["DL", "AADHAAR", "PAN"], {
     required_error: "Please select document type",
   }),
+  side: z.enum(["FRONT", "BACK"], {
+    required_error: "Please select document side",
+  }),
   file: z
     .instanceof(File, { message: "Please select a file" })
     .refine(
@@ -103,6 +106,7 @@ export const UploadKycDialog = ({
       const formData = new FormData();
       formData.append("file", data.file);
       formData.append("kyc_type", data.type);
+      formData.append("side", data.side);
       formData.append("customer_public_id", customerPublicId);
 
       await apiClient.post("/employee/walkin/kyc/upload", formData, {
@@ -168,6 +172,31 @@ export const UploadKycDialog = ({
                       <SelectItem value="DL">Driver's License</SelectItem>
                       <SelectItem value="AADHAAR">Aadhaar Card</SelectItem>
                       <SelectItem value="PAN">PAN Card</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="side"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Document Side</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select side" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="FRONT">Front Side</SelectItem>
+                      <SelectItem value="BACK">Back Side</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

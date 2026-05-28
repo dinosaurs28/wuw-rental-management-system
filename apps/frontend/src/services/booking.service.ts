@@ -205,7 +205,7 @@ export const bookingService = {
   },
 
   /**
-   * Verify online payment status
+   * Verify online payment status (customer-facing, CUSTOMER role only)
    * GET /payment/status/:transactionId
    */
   verifyOnlinePayment: async (
@@ -213,6 +213,19 @@ export const bookingService = {
   ): Promise<PaymentStatusResponse> => {
     const response = await apiClient.get<PaymentStatusResponse>(
       `/payment/status/${transactionId}`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Verify booking payment status from the employee side (STAFF role)
+   * GET /employee/booking/payment-status/:transactionId
+   */
+  verifyEmployeePayment: async (
+    transactionId: string,
+  ): Promise<PaymentStatusResponse> => {
+    const response = await apiClient.get<PaymentStatusResponse>(
+      `/employee/booking/payment-status/${transactionId}`,
     );
     return response.data;
   },

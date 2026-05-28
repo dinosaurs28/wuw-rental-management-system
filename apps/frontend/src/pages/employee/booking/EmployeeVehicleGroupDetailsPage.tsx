@@ -108,15 +108,27 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     try {
       const response = await kycService.getCustomerKyc(customerSession.publicId);
       setKycDocuments(response.data);
-      if (!customerKycId) {
-        const approvedDoc = response.data.find((d) => d.status === "APPROVED");
-        if (approvedDoc) {
-          setSelectedKycId(approvedDoc.publicId);
-          setCustomerKycId(approvedDoc.publicId);
-        }
-      } else {
-        const storedDoc = response.data.find((d) => d.publicId === customerKycId);
+
+      // Auto-select only complete document types (both FRONT and BACK present)
+      const docs = response.data;
+      const completeTypeFront = ["DL", "AADHAAR", "PAN"].reduce<KycDocument | null>((found, type) => {
+        if (found) return found;
+        const front = docs.find((d) => d.type === type && d.side === "FRONT");
+        const back = docs.find((d) => d.type === type && d.side === "BACK");
+        return front && back ? front : null;
+      }, null);
+
+      if (!customerKycId && completeTypeFront) {
+        setSelectedKycId(completeTypeFront.publicId);
+        setCustomerKycId(completeTypeFront.publicId);
+      } else if (customerKycId) {
+        const storedDoc = docs.find((d) => d.publicId === customerKycId);
         if (storedDoc) setSelectedKycId(storedDoc.publicId);
+        else {
+          // Previously stored doc no longer exists — clear
+          setSelectedKycId(null);
+          setCustomerKycId(null);
+        }
       }
     } catch {
       setKycError("Failed to load customer documents. Please try again.");
@@ -150,6 +162,16 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     }
   };
 
+  // A type is complete when both FRONT and BACK sides exist
+  const hasCompleteKyc = (() => {
+    if (!selectedKycId) return false;
+    return ["DL", "AADHAAR", "PAN"].some((type) => {
+      const front = kycDocuments.find((d) => d.type === type && d.side === "FRONT");
+      const back = kycDocuments.find((d) => d.type === type && d.side === "BACK");
+      return front && back && front.publicId === selectedKycId;
+    });
+  })();
+
   const handleBookVehicle = () => {
     if (!group || !customerSession) {
       toast.error("Missing group or session details");
@@ -159,9 +181,10 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       toast.error("Please select booking dates");
       return;
     }
-    if (!customerKycId) {
-      toast.error("Please select a KYC document");
+    if (!customerKycId || !hasCompleteKyc) {
+      toast.error("Please upload both front and back sides of a KYC document");
       document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
+      setShowUploadKyc(true);
       return;
     }
 
@@ -386,6 +409,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     isLoading ||
                     (customerSession ? !customerSession.profileCompleted : true)
                   }
+                  hasCompleteKyc={hasCompleteKyc}
                 />
               )}
 

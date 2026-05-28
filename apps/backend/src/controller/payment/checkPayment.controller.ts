@@ -201,7 +201,7 @@ export const checkPayment = async (req: Request, res: Response) => {
           },
         });
 
-      });
+      }, { timeout: 15000 });
 
       console.log(`[checkPayment] Prisma transaction committed OK for booking=${booking.publicId}`);
 

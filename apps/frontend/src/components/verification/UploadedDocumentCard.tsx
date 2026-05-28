@@ -92,6 +92,13 @@ export const UploadedDocumentCard = ({
           >
             {document.status}
           </span>
+
+          {/* Side Badge */}
+          {document.side && (
+            <span className="absolute top-3 right-3 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full z-20 backdrop-blur-md border bg-zinc-900/60 text-zinc-200 border-zinc-700/40">
+              {document.side === "FRONT" ? "Front" : "Back"}
+            </span>
+          )}
         </div>
 
         {/* Info & Actions */}
