@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Shield, Loader2, User } from "lucide-react";
 import axios from "axios";
+import type { KycDocumentType, KycSide } from "@/services/kyc.service";
 
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import {
@@ -30,7 +31,6 @@ export function DocumentsPage() {
   const {
     selectedDocumentType,
     uploadedDocuments,
-    isUploading,
     isFetching,
     deletingDocumentId,
     setSelectedDocumentType,
@@ -44,6 +44,17 @@ export function DocumentsPage() {
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isProfileMissing, setIsProfileMissing] = useState(false);
+  const [uploadingSide, setUploadingSide] = useState<KycSide | null>(null);
+  const [selectedSide, setSelectedSide] = useState<KycSide | null>(null);
+
+  const handleSelectType = useCallback(
+    (type: KycDocumentType | null) => {
+      setSelectedDocumentType(type);
+      setSelectedSide(null);
+      setUploadError(null);
+    },
+    [setSelectedDocumentType],
+  );
 
   // Fetch existing documents on mount
   useEffect(() => {
@@ -80,13 +91,14 @@ export function DocumentsPage() {
 
   // Handle file upload
   const handleFileSelect = useCallback(
-    async (file: File) => {
+    async (file: File, side: KycSide) => {
       if (!selectedDocumentType) {
         toast.error("Please select a document type first");
         return;
       }
 
       setUploadError(null);
+      setUploadingSide(side);
       setIsUploading(true);
 
       try {
@@ -94,10 +106,23 @@ export function DocumentsPage() {
         const response = await kycService.uploadDocument(
           processedFile,
           selectedDocumentType,
+          side,
         );
         addDocument(response.data);
-        setSelectedDocumentType(null);
-        toast.success("Document uploaded successfully");
+        toast.success(`${side === "FRONT" ? "Front" : "Back"} side uploaded`);
+        setSelectedSide(null);
+
+        // Auto-deselect type once both sides are uploaded
+        const allDocs = useKycStore.getState().uploadedDocuments;
+        const hasFront = allDocs.some(
+          (d) => d.type === selectedDocumentType && d.side === "FRONT",
+        );
+        const hasBack = allDocs.some(
+          (d) => d.type === selectedDocumentType && d.side === "BACK",
+        );
+        if (hasFront && hasBack) {
+          setSelectedDocumentType(null);
+        }
       } catch (error) {
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 403) {
@@ -105,7 +130,7 @@ export function DocumentsPage() {
             navigate("/auth/sign-in", { replace: true });
           } else if (error.response?.status === 409) {
             setUploadError(
-              "Document of this type already exists. Delete it first to upload a new one.",
+              "This side already exists. Delete it first to re-upload.",
             );
             toast.error("Document already exists");
           } else {
@@ -118,6 +143,7 @@ export function DocumentsPage() {
         }
       } finally {
         setIsUploading(false);
+        setUploadingSide(null);
       }
     },
     [
@@ -158,8 +184,26 @@ export function DocumentsPage() {
     [removeDocument, setDeletingDocumentId, navigate],
   );
 
-  // Get already uploaded document types (to disable in selector)
-  const uploadedTypes = uploadedDocuments.map((doc) => doc.type);
+  const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR", "PAN"];
+
+  const fullyUploadedTypes = KYC_TYPES.filter((type) => {
+    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT");
+    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK");
+    return hasFront && hasBack;
+  });
+
+  const partialTypes = KYC_TYPES.filter((type) => {
+    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT");
+    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK");
+    return (hasFront || hasBack) && !(hasFront && hasBack);
+  });
+
+  const frontDoc = selectedDocumentType
+    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "FRONT")
+    : null;
+  const backDoc = selectedDocumentType
+    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "BACK")
+    : null;
 
   // Loading state
   if (authLoading) {
@@ -224,33 +268,85 @@ export function DocumentsPage() {
               </div>
             ) : (
               <>
-                {/* Document Type Selection */}
+                {/* Step 1 — Document Type */}
                 <section>
                   <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
-                    Select Document Type
+                    Step 1 — Select Document Type
                   </h2>
                   <DocumentTypeSelector
                     selectedType={selectedDocumentType}
-                    onSelectType={setSelectedDocumentType}
-                    disabledTypes={uploadedTypes}
+                    onSelectType={handleSelectType}
+                    disabledTypes={fullyUploadedTypes}
+                    partialTypes={partialTypes}
                   />
                 </section>
 
-                {/* Upload Zone */}
-                <section>
-                  <DocumentUploadZone
-                    onFileSelect={handleFileSelect}
-                    isUploading={isUploading}
-                    disabled={!selectedDocumentType}
-                    error={uploadError}
-                  />
-                  {!selectedDocumentType && !isUploading && (
-                    <p className="text-sm font-medium text-zinc-500 text-center mt-4">
-                      Please select a document type above to enable the upload
-                      zone
-                    </p>
-                  )}
-                </section>
+                {/* Step 2 — Side Selection */}
+                {selectedDocumentType && (
+                  <section>
+                    <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                      Step 2 — Select Side
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(["FRONT", "BACK"] as KycSide[]).map((side) => {
+                        const isUploaded = side === "FRONT" ? !!frontDoc : !!backDoc;
+                        const isSelected = selectedSide === side;
+                        return (
+                          <button
+                            key={side}
+                            type="button"
+                            onClick={() => !isUploaded && setSelectedSide(side)}
+                            disabled={isUploaded}
+                            className={[
+                              "relative flex flex-col items-center justify-center gap-2 p-5 rounded-[1.5rem] border-2 transition-all duration-200 focus:outline-none",
+                              isSelected
+                                ? "border-orange-400 bg-orange-50 shadow-[0_0_20px_rgba(249,115,22,0.1)]"
+                                : isUploaded
+                                  ? "border-emerald-200 bg-emerald-50/50 opacity-70 cursor-not-allowed"
+                                  : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-zinc-100 cursor-pointer",
+                            ].join(" ")}
+                          >
+                            {isUploaded && (
+                              <span className="absolute top-3 right-3 text-[9px] font-black tracking-widest uppercase bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                Uploaded
+                              </span>
+                            )}
+                            <span className="text-base font-bold text-zinc-900">
+                              {side === "FRONT" ? "Front Side" : "Back Side"}
+                            </span>
+                            <span className="text-xs text-zinc-500">
+                              {side === "FRONT"
+                                ? "Photo / ID number side"
+                                : "Address / signature side"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* Step 3 — Upload Zone */}
+                {selectedDocumentType && selectedSide && (
+                  <section>
+                    <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                      Step 3 — Upload {selectedSide === "FRONT" ? "Front" : "Back"} Side
+                    </h2>
+                    <DocumentUploadZone
+                      side={selectedSide}
+                      onFileSelect={(file) => handleFileSelect(file, selectedSide)}
+                      isUploading={!!uploadingSide}
+                      disabled={false}
+                      error={uploadError}
+                    />
+                  </section>
+                )}
+
+                {!selectedDocumentType && (
+                  <p className="text-sm font-medium text-zinc-500 text-center">
+                    Select a document type above to continue
+                  </p>
+                )}
 
                 {/* Uploaded Documents Grid */}
                 <section>

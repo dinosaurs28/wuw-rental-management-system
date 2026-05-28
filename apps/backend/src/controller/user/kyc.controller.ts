@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, KycType, KycStatus, Role } from "@repo/database/client";
+import { prisma, KycType, KycSide, KycStatus, Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../lib/r2.client.js";
@@ -70,7 +70,7 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
       });
     }
 
-    const { type } = req.body;
+    const { type, side } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -80,20 +80,25 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
     }
 
     if (!type || !Object.values(KycType).includes(type as KycType)) {
-      // Cleanup temp file if validation fails
       await fs.unlink(file.path).catch(() => {});
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid or missing KYC document type",
       });
     }
 
-    // Check if document of this type already exists (optional: business rule?)
-    // The schema has @@unique([customerId, type]), so we must check or handle conflict.
+    if (!side || !Object.values(KycSide).includes(side as KycSide)) {
+      await fs.unlink(file.path).catch(() => {});
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: `Invalid or missing side. Allowed: ${Object.values(KycSide).join(", ")}`,
+      });
+    }
+
     const existingKyc = await prisma.customerKyc.findUnique({
       where: {
-        customerId_type: {
+        customerId_type_side: {
           customerId,
           type: type as KycType,
+          side: side as KycSide,
         },
       },
     });
@@ -101,7 +106,7 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
     if (existingKyc) {
       await fs.unlink(file.path).catch(() => {});
       return res.status(StatusCode.CONFLICT).json({
-        message: `Document of type ${type} already exists. Please delete it first if you want to replace it.`,
+        message: `Document of type ${type} (${side}) already exists. Please delete it first if you want to replace it.`,
       });
     }
 
@@ -139,6 +144,7 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
           publicId: createID(),
           customerId,
           type: type as KycType,
+          side: side as KycSide,
           fileId: fileObj.id,
           status: KycStatus.PENDING,
         },

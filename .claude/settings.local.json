@@ -29,7 +29,11 @@
       "Bash(curl -s \"http://localhost:8080/api/public/vehicles/h7whgyobfwo7n0g8?start=2026-03-27T10:00&end=2026-03-28T10:00\")",
       "Bash(python3 -m json.tool)",
       "Bash(sed -n '990,1030p' C:/Freelance/vrms/packages/db/prisma/schema.prisma)",
-      "Bash(sed -n '1975,2070p' C:/Freelance/vrms/packages/db/prisma/schema.prisma)"
+      "Bash(sed -n '1975,2070p' C:/Freelance/vrms/packages/db/prisma/schema.prisma)",
+      "Skill(create-implementation-plan)",
+      "Bash(not exist *)",
+      "Bash(sed -n '125,180p' /c/Freelance/vrms/apps/backend/src/controller/user/booking.controller.ts)",
+      "Bash(sed -n '125,180p' /c/Freelance/vrms/apps/backend/src/controller/booking.controller.ts)"
     ]
   }
 }

@@ -8,10 +8,18 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type DropdownProps,
 } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import "react-day-picker/dist/style.css";
 
 function Calendar({
@@ -159,6 +167,7 @@ function Calendar({
           );
         },
         DayButton: CalendarDayButton,
+        Dropdown: CalendarDropdown,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
@@ -172,6 +181,36 @@ function Calendar({
       }}
       {...props}
     />
+  );
+}
+
+function CalendarDropdown({ value, onChange, options }: DropdownProps) {
+  return (
+    <Select
+      value={String(value)}
+      onValueChange={(val) => {
+        const syntheticEvent = {
+          target: { value: val },
+        } as React.ChangeEvent<HTMLSelectElement>;
+        onChange?.(syntheticEvent);
+      }}
+    >
+      <SelectTrigger className="h-7 border-zinc-200 bg-white px-2 py-0.5 text-sm font-medium focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-56 overflow-y-auto" position="popper">
+        {options?.map((opt) => (
+          <SelectItem
+            key={opt.value}
+            value={String(opt.value)}
+            disabled={opt.disabled}
+            className="text-sm"
+          >
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -221,4 +260,4 @@ function CalendarDayButton({
   );
 }
 
-export { Calendar, CalendarDayButton };
+export { Calendar, CalendarDayButton, CalendarDropdown };

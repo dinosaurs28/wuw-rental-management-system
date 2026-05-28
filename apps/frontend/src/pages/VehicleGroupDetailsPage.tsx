@@ -133,6 +133,10 @@ export const VehicleGroupDetailsPage = () => {
     const savedStartDate = startDate;
     const savedEndDate   = endDate;
 
+    // Capture payment plan before clearVehicleSelection resets it to defaults
+    const savedPaymentFlow    = useVehicleRentalStore.getState().paymentFlow;
+    const savedAdvanceAmount  = useVehicleRentalStore.getState().advancePayAmount;
+
     useVehicleRentalStore.getState().clearVehicleSelection();
 
     // Store the group key instead of a specific vehicle ID
@@ -147,9 +151,11 @@ export const VehicleGroupDetailsPage = () => {
       branch:   group.branch,
     });
 
-    // Restore dates (clearVehicleSelection wiped them)
+    // Restore dates and payment plan (clearVehicleSelection wiped them)
     if (savedStartDate) setStartDate(new Date(savedStartDate));
     if (savedEndDate)   setEndDate(new Date(savedEndDate));
+    useVehicleRentalStore.getState().setPaymentFlow(savedPaymentFlow);
+    useVehicleRentalStore.getState().setAdvancePayAmount(savedAdvanceAmount);
 
     setPricePerDay(group.pricing?.daily || 0);
     setDeposit(group.deposit || 0);
