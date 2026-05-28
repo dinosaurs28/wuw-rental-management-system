@@ -3,12 +3,16 @@ import apiClient from "@/lib/axios";
 // KYC Document types matching backend KycType enum
 export type KycDocumentType = "DL" | "AADHAAR" | "PAN";
 
+// KYC document side matching backend KycSide enum
+export type KycSide = "FRONT" | "BACK";
+
 // Response types based on backend controller
 export interface KycDocument {
   id: number;
   publicId: string;
   customerId: number;
   type: KycDocumentType;
+  side: KycSide;
   status: "PENDING" | "APPROVED" | "REJECTED";
   fileId: number;
   createdAt: string;
@@ -55,10 +59,12 @@ export const kycService = {
   uploadDocument: async (
     file: File,
     type: KycDocumentType,
+    side: KycSide,
   ): Promise<UploadKycDocumentResponse> => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", type);
+    formData.append("side", side);
 
     const response = await apiClient.post<UploadKycDocumentResponse>(
       "/user/kyc",

@@ -9,6 +9,7 @@ import {
   createEmployeeBooking,
   GetBookingDetails,
 } from "../../controller/employee/booking.controller.js";
+import { checkPayment } from "../../controller/payment/checkPayment.controller.js";
 import { ScanBooking } from "../../controller/employee/scanBooking.controller.js";
 import { getEmployeeVehicleCategories } from "../../controller/employee/vehicle.controller.js";
 import { cancelEmployeeHold } from "../../controller/employee/cancelHold.controller.js";
@@ -126,6 +127,7 @@ router.get("/vehicles/search", EmployeeCheck, searchVehicles);
 router.get("/vehicles/group/:groupKey", EmployeeCheck, getEmployeeVehicleGroupDetails);
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails);
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking);
+router.get("/booking/payment-status/:transactionId", EmployeeCheck, checkPayment);
 router.delete("/booking/hold/:holdId", EmployeeCheck, cancelEmployeeHold);
 router.get("/customer/search", EmployeeCheck, SearchCustomer);
 router.get("/customer/:publicId", EmployeeCheck, GetCustomerDetails);

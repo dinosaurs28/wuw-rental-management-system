@@ -1,14 +1,17 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/lib/utils";
-import { Upload, FileImage, AlertCircle } from "lucide-react";
+import { Upload, FileImage, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import type { KycSide } from "@/services/kyc.service";
 
 interface DocumentUploadZoneProps {
   onFileSelect: (file: File) => void;
   isUploading: boolean;
   disabled?: boolean;
   error?: string | null;
+  side?: KycSide;
+  alreadyUploaded?: boolean;
 }
 
 const ACCEPTED_TYPES = {
@@ -23,7 +26,10 @@ export const DocumentUploadZone = ({
   isUploading,
   disabled = false,
   error,
+  side,
+  alreadyUploaded = false,
 }: DocumentUploadZoneProps) => {
+  const sideLabel = side === "FRONT" ? "Front Side" : side === "BACK" ? "Back Side" : null;
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: any[]) => {
       // If dropzone rejects it (e.g. because of MIME type vs extension mismatch)
@@ -55,8 +61,36 @@ export const DocumentUploadZone = ({
   // Get rejection error message
   const rejectionError = fileRejections[0]?.errors[0]?.message;
 
+  if (alreadyUploaded) {
+    return (
+      <div className="space-y-2">
+        {sideLabel && (
+          <p className="text-xs font-black tracking-widest uppercase text-zinc-500">
+            {sideLabel}
+          </p>
+        )}
+        <div className="flex flex-col items-center justify-center w-full min-h-[250px] p-8 border-2 border-dashed border-emerald-200 rounded-[2rem] bg-emerald-50/50">
+          <div className="p-5 rounded-full bg-emerald-100 text-emerald-500 mb-4">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <p className="text-sm font-bold text-emerald-700 text-center">
+            {sideLabel ?? "Document"} uploaded
+          </p>
+          <p className="text-xs text-emerald-600/70 mt-1 text-center">
+            Delete the existing document below to re-upload
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
+      {sideLabel && (
+        <p className="text-xs font-black tracking-widest uppercase text-zinc-500">
+          {sideLabel}
+        </p>
+      )}
       <div
         {...getRootProps()}
         className={cn(

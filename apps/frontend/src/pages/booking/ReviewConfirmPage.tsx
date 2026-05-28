@@ -230,7 +230,7 @@ export const ReviewConfirmPage = () => {
                   {/* Disabled state hint */}
                   {!isFormValid && (
                     <p className="text-xs text-muted-foreground text-center mt-3">
-                      {!selectedKycFilePublicId && "Select a KYC document • "}
+                      {!selectedKycFilePublicId && "Upload both sides of a document • "}
                       {!paymentType && "Select payment method • "}
                       {!termsAccepted && "Accept terms & conditions"}
                     </p>

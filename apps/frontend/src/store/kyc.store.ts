@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { KycDocument, KycDocumentType } from "@/services/kyc.service";
+import type { KycDocument, KycDocumentType, KycSide } from "@/services/kyc.service";
 
 interface KycState {
   // Document type selection
@@ -24,7 +24,7 @@ interface KycState {
 
   // Computed
   hasRequiredDocuments: () => boolean;
-  getDocumentByType: (type: KycDocumentType) => KycDocument | undefined;
+  getDocumentByType: (type: KycDocumentType, side?: KycSide) => KycDocument | undefined;
 }
 
 export const useKycStore = create<KycState>((set, get) => ({
@@ -61,12 +61,21 @@ export const useKycStore = create<KycState>((set, get) => ({
   // Computed helpers
   hasRequiredDocuments: () => {
     const { uploadedDocuments } = get();
-    // At least one document should be uploaded to proceed
-    return uploadedDocuments.length > 0;
+    // A type is complete when it has both FRONT and BACK, or has an APPROVED side (backwards compat)
+    const types = [...new Set(uploadedDocuments.map((doc) => doc.type))];
+    return types.some((type) => {
+      const docs = uploadedDocuments.filter((d) => d.type === type);
+      const hasApproved = docs.some((d) => d.status === "APPROVED");
+      const hasFront = docs.some((d) => d.side === "FRONT");
+      const hasBack = docs.some((d) => d.side === "BACK");
+      return hasApproved || (hasFront && hasBack);
+    });
   },
 
-  getDocumentByType: (type) => {
+  getDocumentByType: (type, side) => {
     const { uploadedDocuments } = get();
-    return uploadedDocuments.find((doc) => doc.type === type);
+    return uploadedDocuments.find(
+      (doc) => doc.type === type && (side === undefined || doc.side === side),
+    );
   },
 }));

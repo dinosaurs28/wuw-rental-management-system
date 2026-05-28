@@ -48,7 +48,7 @@ export const EmployeeBookingStatusPage = () => {
     if (!transactionId) return;
 
     try {
-      const response = await bookingService.verifyOnlinePayment(transactionId);
+      const response = await bookingService.verifyEmployeePayment(transactionId);
 
       if (response.status === "Success") {
         setStatus("success");

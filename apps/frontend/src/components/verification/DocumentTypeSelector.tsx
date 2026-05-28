@@ -34,18 +34,21 @@ interface DocumentTypeSelectorProps {
   selectedType: KycDocumentType | null;
   onSelectType: (type: KycDocumentType) => void;
   disabledTypes?: KycDocumentType[];
+  partialTypes?: KycDocumentType[];
 }
 
 export const DocumentTypeSelector = ({
   selectedType,
   onSelectType,
   disabledTypes = [],
+  partialTypes = [],
 }: DocumentTypeSelectorProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {documentTypes.map((docType) => {
         const isSelected = selectedType === docType.type;
         const isDisabled = disabledTypes.includes(docType.type);
+        const isPartial = partialTypes.includes(docType.type);
 
         return (
           <button
@@ -67,10 +70,15 @@ export const DocumentTypeSelector = ({
             {isSelected && (
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
             )}
-            {/* Uploaded Badge */}
+            {/* Status Badge */}
             {isDisabled && (
               <span className="absolute top-4 right-4 text-[9px] font-black tracking-widest uppercase bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
-                Uploaded
+                Complete
+              </span>
+            )}
+            {isPartial && !isDisabled && (
+              <span className="absolute top-4 right-4 text-[9px] font-black tracking-widest uppercase bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20">
+                1/2
               </span>
             )}
 
