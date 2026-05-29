@@ -5,14 +5,6 @@ import type {
   ChargeResult,
 } from "../../../types/charge-engine.types.js";
 
-/** Fuel level ordinal for comparison — higher = more fuel. */
-const FUEL_LEVEL_ORDER: Record<string, number> = {
-  EMPTY: 0,
-  QUARTER: 1,
-  HALF: 2,
-  THREE_QUARTER: 3,
-  FULL: 4,
-};
 
 /**
  * FUEL_DEFICIT module — detects fuel drop between pickup and return.
@@ -41,9 +33,9 @@ export class FuelDeficitModule implements ChargeModuleInterface {
       };
     }
 
-    const pickupOrdinal = FUEL_LEVEL_ORDER[pickupFuelLevel] ?? 0;
-    const returnOrdinal = FUEL_LEVEL_ORDER[returnFuelLevel] ?? 0;
-    const hasDeficit = returnOrdinal < pickupOrdinal;
+    const pickupOrdinal = parseInt(pickupFuelLevel, 10);
+    const returnOrdinal = parseInt(returnFuelLevel, 10);
+    const hasDeficit = !isNaN(pickupOrdinal) && !isNaN(returnOrdinal) && returnOrdinal < pickupOrdinal;
 
     if (!hasDeficit) {
       return {

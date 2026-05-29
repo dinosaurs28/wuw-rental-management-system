@@ -41,7 +41,7 @@ import { createID } from "../../utils/nanoID.js";
 
 const computeReturnSessionSchema = z.object({
   endOdometer: z.coerce.number().min(0),
-  returnFuelLevel: z.enum(["EMPTY", "QUARTER", "HALF", "THREE_QUARTER", "FULL"]).optional(),
+  returnFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   extraKmCharge: z.coerce.number().min(0).optional(),
   fuelCharge: z.coerce.number().min(0).optional(),
   fastagAmount: z.coerce.number().min(0).optional(),
