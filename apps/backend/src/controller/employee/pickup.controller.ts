@@ -14,7 +14,7 @@ import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 import { z } from "zod";
 const chargePickupDataSchema = z.object({
-  pickupFuelLevel: z.enum(["EMPTY", "QUARTER", "HALF", "THREE_QUARTER", "FULL"]).optional(),
+  pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   safetyDepositRequest: z.object({
     requestedAmount: z.coerce.number().positive(),
     reason: z.string().min(1),

@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import type { ChargeType, FuelLevel, GraceType } from "@repo/database/client";
+import type { ChargeType, GraceType } from "@repo/database/client";
 
 // ── Frozen charge config ──────────────────────────────────────────────────────
 
@@ -85,8 +85,8 @@ export interface ChargeContext {
   applyGrace?: boolean;
 
   // Fuel module input (only relevant when fuelModuleEnabled = true)
-  pickupFuelLevel?: FuelLevel;
-  returnFuelLevel?: FuelLevel;
+  pickupFuelLevel?: string;
+  returnFuelLevel?: string;
   fuelDeficitCharge?: Decimal;  // employee-entered custom charge
   fuelSkipReason?: string;      // mandatory if deficit but charge skipped
 

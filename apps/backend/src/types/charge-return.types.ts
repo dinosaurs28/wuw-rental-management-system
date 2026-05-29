@@ -1,6 +1,6 @@
 /** Input data provided by employee at vehicle return time. */
 export interface ChargeReturnDataInput {
-  returnFuelLevel?: "EMPTY" | "QUARTER" | "HALF" | "THREE_QUARTER" | "FULL";
+  returnFuelLevel?: string;
   fuelDeficitCharge?: number;
   fuelSkipReason?: string;
   fastagAmount?: number;

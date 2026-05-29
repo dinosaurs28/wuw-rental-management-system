@@ -48,7 +48,7 @@ const initiatePickupSessionSchema = z.object({
   // Handover metadata — saved now; vehicle status set when payment is recorded
   odo: z.coerce.number().min(0).optional(),
   fuelLevel: z.coerce.number().min(0).max(100).optional(),
-  pickupFuelLevel: z.enum(["EMPTY", "QUARTER", "HALF", "THREE_QUARTER", "FULL"]).optional(),
+  pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
 });
