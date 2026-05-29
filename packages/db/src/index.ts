@@ -52,7 +52,6 @@ export {
   GraceType,
   ChargeType,
   OverrideStatus,
-  FuelLevel,
   SafetyDepositStatus,
   RentalPeriodType,
   DamageChargeType,

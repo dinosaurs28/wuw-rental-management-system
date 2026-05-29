@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const fuelLevelEnum = z.enum(["EMPTY", "QUARTER", "HALF", "THREE_QUARTER", "FULL"]);
+const fuelLevelEnum = z.string().regex(/^([1-9]|10)$/);
 
 // ── Fastag configuration (on Vehicle) ────────────────────────────────────────
 

@@ -72,13 +72,6 @@ enum OverrideStatus {
   REJECTED
 }
 
-enum FuelLevel {
-  EMPTY
-  QUARTER
-  HALF
-  THREE_QUARTER
-  FULL
-}
 
 enum SafetyDepositStatus {
   PENDING_APPROVAL
@@ -1872,8 +1865,8 @@ model FuelRecord {
 
   bookingId Int @unique
 
-  pickupFuelLevel  FuelLevel
-  returnFuelLevel  FuelLevel?
+  pickupFuelLevel  String
+  returnFuelLevel  String?
 
   fuelDeficit       Boolean  @default(false)
   fuelDeficitCharge Decimal? @db.Decimal(10, 2)
