@@ -105,21 +105,14 @@ const getDocumentTypeName = (type: string): string => {
 const isImageFile = (mime: string): boolean => mime.startsWith("image/");
 
 // --- FUEL LEVEL CONSTANTS ---
-const FUEL_LEVEL_OPTIONS = [
-  { value: "EMPTY", label: "Empty (0%)" },
-  { value: "QUARTER", label: "Quarter (25%)" },
-  { value: "HALF", label: "Half (50%)" },
-  { value: "THREE_QUARTER", label: "Three Quarter (75%)" },
-  { value: "FULL", label: "Full (100%)" },
-] as const;
+const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}));
 
-const FUEL_LEVEL_TO_NUM: Record<string, number> = {
-  EMPTY: 0,
-  QUARTER: 25,
-  HALF: 50,
-  THREE_QUARTER: 75,
-  FULL: 100,
-};
+const FUEL_LEVEL_TO_NUM: Record<string, number> = Object.fromEntries(
+  Array.from({ length: 10 }, (_, i) => [String(i + 1), (i + 1) * 10])
+);
 
 // --- VALIDATION SCHEMA ---
 const handoverSchema = z.object({
