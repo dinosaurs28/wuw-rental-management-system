@@ -61,21 +61,18 @@ import {
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
 
-const FUEL_LEVEL_OPTIONS = [
-  { value: "EMPTY", label: "Empty (0%)" },
-  { value: "QUARTER", label: "Quarter (25%)" },
-  { value: "HALF", label: "Half (50%)" },
-  { value: "THREE_QUARTER", label: "Three Quarter (75%)" },
-  { value: "FULL", label: "Full (100%)" },
-] as const;
+const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}));
 
-const FUEL_LEVEL_ORDER: Record<string, number> = {
-  EMPTY: 0, QUARTER: 1, HALF: 2, THREE_QUARTER: 3, FULL: 4,
-};
+const FUEL_LEVEL_ORDER: Record<string, number> = Object.fromEntries(
+  Array.from({ length: 10 }, (_, i) => [String(i + 1), i + 1])
+);
 
-const FUEL_LEVEL_TO_PCT: Record<string, number> = {
-  EMPTY: 0, QUARTER: 25, HALF: 50, THREE_QUARTER: 75, FULL: 100,
-};
+const FUEL_LEVEL_TO_PCT: Record<string, number> = Object.fromEntries(
+  Array.from({ length: 10 }, (_, i) => [String(i + 1), (i + 1) * 10])
+);
 
 interface DamageItem {
   id: string;
@@ -1445,7 +1442,7 @@ export default function ReturnProcessPage() {
                 </SelectContent>
               </Select>
             </div>
-            {frozenConfig?.fuelModuleEnabled && returnFuelLevel && FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER["FULL"] && (
+            {frozenConfig?.fuelModuleEnabled && returnFuelLevel && FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER["10"] && (
               <div className="space-y-3 p-4 rounded-lg border bg-amber-50/40 border-amber-200">
                 <p className="text-sm font-semibold text-amber-900">Fuel Deficit Charge</p>
                 <div className="flex items-center gap-3">
