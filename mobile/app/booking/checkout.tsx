@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi, userApi, discountApi, api } from '../../lib/api';
+import { displayCategory } from '../../lib/categoryDisplay';
 import SwipeButton from '../../components/ui/SwipeButton';
 import WhatsappFab from '../../components/ui/WhatsappFab';
 import type { VehicleDetail, KycDocument } from '../../types/api';
@@ -350,7 +351,7 @@ export default function Checkout() {
               <View style={styles.carMetaRow}>
                 <Ionicons name="location-outline" size={11} color={Colors.ink3} />
                 <Text style={styles.carMeta} numberOfLines={1}>
-                  {vehicle.branch} · {vehicle.category}
+                  {vehicle.branch} · {displayCategory(vehicle.category)}
                 </Text>
               </View>
             </View>

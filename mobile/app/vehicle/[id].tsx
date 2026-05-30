@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
+import { displayCategory } from '../../lib/categoryDisplay';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
 import type { VehicleDetail } from '../../types/api';
@@ -244,7 +245,7 @@ export default function VehicleDetail() {
         {/* Stat strip */}
         {(() => {
           const cells = [
-            { icon: 'layers-outline' as IoniconName, label: 'Type', value: vehicle.category, accent: false, show: true },
+            { icon: 'layers-outline' as IoniconName, label: 'Type', value: displayCategory(vehicle.category), accent: false, show: true },
             { icon: 'speedometer-outline' as IoniconName, label: 'Free km', value: `${pd?.freeKmLimit ?? 0}/day`, accent: false, show: !!pd?.freeKmLimit },
             { icon: 'shield-outline' as IoniconName, label: 'Deposit', value: `₹${pd?.deposit?.toLocaleString('en-IN') ?? 0}`, accent: true, show: !!pd?.deposit },
             { icon: 'navigate-outline' as IoniconName, label: 'Extra km', value: `₹${pd?.extraKmRate ?? 0}/km`, accent: false, show: !!pd?.extraKmRate },
@@ -330,7 +331,7 @@ export default function VehicleDetail() {
             <Text style={styles.sectionTitle}>Vehicle specs</Text>
             <View style={styles.specsCard}>
               {[
-                { icon: 'layers-outline' as IoniconName,          label: 'Category',      value: vehicle.category },
+                { icon: 'layers-outline' as IoniconName,          label: 'Category',      value: displayCategory(vehicle.category) },
                 { icon: 'location-outline' as IoniconName,        label: 'Branch',        value: vehicle.branch },
                 { icon: 'checkmark-circle-outline' as IoniconName,label: 'Status',        value: vehicle.status ?? 'Available' },
                 ...(pd ? [

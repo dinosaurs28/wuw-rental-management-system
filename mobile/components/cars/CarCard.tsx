@@ -65,8 +65,10 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
           {price != null ? (
             <>
               <Text style={styles.priceCurrency}>₹</Text>
-              <Text style={styles.priceAmount}>{price.toLocaleString('en-IN')}</Text>
-              <Text style={styles.priceUnit}>/day</Text>
+              <Text style={styles.priceAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {price.toLocaleString('en-IN')}
+              </Text>
+              <Text style={styles.priceUnit} numberOfLines={1}>/day</Text>
             </>
           ) : (
             <Text style={styles.priceAmount}>—</Text>
@@ -74,7 +76,7 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
         </View>
 
         <View style={styles.arrowBtn}>
-          <Ionicons name="arrow-forward" size={13} color={Colors.ink} />
+          <Ionicons name="arrow-forward" size={12} color={Colors.ink} />
         </View>
       </View>
     </TouchableOpacity>
@@ -176,37 +178,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 6,
   },
   priceWrap: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   priceCurrency: {
     fontFamily: Fonts.display,
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.ink2,
     marginRight: 1,
   },
   priceAmount: {
     fontFamily: Fonts.displayBold,
-    fontSize: 22,
+    fontSize: 19,
     color: Colors.ink,
-    letterSpacing: -0.8,
-    lineHeight: 24,
+    letterSpacing: -0.6,
+    lineHeight: 22,
+    flexShrink: 1,
   },
   priceUnit: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 10,
     color: Colors.ink3,
     marginLeft: 2,
   },
   arrowBtn: {
-    width: 30,
-    height: 30,
+    width: 26,
+    height: 26,
     borderRadius: 999,
     backgroundColor: Colors.bg,
     alignItems: 'center',

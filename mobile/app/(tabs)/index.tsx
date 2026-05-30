@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
+import { displayCategory } from '../../lib/categoryDisplay';
 import { useAuthStore } from '../../store/auth';
 import CarCard from '../../components/cars/CarCard';
 import VehicleQuickView from '../../components/cars/VehicleQuickView';
@@ -169,60 +171,67 @@ export default function Browse() {
         </View>
       ) : (
         <>
-          {/* Vehicle type filter */}
-          <View style={styles.filterLabelRow}>
-            <Ionicons name="car-sport-outline" size={13} color={Colors.ink3} />
-            <Text style={styles.filterLabel}>Vehicle Type</Text>
-          </View>
-          <View style={styles.chips}>
-            <TouchableOpacity
-              style={[styles.chip, selectedCategory === null && styles.chipActive]}
-              onPress={() => setSelectedCategory(null)}
-              activeOpacity={0.8}
+          {/* Compact filter bar — categories scroll, sort cycles */}
+          <View style={styles.filterBar}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScroll}
+              style={styles.filterScrollWrap}
             >
-              <Text style={[styles.chipText, selectedCategory === null && styles.chipTextActive]}>
-                All
+              <TouchableOpacity
+                style={[styles.chip, selectedCategory === null && styles.chipActive]}
+                onPress={() => setSelectedCategory(null)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, selectedCategory === null && styles.chipTextActive]}>
+                  All
+                </Text>
+              </TouchableOpacity>
+
+              {[...new Set((allVehicles ?? []).map(v => v.category).filter(Boolean))].sort().map((name) => (
+                <TouchableOpacity
+                  key={name}
+                  style={[styles.chip, selectedCategory === name && styles.chipActive]}
+                  onPress={() => setSelectedCategory(name)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, selectedCategory === name && styles.chipTextActive]}>
+                    {displayCategory(name)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sortPill, sortKey !== 'default' && styles.sortPillActive]}
+              onPress={() => {
+                const idx = SORT_OPTIONS.findIndex(o => o.key === sortKey);
+                const next = SORT_OPTIONS[(idx + 1) % SORT_OPTIONS.length];
+                setSortKey(next.key);
+              }}
+              activeOpacity={0.8}
+              hitSlop={6}
+            >
+              <Ionicons
+                name={
+                  sortKey === 'price_low_to_high' ? 'arrow-up' :
+                  sortKey === 'price_high_to_low' ? 'arrow-down' :
+                  'swap-vertical'
+                }
+                size={13}
+                color={sortKey === 'default' ? Colors.ink3 : Colors.orange}
+              />
+              <Text style={[styles.sortPillText, sortKey !== 'default' && styles.sortPillTextActive]}>
+                {sortKey === 'default' ? 'Sort' : 'Price'}
               </Text>
             </TouchableOpacity>
-
-            {[...new Set((allVehicles ?? []).map(v => v.category).filter(Boolean))].sort().map((name) => (
-              <TouchableOpacity
-                key={name}
-                style={[styles.chip, selectedCategory === name && styles.chipActive]}
-                onPress={() => setSelectedCategory(name)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chipText, selectedCategory === name && styles.chipTextActive]}>
-                  {name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Sort selector */}
-          <View style={styles.filterLabelRow}>
-            <Ionicons name="swap-vertical-outline" size={13} color={Colors.ink3} />
-            <Text style={styles.filterLabel}>Sort</Text>
-          </View>
-          <View style={styles.chips}>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[styles.chip, sortKey === opt.key && styles.chipActive]}
-                onPress={() => setSortKey(opt.key)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chipText, sortKey === opt.key && styles.chipTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
           </View>
 
           {/* Section label */}
           <View style={styles.sectionRow}>
             <Text style={styles.sectionLabel}>
-              {selectedCategory == null ? 'Available now' : selectedCategory}
+              {selectedCategory == null ? 'Available now' : displayCategory(selectedCategory)}
             </Text>
             {vehiclesData && (
               <Text style={styles.sectionCount}>
@@ -370,22 +379,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Filter label (shared by Vehicle Type, future filters)
-  filterLabelRow: {
+  // Compact filter bar
+  filterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 20,
+    paddingRight: 12,
+    gap: 8,
+  },
+  filterScrollWrap: { flex: 1 },
+  filterScroll: { gap: 8, paddingRight: 8, alignItems: 'center' },
+  sortPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
   },
-  filterLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.ink3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+  sortPillActive: {
+    backgroundColor: '#ff6a1f0e',
+    borderColor: '#ff6a1f33',
   },
+  sortPillText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 13,
+    color: Colors.ink2,
+  },
+  sortPillTextActive: { color: Colors.orange },
 
   // No branch state
   noBranchState: {
@@ -422,13 +446,6 @@ const styles = StyleSheet.create({
   },
 
   // Categories
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 8,
-    paddingVertical: 4,
-  },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,

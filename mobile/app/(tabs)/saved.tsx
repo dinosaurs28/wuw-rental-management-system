@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Fonts } from '../../constants/colors';
 import { useSavedStore } from '../../store/saved';
 import VehicleQuickView from '../../components/cars/VehicleQuickView';
+import { displayCategory } from '../../lib/categoryDisplay';
 import { useState } from 'react';
 import type { Vehicle } from '../../types/api';
 
@@ -144,7 +145,7 @@ function SavedHero({
 
         <View style={styles.heroMetaWrap}>
           <Text style={styles.heroMeta} numberOfLines={1}>
-            {vehicle.category}
+            {displayCategory(vehicle.category)}
           </Text>
           <View style={styles.heroArrow}>
             <Ionicons name="arrow-forward" size={14} color={Colors.ink} />

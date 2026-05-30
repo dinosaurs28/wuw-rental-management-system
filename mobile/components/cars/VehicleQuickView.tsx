@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { displayCategory } from '../../lib/categoryDisplay';
 import type { Vehicle } from '../../types/api';
 
 const { height } = Dimensions.get('window');
@@ -103,7 +104,7 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                     </View>
                     <Text style={styles.tileLabel}>Category</Text>
                     <Text style={styles.tileValue} numberOfLines={1}>
-                      {vehicle.category}
+                      {displayCategory(vehicle.category)}
                     </Text>
                   </View>
                 ) : null}
