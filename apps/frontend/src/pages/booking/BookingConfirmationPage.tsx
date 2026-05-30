@@ -131,23 +131,24 @@ export const BookingConfirmationPage = () => {
       try {
         const { pickupDate, returnDate, pickupTime, returnTime } = useSearchStore.getState();
 
+        const buildLocalISOString = (date: Date, time: string) => {
+          const [hours, minutes] = time.split(":").map(Number);
+          return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0).toISOString();
+        };
+
         const startDateTime = pickupDate
-          ? (() => {
-              const year = pickupDate.getFullYear();
-              const month = String(pickupDate.getMonth() + 1).padStart(2, "0");
-              const day = String(pickupDate.getDate()).padStart(2, "0");
-              return `${year}-${month}-${day}T${pickupTime || startTime}:00.000Z`;
-            })()
-          : `${startDate}T${startTime}:00.000Z`;
+          ? buildLocalISOString(pickupDate, pickupTime || startTime)
+          : (() => {
+              const [y, m, d] = startDate.split("-").map(Number);
+              return buildLocalISOString(new Date(y, m - 1, d), startTime);
+            })();
 
         const endDateTime = returnDate
-          ? (() => {
-              const year = returnDate.getFullYear();
-              const month = String(returnDate.getMonth() + 1).padStart(2, "0");
-              const day = String(returnDate.getDate()).padStart(2, "0");
-              return `${year}-${month}-${day}T${returnTime || endTime}:00.000Z`;
-            })()
-          : `${endDate}T${endTime}:00.000Z`;
+          ? buildLocalISOString(returnDate, returnTime || endTime)
+          : (() => {
+              const [y, m, d] = endDate.split("-").map(Number);
+              return buildLocalISOString(new Date(y, m - 1, d), endTime);
+            })();
 
         const response = await bookingService.createBookingSummary({
           ...(selectedGroupKey

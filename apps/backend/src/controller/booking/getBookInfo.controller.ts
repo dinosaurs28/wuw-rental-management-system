@@ -572,7 +572,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
 
       return newBooking;
-    });
+    }, { timeout: 20000 });
 
     const holdId = booking.publicId;
     const holdExpiry = 10 * 60;
