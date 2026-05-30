@@ -140,8 +140,8 @@ export const ReviewConfirmPage = () => {
                     <CouponInput
                       vehiclePublicId={selectedVehicleId ?? undefined}
                       groupKey={selectedGroupKey ?? undefined}
-                      startAt={startDate ? `${startDate}T${startTime}:00.000Z` : undefined}
-                      endAt={endDate ? `${endDate}T${endTime}:00.000Z` : undefined}
+                      startAt={startDate && startTime ? (() => { const [y,m,d] = startDate.split("-").map(Number); const [h,mi] = startTime.split(":").map(Number); return new Date(y, m-1, d, h, mi, 0).toISOString(); })() : undefined}
+                      endAt={endDate && endTime ? (() => { const [y,m,d] = endDate.split("-").map(Number); const [h,mi] = endTime.split(":").map(Number); return new Date(y, m-1, d, h, mi, 0).toISOString(); })() : undefined}
                       appliedCode={couponCode}
                       appliedAmount={couponDiscountAmount}
                       onApply={(code, amount) => setCouponCode(code, amount)}
