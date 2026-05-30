@@ -53,31 +53,17 @@ interface ReportData {
 // ============================================================================
 
 // Full-row background per status (Expired = red, Expiring Soon = yellow,
-// Valid = normal). DataTable has no per-row class hook, so each cell paints
-// the status colour and bleeds into the cell's `p-2` padding via `-m-2 p-2`,
-// `h-full` keeps the stripe even across cells of differing content height.
+// Valid = normal), applied via DataTable's rowClassName.
 const rowBgClass = (status: InsuranceStatus): string => {
   switch (status) {
     case "Expired":
-      return "bg-red-50";
+      return "bg-red-50 hover:bg-red-100/60";
     case "Expiring Soon":
-      return "bg-yellow-50";
+      return "bg-yellow-50 hover:bg-yellow-100/60";
     default:
       return "";
   }
 };
-
-const CellShell = ({
-  status,
-  children,
-}: {
-  status: InsuranceStatus;
-  children: React.ReactNode;
-}) => (
-  <div className={`-m-2 p-2 h-full flex items-center ${rowBgClass(status)}`}>
-    {children}
-  </div>
-);
 
 const STATUS_BADGE: Record<InsuranceStatus, string> = {
   Expired: "bg-red-100 text-red-800 border-red-200",
@@ -190,120 +176,94 @@ export const InsurancePermitExpiryReport = () => {
     return `${baseUrl}/admin/dashboard/reports/insurance-permit-expiry?${queryString}`;
   };
 
-  // Table columns (spec §4.7 order). Every cell is wrapped in CellShell so the
-  // status background spans the full row.
+  // Table columns (spec §4.7 order). Full-row status background is applied via
+  // DataTable's rowClassName (see <DataTable rowClassName=... /> below).
   const columns: ColumnDef<VehicleExpiryRow>[] = [
     {
       accessorKey: "regNo",
       header: "Vehicle Reg No",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="font-medium font-mono">{row.original.regNo}</span>
-        </CellShell>
+        <span className="font-medium font-mono">{row.original.regNo}</span>
       ),
     },
     {
       accessorKey: "vehicleName",
       header: "Vehicle Name",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">{row.original.vehicleName}</span>
-        </CellShell>
+        <span className="text-sm">{row.original.vehicleName}</span>
       ),
     },
     {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">{row.original.category}</span>
-        </CellShell>
+        <span className="text-sm">{row.original.category}</span>
       ),
     },
     {
       accessorKey: "branch",
       header: "Branch",
-      cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">{row.original.branch}</span>
-        </CellShell>
-      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.branch}</span>,
     },
     {
       accessorKey: "provider",
       header: "Insurance Provider",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">
-            {row.original.provider || <span className="text-gray-400">—</span>}
-          </span>
-        </CellShell>
+        <span className="text-sm">
+          {row.original.provider || <span className="text-gray-400">—</span>}
+        </span>
       ),
     },
     {
       accessorKey: "policyNumber",
       header: "Policy Number",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm font-mono">
-            {row.original.policyNumber || (
-              <span className="text-gray-400">—</span>
-            )}
-          </span>
-        </CellShell>
+        <span className="text-sm font-mono">
+          {row.original.policyNumber || <span className="text-gray-400">—</span>}
+        </span>
       ),
     },
     {
       accessorKey: "insuranceStartDate",
       header: "Insurance Start Date",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">
-            {row.original.insuranceStartDate ? (
-              formatDate(row.original.insuranceStartDate)
-            ) : (
-              <span className="text-gray-400">—</span>
-            )}
-          </span>
-        </CellShell>
+        <span className="text-sm">
+          {row.original.insuranceStartDate ? (
+            formatDate(row.original.insuranceStartDate)
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </span>
       ),
     },
     {
       accessorKey: "insuranceExpiryDate",
       header: "Insurance Expiry Date",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">
-            {row.original.insuranceExpiryDate ? (
-              formatDate(row.original.insuranceExpiryDate)
-            ) : (
-              <span className="text-gray-400">—</span>
-            )}
-          </span>
-        </CellShell>
+        <span className="text-sm">
+          {row.original.insuranceExpiryDate ? (
+            formatDate(row.original.insuranceExpiryDate)
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </span>
       ),
     },
     {
       accessorKey: "daysUntilExpiry",
       header: "Days Until Expiry",
       cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <span className="text-sm">
-            {row.original.daysUntilExpiry < 0
-              ? `${Math.abs(row.original.daysUntilExpiry)} days ago`
-              : `${row.original.daysUntilExpiry} days`}
-          </span>
-        </CellShell>
+        <span className="text-sm">
+          {row.original.daysUntilExpiry < 0
+            ? `${Math.abs(row.original.daysUntilExpiry)} days ago`
+            : `${row.original.daysUntilExpiry} days`}
+        </span>
       ),
     },
     {
       accessorKey: "insuranceStatus",
       header: "Status",
-      cell: ({ row }) => (
-        <CellShell status={row.original.insuranceStatus}>
-          <StatusBadge status={row.original.insuranceStatus} />
-        </CellShell>
-      ),
+      cell: ({ row }) => <StatusBadge status={row.original.insuranceStatus} />,
     },
   ];
 
@@ -434,6 +394,7 @@ export const InsurancePermitExpiryReport = () => {
             data={reportData?.vehicles || []}
             isLoading={isLoading}
             emptyMessage="No vehicles found for the selected filters"
+            rowClassName={(r) => rowBgClass(r.insuranceStatus)}
           />
         </CardContent>
       </Card>

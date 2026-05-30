@@ -339,7 +339,7 @@ export const VehicleAvailabilityReport = () => {
       color: "#10B981",
     },
     {
-      name: "Rented",
+      name: "Booked",
       value: reportData?.summary.currentlyRented || 0,
       color: "#FF5F00",
     },
@@ -435,7 +435,7 @@ export const VehicleAvailabilityReport = () => {
             isLoading={isLoading}
           />
           <MetricCard
-            title="Currently Rented"
+            title="Currently Booked"
             value={reportData?.summary.currentlyRented.toString() || "0"}
             icon={Car}
             variant="bookings"
@@ -517,9 +517,10 @@ export const VehicleAvailabilityReport = () => {
                   />
                   <Bar
                     dataKey="rented"
+                    /* label aligned with table's "Booked" status */
                     stackId="a"
                     fill="#FF5F00"
-                    name="Rented"
+                    name="Booked"
                   />
                   <Bar
                     dataKey="maintenance"
