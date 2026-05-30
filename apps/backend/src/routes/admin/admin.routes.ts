@@ -23,6 +23,7 @@ import {
 import { GetDailySummary } from "../../controller/admin/dailySummaryController.js";
 import { GetSalesReport } from "../../controller/admin/salesReportController.js";
 import { GetVehicleHistory } from "../../controller/admin/vehicleHistoryController.js";
+import { GetVehicleReportList } from "../../controller/admin/vehicleReportController.js";
 import { GetVehicleAvailability } from "../../controller/admin/vehicleAvailabilityController.js";
 import { GetInsurancePermitExpiry } from "../../controller/admin/insurancePermitController.js";
 import { GetCollectionReport } from "../../controller/admin/collectionReportController.js";
@@ -72,6 +73,7 @@ router.get("/dashboard/reports/global-kpi", AdminCheck, getGlobalKpiStats);
 // New Reports System Routes (All 8 Reports)
 router.get("/dashboard/reports/daily-summary", AdminCheck, GetDailySummary);
 router.get("/dashboard/reports/sales", AdminCheck, GetSalesReport);
+router.get("/dashboard/reports/vehicles", AdminCheck, GetVehicleReportList);
 router.get(
   "/dashboard/reports/vehicle-history/:vehicleId",
   AdminCheck,
