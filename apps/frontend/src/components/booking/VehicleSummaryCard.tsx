@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
+import { useSearchStore } from "@/store/search.store";
 import { Car, Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
@@ -13,16 +14,26 @@ export const VehicleSummaryCard = () => {
     branch,
     startDate,
     endDate,
+    startTime,
+    endTime,
     rentalDays,
   } = useVehicleRentalStore();
 
+  const { pickupTime, returnTime } = useSearchStore();
+  const resolvedStartTime = pickupTime || startTime;
+  const resolvedEndTime = returnTime || endTime;
+
   const imageUrl = vehicleImages?.[0];
-  const formattedStartDate = startDate
-    ? format(new Date(startDate), "EEE, MMM d, yyyy")
-    : "-";
-  const formattedEndDate = endDate
-    ? format(new Date(endDate), "EEE, MMM d, yyyy")
-    : "-";
+
+  const formatDateWithTime = (date: string | null, time: string) => {
+    if (!date) return "-";
+    const [y, m, d] = date.split("-").map(Number);
+    const [h, mi] = time.split(":").map(Number);
+    return format(new Date(y, m - 1, d, h, mi, 0), "EEE, MMM d, yyyy, h:mm a");
+  };
+
+  const formattedStartDate = formatDateWithTime(startDate, resolvedStartTime);
+  const formattedEndDate = formatDateWithTime(endDate, resolvedEndTime);
 
   return (
     <Card className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
