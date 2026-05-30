@@ -1,376 +1,303 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma } from "@repo/database/client";
-import { BookingStatus, PaymentStatus } from "@repo/database/client";
+import { prisma, BookingStatus, PaymentStatus } from "@repo/database/client";
 import { exportSalesReportToExcel } from "../../utils/exportToExcel.js";
-import { exportSalesReportToCSV } from "../../utils/exportToCSV.js";
+import {
+  resolveReportRange,
+  parseCategoryIds,
+  buildBookingWhere,
+  getPaidByBooking,
+  REVENUE_BOOKING_STATUSES,
+  DB_STATUS_TO_SPEC,
+  exportRowsToCSV,
+  summaryRow,
+  csvCurrency,
+  csvDate,
+  type PaidAmounts,
+} from "../../utils/reporting/index.js";
 
 /**
- * Sales Report Controller
- * GET /api/dashboard/reports/sales
+ * Sales Report — the master reconciliation report (spec §3).
  *
- * Query Parameters:
- * - startDate: YYYY-MM-DD (required)
- * - endDate: YYYY-MM-DD (required)
- * - branchId: string (optional) - Filter by branch public ID
- * - status: BookingStatus (optional) - Filter by booking status
- * - paymentStatus: PaymentStatus (optional) - Filter by payment status
- * - page: number (optional, default: 1)
- * - limit: number (optional, default: 50, max: 100)
- * - export: 'xlsx' | 'csv' (optional)
+ * Conformed to spec: date range anchored on startAt (booking_start_date),
+ * category + payment-mode filters, GST sourced from BookingItem (cgst+sgst),
+ * cancelled rows shown with revenue 0 and excluded from sums, sort by
+ * booking_start_date desc, spec-ordered CSV with a summary row.
+ *
+ * INVARIANT: summary.totalRevenue is computed via the SAME buildBookingWhere
+ * (revenue statuses, startAt) the dashboard uses, so it always matches the
+ * dashboard "Revenue (Selected)" card for the same branch/date/category filters.
  */
+
+const SALES_TABLE_STATUSES: BookingStatus[] = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.PICKED_UP,
+  BookingStatus.RETURNED,
+  BookingStatus.CANCELLED,
+];
+
+type SpecMode = "Cash" | "UPI" | "Gateway" | "Credit";
+
+const primaryMode = (paid: PaidAmounts | undefined): SpecMode => {
+  if (!paid || paid.total <= 0) return "Credit";
+  const entries: [SpecMode, number][] = [
+    ["Cash", paid.cash],
+    ["UPI", paid.upi],
+    ["Gateway", paid.gateway],
+  ];
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0]![1] > 0 ? entries[0]![0] : "Credit";
+};
+
 export const GetSalesReport = async (req: Request, res: Response) => {
   try {
     const {
-      startDate,
-      endDate,
       branchId,
+      branch,
+      categories,
+      categoryId,
       status,
       paymentStatus,
+      paymentMode,
       page = "1",
       limit = "50",
       export: exportFormat,
     } = req.query;
 
-    // Validate required parameters
-    if (!startDate || !endDate) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "startDate and endDate are required (format: YYYY-MM-DD)",
-      });
-    }
+    const branchPublicId =
+      branchId && String(branchId) !== "all"
+        ? String(branchId)
+        : branch && String(branch) !== "all"
+          ? String(branch)
+          : undefined;
+    const categoryPublicIds = parseCategoryIds(categories ?? categoryId);
+    const { start, end } = resolveReportRange({
+      preset: req.query.preset,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      from: req.query.from,
+      to: req.query.to,
+    });
 
-    // Parse and validate dates
-    const start = new Date(startDate as string);
-    const end = new Date(endDate as string);
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid date format. Use YYYY-MM-DD",
-      });
-    }
-
-    // Set time boundaries
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-
-    // Pagination
     const pageNum = Math.max(1, parseInt(page as string));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)));
-    const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause
-    const whereClause: any = {
-      createdAt: { gte: start, lte: end },
-      deletedAt: null,
+    const paymentModeFilter =
+      paymentMode && String(paymentMode) !== "all"
+        ? (String(paymentMode) as SpecMode)
+        : undefined;
+
+    // Table status set: explicit status filter, else all real sales statuses.
+    const tableStatuses =
+      status && Object.values(BookingStatus).includes(status as BookingStatus)
+        ? [status as BookingStatus]
+        : SALES_TABLE_STATUSES;
+
+    const baseFilter = { branchPublicId, categoryPublicIds, from: start, to: end };
+    const tableWhere = {
+      ...buildBookingWhere({ ...baseFilter, statuses: tableStatuses }),
+      ...(paymentStatus &&
+      Object.values(PaymentStatus).includes(paymentStatus as PaymentStatus)
+        ? { paymentStatus: paymentStatus as PaymentStatus }
+        : {}),
     };
 
-    // Branch filter
-    let branchFilter: { id: number } | undefined;
-    if (branchId) {
-      const branch = await prisma.branch.findUnique({
-        where: { publicId: branchId as string },
-        select: { id: true },
-      });
+    // --- Canonical revenue (matches dashboard exactly) ---
+    const canonicalAgg = await prisma.booking.aggregate({
+      _sum: { totalFinal: true },
+      _count: true,
+      where: buildBookingWhere({ ...baseFilter, statuses: REVENUE_BOOKING_STATUSES }),
+    });
+    const canonicalRevenue = Number(canonicalAgg._sum.totalFinal || 0);
 
-      if (!branch) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          message: "Branch not found",
-        });
-      }
+    // --- Full filtered set (lightweight) for summary + payment-mode filtering ---
+    const fullSet = await prisma.booking.findMany({
+      where: tableWhere,
+      select: { id: true, totalFinal: true, status: true, startAt: true },
+      orderBy: { startAt: "desc" },
+    });
+    const paidMap = await getPaidByBooking(fullSet.map((b) => b.id));
 
-      whereClause.branchId = branch.id;
-      branchFilter = { id: branch.id };
-    }
+    const enriched = fullSet.map((b) => {
+      const paid = paidMap.get(b.id);
+      const isCancelled = b.status === BookingStatus.CANCELLED;
+      const total = Number(b.totalFinal);
+      return {
+        id: b.id,
+        mode: primaryMode(paid),
+        paid: paid?.total ?? 0,
+        revenue: isCancelled ? 0 : total,
+        outstanding: isCancelled ? 0 : Math.max(0, total - (paid?.total ?? 0)),
+        isCancelled,
+      };
+    });
 
-    // Status filter — default to revenue statuses when not explicitly filtered
-    if (
-      status &&
-      Object.values(BookingStatus).includes(status as BookingStatus)
-    ) {
-      whereClause.status = status as BookingStatus;
-    } else {
-      // Revenue = confirmed/active/returned bookings (excludes HOLD, CANCELLED, HOLD_EXPIRED)
-      whereClause.status = { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] };
-    }
+    const matched = paymentModeFilter
+      ? enriched.filter((e) => e.mode === paymentModeFilter)
+      : enriched;
 
-    // Payment status filter
-    if (
-      paymentStatus &&
-      Object.values(PaymentStatus).includes(paymentStatus as PaymentStatus)
-    ) {
-      whereClause.paymentStatus = paymentStatus as PaymentStatus;
-    }
+    const totalCount = matched.length;
+    const displayedRevenue = matched.reduce((s, e) => s + e.revenue, 0);
+    const totalCollected = matched.reduce((s, e) => s + e.paid, 0);
+    const totalOutstanding = matched.reduce((s, e) => s + e.outstanding, 0);
+    // When no status/payment-mode narrowing, displayed revenue == canonical.
+    const totalRevenue =
+      !paymentModeFilter && tableStatuses === SALES_TABLE_STATUSES
+        ? canonicalRevenue
+        : displayedRevenue;
 
-    // ========================================================================
-    // Execute queries in parallel
-    // ========================================================================
+    // --- Page slice (all rows for export) ---
+    const wantAll = Boolean(exportFormat);
+    const pageSlice = wantAll
+      ? matched
+      : matched.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    const pageIds = pageSlice.map((e) => e.id);
 
-    const [
-      // Paginated bookings data
-      bookings,
+    const detailRows = await prisma.booking.findMany({
+      where: { id: { in: pageIds } },
+      include: {
+        customer: { include: { user: { select: { name: true, phone: true, email: true } } } },
+        items: {
+          include: {
+            vehicle: {
+              select: { regNo: true, make: true, model: true, category: { select: { name: true } } },
+            },
+          },
+        },
+        branch: { select: { name: true } },
+        invoice: { select: { publicId: true, invoiceNumber: true } },
+        createdBy: { select: { name: true } },
+      },
+    });
+    const detailById = new Map(detailRows.map((b) => [b.id, b]));
 
-      // Total count for pagination
-      totalCount,
-
-      // Summary aggregates
-      summaryMetrics,
-
-      // Breakdown by status
-      statusBreakdown,
-
-      // Breakdown by branch
-      branchBreakdown,
-
-      // Breakdown by category (via vehicle relation)
-      // This requires a more complex query
-    ] = await Promise.all([
-      // Fetch bookings with all related data
-      prisma.booking.findMany({
-        where: whereClause,
-        include: {
+    const formatted = pageSlice
+      .map((e) => {
+        const b = detailById.get(e.id);
+        if (!b) return null;
+        const gst = b.items.reduce(
+          (s, it) => s + Number(it.cgstAmount) + Number(it.sgstAmount),
+          0,
+        );
+        const v = b.items[0]?.vehicle;
+        const vehicleName = v ? `${v.make} ${v.model}` : "N/A";
+        return {
+          bookingId: b.publicId,
+          bookingDate: b.createdAt.toISOString(),
+          invoiceNumber: b.invoice?.invoiceNumber || b.invoice?.publicId || "N/A",
           customer: {
-            include: {
-              user: {
-                select: {
-                  name: true,
-                  phone: true,
-                  email: true,
-                },
-              },
-            },
+            name: b.customer.user.name,
+            phone: b.customer.user.phone,
+            email: b.customer.user.email,
           },
-          items: {
-            include: {
-              vehicle: {
-                select: {
-                  regNo: true,
-                  make: true,
-                  model: true,
-                  category: {
-                    select: {
-                      name: true,
-                    },
-                  },
-                },
-              },
-            },
+          vehicle: {
+            regNo: v?.regNo || "N/A",
+            name: vehicleName,
+            details: vehicleName,
+            category: v?.category.name || "N/A",
           },
-          branch: {
-            select: {
-              name: true,
-            },
+          category: v?.category.name || "N/A",
+          period: {
+            startDate: b.startAt.toISOString(),
+            endDate: b.endAt.toISOString(),
+            days: b.days,
           },
-          invoice: {
-            select: {
-              publicId: true,
-              tax: true,
-              total: true,
-              status: true,
-            },
+          financial: {
+            baseAmount: Number(b.totalBase),
+            discount: Number(b.totalDiscount),
+            gstAmount: gst,
+            totalTax: gst,
+            totalAmount: Number(b.totalFinal),
+            amountPaid: e.paid,
+            outstanding: e.outstanding,
+            balanceAmount: e.outstanding,
+            revenue: e.revenue,
           },
-          deposit: {
-            select: {
-              amount: true,
-              method: true,
-            },
+          paymentMode: e.mode,
+          payment: {
+            mode: e.mode,
+            paymentStatus: b.paymentStatus,
+            transactionId: b.transactionId || undefined,
           },
-          createdBy: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        skip: exportFormat ? undefined : skip,
-        take: exportFormat ? undefined : limitNum,
-        orderBy: { createdAt: "desc" },
-      }),
+          status: b.status,
+          statusLabel: DB_STATUS_TO_SPEC[b.status] ?? b.status,
+          isCancelled: e.isCancelled,
+          branch: b.branch.name,
+          createdBy: b.createdBy.name,
+        };
+      })
+      .filter(<T,>(x: T | null): x is T => x !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.period.startDate).getTime() -
+          new Date(a.period.startDate).getTime(),
+      );
 
-      // Total count
-      prisma.booking.count({ where: whereClause }),
-
-      // Summary aggregates
-      prisma.booking.aggregate({
-        where: whereClause,
-        _sum: {
-          totalFinal: true,
-          totalDeposit: true,
-          totalBase: true,
-          totalDiscount: true,
-        },
-        _avg: {
-          totalFinal: true,
-        },
-        _count: true,
-      }),
-
-      // Breakdown by status
+    // Breakdown widgets (byCategory from displayed rows; status/branch via groupBy)
+    const [statusGroup, branchGroup] = await Promise.all([
       prisma.booking.groupBy({
         by: ["status"],
-        where: whereClause,
-        _sum: {
-          totalFinal: true,
-        },
+        where: tableWhere,
+        _sum: { totalFinal: true },
         _count: true,
       }),
-
-      // Breakdown by branch
       prisma.booking.groupBy({
         by: ["branchId"],
-        where: whereClause,
-        _sum: {
-          totalFinal: true,
-        },
+        where: tableWhere,
+        _sum: { totalFinal: true },
         _count: true,
       }),
     ]);
-
-    // Get branch names for breakdown
-    const branchIds = branchBreakdown.map((b) => b.branchId);
-    const branchesData = await prisma.branch.findMany({
+    const branchIds = branchGroup.map((g) => g.branchId);
+    const branchNames = await prisma.branch.findMany({
       where: { id: { in: branchIds } },
       select: { id: true, name: true },
     });
-
-    const branchMap = Object.fromEntries(
-      branchesData.map((b) => [b.id, b.name]),
+    const branchNameMap = Object.fromEntries(branchNames.map((b) => [b.id, b.name]));
+    const categoryBreakdown = formatted.reduce<Record<string, { category: string; count: number; revenue: number }>>(
+      (acc, row) => {
+        const c = row.category;
+        if (!acc[c]) acc[c] = { category: c, count: 0, revenue: 0 };
+        acc[c].count += 1;
+        acc[c].revenue += row.financial.revenue;
+        return acc;
+      },
+      {},
     );
 
-    // Category breakdown (manual aggregation from bookings)
-    const categoryBreakdown = bookings.reduce((acc: any, booking) => {
-      booking.items.forEach((item) => {
-        const categoryName = item.vehicle.category.name;
-        if (!acc[categoryName]) {
-          acc[categoryName] = {
-            category: categoryName,
-            count: 0,
-            revenue: 0,
-          };
-        }
-        acc[categoryName].count++;
-        acc[categoryName].revenue += Number(item.finalTotal || 0);
-      });
-      return acc;
-    }, {});
-
-    // ========================================================================
-    // Format response data
-    // ========================================================================
-
-    // Calculate tax collected (from invoices)
-    const taxCollected = bookings.reduce((sum, booking) => {
-      return sum + Number(booking.invoice?.tax || 0);
-    }, 0);
-
-    // Calculate net revenue (after discounts)
-    const totalRevenue = Number(summaryMetrics._sum.totalFinal || 0);
-    const totalDiscounts = Number(summaryMetrics._sum.totalDiscount || 0);
-    const netRevenue = totalRevenue - totalDiscounts;
-
-    // Collected amount per booking from PaymentTransaction (COLLECTED or CONFIRMED,
-    // excluding safety deposits and refunds which are not rental revenue)
-    const REVENUE_PURPOSES = ["ADVANCE", "REMAINING_BALANCE", "FULL_PAYMENT", "EXTENSION", "DAMAGE_FEE"];
-    const bookingIds = bookings.map((b) => b.id);
-    const collectedTxns = await prisma.paymentTransaction.findMany({
-      where: {
-        bookingId: { in: bookingIds },
-        status: { in: ["COLLECTED", "CONFIRMED"] },
-        purpose: { in: REVENUE_PURPOSES as any },
-      },
-      select: { bookingId: true, totalAmount: true },
-    });
-    const collectedByBooking = collectedTxns.reduce<Record<number, number>>((acc, t) => {
-      acc[t.bookingId] = (acc[t.bookingId] ?? 0) + Number(t.totalAmount);
-      return acc;
-    }, {});
-
-    const outstandingAmount = bookings.reduce((sum, booking) => {
-      const collected = collectedByBooking[booking.id] ?? 0;
-      const due = Math.max(0, Number(booking.totalFinal) - collected);
-      return sum + due;
-    }, 0);
-
-    // Format bookings data
-    const formattedBookings = bookings.map((booking) => ({
-      bookingId: booking.publicId,
-      bookingDate: booking.createdAt.toISOString(),
-      invoiceNumber: booking.invoice?.publicId || "N/A",
-      customer: {
-        name: booking.customer.user.name,
-        phone: booking.customer.user.phone,
-        email: booking.customer.user.email,
-      },
-      vehicle: {
-        regNo: booking.items[0]?.vehicle.regNo || "N/A",
-        details: booking.items[0]
-          ? `${booking.items[0].vehicle.make} ${booking.items[0].vehicle.model}`
-          : "N/A",
-      },
-      period: {
-        startDate: booking.startAt.toISOString(),
-        endDate: booking.endAt.toISOString(),
-        days: booking.days,
-      },
-      financial: {
-        baseAmount: Number(booking.totalBase),
-        discount: Number(booking.totalDiscount),
-        taxableAmount:
-          Number(booking.totalBase) - Number(booking.totalDiscount),
-        cgst: Number(booking.invoice?.tax || 0) / 2,
-        sgst: Number(booking.invoice?.tax || 0) / 2,
-        totalTax: Number(booking.invoice?.tax || 0),
-        depositAmount: Number(booking.totalDeposit),
-        totalAmount: Number(booking.totalFinal),
-        amountPaid: collectedByBooking[booking.id] ?? 0,
-        balanceAmount: Math.max(0, Number(booking.totalFinal) - (collectedByBooking[booking.id] ?? 0)),
-      },
-      payment: {
-        depositMethod: booking.depositMethod || "N/A",
-        paymentStatus: booking.paymentStatus,
-        transactionId: booking.transactionId || undefined,
-      },
-      status: booking.status,
-      branch: booking.branch.name,
-      createdBy: booking.createdBy.name,
-    }));
-
-    // Calculate pagination
-    const totalPages = Math.ceil(totalCount / limitNum);
+    const totalPages = Math.ceil(totalCount / limitNum) || 1;
 
     const reportData = {
       metadata: {
-        period: {
-          start: startDate,
-          end: endDate,
-        },
+        period: { start: start.toISOString(), end: end.toISOString() },
         filters: {
-          branch: branchFilter ? branchMap[branchFilter.id] : "All Branches",
+          branch: branchPublicId ?? "All Branches",
           status: status || "All",
+          paymentMode: paymentModeFilter || "All",
         },
         generatedAt: new Date().toISOString(),
       },
       summary: {
         totalRevenue,
-        totalBookings: summaryMetrics._count,
-        averageBookingValue: Number(summaryMetrics._avg.totalFinal || 0),
-        taxCollected,
-        depositsCollected: Number(summaryMetrics._sum.totalDeposit || 0),
-        netRevenue,
-        outstandingAmount,
+        totalBookings: totalCount,
+        averageBookingValue: totalCount > 0 ? totalRevenue / totalCount : 0,
+        totalCollected,
+        outstandingAmount: totalOutstanding,
       },
       breakdown: {
-        byStatus: statusBreakdown.map((item) => ({
-          status: item.status,
-          count: item._count,
-          revenue: Number(item._sum.totalFinal || 0),
+        byStatus: statusGroup.map((g) => ({
+          status: g.status,
+          count: g._count,
+          revenue: Number(g._sum.totalFinal || 0),
         })),
-        byBranch: branchBreakdown.map((item) => ({
-          branch: branchMap[item.branchId] || "Unknown",
-          count: item._count,
-          revenue: Number(item._sum.totalFinal || 0),
+        byBranch: branchGroup.map((g) => ({
+          branch: branchNameMap[g.branchId] || "Unknown",
+          count: g._count,
+          revenue: Number(g._sum.totalFinal || 0),
         })),
         byCategory: Object.values(categoryBreakdown),
       },
-      data: formattedBookings,
+      data: formatted,
       pagination: {
         currentPage: pageNum,
         totalPages,
@@ -380,21 +307,55 @@ export const GetSalesReport = async (req: Request, res: Response) => {
       },
     };
 
-    // ========================================================================
-    // Handle export if requested
-    // ========================================================================
-
     if (exportFormat === "xlsx") {
-      const filename = `sales-report-${startDate}-${endDate}`;
-      return await exportSalesReportToExcel(res, reportData, filename);
+      return await exportSalesReportToExcel(
+        res,
+        reportData,
+        `sales-report-${csvDate(start)}-${csvDate(end)}`,
+      );
     }
 
     if (exportFormat === "csv") {
-      const filename = `sales-report-${startDate}-${endDate}`;
-      return exportSalesReportToCSV(res, reportData, filename);
+      const columns = [
+        "Booking ID", "Booking Date", "Start Date", "End Date", "Customer Name",
+        "Phone", "Vehicle Reg", "Vehicle Name", "Category", "Branch", "Duration",
+        "Base Amount", "Discount", "GST Amount", "Total Amount", "Amount Paid",
+        "Outstanding", "Payment Mode", "Status",
+      ];
+      const rows = formatted.map((r) => ({
+        "Booking ID": r.bookingId,
+        "Booking Date": csvDate(r.bookingDate),
+        "Start Date": csvDate(r.period.startDate),
+        "End Date": csvDate(r.period.endDate),
+        "Customer Name": r.customer.name,
+        Phone: r.customer.phone,
+        "Vehicle Reg": r.vehicle.regNo,
+        "Vehicle Name": r.vehicle.name,
+        Category: r.category,
+        Branch: r.branch,
+        Duration: `${r.period.days}`,
+        "Base Amount": csvCurrency(r.financial.baseAmount),
+        Discount: csvCurrency(r.financial.discount),
+        "GST Amount": csvCurrency(r.financial.gstAmount),
+        "Total Amount": csvCurrency(r.financial.totalAmount),
+        "Amount Paid": csvCurrency(r.financial.amountPaid),
+        Outstanding: csvCurrency(r.financial.outstanding),
+        "Payment Mode": r.paymentMode,
+        Status: r.statusLabel,
+      }));
+      const summary = summaryRow(columns, "TOTAL", {
+        "Total Amount": csvCurrency(totalRevenue),
+        "Amount Paid": csvCurrency(totalCollected),
+        Outstanding: csvCurrency(totalOutstanding),
+      });
+      return exportRowsToCSV(res, {
+        columns,
+        rows,
+        summaryRows: [summary],
+        filename: `sales-report-${csvDate(start)}-${csvDate(end)}`,
+      });
     }
 
-    // Return JSON response
     return res.status(StatusCode.OK).json({
       message: "Sales report generated successfully",
       data: reportData,
