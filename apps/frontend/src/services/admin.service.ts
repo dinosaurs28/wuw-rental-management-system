@@ -485,6 +485,8 @@ export const adminService = {
         startDate: string;
         endDate: string;
         branchId?: string;
+        categories?: string;
+        availableOnly?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -500,7 +502,9 @@ export const adminService = {
     getInsurancePermitExpiryReport: async (params: {
         alertType?: 'insurance' | 'permit' | 'all';
         daysThreshold?: number;
+        expiryStatus?: string;
         branchId?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -536,6 +540,9 @@ export const adminService = {
     getFleetExecutiveReport: async (params: {
         startDate: string;
         endDate: string;
+        branchId?: string;
+        executiveId?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -552,6 +559,8 @@ export const adminService = {
         startDate: string;
         endDate: string;
         branchId?: string;
+        gstType?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
