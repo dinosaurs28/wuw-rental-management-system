@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Receipt, DollarSign, TrendingDown, RefreshCw } from "lucide-react";
+import { ArrowLeft, Receipt, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { FilterPanel } from "@/components/ui/FilterPanel";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { DataTable } from "@/components/ui/DataTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
 import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelpers";
 import { toast } from "sonner";
@@ -14,17 +21,17 @@ import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface ReceiptRow {
-  receiptId: string;
-  receiptNumber: string;
+  receiptNo: string;
+  receiptDate: string;
   bookingId: string;
-  customer: { name: string; phone: string };
+  invoiceNo: string;
+  customerName: string;
+  customerPhone: string;
+  amountReceived: number;
+  paymentMode: string;
+  transactionRef: string;
+  collectedBy: string;
   branch: string;
-  totalCharges: number;
-  depositPaid: number;
-  amountDue: number;
-  refundAmount: number;
-  creditNotes: { creditNoteNumber: string | null; amount: number; reason: string }[];
-  generatedAt: string;
 }
 
 export const ReceiptReportPage = () => {
@@ -33,6 +40,7 @@ export const ReceiptReportPage = () => {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedBranch, setSelectedBranch] = useState("all");
+  const [paymentMode, setPaymentMode] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [reportData, setReportData] = useState<any>(null);
   const [branches, setBranches] = useState<Array<{ value: string; label: string }>>([]);
@@ -54,7 +62,8 @@ export const ReceiptReportPage = () => {
 
   useEffect(() => {
     if (startDate && endDate) fetchReport();
-  }, [startDate, endDate, selectedBranch, currentPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, selectedBranch, paymentMode, currentPage]);
 
   const fetchReport = async () => {
     if (!startDate || !endDate) return;
@@ -67,6 +76,7 @@ export const ReceiptReportPage = () => {
         limit: "50",
       };
       if (selectedBranch !== "all") params.branchId = selectedBranch;
+      if (paymentMode !== "all") params.paymentMode = paymentMode;
       const result = await adminService.getReceiptReport(params);
       setReportData(result.data);
     } catch {
@@ -76,87 +86,117 @@ export const ReceiptReportPage = () => {
     }
   };
 
+  const getExportUrl = () => {
+    if (!startDate || !endDate) return "";
+    const params = new URLSearchParams({
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+      branchId: selectedBranch,
+      paymentMode,
+    });
+    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+    return `${baseUrl}/admin/dashboard/reports/receipts?${params.toString()}`;
+  };
+
   const columns: ColumnDef<ReceiptRow>[] = [
     {
-      accessorKey: "receiptNumber",
-      header: "Receipt #",
-      cell: ({ row }) => <div className="font-mono text-sm font-medium">{row.original.receiptNumber}</div>,
+      accessorKey: "receiptNo",
+      header: "Receipt No",
+      cell: ({ row }) => (
+        <div className="font-mono text-sm font-medium">{row.original.receiptNo}</div>
+      ),
+    },
+    {
+      accessorKey: "receiptDate",
+      header: "Receipt Date",
+      cell: ({ row }) => <div className="text-sm">{formatDate(row.original.receiptDate)}</div>,
     },
     {
       accessorKey: "bookingId",
-      header: "Booking",
-      cell: ({ row }) => <div className="font-mono text-xs text-gray-500">{row.original.bookingId.slice(0, 8)}</div>,
-    },
-    {
-      accessorKey: "generatedAt",
-      header: "Date",
-      cell: ({ row }) => <div className="text-sm">{formatDate(row.original.generatedAt)}</div>,
-    },
-    {
-      accessorKey: "customer.name",
-      header: "Customer",
+      header: "Booking ID",
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-sm">{row.original.customer.name}</div>
-          <div className="text-xs text-gray-500">{row.original.customer.phone}</div>
-        </div>
-      ),
-    },
-    { accessorKey: "branch", header: "Branch", cell: ({ row }) => <div className="text-sm">{row.original.branch}</div> },
-    {
-      accessorKey: "totalCharges",
-      header: "Total Charges",
-      cell: ({ row }) => <div className="font-mono text-sm font-semibold">{formatCurrency(row.original.totalCharges)}</div>,
-    },
-    {
-      accessorKey: "amountDue",
-      header: "Amt Due",
-      cell: ({ row }) => (
-        <div className={`font-mono text-sm font-semibold ${row.original.amountDue > 0 ? "text-red-600" : "text-gray-400"}`}>
-          {row.original.amountDue > 0 ? formatCurrency(row.original.amountDue) : "—"}
-        </div>
+        <div className="font-mono text-xs text-gray-500">{row.original.bookingId}</div>
       ),
     },
     {
-      accessorKey: "refundAmount",
-      header: "Refund",
+      accessorKey: "invoiceNo",
+      header: "Invoice No",
       cell: ({ row }) => (
-        <div className={`font-mono text-sm font-semibold ${row.original.refundAmount > 0 ? "text-green-600" : "text-gray-400"}`}>
-          {row.original.refundAmount > 0 ? formatCurrency(row.original.refundAmount) : "—"}
+        <div className="font-mono text-xs text-gray-500">{row.original.invoiceNo || "—"}</div>
+      ),
+    },
+    {
+      accessorKey: "customerName",
+      header: "Customer Name",
+      cell: ({ row }) => (
+        <div className="font-medium text-sm">{row.original.customerName}</div>
+      ),
+    },
+    {
+      accessorKey: "customerPhone",
+      header: "Customer Phone",
+      cell: ({ row }) => (
+        <div className="text-sm text-gray-500">{row.original.customerPhone || "—"}</div>
+      ),
+    },
+    {
+      accessorKey: "amountReceived",
+      header: "Amount Received",
+      cell: ({ row }) => (
+        <div className="font-mono text-sm font-semibold">
+          {formatCurrency(row.original.amountReceived)}
         </div>
       ),
     },
     {
-      accessorKey: "creditNotes",
-      header: "Credit Notes",
-      cell: ({ row }) =>
-        row.original.creditNotes.length > 0 ? (
-          <div className="space-y-1">
-            {row.original.creditNotes.map((cn, i) => (
-              <Badge key={i} className="bg-purple-100 text-purple-800 text-xs block w-fit">
-                {cn.creditNoteNumber ?? "CN"} · {formatCurrency(cn.amount)}
-              </Badge>
-            ))}
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">None</span>
-        ),
+      accessorKey: "paymentMode",
+      header: "Payment Mode",
+      cell: ({ row }) => <div className="text-sm">{row.original.paymentMode}</div>,
+    },
+    {
+      accessorKey: "transactionRef",
+      header: "Transaction Ref",
+      cell: ({ row }) => (
+        <div className="font-mono text-xs text-gray-500">
+          {row.original.transactionRef || "—"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "collectedBy",
+      header: "Collected By",
+      cell: ({ row }) => <div className="text-sm">{row.original.collectedBy}</div>,
+    },
+    {
+      accessorKey: "branch",
+      header: "Branch",
+      cell: ({ row }) => <div className="text-sm">{row.original.branch}</div>,
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Receipt className="h-7 w-7 text-orange-500" /> Receipt Report
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">Return receipts with charges, refunds and credit notes</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Receipt className="h-7 w-7 text-orange-500" /> Receipt Report
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Payment receipts — one row per collected payment
+              </p>
+            </div>
           </div>
+
+          <ExportButton
+            apiUrl={getExportUrl()}
+            filename={`receipt-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+            disabled={isLoading || !reportData}
+          />
         </div>
 
         <FilterPanel
@@ -164,20 +204,56 @@ export const ReceiptReportPage = () => {
           onDateRangePresetChange={setDateRangePreset}
           startDate={startDate}
           endDate={endDate}
-          onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
+          onDateChange={(s, e) => {
+            setStartDate(s);
+            setEndDate(e);
+          }}
           showBranchFilter
           branches={branches}
           selectedBranch={selectedBranch}
           onBranchChange={setSelectedBranch}
-          onApply={() => { setCurrentPage(1); fetchReport(); }}
-          onReset={() => { setDateRangePreset("30days"); setSelectedBranch("all"); setCurrentPage(1); }}
-        />
+          onApply={() => {
+            setCurrentPage(1);
+            fetchReport();
+          }}
+          onReset={() => {
+            setDateRangePreset("30days");
+            setSelectedBranch("all");
+            setPaymentMode("all");
+            setCurrentPage(1);
+          }}
+        >
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Payment Mode</label>
+            <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Modes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Modes</SelectItem>
+                <SelectItem value="Cash">Cash</SelectItem>
+                <SelectItem value="UPI">UPI</SelectItem>
+                <SelectItem value="Gateway">Gateway</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterPanel>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard title="Total Receipts" value={reportData?.summary.totalReceipts?.toString() ?? "0"} icon={Receipt} variant="default" isLoading={isLoading} />
-          <MetricCard title="Total Charges" value={abbreviateAmount(reportData?.summary.totalCharges ?? 0)} icon={DollarSign} variant="revenue" isLoading={isLoading} />
-          <MetricCard title="Total Due" value={abbreviateAmount(reportData?.summary.totalDue ?? 0)} icon={TrendingDown} variant="collection" isLoading={isLoading} />
-          <MetricCard title="Total Refunded" value={abbreviateAmount(reportData?.summary.totalRefunded ?? 0)} icon={RefreshCw} variant="default" isLoading={isLoading} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <MetricCard
+            title="Total Receipts"
+            value={reportData?.summary.totalReceipts?.toString() ?? "0"}
+            icon={Receipt}
+            variant="default"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Total Amount Received"
+            value={abbreviateAmount(reportData?.summary.totalAmountReceived ?? 0)}
+            icon={DollarSign}
+            variant="revenue"
+            isLoading={isLoading}
+          />
         </div>
 
         <Card>
