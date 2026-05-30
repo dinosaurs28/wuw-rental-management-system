@@ -28,6 +28,13 @@ import { FilterPanel } from "@/components/ui/FilterPanel";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { DataTable } from "@/components/ui/DataTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate, formatCurrency } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
@@ -49,6 +56,8 @@ interface Summary {
   totalIGST: number;
   totalGST: number;
   totalInvoiceAmount: number;
+  totalInputGST: number;
+  netLiability: number;
   effectiveGSTRate: number;
 }
 
@@ -74,22 +83,19 @@ interface BranchBreakdown {
   totalAmount: number;
 }
 
-interface Invoice {
-  invoiceId: string;
-  invoiceNumber: string;
-  bookingId: string;
-  customerName: string;
+// Section A (Output GST) row — exact backend field names (spec §4.9)
+interface SectionARow {
+  section: string;
+  date: string;
+  documentNo: string;
+  partyName: string;
   gstin: string;
-  branch: string;
-  invoiceDate: string;
   taxableAmount: number;
   cgst: number;
   sgst: number;
   igst: number;
   totalGST: number;
-  totalAmount: number;
-  gstRate: number;
-  isInterState: boolean;
+  invoiceTotal: number;
 }
 
 interface GSTReportData {
@@ -100,11 +106,16 @@ interface GSTReportData {
       endDate: string;
     };
     branch: string;
+    gstType?: string;
   };
   summary: Summary;
   monthlyBreakdown: MonthlyBreakdown[];
   branchBreakdown: BranchBreakdown[];
-  invoices: Invoice[];
+  // Two-section structure (spec §4.9)
+  sectionA_output: SectionARow[];
+  sectionB_input: unknown[];
+  inputNote: string;
+  netLiability: number;
 }
 
 export const GSTReport = ({
@@ -121,6 +132,7 @@ export const GSTReport = ({
     initialEndDate ? new Date(initialEndDate) : undefined,
   );
   const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
+  const [selectedGstType, setSelectedGstType] = useState<string>("both");
   const [data, setData] = useState<GSTReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +169,7 @@ export const GSTReport = ({
     if (startDate && endDate) {
       fetchReportData();
     }
-  }, [startDate, endDate, selectedBranch]);
+  }, [startDate, endDate, selectedBranch, selectedGstType]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -168,6 +180,7 @@ export const GSTReport = ({
         startDate: startDate!.toISOString().split("T")[0],
         endDate: endDate!.toISOString().split("T")[0],
         branchId: selectedBranch,
+        gstType: selectedGstType,
       };
 
       const result = await adminService.getGSTReport(params);
@@ -185,6 +198,7 @@ export const GSTReport = ({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
       branchId: selectedBranch,
+      gstType: selectedGstType,
     });
     const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
     return `${baseUrl}/admin/dashboard/reports/gst?${params.toString()}`;
@@ -200,35 +214,46 @@ export const GSTReport = ({
     setStartDate(start);
     setEndDate(end);
     setSelectedBranch("all");
+    setSelectedGstType("both");
   };
 
-  const columns: ColumnDef<Invoice>[] = [
+  // Section A (Output GST) columns — spec §4.9 order.
+  const columns: ColumnDef<SectionARow>[] = [
     {
-      accessorKey: "invoiceNumber",
-      header: "Invoice No",
+      accessorKey: "section",
+      header: "Section",
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.invoiceNumber}</span>
+        <span className="text-xs font-medium">{row.original.section}</span>
       ),
     },
     {
-      accessorKey: "invoiceDate",
+      accessorKey: "date",
       header: "Date",
-      cell: ({ row }) => <span>{formatDate(row.original.invoiceDate)}</span>,
+      cell: ({ row }) => <span>{formatDate(row.original.date)}</span>,
     },
     {
-      accessorKey: "customerName",
-      header: "Customer",
+      accessorKey: "documentNo",
+      header: "Document No",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.documentNo}</span>
+      ),
+    },
+    {
+      accessorKey: "partyName",
+      header: "Party Name",
     },
     {
       accessorKey: "gstin",
       header: "GSTIN",
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.gstin}</span>
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.original.gstin || "—"}
+        </span>
       ),
     },
     {
       accessorKey: "taxableAmount",
-      header: "Taxable Value",
+      header: "Taxable Amount",
       cell: ({ row }) => (
         <span className="font-medium">
           {formatCurrency(row.original.taxableAmount)}
@@ -264,7 +289,7 @@ export const GSTReport = ({
     },
     {
       accessorKey: "totalGST",
-      header: "Total Tax",
+      header: "Total GST",
       cell: ({ row }) => (
         <span className="font-medium text-orange-600">
           {formatCurrency(row.original.totalGST)}
@@ -272,11 +297,11 @@ export const GSTReport = ({
       ),
     },
     {
-      accessorKey: "totalAmount",
-      header: "Total Amount",
+      accessorKey: "invoiceTotal",
+      header: "Invoice Total",
       cell: ({ row }) => (
         <span className="font-bold">
-          {formatCurrency(row.original.totalAmount)}
+          {formatCurrency(row.original.invoiceTotal)}
         </span>
       ),
     },
@@ -409,7 +434,22 @@ export const GSTReport = ({
         onBranchChange={setSelectedBranch}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-      />
+      >
+        {/* GST Type filter (Both / Output Only / Input Only) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">GST Type</label>
+          <Select value={selectedGstType} onValueChange={setSelectedGstType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Both" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="both">Both</SelectItem>
+              <SelectItem value="output">Output Only</SelectItem>
+              <SelectItem value="input">Input Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </FilterPanel>
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -497,6 +537,24 @@ export const GSTReport = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* Net GST Liability */}
+      <Card className="border-orange-200 bg-orange-50/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-orange-700">
+            Net GST Liability
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold text-orange-600">
+            ₹{(data.netLiability ?? 0).toLocaleString("en-IN")}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Output GST ({formatCurrency(data.summary.totalGST)}) − Input GST (
+            {formatCurrency(data.summary.totalInputGST)})
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -600,21 +658,41 @@ export const GSTReport = ({
         </CardContent>
       </Card>
 
-      {/* Invoice Details Table */}
+      {/* Section A — Output GST */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-orange-500" />
-            Invoice Details
+            Section A — Output GST
           </CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
             columns={columns}
-            data={data?.invoices || []}
+            data={data.sectionA_output || []}
             isLoading={loading}
-            emptyMessage="No invoices found"
+            emptyMessage="No output GST records found"
           />
+        </CardContent>
+      </Card>
+
+      {/* Section B — Input GST (deferred) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            Section B — Input GST
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 p-6 text-center">
+            <p className="text-sm font-medium text-muted-foreground">
+              {data.inputNote || "Input GST not configured"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Input GST is deferred. Net liability equals total output GST.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
