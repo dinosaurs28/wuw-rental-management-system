@@ -6,7 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { FilterPanel } from "@/components/ui/FilterPanel";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { DataTable } from "@/components/ui/DataTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
 import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelpers";
 import { toast } from "sonner";
@@ -20,10 +28,13 @@ interface CustomerRow {
   email: string;
   registeredAt: string;
   isProfileCompleted: boolean;
-  totalBookings: number;
-  totalRevenue: number;
-  totalOutstanding: number;
+  totalBookingsAllTime: number;
+  bookingsInRange: number;
+  revenueInRange: number;
+  amountPaid: number;
+  outstanding: number;
   lastBookingDate: string | null;
+  customerType: string;
 }
 
 export const CustomerReportPage = () => {
@@ -32,6 +43,7 @@ export const CustomerReportPage = () => {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedBranch, setSelectedBranch] = useState("all");
+  const [customerType, setCustomerType] = useState("all");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [reportData, setReportData] = useState<any>(null);
@@ -54,7 +66,7 @@ export const CustomerReportPage = () => {
 
   useEffect(() => {
     fetchReport();
-  }, [startDate, endDate, selectedBranch, currentPage]);
+  }, [startDate, endDate, selectedBranch, customerType, currentPage]);
 
   const fetchReport = async () => {
     setIsLoading(true);
@@ -63,6 +75,7 @@ export const CustomerReportPage = () => {
       if (startDate) params.startDate = startDate.toISOString().split("T")[0];
       if (endDate) params.endDate = endDate.toISOString().split("T")[0];
       if (selectedBranch !== "all") params.branchId = selectedBranch;
+      if (customerType !== "all") params.customerType = customerType;
       if (search.trim()) params.search = search.trim();
       const result = await adminService.getCustomerReport(params);
       setReportData(result.data);
@@ -73,16 +86,30 @@ export const CustomerReportPage = () => {
     }
   };
 
+  const getExportUrl = () => {
+    const params: Record<string, string> = {};
+    if (startDate) params.startDate = startDate.toISOString().split("T")[0]!;
+    if (endDate) params.endDate = endDate.toISOString().split("T")[0]!;
+    if (selectedBranch !== "all") params.branchId = selectedBranch;
+    if (customerType !== "all") params.customerType = customerType;
+    if (search.trim()) params.search = search.trim();
+    const queryString = new URLSearchParams(params).toString();
+    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+    return `${baseUrl}/admin/dashboard/reports/customers${queryString ? `?${queryString}` : ""}`;
+  };
+
   const columns: ColumnDef<CustomerRow>[] = [
     {
       accessorKey: "name",
-      header: "Customer",
+      header: "Customer Name",
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-sm">{row.original.name}</div>
-          <div className="text-xs text-gray-500">{row.original.phone}</div>
-        </div>
+        <div className="font-medium text-sm">{row.original.name}</div>
       ),
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => <div className="text-sm text-gray-600">{row.original.phone}</div>,
     },
     {
       accessorKey: "email",
@@ -91,33 +118,49 @@ export const CustomerReportPage = () => {
     },
     {
       accessorKey: "registeredAt",
-      header: "Registered",
+      header: "Registered On",
       cell: ({ row }) => <div className="text-sm">{formatDate(row.original.registeredAt)}</div>,
     },
     {
-      accessorKey: "totalBookings",
-      header: "Bookings",
-      cell: ({ row }) => <div className="text-center font-semibold">{row.original.totalBookings}</div>,
-    },
-    {
-      accessorKey: "totalRevenue",
-      header: "Total Revenue",
+      accessorKey: "totalBookingsAllTime",
+      header: "Total Bookings",
       cell: ({ row }) => (
-        <div className="font-mono font-semibold text-sm">{formatCurrency(row.original.totalRevenue)}</div>
+        <div className="text-center font-semibold">{row.original.totalBookingsAllTime}</div>
       ),
     },
     {
-      accessorKey: "totalOutstanding",
+      accessorKey: "bookingsInRange",
+      header: "Bookings in Range",
+      cell: ({ row }) => (
+        <div className="text-center font-semibold">{row.original.bookingsInRange}</div>
+      ),
+    },
+    {
+      accessorKey: "revenueInRange",
+      header: "Revenue in Range",
+      cell: ({ row }) => (
+        <div className="font-mono font-semibold text-sm">{formatCurrency(row.original.revenueInRange)}</div>
+      ),
+    },
+    {
+      accessorKey: "amountPaid",
+      header: "Amount Paid",
+      cell: ({ row }) => (
+        <div className="font-mono text-sm">{formatCurrency(row.original.amountPaid)}</div>
+      ),
+    },
+    {
+      accessorKey: "outstanding",
       header: "Outstanding",
       cell: ({ row }) => (
-        <div className={`font-mono text-sm font-semibold ${row.original.totalOutstanding > 0 ? "text-red-600" : "text-gray-400"}`}>
-          {row.original.totalOutstanding > 0 ? formatCurrency(row.original.totalOutstanding) : "—"}
+        <div className={`font-mono text-sm font-semibold ${row.original.outstanding > 0 ? "text-red-600" : "text-gray-400"}`}>
+          {row.original.outstanding > 0 ? formatCurrency(row.original.outstanding) : "—"}
         </div>
       ),
     },
     {
       accessorKey: "lastBookingDate",
-      header: "Last Booking",
+      header: "Last Booking Date",
       cell: ({ row }) => (
         <div className="text-sm text-gray-600">
           {row.original.lastBookingDate ? formatDate(row.original.lastBookingDate) : "—"}
@@ -125,11 +168,11 @@ export const CustomerReportPage = () => {
       ),
     },
     {
-      accessorKey: "isProfileCompleted",
-      header: "KYC",
+      accessorKey: "customerType",
+      header: "Customer Type",
       cell: ({ row }) => (
-        <span className={`px-2 py-0.5 rounded text-xs font-medium ${row.original.isProfileCompleted ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-          {row.original.isProfileCompleted ? "Complete" : "Pending"}
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${row.original.customerType === "New" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+          {row.original.customerType}
         </span>
       ),
     },
@@ -142,12 +185,17 @@ export const CustomerReportPage = () => {
           <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Users className="h-7 w-7 text-orange-500" /> Customer Report
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">Customer-wise revenue, outstanding and booking summary</p>
           </div>
+          <ExportButton
+            apiUrl={getExportUrl()}
+            filename="customer-report"
+            disabled={isLoading || !reportData}
+          />
         </div>
 
         <FilterPanel
@@ -161,8 +209,22 @@ export const CustomerReportPage = () => {
           selectedBranch={selectedBranch}
           onBranchChange={setSelectedBranch}
           onApply={() => { setCurrentPage(1); fetchReport(); }}
-          onReset={() => { setDateRangePreset("30days"); setSelectedBranch("all"); setSearch(""); setCurrentPage(1); }}
-        />
+          onReset={() => { setDateRangePreset("30days"); setSelectedBranch("all"); setCustomerType("all"); setSearch(""); setCurrentPage(1); }}
+        >
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Customer Type</label>
+            <Select value={customerType} onValueChange={(v) => { setCustomerType(v); setCurrentPage(1); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="returning">Returning</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterPanel>
 
         {/* Search */}
         <div className="relative max-w-sm">

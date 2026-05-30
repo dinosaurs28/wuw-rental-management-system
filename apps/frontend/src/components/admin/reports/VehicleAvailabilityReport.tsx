@@ -6,6 +6,7 @@ import { FilterPanel } from "@/components/ui/FilterPanel";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { DataTable } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   BarChart,
   Bar,
@@ -37,15 +38,18 @@ interface VehicleAvailability {
   regNo: string;
   make: string;
   model: string;
-  year: number;
+  vehicleName: string;
   category: string;
   branch: string;
   status: string;
+  currentStatus: string;
   totalDays: number;
   bookedDays: number;
   availableDays: number;
+  freeDays: number;
   utilizationRate: number;
-  currentStatus: string;
+  nextAvailableFrom: string;
+  bookedDatesInRange: string;
   bookings: Array<{
     bookingId: string;
     customerName: string;
@@ -56,6 +60,16 @@ interface VehicleAvailability {
     days: number;
   }>;
 }
+
+// currentStatus arrives as a display label ("Available" | "Booked" | "Maintenance").
+// StatusBadge keys its colors off enum values and re-runs the text through
+// formatStatus, so we keep the label as the text (renders as-is) and override
+// the color via className.
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  Available: "bg-green-100 text-green-800 border-green-200",
+  Booked: "bg-blue-100 text-blue-800 border-blue-200",
+  Maintenance: "bg-orange-100 text-orange-800 border-orange-200",
+};
 
 interface CategoryBreakdown {
   category: string;
@@ -75,6 +89,7 @@ interface AvailabilityReportData {
       endDate: string;
     };
     branch: string;
+    availableOnly?: boolean;
   };
   summary: {
     totalVehicles: number;
@@ -104,17 +119,22 @@ export const VehicleAvailabilityReport = () => {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [availableOnly, setAvailableOnly] = useState<boolean>(false);
   const [reportData, setReportData] = useState<AvailabilityReportData | null>(
     null,
   );
   const [branches, setBranches] = useState<
     Array<{ value: string; label: string }>
   >([]);
+  const [categories, setCategories] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch branches on mount
+  // Fetch branches + categories on mount
   useEffect(() => {
-    fetchBranches();
+    fetchFilterOptions();
   }, []);
 
   // Initialize date range from preset
@@ -132,18 +152,29 @@ export const VehicleAvailabilityReport = () => {
     if (startDate && endDate) {
       fetchReportData();
     }
-  }, [startDate, endDate, selectedBranch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, selectedBranch, selectedCategory, availableOnly]);
 
-  const fetchBranches = async () => {
+  const fetchFilterOptions = async () => {
     try {
-      const data = await adminService.getBranches();
-      const branchOptions = data.map((branch: any) => ({
-        value: branch.publicId,
-        label: branch.name,
-      }));
-      setBranches(branchOptions);
+      const [branchData, categoryData] = await Promise.all([
+        adminService.getBranches(),
+        adminService.getCategories(),
+      ]);
+      setBranches(
+        branchData.map((branch: any) => ({
+          value: branch.publicId,
+          label: branch.name,
+        })),
+      );
+      setCategories(
+        categoryData.map((category) => ({
+          value: category.publicId,
+          label: category.name,
+        })),
+      );
     } catch (error) {
-      console.error("Failed to fetch branches:", error);
+      console.error("Failed to fetch filter options:", error);
     }
   };
 
@@ -159,6 +190,14 @@ export const VehicleAvailabilityReport = () => {
 
       if (selectedBranch !== "all") {
         params.branchId = selectedBranch;
+      }
+
+      if (selectedCategory !== "all") {
+        params.categories = selectedCategory;
+      }
+
+      if (availableOnly) {
+        params.availableOnly = "true";
       }
 
       const result = await adminService.getVehicleAvailabilityReport(
@@ -182,6 +221,8 @@ export const VehicleAvailabilityReport = () => {
   const handleResetFilters = () => {
     setDateRangePreset("30days");
     setSelectedBranch("all");
+    setSelectedCategory("all");
+    setAvailableOnly(false);
   };
 
   const getExportUrl = () => {
@@ -196,23 +237,33 @@ export const VehicleAvailabilityReport = () => {
       params.branchId = selectedBranch;
     }
 
+    if (selectedCategory !== "all") {
+      params.categories = selectedCategory;
+    }
+
+    if (availableOnly) {
+      params.availableOnly = "true";
+    }
+
     const queryString = new URLSearchParams(params).toString();
     const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
     return `${baseUrl}/admin/dashboard/reports/vehicle-availability?${queryString}`;
   };
 
-  // Table columns
+  // Table columns (spec §4.6 order)
   const columns: ColumnDef<VehicleAvailability>[] = [
     {
       accessorKey: "regNo",
-      header: "Vehicle",
+      header: "Vehicle Reg No",
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium font-mono">{row.original.regNo}</div>
-          <div className="text-xs text-gray-500">
-            {row.original.make} {row.original.model}
-          </div>
-        </div>
+        <div className="font-medium font-mono">{row.original.regNo}</div>
+      ),
+    },
+    {
+      accessorKey: "vehicleName",
+      header: "Vehicle Name",
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.vehicleName}</div>
       ),
     },
     {
@@ -227,34 +278,46 @@ export const VehicleAvailabilityReport = () => {
     },
     {
       accessorKey: "currentStatus",
-      header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.currentStatus} />,
+      header: "Current Status",
+      cell: ({ row }) => (
+        <StatusBadge
+          status={row.original.currentStatus}
+          className={STATUS_BADGE_CLASS[row.original.currentStatus]}
+        />
+      ),
     },
     {
-      accessorKey: "utilizationRate",
-      header: "Utilization",
+      accessorKey: "nextAvailableFrom",
+      header: "Next Available From",
       cell: ({ row }) => (
-        <div className="font-semibold">
-          {row.original.utilizationRate.toFixed(1)}%
+        <div className="text-sm">
+          {row.original.currentStatus === "Available"
+            ? "Available"
+            : formatDate(row.original.nextAvailableFrom)}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "bookedDatesInRange",
+      header: "Booked Dates in Range",
+      cell: ({ row }) => (
+        <div className="text-sm text-gray-600">
+          {row.original.bookedDatesInRange || "—"}
         </div>
       ),
     },
     {
       accessorKey: "bookedDays",
-      header: "Booked / Total",
+      header: "Total Booked Days",
       cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.bookedDays} / {row.original.totalDays} days
-        </div>
+        <div className="text-sm font-semibold">{row.original.bookedDays}</div>
       ),
     },
     {
-      accessorKey: "bookings",
-      header: "Bookings",
+      accessorKey: "freeDays",
+      header: "Total Free Days",
       cell: ({ row }) => (
-        <div className="text-sm font-semibold">
-          {row.original.bookings.length}
-        </div>
+        <div className="text-sm font-semibold">{row.original.freeDays}</div>
       ),
     },
   ];
@@ -266,7 +329,6 @@ export const VehicleAvailabilityReport = () => {
       available: item.available,
       rented: item.rented,
       maintenance: item.maintenance,
-      inactive: item.inactive,
     })) || [];
 
   // Status distribution pie chart
@@ -285,11 +347,6 @@ export const VehicleAvailabilityReport = () => {
       name: "Maintenance",
       value: reportData?.summary.inMaintenance || 0,
       color: "#F59E0B",
-    },
-    {
-      name: "Inactive",
-      value: reportData?.summary.inactive || 0,
-      color: "#EF4444",
     },
   ];
 
@@ -330,9 +387,31 @@ export const VehicleAvailabilityReport = () => {
         branches={branches}
         selectedBranch={selectedBranch}
         onBranchChange={setSelectedBranch}
+        showCategoryFilter
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-      />
+      >
+        {/* Show Only Available toggle (sent as availableOnly) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Availability</label>
+          <div className="flex h-9 items-center gap-2">
+            <Checkbox
+              id="availableOnly"
+              checked={availableOnly}
+              onCheckedChange={(checked) => setAvailableOnly(checked === true)}
+            />
+            <label
+              htmlFor="availableOnly"
+              className="text-sm font-normal cursor-pointer select-none"
+            >
+              Show Only Available
+            </label>
+          </div>
+        </div>
+      </FilterPanel>
 
       {/* Summary Metrics */}
       <div>
@@ -447,12 +526,6 @@ export const VehicleAvailabilityReport = () => {
                     stackId="a"
                     fill="#F59E0B"
                     name="Maintenance"
-                  />
-                  <Bar
-                    dataKey="inactive"
-                    stackId="a"
-                    fill="#EF4444"
-                    name="Inactive"
                   />
                 </BarChart>
               </ResponsiveContainer>
