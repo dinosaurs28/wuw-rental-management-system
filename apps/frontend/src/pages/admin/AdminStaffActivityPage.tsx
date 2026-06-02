@@ -107,45 +107,94 @@ function DetailSheet({
 }) {
   return (
     <Sheet open={!!log} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0">
         {log && (
           <>
-            <SheetHeader className="mb-4">
-              <SheetTitle className="flex items-center gap-2">
+            <SheetHeader className="px-5 pt-5 pb-4 border-b">
+              <SheetTitle className="flex items-center gap-2 flex-wrap">
                 {actionBadge(log.actionType)}
                 {entityBadge(log.entityType)}
               </SheetTitle>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {log.description || "No description"}
+              </p>
             </SheetHeader>
 
-            <div className="space-y-4 text-sm">
-              <Section title="Action">
-                <Row label="Action" value={actionBadge(log.actionType)} />
-                <Row label="Entity" value={entityBadge(log.entityType)} />
-                <Row label="Entity Ref" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.entityRef}</code>} />
-                <Row label="Description" value={log.description} />
-                <Row label="Time" value={format(new Date(log.createdAt), "dd MMM yyyy, hh:mm:ss a")} />
+            <div className="px-5 py-4 space-y-5 text-sm">
+              {/* Activity */}
+              <Section title="Activity">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Action">
+                    {actionBadge(log.actionType)}
+                  </Field>
+                  <Field label="Entity">
+                    {entityBadge(log.entityType)}
+                  </Field>
+                  <Field label="Entity Ref">
+                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                      {log.entityRef || "—"}
+                    </code>
+                  </Field>
+                  <Field label="Time">
+                    <span className="text-xs">
+                      {format(new Date(log.createdAt), "dd MMM yyyy")}
+                    </span>
+                    <span className="text-xs text-muted-foreground block">
+                      {format(new Date(log.createdAt), "hh:mm:ss a")}
+                    </span>
+                  </Field>
+                </div>
+                {log.description && (
+                  <Field label="Description">
+                    <p className="text-sm text-neutral-700 leading-relaxed">
+                      {log.description}
+                    </p>
+                  </Field>
+                )}
               </Section>
 
               <Separator />
 
+              {/* Actor */}
               <Section title="Actor">
-                <Row label="Name" value={log.actorName} />
-                <Row label="Role" value={log.actorRole} />
-                <Row label="Public ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.actorPublicId}</code>} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name">
+                    <span className="font-medium">{log.actorName || "—"}</span>
+                  </Field>
+                  <Field label="Role">
+                    <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                      {log.actorRole}
+                    </span>
+                  </Field>
+                </div>
+                <Field label="Public ID">
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono break-all">
+                    {log.actorPublicId}
+                  </code>
+                </Field>
               </Section>
 
               <Separator />
 
+              {/* Branch */}
               <Section title="Branch">
-                <Row label="Name" value={log.branchName} />
-                <Row label="ID" value={String(log.branchId)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name">
+                    <span className="font-medium">{log.branchName || "—"}</span>
+                  </Field>
+                  <Field label="Branch ID">
+                    <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                      {log.branchId}
+                    </span>
+                  </Field>
+                </div>
               </Section>
 
               {log.metadata && (
                 <>
                   <Separator />
                   <Section title="Metadata">
-                    <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap">
+                    <pre className="text-xs bg-muted rounded-lg p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed">
                       {JSON.stringify(log.metadata, null, 2)}
                     </pre>
                   </Section>
@@ -161,18 +210,22 @@ function DetailSheet({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
-      <div className="space-y-1.5">{children}</div>
+    <div className="space-y-3">
+      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+        {title}
+      </p>
+      <div className="space-y-2.5">{children}</div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-2">
-      <span className="text-muted-foreground shrink-0 w-24">{label}</span>
-      <span className="text-right">{value}</span>
+    <div className="flex flex-col gap-1">
+      <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+        {label}
+      </span>
+      <div>{children}</div>
     </div>
   );
 }
