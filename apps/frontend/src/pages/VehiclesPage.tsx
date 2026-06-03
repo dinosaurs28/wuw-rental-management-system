@@ -286,18 +286,18 @@ export const VehiclesPage = () => {
         </Breadcrumb>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-5xl font-serif font-black text-zinc-900 tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-black tracking-tight uppercase">
               Select Your Vehicle
             </h1>
-            <p className="text-zinc-400 font-medium mt-2">
-              Find the perfect luxury companion for your journey
+            <p className="text-gray-500 font-bold mt-2 uppercase tracking-wide text-sm">
+              Premium fleet at your disposal
             </p>
           </div>
-          <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-zinc-100 px-4 py-2 rounded-full border border-zinc-200">
-            <span className="text-zinc-900 text-lg mr-2">{vehicleCount}</span>
-            Results found
+          <div className="text-xs font-black text-white tracking-widest uppercase bg-[#1A1A1A] px-5 py-3 rounded-none shadow-md">
+            <span className="text-[#FF5F00] text-lg mr-2">{vehicleCount}</span>
+            Results
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Car } from "lucide-react";
+import { Car, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { PublicVehicle, ManagerVehicle } from "@/services/vehicle.service";
@@ -45,14 +45,14 @@ export const VehicleCard = ({
   const getPriceLabel = () => {
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
       const typeMap: Record<string, string> = {
-        HOURLY: "/hr",
-        HALF_DAY: "/half day",
-        FULL_DAY: "/day",
-        MULTI_DAY: "/total",
+        HOURLY: "/ hour",
+        HALF_DAY: "/ half day",
+        FULL_DAY: "/ day",
+        MULTI_DAY: "total",
       };
-      return typeMap[vehicle.pricingDetails.type] || "/day";
+      return typeMap[vehicle.pricingDetails.type] || "/ day";
     }
-    return "/day";
+    return "/ day";
   };
 
   const handleViewVehicle = () => {
@@ -73,12 +73,9 @@ export const VehicleCard = ({
     "pricingDetails" in vehicle && vehicle.pricingDetails;
 
   return (
-    <Card className="group overflow-hidden bg-white border border-zinc-200 shadow-2xl rounded-[2rem] hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-500 relative">
-      {/* Subtle glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-      {/* Vehicle Image */}
-      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden rounded-t-[2rem]">
+    <Card className="group overflow-hidden bg-white border-2 border-gray-100 rounded-none hover:border-gray-300 transition-all duration-300 relative flex flex-col h-full shadow-sm hover:shadow-xl">
+      {/* Vehicle Image Container */}
+      <div className="relative aspect-[4/3] bg-white overflow-hidden p-6">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -86,75 +83,84 @@ export const VehicleCard = ({
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-zinc-100">
-            <Car className="size-16 text-zinc-400" />
+          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+            <Car className="size-16 text-gray-300" />
           </div>
         )}
-        {/* Category Badge */}
+        
+        {/* Category Label (Top Left) */}
         <div className="absolute top-4 left-4 z-10">
-          <span className="px-4 py-1.5 text-[10px] font-black tracking-[0.2em] bg-white/90 backdrop-blur-md border border-zinc-200 text-zinc-900 rounded-full uppercase">
+          <span className="px-3 py-1 bg-black text-white text-[10px] font-black tracking-[0.2em] uppercase rounded-sm">
             {getCategoryName()}
           </span>
         </div>
-        {/* Period Type Badge */}
+        
+        {/* Period Type Label */}
         {hasPricingDetails && (
           <div className="absolute top-4 right-4 z-10">
-            <span className="px-3 py-1.5 text-[10px] font-black tracking-[0.15em] bg-orange-500/80 backdrop-blur-md text-white rounded-full uppercase">
+            <span className="px-3 py-1 bg-[#FF5F00] text-white text-[10px] font-black tracking-[0.15em] uppercase rounded-sm">
               {vehicle.pricingDetails!.type.replace("_", " ")}
-            </span>
-          </div>
-        )}
-        {/* Available Count Badge (public grouped vehicles only) */}
-        {"availableCount" in vehicle && (
-          <div className="absolute bottom-4 right-4 z-10">
-            <span
-              className={`px-3 py-1.5 text-[10px] font-black tracking-[0.15em] backdrop-blur-md text-white rounded-full uppercase ${
-                vehicle.availableCount >= 3
-                  ? "bg-emerald-500/80"
-                  : vehicle.availableCount >= 1
-                  ? "bg-yellow-500/80"
-                  : "bg-red-500/80"
-              }`}
-            >
-              {vehicle.availableCount} available
             </span>
           </div>
         )}
       </div>
 
-      <CardContent className="p-6 space-y-4 relative z-10">
-        {/* Make + Model */}
-        <div className="space-y-1">
-          <h3 className="text-xl md:text-2xl font-serif font-black text-zinc-900 leading-tight group-hover:text-orange-600 transition-colors">
+      <CardContent className="p-6 pt-0 flex-1 flex flex-col justify-between space-y-6">
+        {/* Vehicle Details */}
+        <div className="space-y-2 text-center md:text-left">
+          <h3 className="text-2xl font-black text-black leading-tight uppercase">
             {vehicle.make} {vehicle.model}
           </h3>
-          {/* Branch */}
-          {"branch" in vehicle && vehicle.branch && (
-            <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
-              {vehicle.branch}
-            </p>
-          )}
+          <p className="text-sm font-medium text-gray-500">
+            Or similar
+          </p>
+          
+          {/* Branch / Availability */}
+          <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
+            {"branch" in vehicle && vehicle.branch && (
+              <p className="text-[11px] font-bold tracking-wider text-gray-400 uppercase">
+                {vehicle.branch}
+              </p>
+            )}
+            {"availableCount" in vehicle && (
+              <span
+                className={`text-[11px] font-bold tracking-wider uppercase ${
+                  vehicle.availableCount >= 3
+                    ? "text-green-600"
+                    : vehicle.availableCount >= 1
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }`}
+              >
+                {vehicle.availableCount} available
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Price and CTA */}
-        <div className="flex items-center justify-between pt-4 border-t border-zinc-200">
-          <div>
-            <span className="text-3xl font-bold text-zinc-900 tracking-tight">
-              ₹{getDisplayPrice() as number}
-            </span>
-            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-2">
-              {getPriceLabel()}
-            </span>
+        {/* Price and CTA Area */}
+        <div className="pt-6 border-t-2 border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total from</div>
+            <div className="flex items-baseline justify-center sm:justify-start gap-1">
+               <span className="text-3xl font-black text-black tracking-tighter">
+                  ₹{getDisplayPrice() as number}
+               </span>
+               <span className="text-sm font-bold text-gray-500">
+                  {getPriceLabel()}
+               </span>
+            </div>
           </div>
           <Button
             onClick={handleViewVehicle}
-            className="h-12 px-6 bg-zinc-900 hover:bg-zinc-700 text-white font-bold rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm"
+            className="w-full sm:w-auto h-12 px-6 bg-[#FF5F00] hover:bg-[#E55500] text-white font-bold uppercase tracking-wider rounded-none transition-all group-hover:scale-105"
           >
-            View
+            Select
+            <ChevronRight className="ml-1 size-4" />
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 };
+
