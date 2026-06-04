@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Car, ChevronRight } from "lucide-react";
+import { Car, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { PublicVehicle, ManagerVehicle } from "@/services/vehicle.service";
@@ -9,6 +9,8 @@ interface VehicleCardProps {
   basePath?: string;
   startDateTime?: string;
   endDateTime?: string;
+  /** "light" keeps the original card (internal/employee pages); "dark" is the public Sixt-style card. */
+  variant?: "light" | "dark";
 }
 
 export const VehicleCard = ({
@@ -16,6 +18,7 @@ export const VehicleCard = ({
   basePath = "/vehicle",
   startDateTime,
   endDateTime,
+  variant = "light",
 }: VehicleCardProps) => {
   const navigate = useNavigate();
 
@@ -72,6 +75,124 @@ export const VehicleCard = ({
   const hasPricingDetails =
     "pricingDetails" in vehicle && vehicle.pricingDetails;
 
+  // Period-type label as a short, real chip (e.g. "Full day")
+  const getPeriodChip = () => {
+    if (!hasPricingDetails) return null;
+    const map: Record<string, string> = {
+      HOURLY: "Hourly",
+      HALF_DAY: "Half day",
+      FULL_DAY: "Full day",
+      MULTI_DAY: "Multi-day",
+    };
+    return map[(vehicle as PublicVehicle).pricingDetails!.type] || null;
+  };
+
+  const availableCount =
+    "availableCount" in vehicle ? vehicle.availableCount : undefined;
+
+  const availabilityTone =
+    availableCount === undefined
+      ? ""
+      : availableCount >= 3
+      ? "bg-green-500"
+      : availableCount >= 1
+      ? "bg-yellow-500"
+      : "bg-red-500";
+
+  // Secondary per-day rate, only when the headline is a multi-day total (both real fields)
+  const dailyRate =
+    "pricing" in vehicle ? vehicle.pricing?.daily : undefined;
+  const showSecondaryDaily =
+    hasPricingDetails &&
+    (vehicle as PublicVehicle).pricingDetails!.type === "MULTI_DAY" &&
+    !!dailyRate;
+
+  // ---------------------------------------------------------------------------
+  // Dark Sixt-style card (public pages) — real data only
+  // ---------------------------------------------------------------------------
+  if (variant === "dark") {
+    const periodChip = getPeriodChip();
+    return (
+      <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#23272c] via-[#1a1d21] to-[#101214] shadow-lg transition-all duration-300 hover:border-white/25 hover:shadow-2xl">
+        {/* Header: title + category */}
+        <div className="px-5 pt-5">
+          <h3 className="text-xl font-black uppercase leading-tight tracking-tight text-white">
+            {vehicle.make} {vehicle.model}
+          </h3>
+          <p className="mt-1 text-sm font-medium text-zinc-400">
+            {getCategoryName()}
+          </p>
+
+          {/* Real-data chips: branch, period type, availability */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {"branch" in vehicle && vehicle.branch && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-zinc-200">
+                <MapPin className="size-3" />
+                {vehicle.branch}
+              </span>
+            )}
+            {periodChip && (
+              <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-zinc-200">
+                {periodChip}
+              </span>
+            )}
+            {availableCount !== undefined && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-zinc-200">
+                <span className={`size-1.5 rounded-full ${availabilityTone}`} />
+                {availableCount} available
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Vehicle image with spotlight backdrop */}
+        <div className="relative mt-2 h-44 px-6">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_60%_55%,rgba(255,255,255,0.16),transparent_65%)]" />
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={`${vehicle.make} ${vehicle.model}`}
+              className="relative h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="relative flex h-full w-full items-center justify-center">
+              <Car className="size-16 text-white/20" />
+            </div>
+          )}
+        </div>
+
+        {/* Price block */}
+        <div className="mt-auto px-5 pb-4 pt-2">
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-black tracking-tight text-white">
+              ₹{getDisplayPrice() as number}
+            </span>
+            <span className="text-xs font-bold text-zinc-400">
+              {getPriceLabel()}
+            </span>
+          </div>
+          {showSecondaryDaily && (
+            <div className="mt-0.5 text-xs font-medium text-zinc-500">
+              ₹{dailyRate} / day
+            </div>
+          )}
+        </div>
+
+        {/* Full-width CTA footer */}
+        <button
+          onClick={handleViewVehicle}
+          className="flex w-full items-center justify-center gap-1 bg-[#FF5F00] py-3.5 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#E55500]"
+        >
+          Select
+          <ChevronRight className="size-4" />
+        </button>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Original light card (internal / employee pages)
+  // ---------------------------------------------------------------------------
   return (
     <Card className="group overflow-hidden bg-white border-2 border-gray-100 rounded-none hover:border-gray-300 transition-all duration-300 relative flex flex-col h-full shadow-sm hover:shadow-xl">
       {/* Vehicle Image Container */}
@@ -87,14 +208,14 @@ export const VehicleCard = ({
             <Car className="size-16 text-gray-300" />
           </div>
         )}
-        
+
         {/* Category Label (Top Left) */}
         <div className="absolute top-4 left-4 z-10">
           <span className="px-3 py-1 bg-black text-white text-[10px] font-black tracking-[0.2em] uppercase rounded-sm">
             {getCategoryName()}
           </span>
         </div>
-        
+
         {/* Period Type Label */}
         {hasPricingDetails && (
           <div className="absolute top-4 right-4 z-10">
@@ -111,10 +232,7 @@ export const VehicleCard = ({
           <h3 className="text-2xl font-black text-black leading-tight uppercase">
             {vehicle.make} {vehicle.model}
           </h3>
-          <p className="text-sm font-medium text-gray-500">
-            Or similar
-          </p>
-          
+
           {/* Branch / Availability */}
           <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
             {"branch" in vehicle && vehicle.branch && (
@@ -163,4 +281,3 @@ export const VehicleCard = ({
     </Card>
   );
 };
-

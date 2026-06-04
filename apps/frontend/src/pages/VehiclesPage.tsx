@@ -339,6 +339,7 @@ export const VehiclesPage = () => {
           onPageChange={handlePageChange}
           startDateTime={startDateTime}
           endDateTime={endDateTime}
+          variant="dark"
         />
       </main>
 

@@ -25,6 +25,8 @@ interface VehicleGridProps {
   basePath?: string;
   startDateTime?: string;
   endDateTime?: string;
+  /** "dark" renders the public Sixt-style cards; "light" (default) for internal pages. */
+  variant?: "light" | "dark";
 }
 
 // Memoized vehicle card for optimization
@@ -82,6 +84,7 @@ export const VehicleGrid = ({
   basePath,
   startDateTime,
   endDateTime,
+  variant = "light",
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -102,23 +105,27 @@ export const VehicleGrid = ({
 
   // Loading state
   if (isLoading) {
+    const isDark = variant === "dark";
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 9 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col space-y-4 bg-white border border-zinc-200 rounded-[2rem] p-4"
+              className={cn(
+                "flex flex-col space-y-4 rounded-2xl p-5",
+                isDark
+                  ? "bg-gradient-to-br from-[#23272c] to-[#101214] border border-white/10"
+                  : "bg-white border border-zinc-200",
+              )}
             >
-              <Skeleton className="h-[200px] w-full rounded-[1.5rem] bg-white/5" />
-              <div className="space-y-3 px-2">
-                <Skeleton className="h-4 w-3/4 bg-white/10 rounded-full" />
-                <Skeleton className="h-4 w-1/2 bg-white/5 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className={cn("h-5 w-3/4 rounded", isDark ? "bg-white/10" : "bg-zinc-200")} />
+                <Skeleton className={cn("h-4 w-1/2 rounded", isDark ? "bg-white/5" : "bg-zinc-100")} />
               </div>
-              <div className="pt-4 mt-2 border-t border-zinc-200 flex justify-between px-2">
-                <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
-                <Skeleton className="h-10 w-28 bg-white/5 rounded-full" />
-              </div>
+              <Skeleton className={cn("h-32 w-full rounded-lg", isDark ? "bg-white/5" : "bg-zinc-100")} />
+              <Skeleton className={cn("h-7 w-28 rounded", isDark ? "bg-white/10" : "bg-zinc-200")} />
+              <Skeleton className={cn("h-11 w-full rounded", isDark ? "bg-[#FF5F00]/30" : "bg-zinc-200")} />
             </div>
           ))}
         </div>
@@ -142,6 +149,7 @@ export const VehicleGrid = ({
             basePath={basePath}
             startDateTime={startDateTime}
             endDateTime={endDateTime}
+            variant={variant}
           />
         ))}
       </div>

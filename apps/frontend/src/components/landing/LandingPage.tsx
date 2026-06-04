@@ -22,18 +22,20 @@ export const LandingPage = () => {
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
-
-          {/* Floating Search Form Widget */}
-          {/* It needs to be positioned at the bottom of the hero, overflowing into the orange banner */}
-          <div className="absolute bottom-[-180px] sm:bottom-[-160px] md:bottom-[-140px] left-0 w-full z-20 px-4 md:px-6 lg:px-12 flex justify-center">
-             <div className="w-full max-w-[1300px]">
-                <SearchForm />
-             </div>
-          </div>
         </section>
 
-        {/* Huge Orange Banner */}
-        <section className="bg-[#FF5F00] pt-[220px] sm:pt-[200px] md:pt-[180px] pb-16 px-4 text-center">
+        {/* Huge Orange Banner. The search form is the first child here, pulled up
+            over the hero with a negative margin so it stays in normal flow — its
+            real (variable) height then pushes the heading down on every screen,
+            instead of overlapping it. */}
+        <section className="bg-[#FF5F00] pb-16 px-4 text-center">
+            {/* Floating Search Form Widget */}
+            <div className="relative z-20 -mt-32 sm:-mt-36 md:-mt-40 mb-12 md:mb-20 px-0 sm:px-2 md:px-6 lg:px-12 flex justify-center">
+               <div className="w-full max-w-[1300px]">
+                  <SearchForm />
+               </div>
+            </div>
+
             <h2 className="text-[2.5rem] md:text-[4rem] lg:text-[5rem] font-black text-[#1A1A1A] uppercase tracking-tighter leading-none mb-4 md:mb-6">
                 EXCLUSIVE RATES FOR MEMBERS
             </h2>
