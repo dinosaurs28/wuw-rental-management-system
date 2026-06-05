@@ -329,8 +329,8 @@ export const VehicleGroupDetailsPage = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          <div className="lg:col-span-7 xl:col-span-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-stretch">
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
             <VehicleImageGallery images={group.images} vehicleName={vehicleName} />
           </div>
           <div className="lg:col-span-5 xl:col-span-4">
