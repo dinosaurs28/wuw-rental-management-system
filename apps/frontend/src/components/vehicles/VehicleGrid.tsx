@@ -25,8 +25,6 @@ interface VehicleGridProps {
   basePath?: string;
   startDateTime?: string;
   endDateTime?: string;
-  /** "dark" renders the public Sixt-style cards; "light" (default) for internal pages. */
-  variant?: "light" | "dark";
 }
 
 // Memoized vehicle card for optimization
@@ -84,7 +82,6 @@ export const VehicleGrid = ({
   basePath,
   startDateTime,
   endDateTime,
-  variant = "light",
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -105,27 +102,16 @@ export const VehicleGrid = ({
 
   // Loading state
   if (isLoading) {
-    const isDark = variant === "dark";
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
           {Array.from({ length: 9 }).map((_, i) => (
             <div
               key={i}
-              className={cn(
-                "flex flex-col space-y-4 rounded-2xl p-5",
-                isDark
-                  ? "bg-gradient-to-br from-[#23272c] to-[#101214] border border-white/10"
-                  : "bg-white border border-zinc-200",
-              )}
+              className="flex flex-col rounded-[22px] overflow-hidden bg-[#101217]"
             >
-              <div className="space-y-2">
-                <Skeleton className={cn("h-5 w-3/4 rounded", isDark ? "bg-white/10" : "bg-zinc-200")} />
-                <Skeleton className={cn("h-4 w-1/2 rounded", isDark ? "bg-white/5" : "bg-zinc-100")} />
-              </div>
-              <Skeleton className={cn("h-32 w-full rounded-lg", isDark ? "bg-white/5" : "bg-zinc-100")} />
-              <Skeleton className={cn("h-7 w-28 rounded", isDark ? "bg-white/10" : "bg-zinc-200")} />
-              <Skeleton className={cn("h-11 w-full rounded", isDark ? "bg-[#FF5F00]/30" : "bg-zinc-200")} />
+              <Skeleton className="h-[440px] w-full rounded-none bg-zinc-800/60" />
+              <div className="h-[60px] bg-zinc-800/40" />
             </div>
           ))}
         </div>
@@ -141,7 +127,7 @@ export const VehicleGrid = ({
   return (
     <div className="space-y-8">
       {/* Vehicle Grid - No separate scroll container */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
         {vehicles.map((vehicle) => (
           <MemoizedVehicleCard
             key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
@@ -149,7 +135,6 @@ export const VehicleGrid = ({
             basePath={basePath}
             startDateTime={startDateTime}
             endDateTime={endDateTime}
-            variant={variant}
           />
         ))}
       </div>
