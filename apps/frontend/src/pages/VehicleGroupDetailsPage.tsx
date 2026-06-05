@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import {
   useParams,
   Link,
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { Car } from "lucide-react";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
-import { VehicleBookingPanel } from "@/components/vehicles/VehicleBookingPanel";
+import { VehicleImageGallery } from "@/components/vehicles/VehicleImageGallery";
+import { VehiclePricingCard } from "@/components/vehicles/VehiclePricingCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Breadcrumb,
@@ -18,6 +18,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { cn } from "@/lib/utils";
 import { useVehicleGroupDetails } from "@/hooks/useVehicleGroupDetails";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useSearchStore } from "@/store/search.store";
@@ -56,8 +57,6 @@ export const VehicleGroupDetailsPage = () => {
 
   const pickupDate = getStartDate();
   const returnDate = getEndDate();
-
-  const [activeImage, setActiveImage] = useState(0);
 
   const urlStart = searchParams.get("start");
   const urlEnd   = searchParams.get("end");
@@ -255,15 +254,31 @@ export const VehicleGroupDetailsPage = () => {
   }
 
   const vehicleName = `${group.make} ${group.model}`;
-  const images = group.images ?? [];
-  const mainImage = images[activeImage] ?? images[0];
+
+  // Shape the group data into the format VehiclePricingCard expects
+  const vehicleForPricingCard = {
+    publicId:         groupKey,
+    make:             group.make,
+    model:            group.model,
+    status:           (group.availability ? "AVAILABLE" : "NOT_AVAILABLE") as any,
+    availability:     group.availability,
+    category:         group.category,
+    branch:           group.branch,
+    images:           group.images,
+    pricing:          { daily: group.pricing.daily ?? 0 },
+    deposit:          group.deposit,
+    advancePayAmount: group.advancePayAmount,
+    pricingDetails:   group.pricingDetails,
+    fastagNumber:     undefined,
+    hasFastag:        false,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24 min-h-[80vh]">
         {/* Breadcrumb */}
-        <Breadcrumb className="mb-6">
+        <Breadcrumb className="mb-8">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -283,81 +298,50 @@ export const VehicleGroupDetailsPage = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Two-panel card: dark image hero (left) + booking panel (right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl lg:min-h-[620px]">
-          {/* Left: dark image panel */}
-          <div className="relative flex flex-col bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-6 lg:p-10">
-            {/* Title */}
-            <div className="relative z-10">
-              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-serif font-black uppercase tracking-tight text-white">
-                {vehicleName}
-              </h1>
-              <p className="mt-2 text-sm font-medium uppercase tracking-wider text-white/60">
+        {/* Vehicle Header */}
+        <div className="mb-8 md:mb-12">
+          <div className="flex flex-wrap items-center gap-4 mb-3">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-zinc-900 tracking-tight">
+              {vehicleName}
+            </h1>
+            <div className="flex items-center gap-3">
+              <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-zinc-100 text-zinc-900 rounded-full uppercase border border-zinc-200">
                 {group.category}
-              </p>
-            </div>
-
-            {/* Image */}
-            <div className="relative z-10 my-8 flex flex-1 items-center justify-center">
-              {mainImage ? (
-                <img
-                  src={mainImage}
-                  alt={vehicleName}
-                  className="max-h-[320px] w-full object-contain drop-shadow-2xl"
-                />
-              ) : (
-                <Car className="size-24 text-white/20" />
-              )}
-            </div>
-
-            {/* Thumbnails */}
-            {images.length > 1 && (
-              <div className="relative z-10 mb-6 flex flex-wrap gap-3">
-                {images.map((img, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`size-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white/5 p-1 transition-all ${
-                      i === activeImage
-                        ? "border-[#FF5F00]"
-                        : "border-white/10 hover:border-white/30"
-                    }`}
-                  >
-                    <img src={img} alt={`${vehicleName} ${i + 1}`} className="size-full object-contain" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Facts row — only real data */}
-            <div className="relative z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-sm font-medium text-white/70">
-              <span className="flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-[#FF5F00]" />
-                {group.category}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-white/30" />
-                {group.branch}
               </span>
               <span
-                className={
-                  group.availableCount > 0 ? "text-emerald-400" : "text-red-400"
-                }
+                className={cn(
+                  "px-4 py-1.5 text-xs font-black tracking-[0.2em] rounded-full uppercase border",
+                  group.availableCount > 0
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                    : "bg-red-500/10 text-red-500 border-red-500/20",
+                )}
               >
                 {group.availableCount > 0
-                  ? `${group.availableCount} available`
-                  : "Not available"}
+                  ? `${group.availableCount} Available`
+                  : "Not Available"}
               </span>
             </div>
           </div>
+          <p className="text-sm font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-2">
+            <span className="size-2 rounded-full bg-orange-500 shrink-0" />
+            {group.branch}
+          </p>
+        </div>
 
-          {/* Right: booking panel */}
-          <VehicleBookingPanel
-            group={group}
-            onBookVehicle={handleBookVehicle}
-            isRefetching={isFetching}
-          />
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-stretch">
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
+            <VehicleImageGallery images={group.images} vehicleName={vehicleName} />
+          </div>
+          <div className="lg:col-span-5 xl:col-span-4">
+            <div className="lg:sticky lg:top-28">
+              <VehiclePricingCard
+                vehicle={vehicleForPricingCard as any}
+                onBookVehicle={handleBookVehicle}
+                isRefetching={isFetching}
+              />
+            </div>
+          </div>
         </div>
       </main>
       <Footer />

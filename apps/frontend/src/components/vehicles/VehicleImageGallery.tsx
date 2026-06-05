@@ -1,12 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Car, ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface VehicleImageGalleryProps {
@@ -14,146 +7,110 @@ interface VehicleImageGalleryProps {
   vehicleName: string;
 }
 
+const STUDIO_GRADIENT = [
+  "radial-gradient(110% 46% at 50% 73%, rgba(232,235,237,.9) 0%, rgba(150,156,160,.3) 42%, rgba(11,12,15,0) 72%)",
+  "radial-gradient(95% 72% at 52% 49%, #c6cbce 0%, #8b9095 30%, #44484d 55%, rgba(11,12,15,0) 82%)",
+  "radial-gradient(140% 120% at 50% 40%, rgba(0,0,0,0) 50%, rgba(7,8,10,.92) 100%)",
+  "linear-gradient(180deg,#0b0c0f 0%,#101217 52%,#090a0d 100%)",
+].join(",");
+
 export const VehicleImageGallery = ({
   images,
   vehicleName,
 }: VehicleImageGalleryProps) => {
-  const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
 
-  // Normalize images to string array
-  const normalizedImages: string[] = Array.isArray(images)
+  const normalized: string[] = Array.isArray(images)
     ? images.map((img) => (typeof img === "string" ? img : img.file.url))
     : [];
 
-  useEffect(() => {
-    if (!api) return;
-
-    const onSelect = () => {
-      setCurrent(api.selectedScrollSnap());
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-    };
-
-    onSelect();
-    api.on("select", onSelect);
-    api.on("reInit", onSelect);
-
-    return () => {
-      api.off("select", onSelect);
-    };
-  }, [api]);
-
-  const scrollTo = useCallback(
-    (index: number) => {
-      api?.scrollTo(index);
-    },
-    [api],
+  const prev = useCallback(
+    () => setCurrent((i) => (i - 1 + normalized.length) % normalized.length),
+    [normalized.length],
   );
 
-  const scrollPrev = useCallback(() => {
-    api?.scrollPrev();
-  }, [api]);
-
-  const scrollNext = useCallback(() => {
-    api?.scrollNext();
-  }, [api]);
-
-  if (!normalizedImages || normalizedImages.length === 0) {
-    return (
-      <div className="w-full aspect-[4/3] bg-zinc-100 border border-zinc-200 rounded-[2rem] flex items-center justify-center">
-        <Car className="size-20 text-zinc-700" />
-      </div>
-    );
-  }
+  const next = useCallback(
+    () => setCurrent((i) => (i + 1) % normalized.length),
+    [normalized.length],
+  );
 
   return (
-    <div className="space-y-4">
-      {/* Main Image Carousel */}
-      <div className="relative group">
-        <Carousel
-          setApi={setApi}
-          className="w-full"
-          opts={{
-            loop: true,
+    <div
+      className="relative overflow-hidden rounded-[2rem] w-full h-full min-h-[420px] lg:min-h-[580px]"
+      style={{ background: STUDIO_GRADIENT }}
+    >
+      {/* Vehicle image — centered, fills the section */}
+      {normalized.length > 0 ? (
+        <img
+          key={current}
+          src={normalized[current]}
+          alt={`${vehicleName} - Image ${current + 1}`}
+          className="absolute left-1/2 top-1/2 w-[90%] pointer-events-none select-none"
+          style={{
+            transform: "translate(-50%, -50%)",
+            filter: "drop-shadow(0 30px 26px rgba(0,0,0,.55))",
+            objectFit: "contain",
           }}
-        >
-          <CarouselContent>
-            {normalizedImages.map((image, index) => (
-              <CarouselItem key={index}>
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-[2rem] bg-zinc-100 border border-zinc-200">
-                  <img
-                    src={image}
-                    alt={`${vehicleName} - Image ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-
-        {/* Navigation Arrows */}
-        {normalizedImages.length > 1 && (
-          <>
-            <Button
-              variant="secondary"
-              size="icon"
-              className={cn(
-                "absolute left-4 top-1/2 -translate-y-1/2 z-10",
-                "size-12 rounded-full bg-white/90 backdrop-blur-md border border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-2xl",
-                "opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110",
-                !canScrollPrev && "opacity-50 cursor-not-allowed hidden",
-              )}
-              onClick={scrollPrev}
-              disabled={!canScrollPrev}
-            >
-              <ChevronLeft className="size-6 text-zinc-700" />
-              <span className="sr-only">Previous image</span>
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className={cn(
-                "absolute right-4 top-1/2 -translate-y-1/2 z-10",
-                "size-12 rounded-full bg-white/90 backdrop-blur-md border border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-2xl",
-                "opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110",
-                !canScrollNext && "opacity-50 cursor-not-allowed hidden",
-              )}
-              onClick={scrollNext}
-              disabled={!canScrollNext}
-            >
-              <ChevronRight className="size-5 text-zinc-700" />
-              <span className="sr-only">Next image</span>
-            </Button>
-          </>
-        )}
-      </div>
-
-      {/* Thumbnail Strip */}
-      {normalizedImages.length > 1 && (
-        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent mt-4 px-1">
-          {normalizedImages.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => scrollTo(index)}
-              className={cn(
-                "flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300",
-                current === index
-                  ? "border-orange-500 ring-4 ring-orange-500/10 scale-105"
-                  : "border-transparent opacity-50 hover:opacity-100 hover:border-zinc-300 hover:scale-105",
-              )}
-            >
-              <img
-                src={image}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </button>
-          ))}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Car className="size-24 text-zinc-600" />
         </div>
+      )}
+
+      {/* Top scrim */}
+      <div
+        className="absolute inset-x-0 top-0 h-48 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg,rgba(8,9,12,.85) 0%,rgba(8,9,12,.35) 50%,rgba(8,9,12,0) 100%)",
+        }}
+      />
+
+      {/* Bottom scrim */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(0deg,rgba(8,9,12,.88) 0%,rgba(8,9,12,.4) 55%,rgba(8,9,12,0) 100%)",
+        }}
+      />
+
+      {/* Prev / Next arrows */}
+      {normalized.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            aria-label="Previous image"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 size-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/25 transition-all duration-200 hover:scale-110 active:scale-95"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <button
+            onClick={next}
+            aria-label="Next image"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 size-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/25 transition-all duration-200 hover:scale-110 active:scale-95"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+
+          {/* Dot indicators */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {normalized.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                aria-label={`Go to image ${i + 1}`}
+                className={cn(
+                  "rounded-full transition-all duration-200",
+                  i === current
+                    ? "w-4 h-1.5 bg-white"
+                    : "w-1.5 h-1.5 bg-white/40 hover:bg-white/70",
+                )}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
