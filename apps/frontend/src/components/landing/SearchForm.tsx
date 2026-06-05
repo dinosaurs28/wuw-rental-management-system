@@ -59,48 +59,46 @@ export const SearchForm = () => {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="w-full max-w-[1300px] mx-auto relative z-10 font-sans"
         >
-            <div className="relative rounded-[2rem] bg-white border border-zinc-200/70 shadow-[0_24px_45px_-24px_rgba(0,0,0,0.15)] p-5 md:p-6 lg:p-8">
-                {/* Top Bar: Dynamic Category Tabs & View Booking */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
-                    <div className="flex items-center flex-wrap gap-1.5 p-1 bg-zinc-100/80 rounded-2xl md:rounded-full border border-zinc-200/50 max-w-full">
-                        <button
-                            onClick={() => setSearchCriteria({ categoryPublicId: "all" })}
-                            className={cn(
-                                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus:outline-none whitespace-nowrap",
-                                (!categoryPublicId || categoryPublicId === "all")
-                                    ? "bg-zinc-900 text-white shadow-sm"
-                                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
-                            )}>
-                            All Types
-                        </button>
-                        {categoriesLoading ? (
-                            <div className="px-5 py-2.5 flex items-center gap-2 text-zinc-400 text-sm font-semibold">
-                                <Loader2 className="size-4 animate-spin" /> Loading
-                            </div>
-                        ) : (
-                            categories.map(category => (
-                                <button
-                                    key={category.publicId}
-                                    onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
-                                    className={cn(
-                                        "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus:outline-none whitespace-nowrap",
-                                        categoryPublicId === category.publicId
-                                            ? "bg-zinc-900 text-white shadow-sm"
-                                            : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
-                                    )}>
-                                    <Car className="size-4" strokeWidth={2.5} />
-                                    {category.name}
-                                </button>
-                            ))
-                        )}
-                    </div>
+            <div className="relative rounded-[22px] bg-white border border-zinc-200/70 shadow-[0_1px_2px_rgba(20,20,30,0.04),0_18px_50px_-24px_rgba(20,20,30,0.22)] pt-[26px] px-[30px] pb-[30px]">
+                {/* Category Row */}
+                <div className="flex items-center flex-wrap gap-[10px] mb-[26px]">
+                    <button
+                        onClick={() => setSearchCriteria({ categoryPublicId: "all" })}
+                        className={cn(
+                            "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
+                            (!categoryPublicId || categoryPublicId === "all")
+                                ? "bg-zinc-900 text-white"
+                                : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
+                        )}>
+                        All
+                    </button>
+                    {categoriesLoading ? (
+                        <div className="h-[52px] px-6 flex items-center gap-[9px] text-zinc-400 text-[18px] font-semibold tracking-[-0.01em]">
+                            <Loader2 className="size-[22px] animate-spin" /> Loading
+                        </div>
+                    ) : (
+                        categories.map(category => (
+                            <button
+                                key={category.publicId}
+                                onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
+                                className={cn(
+                                    "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
+                                    categoryPublicId === category.publicId
+                                        ? "bg-zinc-900 text-white"
+                                        : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
+                                )}>
+                                <Car className="size-[22px]" strokeWidth={1.8} />
+                                {category.name}
+                            </button>
+                        ))
+                    )}
                 </div>
 
                 {/* Main Search Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_152px] gap-3 w-full items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_200px] gap-7 w-full items-end">
                     {/* Location */}
                     <div className="sm:col-span-2 lg:col-span-1 relative">
-                        <label className="block text-xs font-bold text-zinc-900 mb-2.5">
+                        <label className="block text-[15px] font-bold tracking-[-0.01em] text-zinc-900 mb-[10px] pl-0.5">
                             Location
                         </label>
                         <Select
@@ -108,11 +106,11 @@ export const SearchForm = () => {
                             onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
                             disabled={isLoading || isError}
                         >
-                            <SelectTrigger className="w-full h-[54px] bg-white border border-zinc-200 rounded-[14px] px-3 xl:px-4 text-left font-medium text-zinc-900 hover:border-zinc-300 transition-colors shadow-none focus:ring-0 [&>svg]:hidden">
-                                <div className="flex items-center gap-3 text-[15px] xl:text-base w-full min-w-0">
-                                    <Search className="size-5 shrink-0 text-zinc-900" strokeWidth={2.5} />
-                                    <span className={cn("truncate flex-1 font-medium", !branchPublicId && "text-zinc-400 placeholder")}>
-                                        <SelectValue placeholder={isLoading ? "Loading locations..." : "Airport, city or address"} />
+                            <SelectTrigger className="w-full h-[64px] bg-white border-[1.5px] border-zinc-200 rounded-[14px] px-5 text-left font-medium text-zinc-900 hover:border-zinc-300 focus:border-zinc-900 transition-colors shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
+                                <div className="flex items-center gap-[14px] text-[19px] font-medium tracking-[-0.01em] w-full min-w-0">
+                                    <Search className="size-[22px] shrink-0 text-zinc-500" strokeWidth={2} />
+                                    <span className={cn("truncate flex-1", !branchPublicId && "text-[#8a8a93]")}>
+                                        <SelectValue placeholder={isLoading ? "Loading locations..." : "Search city, airport or address"} />
                                     </span>
                                 </div>
                             </SelectTrigger>
@@ -135,21 +133,23 @@ export const SearchForm = () => {
 
                     {/* Pick-up Date & Time */}
                     <div className="relative">
-                        <label className="block text-xs font-bold text-zinc-900 mb-2.5">
+                        <label className="block text-[15px] font-bold tracking-[-0.01em] text-zinc-900 mb-[10px] pl-0.5">
                             Pick-up date
                         </label>
-                        <div className="flex items-center h-[54px] rounded-[14px] border border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-300 group">
+                        <div className="flex items-stretch h-[64px] rounded-[14px] border-[1.5px] border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-900 focus-within:shadow-[0_0_0_3px_rgba(22,22,26,0.06)]">
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            "flex-1 h-full rounded-none justify-start px-3 xl:px-4 text-left bg-transparent hover:bg-zinc-50 border-0 shadow-none font-medium gap-2 xl:gap-3",
-                                            !pickupDate ? "text-zinc-400" : "text-zinc-900"
+                                            "flex items-center gap-[12px] min-w-[158px] h-full rounded-none justify-start px-5 text-left bg-transparent hover:bg-[#fafafb] border-0 shadow-none font-medium",
+                                            !pickupDate ? "text-[#8a8a93]" : "text-zinc-900"
                                         )}
                                     >
-                                        <CalendarIcon className="size-5 shrink-0 text-zinc-900" strokeWidth={2} />
-                                        <span className="truncate text-[15px] xl:text-base">{pickupDate ? format(pickupDate, "MMM do") : "Select"}</span>
+                                        <CalendarIcon className="size-[22px] shrink-0 text-zinc-900" strokeWidth={1.8} />
+                                        <span className="text-[19px] font-medium tracking-[-0.01em] whitespace-nowrap">
+                                            {pickupDate ? format(pickupDate, "MMM do") : "Select"}
+                                        </span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-2xl border-zinc-200 shadow-xl" align="start">
@@ -167,8 +167,8 @@ export const SearchForm = () => {
                                     />
                                 </PopoverContent>
                             </Popover>
-                            <div className="h-3/5 w-[1px] bg-zinc-200 shrink-0" />
-                            <div className="relative flex items-center h-full px-2 xl:px-3 hover:bg-zinc-50 transition-colors shrink-0">
+                            <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
+                            <div className="relative flex items-center h-full px-[14px] hover:bg-[#fafafb] transition-colors shrink-0">
                                 <input
                                     type="time"
                                     onClick={(e) => {
@@ -180,30 +180,32 @@ export const SearchForm = () => {
                                     }}
                                     value={pickupTime || "10:00"}
                                     onChange={(e) => setSearchCriteria({ pickupTime: e.target.value })}
-                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[15px] focus:outline-none w-[115px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-7 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[19px] tracking-[-0.01em] focus:outline-none w-[110px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
                                 />
-                                <Clock className="size-4 shrink-0 text-zinc-900 pointer-events-none absolute right-2" strokeWidth={2.5} />
+                                <Clock className="size-[18px] shrink-0 text-zinc-900 pointer-events-none absolute right-[14px]" strokeWidth={2} />
                             </div>
                         </div>
                     </div>
 
                     {/* Return Date & Time */}
                     <div className="relative">
-                        <label className="block text-xs font-bold text-zinc-900 mb-2.5">
+                        <label className="block text-[15px] font-bold tracking-[-0.01em] text-zinc-900 mb-[10px] pl-0.5">
                             Return date
                         </label>
-                        <div className="flex items-center h-[54px] rounded-[14px] border border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-300 group">
+                        <div className="flex items-stretch h-[64px] rounded-[14px] border-[1.5px] border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-900 focus-within:shadow-[0_0_0_3px_rgba(22,22,26,0.06)]">
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            "flex-1 h-full rounded-none justify-start px-3 xl:px-4 text-left bg-transparent hover:bg-zinc-50 border-0 shadow-none font-medium gap-2 xl:gap-3",
-                                            !returnDate ? "text-zinc-400" : "text-zinc-900"
+                                            "flex items-center gap-[12px] min-w-[158px] h-full rounded-none justify-start px-5 text-left bg-transparent hover:bg-[#fafafb] border-0 shadow-none font-medium",
+                                            !returnDate ? "text-[#8a8a93]" : "text-zinc-900"
                                         )}
                                     >
-                                        <CalendarIcon className="size-5 shrink-0 text-zinc-900" strokeWidth={2} />
-                                        <span className="truncate text-[15px] xl:text-base">{returnDate ? format(returnDate, "MMM do") : "Select"}</span>
+                                        <CalendarIcon className="size-[22px] shrink-0 text-zinc-900" strokeWidth={1.8} />
+                                        <span className="text-[19px] font-medium tracking-[-0.01em] whitespace-nowrap">
+                                            {returnDate ? format(returnDate, "MMM do") : "Select"}
+                                        </span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-2xl border-zinc-200 shadow-xl" align="start">
@@ -220,8 +222,8 @@ export const SearchForm = () => {
                                     />
                                 </PopoverContent>
                             </Popover>
-                            <div className="h-3/5 w-[1px] bg-zinc-200 shrink-0" />
-                            <div className="relative flex items-center h-full px-2 xl:px-3 hover:bg-zinc-50 transition-colors shrink-0">
+                            <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
+                            <div className="relative flex items-center h-full px-[14px] hover:bg-[#fafafb] transition-colors shrink-0">
                                 <input
                                     type="time"
                                     onClick={(e) => {
@@ -233,9 +235,9 @@ export const SearchForm = () => {
                                     }}
                                     value={returnTime || "10:00"}
                                     onChange={(e) => setSearchCriteria({ returnTime: e.target.value })}
-                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[15px] focus:outline-none w-[115px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-7 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[19px] tracking-[-0.01em] focus:outline-none w-[110px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
                                 />
-                                <Clock className="size-4 shrink-0 text-zinc-900 pointer-events-none absolute right-2" strokeWidth={2.5} />
+                                <Clock className="size-[18px] shrink-0 text-zinc-900 pointer-events-none absolute right-[14px]" strokeWidth={2} />
                             </div>
                         </div>
                     </div>
@@ -246,9 +248,9 @@ export const SearchForm = () => {
                             whileHover={isFormValid ? { scale: 1.02 } : {}}
                             whileTap={isFormValid ? { scale: 0.98 } : {}}
                             className={cn(
-                                "h-[54px] px-8 rounded-[14px] bg-[#FF5A00] text-white flex items-center justify-center font-bold text-[15px] transition-all duration-300 w-full whitespace-nowrap",
-                                "hover:bg-[#E55100] focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:ring-offset-2 shadow-lg shadow-[#FF5A00]/20 hover:shadow-[#FF5A00]/40",
-                                "disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none disabled:cursor-not-allowed"
+                                "h-[64px] px-6 rounded-[14px] bg-[#f0500a] text-white flex items-center justify-center font-bold text-[19px] tracking-[-0.01em] transition-all duration-200 w-full whitespace-nowrap",
+                                "hover:bg-[#d9470a] focus:outline-none focus:ring-2 focus:ring-[#f0500a] focus:ring-offset-2",
+                                "disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed"
                             )}
                             onClick={handleSearch}
                             disabled={!isFormValid}

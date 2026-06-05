@@ -104,21 +104,14 @@ export const VehicleGrid = ({
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
           {Array.from({ length: 9 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col space-y-4 bg-white border border-zinc-200 rounded-[2rem] p-4"
+              className="flex flex-col rounded-[22px] overflow-hidden bg-[#101217]"
             >
-              <Skeleton className="h-[200px] w-full rounded-[1.5rem] bg-white/5" />
-              <div className="space-y-3 px-2">
-                <Skeleton className="h-4 w-3/4 bg-white/10 rounded-full" />
-                <Skeleton className="h-4 w-1/2 bg-white/5 rounded-full" />
-              </div>
-              <div className="pt-4 mt-2 border-t border-zinc-200 flex justify-between px-2">
-                <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
-                <Skeleton className="h-10 w-28 bg-white/5 rounded-full" />
-              </div>
+              <Skeleton className="h-[440px] w-full rounded-none bg-zinc-800/60" />
+              <div className="h-[60px] bg-zinc-800/40" />
             </div>
           ))}
         </div>
@@ -134,7 +127,7 @@ export const VehicleGrid = ({
   return (
     <div className="space-y-8">
       {/* Vehicle Grid - No separate scroll container */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
         {vehicles.map((vehicle) => (
           <MemoizedVehicleCard
             key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
