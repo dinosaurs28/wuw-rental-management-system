@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+function getCurrentTime(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
 interface VehicleRentalState {
   // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
   selectedVehicleId: string | null;
@@ -189,8 +194,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       branch: null,
       startDate: null,
       endDate: null,
-      startTime: "10:00",
-      endTime: "10:00",
+      startTime: getCurrentTime(),
+      endTime: getCurrentTime(),
       dateSelectionTimestamp: null,
       rentalDays: 0,
       pricePerDay: 0,
@@ -391,8 +396,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         set({
           startDate: null,
           endDate: null,
-          startTime: "10:00",
-          endTime: "10:00",
+          startTime: getCurrentTime(),
+          endTime: getCurrentTime(),
           dateSelectionTimestamp: null,
           rentalDays: 0,
           totalPrice: 0,
@@ -410,8 +415,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           branch: null,
           startDate: null,
           endDate: null,
-          startTime: "10:00",
-          endTime: "10:00",
+          startTime: getCurrentTime(),
+          endTime: getCurrentTime(),
           dateSelectionTimestamp: null,
           rentalDays: 0,
           pricePerDay: 0,

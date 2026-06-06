@@ -25,6 +25,15 @@ interface PricingRow {
   priceMonthly: number | null;
 }
 
+/** Converts a Prisma Decimal to a number, returning null if the value is 0 or unset.
+ *  Prisma Decimal(0) is an object (truthy), so a plain `? Number(x) : null` check
+ *  would store 0 instead of null, breaking the `?? fallback` logic downstream. */
+function toPositiveOrNull(val: { toNumber?: () => number } | null | undefined): number | null {
+  if (val == null) return null;
+  const n = Number(val);
+  return n > 0 ? n : null;
+}
+
 /**
  * Mirrors PricingEngineService.determineBasePrice hourly-first rule:
  * if hourlyRate > 0 → hourlyRate × ceil(actualDuration) for ALL slab types.
@@ -57,8 +66,31 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): number {
         return pricing.price24Hour * (fullDays + 1);
       }
     }
-    case RentalPeriodType.MONTHLY:
-      return pricing.priceMonthly ?? pricing.price24Hour * 30;
+    case RentalPeriodType.MONTHLY: {
+      if (pricing.priceMonthly) {
+        // Full months + overflow days + leftover hours
+        const fullMonths     = Math.floor(duration.actualDuration / (30 * 24));
+        const afterMonths    = duration.actualDuration % (30 * 24);
+        const overflowDays   = Math.floor(afterMonths / 24);
+        const leftoverHours  = afterMonths % 24;
+
+        let price = pricing.priceMonthly * fullMonths;
+        price += pricing.price24Hour * overflowDays;
+        if (leftoverHours > 0) {
+          if (pricing.hourlyRate && pricing.hourlyRate > 0) {
+            price += pricing.hourlyRate * Math.ceil(leftoverHours);
+          } else if (leftoverHours <= 12 && pricing.price12Hour) {
+            price += pricing.price12Hour;
+          } else {
+            price += pricing.price24Hour;
+          }
+        }
+        return price;
+      }
+      // No monthly rate — bill per actual day
+      const actualDays = Math.ceil(duration.actualDuration / 24);
+      return pricing.price24Hour * actualDays;
+    }
     default:
       return pricing.price24Hour;
   }
@@ -100,10 +132,10 @@ export async function getBatchListingPrices(
   const customMap = new Map<number, PricingRow>();
   for (const cp of customPricings) {
     customMap.set(cp.vehicleId, {
-      hourlyRate:   cp.hourlyRate   ? Number(cp.hourlyRate)   : null,
-      price12Hour:  cp.price12Hour  ? Number(cp.price12Hour)  : null,
+      hourlyRate:   toPositiveOrNull(cp.hourlyRate),
+      price12Hour:  toPositiveOrNull(cp.price12Hour),
       price24Hour:  Number(cp.price24Hour),
-      priceMonthly: cp.priceMonthly ? Number(cp.priceMonthly) : null,
+      priceMonthly: toPositiveOrNull(cp.priceMonthly),
     });
   }
 
@@ -137,10 +169,10 @@ export async function getBatchListingPrices(
 
     for (const bd of branchDefaults) {
       defaultMap.set(`${bd.branchId}:${bd.categoryId}`, {
-        hourlyRate:   bd.hourlyRate   ? Number(bd.hourlyRate)   : null,
-        price12Hour:  bd.price12Hour  ? Number(bd.price12Hour)  : null,
+        hourlyRate:   toPositiveOrNull(bd.hourlyRate),
+        price12Hour:  toPositiveOrNull(bd.price12Hour),
         price24Hour:  Number(bd.price24Hour),
-        priceMonthly: bd.priceMonthly ? Number(bd.priceMonthly) : null,
+        priceMonthly: toPositiveOrNull(bd.priceMonthly),
       });
     }
   }
@@ -236,8 +268,8 @@ export async function getBatchFallbackPrices(
   const customMap = new Map<number, PricingRow>();
   for (const cp of customPricings) {
     customMap.set(cp.vehicleId, {
-      hourlyRate:   cp.hourlyRate   ? Number(cp.hourlyRate)   : null,
-      price12Hour:  cp.price12Hour  ? Number(cp.price12Hour)  : null,
+      hourlyRate:   toPositiveOrNull(cp.hourlyRate),
+      price12Hour:  toPositiveOrNull(cp.price12Hour),
       price24Hour:  Number(cp.price24Hour),
       priceMonthly: null,
     });
@@ -263,8 +295,8 @@ export async function getBatchFallbackPrices(
     });
     for (const bd of branchDefaults) {
       defaultMap.set(`${bd.branchId}:${bd.categoryId}`, {
-        hourlyRate:   bd.hourlyRate   ? Number(bd.hourlyRate)   : null,
-        price12Hour:  bd.price12Hour  ? Number(bd.price12Hour)  : null,
+        hourlyRate:   toPositiveOrNull(bd.hourlyRate),
+        price12Hour:  toPositiveOrNull(bd.price12Hour),
         price24Hour:  Number(bd.price24Hour),
         priceMonthly: null,
       });

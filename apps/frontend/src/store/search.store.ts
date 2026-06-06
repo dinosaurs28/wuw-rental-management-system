@@ -1,5 +1,10 @@
 import { create } from "zustand";
 
+function getCurrentTime(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
 interface SearchState {
   branchPublicId: string | null;
   categoryPublicId: string;
@@ -18,8 +23,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   categoryPublicId: "all",
   pickupDate: new Date(),
   returnDate: null,
-  pickupTime: "10:00",
-  returnTime: "10:00",
+  pickupTime: getCurrentTime(),
+  returnTime: getCurrentTime(),
   setSearchCriteria: (criteria) => set((state) => ({ ...state, ...criteria })),
   resetSearch: () =>
     set({

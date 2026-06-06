@@ -438,11 +438,32 @@ export class PricingEngineService {
 
       case RentalPeriodType.MONTHLY:
         if (pricing.priceMonthly) {
-          basePrice = pricing.priceMonthly;
-          freeKmLimit = pricing.freeKmMonthly;
+          const fullMonths    = Math.floor(duration.actualDuration / (30 * 24));
+          const afterMonths   = duration.actualDuration % (30 * 24);
+          const overflowDays  = Math.floor(afterMonths / 24);
+          const leftoverHours = afterMonths % 24;
+
+          basePrice   = pricing.priceMonthly.mul(fullMonths)
+                          .add(pricing.price24Hour.mul(overflowDays));
+          freeKmLimit = pricing.freeKmMonthly * fullMonths
+                          + pricing.freeKm24Hour * overflowDays;
+
+          if (leftoverHours > 0) {
+            if (pricing.hourlyRate && pricing.hourlyRate.gt(0)) {
+              basePrice   = basePrice.add(pricing.hourlyRate.mul(Math.ceil(leftoverHours)));
+              freeKmLimit += pricing.freeKm24Hour;
+            } else if (leftoverHours <= 12 && pricing.price12Hour) {
+              basePrice   = basePrice.add(pricing.price12Hour);
+              freeKmLimit += pricing.freeKm12Hour;
+            } else {
+              basePrice   = basePrice.add(pricing.price24Hour);
+              freeKmLimit += pricing.freeKm24Hour;
+            }
+          }
         } else {
-          basePrice = pricing.price24Hour.mul(30);
-          freeKmLimit = pricing.freeKm24Hour * 30;
+          const actualDays = Math.ceil(duration.actualDuration / 24);
+          basePrice   = pricing.price24Hour.mul(actualDays);
+          freeKmLimit = pricing.freeKm24Hour * actualDays;
         }
         break;
 

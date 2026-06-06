@@ -20,8 +20,12 @@ const pricingEngine = new PricingEngineService();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function normalizeStr(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function buildGroupKey(make: string, model: string, categoryId: number, branchId: number): string {
-  return `${make}__${model}__${categoryId}__${branchId}`;
+  return `${normalizeStr(make)}__${normalizeStr(model)}__${categoryId}__${branchId}`;
 }
 
 function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
@@ -259,8 +263,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       if (!existing) {
         groupMap.set(gk, {
           groupKey: gk,
-          make: v.make,
-          model: v.model,
+          make: normalizeStr(v.make),
+          model: normalizeStr(v.model),
           category: v.category.name,
           branch: v.branch.name,
           availableCount: 1,
