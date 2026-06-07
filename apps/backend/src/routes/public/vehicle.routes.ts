@@ -6,6 +6,7 @@ import {
 } from "../../controller/public/vehicles.controller.js";
 import { kycCheck } from "../../middlewares/kycCheck.middlewares.js";
 import { createBookingSummary } from "../../controller/booking/getBookInfo.controller.js";
+import { getCustomerBookingLimits } from "../../controller/booking/customerLimits.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { checkProfileCompletion } from "../../middlewares/profileCheck.middleware.js";
 import { getPublicBranches } from "../../controller/public/getPublicBranches.controller.js";
@@ -18,6 +19,7 @@ router.get("/categories", getPublicCategories);
 router.get("/vehicles", getPublicVehicles);
 router.get("/vehicles/group/:groupKey", getVehicleGroupDetails);
 router.get("/vehicles/:id", getPublicVehiclesDetails);
+router.get("/customer/booking-limits", authCheckJwt, checkProfileCompletion, getCustomerBookingLimits);
 router
   .route("/vehicles/booking")
   .all(authCheckJwt, checkProfileCompletion, kycCheck)

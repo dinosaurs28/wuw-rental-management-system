@@ -135,7 +135,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     const vehicles = await prisma.vehicle.findMany({
       where: filters,
       include: {
-        category: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, typeClass: true } },
         branch:   { select: { id: true, name: true } },
         images: {
           where: { isThumbnail: true },
@@ -230,6 +230,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       make: string;
       model: string;
       category: string;
+      typeClass: string;
       branch: string;
       availableCount: number;
       imageUrl: any[];
@@ -266,6 +267,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           make: normalizeStr(v.make),
           model: normalizeStr(v.model),
           category: v.category.name,
+          typeClass: v.category.typeClass,
           branch: v.branch.name,
           availableCount: 1,
           imageUrl: v.images,
@@ -292,6 +294,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       make:           g.make,
       model:          g.model,
       category:       g.category,
+      typeClass:      g.typeClass,
       branch:         g.branch,
       availableCount: g.availableCount,
       imageUrl:       g.imageUrl,

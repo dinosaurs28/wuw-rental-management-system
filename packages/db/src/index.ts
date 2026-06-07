@@ -66,7 +66,8 @@ export {
   LedgerEntryType,
   LedgerEntryClassification,
   Prisma,
-  KycSide
+  KycSide,
+  VehicleTypeClass
 } from "./generated/client/index.js";
 
 // Export types

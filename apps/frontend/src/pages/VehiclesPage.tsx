@@ -17,7 +17,9 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchStore } from "@/store/search.store";
+import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
+import { Lock } from "lucide-react";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -260,6 +262,21 @@ export const VehiclesPage = () => {
       })()
     : undefined;
 
+  // Booking type-class limits — declared after startDateTime/endDateTime so the hook
+  // receives the correct values on first render (avoids temporal dead zone access)
+  const {
+    restrictedTypeClasses,
+    conflictDetails,
+    isLoading: limitsLoading,
+  } = useCustomerBookingLimits(startDateTime, endDateTime);
+
+  const restrictionBannerLabel = useMemo(() => {
+    const labels: string[] = [];
+    if (restrictedTypeClasses.has("TWO_WHEELER")) labels.push("two-wheeler");
+    if (restrictedTypeClasses.has("FOUR_WHEELER")) labels.push("four-wheeler");
+    return labels;
+  }, [restrictedTypeClasses]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
@@ -301,6 +318,35 @@ export const VehiclesPage = () => {
           </div>
         </div>
 
+        {/* Booking restriction banner */}
+        {restrictionBannerLabel.length > 0 && startDateTime && endDateTime && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-950/60 border border-amber-800/60 rounded-xl px-5 py-4 text-amber-300">
+            <Lock className="size-5 shrink-0 mt-0.5" strokeWidth={2.2} />
+            <div>
+              <p className="font-bold text-sm uppercase tracking-wide text-amber-200">
+                Booking limit reached
+              </p>
+              <p className="text-sm mt-0.5 text-amber-300/90">
+                You already have an active{" "}
+                <span className="font-semibold text-amber-100">
+                  {restrictionBannerLabel.join(" and ")}
+                </span>{" "}
+                booking during these dates. Only one per type is allowed.{" "}
+                {Object.values(conflictDetails).map((slot, i) => (
+                  <span key={i} className="block mt-1 text-amber-400/80 text-xs font-medium">
+                    {slot.vehicleMake} {slot.vehicleModel} · until{" "}
+                    {new Date(slot.endAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="mb-6">
           <VehicleFilters
@@ -340,6 +386,8 @@ export const VehiclesPage = () => {
           startDateTime={startDateTime}
           endDateTime={endDateTime}
           variant="dark"
+          restrictedTypeClasses={restrictedTypeClasses}
+          limitsLoading={limitsLoading}
         />
       </main>
 

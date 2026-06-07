@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { CouponInput } from "@/components/discount/CouponInput";
+import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
+import {
+  BookingTypeLimitModal,
+  type TypeClassConflict,
+} from "@/components/booking/BookingTypeLimitModal";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +32,8 @@ import { useAuthStore } from "@/store/auth.store";
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitConflicts, setLimitConflicts] = useState<TypeClassConflict[]>([]);
 
   // Get all booking state from store
   const {
@@ -52,6 +59,23 @@ export const ReviewConfirmPage = () => {
     hasVehicleSelected,
   } = useVehicleRentalStore();
 
+  // Build ISO strings for the booking limit pre-flight check
+  const startISO = useMemo(() => {
+    if (!startDate || !startTime) return undefined;
+    const [y, m, d] = startDate.split("-").map(Number);
+    const [h, mi] = startTime.split(":").map(Number);
+    return new Date(y, m - 1, d, h, mi, 0).toISOString();
+  }, [startDate, startTime]);
+
+  const endISO = useMemo(() => {
+    if (!endDate || !endTime) return undefined;
+    const [y, m, d] = endDate.split("-").map(Number);
+    const [h, mi] = endTime.split(":").map(Number);
+    return new Date(y, m - 1, d, h, mi, 0).toISOString();
+  }, [endDate, endTime]);
+
+  const { restrictedTypeClasses, conflictDetails } = useCustomerBookingLimits(startISO, endISO);
+
   // Clear any stale booking intent when the user lands here — prevents a
   // subsequent unrelated sign-in from incorrectly redirecting to review.
   useEffect(() => {
@@ -64,7 +88,7 @@ export const ReviewConfirmPage = () => {
   // Check if form is valid for submission
   const isFormValid = selectedKycFilePublicId && paymentType && termsAccepted;
 
-  // Handle Confirm & Pay click - just validate and navigate
+  // Handle Confirm & Pay click - validate, check type-class limits, then navigate
   const handleConfirmAndPay = () => {
     if (
       (!selectedVehicleId && !selectedGroupKey) ||
@@ -74,6 +98,24 @@ export const ReviewConfirmPage = () => {
       !paymentType
     ) {
       toast.error("Please complete all required fields");
+      return;
+    }
+
+    // Pre-flight: surface any type-class conflict before the API call
+    if (restrictedTypeClasses.size > 0) {
+      const conflicts: TypeClassConflict[] = Object.entries(conflictDetails).map(
+        ([tc, slot]) => ({
+          typeClass: tc,
+          existingBookingPublicId: slot.bookingPublicId,
+          existingVehicleMake: slot.vehicleMake,
+          existingVehicleModel: slot.vehicleModel,
+          existingBookingStart: slot.startAt,
+          existingBookingEnd: slot.endAt,
+          existingBookingStatus: slot.status,
+        }),
+      );
+      setLimitConflicts(conflicts);
+      setShowLimitModal(true);
       return;
     }
 
@@ -243,6 +285,12 @@ export const ReviewConfirmPage = () => {
       </main>
 
       <Footer />
+
+      <BookingTypeLimitModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        conflicts={limitConflicts}
+      />
     </div>
   );
 };

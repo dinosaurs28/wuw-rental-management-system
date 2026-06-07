@@ -96,6 +96,12 @@ enum BookingStatus {
   HOLD_EXPIRED
 }
 
+enum VehicleTypeClass {
+  TWO_WHEELER
+  FOUR_WHEELER
+  OTHER
+}
+
 enum BookingPhotoType {
   PRE_DELIVERY
   POST_RETURN
@@ -520,11 +526,12 @@ model BranchPricingSetting {
 // VEHICLES
 
 model VehicleCategory {
-  id          Int     @id @default(autoincrement())
-  publicId    String  @unique
+  id          Int              @id @default(autoincrement())
+  publicId    String           @unique
   name        String
   description String?
-  rank        Int     @default(1)
+  rank        Int              @default(1)
+  typeClass   VehicleTypeClass @default(OTHER)
 
   pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]

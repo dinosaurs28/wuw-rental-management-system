@@ -4,6 +4,11 @@ import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  checkCustomerTypeClassLimits,
+  checkCustomerTypeClassLimitsInTx,
+  type VehicleWithTypeClass,
+} from "../../utils/booking/customerTypeClassLimits.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
@@ -248,6 +253,44 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           });
         }
       }
+    }
+
+    // ── Type-class limit pre-check ────────────────────────────────────────────
+    // Build a representative entry for each groupKey slot using its categoryId
+    // so we can detect conflicts before the transaction resolves the actual vehicle.
+    const groupKeyRepVehicles: VehicleWithTypeClass[] = [];
+    if (resolvedGroupKeys.length > 0) {
+      const groupCategoryIds = resolvedGroupKeys.map((gk) => parseGroupKey(gk)!.categoryId);
+      const groupCategories = await prisma.vehicleCategory.findMany({
+        where: { id: { in: groupCategoryIds } },
+        select: { id: true, typeClass: true },
+      });
+      const categoryTypeMap = new Map(groupCategories.map((c) => [c.id, c.typeClass]));
+      for (const gk of resolvedGroupKeys) {
+        const gkParsed = parseGroupKey(gk)!;
+        groupKeyRepVehicles.push({
+          id: 0,
+          make: gkParsed.make,
+          model: gkParsed.model,
+          category: { typeClass: categoryTypeMap.get(gkParsed.categoryId) ?? "OTHER" },
+        });
+      }
+    }
+
+    const { conflicts: typeClassConflicts } = await checkCustomerTypeClassLimits(
+      customerId,
+      [...vehiclesData, ...groupKeyRepVehicles],
+      startDate,
+      endDate,
+    );
+    if (typeClassConflicts.length > 0) {
+      const c = typeClassConflicts[0]!;
+      const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: `You already have an active ${label} booking that overlaps the selected dates. Only one ${label} booking is allowed at a time.`,
+        conflicts: typeClassConflicts,
+      });
     }
 
     for (const v of vehiclesData) {
@@ -507,6 +550,24 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         });
       }
 
+      // Race-condition guard: re-validate type-class limit inside the transaction
+      const allResolvedVehicles = [...vehiclesData, ...resolvedGroupVehicles];
+      const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
+        tx as any,
+        customerId,
+        allResolvedVehicles,
+        startDate,
+        endDate,
+      );
+      if (txTypeClassConflicts.length > 0) {
+        const c = txTypeClassConflicts[0]!;
+        const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+        throw Object.assign(
+          new Error(`You already have an active ${label} booking that overlaps the selected dates.`),
+          { code: "VEHICLE_TYPE_LIMIT_EXCEEDED", conflicts: txTypeClassConflicts },
+        );
+      }
+
       const newBooking = await tx.booking.create({
         data: {
           publicId: createID(),
@@ -655,6 +716,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     if (e?.code === "INVALID_GROUP_KEY") {
       return res.status(StatusCode.BAD_REQUEST).json({ message: e.message });
+    }
+    if (e?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: e.message,
+        conflicts: e.conflicts ?? [],
+      });
     }
     console.error("Error generating booking summary:", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

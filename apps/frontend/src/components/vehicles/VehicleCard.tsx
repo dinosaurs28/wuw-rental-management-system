@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { Car, MapPin, ChevronRight } from "lucide-react";
+import { Car, MapPin, ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { PublicVehicle, ManagerVehicle } from "@/services/vehicle.service";
 
 interface VehicleCardProps {
@@ -10,6 +17,9 @@ interface VehicleCardProps {
   startDateTime?: string;
   endDateTime?: string;
   variant?: "light" | "dark";
+  isRestricted?: boolean;
+  /** When true, show a skeleton shimmer on the CTA while booking limits are loading */
+  limitsLoading?: boolean;
 }
 
 export const VehicleCard = ({
@@ -18,6 +28,8 @@ export const VehicleCard = ({
   startDateTime,
   endDateTime,
   variant = "light",
+  isRestricted = false,
+  limitsLoading = false,
 }: VehicleCardProps) => {
   const navigate = useNavigate();
 
@@ -68,6 +80,7 @@ export const VehicleCard = ({
   };
 
   const handleViewVehicle = () => {
+    if (isRestricted) return;
     const params = new URLSearchParams();
     if (startDateTime) params.set("start", startDateTime);
     if (endDateTime) params.set("end", endDateTime);
@@ -79,6 +92,12 @@ export const VehicleCard = ({
       navigate(`${basePath}/${(vehicle as ManagerVehicle).publicId}${query ? `?${query}` : ""}`);
     }
   };
+
+  const categoryLabel =
+    "typeClass" in vehicle && (vehicle as PublicVehicle).typeClass === "TWO_WHEELER"
+      ? "two-wheeler"
+      : "four-wheeler";
+  const restrictionTooltip = `You already have an active ${categoryLabel} booking for these dates. Return it first to book another.`;
 
   const hasBranch = "branch" in vehicle && vehicle.branch;
   const durationLabel = getDurationLabel();
@@ -95,7 +114,8 @@ export const VehicleCard = ({
 
   if (variant === "dark") {
     return (
-      <article className="flex flex-col rounded-[22px] overflow-hidden bg-[#101217] shadow-[0_22px_50px_-26px_rgba(0,0,0,0.55)] isolate transition-transform duration-300 hover:-translate-y-1">
+      <TooltipProvider delayDuration={100}>
+      <article className={`flex flex-col rounded-[22px] overflow-hidden bg-[#101217] shadow-[0_22px_50px_-26px_rgba(0,0,0,0.55)] isolate transition-transform duration-300 ${isRestricted ? "opacity-50 cursor-not-allowed" : "hover:-translate-y-1"}`}>
         {/* Stage */}
         <div className="relative h-[440px] overflow-hidden">
           {/* Studio gradient backdrop */}
@@ -192,21 +212,39 @@ export const VehicleCard = ({
           </div>
         </div>
 
-        {/* SELECT CTA */}
-        <button
-          onClick={handleViewVehicle}
-          className="w-full h-[60px] flex items-center justify-center gap-3 bg-[#f0500a] hover:bg-[#d9470a] text-white font-extrabold text-[17px] tracking-[0.06em] uppercase transition-colors duration-150 border-0 cursor-pointer"
-        >
-          Select
-          <ChevronRight className="size-[18px]" strokeWidth={2.4} />
-        </button>
+        {/* SELECT / RESTRICTED / LOADING CTA */}
+        {limitsLoading ? (
+          <Skeleton className="h-[60px] w-full rounded-none bg-zinc-800/60" />
+        ) : isRestricted ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full h-[60px] flex items-center justify-center gap-3 bg-zinc-700 text-zinc-400 font-extrabold text-[17px] tracking-[0.06em] uppercase border-0 cursor-not-allowed select-none">
+                <Lock className="size-[18px]" strokeWidth={2.4} />
+                Already Booked
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[220px] text-center text-xs">
+              {restrictionTooltip}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={handleViewVehicle}
+            className="w-full h-[60px] flex items-center justify-center gap-3 bg-[#f0500a] hover:bg-[#d9470a] text-white font-extrabold text-[17px] tracking-[0.06em] uppercase transition-colors duration-150 border-0 cursor-pointer"
+          >
+            Select
+            <ChevronRight className="size-[18px]" strokeWidth={2.4} />
+          </button>
+        )}
       </article>
+      </TooltipProvider>
     );
   }
 
   // Light Card for Employee Listing
   return (
-    <Card className="group overflow-hidden bg-white border-2 border-gray-100 rounded-none hover:border-gray-300 transition-all duration-300 relative flex flex-col h-full shadow-sm hover:shadow-xl">
+    <TooltipProvider delayDuration={100}>
+    <Card className={`group overflow-hidden bg-white border-2 rounded-none transition-all duration-300 relative flex flex-col h-full shadow-sm ${isRestricted ? "border-gray-100 opacity-60 cursor-not-allowed" : "border-gray-100 hover:border-gray-300 hover:shadow-xl"}`}>
       {/* Vehicle Image Container */}
       <div className="relative aspect-[4/3] bg-white overflow-hidden p-6">
         {imageUrl ? (
@@ -281,15 +319,32 @@ export const VehicleCard = ({
                </span>
             </div>
           </div>
-          <Button
-            onClick={handleViewVehicle}
-            className="w-full sm:w-auto h-12 px-6 bg-[#FF5F00] hover:bg-[#E55500] text-white font-bold uppercase tracking-wider rounded-none transition-all group-hover:scale-105"
-          >
-            Select
-            <ChevronRight className="ml-1 size-4" />
-          </Button>
+          {limitsLoading ? (
+            <Skeleton className="h-12 w-full sm:w-32 rounded-none" />
+          ) : isRestricted ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full sm:w-auto h-12 px-6 bg-gray-200 text-gray-400 font-bold uppercase tracking-wider rounded-none flex items-center justify-center gap-2 cursor-not-allowed select-none">
+                  <Lock className="size-4" />
+                  Already Booked
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px] text-center text-xs">
+                {restrictionTooltip}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              onClick={handleViewVehicle}
+              className="w-full sm:w-auto h-12 px-6 bg-[#FF5F00] hover:bg-[#E55500] text-white font-bold uppercase tracking-wider rounded-none transition-all group-hover:scale-105"
+            >
+              Select
+              <ChevronRight className="ml-1 size-4" />
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };

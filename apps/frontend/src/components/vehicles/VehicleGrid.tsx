@@ -26,6 +26,8 @@ interface VehicleGridProps {
   startDateTime?: string;
   endDateTime?: string;
   variant?: "light" | "dark";
+  restrictedTypeClasses?: Set<string>;
+  limitsLoading?: boolean;
 }
 
 // Memoized vehicle card for optimization
@@ -84,6 +86,8 @@ export const VehicleGrid = ({
   startDateTime,
   endDateTime,
   variant = "light",
+  restrictedTypeClasses,
+  limitsLoading = false,
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -151,16 +155,22 @@ export const VehicleGrid = ({
         "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
         variant === "dark" ? "gap-[26px]" : "gap-6"
       )}>
-        {vehicles.map((vehicle) => (
-          <MemoizedVehicleCard
-            key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
-            vehicle={vehicle}
-            basePath={basePath}
-            startDateTime={startDateTime}
-            endDateTime={endDateTime}
-            variant={variant}
-          />
-        ))}
+        {vehicles.map((vehicle) => {
+          const tc = "typeClass" in vehicle ? (vehicle as any).typeClass : undefined;
+          const isRestricted = !!(tc && restrictedTypeClasses?.has(tc));
+          return (
+            <MemoizedVehicleCard
+              key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
+              vehicle={vehicle}
+              basePath={basePath}
+              startDateTime={startDateTime}
+              endDateTime={endDateTime}
+              variant={variant}
+              isRestricted={isRestricted}
+              limitsLoading={limitsLoading}
+            />
+          );
+        })}
       </div>
 
       {/* Pagination */}

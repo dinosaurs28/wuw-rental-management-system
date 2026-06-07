@@ -77,9 +77,25 @@ export const EmployeeBookingSummaryPage = () => {
         }
       } catch (error: any) {
         console.error("Booking creation failed", error);
-        toast.error(
-          error.response?.data?.message || "Failed to create booking",
-        );
+
+        if (error?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+          const conflicts = error.response.data.conflicts ?? [];
+          const first = conflicts[0];
+          const label =
+            first?.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+          const vehicleName = first
+            ? `${first.existingVehicleMake} ${first.existingVehicleModel}`
+            : "";
+          toast.error(
+            `Customer already has an active ${label} booking${vehicleName ? ` (${vehicleName})` : ""} overlapping these dates. Use the override option if authorised.`,
+            { duration: 8000 },
+          );
+        } else {
+          toast.error(
+            error.response?.data?.message || "Failed to create booking",
+          );
+        }
+
         navigate(-1);
       } finally {
         setLoading(false);

@@ -114,6 +114,7 @@ async function main() {
       publicId: nanoid(),
       name: "Two Wheeler",
       description: "Bikes & Scooters",
+      typeClass: "TWO_WHEELER",
     },
   });
 
@@ -122,6 +123,7 @@ async function main() {
       publicId: nanoid(),
       name: "Four Wheeler",
       description: "Cars, SUVs",
+      typeClass: "FOUR_WHEELER",
     },
   });
 

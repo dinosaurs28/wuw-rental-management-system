@@ -3,6 +3,10 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  checkCustomerTypeClassLimits,
+  checkCustomerTypeClassLimitsInTx,
+} from "../../utils/booking/customerTypeClassLimits.js";
 import { parseGroupKey } from "./vehicle.controller.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -257,6 +261,27 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       }
     }
 
+    // ── Type-class limit check ─────────────────────────────────────────────────
+    const bypassLimit =
+      req.body.bypassTypeClassLimit === true &&
+      ["ADMIN", "MANAGER"].includes(staff.role);
+    const { conflicts: typeClassConflicts } = await checkCustomerTypeClassLimits(
+      customer.customerProfile.id,
+      vehiclesData,
+      startDate,
+      endDate,
+      { bypassLimit },
+    );
+    if (typeClassConflicts.length > 0) {
+      const c = typeClassConflicts[0]!;
+      const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: `This customer already has an active ${label} booking that overlaps the selected dates.`,
+        conflicts: typeClassConflicts,
+      });
+    }
+
     // ── Pricing via PricingEngineService (TASK-010 / TASK-011) ───────────────
     // Fixes the 13-hour bug: PricingEngineService uses DurationCalculatorService
     // which correctly classifies 13 hours as FULL_DAY (not 2 calendar days).
@@ -394,6 +419,25 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const totalTaxRate = items[0]?.taxRate ?? 0;
 
     const booking = await prisma.$transaction(async (tx) => {
+      // Race-condition guard: re-check inside transaction before committing
+      if (!bypassLimit) {
+        const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
+          tx as any,
+          customer.customerProfile!.id,
+          vehiclesData,
+          startDate,
+          endDate,
+        );
+        if (txTypeClassConflicts.length > 0) {
+          const c = txTypeClassConflicts[0]!;
+          const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+          throw Object.assign(
+            new Error(`This customer already has an active ${label} booking that overlaps the selected dates.`),
+            { code: "VEHICLE_TYPE_LIMIT_EXCEEDED", conflicts: txTypeClassConflicts },
+          );
+        }
+      }
+
       const newBooking = await tx.booking.create({
         data: {
           publicId:     createID(),
@@ -509,7 +553,14 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         expiresIn:     holdExpiry,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: error.message,
+        conflicts: error.conflicts ?? [],
+      });
+    }
     console.error("Create Employee Booking Error:", error);
     return res
       .status(StatusCode.INTERNAL_SERVER_ERROR)

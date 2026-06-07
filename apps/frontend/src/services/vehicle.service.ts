@@ -26,6 +26,7 @@ export interface PublicVehicle {
   make: string;
   model: string;
   category: string;
+  typeClass?: "TWO_WHEELER" | "FOUR_WHEELER" | "OTHER";
   branch: string;
   availableCount: number;
   imageUrl: VehicleImage[];
