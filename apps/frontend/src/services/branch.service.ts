@@ -37,6 +37,28 @@ export const fetchBranches = async (): Promise<BranchResponse["data"]> => {
   }
 };
 
+// ── Branch schedule ───────────────────────────────────────────────────────────
+
+export interface BranchScheduleRow {
+  dayOfWeek: number; // 0 = Sunday … 6 = Saturday
+  isOpen: boolean;
+  openTime: string;  // "HH:mm" 24-hr
+  closeTime: string; // "HH:mm" 24-hr
+}
+
+export interface BranchScheduleConfig {
+  schedules: BranchScheduleRow[];
+  graceMinutes: number;
+  is24Hours: boolean;
+}
+
+export async function fetchBranchSchedule(branchPublicId: string): Promise<BranchScheduleConfig> {
+  const { data } = await apiClient.get<BranchScheduleConfig>(
+    `/public/branch/${branchPublicId}/schedule`,
+  );
+  return data;
+}
+
 export const branchManagerService = {
   login: async (data: SignInInput): Promise<BranchManagerAuthResponse> => {
     const response = await apiClient.post<BranchManagerAuthResponse>(

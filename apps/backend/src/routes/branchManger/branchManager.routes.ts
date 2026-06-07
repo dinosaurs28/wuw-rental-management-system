@@ -95,10 +95,18 @@ import {
   RejectSafetyDepositRequest,
 } from "../../controller/branchManager/safety-deposit-request.controller.js";
 import { UpdateVehicleFastag } from "../../controller/branchManager/vehicle.controller.js";
+import {
+  getManagerBranchSchedule,
+  upsertManagerBranchSchedule,
+  updateManagerBranchGrace,
+} from "../../controller/branchManager/branchSchedule.controller.js";
 
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.get("/dashboard/branch/schedule", ManagerCheck, getManagerBranchSchedule);
+router.patch("/dashboard/branch/schedule", ManagerCheck, upsertManagerBranchSchedule);
+router.patch("/dashboard/branch/grace", ManagerCheck, updateManagerBranchGrace);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);

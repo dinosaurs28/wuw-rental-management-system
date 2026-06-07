@@ -10,6 +10,8 @@ interface EmployeeUser {
   email: string;
   name: string;
   role: string;
+  branchPublicId?: string | null;
+  branchName?: string | null;
 }
 
 interface EmployeeAuthState {

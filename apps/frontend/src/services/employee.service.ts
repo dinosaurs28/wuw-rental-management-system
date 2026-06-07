@@ -11,6 +11,8 @@ export interface EmployeeAuthResponse {
     name: string;
     email: string;
     role: string;
+    branchPublicId?: string | null;
+    branchName?: string | null;
   };
 }
 

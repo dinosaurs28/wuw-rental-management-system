@@ -34,6 +34,7 @@ import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 import RemainingPaymentStatusPage from "@/pages/employee/RemainingPaymentStatusPage";
 import ManagerCaptureConfigPage from "@/pages/manager/ManagerCaptureConfigPage";
+import BranchSchedulePage from "@/pages/manager/BranchSchedulePage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
 import { DashboardPage } from "./pages/manager/DashboardPage";
 import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
@@ -184,6 +185,7 @@ function App() {
           <Route path="/manager/gst-rules" element={<ManagerGSTRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
           <Route path="/manager/capture-configs" element={<ManagerCaptureConfigPage />} />
+          <Route path="/manager/branch-schedule" element={<BranchSchedulePage />} />
           <Route
             path="/manager/payment/fine-status/:transactionId"
             element={<FinePaymentStatusPage />}

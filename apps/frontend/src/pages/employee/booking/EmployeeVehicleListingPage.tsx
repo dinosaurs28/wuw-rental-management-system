@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { getCurrentTime } from "@/utils/formatters";
 
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { Button } from "@/components/ui/button";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 
 import { useEmployeeVehicles } from "@/hooks/useEmployeeVehicles";
 import { useEmployeeCustomerBookingLimits } from "@/hooks/useEmployeeCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
 import { useQuery } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee.service";
@@ -23,7 +26,9 @@ const ITEMS_PER_PAGE = 9;
 
 export default function EmployeeVehicleListingPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useEmployeeAuthStore();
+  const { isAuthenticated, user: employeeUser } = useEmployeeAuthStore();
+  const canBypassSchedule = employeeUser?.role === "ADMIN" || employeeUser?.role === "MANAGER";
+  const [bypassSchedule, setBypassSchedule] = useState(false);
 
   const {
     setDates,
@@ -176,6 +181,25 @@ export default function EmployeeVehicleListingPage() {
     return labels;
   }, [restrictedTypeClasses]);
 
+  const { schedule } = useBranchSchedule(employeeUser?.branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(
+      bypassSchedule ? undefined : schedule,
+      startDateTime,
+      endDateTime,
+    );
+
+  // Write-back: persist bumped return to local state + store
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setSelectedReturnDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    setReturnTime(`${hh}:${mm}`);
+  }, [adjustedEndDateTime, scheduleVerdict?.status]);
+
   if (!isAuthenticated) return null;
 
   return (
@@ -234,8 +258,40 @@ export default function EmployeeVehicleListingPage() {
             onSearchChange={setSearchQuery}
             onReset={handleReset}
             showBranchSelector={false}
+            schedule={bypassSchedule ? undefined : schedule}
+            scheduleVerdict={bypassSchedule ? null : scheduleVerdict}
           />
         </div>
+
+        {/* Schedule bypass toggle for ADMIN / MANAGER */}
+        {canBypassSchedule && (
+          <div className="mb-4 flex items-center gap-3 px-1">
+            <button
+              type="button"
+              onClick={() => setBypassSchedule((v) => !v)}
+              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-all ${
+                bypassSchedule
+                  ? "bg-amber-100 border-amber-400 text-amber-800"
+                  : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
+              }`}
+            >
+              <ShieldOff className="size-4 shrink-0" />
+              {bypassSchedule ? "Schedule bypass ON" : "Bypass schedule check"}
+            </button>
+            {bypassSchedule && (
+              <span className="text-xs text-amber-600 font-medium">
+                Branch operating hour restrictions are disabled for this booking
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Schedule warning banner */}
+        {!bypassSchedule && scheduleVerdict && scheduleVerdict.status !== "OK" && (
+          <div className="mb-6">
+            <ScheduleWarningBanner verdict={scheduleVerdict} />
+          </div>
+        )}
 
         {/* Booking restriction banner */}
         {restrictionBannerLabel.length > 0 && startDateTime && endDateTime && (

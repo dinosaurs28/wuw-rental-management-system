@@ -349,8 +349,23 @@ model Branch {
   extensions              BookingExtension[]
   paymentSessions         PaymentSession[]
   creditEntries           CustomerCreditEntry[]
+  schedules               BranchSchedule[]
+  graceMinutes            Int                      @default(0)
+  is24Hours               Boolean                  @default(false)
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
+}
+
+model BranchSchedule {
+  id        Int     @id @default(autoincrement())
+  branchId  Int
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  dayOfWeek Int     // 0 = Sunday … 6 = Saturday
+  isOpen    Boolean @default(true)
+  openTime  String  // "09:00" — 24-hr HH:mm, branch-local time
+  closeTime String  // "22:00" — 24-hr HH:mm, branch-local time
+
+  @@unique([branchId, dayOfWeek])
 }
 
 enum StaffActionType {

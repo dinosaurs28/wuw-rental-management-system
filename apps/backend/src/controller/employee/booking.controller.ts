@@ -7,6 +7,11 @@ import {
   checkCustomerTypeClassLimits,
   checkCustomerTypeClassLimitsInTx,
 } from "../../utils/booking/customerTypeClassLimits.js";
+import {
+  validateBookingSchedule,
+  buildScheduleErrorMessage,
+  type BranchScheduleConfig,
+} from "../../utils/booking/branchScheduleValidator.js";
 import { parseGroupKey } from "./vehicle.controller.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -258,6 +263,47 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         return res.status(StatusCode.CONFLICT).json({
           message: `Vehicle ${v.make} ${v.model} unavailable for the selected dates`,
         });
+      }
+    }
+
+    // ── Branch schedule validation ────────────────────────────────────────────
+    const bypassSchedule =
+      req.body.bypassSchedule === true && ["ADMIN", "MANAGER"].includes(staff.role);
+
+    if (!bypassSchedule) {
+      const branchScheduleData = await prisma.branch.findUnique({
+        where: { id: req.branch_Id },
+        select: {
+          graceMinutes: true,
+          is24Hours: true,
+          schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
+        },
+      });
+
+      if (branchScheduleData) {
+        const scheduleConfig: BranchScheduleConfig = {
+          schedules: branchScheduleData.schedules,
+          graceMinutes: branchScheduleData.graceMinutes,
+          is24Hours: branchScheduleData.is24Hours,
+        };
+
+        const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+
+        if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_VIOLATION",
+            message: buildScheduleErrorMessage(verdict),
+            verdict,
+          });
+        }
+
+        if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+            message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
+            verdict,
+          });
+        }
       }
     }
 

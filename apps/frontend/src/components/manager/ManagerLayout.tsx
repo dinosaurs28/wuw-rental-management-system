@@ -15,6 +15,7 @@ import {
   Settings2,
   BookOpen,
   Activity,
+  Clock,
   ShieldCheck,
   LogOut,
   User,
@@ -57,6 +58,7 @@ const financialsItems = [
 
 const operationsItems = [
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
+  { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
   { label: "No-Show", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },
 ];

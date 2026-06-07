@@ -41,6 +41,10 @@ import staffActivityRouter from "./staffActivity.routes.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import whatsappConfigRouter from "./whatsapp-config.routes.js";
+import {
+  upsertBranchSchedule,
+  updateBranchGrace,
+} from "../../controller/admin/branchSchedule.controller.js";
 
 const router: Router = Router();
 
@@ -49,6 +53,10 @@ router.get("/dashboard/branches", AdminCheck, GetAllBranches);
 router.post("/dashboard/branches/create", AdminCheck, CreateBranch);
 router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);
 router.delete("/dashboard/branches/delete/:branchId", AdminCheck, DeleteBranch);
+
+// Branch schedule configuration
+router.patch("/dashboard/branches/:branchPublicId/schedule", AdminCheck, upsertBranchSchedule);
+router.patch("/dashboard/branches/:branchPublicId/grace", AdminCheck, updateBranchGrace);
 
 // Branch Manager CRUD (multiple managers per branch)
 router.get("/dashboard/branches/:branchId/managers", AdminCheck, GetBranchManagers);

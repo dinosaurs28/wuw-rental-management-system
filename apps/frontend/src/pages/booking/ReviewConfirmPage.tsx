@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { CouponInput } from "@/components/discount/CouponInput";
 import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 import {
   BookingTypeLimitModal,
   type TypeClassConflict,
@@ -28,6 +31,7 @@ import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useSearchStore } from "@/store/search.store";
 
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
@@ -76,6 +80,10 @@ export const ReviewConfirmPage = () => {
 
   const { restrictedTypeClasses, conflictDetails } = useCustomerBookingLimits(startISO, endISO);
 
+  const { branchPublicId } = useSearchStore();
+  const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict } = useBookingScheduleVerdict(schedule, startISO, endISO);
+
   // Clear any stale booking intent when the user lands here — prevents a
   // subsequent unrelated sign-in from incorrectly redirecting to review.
   useEffect(() => {
@@ -98,6 +106,18 @@ export const ReviewConfirmPage = () => {
       !paymentType
     ) {
       toast.error("Please complete all required fields");
+      return;
+    }
+
+    // Pre-flight: block if schedule verdict is a hard pickup violation
+    if (
+      scheduleVerdict &&
+      (scheduleVerdict.status === "PICKUP_CLOSED_DAY" ||
+        scheduleVerdict.status === "PICKUP_BEFORE_OPEN" ||
+        scheduleVerdict.status === "PICKUP_AT_OR_AFTER_CLOSE" ||
+        scheduleVerdict.status === "NO_OPEN_DAY_IN_WINDOW")
+    ) {
+      toast.error("Booking times conflict with branch operating hours. Please adjust your pickup or return time.");
       return;
     }
 
@@ -259,10 +279,17 @@ export const ReviewConfirmPage = () => {
                     />
                   </div>
 
+                  {/* Schedule warning — show when times conflict with branch hours */}
+                  {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+                    <div className="mt-4">
+                      <ScheduleWarningBanner verdict={scheduleVerdict} />
+                    </div>
+                  )}
+
                   {/* Confirm & Pay Button */}
                   <Button
                     onClick={handleConfirmAndPay}
-                    disabled={!isFormValid}
+                    disabled={!isFormValid || (scheduleVerdict?.status === "PICKUP_CLOSED_DAY" || scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" || scheduleVerdict?.status === "PICKUP_AT_OR_AFTER_CLOSE" || scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW")}
                     className="w-full mt-6 h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all duration-200"
                   >
                     <Lock className="mr-2 size-5" />

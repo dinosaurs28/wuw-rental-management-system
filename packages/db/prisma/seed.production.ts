@@ -69,6 +69,7 @@ async function main() {
   await prisma.branchPaymentConfig.deleteMany();
   await prisma.gSTRule.deleteMany();
   await prisma.vehiclePhotoCaptureConfig.deleteMany();
+  await prisma.branchSchedule.deleteMany();
   await prisma.branch.deleteMany();
   await prisma.vehicleCategory.deleteMany();
   await prisma.fileObject.deleteMany();
@@ -114,7 +115,22 @@ async function main() {
     },
   });
 
-  // ── 3. Branch Charge Config ───────────────────────────────────────────────
+  // ── 3. Branch Schedule ────────────────────────────────────────────────────
+  await prisma.branch.update({
+    where: { id: mainBranch.id },
+    data: { graceMinutes: 30, is24Hours: false },
+  });
+  await prisma.branchSchedule.createMany({
+    data: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
+      branchId: mainBranch.id,
+      dayOfWeek: day,
+      isOpen: day !== 0,
+      openTime: "09:00",
+      closeTime: "22:00",
+    })),
+  });
+
+  // ── 4. Branch Charge Config ───────────────────────────────────────────────
   await prisma.branchChargeConfig.create({
     data: {
       publicId: nanoid(),

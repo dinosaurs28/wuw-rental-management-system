@@ -18,6 +18,8 @@ import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchStore } from "@/store/search.store";
 import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
 import { Lock } from "lucide-react";
 
@@ -277,6 +279,25 @@ export const VehiclesPage = () => {
     return labels;
   }, [restrictedTypeClasses]);
 
+  // Branch schedule — used for hours badge and schedule conflict warnings
+  const { schedule } = useBranchSchedule(selectedBranch || undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(schedule, startDateTime, endDateTime);
+
+  // Write-back: when return is bumped, persist the adjusted date/time to local state + store
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    const newDate = new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate());
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    const newTime = `${hh}:${mm}`;
+    setSelectedReturnDate(newDate);
+    setReturnTime(newTime);
+    setSearchCriteria({ returnDate: newDate, returnTime: newTime });
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setSearchCriteria]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
@@ -371,6 +392,8 @@ export const VehiclesPage = () => {
             returnTime={returnTime}
             onPickupTimeChange={handlePickupTimeChange}
             onReturnTimeChange={handleReturnTimeChange}
+            schedule={schedule}
+            scheduleVerdict={scheduleVerdict}
           />
         </div>
 

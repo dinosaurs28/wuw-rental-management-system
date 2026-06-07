@@ -9,6 +9,11 @@ import {
   checkCustomerTypeClassLimitsInTx,
   type VehicleWithTypeClass,
 } from "../../utils/booking/customerTypeClassLimits.js";
+import {
+  validateBookingSchedule,
+  buildScheduleErrorMessage,
+  type BranchScheduleConfig,
+} from "../../utils/booking/branchScheduleValidator.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
@@ -274,6 +279,50 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           model: gkParsed.model,
           category: { typeClass: categoryTypeMap.get(gkParsed.categoryId) ?? "OTHER" },
         });
+      }
+    }
+
+    // ── Branch schedule validation ────────────────────────────────────────────
+    if (bookingBranchId) {
+      const branchScheduleData = await prisma.branch.findUnique({
+        where: { id: bookingBranchId },
+        select: {
+          graceMinutes: true,
+          is24Hours: true,
+          schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
+        },
+      });
+
+      if (branchScheduleData) {
+        const scheduleConfig: BranchScheduleConfig = {
+          schedules: branchScheduleData.schedules,
+          graceMinutes: branchScheduleData.graceMinutes,
+          is24Hours: branchScheduleData.is24Hours,
+        };
+
+        // Times are already in IST (TimezoneService.toPrisma converts to UTC for DB,
+        // but for schedule comparison we need local time — use the original Luxon DT)
+        const pickupLocal = startDateDt.toJSDate();
+        const returnLocal = endDateDt.toJSDate();
+
+        const verdict = validateBookingSchedule(scheduleConfig, pickupLocal, returnLocal);
+
+        if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_VIOLATION",
+            message: buildScheduleErrorMessage(verdict),
+            verdict,
+          });
+        }
+
+        if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+          // Client should have already adjusted; if not, reject so they recalculate pricing
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+            message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours. Please confirm the new return time.`,
+            verdict,
+          });
+        }
       }
     }
 
