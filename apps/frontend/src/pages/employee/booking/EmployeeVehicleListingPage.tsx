@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { format } from "date-fns";
+import { getCurrentTime } from "@/utils/formatters";
 
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { Button } from "@/components/ui/button";
 
 import { useEmployeeVehicles } from "@/hooks/useEmployeeVehicles";
+import { useEmployeeCustomerBookingLimits } from "@/hooks/useEmployeeCustomerBookingLimits";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
 import { useQuery } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee.service";
@@ -59,9 +61,9 @@ export default function EmployeeVehicleListingPage() {
     initialReturn,
   );
   const [pickupTime, setPickupTime] = useState<string>(
-    storeStartTime || "10:00",
+    storeStartTime || getCurrentTime(),
   );
-  const [returnTime, setReturnTime] = useState<string>(storeEndTime || "10:00");
+  const [returnTime, setReturnTime] = useState<string>(storeEndTime || getCurrentTime());
   const [category, setCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -143,8 +145,8 @@ export default function EmployeeVehicleListingPage() {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedReturnDate(tomorrow);
-    setPickupTime("10:00");
-    setReturnTime("10:00");
+    setPickupTime(getCurrentTime());
+    setReturnTime(getCurrentTime());
     setCategory("all");
     setSortBy("default");
     setSearchQuery("");
@@ -158,6 +160,21 @@ export default function EmployeeVehicleListingPage() {
   const endDateTime = selectedReturnDate
     ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
     : undefined;
+
+  const customerPublicId = customerSession.get()?.publicId;
+
+  const {
+    restrictedTypeClasses,
+    conflictDetails,
+    isLoading: limitsLoading,
+  } = useEmployeeCustomerBookingLimits(customerPublicId, startDateTime, endDateTime);
+
+  const restrictionBannerLabel = useMemo(() => {
+    const labels: string[] = [];
+    if (restrictedTypeClasses.has("TWO_WHEELER")) labels.push("two-wheeler");
+    if (restrictedTypeClasses.has("FOUR_WHEELER")) labels.push("four-wheeler");
+    return labels;
+  }, [restrictedTypeClasses]);
 
   if (!isAuthenticated) return null;
 
@@ -220,6 +237,31 @@ export default function EmployeeVehicleListingPage() {
           />
         </div>
 
+        {/* Booking restriction banner */}
+        {restrictionBannerLabel.length > 0 && startDateTime && endDateTime && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 text-amber-800">
+            <Lock className="size-5 shrink-0 mt-0.5 text-amber-600" strokeWidth={2.2} />
+            <div>
+              <p className="font-bold text-sm text-amber-900">
+                Customer has an active {restrictionBannerLabel.join(" and ")} booking
+              </p>
+              <p className="text-sm mt-0.5 text-amber-700">
+                Vehicles of the same type are blocked for these dates.{" "}
+                {Object.values(conflictDetails).map((slot, i) => (
+                  <span key={i} className="block mt-1 text-xs font-medium text-amber-600">
+                    {slot.vehicleMake} {slot.vehicleModel} · until{" "}
+                    {new Date(slot.endAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
+        )}
+
         <VehicleGrid
           vehicles={vehicles}
           isLoading={isLoading}
@@ -231,6 +273,8 @@ export default function EmployeeVehicleListingPage() {
           basePath="/employee/vehicle"
           startDateTime={startDateTime}
           endDateTime={endDateTime}
+          restrictedTypeClasses={restrictedTypeClasses}
+          limitsLoading={limitsLoading}
         />
       </main>
     </div>

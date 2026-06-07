@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { Shield, Users, ArrowLeft, Car } from "lucide-react";
 import { format } from "date-fns";
+import { getCurrentTime } from "@/utils/formatters";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
@@ -66,12 +67,12 @@ export const EmployeeVehicleGroupDetailsPage = () => {
   const startDateTime =
     urlStart ||
     (startDate
-      ? `${format(new Date(startDate), "yyyy-MM-dd")}T${startTime || "10:00"}`
+      ? `${format(new Date(startDate), "yyyy-MM-dd")}T${startTime || getCurrentTime()}`
       : null);
   const endDateTime =
     urlEnd ||
     (endDate
-      ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || "10:00"}`
+      ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || getCurrentTime()}`
       : null);
 
   const { data: groupResponse, isLoading, isRefetching, error } = useQuery({

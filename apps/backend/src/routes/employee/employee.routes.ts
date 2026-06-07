@@ -35,6 +35,7 @@ import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.control
 import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller.js";
 import { SearchCustomer } from "../../controller/employee/customer/search.controller.js";
 import { GetCustomerDetails } from "../../controller/employee/customer/get.controller.js";
+import { getEmployeeCustomerBookingLimits } from "../../controller/employee/customerLimits.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware.js";
 import {
@@ -130,6 +131,7 @@ router.post("/booking/create", EmployeeCheck, createEmployeeBooking);
 router.get("/booking/payment-status/:transactionId", EmployeeCheck, checkPayment);
 router.delete("/booking/hold/:holdId", EmployeeCheck, cancelEmployeeHold);
 router.get("/customer/search", EmployeeCheck, SearchCustomer);
+router.get("/customer/:customerPublicId/booking-limits", EmployeeCheck, getEmployeeCustomerBookingLimits);
 router.get("/customer/:publicId", EmployeeCheck, GetCustomerDetails);
 router.post(
   "/damage/upload",

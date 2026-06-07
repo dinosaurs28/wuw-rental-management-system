@@ -1,9 +1,5 @@
 import { create } from "zustand";
-
-function getCurrentTime(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-}
+import { getCurrentTime } from "@/utils/formatters";
 
 interface SearchState {
   branchPublicId: string | null;

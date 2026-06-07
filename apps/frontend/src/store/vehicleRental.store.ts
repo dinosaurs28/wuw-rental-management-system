@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-function getCurrentTime(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-}
+import { getCurrentTime } from "@/utils/formatters";
 
 interface VehicleRentalState {
   // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
@@ -546,6 +542,11 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
     {
       name: "vehicle-rental-dates",
       storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { startTime, endTime, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

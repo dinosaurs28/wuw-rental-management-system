@@ -73,6 +73,33 @@ export const employeeService = {
     return response.data;
   },
 
+  getCustomerBookingLimits: async (
+    customerPublicId: string,
+    start: string,
+    end: string,
+  ) => {
+    const response = await apiClient.get(
+      `/employee/customer/${customerPublicId}/booking-limits`,
+      { params: { start, end } },
+    );
+    return response.data as {
+      usedTypeClasses: Partial<
+        Record<
+          "TWO_WHEELER" | "FOUR_WHEELER",
+          {
+            bookingPublicId: string;
+            vehicleMake: string;
+            vehicleModel: string;
+            startAt: string;
+            endAt: string;
+            status: "HOLD" | "CONFIRMED" | "PICKED_UP";
+            holdExpiresAt: string | null;
+          }
+        >
+      >;
+    };
+  },
+
   scanBooking: async (bookingId: string): Promise<{
     publicId: string;
     status: string;
