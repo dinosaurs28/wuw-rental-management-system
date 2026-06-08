@@ -49,6 +49,7 @@ import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
 import { FinancialsDashboardPage } from "./pages/manager/payment/FinancialsDashboardPage";
 import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
+import { DisplacedBookingsPage } from "./pages/manager/DisplacedBookingsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
 import { NoShowCancellationsPage } from "./pages/manager/NoShowCancellationsPage";
@@ -229,6 +230,10 @@ function App() {
           <Route
             path="/manager/payment/extensions"
             element={<ExtensionsPage />}
+          />
+          <Route
+            path="/manager/extensions/displaced"
+            element={<DisplacedBookingsPage />}
           />
           <Route
             path="/manager/payment/discounts"

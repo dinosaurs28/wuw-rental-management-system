@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ArrowUpRight, RefreshCw } from "lucide-react";
+import { Loader2, ArrowUpRight, RefreshCw, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -52,6 +53,7 @@ function fmtMoney(val: string) {
 const PAGE_SIZE = 20;
 
 export function ExtensionsPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<ExtensionStatus | "ALL">(
     "ALL"
@@ -102,18 +104,29 @@ export function ExtensionsPage() {
               All booking extensions for this branch
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={handleRefresh}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700"
+              onClick={() => navigate("/manager/extensions/displaced")}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Displaced Bookings
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleRefresh}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

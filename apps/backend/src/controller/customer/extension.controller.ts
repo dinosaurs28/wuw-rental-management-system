@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, ExtensionTrigger } from "@repo/database/client";
+import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import {
   customerEvaluateExtensionSchema,
   customerCommitExtensionSchema,
@@ -28,10 +29,20 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
     const { newEndAt, notes } = validation.data;
 
     // Load booking — verify it belongs to this customer
+    const userForBooking = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { customerProfile: { select: { id: true } } },
+    });
+
+    if (!userForBooking?.customerProfile) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
+      return;
+    }
+
     const booking = await prisma.booking.findFirst({
       where: {
         publicId: bookingPublicId,
-        customer: { publicId: req.public_Id },
+        customerId: userForBooking.customerProfile.id,
       },
       select: {
         status: true,
@@ -137,6 +148,17 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     const { extensionPublicId, onlineTransactionRef, onlineGateway, idempotencyKey } =
       validation.data;
 
+    // Resolve User.publicId → CustomerProfile.id
+    const userForCommit = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, customerProfile: { select: { id: true } } },
+    });
+
+    if (!userForCommit?.customerProfile) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
     // Load extension to verify it belongs to this customer's booking
     const extensionRecord = await prisma.bookingExtension.findUnique({
       where: { publicId: extensionPublicId },
@@ -145,7 +167,7 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
           select: {
             publicId: true,
             totalFinal: true,
-            customer: { select: { publicId: true } },
+            customerId: true,
             branch: { select: { name: true } },
           },
         },
@@ -154,20 +176,13 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
 
     if (
       !extensionRecord ||
-      extensionRecord.booking.customer.publicId !== req.public_Id
+      extensionRecord.booking.customerId !== userForCommit.customerProfile.id
     ) {
       res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
       return;
     }
 
-    const customer = await prisma.user.findUnique({
-      where: { publicId: req.public_Id },
-      select: { id: true, name: true, role: true },
-    });
-    if (!customer) {
-      res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
-      return;
-    }
+    const customer = userForCommit;
 
     const actor = {
       actorId: customer.id,
@@ -235,13 +250,24 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    // Resolve User.publicId → CustomerProfile.id
+    const userForCancel = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, customerProfile: { select: { id: true } } },
+    });
+
+    if (!userForCancel?.customerProfile) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
     // Verify ownership
     const extensionRecord = await prisma.bookingExtension.findUnique({
       where: { publicId: extensionPublicId },
       include: {
         booking: {
           select: {
-            customer: { select: { publicId: true } },
+            customerId: true,
             branch: { select: { name: true } },
           },
         },
@@ -250,20 +276,13 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
 
     if (
       !extensionRecord ||
-      extensionRecord.booking.customer.publicId !== req.public_Id
+      extensionRecord.booking.customerId !== userForCancel.customerProfile.id
     ) {
       res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
       return;
     }
 
-    const customer = await prisma.user.findUnique({
-      where: { publicId: req.public_Id },
-      select: { id: true, name: true, role: true },
-    });
-    if (!customer) {
-      res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
-      return;
-    }
+    const customer = userForCancel;
 
     const actor = {
       actorId: customer.id,
@@ -287,6 +306,187 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;
     }
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/user/bookings/:bookingPublicId/extension-eligibility
+ * Returns whether the extension button should be shown, how many hours remain,
+ * and the configured visibility window for this branch.
+ */
+export const GetExtensionEligibility = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingPublicId } = req.params;
+
+    // Resolve User.publicId → CustomerProfile.id
+    const user = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { customerProfile: { select: { id: true } } },
+    });
+
+    if (!user?.customerProfile) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
+      return;
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        publicId: bookingPublicId,
+        customerId: user.customerProfile.id,
+      },
+      select: {
+        status: true,
+        startAt: true,
+        endAt: true,
+        branchId: true,
+        activeExtensionId: true,
+      },
+    });
+
+    if (!booking) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
+      return;
+    }
+
+    if (
+      booking.status !== BookingStatus.CONFIRMED &&
+      booking.status !== BookingStatus.PICKED_UP
+    ) {
+      res.status(StatusCode.OK).json({
+        data: { eligible: false, reason: `Booking status is ${booking.status}` },
+      });
+      return;
+    }
+
+    if (booking.activeExtensionId !== null) {
+      res.status(StatusCode.OK).json({
+        data: { eligible: false, reason: "A pending extension already exists for this booking" },
+      });
+      return;
+    }
+
+    const config = await prisma.branchChargeConfig.findUnique({
+      where: { branchId: booking.branchId },
+      select: {
+        extensionThresholdHours: true,
+        extensionWindowShortHours: true,
+        extensionWindowLongHours: true,
+      },
+    });
+
+    const thresholdHours = config?.extensionThresholdHours ?? 24;
+    const shortWindowHours = config?.extensionWindowShortHours ?? 6;
+    const longWindowHours = config?.extensionWindowLongHours ?? 12;
+
+    const now = new Date();
+    const rentalDurationHours =
+      (booking.endAt.getTime() - booking.startAt.getTime()) / (1000 * 60 * 60);
+    const hoursUntilEnd =
+      (booking.endAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    const isShortRental = rentalDurationHours <= thresholdHours;
+    const windowHours = isShortRental ? shortWindowHours : longWindowHours;
+
+    // Button visible when: hoursUntilEnd <= windowHours AND still before end
+    const eligible = hoursUntilEnd > 0 && hoursUntilEnd <= windowHours;
+
+    res.status(StatusCode.OK).json({
+      data: {
+        eligible,
+        hoursUntilEnd: Math.max(0, Math.round(hoursUntilEnd * 10) / 10),
+        windowHours,
+        isShortRental,
+        reason: eligible
+          ? null
+          : hoursUntilEnd > windowHours
+          ? `Extension button appears ${windowHours}h before end (${Math.round(hoursUntilEnd - windowHours)}h remaining until then)`
+          : "Rental has already ended",
+      },
+    });
+  } catch (error: any) {
+    console.error("GetExtensionEligibility Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/user/extensions/:extensionPublicId/initiate-payment
+ * Initiates a PhonePe payment for a pending customer extension.
+ * Returns the PhonePe redirect URL for the customer to complete payment.
+ */
+export const InitiateExtensionPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { extensionPublicId } = req.params;
+    const { redirectBaseUrl } = req.body;
+
+    // Resolve User.publicId → CustomerProfile.id
+    const userForPayment = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { customerProfile: { select: { id: true } } },
+    });
+
+    if (!userForPayment?.customerProfile) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
+    const extensionRecord = await prisma.bookingExtension.findUnique({
+      where: { publicId: extensionPublicId },
+      include: {
+        booking: {
+          select: {
+            publicId: true,
+            customerId: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !extensionRecord ||
+      extensionRecord.booking.customerId !== userForPayment.customerProfile.id
+    ) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
+    if (extensionRecord.extensionStatus !== ExtensionStatus.PENDING_PAYMENT) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        message: `Extension is already in ${extensionRecord.extensionStatus} status`,
+      });
+      return;
+    }
+
+    const additionalAmount = parseFloat(extensionRecord.additionalAmount.toString());
+
+    const phonePeRedirectBase =
+      redirectBaseUrl ||
+      process.env.EXTENSION_REDIRECT_URL ||
+      process.env.REDIRECT_URL_PAY;
+
+    const paymentData = await initiatePhonePePayment(
+      additionalAmount,
+      `${phonePeRedirectBase}/extension`,
+      req.public_Id,
+    );
+
+    // Store PhonePe transaction ID on the extension for webhook lookup
+    await prisma.bookingExtension.update({
+      where: { id: extensionRecord.id },
+      data: { phonePeTransactionId: paymentData.merchantTransactionId },
+    });
+
+    res.status(StatusCode.OK).json({
+      message: "Payment initiated",
+      data: {
+        redirectUrl: paymentData.instrumentResponse?.redirectInfo?.url,
+        transactionId: paymentData.merchantTransactionId,
+        amount: additionalAmount,
+      },
+    });
+  } catch (error: any) {
+    console.error("InitiateExtensionPayment Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

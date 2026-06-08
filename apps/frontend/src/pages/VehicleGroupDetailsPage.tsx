@@ -148,9 +148,11 @@ export const VehicleGroupDetailsPage = () => {
   const handleBookVehicle = useCallback(() => {
     if (!groupKey || !group) return;
 
-    // Capture raw date strings before clearVehicleSelection wipes them
+    // Capture all date/time state before clearVehicleSelection wipes them
     const savedStartDate = startDate;
     const savedEndDate   = endDate;
+    const savedStartTime = startTime;
+    const savedEndTime   = endTime;
 
     // Capture payment plan before clearVehicleSelection resets it to defaults
     const savedPaymentFlow    = useVehicleRentalStore.getState().paymentFlow;
@@ -170,9 +172,11 @@ export const VehicleGroupDetailsPage = () => {
       branch:   group.branch,
     });
 
-    // Restore dates and payment plan (clearVehicleSelection wiped them)
+    // Restore dates, times, and payment plan (clearVehicleSelection wiped them)
     if (savedStartDate) setStartDate(new Date(savedStartDate));
     if (savedEndDate)   setEndDate(new Date(savedEndDate));
+    setStartTime(savedStartTime);
+    setEndTime(savedEndTime);
     useVehicleRentalStore.getState().setPaymentFlow(savedPaymentFlow);
     useVehicleRentalStore.getState().setAdvancePayAmount(savedAdvanceAmount);
 
@@ -202,10 +206,14 @@ export const VehicleGroupDetailsPage = () => {
     paymentFlow,
     startDate,
     endDate,
+    startTime,
+    endTime,
     setGroupKey,
     setVehicleFullDetails,
     setStartDate,
     setEndDate,
+    setStartTime,
+    setEndTime,
     setPricePerDay,
     setDeposit,
     setApiPricingDetails,

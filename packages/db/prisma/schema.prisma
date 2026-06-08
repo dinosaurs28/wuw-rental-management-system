@@ -1733,9 +1733,11 @@ model BookingExtension {
   affectedBookingIds   Int[]                    // Internal IDs of future bookings displaced (if SWAP_FUTURE_BOOKING)
 
   // Payment linkage (PaymentTransaction with purpose=EXTENSION)
-  paymentTransactionId Int?                     @unique
+  paymentTransactionId  Int?    @unique
+  // PhonePe transaction ID for customer self-pay extensions
+  phonePeTransactionId  String? @unique
   // VehicleSwap linkage (for SWAP_CURRENT_TO_OTHER)
-  vehicleSwapId        Int?                     @unique
+  vehicleSwapId         Int?    @unique
 
   // Actor
   actorId              Int
@@ -1799,6 +1801,13 @@ model BranchChargeConfig {
 
   // Payment session / ledger-based financial flow
   usePaymentSessions Boolean @default(false)
+
+  // Extension button visibility window (customer portal)
+  // Short rental = booking duration <= extensionThresholdHours
+  // Button becomes visible N hours before rental ends
+  extensionThresholdHours   Int @default(24) // duration threshold (hrs) to pick short vs long window
+  extensionWindowShortHours Int @default(6)  // show button this many hrs before end for short rentals
+  extensionWindowLongHours  Int @default(12) // show button this many hrs before end for long rentals
 
   branch    Branch   @relation(fields: [branchId], references: [id])
   createdAt DateTime @default(now())

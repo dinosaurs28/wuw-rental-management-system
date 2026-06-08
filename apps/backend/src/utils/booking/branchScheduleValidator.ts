@@ -189,20 +189,11 @@ export function validateBookingSchedule(
   const closeMins = returnDay.closeMinutes;
   const graceEndMins = closeMins + config.graceMinutes;
 
-  // Handle grace spanning midnight: compare modulo 1440
-  // If returnMins is in the next calendar day (< closeMins due to wrap), adjust
-  const effectiveReturnMins =
-    returnMins < closeMins - 120 // heuristic: if return time is suspiciously "early" it may be next-day
-      ? returnMins + 1440
-      : returnMins;
-
-  if (effectiveReturnMins <= closeMins) {
-    // Within normal closing — OK
+  if (returnMins <= closeMins) {
     return { status: "OK" };
   }
 
-  if (effectiveReturnMins <= graceEndMins) {
-    // Within grace window — warn but allow
+  if (returnMins <= graceEndMins) {
     return {
       status: "RETURN_GRACE",
       closingTime: minutesToDisplay(closeMins),

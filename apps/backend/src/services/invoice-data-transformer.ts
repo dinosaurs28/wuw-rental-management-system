@@ -4,6 +4,7 @@ import { prisma } from "@repo/database/client";
 
 export type SectionType =
   | "VEHICLE_RENTAL"
+  | "EXTENSION_CHARGES"
   | "DAMAGE_PENALTY"
   | "ADDITIONAL_CHARGES"
   | "DAMAGE_COMPENSATION";
@@ -185,6 +186,37 @@ export async function transformBookingToInvoiceData(
     rentalDiscount,
   );
 
+  // ── SECTION 1b: Extension Charges (taxable) ──────────────────────────────────
+  // Fetch all confirmed extensions for this booking
+  const confirmedExtensions = await prisma.bookingExtension.findMany({
+    where: { bookingId: booking.id, extensionStatus: "CONFIRMED" },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const extensionItems: InvoiceSectionItem[] = confirmedExtensions.map((ext, idx) => {
+    const originalDays = Math.max(
+      1,
+      Math.ceil(
+        (ext.oldEndAt.getTime() - booking.startAt.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
+    const extEndAt = ext.actualNewEndAt ?? ext.requestedEndAt;
+    const newDays = Math.max(
+      1,
+      Math.ceil(
+        (extEndAt.getTime() - booking.startAt.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
+    const additionalDays = newDays - originalDays;
+    return {
+      description: `Extension #${idx + 1}: +${additionalDays} day${additionalDays !== 1 ? "s" : ""} (until ${extEndAt.toLocaleDateString("en-IN")})`,
+      quantity: additionalDays,
+      amount: Number(ext.additionalAmount),
+      isTaxable: true,
+      notes: ext.notes ?? undefined,
+    };
+  });
+
   // ── Classify InvoiceItems into bucket arrays ────────────────────────────────
   const penaltyItems: InvoiceSectionItem[] = [];
   const compensationItems: InvoiceSectionItem[] = [];
@@ -205,9 +237,16 @@ export async function transformBookingToInvoiceData(
     else additionalItems.push(sectionItem);
   }
 
-  // ── SECTION 2: Damage Penalty (taxable, conditional) ─────────────────────────
+  // ── SECTION 2: Extension Charges (taxable, conditional) ─────────────────────
   const taxableSections: InvoiceSection[] = [vehicleRentalSection];
 
+  if (extensionItems.length > 0) {
+    taxableSections.push(
+      buildSection("EXTENSION_CHARGES", "Rental Extensions", extensionItems, cgstRate, sgstRate),
+    );
+  }
+
+  // ── SECTION 3: Damage Penalty (taxable, conditional) ─────────────────────────
   if (penaltyItems.length > 0) {
     taxableSections.push(
       buildSection("DAMAGE_PENALTY", "Damage Penalty", penaltyItems, cgstRate, sgstRate),

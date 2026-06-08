@@ -6,6 +6,7 @@ import {
   ExtensionResolutionType,
   Role,
   PaymentPurpose,
+  VehicleStatus,
 } from "@repo/database/client";
 import type { BookingExtension } from "@repo/database/client";
 import Decimal from "decimal.js";
@@ -745,27 +746,182 @@ class ExtensionService {
 
   async getDisplacedBookingsForBranch(branchId: number): Promise<
     Array<{
-      id: number;
       publicId: string;
       extensionDisplacedAt: Date | null;
       displacedByExtensionId: number | null;
       status: string;
+      startAt: Date;
+      endAt: Date;
+      customer: { name: string; phone: string | null; email: string | null };
+      newVehicle: { regNo: string; make: string; model: string } | null;
+      displacingExtension: { publicId: string; requestedEndAt: Date } | null;
     }>
   > {
-    return prisma.booking.findMany({
+    const bookings = await prisma.booking.findMany({
       where: {
         branchId,
         extensionDisplacedAt: { not: null },
         status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
       },
       select: {
-        id: true,
         publicId: true,
         extensionDisplacedAt: true,
         displacedByExtensionId: true,
         status: true,
+        startAt: true,
+        endAt: true,
+        customer: {
+          select: {
+            user: { select: { name: true, phone: true, email: true } },
+          },
+        },
+        items: {
+          select: {
+            vehicle: { select: { regNo: true, make: true, model: true } },
+          },
+          take: 1,
+        },
       },
       orderBy: { extensionDisplacedAt: "desc" },
+    });
+
+    // Fetch displacing extension details for display
+    const extensionIds = bookings
+      .map((b) => b.displacedByExtensionId)
+      .filter((id): id is number => id !== null);
+
+    const extensions =
+      extensionIds.length > 0
+        ? await prisma.bookingExtension.findMany({
+            where: { id: { in: extensionIds } },
+            select: { id: true, publicId: true, requestedEndAt: true },
+          })
+        : [];
+
+    const extensionMap = new Map(extensions.map((e) => [e.id, e]));
+
+    return bookings.map((b) => ({
+      publicId: b.publicId,
+      extensionDisplacedAt: b.extensionDisplacedAt,
+      displacedByExtensionId: b.displacedByExtensionId,
+      status: b.status,
+      startAt: b.startAt,
+      endAt: b.endAt,
+      customer: {
+        name: b.customer.user.name,
+        phone: b.customer.user.phone ?? null,
+        email: b.customer.user.email ?? null,
+      },
+      newVehicle: b.items[0]?.vehicle ?? null,
+      displacingExtension: b.displacedByExtensionId
+        ? (extensionMap.get(b.displacedByExtensionId) ?? null)
+        : null,
+    }));
+  }
+
+  /**
+   * Resolve a displaced booking:
+   * CONFIRM_SWAP   — swap is already done, mark resolved
+   * CANCEL_WITH_REFUND — cancel the booking and issue a refund request
+   * CANCEL_NO_REFUND   — cancel the booking without refund
+   */
+  async resolveDisplacedBooking(
+    bookingPublicId: string,
+    action: "CONFIRM_SWAP" | "CANCEL_WITH_REFUND" | "CANCEL_NO_REFUND",
+    actor: ActorContext,
+    refundAmount?: number,
+    refundMethod?: "CASH" | "ONLINE",
+    notes?: string,
+  ): Promise<void> {
+    const booking = await prisma.booking.findUnique({
+      where: { publicId: bookingPublicId },
+      select: {
+        id: true,
+        publicId: true,
+        branchId: true,
+        status: true,
+        extensionDisplacedAt: true,
+      },
+    });
+
+    if (!booking) throw new Error("Booking not found");
+    if (!booking.extensionDisplacedAt) throw new Error("Booking is not displaced");
+    if (booking.branchId !== actor.actorBranchId) throw new Error("Access denied");
+
+    if (action === "CONFIRM_SWAP") {
+      // Swap was already done — clear the displaced flag to remove from dashboard
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { extensionDisplacedAt: null },
+      });
+
+      await auditService.log({
+        actorId: actor.actorId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        actorBranchId: actor.actorBranchId,
+        action: "Displaced booking swap confirmed by manager",
+        category: AuditCategory.BOOKING,
+        severity: AuditSeverity.INFO,
+        entity: "Booking",
+        entityId: bookingPublicId,
+        description: notes ?? "Customer agreed to vehicle swap",
+      });
+      return;
+    }
+
+    // Cancel the booking
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: BookingStatus.CANCELLED,
+          cancelledAt: new Date(),
+          extensionDisplacedAt: null,
+        },
+      });
+
+      // Free up the vehicle
+      const items = await tx.bookingItem.findMany({
+        where: { bookingId: booking.id },
+        select: { vehicleId: true },
+      });
+      if (items.length > 0) {
+        await tx.vehicle.updateMany({
+          where: { id: { in: items.map((i) => i.vehicleId) } },
+          data: { status: VehicleStatus.AVAILABLE },
+        });
+      }
+
+      if (action === "CANCEL_WITH_REFUND" && refundAmount && refundMethod) {
+        await tx.refundRequest.create({
+          data: {
+            publicId: createID(),
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            requestedById: actor.actorId,
+            amount: new Decimal(refundAmount),
+            method: refundMethod,
+            reason: notes ?? "Vehicle displaced by extension — customer declined swap",
+            status: "APPROVED",
+          },
+        });
+      }
+    });
+
+    await auditService.log({
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      actorBranchId: actor.actorBranchId,
+      action: action === "CANCEL_WITH_REFUND"
+        ? "Displaced booking cancelled with refund"
+        : "Displaced booking cancelled without refund",
+      category: AuditCategory.BOOKING,
+      severity: AuditSeverity.WARNING,
+      entity: "Booking",
+      entityId: bookingPublicId,
+      description: notes ?? "Customer declined vehicle swap",
     });
   }
 }

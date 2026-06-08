@@ -51,6 +51,9 @@ const DEFAULT_CONFIG: BranchChargeConfig = {
   safetyDepositEnabled: false,
   safetyDepositRequiresApproval: true,
   usePaymentSessions: false,
+  extensionThresholdHours: 24,
+  extensionWindowShortHours: 6,
+  extensionWindowLongHours: 12,
 };
 
 function ActiveModulesBar({ config }: { config: BranchChargeConfig }) {
@@ -467,6 +470,80 @@ export function ChargeConfigPage() {
               enabled={form.usePaymentSessions}
               onToggle={(v) => update("usePaymentSessions", v)}
             />
+          </div>
+        </div>
+
+        {/* Extension Button Visibility Window */}
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+              <Clock className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Extension Button Visibility</h2>
+              <p className="text-sm text-muted-foreground">
+                Controls when the "Extend Rental" button appears in the customer portal
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Short/Long threshold (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={72}
+                value={form.extensionThresholdHours}
+                onChange={(e) =>
+                  update("extensionThresholdHours", parseInt(e.target.value) || 24)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Rentals ≤ this duration are "short"
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Short rental window (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={24}
+                value={form.extensionWindowShortHours}
+                onChange={(e) =>
+                  update("extensionWindowShortHours", parseInt(e.target.value) || 6)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Show button N hrs before end for short rentals
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Long rental window (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={48}
+                value={form.extensionWindowLongHours}
+                onChange={(e) =>
+                  update("extensionWindowLongHours", parseInt(e.target.value) || 12)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Show button N hrs before end for long rentals
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-orange-50 border border-orange-100 px-4 py-3 text-xs text-orange-700">
+            <strong>Example:</strong> With threshold=24h, short-window=6h, long-window=12h — a 12hr booking shows the
+            extend button in the last 6hrs; a 3-day booking shows it in the last 12hrs.
           </div>
         </div>
 

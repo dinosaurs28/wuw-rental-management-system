@@ -128,12 +128,9 @@ export function validateBookingSchedule(
   const closeMins = returnDay.closeMinutes;
   const graceEndMins = closeMins + config.graceMinutes;
 
-  // Grace-spans-midnight: if returnMins is much less than closeMins it's next-day wrap
-  const effectiveReturnMins = returnMins < closeMins - 120 ? returnMins + 1440 : returnMins;
+  if (returnMins <= closeMins) return { status: "OK" };
 
-  if (effectiveReturnMins <= closeMins) return { status: "OK" };
-
-  if (effectiveReturnMins <= graceEndMins) {
+  if (returnMins <= graceEndMins) {
     return {
       status: "RETURN_GRACE",
       closingTime: minutesToDisplay(closeMins),

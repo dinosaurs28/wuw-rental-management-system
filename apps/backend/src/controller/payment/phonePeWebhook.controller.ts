@@ -53,6 +53,98 @@ export const phonePeWebhook = async (req: Request, res: Response) => {
       return res.status(StatusCode.OK).json({ message: "Acknowledged" });
     }
 
+    // ── Extension payment path ─────────────────────────────────────────────────
+    // Check if this transactionId belongs to a BookingExtension before the booking path
+    const extensionRecord = await prisma.bookingExtension.findUnique({
+      where: { phonePeTransactionId: transactionId },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            publicId: true,
+            branchId: true,
+            extensionCount: true,
+            createdById: true,
+          },
+        },
+      },
+    });
+
+    if (extensionRecord) {
+      // Idempotency — already confirmed
+      if (extensionRecord.extensionStatus === "CONFIRMED") {
+        return res.status(StatusCode.OK).json({ message: "Already confirmed" });
+      }
+
+      const additionalAmount = extensionRecord.additionalAmount;
+
+      await prisma.$transaction(async (tx) => {
+        // Record PaymentTransaction with EXTENSION purpose
+        const ptxn = await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            idempotencyKey: `ext:phonepe:${transactionId}`,
+            bookingId: extensionRecord.booking.id,
+            branchId: extensionRecord.booking.branchId,
+            purpose: PaymentPurpose.EXTENSION,
+            method: PaymentMethod.ONLINE,
+            status: "CONFIRMED",
+            totalAmount: additionalAmount,
+            cashAmount: 0,
+            onlineAmount: additionalAmount,
+            onlineTransactionRef: transactionId,
+            onlineGateway: "PHONEPE",
+            confirmedById: extensionRecord.booking.createdById,
+            confirmedAt: new Date(),
+          },
+        });
+
+        // Finalize booking date update
+        await tx.booking.update({
+          where: { id: extensionRecord.booking.id },
+          data: {
+            endAt: extensionRecord.requestedEndAt,
+            activeExtensionId: null,
+            extensionCount: { increment: 1 },
+            lastExtendedAt: new Date(),
+            totalFinal: extensionRecord.newTotalFinal,
+            ...(extensionRecord.booking.extensionCount === 0 && {
+              originalEndAt: extensionRecord.oldEndAt,
+            }),
+          },
+        });
+
+        // Confirm extension
+        await tx.bookingExtension.update({
+          where: { id: extensionRecord.id },
+          data: {
+            extensionStatus: "CONFIRMED",
+            actualNewEndAt: extensionRecord.requestedEndAt,
+            paymentTransactionId: ptxn.id,
+          },
+        });
+      });
+
+      await auditService.log({
+        actorId: extensionRecord.booking.createdById,
+        actorName: "PhonePe Webhook",
+        actorRole: Role.CUSTOMER,
+        actorBranchId: extensionRecord.booking.branchId,
+        action: "EXTENSION_CONFIRMED_PHONEPE",
+        category: AuditCategory.PAYMENT,
+        description: `Extension ${extensionRecord.publicId} confirmed via PhonePe webhook`,
+        entity: "BookingExtension",
+        entityId: extensionRecord.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"] as string | undefined,
+        after: { extensionStatus: "CONFIRMED", newEndAt: extensionRecord.requestedEndAt },
+      });
+
+      console.log(`[phonePeWebhook] extension=${extensionRecord.publicId} confirmed via webhook`);
+      return res.status(StatusCode.OK).json({ message: "Extension confirmed" });
+    }
+    // ── End extension payment path ─────────────────────────────────────────────
+
     const booking = await prisma.booking.findUnique({
       where: { transactionId },
       include: { items: { include: { vehicle: true } } },

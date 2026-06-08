@@ -74,6 +74,18 @@ export interface BookingExtension {
   createdAt: string;
 }
 
+export interface DisplacedBooking {
+  publicId: string;
+  extensionDisplacedAt: string;
+  displacedByExtensionId: number | null;
+  status: string;
+  startAt: string;
+  endAt: string;
+  customer: { name: string; phone: string | null; email: string | null };
+  newVehicle: { regNo: string; make: string; model: string } | null;
+  displacingExtension: { publicId: string; requestedEndAt: string } | null;
+}
+
 export interface CommitExtensionPayload {
   extensionPublicId: string;
   resolutionType: ExtensionResolutionType;
@@ -197,10 +209,23 @@ export const extensionService = {
 
   getDisplacedBookings: () =>
     apiClient
-      .get<{ data: any[] }>(`/branchManager/extensions/displaced-bookings`)
+      .get<{ data: DisplacedBooking[] }>(`/branchManager/extensions/displaced-bookings`)
       .then((r) => r.data.data),
 
   // ── Customer ────────────────────────────────────────────────────────────────
+
+  customerCheckEligibility: (bookingPublicId: string) =>
+    apiClient
+      .get<{
+        data: {
+          eligible: boolean;
+          hoursUntilEnd: number;
+          windowHours: number;
+          isShortRental: boolean;
+          reason: string | null;
+        };
+      }>(`/user/bookings/${bookingPublicId}/extension-eligibility`)
+      .then((r) => r.data.data),
 
   customerEvaluate: (bookingPublicId: string, newEndAt: string, notes?: string) =>
     apiClient
@@ -208,6 +233,14 @@ export const extensionService = {
         `/user/bookings/${bookingPublicId}/extensions/evaluate`,
         { newEndAt, notes }
       )
+      .then((r) => r.data),
+
+  customerInitiatePayment: (extensionPublicId: string, redirectBaseUrl: string) =>
+    apiClient
+      .post<{
+        data: { redirectUrl: string; transactionId: string; amount: number };
+        message: string;
+      }>(`/user/extensions/${extensionPublicId}/initiate-payment`, { redirectBaseUrl })
       .then((r) => r.data),
 
   customerCommit: (payload: {
@@ -228,4 +261,22 @@ export const extensionService = {
     apiClient
       .get<{ data: BookingExtension }>(`/user/extensions/${extensionPublicId}`)
       .then((r) => r.data.data),
+
+  // ── Manager displaced bookings ───────────────────────────────────────────────
+
+  resolveDisplacedBooking: (
+    bookingPublicId: string,
+    payload: {
+      action: "CONFIRM_SWAP" | "CANCEL_WITH_REFUND" | "CANCEL_NO_REFUND";
+      refundAmount?: number;
+      refundMethod?: "CASH" | "ONLINE";
+      notes?: string;
+    }
+  ) =>
+    apiClient
+      .post<{ message: string }>(
+        `/branchManager/extensions/displaced-bookings/${bookingPublicId}/resolve`,
+        payload
+      )
+      .then((r) => r.data),
 };
