@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { createManagerCouponSchema } from "@repo/schemas";
+import { createManagerCouponSchema, updateManagerCouponSchema } from "@repo/schemas";
 import { discountRuleService } from "../../services/discount/index.js";
+import Decimal from "decimal.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -105,6 +106,174 @@ export const ListManagerCoupons = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({ data: coupons });
   } catch (error) {
     console.error("ListManagerCoupons Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /api/branchManager/discount/coupons/:publicId
+ *
+ * Branch manager edits an existing coupon. Usage logs are never touched —
+ * only the rule definition is updated. Guardrails from BranchDiscountConfig
+ * are re-enforced on every edit.
+ */
+export const UpdateManagerCoupon = async (req: Request, res: Response) => {
+  try {
+    const { publicId } = req.params;
+    const branchId = req.branch_Id;
+
+    const validation = updateManagerCouponSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
+    }
+    const input = validation.data;
+
+    const rule = await prisma.discountRule.findUnique({
+      where: { publicId },
+      select: { id: true, applicableBranchIds: true, isActive: true, discountType: true, endDate: true, totalUsageLimit: true },
+    });
+
+    if (!rule) return res.status(StatusCode.NOT_FOUND).json({ message: "Coupon not found" });
+    if (!rule.applicableBranchIds.includes(branchId)) {
+      return res.status(StatusCode.FORBIDDEN).json({ message: "You can only edit coupons for your own branch" });
+    }
+
+    const config = await prisma.branchDiscountConfig.findUnique({ where: { branchId } });
+
+    // Re-enforce guardrails on value change
+    if (input.value !== undefined) {
+      if (rule.discountType === "PERCENTAGE") {
+        const maxPct = Number(config?.maxManagerCouponDiscountPercent ?? 15);
+        if (input.value > maxPct) {
+          return res.status(StatusCode.BAD_REQUEST).json({ message: `Discount percentage cannot exceed ${maxPct}%` });
+        }
+      } else {
+        const maxFlat = Number(config?.maxManagerCouponFlatAmount ?? 500);
+        if (input.value > maxFlat) {
+          return res.status(StatusCode.BAD_REQUEST).json({ message: `Flat discount cannot exceed ₹${maxFlat}` });
+        }
+      }
+    }
+
+    // Re-enforce usage limit cap
+    if (input.usageLimit !== undefined) {
+      const cap = config?.maxManagerCouponUsageLimit ?? 5;
+      input.usageLimit = Math.min(input.usageLimit, cap);
+
+      // Ensure new limit is not below current usage count (preserve existing logs)
+      const currentUsage = await prisma.couponUsageLog.count({ where: { discountRuleId: rule.id } });
+      if (input.usageLimit < currentUsage) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: `Cannot set limit to ${input.usageLimit} — coupon has already been used ${currentUsage} time(s)`,
+        });
+      }
+    }
+
+    // Compute new endDate if extendDays provided
+    let newEndDate: Date | undefined;
+    if (input.extendDays !== undefined) {
+      const base = new Date(rule.endDate) > new Date() ? new Date(rule.endDate) : new Date();
+      newEndDate = new Date(base);
+      newEndDate.setDate(newEndDate.getDate() + input.extendDays);
+    }
+
+    const updateData: any = {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.value !== undefined && { value: new Decimal(input.value) }),
+      ...(input.usageLimit !== undefined && { totalUsageLimit: input.usageLimit }),
+      ...(input.perUserLimit !== undefined && { perUserLimit: input.perUserLimit }),
+      ...(input.targetCustomerIds !== undefined && { targetCustomerIds: input.targetCustomerIds }),
+      ...(newEndDate && { endDate: newEndDate }),
+      ...(input.reason !== undefined && {
+        description: `[Manager Coupon] Reason: ${input.reason}`,
+      }),
+    };
+
+    const updated = await prisma.discountRule.update({ where: { publicId }, data: updateData });
+
+    return res.status(StatusCode.OK).json({ message: "Coupon updated successfully", data: { publicId: updated.publicId } });
+  } catch (error: any) {
+    console.error("UpdateManagerCoupon Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /api/branchManager/discount/coupons/:publicId/deactivate
+ *
+ * Branch manager deactivates one of their own branch's coupons.
+ */
+export const DeactivateManagerCoupon = async (req: Request, res: Response) => {
+  try {
+    const { publicId } = req.params;
+    const branchId = req.branch_Id;
+
+    const rule = await prisma.discountRule.findUnique({
+      where: { publicId },
+      select: { id: true, isActive: true, applicableBranchIds: true },
+    });
+
+    if (!rule) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Coupon not found" });
+    }
+    if (!rule.applicableBranchIds.includes(branchId)) {
+      return res.status(StatusCode.FORBIDDEN).json({ message: "You can only deactivate coupons for your own branch" });
+    }
+    if (!rule.isActive) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Coupon is already inactive" });
+    }
+
+    const actor = await buildActorContext(req);
+    await discountRuleService.deactivateRule(publicId as string, actor);
+
+    return res.status(StatusCode.OK).json({ message: "Coupon deactivated successfully" });
+  } catch (error: any) {
+    console.error("DeactivateManagerCoupon Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/branchManager/discount/coupons/customer-search?q=phone_or_name
+ *
+ * Search customers by phone number or name so the manager can pick a
+ * specific customer to restrict a coupon to.
+ */
+export const SearchCustomerForCoupon = async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string | undefined)?.trim();
+    if (!q || q.length < 3) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Query must be at least 3 characters" });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        role: "CUSTOMER",
+        OR: [
+          { phone: { contains: q } },
+          { name: { contains: q, mode: "insensitive" } },
+        ],
+        customerProfile: { isNot: null },
+      },
+      select: {
+        name: true,
+        phone: true,
+        publicId: true,
+        customerProfile: { select: { id: true } },
+      },
+      take: 10,
+    });
+
+    return res.status(StatusCode.OK).json({
+      data: users.map((u) => ({
+        customerProfileId: u.customerProfile!.id,
+        name: u.name,
+        phone: u.phone,
+        publicId: u.publicId,
+      })),
+    });
+  } catch (error) {
+    console.error("SearchCustomerForCoupon Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

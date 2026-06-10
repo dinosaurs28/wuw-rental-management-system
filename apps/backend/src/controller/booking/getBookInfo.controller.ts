@@ -691,6 +691,20 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         })),
       });
 
+      // Record coupon usage log so totalUsageLimit / perUserLimit checks are enforced
+      const appliedCouponRuleId = items[0]?.couponRuleId ?? null;
+      if (appliedCouponRuleId) {
+        await tx.couponUsageLog.create({
+          data: {
+            discountRuleId: appliedCouponRuleId,
+            bookingId: newBooking.id,
+            customerId,
+            branchId: newBooking.branchId,
+            discountedAmount: new Decimal(grandDiscountTotal),
+          },
+        });
+      }
+
       return newBooking;
     }, { timeout: 20000 });
 

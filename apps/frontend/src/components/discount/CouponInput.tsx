@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { Tag, X, Loader2, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { discountPublicService } from "@/services/discount.service";
+import { discountPublicService, discountCustomerService } from "@/services/discount.service";
+import { useAuthStore } from "@/store/auth.store";
 
 interface CouponInputProps {
   vehiclePublicId?: string;
@@ -23,8 +24,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   COUPON_BRANCH_MISMATCH: "This coupon is not valid at this branch.",
   COUPON_MIN_DURATION: "This coupon requires a longer rental period.",
   COUPON_MIN_AMOUNT: "This coupon requires a higher booking amount.",
-  COUPON_USAGE_LIMIT: "This coupon has reached its usage limit.",
+  COUPON_USAGE_LIMIT: "This coupon has reached its total usage limit.",
   COUPON_ALREADY_USED: "You have already used this coupon.",
+  COUPON_PER_USER_LIMIT_EXCEEDED: "You have already used this coupon the maximum number of times.",
+  COUPON_USER_RESTRICTED: "This coupon is not available for your account.",
   COUPON_CATEGORY_MISMATCH: "This coupon is not valid for this vehicle category.",
   COUPON_INVALID: "This coupon is not valid.",
 };
@@ -44,6 +47,8 @@ export function CouponInput({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const handleApply = async () => {
     const code = inputValue.trim().toUpperCase();
     if (!code) return;
@@ -54,12 +59,17 @@ export function CouponInput({
     try {
       const hasContext = (vehiclePublicId || groupKey) && startAt && endAt;
       if (hasContext) {
-        const res = await discountPublicService.validateCoupon({
+        const params = {
           couponCode: code,
           ...(vehiclePublicId ? { vehiclePublicId } : { groupKey }),
           startAt: startAt!,
           endAt: endAt!,
-        });
+        };
+
+        // Use authenticated endpoint when logged in — enforces per-user limits
+        const res = isAuthenticated
+          ? await discountCustomerService.validateCoupon(params)
+          : await discountPublicService.validateCoupon(params);
 
         if (!res.data.valid) {
           const msg = ERROR_MESSAGES[(res.data as any).code] || (res.data as any).reason || "Invalid coupon code.";
@@ -71,7 +81,6 @@ export function CouponInput({
         setInputValue("");
         toast.success(`Coupon ${code} applied! Saved ₹${res.data.discountAmount}`);
       } else {
-        // No vehicle or date context — cannot validate
         setError("Please select rental dates before applying a coupon.");
       }
     } catch {

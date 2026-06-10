@@ -287,6 +287,7 @@ class DiscountRuleService {
       description?: string;
       validityDays: number;
       usageLimit: number;
+      perUserLimit: number;
       targetCustomerIds: number[];
       reason: string;
     },
@@ -384,7 +385,7 @@ class DiscountRuleService {
         stackable: false,          // never stackable
         priority: 0,
         totalUsageLimit: clampedUsageLimit,
-        perUserLimit: 1,           // one use per customer — prevents abuse
+        perUserLimit: Math.max(1, input.perUserLimit),
         perBranchLimit: null,
         perDayLimit: null,
         startDate: now,

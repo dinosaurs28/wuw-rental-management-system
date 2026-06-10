@@ -44,7 +44,8 @@
       "Bash(dir /s /b \"C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\pages\")",
       "Bash(findstr /i \"employee\\\\|booking\\\\|mybook\")",
       "Bash(dir C:\\\\Freelance\\\\vrms\\\\apps\\\\backend\\\\src\\\\utils\\\\payment *)",
-      "Bash(Test-Path C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\components\\\\customer *)"
+      "Bash(Test-Path C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\components\\\\customer *)",
+      "Bash(pnpm build *)"
     ]
   }
 }

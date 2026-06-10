@@ -111,6 +111,8 @@ export const createManagerCouponSchema = z
     validityDays: z.number().int().min(1).max(90).default(7),
     // Total number of uses (capped to maxManagerCouponUsageLimit)
     usageLimit: z.number().int().min(1).max(100).default(5),
+    // How many times each customer can use this coupon
+    perUserLimit: z.number().int().min(1).max(10).default(1),
     // Optionally target specific customers (friends/relatives)
     targetCustomerIds: z.array(z.number().int().positive()).default([]),
     // Mandatory reason — why is this coupon being created?
@@ -123,6 +125,18 @@ export const createManagerCouponSchema = z
     },
     { message: "PERCENTAGE value cannot exceed 100", path: ["value"] },
   );
+
+// ─── Manager Coupon Edit ──────────────────────────────────────────────────────
+
+export const updateManagerCouponSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  value: z.number().positive().optional(),
+  usageLimit: z.number().int().min(1).max(100).optional(),
+  perUserLimit: z.number().int().min(1).max(10).optional(),
+  targetCustomerIds: z.array(z.number().int().positive()).optional(),
+  extendDays: z.number().int().min(1).max(90).optional(),
+  reason: z.string().min(5).max(300).optional(),
+});
 
 // ─── Apply Coupon ─────────────────────────────────────────────────────────────
 

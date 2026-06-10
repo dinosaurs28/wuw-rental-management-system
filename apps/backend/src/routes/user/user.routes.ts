@@ -21,6 +21,7 @@ import {
   GetExtensionEligibility,
   InitiateExtensionPayment,
 } from "../../controller/customer/extension.controller.js";
+import { ValidateCustomerCoupon } from "../../controller/user/coupon-validate.controller.js";
 const router: Router = Router();
 
 router.get("/booking", authCheckJwt, getUserBookings);
@@ -36,6 +37,9 @@ router.post("/kyc", authCheckJwt, upload.single("file"), UploadKycDocument);
 router.delete("/kyc", authCheckJwt, DeleteKycDocument);
 // router.post("/payment/cash", authCheckJwt, checkPaymentForCash); // Cash payment — temporarily disabled
 router.delete("/booking/hold/:holdId", authCheckJwt, cancelHold);
+
+// Customer coupon validation (authenticated — enforces per-user limits)
+router.post("/discount/validate", authCheckJwt, ValidateCustomerCoupon);
 
 // Customer extension routes
 router.get("/bookings/:bookingPublicId/extension-eligibility", authCheckJwt, GetExtensionEligibility);

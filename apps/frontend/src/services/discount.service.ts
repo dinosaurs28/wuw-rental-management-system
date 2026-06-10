@@ -78,17 +78,17 @@ export interface ManagerCoupon {
   publicId: string;
   code: string;
   name: string;
+  description: string | null;
   discountType: "PERCENTAGE" | "FLAT";
-  discountValue: string;
-  maxDiscountCap: string | null;
+  value: string;
   totalUsageLimit: number | null;
-  perCustomerLimit: number | null;
-  usageCount: number;
-  validFrom: string | null;
-  validTo: string | null;
-  minBookingAmount: string | null;
-  minRentalDays: number | null;
+  startDate: string;
+  endDate: string;
   isActive: boolean;
+  targetCustomerIds: number[];
+  createdAt: string;
+  createdBy: { publicId: string; name: string; role: string };
+  _count: { usageLogs: number };
 }
 
 export interface AdminDiscountRule {
@@ -222,6 +222,21 @@ export const discountPublicService = {
   },
 };
 
+// ── Customer (authenticated) ──────────────────────────────────────────────────
+
+export const discountCustomerService = {
+  validateCoupon: async (params: {
+    couponCode: string;
+    vehiclePublicId?: string;
+    groupKey?: string;
+    startAt: string;
+    endAt: string;
+  }): Promise<{ data: CouponValidation }> => {
+    const res = await apiClient.post("/user/discount/validate", params);
+    return res.data;
+  },
+};
+
 // ── Employee ─────────────────────────────────────────────────────────────────
 
 export const employeeDiscountService = {
@@ -345,10 +360,37 @@ export const managerDiscountService = {
     reason: string;
     validityDays?: number;
     usageLimit?: number;
+    perUserLimit?: number;
     targetCustomerIds?: number[];
     description?: string;
   }): Promise<{ message: string; data: ManagerCoupon }> => {
     const res = await apiClient.post("/branchManager/discount/coupons", data);
+    return res.data;
+  },
+
+  updateCoupon: async (
+    publicId: string,
+    data: {
+      name?: string;
+      value?: number;
+      usageLimit?: number;
+      perUserLimit?: number;
+      targetCustomerIds?: number[];
+      extendDays?: number;
+      reason?: string;
+    },
+  ): Promise<{ message: string }> => {
+    const res = await apiClient.patch(`/branchManager/discount/coupons/${publicId}`, data);
+    return res.data;
+  },
+
+  deactivateCoupon: async (publicId: string): Promise<{ message: string }> => {
+    const res = await apiClient.patch(`/branchManager/discount/coupons/${publicId}/deactivate`);
+    return res.data;
+  },
+
+  searchCustomer: async (q: string): Promise<{ data: Array<{ customerProfileId: number; name: string; phone: string; publicId: string }> }> => {
+    const res = await apiClient.get("/branchManager/discount/coupons/customer-search", { params: { q } });
     return res.data;
   },
 
