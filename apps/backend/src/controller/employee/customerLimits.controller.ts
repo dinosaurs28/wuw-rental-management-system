@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma, BookingStatus, VehicleTypeClass } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleTypeClass, BookingRestrictionMode } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 
@@ -12,12 +12,8 @@ const ACTIVE_STATUSES: BookingStatus[] = [
 /**
  * GET /employee/customer/:customerPublicId/booking-limits?start=ISO&end=ISO
  *
- * Employee-side variant of the public booking-limits endpoint. Looks up the
- * customer by publicId (from the URL param) instead of the JWT identity, so
- * employees can see which vehicle type classes are already occupied for the
- * customer they are booking on behalf of.
- *
- * Requires EmployeeCheck middleware (staff JWT).
+ * Employee-side variant. Uses the employee's own branch (from JWT) to resolve
+ * the restriction mode and scope ANY_VEHICLE checks.
  */
 export const getEmployeeCustomerBookingLimits = async (
   req: Request,
@@ -32,9 +28,7 @@ export const getEmployeeCustomerBookingLimits = async (
     });
 
     if (!userData?.customerProfile) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: "Customer not found" });
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Customer not found" });
     }
 
     const customerId = userData.customerProfile.id;
@@ -52,6 +46,76 @@ export const getEmployeeCustomerBookingLimits = async (
       }
     }
 
+    // Resolve branch restriction mode from the employee's branch
+    const branchId: number | undefined = (req as any).branch_Id ?? undefined;
+    let restrictionMode: BookingRestrictionMode = BookingRestrictionMode.SAME_CATEGORY;
+
+    if (branchId) {
+      const branch = await prisma.branch.findUnique({
+        where: { id: branchId },
+        select: { bookingRestrictionMode: true },
+      });
+      if (branch) restrictionMode = branch.bookingRestrictionMode;
+    }
+
+    // NONE
+    if (restrictionMode === BookingRestrictionMode.NONE) {
+      return res.status(StatusCode.OK).json({
+        restrictionMode,
+        usedTypeClasses: {},
+        blockedAll: false,
+      });
+    }
+
+    // ANY_VEHICLE
+    if (restrictionMode === BookingRestrictionMode.ANY_VEHICLE && branchId && startDate && endDate) {
+      const conflictItem = await prisma.bookingItem.findFirst({
+        where: {
+          booking: {
+            customerId,
+            branchId,
+            status: { in: ACTIVE_STATUSES },
+            startAt: { lt: endDate },
+            endAt: { gt: startDate },
+            OR: [
+              { status: { not: BookingStatus.HOLD } },
+              { holdExpiresAt: { gt: now } },
+            ],
+          },
+        },
+        select: {
+          vehicle: { select: { make: true, model: true } },
+          booking: {
+            select: {
+              publicId: true,
+              startAt: true,
+              endAt: true,
+              status: true,
+              holdExpiresAt: true,
+            },
+          },
+        },
+      });
+
+      return res.status(StatusCode.OK).json({
+        restrictionMode,
+        usedTypeClasses: {},
+        blockedAll: !!conflictItem,
+        anyVehicleConflict: conflictItem
+          ? {
+              bookingPublicId: conflictItem.booking.publicId,
+              vehicleMake: conflictItem.vehicle.make,
+              vehicleModel: conflictItem.vehicle.model,
+              startAt: conflictItem.booking.startAt,
+              endAt: conflictItem.booking.endAt,
+              status: conflictItem.booking.status,
+              holdExpiresAt: conflictItem.booking.holdExpiresAt,
+            }
+          : null,
+      });
+    }
+
+    // SAME_CATEGORY
     const items = await prisma.bookingItem.findMany({
       where: {
         booking: {
@@ -120,11 +184,13 @@ export const getEmployeeCustomerBookingLimits = async (
       }
     }
 
-    return res.status(StatusCode.OK).json({ usedTypeClasses });
+    return res.status(StatusCode.OK).json({
+      restrictionMode,
+      usedTypeClasses,
+      blockedAll: false,
+    });
   } catch (error) {
     console.error("[getEmployeeCustomerBookingLimits] error:", error);
-    return res
-      .status(StatusCode.INTERNAL_SERVER_ERROR)
-      .json({ message: "Internal server error" });
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

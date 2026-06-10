@@ -27,6 +27,7 @@ interface VehicleGridProps {
   endDateTime?: string;
   variant?: "light" | "dark";
   restrictedTypeClasses?: Set<string>;
+  blockedAll?: boolean;
   limitsLoading?: boolean;
 }
 
@@ -87,6 +88,7 @@ export const VehicleGrid = ({
   endDateTime,
   variant = "light",
   restrictedTypeClasses,
+  blockedAll = false,
   limitsLoading = false,
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -157,7 +159,7 @@ export const VehicleGrid = ({
       )}>
         {vehicles.map((vehicle) => {
           const tc = "typeClass" in vehicle ? (vehicle as any).typeClass : undefined;
-          const isRestricted = !!(tc && restrictedTypeClasses?.has(tc));
+          const isRestricted = blockedAll || !!(tc && restrictedTypeClasses?.has(tc));
           return (
             <MemoizedVehicleCard
               key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}

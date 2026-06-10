@@ -13,6 +13,7 @@ import { format } from "date-fns";
 
 export interface TypeClassConflict {
   typeClass: "TWO_WHEELER" | "FOUR_WHEELER" | string;
+  reason?: "ANY_VEHICLE";
   existingBookingPublicId: string;
   existingVehicleMake: string;
   existingVehicleModel: string;
@@ -70,9 +71,10 @@ export const BookingTypeLimitModal = ({
   };
 
   const primaryConflict = conflicts[0];
-  const typeLabel = primaryConflict
-    ? (TYPE_LABEL[primaryConflict.typeClass] ?? "vehicle")
-    : "vehicle";
+  const isAnyVehicleMode = primaryConflict?.reason === "ANY_VEHICLE";
+  const typeLabel = isAnyVehicleMode
+    ? "vehicle"
+    : (primaryConflict ? (TYPE_LABEL[primaryConflict.typeClass] ?? "vehicle") : "vehicle");
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -89,7 +91,9 @@ export const BookingTypeLimitModal = ({
                   Booking Limit Reached
                 </DialogTitle>
                 <DialogDescription className="text-amber-300/80 text-sm leading-snug">
-                  You can only have one active {typeLabel} booking at a time.
+                  {isAnyVehicleMode
+                    ? "Only one active booking is allowed at this branch at a time."
+                    : `You can only have one active ${typeLabel} booking at a time.`}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -139,13 +143,15 @@ export const BookingTypeLimitModal = ({
                   <span>{formatDate(conflict.existingBookingEnd)}</span>
                 </div>
 
-                {/* Type badge */}
-                <Badge
-                  variant="outline"
-                  className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 border-zinc-200"
-                >
-                  {TYPE_LABEL[conflict.typeClass] ?? conflict.typeClass}
-                </Badge>
+                {/* Type badge — hidden in ANY_VEHICLE mode */}
+                {!isAnyVehicleMode && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 border-zinc-200"
+                  >
+                    {TYPE_LABEL[conflict.typeClass] ?? conflict.typeClass}
+                  </Badge>
+                )}
               </div>
             ))}
 

@@ -102,6 +102,12 @@ enum VehicleTypeClass {
   OTHER
 }
 
+enum BookingRestrictionMode {
+  NONE
+  SAME_CATEGORY
+  ANY_VEHICLE
+}
+
 enum BookingPhotoType {
   PRE_DELIVERY
   POST_RETURN
@@ -352,6 +358,7 @@ model Branch {
   schedules               BranchSchedule[]
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
+  bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }

@@ -78,9 +78,8 @@ export const ReviewConfirmPage = () => {
     return new Date(y, m - 1, d, h, mi, 0).toISOString();
   }, [endDate, endTime]);
 
-  const { restrictedTypeClasses, conflictDetails } = useCustomerBookingLimits(startISO, endISO);
-
   const { branchPublicId } = useSearchStore();
+  const { restrictedTypeClasses, conflictDetails, blockedAll, anyVehicleConflict } = useCustomerBookingLimits(startISO, endISO, branchPublicId ?? undefined);
   const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
   const { verdict: scheduleVerdict } = useBookingScheduleVerdict(schedule, startISO, endISO);
 
@@ -121,7 +120,22 @@ export const ReviewConfirmPage = () => {
       return;
     }
 
-    // Pre-flight: surface any type-class conflict before the API call
+    // Pre-flight: surface any type-class / any-vehicle conflict before the API call
+    if (blockedAll && anyVehicleConflict) {
+      setLimitConflicts([{
+        typeClass: "TWO_WHEELER" as any,
+        reason: "ANY_VEHICLE" as any,
+        existingBookingPublicId: anyVehicleConflict.bookingPublicId,
+        existingVehicleMake: anyVehicleConflict.vehicleMake,
+        existingVehicleModel: anyVehicleConflict.vehicleModel,
+        existingBookingStart: anyVehicleConflict.startAt,
+        existingBookingEnd: anyVehicleConflict.endAt,
+        existingBookingStatus: anyVehicleConflict.status,
+      }]);
+      setShowLimitModal(true);
+      return;
+    }
+
     if (restrictedTypeClasses.size > 0) {
       const conflicts: TypeClassConflict[] = Object.entries(conflictDetails).map(
         ([tc, slot]) => ({
@@ -289,7 +303,7 @@ export const ReviewConfirmPage = () => {
                   {/* Confirm & Pay Button */}
                   <Button
                     onClick={handleConfirmAndPay}
-                    disabled={!isFormValid || (scheduleVerdict?.status === "PICKUP_CLOSED_DAY" || scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" || scheduleVerdict?.status === "PICKUP_AT_OR_AFTER_CLOSE" || scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW")}
+                    disabled={!isFormValid || blockedAll || (scheduleVerdict?.status === "PICKUP_CLOSED_DAY" || scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" || scheduleVerdict?.status === "PICKUP_AT_OR_AFTER_CLOSE" || scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW")}
                     className="w-full mt-6 h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all duration-200"
                   >
                     <Lock className="mr-2 size-5" />

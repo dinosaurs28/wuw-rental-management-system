@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "@repo/database/client";
+import { prisma, BookingRestrictionMode } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
 
@@ -82,6 +82,58 @@ export const upsertManagerBranchSchedule = async (req: Request, res: Response) =
     return res.status(StatusCode.OK).json({ message: "Schedule updated" });
   } catch (error) {
     console.error("[upsertManagerBranchSchedule] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /branchManager/dashboard/branch/booking-restriction
+ * Returns the current booking restriction mode for the manager's branch.
+ */
+export const getBookingRestrictionConfig = async (req: Request, res: Response) => {
+  try {
+    const branchId = req.branch_Id;
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { bookingRestrictionMode: true },
+    });
+
+    if (!branch) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
+    }
+
+    return res.status(StatusCode.OK).json({ bookingRestrictionMode: branch.bookingRestrictionMode });
+  } catch (error) {
+    console.error("[getBookingRestrictionConfig] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+const VALID_RESTRICTION_MODES = Object.values(BookingRestrictionMode);
+
+/**
+ * PATCH /branchManager/dashboard/branch/booking-restriction
+ * Body: { bookingRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" }
+ */
+export const updateBookingRestrictionMode = async (req: Request, res: Response) => {
+  try {
+    const branchId = req.branch_Id;
+    const { bookingRestrictionMode } = req.body as { bookingRestrictionMode: BookingRestrictionMode };
+
+    if (!VALID_RESTRICTION_MODES.includes(bookingRestrictionMode)) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: `bookingRestrictionMode must be one of: ${VALID_RESTRICTION_MODES.join(", ")}`,
+      });
+    }
+
+    await prisma.branch.update({
+      where: { id: branchId },
+      data: { bookingRestrictionMode },
+    });
+
+    return res.status(StatusCode.OK).json({ message: "Booking restriction mode updated", bookingRestrictionMode });
+  } catch (error) {
+    console.error("[updateBookingRestrictionMode] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

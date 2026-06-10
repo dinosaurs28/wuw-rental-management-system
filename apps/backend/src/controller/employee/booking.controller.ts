@@ -266,43 +266,50 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       }
     }
 
-    // ── Branch schedule validation ────────────────────────────────────────────
+    // ── Branch schedule + restriction mode ───────────────────────────────────
     const bypassSchedule =
       req.body.bypassSchedule === true && ["ADMIN", "MANAGER"].includes(staff.role);
 
-    if (!bypassSchedule) {
-      const branchScheduleData = await prisma.branch.findUnique({
+    let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
+
+    {
+      const branchData = await prisma.branch.findUnique({
         where: { id: req.branch_Id },
         select: {
           graceMinutes: true,
           is24Hours: true,
+          bookingRestrictionMode: true,
           schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
         },
       });
 
-      if (branchScheduleData) {
-        const scheduleConfig: BranchScheduleConfig = {
-          schedules: branchScheduleData.schedules,
-          graceMinutes: branchScheduleData.graceMinutes,
-          is24Hours: branchScheduleData.is24Hours,
-        };
+      if (branchData) {
+        branchRestrictionMode = branchData.bookingRestrictionMode as "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
 
-        const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+        if (!bypassSchedule) {
+          const scheduleConfig: BranchScheduleConfig = {
+            schedules: branchData.schedules,
+            graceMinutes: branchData.graceMinutes,
+            is24Hours: branchData.is24Hours,
+          };
 
-        if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
-          return res.status(StatusCode.BAD_REQUEST).json({
-            code: "BRANCH_SCHEDULE_VIOLATION",
-            message: buildScheduleErrorMessage(verdict),
-            verdict,
-          });
-        }
+          const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
 
-        if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
-          return res.status(StatusCode.BAD_REQUEST).json({
-            code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
-            message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
-            verdict,
-          });
+          if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+            return res.status(StatusCode.BAD_REQUEST).json({
+              code: "BRANCH_SCHEDULE_VIOLATION",
+              message: buildScheduleErrorMessage(verdict),
+              verdict,
+            });
+          }
+
+          if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+              code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+              message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
+              verdict,
+            });
+          }
         }
       }
     }
@@ -316,14 +323,17 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       vehiclesData,
       startDate,
       endDate,
-      { bypassLimit },
+      { bypassLimit, restrictionMode: branchRestrictionMode, branchId: req.branch_Id },
     );
     if (typeClassConflicts.length > 0) {
       const c = typeClassConflicts[0]!;
-      const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+      const message =
+        c.reason === "ANY_VEHICLE"
+          ? "This customer already has an active booking at this branch that overlaps the selected dates."
+          : `This customer already has an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
       return res.status(StatusCode.CONFLICT).json({
         code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
-        message: `This customer already has an active ${label} booking that overlaps the selected dates.`,
+        message,
         conflicts: typeClassConflicts,
       });
     }
@@ -473,14 +483,18 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           vehiclesData,
           startDate,
           endDate,
+          { restrictionMode: branchRestrictionMode, branchId: req.branch_Id },
         );
         if (txTypeClassConflicts.length > 0) {
           const c = txTypeClassConflicts[0]!;
-          const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
-          throw Object.assign(
-            new Error(`This customer already has an active ${label} booking that overlaps the selected dates.`),
-            { code: "VEHICLE_TYPE_LIMIT_EXCEEDED", conflicts: txTypeClassConflicts },
-          );
+          const msg =
+            c.reason === "ANY_VEHICLE"
+              ? "This customer already has an active booking at this branch that overlaps the selected dates."
+              : `This customer already has an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
+          throw Object.assign(new Error(msg), {
+            code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+            conflicts: txTypeClassConflicts,
+          });
         }
       }
 

@@ -282,26 +282,29 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       }
     }
 
-    // ── Branch schedule validation ────────────────────────────────────────────
+    // ── Branch schedule + restriction mode ───────────────────────────────────
+    let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
+
     if (bookingBranchId) {
-      const branchScheduleData = await prisma.branch.findUnique({
+      const branchData = await prisma.branch.findUnique({
         where: { id: bookingBranchId },
         select: {
           graceMinutes: true,
           is24Hours: true,
+          bookingRestrictionMode: true,
           schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
         },
       });
 
-      if (branchScheduleData) {
+      if (branchData) {
+        branchRestrictionMode = branchData.bookingRestrictionMode as "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
+
         const scheduleConfig: BranchScheduleConfig = {
-          schedules: branchScheduleData.schedules,
-          graceMinutes: branchScheduleData.graceMinutes,
-          is24Hours: branchScheduleData.is24Hours,
+          schedules: branchData.schedules,
+          graceMinutes: branchData.graceMinutes,
+          is24Hours: branchData.is24Hours,
         };
 
-        // Times are already in IST (TimezoneService.toPrisma converts to UTC for DB,
-        // but for schedule comparison we need local time — use the original Luxon DT)
         const pickupLocal = startDateDt.toJSDate();
         const returnLocal = endDateDt.toJSDate();
 
@@ -316,7 +319,6 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         }
 
         if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
-          // Client should have already adjusted; if not, reject so they recalculate pricing
           return res.status(StatusCode.BAD_REQUEST).json({
             code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
             message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours. Please confirm the new return time.`,
@@ -331,13 +333,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       [...vehiclesData, ...groupKeyRepVehicles],
       startDate,
       endDate,
+      { restrictionMode: branchRestrictionMode, branchId: bookingBranchId ?? undefined },
     );
     if (typeClassConflicts.length > 0) {
       const c = typeClassConflicts[0]!;
-      const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+      const message =
+        c.reason === "ANY_VEHICLE"
+          ? "You already have an active booking at this branch that overlaps the selected dates. Only one vehicle booking is allowed at a time."
+          : `You already have an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates. Only one ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking is allowed at a time.`;
       return res.status(StatusCode.CONFLICT).json({
         code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
-        message: `You already have an active ${label} booking that overlaps the selected dates. Only one ${label} booking is allowed at a time.`,
+        message,
         conflicts: typeClassConflicts,
       });
     }
@@ -607,14 +613,18 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         allResolvedVehicles,
         startDate,
         endDate,
+        { restrictionMode: branchRestrictionMode, branchId: bookingBranchId ?? undefined },
       );
       if (txTypeClassConflicts.length > 0) {
         const c = txTypeClassConflicts[0]!;
-        const label = c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
-        throw Object.assign(
-          new Error(`You already have an active ${label} booking that overlaps the selected dates.`),
-          { code: "VEHICLE_TYPE_LIMIT_EXCEEDED", conflicts: txTypeClassConflicts },
-        );
+        const msg =
+          c.reason === "ANY_VEHICLE"
+            ? "You already have an active booking at this branch that overlaps the selected dates."
+            : `You already have an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
+        throw Object.assign(new Error(msg), {
+          code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+          conflicts: txTypeClassConflicts,
+        });
       }
 
       const newBooking = await tx.booking.create({

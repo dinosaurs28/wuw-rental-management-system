@@ -269,15 +269,19 @@ export const VehiclesPage = () => {
   const {
     restrictedTypeClasses,
     conflictDetails,
+    blockedAll,
+    restrictionMode,
+    anyVehicleConflict,
     isLoading: limitsLoading,
-  } = useCustomerBookingLimits(startDateTime, endDateTime);
+  } = useCustomerBookingLimits(startDateTime, endDateTime, selectedBranch || undefined);
 
   const restrictionBannerLabel = useMemo(() => {
+    if (blockedAll) return ["all vehicles"];
     const labels: string[] = [];
     if (restrictedTypeClasses.has("TWO_WHEELER")) labels.push("two-wheeler");
     if (restrictedTypeClasses.has("FOUR_WHEELER")) labels.push("four-wheeler");
     return labels;
-  }, [restrictedTypeClasses]);
+  }, [restrictedTypeClasses, blockedAll]);
 
   // Branch schedule — used for hours badge and schedule conflict warnings
   const { schedule } = useBranchSchedule(selectedBranch || undefined);
@@ -347,23 +351,37 @@ export const VehiclesPage = () => {
               <p className="font-bold text-sm uppercase tracking-wide text-amber-200">
                 Booking limit reached
               </p>
-              <p className="text-sm mt-0.5 text-amber-300/90">
-                You already have an active{" "}
-                <span className="font-semibold text-amber-100">
-                  {restrictionBannerLabel.join(" and ")}
-                </span>{" "}
-                booking during these dates. Only one per type is allowed.{" "}
-                {Object.values(conflictDetails).map((slot, i) => (
-                  <span key={i} className="block mt-1 text-amber-400/80 text-xs font-medium">
-                    {slot.vehicleMake} {slot.vehicleModel} · until{" "}
-                    {new Date(slot.endAt).toLocaleDateString("en-IN", {
+              {blockedAll && anyVehicleConflict ? (
+                <p className="text-sm mt-0.5 text-amber-300/90">
+                  You already have an active booking during these dates. Only one vehicle booking is allowed at a time.{" "}
+                  <span className="block mt-1 text-amber-400/80 text-xs font-medium">
+                    {anyVehicleConflict.vehicleMake} {anyVehicleConflict.vehicleModel} · until{" "}
+                    {new Date(anyVehicleConflict.endAt).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                     })}
                   </span>
-                ))}
-              </p>
+                </p>
+              ) : (
+                <p className="text-sm mt-0.5 text-amber-300/90">
+                  You already have an active{" "}
+                  <span className="font-semibold text-amber-100">
+                    {restrictionBannerLabel.join(" and ")}
+                  </span>{" "}
+                  booking during these dates. Only one per type is allowed.{" "}
+                  {Object.values(conflictDetails).map((slot, i) => (
+                    <span key={i} className="block mt-1 text-amber-400/80 text-xs font-medium">
+                      {slot.vehicleMake} {slot.vehicleModel} · until{" "}
+                      {new Date(slot.endAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -410,6 +428,7 @@ export const VehiclesPage = () => {
           endDateTime={endDateTime}
           variant="dark"
           restrictedTypeClasses={restrictedTypeClasses}
+          blockedAll={blockedAll}
           limitsLoading={limitsLoading}
         />
       </main>

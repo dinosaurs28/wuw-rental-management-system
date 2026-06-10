@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Clock, Save, Loader2 } from "lucide-react";
+import { Clock, Save, Loader2, Users } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,12 @@ interface SchedulePayload {
 
 interface GracePayload {
   graceMinutes: number;
+}
+
+type BookingRestrictionMode = "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
+
+interface RestrictionPayload {
+  bookingRestrictionMode: BookingRestrictionMode;
 }
 
 interface BranchScheduleResponse {
@@ -53,6 +59,16 @@ async function saveSchedule(payload: SchedulePayload) {
 
 async function saveGrace(payload: GracePayload) {
   const res = await apiClient.patch("/branchManager/dashboard/branch/grace", payload);
+  return res.data;
+}
+
+async function fetchRestrictionMode(): Promise<{ bookingRestrictionMode: BookingRestrictionMode }> {
+  const res = await apiClient.get("/branchManager/dashboard/branch/booking-restriction");
+  return res.data;
+}
+
+async function saveRestrictionMode(payload: RestrictionPayload) {
+  const res = await apiClient.patch("/branchManager/dashboard/branch/booking-restriction", payload);
   return res.data;
 }
 
@@ -106,9 +122,24 @@ export default function BranchSchedulePage() {
     retry: false,
   });
 
+  const { data: restrictionData } = useQuery({
+    queryKey: ["branch-restriction-mode-manager"],
+    queryFn: fetchRestrictionMode,
+    throwOnError: false,
+    retry: false,
+  });
+
   const [rows, setRows] = useState<DayScheduleRow[]>(DEFAULT_SCHEDULE);
   const [graceMinutes, setGraceMinutes] = useState<number>(0);
   const [graceInput, setGraceInput] = useState<string>("0");
+  const [restrictionMode, setRestrictionMode] = useState<BookingRestrictionMode>("SAME_CATEGORY");
+
+  // Sync restriction mode from server
+  useEffect(() => {
+    if (restrictionData?.bookingRestrictionMode) {
+      setRestrictionMode(restrictionData.bookingRestrictionMode);
+    }
+  }, [restrictionData]);
 
   // Sync from server when loaded
   useEffect(() => {
@@ -140,6 +171,16 @@ export default function BranchSchedulePage() {
       queryClient.invalidateQueries({ queryKey: ["branch-schedule-manager"] });
     },
     onError: (e: any) => toast.error(e.response?.data?.message || "Failed to update grace period"),
+  });
+
+  const restrictionMutation = useMutation({
+    mutationFn: saveRestrictionMode,
+    onSuccess: (_, vars) => {
+      toast.success("Booking restriction updated");
+      setRestrictionMode(vars.bookingRestrictionMode);
+      queryClient.invalidateQueries({ queryKey: ["branch-restriction-mode-manager"] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || "Failed to update booking restriction"),
   });
 
   const updateRow = (dayOfWeek: number, patch: Partial<DayScheduleRow>) => {
@@ -314,9 +355,83 @@ export default function BranchSchedulePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Booking restriction */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="size-4 text-primary" />
+                  Booking Restriction
+                </CardTitle>
+                <CardDescription>
+                  Control how many active bookings a customer can have at this branch at the same time.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(["NONE", "SAME_CATEGORY", "ANY_VEHICLE"] as BookingRestrictionMode[]).map((mode) => {
+                  const labels: Record<BookingRestrictionMode, { title: string; desc: string }> = {
+                    NONE: {
+                      title: "No restriction",
+                      desc: "Customers can have multiple active bookings simultaneously.",
+                    },
+                    SAME_CATEGORY: {
+                      title: "Same category only",
+                      desc: "One booking per vehicle category (two-wheeler / four-wheeler) at a time.",
+                    },
+                    ANY_VEHICLE: {
+                      title: "Any vehicle (strict)",
+                      desc: "If a customer has any active booking at this branch, they cannot make another.",
+                    },
+                  };
+                  const selected = restrictionMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setRestrictionMode(mode)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                        selected
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            selected ? "border-primary" : "border-zinc-300"
+                          }`}
+                        >
+                          {selected && <span className="size-2 rounded-full bg-primary" />}
+                        </span>
+                        <span className={`text-sm font-semibold ${selected ? "text-primary" : "text-zinc-700"}`}>
+                          {labels[mode].title}
+                        </span>
+                      </div>
+                      <p className="mt-1 ml-6 text-xs text-zinc-500 leading-relaxed">
+                        {labels[mode].desc}
+                      </p>
+                    </button>
+                  );
+                })}
+                <div className="pt-3 border-t border-zinc-100">
+                  <Button
+                    onClick={() => restrictionMutation.mutate({ bookingRestrictionMode: restrictionMode })}
+                    disabled={restrictionMutation.isPending || restrictionMode === restrictionData?.bookingRestrictionMode}
+                    variant="outline"
+                  >
+                    {restrictionMutation.isPending ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="size-4 mr-2" />
+                    )}
+                    Save Restriction
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Live preview — takes 2 columns */}
+          {/* Live preview — takes 2 cols */}
           <div className="lg:col-span-2">
             <Card className="sticky top-24">
               <CardHeader className="pb-3">
