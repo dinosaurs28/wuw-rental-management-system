@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import type { VehicleDetails } from "@/services/vehicle.service";
@@ -148,12 +149,9 @@ export const VehiclePricingCard = ({
               <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
                 Pickup Time
               </label>
-              <input
-                type="time"
-                value={startTime || "10:00"}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 focus:outline-none focus:border-zinc-300 transition-all text-sm"
-              />
+              <div className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 flex items-center focus-within:border-zinc-300 transition-all">
+                <TimeSelect value={startTime || "10:00"} onChange={setStartTime} className="w-full" />
+              </div>
             </div>
 
             {/* Return Date */}
@@ -193,12 +191,9 @@ export const VehiclePricingCard = ({
               <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
                 Return Time
               </label>
-              <input
-                type="time"
-                value={endTime || "10:00"}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 focus:outline-none focus:border-zinc-300 transition-all text-sm"
-              />
+              <div className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 flex items-center focus-within:border-zinc-300 transition-all">
+                <TimeSelect value={endTime || "10:00"} onChange={setEndTime} className="w-full" />
+              </div>
             </div>
           </div>
         </div>

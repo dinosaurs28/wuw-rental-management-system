@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import type { VehicleGroupDetails } from "@/services/vehicle.service";
@@ -123,12 +124,9 @@ export const VehicleBookingPanel = ({
                   />
                 </PopoverContent>
               </Popover>
-              <input
-                type="time"
-                value={startTime || "10:00"}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-11 w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-3 focus:outline-none focus:border-zinc-400 transition-colors text-sm [color-scheme:light]"
-              />
+              <div className="h-11 w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-3 flex items-center focus-within:border-zinc-400 transition-colors">
+                <TimeSelect value={startTime || "10:00"} onChange={setStartTime} className="w-full" />
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
@@ -146,12 +144,9 @@ export const VehicleBookingPanel = ({
                   />
                 </PopoverContent>
               </Popover>
-              <input
-                type="time"
-                value={endTime || "10:00"}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-11 w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-3 focus:outline-none focus:border-zinc-400 transition-colors text-sm [color-scheme:light]"
-              />
+              <div className="h-11 w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-3 flex items-center focus-within:border-zinc-400 transition-colors">
+                <TimeSelect value={endTime || "10:00"} onChange={setEndTime} className="w-full" />
+              </div>
             </div>
           </div>
         </section>

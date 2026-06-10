@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import type { VehicleDetails } from "@/services/vehicle.service";
@@ -172,12 +173,9 @@ export const EmployeeVehiclePricingCard = ({
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
                 Pickup Time
               </label>
-              <input
-                type="time"
-                value={startTime || "10:00"}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-11 w-full border border-input rounded-md px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
-              />
+              <div className="h-11 w-full border border-input rounded-md px-3 flex items-center bg-background focus-within:ring-1 focus-within:ring-ring">
+                <TimeSelect value={startTime || "10:00"} onChange={setStartTime} className="w-full" />
+              </div>
             </div>
 
             {/* Return Date */}
@@ -217,12 +215,9 @@ export const EmployeeVehiclePricingCard = ({
               <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
                 Return Time
               </label>
-              <input
-                type="time"
-                value={endTime || "10:00"}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-11 w-full border border-input rounded-md px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
-              />
+              <div className="h-11 w-full border border-input rounded-md px-3 flex items-center bg-background focus-within:ring-1 focus-within:ring-ring">
+                <TimeSelect value={endTime || "10:00"} onChange={setEndTime} className="w-full" />
+              </div>
             </div>
           </div>
         </div>

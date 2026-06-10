@@ -228,9 +228,16 @@ export const formatRegNo = (regNo: string | null | undefined): string => {
 // Time Helpers
 // ============================================================================
 
+export function snapTo15Minutes(h: number, m: number): { h: number; m: number } {
+  const snapped = Math.ceil(m / 15) * 15;
+  if (snapped >= 60) return { h: (h + 1) % 24, m: 0 };
+  return { h, m: snapped };
+}
+
 export function getCurrentTime(): string {
   const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const { h, m } = snapTo15Minutes(now.getHours(), now.getMinutes());
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 // ============================================================================

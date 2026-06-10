@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
@@ -203,12 +204,9 @@ export const VehicleFilters = ({
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Pickup Time
           </label>
-          <input
-            type="time"
-            value={pickupTime || "10:00"}
-            onChange={(e) => onPickupTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
+          <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
+            <TimeSelect value={pickupTime || "10:00"} onChange={(v) => onPickupTimeChange?.(v)} className="w-full" />
+          </div>
           <BranchHoursBadge schedule={schedule} date={pickupDate} />
         </div>
 
@@ -255,12 +253,9 @@ export const VehicleFilters = ({
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Return Time
           </label>
-          <input
-            type="time"
-            value={returnTime || "10:00"}
-            onChange={(e) => onReturnTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
+          <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
+            <TimeSelect value={returnTime || "10:00"} onChange={(v) => onReturnTimeChange?.(v)} className="w-full" />
+          </div>
           <BranchHoursBadge schedule={schedule} date={returnDate} />
         </div>
 

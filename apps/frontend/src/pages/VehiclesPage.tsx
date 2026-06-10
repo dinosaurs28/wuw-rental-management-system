@@ -270,7 +270,6 @@ export const VehiclesPage = () => {
     restrictedTypeClasses,
     conflictDetails,
     blockedAll,
-    restrictionMode,
     anyVehicleConflict,
     isLoading: limitsLoading,
   } = useCustomerBookingLimits(startDateTime, endDateTime, selectedBranch || undefined);
