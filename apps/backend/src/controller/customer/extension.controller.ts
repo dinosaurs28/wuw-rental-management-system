@@ -494,6 +494,11 @@ export const VerifyExtensionPayment = async (req: Request, res: Response): Promi
   try {
     const { merchantTransactionId } = req.params;
 
+    if (!merchantTransactionId) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: "Transaction ID is required" });
+      return;
+    }
+
     const extensionRecord = await prisma.bookingExtension.findUnique({
       where: { phonePeTransactionId: merchantTransactionId },
       include: {
