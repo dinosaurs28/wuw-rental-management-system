@@ -220,8 +220,6 @@ export const extensionService = {
         data: {
           eligible: boolean;
           hoursUntilEnd: number;
-          windowHours: number;
-          isShortRental: boolean;
           reason: string | null;
         };
       }>(`/user/bookings/${bookingPublicId}/extension-eligibility`)
@@ -255,6 +253,18 @@ export const extensionService = {
         `/user/extensions/commit`,
         payload
       )
+      .then((r) => r.data),
+
+  verifyExtensionPayment: (merchantTransactionId: string) =>
+    apiClient
+      .post<{ status: "CONFIRMED" | "PENDING"; message: string; data?: { newEndAt?: string } }>(
+        `/user/extensions/verify-payment/${merchantTransactionId}`
+      )
+      .then((r) => r.data),
+
+  customerCancelExtension: (extensionPublicId: string) =>
+    apiClient
+      .post<{ message: string }>(`/user/extensions/${extensionPublicId}/cancel`)
       .then((r) => r.data),
 
   customerGetStatus: (extensionPublicId: string) =>

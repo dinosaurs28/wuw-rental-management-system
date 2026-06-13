@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus } from "@repo/database/client";
+import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, Role, PaymentPurpose, PaymentMethod } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
+import { createID } from "../../utils/nanoID.js";
 import {
   customerEvaluateExtensionSchema,
   customerCommitExtensionSchema,
@@ -101,7 +103,9 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         oldEndAt: evaluation.oldEndAt,
         requestedEndAt: evaluation.requestedEndAt,
         pricing: {
+          originalDays: evaluation.pricing.originalDays,
           newDays: evaluation.pricing.newDays,
+          originalTotalFinal: evaluation.pricing.originalTotalFinal,
           additionalAmount: evaluation.pricing.additionalAmount,
           newTotalFinal: evaluation.pricing.newTotalFinal,
         },
@@ -380,28 +384,17 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     const longWindowHours = config?.extensionWindowLongHours ?? 12;
 
     const now = new Date();
-    const rentalDurationHours =
-      (booking.endAt.getTime() - booking.startAt.getTime()) / (1000 * 60 * 60);
     const hoursUntilEnd =
       (booking.endAt.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    const isShortRental = rentalDurationHours <= thresholdHours;
-    const windowHours = isShortRental ? shortWindowHours : longWindowHours;
-
-    // Button visible when: hoursUntilEnd <= windowHours AND still before end
-    const eligible = hoursUntilEnd > 0 && hoursUntilEnd <= windowHours;
+    // Button is visible for any active booking that hasn't ended yet.
+    const eligible = hoursUntilEnd > 0;
 
     res.status(StatusCode.OK).json({
       data: {
         eligible,
         hoursUntilEnd: Math.max(0, Math.round(hoursUntilEnd * 10) / 10),
-        windowHours,
-        isShortRental,
-        reason: eligible
-          ? null
-          : hoursUntilEnd > windowHours
-          ? `Extension button appears ${windowHours}h before end (${Math.round(hoursUntilEnd - windowHours)}h remaining until then)`
-          : "Rental has already ended",
+        reason: eligible ? null : "Rental has already ended",
       },
     });
   } catch (error: any) {
@@ -460,6 +453,7 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
 
     const additionalAmount = parseFloat(extensionRecord.additionalAmount.toString());
 
+    // Pass the redirect base directly — initiatePhonePePayment already appends /{transactionId}
     const phonePeRedirectBase =
       redirectBaseUrl ||
       process.env.EXTENSION_REDIRECT_URL ||
@@ -467,7 +461,7 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
 
     const paymentData = await initiatePhonePePayment(
       additionalAmount,
-      `${phonePeRedirectBase}/extension`,
+      phonePeRedirectBase,
       req.public_Id,
     );
 
@@ -487,6 +481,128 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
     });
   } catch (error: any) {
     console.error("InitiateExtensionPayment Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/user/extensions/verify-payment/:merchantTransactionId
+ * Called after PhonePe redirect to verify payment and confirm the extension.
+ * Acts as a fallback for when the webhook doesn't fire (e.g. dev/ngrok).
+ */
+export const VerifyExtensionPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { merchantTransactionId } = req.params;
+
+    const extensionRecord = await prisma.bookingExtension.findUnique({
+      where: { phonePeTransactionId: merchantTransactionId },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            publicId: true,
+            branchId: true,
+            extensionCount: true,
+            createdById: true,
+            customerId: true,
+          },
+        },
+      },
+    });
+
+    if (!extensionRecord) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found for this transaction" });
+      return;
+    }
+
+    // Ownership check
+    const user = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { customerProfile: { select: { id: true } } },
+    });
+    if (!user?.customerProfile || extensionRecord.booking.customerId !== user.customerProfile.id) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
+    // Already confirmed — idempotent
+    if (extensionRecord.extensionStatus === ExtensionStatus.CONFIRMED) {
+      res.status(StatusCode.OK).json({
+        status: "CONFIRMED",
+        message: "Extension already confirmed",
+        data: { newEndAt: extensionRecord.actualNewEndAt },
+      });
+      return;
+    }
+
+    // Call PhonePe status API
+    const phonePeStatus = await paymentStatusCheck(merchantTransactionId);
+    if (!phonePeStatus || phonePeStatus.code !== "PAYMENT_SUCCESS") {
+      res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Payment not yet confirmed by PhonePe",
+        data: { phonepeCode: phonePeStatus?.code ?? "UNKNOWN" },
+      });
+      return;
+    }
+
+    // Confirm the extension (same logic as webhook)
+    await prisma.$transaction(async (tx) => {
+      const ptxn = await tx.paymentTransaction.create({
+        data: {
+          publicId: createID(),
+          idempotencyKey: `ext:phonepe:${merchantTransactionId}`,
+          bookingId: extensionRecord.booking.id,
+          branchId: extensionRecord.booking.branchId,
+          purpose: PaymentPurpose.EXTENSION,
+          method: PaymentMethod.ONLINE,
+          status: "CONFIRMED",
+          totalAmount: extensionRecord.additionalAmount,
+          cashAmount: 0,
+          onlineAmount: extensionRecord.additionalAmount,
+          onlineTransactionRef: merchantTransactionId,
+          onlineGateway: "PHONEPE",
+          confirmedById: extensionRecord.booking.createdById,
+          confirmedAt: new Date(),
+        },
+      });
+
+      await tx.booking.update({
+        where: { id: extensionRecord.booking.id },
+        data: {
+          endAt: extensionRecord.requestedEndAt,
+          activeExtensionId: null,
+          extensionCount: { increment: 1 },
+          lastExtendedAt: new Date(),
+          totalFinal: extensionRecord.newTotalFinal,
+          ...(extensionRecord.booking.extensionCount === 0 && {
+            originalEndAt: extensionRecord.oldEndAt,
+          }),
+        },
+      });
+
+      await tx.bookingExtension.update({
+        where: { id: extensionRecord.id },
+        data: {
+          extensionStatus: ExtensionStatus.CONFIRMED,
+          actualNewEndAt: extensionRecord.requestedEndAt,
+          paymentTransactionId: ptxn.id,
+        },
+      });
+    });
+
+    res.status(StatusCode.OK).json({
+      status: "CONFIRMED",
+      message: "Extension confirmed successfully",
+      data: { newEndAt: extensionRecord.requestedEndAt },
+    });
+  } catch (error: any) {
+    if (error?.code === "P2002" && error?.meta?.target?.includes("idempotencyKey")) {
+      // Duplicate — already processed by webhook
+      res.status(StatusCode.OK).json({ status: "CONFIRMED", message: "Already confirmed" });
+      return;
+    }
+    console.error("VerifyExtensionPayment Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

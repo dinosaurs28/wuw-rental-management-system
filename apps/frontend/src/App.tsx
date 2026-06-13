@@ -53,6 +53,7 @@ import { DisplacedBookingsPage } from "./pages/manager/DisplacedBookingsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
 import { NoShowCancellationsPage } from "./pages/manager/NoShowCancellationsPage";
+import { DamageReportsPage } from "./pages/manager/DamageReportsPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
@@ -141,6 +142,7 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/my-bookings" element={<MyBookingsPage />} />
+          <Route path="/my-bookings/:transactionId" element={<MyBookingsPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification/kyc" element={<KycVerificationPage />} />
@@ -211,6 +213,7 @@ function App() {
             path="/manager/no-show"
             element={<NoShowCancellationsPage />}
           />
+          <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"
             element={<Navigate to="/manager/payment/financials?tab=confirmations" replace />}

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { extensionService } from "@/services/extension.service";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { UserBookingCard } from "@/components/booking/UserBookingCard";
@@ -20,6 +21,7 @@ import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 export function MyBookingsPage() {
   const navigate = useNavigate();
+  const { transactionId } = useParams<{ transactionId?: string }>();
   const { user, isAuthenticated } = useAuthStore();
   const {
     bookings,
@@ -32,13 +34,32 @@ export function MyBookingsPage() {
     setFilter,
   } = useBookingsStore();
 
+  // If landing from a PhonePe extension redirect, verify payment then refresh
+  useEffect(() => {
+    if (!transactionId || !isAuthenticated) return;
+    extensionService.verifyExtensionPayment(transactionId)
+      .then((res) => {
+        if (res.status === "CONFIRMED") {
+          toast.success("Booking extended successfully!");
+        }
+      })
+      .catch(() => {
+        // silent — bookings will still refresh below
+      })
+      .finally(() => {
+        fetchBookings();
+        // Remove the transactionId from the URL without a page reload
+        navigate("/my-bookings", { replace: true });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionId, isAuthenticated]);
+
   // Initial data fetch
   useEffect(() => {
     const loadBookings = async () => {
       try {
         await fetchBookings();
       } catch (err) {
-        // Handle 401/403 errors
         if (axios.isAxiosError(err)) {
           const status = err.response?.status;
           if (status === 401 || status === 403) {
@@ -49,10 +70,10 @@ export function MyBookingsPage() {
       }
     };
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !transactionId) {
       loadBookings();
     }
-  }, [isAuthenticated, fetchBookings, navigate]);
+  }, [isAuthenticated, fetchBookings, navigate, transactionId]);
 
   // Handle filter change
   const handleFilterChange = (value: string) => {

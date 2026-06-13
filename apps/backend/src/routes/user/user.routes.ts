@@ -20,6 +20,7 @@ import {
   CancelExtension as CustomerCancelExtension,
   GetExtensionEligibility,
   InitiateExtensionPayment,
+  VerifyExtensionPayment,
 } from "../../controller/customer/extension.controller.js";
 import { ValidateCustomerCoupon } from "../../controller/user/coupon-validate.controller.js";
 const router: Router = Router();
@@ -47,5 +48,6 @@ router.post("/bookings/:bookingPublicId/extensions/evaluate", authCheckJwt, Cust
 router.post("/extensions/commit", authCheckJwt, CustomerCommitExtension);
 router.post("/extensions/:extensionPublicId/cancel", authCheckJwt, CustomerCancelExtension);
 router.post("/extensions/:extensionPublicId/initiate-payment", authCheckJwt, InitiateExtensionPayment);
+router.post("/extensions/verify-payment/:merchantTransactionId", authCheckJwt, VerifyExtensionPayment);
 
 export default router;

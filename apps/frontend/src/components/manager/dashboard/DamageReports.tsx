@@ -1,8 +1,7 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { type DamageReport } from "@/services/managerDashboard.service";
 
 interface DamageReportsProps {
@@ -12,138 +11,173 @@ interface DamageReportsProps {
   isLoading?: boolean;
 }
 
+const severityConfig = {
+  CRITICAL: { label: "Critical", dot: "#dc2626", bg: "#fef2f2", text: "#dc2626" },
+  HIGH: { label: "High", dot: "#ea580c", bg: "#fff7ed", text: "#ea580c" },
+  MEDIUM: { label: "Medium", dot: "#d97706", bg: "#fffbeb", text: "#d97706" },
+  LOW: { label: "Low", dot: "#16a34a", bg: "#f0fdf4", text: "#16a34a" },
+};
+
+const statusConfig = {
+  PENDING: { label: "Pending", icon: Clock, color: "#2563eb" },
+  IN_PROGRESS: { label: "In Progress", icon: Loader2, color: "#d97706" },
+  APPROVED: { label: "Approved", icon: CheckCircle2, color: "#16a34a" },
+  REJECTED: { label: "Rejected", icon: CheckCircle2, color: "#6b7280" },
+};
+
 export const DamageReports = ({
   reports = [],
   isLoading = false,
   onLoadMore,
   hasMore = false,
 }: DamageReportsProps) => {
-  return (
-    <Card className="border shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-lg font-bold">Damage Reports</CardTitle>
-          {reports.filter((r) => r.status === "PENDING").length > 0 && (
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-          )}
-        </div>
-        {/* Removed View All link in favor of inline expansion */}
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 divide-x divide-y md:divide-y-0 text-center border-b">
-          <div className="p-4 bg-neutral-50/50 flex flex-col items-center justify-center gap-1">
-            <span className="text-2xl font-bold text-neutral-900">
-              {reports.length}
-            </span>
-            <span className="text-xs text-neutral-500 font-medium uppercase tracking-wide">
-              Shown
-            </span>
-          </div>
-          <div className="p-4 bg-neutral-50/50 flex flex-col items-center justify-center gap-1">
-            <span className="text-2xl font-bold text-red-600">
-              {
-                reports.filter(
-                  (r) => r.severity === "CRITICAL" || r.severity === "HIGH",
-                ).length
-              }
-            </span>
-            <span className="text-xs text-neutral-500 font-medium uppercase tracking-wide">
-              Critical / High
-            </span>
-          </div>
-          <div className="p-4 bg-neutral-50/50 flex flex-col items-center justify-center gap-1">
-            <span className="text-2xl font-bold text-blue-600">
-              {reports.filter((r) => r.status === "PENDING").length}
-            </span>
-            <span className="text-xs text-neutral-500 font-medium uppercase tracking-wide">
-              Pending
-            </span>
-          </div>
-        </div>
+  const navigate = useNavigate();
+  const pending = reports.filter((r) => r.status === "PENDING").length;
+  const critical = reports.filter((r) => r.severity === "CRITICAL" || r.severity === "HIGH").length;
 
-        <div className="divide-y max-h-[600px] overflow-y-auto">
-          {reports.length === 0 && !isLoading ? (
-            <div className="p-8 text-center text-neutral-500">
-              No damage reports found.
+  return (
+    <div className="rounded-2xl border border-[#e8e6e1] bg-white overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0ede8]">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-red-50 border border-red-100 p-1.5">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+          </div>
+          <div>
+            <h2 className="font-bold text-[#1a1917] text-sm">Damage Reports</h2>
+            <p className="text-[11px] text-[#9ca3af]">
+              {pending > 0 ? (
+                <span className="text-red-600 font-semibold">{pending} pending action</span>
+              ) : (
+                "All caught up"
+              )}
+            </p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-[#e85d04] hover:text-[#c2410c] hover:bg-orange-50 text-xs font-semibold gap-1 h-8 px-3"
+          onClick={() => navigate("/manager/damage-reports")}
+        >
+          View All <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      {/* Mini stats */}
+      <div className="grid grid-cols-3 divide-x divide-[#f0ede8] border-b border-[#f0ede8]">
+        {[
+          { label: "Shown", value: reports.length, color: "#1a1917" },
+          { label: "Critical / High", value: critical, color: "#dc2626" },
+          { label: "Pending", value: pending, color: "#2563eb" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="py-3 text-center">
+            <div className="font-mono text-xl font-bold" style={{ color }}>{value}</div>
+            <div className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* List */}
+      <div className="divide-y divide-[#f8f7f5]">
+        {isLoading && reports.length === 0 ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-5 py-3.5">
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-3.5 w-40" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-5 w-16 rounded-full" />
             </div>
-          ) : (
-            reports.map((report) => (
-              <Link
+          ))
+        ) : reports.length === 0 ? (
+          <div className="py-12 text-center">
+            <CheckCircle2 className="w-8 h-8 text-green-300 mx-auto mb-2" />
+            <p className="text-sm text-[#9ca3af] font-medium">No damage reports</p>
+          </div>
+        ) : (
+          reports.map((report) => {
+            const sev = severityConfig[report.severity] ?? severityConfig.MEDIUM;
+            const sts = statusConfig[report.status] ?? statusConfig.PENDING;
+            const StatusIcon = sts.icon;
+
+            return (
+              <button
                 key={report.id}
-                to={`/damage/${report.id}`}
-                className="flex items-center gap-4 p-4 hover:bg-neutral-50 transition-colors group"
+                onClick={() => navigate(`/damage/${report.id}`)}
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#fafaf9] transition-colors text-left group"
               >
-                <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-neutral-200 overflow-hidden relative">
+                {/* Vehicle image / severity icon */}
+                <div
+                  className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border overflow-hidden"
+                  style={{ backgroundColor: sev.bg, borderColor: sev.dot + "30" }}
+                >
                   {report.vehicleImage ? (
-                    <img
-                      src={report.vehicleImage}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={report.vehicleImage} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <AlertTriangle
-                      className={`w-5 h-5 ${
-                        report.severity === "CRITICAL"
-                          ? "text-red-600"
-                          : report.severity === "HIGH"
-                            ? "text-orange-600"
-                            : "text-yellow-600"
-                      }`}
-                    />
+                    <AlertTriangle className="w-4 h-4" style={{ color: sev.dot }} />
                   )}
                 </div>
+
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold truncate text-neutral-900">
-                    #{report.id} - {report.vehicleName}
-                  </h4>
-                  <p className="text-xs text-neutral-500 truncate">
-                    Reported by {report.reportedBy} •{" "}
-                    {new Date(report.createdAt).toLocaleDateString()}
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: sev.dot }}
+                    />
+                    <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: sev.text }}>
+                      {sev.label}
+                    </span>
+                    <span className="text-[#d1cdc7] text-[10px]">·</span>
+                    <span className="font-mono text-[11px] text-[#9ca3af]">#{report.id}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-[#1a1917] truncate">{report.vehicleName}</p>
+                  <p className="text-[11px] text-[#9ca3af]">
+                    {new Date(report.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </p>
                 </div>
-                <div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
-                      report.status === "PENDING"
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : report.status === "IN_PROGRESS"
-                          ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                          : "bg-green-50 text-green-700 border-green-200"
-                    }`}
-                  >
-                    {report.status.replace("_", " ")}
-                  </span>
-                </div>
-              </Link>
-            ))
-          )}
 
-          {isLoading &&
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="p-4 flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-1/2" />
-                  <Skeleton className="h-3 w-1/3" />
+                {/* Status */}
+                <div
+                  className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold border shrink-0"
+                  style={{
+                    color: sts.color,
+                    backgroundColor: sts.color + "12",
+                    borderColor: sts.color + "30",
+                  }}
+                >
+                  <StatusIcon className="w-3 h-3" />
+                  {sts.label}
                 </div>
-              </div>
-            ))}
-        </div>
-        {hasMore && (
-          <div className="p-2 border-t bg-neutral-50">
-            <Button
-              variant="ghost"
-              className="w-full text-neutral-500 hover:text-neutral-900"
-              onClick={onLoadMore}
-              disabled={isLoading}
-            >
-              <span className="flex items-center gap-2">
-                Expand Down <ChevronRight className="w-4 h-4 rotate-90" />
-              </span>
-            </Button>
-          </div>
+
+                <ArrowRight className="w-3.5 h-3.5 text-[#d1cdc7] group-hover:text-[#e85d04] transition-colors shrink-0" />
+              </button>
+            );
+          })
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Load more */}
+      {hasMore && (
+        <div className="border-t border-[#f0ede8] px-5 py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-[#6b6860] hover:text-[#1a1917] text-xs font-medium"
+            onClick={onLoadMore}
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+            Load more reports
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };

@@ -58,7 +58,20 @@ export function CustomerExtensionModal({
 
   const minDate = addDays(new Date(currentEndAt), 1);
 
-  function handleClose() {
+  async function cancelPendingExtension(pubId: string) {
+    try {
+      await extensionService.customerCancelExtension(pubId);
+    } catch {
+      // best-effort — ignore errors (e.g. already cancelled)
+    }
+  }
+
+  async function handleClose() {
+    // If we evaluated but never paid, cancel the pending extension so the
+    // booking is unlocked and the customer can try again later.
+    if (evaluation) {
+      await cancelPendingExtension(evaluation.extensionPublicId);
+    }
     setStep("date");
     setSelectedDate(undefined);
     setEvaluation(null);
@@ -99,7 +112,7 @@ export function CustomerExtensionModal({
     try {
       const res = await extensionService.customerInitiatePayment(
         evaluation.extensionPublicId,
-        `${window.location.origin}/bookings`,
+        `${window.location.origin}/my-bookings`,
       );
       if (res.data?.redirectUrl) {
         setStep("redirecting");
@@ -283,7 +296,15 @@ export function CustomerExtensionModal({
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setStep("date")}>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={async () => {
+                      if (evaluation) await cancelPendingExtension(evaluation.extensionPublicId);
+                      setEvaluation(null);
+                      setStep("date");
+                    }}
+                  >
                     ← Back
                   </Button>
                   <Button

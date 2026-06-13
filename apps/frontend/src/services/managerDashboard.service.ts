@@ -198,10 +198,10 @@ export const managerDashboardService = {
     }));
   },
 
-  getStaffActivity: async (): Promise<StaffActivity[]> => {
+  getStaffActivity: async (limit = 10): Promise<StaffActivity[]> => {
     const response = await apiClient.get(
       "/branchManager/dashboard/staff/activity",
-      { timeout: 10000 },
+      { params: { limit }, timeout: 10000 },
     );
     const rawLogs = response.data.data || [];
 

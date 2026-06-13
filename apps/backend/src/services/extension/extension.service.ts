@@ -731,15 +731,23 @@ class ExtensionService {
       ...(filters.trigger ? { extensionTrigger: filters.trigger } : {}),
     };
 
-    const [extensions, total] = await Promise.all([
+    const [raw, total] = await Promise.all([
       prisma.bookingExtension.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
+        include: {
+          booking: { select: { publicId: true } },
+        },
       }),
       prisma.bookingExtension.count({ where }),
     ]);
+
+    const extensions = raw.map(({ booking, ...ext }) => ({
+      ...ext,
+      bookingPublicId: booking.publicId,
+    }));
 
     return { extensions, total, page, pageSize };
   }

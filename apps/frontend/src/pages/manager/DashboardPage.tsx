@@ -1,23 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
-import { ManagerConfirmations } from "@/components/manager/dashboard/ManagerConfirmations";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
-import { RecentVehicleSwaps } from "@/components/manager/dashboard/RecentVehicleSwaps";
 import { QuickActions } from "@/components/manager/dashboard/QuickActions";
-import { DashboardActiveBookings } from "@/components/manager/dashboard/DashboardActiveBookings";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import {
   managerDashboardService,
@@ -25,90 +14,72 @@ import {
   type DamageReport,
 } from "@/services/managerDashboard.service";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
-import { Search, QrCode } from "lucide-react";
+import { Search, QrCode, RefreshCw } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
 
-  // State for all data
   const [stats, setStats] = useState<KPIStats | null>(null);
   const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
   const [damagePage, setDamagePage] = useState(1);
   const [hasMoreDamages, setHasMoreDamages] = useState(true);
   const [staffActivity, setStaffActivity] = useState<any[]>([]);
-
-  // Search State
   const [damageSearchId, setDamageSearchId] = useState("");
-  const debouncedSearch = useDebounce(damageSearchId, 500);
-
-  // QR Scanner State
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDamages, setIsLoadingDamages] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Effect to reload reports when search changes
+  const debouncedSearch = useDebounce(damageSearchId, 500);
+
   useEffect(() => {
     loadDamageReports(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        // Parallel fetching of required data
-        const [dashboardStats, activity] = await Promise.all([
-          managerDashboardService.getDashboardStats(),
-          managerDashboardService.getStaffActivity(),
-        ]);
-
-        setStats(dashboardStats);
-        setStaffActivity(activity || []);
-
-        // Load initial damage reports
-        loadDamageReports(1, true);
-      } catch (err: any) {
-        console.error("Failed to load dashboard data", err);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to load dashboard data.";
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadDashboardData();
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadAll = async () => {
+    try {
+      setIsLoading(true);
+      const [dashboardStats, activity] = await Promise.all([
+        managerDashboardService.getDashboardStats(),
+        managerDashboardService.getStaffActivity(),
+      ]);
+      setStats(dashboardStats);
+      setStaffActivity(activity || []);
+      await loadDamageReports(1, true);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to load dashboard";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadAll();
+    setIsRefreshing(false);
+  };
 
   const loadDamageReports = async (page: number, reset = false) => {
     try {
       setIsLoadingDamages(true);
       const limit = 5;
-      const newReports = await managerDashboardService.getDamageReports(
-        page,
-        limit,
-        debouncedSearch,
-      );
-
+      const newReports = await managerDashboardService.getDamageReports(page, limit, debouncedSearch);
       if (reset) {
         setDamageReports(newReports);
       } else {
         setDamageReports((prev) => [...prev, ...newReports]);
       }
-
-      if (newReports.length < limit) {
-        setHasMoreDamages(false);
-      } else {
-        setHasMoreDamages(true);
-      }
+      setHasMoreDamages(newReports.length >= limit);
       setDamagePage(page);
-    } catch (err) {
-      console.error("Failed to load damage reports", err);
+    } catch {
       toast.error("Failed to load damage reports");
     } finally {
       setIsLoadingDamages(false);
@@ -116,135 +87,117 @@ export const DashboardPage = () => {
   };
 
   const handleLoadMoreDamages = () => {
-    if (!isLoadingDamages && hasMoreDamages) {
-      loadDamageReports(damagePage + 1);
-    }
-  };
-
-  const handleScanQR = () => {
-    setIsScannerOpen(true);
+    if (!isLoadingDamages && hasMoreDamages) loadDamageReports(damagePage + 1);
   };
 
   const handleQrScan = (data: string | null) => {
     if (data) {
-      // Extract damage ID from scanned data
-      // Assuming QR code contains just the damage ID (e.g., "1", "2", etc.)
       const damageId = data.trim();
       toast.success(`Scanned Damage Report #${damageId}`);
       navigate(`/damage/${damageId}`);
     }
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border max-w-md w-full text-center space-y-4">
-          <div className="text-red-500 font-bold text-lg">
-            Error Loading Dashboard
-          </div>
-          <p className="text-neutral-600">{error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    );
-  }
+  // Current date/time display
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <ManagerLayout>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <Breadcrumb className="mb-4">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Branch Overview</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "#F8F7F5" }}
+      >
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-6">
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          {/* ── Header ─────────────────────────────────────────────────────── */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-                Branch Operations Dashboard
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
+                style={{ color: "#9ca3af" }}
+              >
+                Branch Operations
+              </p>
+              <h1
+                className="text-2xl font-bold tracking-tight"
+                style={{ color: "#1a1917", fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Dashboard
               </h1>
-              <p className="text-neutral-500 mt-2 text-lg">
-                Overview of vehicles, damage reports, and staff activity.
+              <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
+                {dateStr}
               </p>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 self-start sm:self-auto border-[#e8e6e1] bg-white text-[#6b6860] hover:text-[#1a1917] h-9"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
           </div>
-        </div>
 
-        {/* KPI Summary Cards */}
-        <section className="mb-8">
+          {/* ── KPIs ───────────────────────────────────────────────────────── */}
           <DashboardKPIs stats={stats} isLoading={isLoading} />
-        </section>
 
-        {/* Quick Actions */}
-        <section className="mb-8">
-          <QuickActions />
-        </section>
+          {/* ── Quick Actions ──────────────────────────────────────────────── */}
+          <div className="rounded-2xl border border-[#e8e6e1] bg-white px-5 py-4">
+            <QuickActions />
+          </div>
 
-        {/* Damage Reports & Tools Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column (2/3 width) - Damage Reports */}
-          <div className="xl:col-span-2 space-y-6">
-            {/* Search & Tools Bar */}
-            <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1 w-full flex items-center gap-2">
-                <Search className="w-5 h-5 text-neutral-400" />
+          {/* ── Main Content ───────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+            {/* Left: Damage Reports (2/3) */}
+            <div className="xl:col-span-2 space-y-3">
+              {/* Search bar */}
+              <div
+                className="flex items-center gap-3 rounded-xl border border-[#e8e6e1] bg-white px-4 py-2.5"
+              >
+                <Search className="w-4 h-4 shrink-0" style={{ color: "#9ca3af" }} />
                 <Input
-                  placeholder="Search Damage Report by ID..."
-                  className="flex-1 border-none shadow-none focus-visible:ring-0 px-0 h-auto text-base"
+                  placeholder="Search damage report by vehicle or ID…"
+                  className="flex-1 border-none shadow-none focus-visible:ring-0 px-0 h-auto text-sm bg-transparent placeholder:text-[#c4c0bb]"
                   value={damageSearchId}
                   onChange={(e) => setDamageSearchId(e.target.value)}
                 />
+                <div
+                  className="h-5 w-px shrink-0"
+                  style={{ backgroundColor: "#e8e6e1" }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 px-3 shrink-0 text-[#6b6860] hover:text-[#1a1917]"
+                  onClick={() => setIsScannerOpen(true)}
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  Scan QR
+                </Button>
               </div>
-              <div className="w-px h-8 bg-neutral-200 hidden md:block"></div>
-              <Button
-                variant="outline"
-                className="w-full md:w-auto gap-2"
-                onClick={handleScanQR}
-              >
-                <QrCode className="w-4 h-4" />
-                Scan QR Code
-              </Button>
-            </div>
 
-            <section id="active-bookings-section">
-              <DashboardActiveBookings />
-            </section>
-
-            <section id="damage-reports-section">
               <DamageReports
                 reports={damageReports}
-                isLoading={
-                  isLoading || (isLoadingDamages && damageReports.length === 0)
-                }
+                isLoading={isLoading || (isLoadingDamages && damageReports.length === 0)}
                 onLoadMore={handleLoadMoreDamages}
                 hasMore={hasMoreDamages}
               />
-            </section>
+            </div>
 
-            <section>
-              <ManagerConfirmations />
-            </section>
-
-            <section id="recent-swaps-section">
-              <RecentVehicleSwaps limit={5} />
-            </section>
-          </div>
-
-          {/* Right Column (1/3 width) - Staff Activity */}
-          <div className="xl:col-span-1 space-y-8">
-            <section>
+            {/* Right: Staff Activity (1/3) */}
+            <div className="xl:col-span-1">
               <StaffActivity activities={staffActivity} isLoading={isLoading} />
-            </section>
+            </div>
           </div>
         </div>
       </div>
