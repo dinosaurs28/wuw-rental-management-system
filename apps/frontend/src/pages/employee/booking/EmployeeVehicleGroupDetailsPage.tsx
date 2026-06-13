@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Breadcrumb,
@@ -28,6 +27,7 @@ import { EmployeeVehiclePricingCard } from "@/components/vehicles/EmployeeVehicl
 import { KycDocumentList } from "@/components/booking/KycDocumentList";
 import { UploadKycDialog } from "@/components/booking/UploadKycDialog";
 import { CompleteProfileDialog } from "@/components/booking/CompleteProfileDialog";
+import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
@@ -233,17 +233,19 @@ export const EmployeeVehicleGroupDetailsPage = () => {
 
   if (isLoading || !customerSession) {
     return (
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Skeleton className="h-[400px] w-full rounded-xl" />
-          </div>
-          <div>
-            <Skeleton className="h-[500px] w-full rounded-xl" />
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <DashboardNavbar />
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
+          <Skeleton className="h-10 w-48" />
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <div className="lg:col-span-3 space-y-6">
+              <Skeleton className="h-[340px] w-full rounded-xl" />
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-[200px] w-full rounded-xl" />
+            </div>
+            <div className="lg:col-span-2">
+              <Skeleton className="h-[520px] w-full rounded-xl" />
+            </div>
           </div>
         </div>
       </div>
@@ -252,155 +254,186 @@ export const EmployeeVehicleGroupDetailsPage = () => {
 
   if (error || !group) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Group Not Found</h2>
-        <p className="text-zinc-600 mb-6">No vehicles found for this group.</p>
-        <Button onClick={() => navigate("/employee/vehicles")}>Return to Vehicles</Button>
+      <div className="min-h-screen bg-[#F5F5F5]">
+        <DashboardNavbar />
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+            <Car className="size-8 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-black mb-2">Group Not Found</h2>
+          <p className="text-[#666666] mb-6">No vehicles found for this group.</p>
+          <Button
+            onClick={() => navigate("/employee/vehicles")}
+            className="bg-[#FF5F00] hover:bg-[#e55500] text-white"
+          >
+            Return to Vehicles
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-20">
-      <header className="sticky top-0 z-30 w-full bg-white border-b border-zinc-200 shadow-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/employee/vehicles")}
-            className="-ml-2"
-          >
-            <ArrowLeft className="size-5" />
-          </Button>
-          <div className="flex-1">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild className="text-zinc-500 hover:text-zinc-900">
-                    <Link to="/employee/new-booking">Customer</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild className="text-zinc-500 hover:text-zinc-900">
-                    <Link to="/employee/vehicles">Vehicles</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="font-semibold text-zinc-900">
-                    {group.make} {group.model}
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <DashboardNavbar />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Mobile title */}
-            <div className="lg:hidden space-y-4">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-zinc-900">
+      {/* Sub-header / Breadcrumb */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-12 flex items-center gap-3">
+          <button
+            onClick={() => navigate("/employee/vehicles")}
+            className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors -ml-1"
+          >
+            <ArrowLeft className="size-4 text-[#666666]" />
+          </button>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild className="text-[#999999] hover:text-black text-sm">
+                  <Link to="/employee/new-booking">Customer</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild className="text-[#999999] hover:text-black text-sm">
+                  <Link to="/employee/vehicles">Vehicles</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-semibold text-black">
                   {group.make} {group.model}
-                </h1>
-                <Badge className="bg-emerald-100 text-emerald-700 border-0">
-                  {group.availableCount} available
-                </Badge>
-              </div>
-              <Badge variant="secondary" className="bg-zinc-100 text-zinc-700">
-                {group.category}
-              </Badge>
-            </div>
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </div>
+
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+
+          {/* ── Left column: gallery → title → customer → KYC ── */}
+          <div className="lg:col-span-3 space-y-5">
 
             {/* Gallery */}
-            {group.images.length > 0 ? (
-              <VehicleImageGallery
-                images={group.images}
-                vehicleName={`${group.make} ${group.model}`}
-              />
-            ) : (
-              <div className="w-full aspect-[4/3] bg-zinc-100 rounded-xl flex items-center justify-center">
-                <Car className="size-16 text-zinc-400" />
-              </div>
-            )}
-
-            {/* Desktop title */}
-            <div className="hidden lg:block space-y-4">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-zinc-900">
-                  {group.make} {group.model}
-                </h1>
-                <Badge className="bg-emerald-100 text-emerald-700 border-0 text-sm px-3 py-1">
-                  {group.availableCount} unit{group.availableCount !== 1 ? "s" : ""} available
-                </Badge>
-              </div>
-              <Badge variant="secondary" className="px-3 py-1 text-sm bg-zinc-100 text-zinc-700">
-                {group.category}
-              </Badge>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              {group.images.length > 0 ? (
+                <VehicleImageGallery
+                  images={group.images}
+                  vehicleName={`${group.make} ${group.model}`}
+                />
+              ) : (
+                <div className="w-full aspect-[16/9] bg-gray-50 flex items-center justify-center">
+                  <Car className="size-16 text-gray-300" />
+                </div>
+              )}
             </div>
 
-            {/* KYC Section */}
-            <div id="kyc-section" className="space-y-4 pt-6 border-t border-zinc-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-zinc-900 flex items-center gap-2">
-                  <Shield className="size-5 text-orange-600" />
-                  Employee Verified KYC
+            {/* Vehicle title + badges */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight">
+                    {group.make} {group.model}
+                  </h1>
+                  <p className="text-[#666666] text-sm mt-1">{group.category}</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  {group.availableCount} unit{group.availableCount !== 1 ? "s" : ""} available
+                </span>
+              </div>
+            </div>
+
+            {/* Customer info */}
+            <div
+              className="rounded-xl border p-4 flex items-center gap-4"
+              style={{ background: "rgba(255,95,0,0.04)", borderColor: "rgba(255,95,0,0.2)" }}
+            >
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                style={{ background: "#FF5F00" }}
+              >
+                {customerSession.name?.charAt(0)?.toUpperCase() || "C"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-black text-sm">{customerSession.name}</p>
+                <p className="text-[#666666] text-xs mt-0.5">
+                  {customerSession.phone} &middot; ID: {customerSession.publicId.slice(0, 8)}…
+                </p>
+              </div>
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
+                style={{ background: "rgba(255,95,0,0.1)", color: "#FF5F00" }}
+              >
+                Active Session
+              </span>
+            </div>
+
+            {/* ── KYC Section ── */}
+            <div id="kyc-section" className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-black flex items-center gap-2">
+                  <Shield className="size-4" style={{ color: "#FF5F00" }} />
+                  KYC Document
                 </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={() => fetchKycDocuments()}
                   disabled={isLoadingKyc}
+                  className="text-xs font-medium text-[#666666] hover:text-black px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
                 >
                   Refresh
-                </Button>
+                </button>
               </div>
 
-              {customerSession && !customerSession.profileCompleted ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center space-y-4">
-                  <div className="flex justify-center">
-                    <div className="p-3 bg-amber-100 rounded-full">
-                      <Users className="size-6 text-amber-600" />
+              <div className="p-5">
+                {customerSession && !customerSession.profileCompleted ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-center space-y-3">
+                    <div className="flex justify-center">
+                      <div className="p-3 bg-amber-100 rounded-full">
+                        <Users className="size-5 text-amber-600" />
+                      </div>
                     </div>
+                    <div>
+                      <h3 className="font-semibold text-amber-900">Profile Incomplete</h3>
+                      <p className="text-amber-700 text-sm mt-1 max-w-sm mx-auto">
+                        Customer profile is missing required details. Complete the profile to upload KYC documents.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setShowCompleteProfile(true)}
+                      className="bg-[#FF5F00] hover:bg-[#e55500] text-white"
+                    >
+                      Complete Profile
+                    </Button>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-amber-900">Profile Incomplete</h3>
-                    <p className="text-amber-700 max-w-sm mx-auto mt-1">
-                      Customer profile details are missing. Please complete the profile to proceed with KYC document upload.
-                    </p>
+                ) : kycError ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <p className="text-red-600 text-sm mb-3">{kycError}</p>
+                    <Button variant="outline" size="sm" onClick={() => fetchKycDocuments()}>
+                      Try Again
+                    </Button>
                   </div>
-                  <Button onClick={() => setShowCompleteProfile(true)}>Complete Profile</Button>
-                </div>
-              ) : kycError ? (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <p className="text-red-600 mb-2">{kycError}</p>
-                  <Button variant="outline" size="sm" onClick={() => fetchKycDocuments()}>
-                    Try Again
-                  </Button>
-                </div>
-              ) : (
-                <KycDocumentList
-                  documents={kycDocuments}
-                  isLoading={isLoadingKyc}
-                  selectedId={selectedKycId}
-                  onSelect={handleKycSelect}
-                  onDelete={handleDeleteKyc}
-                  onUploadClick={() => setShowUploadKyc(true)}
-                  error={null}
-                  pendingCount={kycDocuments.filter((d) => d.status === "PENDING").length}
-                />
-              )}
+                ) : (
+                  <KycDocumentList
+                    documents={kycDocuments}
+                    isLoading={isLoadingKyc}
+                    selectedId={selectedKycId}
+                    onSelect={handleKycSelect}
+                    onDelete={handleDeleteKyc}
+                    onUploadClick={() => setShowUploadKyc(true)}
+                    error={null}
+                    pendingCount={kycDocuments.filter((d) => d.status === "PENDING").length}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24 space-y-6">
+          {/* ── Right column: sticky pricing card ── */}
+          <div className="lg:col-span-2">
+            <div className="lg:sticky lg:top-[calc(3.5rem+3rem+1rem)] space-y-4">
               {pricingCardVehicle && (
                 <EmployeeVehiclePricingCard
                   vehicle={pricingCardVehicle as any}
@@ -413,19 +446,6 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                   hasCompleteKyc={hasCompleteKyc}
                 />
               )}
-
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
-                <Shield className="size-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-900 text-sm">
-                    Booking for {customerSession.name}
-                  </p>
-                  <p className="text-blue-700 text-xs mt-1">
-                    Phone: {customerSession.phone} <br />
-                    Public ID: {customerSession.publicId.slice(0, 8)}...
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

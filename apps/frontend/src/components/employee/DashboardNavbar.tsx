@@ -23,62 +23,70 @@ export function DashboardNavbar() {
 
   return (
     <div className="sticky top-0 z-50">
-    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between gap-4">
-        <div className="flex items-center gap-8">
-          {/* Logo */}
-          <Link
-            to="/employee/dashboard"
-            className="flex items-center gap-2 font-bold text-xl min-w-fit"
-          >
-            {/* Orange Triangle Logo Mock */}
-            <div className="w-0 h-0 border-l-[8px] border-l-transparent border-b-[14px] border-b-primary border-r-[8px] border-r-transparent" />
-            <span>WUW Staff</span>
-          </Link>
+      <header className="w-full bg-white border-b border-gray-200">
+        {/* Aligned to same max-width and padding as page content */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex h-14 items-center justify-between gap-4">
 
-          {/* Navigation */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium">
+          {/* Left: wordmark + nav */}
+          <div className="flex items-center gap-8">
             <Link
               to="/employee/dashboard"
-              className="text-primary font-semibold"
+              className="text-lg font-bold tracking-tight text-black"
             >
-              Dashboard
+              WUW <span style={{ color: "#FF5F00" }}>Staff</span>
             </Link>
-          </nav>
-        </div>
 
-        <div className="flex items-center gap-4 flex-1 justify-end">
-          {/* User Profile */}
+            <nav className="hidden lg:flex items-center gap-1">
+              <Link
+                to="/employee/dashboard"
+                className="text-sm font-semibold px-3 py-1 rounded-md transition-colors"
+                style={{ color: "#FF5F00", background: "rgba(255,95,0,0.08)" }}
+              >
+                Dashboard
+              </Link>
+            </nav>
+          </div>
+
+          {/* Right: user dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 p-1.5 rounded-full transition-colors pl-3 border sm:border-transparent">
+              <div className="flex items-center gap-2.5 cursor-pointer rounded-full px-2 py-1 hover:bg-gray-100 transition-colors">
                 <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-sm font-semibold leading-none">
+                  <span className="text-sm font-semibold text-black leading-none">
                     {user?.name || "Employee"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {user?.email || "Manager"}
+                  <span className="text-xs text-[#999999] mt-0.5">
+                    {user?.email || "Staff"}
                   </span>
                 </div>
-                <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                <Avatar className="h-8 w-8 border border-gray-200">
                   <AvatarImage src="" />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                    {user?.name?.charAt(0) || "E"}
+                  <AvatarFallback
+                    className="text-white text-xs font-bold"
+                    style={{ background: "#FF5F00" }}
+                  >
+                    {user?.name?.charAt(0)?.toUpperCase() || "E"}
                   </AvatarFallback>
                 </Avatar>
               </div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-[#666666] text-xs font-medium">
+                My Account
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/employee/dashboard")}>
+              <DropdownMenuItem
+                onClick={() => navigate("/employee/dashboard")}
+                className="cursor-pointer"
+              >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 Dashboard
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
-                className="text-red-600 focus:text-red-600"
+                className="text-red-600 focus:text-red-600 cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
@@ -86,9 +94,8 @@ export function DashboardNavbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-    </header>
-    <ShiftBanner />
+      </header>
+      <ShiftBanner />
     </div>
   );
 }
