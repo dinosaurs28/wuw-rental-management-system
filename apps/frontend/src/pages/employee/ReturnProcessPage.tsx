@@ -208,7 +208,6 @@ export default function ReturnProcessPage() {
   // ── Damage ─────────────────────────────────────────────────────────────────
   // damageDecision: null = not yet decided, "NO_DAMAGE" = no damage, "DAMAGE_FOUND" = damage reported
   const [damageDecision, setDamageDecision] = useState<"NO_DAMAGE" | "DAMAGE_FOUND" | null>(null);
-  const [hasDamage, setHasDamage] = useState<boolean | null>(null);
   const [damageChargeType, setDamageChargeType] = useState<"PENALTY" | "COMPENSATION" | null>(null);
   const [damages, setDamages] = useState<DamageItem[]>([]);
   const [activeDamage, setActiveDamage] = useState<Partial<DamageItem>>({ severity: "Minor", photos: [] });
@@ -266,8 +265,6 @@ export default function ReturnProcessPage() {
   const step3Complete = !!returnSession && returnSession.session.status !== "OPEN";
   const step5Complete = paymentSettled;
 
-  // Damage flow: if damage found, payment is deferred to manager
-  const isDamageFlow = damageDecision === "DAMAGE_FOUND";
   const isNoDamageFlow = damageDecision === "NO_DAMAGE";
 
   // ── Auto-fill return fuel level from pickup record ─────────────────────────
@@ -958,14 +955,14 @@ export default function ReturnProcessPage() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => { setDamageDecision("NO_DAMAGE"); setHasDamage(false); }}
+                    onClick={() => { setDamageDecision("NO_DAMAGE"); }}
                     className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-700"
                   >
                     No Damage
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setDamageDecision("DAMAGE_FOUND"); setHasDamage(true); setShowDamageForm(true); }}
+                    onClick={() => { setDamageDecision("DAMAGE_FOUND"); setShowDamageForm(true); }}
                     className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-700"
                   >
                     Damage Found
@@ -1020,7 +1017,6 @@ export default function ReturnProcessPage() {
                             setShowDamageForm(false);
                             setDamageChargeType(null);
                             setDamageDecision(null);
-                            setHasDamage(null);
                           }}
                         >
                           ← No Damage

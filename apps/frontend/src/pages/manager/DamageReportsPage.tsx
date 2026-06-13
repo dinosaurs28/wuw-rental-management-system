@@ -17,9 +17,7 @@ import {
   Search,
   RefreshCw,
   ArrowRight,
-  Clock,
   CheckCircle2,
-  Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";

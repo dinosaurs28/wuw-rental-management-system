@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Banknote, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

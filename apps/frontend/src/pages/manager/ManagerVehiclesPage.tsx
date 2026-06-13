@@ -4,7 +4,6 @@ import {
   Plus,
   Search,
   MoreHorizontal,
-  Fuel,
   Settings2,
   Coins,
   ChevronDown,

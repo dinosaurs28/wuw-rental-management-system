@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Users } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
