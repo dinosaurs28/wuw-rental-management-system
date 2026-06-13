@@ -117,27 +117,36 @@ export const LedgerPage = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {data && data.total > 0 && (
           <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Previous
-            </Button>
             <span className="text-sm text-zinc-500">
-              Page {page} of {totalPages}
+              {data.total <= data.limit
+                ? `${data.total} result${data.total !== 1 ? "s" : ""}`
+                : `${(page - 1) * data.limit + 1}–${Math.min(page * data.limit, data.total)} of ${data.total}`}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-zinc-500">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

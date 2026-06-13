@@ -6,20 +6,15 @@ import {
   MoreHorizontal,
   Fuel,
   Settings2,
-  AlertTriangle,
   Coins,
+  ChevronDown,
+  ArrowLeft,
+  Car,
+  Receipt,
 } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -63,7 +57,6 @@ export const ManagerVehiclesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Default tab
   const [activeTab, setActiveTab] = useState("vehicles");
 
   useEffect(() => {
@@ -108,94 +101,105 @@ export const ManagerVehiclesPage = () => {
   return (
     <ManagerLayout>
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8 pb-12">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
           <div>
             <Breadcrumb className="mb-2">
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/manager/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Vehicles & Pricing</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    {activeTab === "vehicles" ? "Vehicles & Pricing" : "Pricing Rules"}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-              Fleet Management
+
+            {activeTab === "pricing" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab("vehicles")}
+                className="-ml-2 mb-2 text-neutral-600 hover:text-neutral-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Fleet
+              </Button>
+            )}
+
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
+              {activeTab === "vehicles" ? "Fleet Management" : "Pricing Rules"}
             </h1>
-            <p className="text-neutral-500 mt-1">
-              Manage your fleet, pricing rules, and availability.
+            <p className="text-neutral-500 mt-1 text-sm">
+              {activeTab === "vehicles"
+                ? "Manage your vehicles, availability, and fleet settings."
+                : "Configure pricing slabs and rental rate structures."}
             </p>
           </div>
-        </div>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-4"
-        >
-          <TabsList>
-            <TabsTrigger value="vehicles" className="flex items-center gap-2">
-              <Fuel className="size-4" />
-              Vehicles
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <Coins className="size-4" />
-              Pricing Rules
-            </TabsTrigger>
-          </TabsList>
+          {activeTab === "vehicles" && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 h-10">
+                    <Settings2 className="w-4 h-4" />
+                    Operations
+                    <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel className="text-xs text-neutral-500 font-normal">
+                    Configuration
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="gap-2 cursor-pointer"
+                    onClick={() => navigate("/manager/payment/discounts?tab=config", { state: { scrollTo: "duration-discount-slabs" } })}
+                  >
+                    <Coins className="w-4 h-4 text-neutral-500" />
+                    Pricing Rules
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2 cursor-pointer"
+                    onClick={() => navigate("/manager/gst-rules")}
+                  >
+                    <Receipt className="w-4 h-4 text-neutral-500" />
+                    GST Rules
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <TabsContent value="vehicles" className="space-y-4">
-            {/* Action Buttons for Vehicles Tab */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto justify-end mb-4">
               <Button
-                variant="outline"
-                className="h-9 md:h-11 w-full sm:w-auto text-sm"
-                onClick={() => navigate("/manager/deposit-rules")}
-              >
-                Deposit Rules
-              </Button>
-              <Button
-                variant="outline"
-                className="h-9 md:h-11 w-full sm:w-auto text-sm"
-                onClick={() => navigate("/manager/insurance-expiry")}
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Insurance Alerts
-              </Button>
-              <Button
-                variant="outline"
-                className="h-9 md:h-11 w-full sm:w-auto text-sm"
-                onClick={() => navigate("/manager/gst-rules")}
-              >
-                GST Rules
-              </Button>
-              <Button
-                className="bg-orange-500 hover:bg-orange-600 text-white h-9 md:h-11 w-full sm:w-auto text-sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-10"
                 onClick={() => navigate("/manager/vehicles/add")}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Add Vehicle
               </Button>
             </div>
+          )}
+        </div>
 
-            {/* Filters & Search */}
-            <div className="bg-white p-4 rounded-lg border shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
-              <div className="relative w-full md:w-96">
+        {/* Vehicles View */}
+        {activeTab === "vehicles" && (
+          <>
+            {/* Search & Filter */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <Input
-                  placeholder="Search by make, model, or license plate..."
-                  className="pl-10 h-12"
+                  placeholder="Search by make, model, or plate..."
+                  className="pl-10 h-11 bg-white"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-52 h-12">
+                <SelectTrigger className="w-full sm:w-52 h-11 bg-white">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -209,193 +213,164 @@ export const ManagerVehiclesPage = () => {
               </Select>
             </div>
 
+            {/* Results count */}
+            {!isLoading && filteredVehicles.length > 0 && (
+              <p className="text-sm text-neutral-500 mb-4">
+                {filteredVehicles.length}{" "}
+                {filteredVehicles.length === 1 ? "vehicle" : "vehicles"}
+              </p>
+            )}
+
             {/* Content */}
             {isLoading ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              <div className="flex flex-col items-center justify-center py-24">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mb-3" />
+                <p className="text-sm text-neutral-400">Loading fleet...</p>
               </div>
             ) : filteredVehicles.length === 0 ? (
-              <div className="text-center py-20 bg-neutral-50 rounded-lg border border-dashed">
-                <p className="text-neutral-500">No vehicles found.</p>
+              <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-dashed border-neutral-200">
+                <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
+                  <Car className="w-8 h-8 text-neutral-300" />
+                </div>
+                <p className="text-neutral-700 font-medium mb-1">No vehicles found</p>
+                <p className="text-sm text-neutral-400 mb-4">
+                  {searchTerm || categoryFilter !== "all"
+                    ? "Try adjusting your filters"
+                    : "Add your first vehicle to get started"}
+                </p>
                 <Button
-                  variant="link"
-                  className="text-orange-500"
+                  className="bg-orange-500 hover:bg-orange-600 text-white gap-2"
                   onClick={() => navigate("/manager/vehicles/add")}
                 >
-                  Add your first vehicle
+                  <Plus className="w-4 h-4" />
+                  Add Vehicle
                 </Button>
               </div>
             ) : (
-              <>
-                {/* Desktop Table View */}
-                <div className="hidden md:block bg-white rounded-lg border shadow-sm overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-neutral-50">
-                      <TableRow>
-                        <TableHead className="w-[100px]">Image</TableHead>
-                        <TableHead>Vehicle Info</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">
-                          Daily Price
-                        </TableHead>
-                        <TableHead className="w-[80px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredVehicles.map((vehicle) => (
-                        <TableRow key={vehicle.publicId}>
-                          <TableCell>
-                            <div className="w-16 h-12 bg-neutral-100 rounded overflow-hidden">
-                              {vehicle.images?.[0]?.file?.url ? (
-                                <img
-                                  src={vehicle.images[0].file.url}
-                                  alt={vehicle.model}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                                  <Fuel className="w-6 h-6" />
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-neutral-900">
-                                {vehicle.make} {vehicle.model}
-                              </p>
-                              <p className="text-xs text-neutral-500">
-                                {vehicle.regNo || "N/A"}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="font-normal">
-                              {vehicle.category?.name || "N/A"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`${getStatusBadgeStyles(vehicle.status || "")} shadow-none`}
-                            >
-                              {vehicle.status || "Unknown"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            ₹{vehicle.customPricing?.price24Hour}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    navigate(
-                                      `/manager/vehicles/edit/${vehicle.publicId}`,
-                                    )
-                                  }
-                                >
-                                  Edit Vehicle
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-600"
-                                  onClick={async () => {
-                                    try {
-                                      if (!confirm("Are you sure?")) return;
-                                      await deleteVehicle(vehicle.publicId);
-                                      toast.success("Vehicle deleted");
-                                      loadVehicles();
-                                    } catch (e) {
-                                      toast.error("Failed to delete");
-                                    }
-                                  }}
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredVehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.publicId}
+                    className="bg-white rounded-xl border border-neutral-200 overflow-hidden hover:border-neutral-300 hover:shadow-md transition-all duration-200 group"
+                  >
+                    {/* Vehicle Image */}
+                    <div className="relative h-44 bg-gradient-to-br from-neutral-100 to-neutral-50 overflow-hidden">
+                      {vehicle.images?.[0]?.file?.url ? (
+                        <img
+                          src={vehicle.images[0].file.url}
+                          alt={`${vehicle.make} ${vehicle.model}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <Car className="w-10 h-10 text-neutral-300" />
+                          <span className="text-xs text-neutral-300">No image</span>
+                        </div>
+                      )}
 
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-4">
-                  {filteredVehicles.map((vehicle) => (
-                    <div
-                      key={vehicle.publicId}
-                      className="bg-white p-4 rounded-lg border shadow-sm flex gap-4"
-                    >
-                      <div className="w-24 h-24 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {vehicle.images?.[0]?.file?.url ? (
-                          <img
-                            src={vehicle.images[0].file.url}
-                            alt={vehicle.model}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                            <Fuel className="w-6 h-6" />
-                          </div>
-                        )}
+                      {/* Status badge */}
+                      <div className="absolute top-2.5 left-2.5">
+                        <Badge
+                          className={`${getStatusBadgeStyles(vehicle.status || "")} shadow-sm text-[11px] px-2 py-0.5`}
+                        >
+                          {vehicle.status || "Unknown"}
+                        </Badge>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="min-w-0">
-                            <h3 className="font-medium text-neutral-900 break-words leading-snug">
-                              {vehicle.make} {vehicle.model}
-                            </h3>
-                            <p className="text-sm text-neutral-500">
-                              {vehicle.category?.name || "N/A"}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="-mr-2 -mt-2"
-                            onClick={() =>
-                              navigate(
-                                `/manager/vehicles/edit/${vehicle.publicId}`,
-                              )
-                            }
-                          >
-                            <Settings2 className="w-4 h-4 text-neutral-500" />
-                          </Button>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <Badge
-                            className={`${getStatusBadgeStyles(vehicle.status || "")} shadow-none`}
-                          >
-                            {vehicle.status || "Unknown"}
-                          </Badge>
-                          <p className="font-semibold text-neutral-900">
-                            ₹{vehicle.customPricing?.price24Hour}
-                            <span className="text-xs text-neutral-500 font-normal">
-                              /day
-                            </span>
-                          </p>
-                        </div>
+
+                      {/* Actions */}
+                      <div className="absolute top-2 right-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="h-7 w-7 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm border border-white/60"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(`/manager/vehicles/edit/${vehicle.publicId}`)
+                              }
+                            >
+                              Edit Vehicle
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onClick={async () => {
+                                try {
+                                  if (!confirm("Are you sure?")) return;
+                                  await deleteVehicle(vehicle.publicId);
+                                  toast.success("Vehicle deleted");
+                                  loadVehicles();
+                                } catch (e) {
+                                  toast.error("Failed to delete");
+                                }
+                              }}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </TabsContent>
 
-          <TabsContent value="pricing">
+                    {/* Vehicle Info */}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-neutral-900 leading-snug truncate text-[15px]">
+                            {vehicle.make} {vehicle.model}
+                          </h3>
+                          <p className="text-xs text-neutral-400 mt-0.5 font-mono tracking-wide">
+                            {vehicle.regNo || "—"}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-base font-bold text-neutral-900 leading-none">
+                            ₹{vehicle.customPricing?.price24Hour}
+                          </p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">/day</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
+                        <Badge
+                          variant="secondary"
+                          className="font-normal text-[11px] text-neutral-600"
+                        >
+                          {vehicle.category?.name || "Uncategorized"}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-neutral-500 hover:text-neutral-900 -mr-1 gap-1"
+                          onClick={() =>
+                            navigate(`/manager/vehicles/edit/${vehicle.publicId}`)
+                          }
+                        >
+                          <Settings2 className="w-3 h-3" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Pricing View */}
+        {activeTab === "pricing" && (
+          <div className="mt-2">
             <PricingSlabList />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </ManagerLayout>
   );

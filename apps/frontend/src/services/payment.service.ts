@@ -303,11 +303,11 @@ export const paymentService = {
       )
       .then((r) => r.data),
 
-  getAllShifts: (page = 1, pageSize = 20) =>
+  getAllShifts: (page = 1, pageSize = 20, filters?: { from?: string; to?: string; status?: string }) =>
     apiClient
       .get<{ shifts: CashShift[]; total: number }>(
         `/branchManager/payment/shifts`,
-        { params: { page, pageSize } }
+        { params: { page, pageSize, ...filters } }
       )
       .then((r) => ({ data: r.data.shifts, total: r.data.total })),
 

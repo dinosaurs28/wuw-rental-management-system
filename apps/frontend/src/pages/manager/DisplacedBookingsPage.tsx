@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -116,11 +117,15 @@ export function DisplacedBookingsPage() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/manager/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="/manager/extensions">Extensions</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/manager/payment/extensions">Extensions</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

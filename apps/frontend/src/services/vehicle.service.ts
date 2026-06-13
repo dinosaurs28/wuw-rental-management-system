@@ -400,27 +400,29 @@ export interface InsuranceExpiryReportItem {
 
 export interface InsuranceExpiryReportResponse {
   data: InsuranceExpiryReportItem[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: { expired: number; expiringSoon: number };
 }
 
-export const fetchInsuranceExpiryReport = async (
-  search?: string,
-): Promise<InsuranceExpiryReportItem[]> => {
-  try {
-    const params = new URLSearchParams();
-    if (search) params.append("q", search);
+export const fetchInsuranceExpiryReport = async (params: {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<InsuranceExpiryReportResponse> => {
+  const query = new URLSearchParams();
+  if (params.search) query.append("q", params.search);
+  if (params.status) query.append("status", params.status);
+  if (params.page) query.append("page", String(params.page));
+  if (params.limit) query.append("limit", String(params.limit));
 
-    const response = await axios.get<InsuranceExpiryReportResponse>(
-      `${API_URL}/branchManager/dashboard/reports/insurance-expiry`,
-      {
-        params,
-        withCredentials: true,
-      },
-    );
-    return response.data.data;
-  } catch (error) {
-    console.error("Error fetching insurance expiry report:", error);
-    return [];
-  }
+  const response = await axios.get<InsuranceExpiryReportResponse>(
+    `${API_URL}/branchManager/dashboard/reports/insurance-expiry`,
+    { params: query, withCredentials: true },
+  );
+  return response.data;
 };
 
 export const fetchVehicleCategories = async (): Promise<Category[]> => {

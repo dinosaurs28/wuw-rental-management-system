@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, CheckCircle2, BookOpen } from "lucide-react";
+import { PlusCircle, CheckCircle2, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,8 @@ export const CustomerCreditPage = () => {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
+  const [entriesPage, setEntriesPage] = useState(1);
+  const entriesPageSize = 10;
 
   const summaryQuery = useQuery({
     queryKey: ["ledger", "customer", customerId],
@@ -35,8 +37,8 @@ export const CustomerCreditPage = () => {
   });
 
   const entriesQuery = useQuery({
-    queryKey: ["ledger", "entries", customerId],
-    queryFn: () => ledgerService.getCustomerEntries(customerId!, 1, 50),
+    queryKey: ["ledger", "entries", customerId, entriesPage],
+    queryFn: () => ledgerService.getCustomerEntries(customerId!, entriesPage, entriesPageSize),
     enabled: !!customerId,
   });
 
@@ -54,11 +56,11 @@ export const CustomerCreditPage = () => {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink asChild><Link to="/manager/dashboard">Dashboard</Link></BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="/manager/ledger">Credit Ledger</BreadcrumbLink>
+              <BreadcrumbLink asChild><Link to="/manager/ledger">Credit Ledger</Link></BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -126,10 +128,17 @@ export const CustomerCreditPage = () => {
         ) : null}
 
         {/* Credit entries list */}
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-700 mb-3">
-            Credit Entries ({entriesQuery.data?.total ?? 0})
-          </h2>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-zinc-700">
+              Credit Entries ({entriesQuery.data?.total ?? 0})
+            </h2>
+            {entriesQuery.data && entriesQuery.data.total > entriesPageSize && (
+              <span className="text-xs text-zinc-400">
+                {(entriesPage - 1) * entriesPageSize + 1}–{Math.min(entriesPage * entriesPageSize, entriesQuery.data.total)} of {entriesQuery.data.total}
+              </span>
+            )}
+          </div>
 
           {entriesQuery.isLoading ? (
             <div className="space-y-3">
@@ -174,6 +183,35 @@ export const CustomerCreditPage = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {entriesQuery.data && entriesQuery.data.total > entriesPageSize && (
+            <div className="flex items-center justify-between pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={entriesPage <= 1}
+                onClick={() => setEntriesPage((p) => p - 1)}
+                className="gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <span className="text-sm text-zinc-500">
+                Page {entriesPage} of {Math.ceil(entriesQuery.data.total / entriesPageSize)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={entriesPage >= Math.ceil(entriesQuery.data.total / entriesPageSize)}
+                onClick={() => setEntriesPage((p) => p + 1)}
+                className="gap-1"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           )}
         </div>

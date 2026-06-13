@@ -4,7 +4,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, CalendarIcon, Truck } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  CalendarIcon,
+  Truck,
+  Car,
+  Gauge,
+  Shield,
+  ImageIcon,
+  Receipt,
+  Clock,
+  Timer,
+  Sun,
+  CalendarDays,
+  MapPin,
+  Zap,
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +74,7 @@ const vehicleSchema = z.object({
   year: z.coerce
     .number()
     .min(1900)
-    .max(new Date().getFullYear() + 1), // Kept for UI, might not be saved by backend
+    .max(new Date().getFullYear() + 1),
   licensePlate: z.string().min(1, "License Plate (Reg No) is required"),
   odo: z.coerce.number().min(0, "Odometer reading is required"),
   category: z.string().min(1, "Category is required"),
@@ -103,7 +119,7 @@ export const ManagerVehicleFormPage = () => {
       make: "",
       model: "",
       year: new Date().getFullYear(),
-      licensePlate: "", // regNo
+      licensePlate: "",
       odo: 0,
       category: "",
       status: "AVAILABLE",
@@ -146,17 +162,8 @@ export const ManagerVehicleFormPage = () => {
           const response = await fetchManagerVehicleDetails(vehicleId);
           const vehicle = response.data;
 
-          // Store original images to track deletions
-          // Only track non-thumbnails for deletion logic usually, but
-          // if user sees thumbnails and deletes them, we want to delete the underlying image?
-          // The UI now filters OUT thumbnails. So user only sees original uploads.
-          // So we should track original images that are NOT thumbnails.
-          // OR, better: invalidating ANY image ID that isn't in current list.
-          // But duplicates issue: The LIST only shows raw uploads.
-          // So let's store all images, filter for non-thumbnails logic is OK.
           setOriginalImages(vehicle.images || []);
 
-          // Safe mapping
           const latestInsurance = vehicle.insuranceRecords?.[0];
 
           form.reset({
@@ -235,32 +242,19 @@ export const ManagerVehicleFormPage = () => {
         formData.append("advancePayAmount", data.advancePayAmount.toString());
       }
 
-      // Handle Images
       data.images.forEach((img: any) => {
         if (img instanceof File) {
           formData.append("images", img);
         }
       });
 
-      // Handle Image Deletion
       if (isEditMode) {
-        // Get current URLs (strings only)
         const currentImageUrls = data.images.filter(
           (img: any) => typeof img === "string",
         ) as string[];
 
-        // Find images that were in original but NOT in current
-        // We compare against originalImages which contains FULL objects.
-        // We filtered OUT thumbnails in the FORM, so 'currentImageUrls' only contains non-thumbnails.
-        // But 'originalImages' contains EVERYTHING (including thumbnails).
-        // If we delete an original image, its thumbnail should also go (backend handles cascade or we send both IDs).
-        // But typically we delete by ID.
-        // Let's look at what the user SEES. They see non-thumbnail images.
-        // If they remove one, its URL is gone from `currentImageUrls`.
-        // So we find the original image object (non-thumbnail) corresponding to the missing URL.
-
         const deletedImageIds = originalImages
-          .filter((img) => !img.isThumbnail) // Only consider the ones displayed/editable
+          .filter((img) => !img.isThumbnail)
           .filter((img) => !currentImageUrls.includes(img.file.url))
           .map((img) => img.publicId);
 
@@ -299,499 +293,614 @@ export const ManagerVehicleFormPage = () => {
 
   return (
     <ManagerLayout>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8 pb-12">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8 pb-28">
+
+        {/* Header */}
         <div className="mb-8">
           <Breadcrumb className="mb-4">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/vehicles">
-                  Vehicles
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/manager/vehicles">Vehicles</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>
-                  {isEditMode ? "Edit Vehicle" : "Add Vehicle"}
-                </BreadcrumbPage>
+                <BreadcrumbPage>{isEditMode ? "Edit Vehicle" : "Add Vehicle"}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               onClick={() => navigate("/manager/vehicles")}
+              className="h-9 w-9 flex-shrink-0"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-              {isEditMode ? "Edit Vehicle" : "Add New Vehicle"}
-            </h1>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
+                {isEditMode ? "Edit Vehicle" : "Add New Vehicle"}
+              </h1>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                {isEditMode
+                  ? "Update vehicle details, pricing, and insurance information."
+                  : "Fill in the details to add a new vehicle to your fleet."}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Section 1: Vehicle Details */}
-              <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  Vehicle Details
-                </h2>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="make"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Make</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g. Toyota"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="model"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Model</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g. Camry"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input type="number" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="licensePlate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>License Plate (Reg No)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g. KA01AB1234"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="odo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Odometer Reading (km)</FormLabel>
-                        <FormControl>
-                          <Input type="number" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="AVAILABLE">Available</SelectItem>
-                            <SelectItem value="MAINTENANCE">
-                              Maintenance
-                            </SelectItem>
-                            <SelectItem value="INACTIVE">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-                <div className="pt-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Truck className="w-5 h-5 text-orange-500" />
-                    <h3 className="font-medium text-neutral-800 text-lg">FASTag Details</h3>
+              {/* Left Column — Vehicle Details + Pricing */}
+              <div className="xl:col-span-2 space-y-6">
+
+                {/* Section: Vehicle Details */}
+                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Car className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-neutral-900 text-[15px]">Vehicle Details</h2>
+                      <p className="text-xs text-neutral-500">Basic information about the vehicle</p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                    <FormField
-                      control={form.control}
-                      name="hasFastag"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-neutral-50/50">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="cursor-pointer">Has FASTag?</FormLabel>
-                            <p className="text-xs text-neutral-500">
-                              Check if this vehicle has a FASTag sticker.
-                            </p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    {form.watch("hasFastag") && (
+                  <div className="p-6 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <FormField
                         control={form.control}
-                        name="fastagNumber"
+                        name="make"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>FASTag Number</FormLabel>
+                            <FormLabel className="text-neutral-700">Make</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="e.g. 1234567890"
-                                className="h-12"
-                                {...field}
-                              />
+                              <Input placeholder="e.g. Toyota" className="h-11" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    )}
+                      <FormField
+                        control={form.control}
+                        name="model"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">Model</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. Camry" className="h-11" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="year"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">Year</FormLabel>
+                            <FormControl>
+                              <Input type="number" className="h-11" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="licensePlate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">License Plate</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. KA01AB1234" className="h-11 font-mono" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="odo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">
+                              <span className="flex items-center gap-1.5">
+                                <Gauge className="w-3.5 h-3.5" />
+                                Odometer (km)
+                              </span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="number" className="h-11" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">Category</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-11">
+                                  <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id.toString()}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">Status</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-11">
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="AVAILABLE">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    Available
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="MAINTENANCE">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                                    Maintenance
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="INACTIVE">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                                    Inactive
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    {/* FASTag */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Truck className="w-4 h-4 text-neutral-500" />
+                        <h3 className="font-medium text-neutral-800 text-sm">FASTag</h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-end">
+                        <FormField
+                          control={form.control}
+                          name="hasFastag"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-neutral-200 p-4 bg-neutral-50/50">
+                              <FormControl>
+                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <div className="space-y-0.5 leading-none">
+                                <FormLabel className="cursor-pointer text-sm">Has FASTag?</FormLabel>
+                                <p className="text-xs text-neutral-500">
+                                  Vehicle has a FASTag sticker fitted.
+                                </p>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        {form.watch("hasFastag") && (
+                          <FormField
+                            control={form.control}
+                            name="fastagNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-neutral-700">FASTag Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. 1234567890" className="h-11 font-mono" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Pricing */}
+                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Receipt className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-neutral-900 text-[15px]">Pricing</h2>
+                      <p className="text-xs text-neutral-500">Set rental rates per time period</p>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-6">
+
+                    {/* Pricing tiers grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                      {/* Hourly */}
+                      <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Clock className="w-4 h-4 text-neutral-500" />
+                          <span className="text-sm font-medium text-neutral-700">Hourly</span>
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="hourlyRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-neutral-500">Rate (₹/hr)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" className="h-10" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* 12-Hour */}
+                      <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Timer className="w-4 h-4 text-neutral-500" />
+                          <span className="text-sm font-medium text-neutral-700">12-Hour</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="price12Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="freeKm12Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Free KM</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Daily */}
+                      <div className="rounded-lg border border-orange-200 p-4 bg-orange-50/30">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Sun className="w-4 h-4 text-orange-500" />
+                          <span className="text-sm font-medium text-neutral-700">Daily (24hr)</span>
+                          <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-medium ml-auto">Primary</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="price24Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="freeKm24Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Free KM</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Monthly */}
+                      <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CalendarDays className="w-4 h-4 text-neutral-500" />
+                          <span className="text-sm font-medium text-neutral-700">Monthly</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="priceMonthly"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="freeKmMonthly"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Free KM</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Duration discount callout */}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/manager/payment/discounts?tab=config", { state: { scrollTo: "duration-discount-slabs" } })}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50/60 border border-blue-100 hover:bg-blue-100/60 transition-colors group text-left"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                        <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-blue-800">Duration Discount Slabs</p>
+                        <p className="text-xs text-blue-600/80 mt-0.5">Automatic discounts for multi-day rentals — configure in Discount Settings</p>
+                      </div>
+                      <ArrowLeft className="w-3.5 h-3.5 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </button>
+
+                    <Separator />
+
+                    {/* Extra charges */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Zap className="w-4 h-4 text-neutral-500" />
+                        <h3 className="text-sm font-medium text-neutral-700">Extra Charges</h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <FormField
+                          control={form.control}
+                          name="extraKmRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-neutral-700">
+                                <span className="flex items-center gap-1.5">
+                                  <MapPin className="w-3.5 h-3.5" />
+                                  Extra KM Rate (₹/km)
+                                </span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" className="h-11" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="extraHourRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-neutral-700">
+                                <span className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  Extra Hour Rate (₹/hr)
+                                </span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" className="h-11" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Advance Payment */}
+                    <div>
+                      <h3 className="text-sm font-medium text-neutral-700 mb-4">Advance Payment</h3>
+                      <div className="max-w-xs">
+                        <FormField
+                          control={form.control}
+                          name="advancePayAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-neutral-700">Advance Amount (₹)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="0 (disabled)" className="h-11" {...field} />
+                              </FormControl>
+                              <p className="text-xs text-neutral-400 mt-1.5">
+                                Set 0 to disable advance payment requirement.
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Section 2: Pricing & Insurance */}
-              <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  Pricing & Insurance
-                </h2>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="price24Hour"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Daily Price (₹)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="freeKm24Hour"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Free KM / Day</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="hourlyRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hourly Rate (₹)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="price12Hour"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>12-Hour Price (₹)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="freeKm12Hour"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Free KM / 12-Hour</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="priceMonthly"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monthly Price (₹)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="freeKmMonthly"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Free KM / Month</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="extraKmRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Extra KM Rate (₹/km)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="extraHourRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Extra Hour Rate (₹/hr)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" className="h-12" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Right Column — Insurance + Images */}
+              <div className="xl:col-span-1 space-y-6">
+
+                {/* Section: Insurance */}
+                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-neutral-900 text-[15px]">Insurance</h2>
+                      <p className="text-xs text-neutral-500">Policy and expiry details</p>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    <FormField
+                      control={form.control}
+                      name="insuranceExpiry"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="text-neutral-700">Expiry Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal h-11",
+                                    !field.value && "text-muted-foreground",
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date("2000-01-01")}
+                                captionLayout="dropdown"
+                                startMonth={new Date(new Date().getFullYear() - 1, 0)}
+                                endMonth={new Date(new Date().getFullYear() + 15, 11)}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="policyNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-neutral-700">Policy Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. POL-2024-001" className="h-11 font-mono" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="provider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-neutral-700">Insurance Provider</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. HDFC Ergo" className="h-11" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
-                <Separator />
-                <h3 className="font-medium text-neutral-800">Advance Payment</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="advancePayAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Advance Amount (₹)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="0 (disabled)"
-                            {...field}
-                          />
-                        </FormControl>
-                        <p className="text-xs text-muted-foreground">
-                          Fixed advance amount customers pay upfront. Set 0 to disable advance payment.
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <Separator />
-                <h3 className="font-medium text-neutral-800">Insurance Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="insuranceExpiry"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Insurance Expiry</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal h-12",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date("2000-01-01")}
-                              captionLayout="dropdown"
-                              startMonth={new Date(new Date().getFullYear() - 1, 0)}
-                              endMonth={new Date(new Date().getFullYear() + 15, 11)}
-                              initialFocus
+
+                {/* Section: Images */}
+                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                      <ImageIcon className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-neutral-900 text-[15px]">Vehicle Images</h2>
+                      <p className="text-xs text-neutral-500">Upload at least one photo</p>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <FormField
+                      control={form.control}
+                      name="images"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <VehicleImageUpload
+                              existingImages={field.value}
+                              onImagesChange={field.onChange}
                             />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="policyNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Policy Number</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Policy #"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="provider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Insurance Provider</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Provider Name"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Section 3: Images */}
-              <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  Vehicle Images
-                </h2>
-                <Separator />
-                <FormField
-                  control={form.control}
-                  name="images"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <VehicleImageUpload
-                          existingImages={field.value}
-                          onImagesChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex items-center justify-end gap-4 fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 md:static md:bg-transparent md:border-none md:p-0 md:block">
+            {/* Sticky Footer Actions */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 px-4 py-3 flex items-center justify-end gap-3">
+              <div className="max-w-[1440px] w-full mx-auto flex items-center justify-end gap-3">
+                <span className="text-sm text-neutral-400 mr-auto hidden sm:block">
+                  {isEditMode ? "Editing vehicle" : "Adding new vehicle"}
+                </span>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 flex-1 md:flex-none"
+                  className="h-10 min-w-[100px]"
                   onClick={() => navigate("/manager/vehicles")}
                   disabled={isLoading}
                 >
@@ -799,22 +908,22 @@ export const ManagerVehicleFormPage = () => {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 text-white min-w-[150px] h-12 flex-1 md:flex-none"
+                  className="bg-orange-500 hover:bg-orange-600 text-white h-10 min-w-[140px] gap-2"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Saving...
                     </>
                   ) : (
-                    "Save Vehicle"
+                    isEditMode ? "Save Changes" : "Add Vehicle"
                   )}
                 </Button>
               </div>
-            </form>
-          </Form>
-        </div>
+            </div>
+          </form>
+        </Form>
       </div>
     </ManagerLayout>
   );
