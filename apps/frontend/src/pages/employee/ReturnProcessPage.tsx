@@ -206,6 +206,8 @@ export default function ReturnProcessPage() {
   const [returnSession, setReturnSession] = useState<ReturnSessionResponse | null>(null);
 
   // ── Damage ─────────────────────────────────────────────────────────────────
+  // damageDecision: null = not yet decided, "NO_DAMAGE" = no damage, "DAMAGE_FOUND" = damage reported
+  const [damageDecision, setDamageDecision] = useState<"NO_DAMAGE" | "DAMAGE_FOUND" | null>(null);
   const [hasDamage, setHasDamage] = useState<boolean | null>(null);
   const [damageChargeType, setDamageChargeType] = useState<"PENALTY" | "COMPENSATION" | null>(null);
   const [damages, setDamages] = useState<DamageItem[]>([]);
@@ -263,6 +265,10 @@ export default function ReturnProcessPage() {
   const step2Complete = returnPhotos.length > 0;
   const step3Complete = !!returnSession && returnSession.session.status !== "OPEN";
   const step5Complete = paymentSettled;
+
+  // Damage flow: if damage found, payment is deferred to manager
+  const isDamageFlow = damageDecision === "DAMAGE_FOUND";
+  const isNoDamageFlow = damageDecision === "NO_DAMAGE";
 
   // ── Auto-fill return fuel level from pickup record ─────────────────────────
   useEffect(() => {
@@ -937,10 +943,255 @@ export default function ReturnProcessPage() {
           </CardContent>
         </StepCard>
 
-        {/* ── STEP 4: Safety Deposit Info ──────────────────────────────────── */}
-        {safetyDeposit > 0 && (
+        {/* ── STEP 4: Vehicle Condition Check (BEFORE payment) ────────────── */}
+        <StepCard
+          stepNum={pickupCaptures.length > 0 ? 4 : 3}
+          title="Vehicle Condition"
+          subtitle="Check for any new damage before proceeding to payment"
+          isCompleted={damageDecision !== null}
+          isLocked={!step3Complete || isCompleted}
+        >
+          <CardContent className="pt-4 space-y-4">
+            {damageDecision === null ? (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700">Does the vehicle have any new damage?</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setDamageDecision("NO_DAMAGE"); setHasDamage(false); }}
+                    className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-700"
+                  >
+                    No Damage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDamageDecision("DAMAGE_FOUND"); setHasDamage(true); setShowDamageForm(true); }}
+                    className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-700"
+                  >
+                    Damage Found
+                  </button>
+                </div>
+              </div>
+            ) : damageDecision === "NO_DAMAGE" ? (
+              <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <p className="text-sm font-medium">No damage found — proceeding to payment.</p>
+                </div>
+                {!paymentSettled && (
+                  <button
+                    type="button"
+                    className="text-xs text-green-700 underline underline-offset-2 hover:text-green-900 shrink-0 ml-3"
+                    onClick={() => setDamageDecision(null)}
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* DAMAGE_FOUND */
+              <div className="space-y-4">
+                {damageSubmitted ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 p-4 text-orange-800">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Damage report submitted to manager.</p>
+                      <p className="text-xs mt-0.5">The branch manager will review and determine the final charge. Payment is handled by the manager.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-orange-700 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" /> Damage Report
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground text-xs h-8"
+                          onClick={() => {
+                            damages.forEach((item) =>
+                              item.photos.forEach((p) => deleteDamageImageMutation.mutate(p.publicId)),
+                            );
+                            activeDamage.photos?.forEach((p) => deleteDamageImageMutation.mutate(p.publicId));
+                            setDamages([]);
+                            setActiveDamage({ severity: "Minor", photos: [] });
+                            setShowDamageForm(false);
+                            setDamageChargeType(null);
+                            setDamageDecision(null);
+                            setHasDamage(null);
+                          }}
+                        >
+                          ← No Damage
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setShowDamageForm(true)}>
+                          + Add Damage
+                        </Button>
+                      </div>
+                    </div>
+
+                    {showDamageForm && (
+                      <div className="p-4 border rounded-lg space-y-4 bg-background animate-in fade-in slide-in-from-top-2">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Area</Label>
+                            <Select onValueChange={(v) => setActiveDamage({ ...activeDamage, area: v })}>
+                              <SelectTrigger><SelectValue placeholder="Select Area" /></SelectTrigger>
+                              <SelectContent>
+                                {damageZones.map((z) => (
+                                  <SelectItem key={z} value={z}>{z}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Severity</Label>
+                            <Select defaultValue="Minor" onValueChange={(v) => setActiveDamage({ ...activeDamage, severity: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Minor">Minor</SelectItem>
+                                <SelectItem value="Moderate">Moderate</SelectItem>
+                                <SelectItem value="Severe">Severe</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Input
+                            placeholder="Describe the damage (e.g. 5cm scratch)"
+                            onChange={(e) => setActiveDamage({ ...activeDamage, description: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Photos</Label>
+                          <div {...getDamageRootProps()} className="border border-dashed p-4 rounded text-center text-sm cursor-pointer hover:bg-muted">
+                            <input {...getDamageInputProps()} />
+                            <p>Click to upload damage photos</p>
+                          </div>
+                          {activeDamage.photos && activeDamage.photos.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                              {activeDamage.photos.map((img, idx) => (
+                                <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted group cursor-pointer" onClick={() => setPreviewImage(img.url)}>
+                                  <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
+                                  <Button
+                                    size="icon" variant="destructive"
+                                    className="absolute top-1 right-1 h-5 w-5 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteDamageImageMutation.mutate(img.publicId);
+                                      setActiveDamage((prev) => ({ ...prev, photos: prev.photos?.filter((p) => p.publicId !== img.publicId) }));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button variant="ghost" size="sm" onClick={() => setShowDamageForm(false)}>Cancel</Button>
+                          <Button size="sm" onClick={addDamageItem}>Save Entry</Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {damages.length > 0 && (
+                      <div className="space-y-3">
+                        {damages.map((item) => (
+                          <div key={item.id} className="flex items-start justify-between p-3 border rounded-md bg-white shadow-sm">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{item.area}</span>
+                                <Badge variant={item.severity === "Severe" ? "destructive" : "outline"}>{item.severity}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{item.description}</p>
+                              {item.photos.length > 0 && (
+                                <div className="grid grid-cols-4 gap-2 mt-2">
+                                  {item.photos.map((img, idx) => (
+                                    <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted cursor-pointer" onClick={() => setPreviewImage(img.url)}>
+                                      <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeDamageItem(item.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {damages.length > 0 && (
+                      <div className="rounded-lg border-2 border-dashed border-orange-200 bg-orange-50/40 p-4 space-y-3">
+                        <p className="text-sm font-semibold text-orange-900">
+                          Damage Type <span className="text-red-500">*</span>
+                        </p>
+                        <p className="text-xs text-orange-700">
+                          Select how this damage will be charged. This cannot be changed after submission.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setDamageChargeType("PENALTY")}
+                            className={cn(
+                              "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
+                              damageChargeType === "PENALTY"
+                                ? "border-red-500 bg-red-50 text-red-800"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-red-300"
+                            )}
+                          >
+                            <span className="text-sm font-semibold">Damage Penalty</span>
+                            <span className="text-xs opacity-80">Customer at fault — GST applicable</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDamageChargeType("COMPENSATION")}
+                            className={cn(
+                              "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
+                              damageChargeType === "COMPENSATION"
+                                ? "border-blue-500 bg-blue-50 text-blue-800"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
+                            )}
+                          >
+                            <span className="text-sm font-semibold">Damage Compensation</span>
+                            <span className="text-xs opacity-80">Insurance / coverage — no GST</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {damages.length > 0 && (
+                      <Button
+                        className="w-full bg-[#FF5F00] hover:bg-[#e65600] text-white"
+                        disabled={reportDamageMutation.isPending || !damageChargeType}
+                        onClick={handleSubmitDamage}
+                      >
+                        {reportDamageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
+                        Submit Damage Report to Manager
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {!step3Complete && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                Compute charges in the previous step to proceed.
+              </p>
+            )}
+          </CardContent>
+        </StepCard>
+
+        {/* ── STEP 5: Safety Deposit Info (no-damage flow only) ────────────── */}
+        {safetyDeposit > 0 && isNoDamageFlow && (
           <StepCard
-            stepNum={pickupCaptures.length > 0 ? 4 : 3}
+            stepNum={pickupCaptures.length > 0 ? 5 : 4}
             title="Safety Deposit"
             subtitle="The deposit collected at pickup has been applied as a credit"
             isCompleted={step3Complete}
@@ -977,324 +1228,86 @@ export default function ReturnProcessPage() {
           </StepCard>
         )}
 
-        {/* ── STEP 5: Collect Payment / Issue Refund ───────────────────────── */}
-        <StepCard
-          stepNum={pickupCaptures.length > 0 ? (safetyDeposit > 0 ? 5 : 4) : (safetyDeposit > 0 ? 4 : 3)}
-          title={
-            returnSession
-              ? parseFloat(returnSession.session.netPayable) < 0
-                ? "Issue Refund to Customer"
-                : parseFloat(returnSession.session.netPayable) === 0
-                  ? "No Payment Required"
-                  : "Collect Payment"
-              : "Collect Payment / Issue Refund"
-          }
-          subtitle="Settle the return — this finalises the booking"
-          isCompleted={step5Complete}
-          isLocked={!step3Complete}
-        >
-          <CardContent className="pt-4 space-y-4">
-            {returnSession && !paymentSettled && (
-              <>
-                {/* Show ledger when no separate deposit step */}
-                {safetyDeposit <= 0 && (
-                  <LedgerSummaryCard session={returnSession.session} />
-                )}
+        {/* ── STEP 6: Collect Payment / Issue Refund (no-damage flow only) ── */}
+        {isNoDamageFlow && (
+          <StepCard
+            stepNum={pickupCaptures.length > 0 ? (safetyDeposit > 0 ? 6 : 5) : (safetyDeposit > 0 ? 5 : 4)}
+            title={
+              returnSession
+                ? parseFloat(returnSession.session.netPayable) < 0
+                  ? "Issue Refund to Customer"
+                  : parseFloat(returnSession.session.netPayable) === 0
+                    ? "No Payment Required"
+                    : "Collect Payment"
+                : "Collect Payment / Issue Refund"
+            }
+            subtitle="Settle the return — this finalises the booking"
+            isCompleted={step5Complete}
+            isLocked={!step3Complete || !isNoDamageFlow}
+          >
+            <CardContent className="pt-4 space-y-4">
+              {returnSession && !paymentSettled && (
+                <>
+                  {safetyDeposit <= 0 && (
+                    <LedgerSummaryCard session={returnSession.session} />
+                  )}
 
-                {/* Zero balance — deposit exactly covered charges */}
-                {isZeroBalance && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
-                      <CheckCircle2 className="h-4 w-4 shrink-0" />
-                      <p className="text-sm font-medium">
-                        The safety deposit covers all charges exactly. No additional payment is needed.
-                      </p>
+                  {isZeroBalance && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <p className="text-sm font-medium">
+                          The safety deposit covers all charges exactly. No additional payment is needed.
+                        </p>
+                      </div>
+                      <Button
+                        className="w-full bg-[#28A745] hover:bg-green-700 text-white h-12 text-sm font-semibold"
+                        disabled={zeroBalanceMutation.isPending}
+                        onClick={() => zeroBalanceMutation.mutate()}
+                      >
+                        {zeroBalanceMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <FileCheck className="h-4 w-4 mr-2" />
+                        )}
+                        Complete Return — No Payment Needed
+                      </Button>
                     </div>
-                    <Button
-                      className="w-full bg-[#28A745] hover:bg-green-700 text-white h-12 text-sm font-semibold"
-                      disabled={zeroBalanceMutation.isPending}
-                      onClick={() => zeroBalanceMutation.mutate()}
-                    >
-                      {zeroBalanceMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <FileCheck className="h-4 w-4 mr-2" />
-                      )}
-                      Complete Return — No Payment Needed
-                    </Button>
-                  </div>
-                )}
+                  )}
 
-                {/* Payment or refund */}
-                {!isZeroBalance && (
-                  <RecordPaymentPanel
-                    session={returnSession.session}
-                    onSuccess={(updatedSession) => {
-                      setReturnSession((prev) => prev ? { ...prev, session: updatedSession } : null);
-                      if (updatedSession.status === "COMPLETED") {
-                        queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-                        toast.success("Return settled — booking marked as Returned.");
-                      }
-                    }}
-                  />
-                )}
-              </>
-            )}
-
-            {paymentSettled && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <p className="text-sm font-medium">Payment settled. Booking marked as Returned.</p>
-              </div>
-            )}
-
-            {!returnSession && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Compute charges in the previous step to proceed.
-              </p>
-            )}
-          </CardContent>
-        </StepCard>
-
-        {/* ── STEP 6: Vehicle Condition ────────────────────────────────────── */}
-        <StepCard
-          stepNum={pickupCaptures.length > 0 ? (safetyDeposit > 0 ? 6 : 5) : (safetyDeposit > 0 ? 5 : 4)}
-          title="Vehicle Condition"
-          subtitle="Report any new damage found during return inspection"
-          isCompleted={paymentSettled && hasDamage !== null}
-          isLocked={!paymentSettled}
-        >
-          <CardContent className="pt-4 space-y-4">
-            {damageSubmitted ? (
-              <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 p-4 text-orange-800">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <p className="text-sm font-medium">
-                  Damage report submitted. The branch manager will review and determine any fine.
-                </p>
-              </div>
-            ) : hasDamage === null && paymentSettled ? (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700">Does the vehicle have any new damage?</p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setHasDamage(false)}
-                    className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-700"
-                  >
-                    No Damage
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setHasDamage(true); setShowDamageForm(true); }}
-                    className="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all bg-white border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-700"
-                  >
-                    Damage Found
-                  </button>
-                </div>
-              </div>
-            ) : hasDamage === false ? (
-              <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <p className="text-sm font-medium">No damage reported. Return process is complete.</p>
-                </div>
-                <button
-                  type="button"
-                  className="text-xs text-green-700 underline underline-offset-2 hover:text-green-900 shrink-0 ml-3"
-                  onClick={() => setHasDamage(null)}
-                >
-                  Change
-                </button>
-              </div>
-            ) : hasDamage === true && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-orange-700 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" /> Damage Report
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-muted-foreground text-xs h-8"
-                      onClick={() => {
-                        // Clean up any uploaded photos before resetting
-                        damages.forEach((item) =>
-                          item.photos.forEach((p) => deleteDamageImageMutation.mutate(p.publicId)),
-                        );
-                        activeDamage.photos?.forEach((p) => deleteDamageImageMutation.mutate(p.publicId));
-                        setDamages([]);
-                        setActiveDamage({ severity: "Minor", photos: [] });
-                        setShowDamageForm(false);
-                        setDamageChargeType(null);
-                        setHasDamage(null);
+                  {!isZeroBalance && (
+                    <RecordPaymentPanel
+                      session={returnSession.session}
+                      onSuccess={(updatedSession) => {
+                        setReturnSession((prev) => prev ? { ...prev, session: updatedSession } : null);
+                        if (updatedSession.status === "COMPLETED") {
+                          queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+                          toast.success("Return settled — booking marked as Returned.");
+                        }
                       }}
-                    >
-                      ← No Damage
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowDamageForm(true)}>
-                      + Add Damage
-                    </Button>
-                  </div>
+                    />
+                  )}
+                </>
+              )}
+
+              {paymentSettled && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <p className="text-sm font-medium">Payment settled. Booking marked as Returned.</p>
                 </div>
+              )}
 
-                {showDamageForm && (
-                  <div className="p-4 border rounded-lg space-y-4 bg-background animate-in fade-in slide-in-from-top-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Area</Label>
-                        <Select onValueChange={(v) => setActiveDamage({ ...activeDamage, area: v })}>
-                          <SelectTrigger><SelectValue placeholder="Select Area" /></SelectTrigger>
-                          <SelectContent>
-                            {damageZones.map((z) => (
-                              <SelectItem key={z} value={z}>{z}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Severity</Label>
-                        <Select defaultValue="Minor" onValueChange={(v) => setActiveDamage({ ...activeDamage, severity: v })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Minor">Minor</SelectItem>
-                            <SelectItem value="Moderate">Moderate</SelectItem>
-                            <SelectItem value="Severe">Severe</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Input
-                        placeholder="Describe the damage (e.g. 5cm scratch)"
-                        onChange={(e) => setActiveDamage({ ...activeDamage, description: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Photos</Label>
-                      <div {...getDamageRootProps()} className="border border-dashed p-4 rounded text-center text-sm cursor-pointer hover:bg-muted">
-                        <input {...getDamageInputProps()} />
-                        <p>Click to upload damage photos</p>
-                      </div>
-                      {activeDamage.photos && activeDamage.photos.length > 0 && (
-                        <div className="grid grid-cols-4 gap-2 mt-2">
-                          {activeDamage.photos.map((img, idx) => (
-                            <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted group cursor-pointer" onClick={() => setPreviewImage(img.url)}>
-                              <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
-                              <Button
-                                size="icon" variant="destructive"
-                                className="absolute top-1 right-1 h-5 w-5 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteDamageImageMutation.mutate(img.publicId);
-                                  setActiveDamage((prev) => ({ ...prev, photos: prev.photos?.filter((p) => p.publicId !== img.publicId) }));
-                                }}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button variant="ghost" size="sm" onClick={() => setShowDamageForm(false)}>Cancel</Button>
-                      <Button size="sm" onClick={addDamageItem}>Save Entry</Button>
-                    </div>
-                  </div>
-                )}
+              {!returnSession && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Compute charges in the previous step to proceed.
+                </p>
+              )}
+            </CardContent>
+          </StepCard>
+        )}
 
-                {damages.length > 0 && (
-                  <div className="space-y-3">
-                    {damages.map((item) => (
-                      <div key={item.id} className="flex items-start justify-between p-3 border rounded-md bg-white shadow-sm">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{item.area}</span>
-                            <Badge variant={item.severity === "Severe" ? "destructive" : "outline"}>{item.severity}</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                          {item.photos.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mt-2">
-                              {item.photos.map((img, idx) => (
-                                <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted cursor-pointer" onClick={() => setPreviewImage(img.url)}>
-                                  <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeDamageItem(item.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {damages.length > 0 && (
-                  <div className="rounded-lg border-2 border-dashed border-orange-200 bg-orange-50/40 p-4 space-y-3">
-                    <p className="text-sm font-semibold text-orange-900">
-                      Damage Type <span className="text-red-500">*</span>
-                    </p>
-                    <p className="text-xs text-orange-700">
-                      Select how this damage will be charged. This cannot be changed after submission.
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setDamageChargeType("PENALTY")}
-                        className={cn(
-                          "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
-                          damageChargeType === "PENALTY"
-                            ? "border-red-500 bg-red-50 text-red-800"
-                            : "border-gray-200 bg-white text-gray-600 hover:border-red-300"
-                        )}
-                      >
-                        <span className="text-sm font-semibold">Damage Penalty</span>
-                        <span className="text-xs opacity-80">Customer at fault — GST applicable</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDamageChargeType("COMPENSATION")}
-                        className={cn(
-                          "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all",
-                          damageChargeType === "COMPENSATION"
-                            ? "border-blue-500 bg-blue-50 text-blue-800"
-                            : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
-                        )}
-                      >
-                        <span className="text-sm font-semibold">Damage Compensation</span>
-                        <span className="text-xs opacity-80">Insurance / coverage — no GST</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {damages.length > 0 && (
-                  <Button
-                    className="w-full bg-[#FF5F00] hover:bg-[#e65600] text-white"
-                    disabled={reportDamageMutation.isPending || !damageChargeType}
-                    onClick={handleSubmitDamage}
-                  >
-                    {reportDamageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
-                    Submit Damage Report to Manager
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {!paymentSettled && (
-              <p className="text-sm text-muted-foreground text-center py-2">
-                Complete payment in the previous step to unlock this section.
-              </p>
-            )}
-          </CardContent>
-        </StepCard>
-
-        {/* ── Navigate to dashboard after completion ──────────────────────── */}
-        {paymentSettled && (hasDamage === false || damageSubmitted) && (
+        {/* ── Navigate to dashboard ────────────────────────────────────────── */}
+        {(paymentSettled || damageSubmitted) && (
           <Button
             className="w-full bg-[#1A1A1A] hover:bg-black text-white h-12"
             onClick={() => navigate("/employee/dashboard")}

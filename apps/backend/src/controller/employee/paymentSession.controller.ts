@@ -45,16 +45,22 @@ const addDepositSchema = z.object({
 });
 
 const recordPaymentSchema = z.object({
-  method: z.enum(["CASH", "ONLINE"]),
+  method: z.enum(["CASH", "ONLINE", "SPLIT"]),
   amount: z.coerce.number().min(0),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
   onlineTransactionRef: z.string().optional(),
   onlineGateway: z.string().optional(),
-}).refine(
-  (d) => d.method !== "ONLINE" || !!d.onlineTransactionRef?.trim(),
-  { message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] },
-);
+  cashAmount: z.coerce.number().min(0).optional(),
+  onlineAmount: z.coerce.number().min(0).optional(),
+}).superRefine((d, ctx) => {
+  if (d.method === "ONLINE" && !d.onlineTransactionRef?.trim()) {
+    ctx.addIssue({ code: "custom", message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] });
+  }
+  if (d.method === "SPLIT" && !d.onlineTransactionRef?.trim() && (d.onlineAmount ?? 0) > 0) {
+    ctx.addIssue({ code: "custom", message: "Transaction reference required for the online portion", path: ["onlineTransactionRef"] });
+  }
+});
 
 const recordRefundSchema = z.object({
   method: z.enum(["CASH", "ONLINE"]),
@@ -225,7 +231,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
     }
-    const { method, amount, idempotencyKey, notes, onlineTransactionRef, onlineGateway } = validation.data;
+    const { method, amount, idempotencyKey, notes, onlineTransactionRef, onlineGateway, cashAmount: splitCash, onlineAmount: splitOnline } = validation.data;
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
 
@@ -363,6 +369,66 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
+    } else if (method === "SPLIT") {
+      const cash = Math.abs(splitCash ?? 0);
+      const online = Math.abs(splitOnline ?? 0);
+
+      await prisma.$transaction(async (tx) => {
+        await ledgerService.addEntry(
+          session.id,
+          session.bookingId,
+          LedgerEntryType.PAYMENT,
+          LedgerEntryClassification.PAYMENT,
+          -Math.abs(amount),
+          notes ?? `Split payment: ₹${cash} cash + ₹${online} online${onlineTransactionRef ? ` (ref: ${onlineTransactionRef})` : ""}`,
+          actor.id,
+          String(actor.role),
+          { idempotencyKey, referenceType: "SPLIT_PAYMENT" },
+          tx as any,
+        );
+
+        const activeShift = await (tx as any).cashShift.findFirst({
+          where: { employeeId: actor.id, status: "OPEN" },
+          select: { id: true },
+        });
+
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            idempotencyKey: `pt:${idempotencyKey}`,
+            bookingId: session.bookingId,
+            branchId: session.branchId,
+            purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
+            method: "SPLIT" as any,
+            status: "COLLECTED",
+            totalAmount: amount.toFixed(2),
+            cashAmount: cash.toFixed(2),
+            onlineAmount: online.toFixed(2),
+            onlineTransactionRef: onlineTransactionRef ?? null,
+            onlineGateway: onlineGateway ?? null,
+            collectedById: actor.id,
+            collectedAt: new Date(),
+            cashShiftId: activeShift?.id ?? null,
+            notes: notes ?? null,
+          },
+        });
+
+        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
+        await (tx as any).booking.update({
+          where: { id: session.bookingId },
+          data: { activePaymentSessionId: null },
+        });
+
+        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+      }, { timeout: 15000 });
+
+      if (returnedVehicleIds.length > 0) {
+        try {
+          await invalidateVehicleAvailability(redis, returnedVehicleIds);
+        } catch (redisErr) {
+          console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
+        }
+      }
     }
 
     // Rebuild and regenerate invoice after RETURN session completes
