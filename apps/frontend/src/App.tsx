@@ -52,7 +52,7 @@ import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
 import { DisplacedBookingsPage } from "./pages/manager/DisplacedBookingsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
-import { NoShowCancellationsPage } from "./pages/manager/NoShowCancellationsPage";
+import NoShowCancellationsPage from "./pages/manager/NoShowCancellationsPage";
 import { DamageReportsPage } from "./pages/manager/DamageReportsPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
