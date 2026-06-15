@@ -60,6 +60,7 @@ import {
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
+import { ZoomableImage } from "@/components/ui/ZoomableImage";
 
 const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   value: String(i + 1),
@@ -1314,12 +1315,15 @@ export default function ReturnProcessPage() {
 
         {/* ── Image preview dialog ─────────────────────────────────────────── */}
         <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-zinc-100/80 border-none sm:rounded-lg">
-            <div className="relative w-full h-[80vh] flex items-center justify-center">
-              <img src={previewImage!} alt="Preview" className="max-w-full max-h-full object-contain" />
-              <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-900" onClick={() => setPreviewImage(null)}>
-                <X className="h-6 w-6" />
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border border-zinc-200 sm:rounded-2xl">
+            <DialogHeader className="px-4 pt-4 pb-3 border-b border-zinc-100">
+              <DialogTitle className="text-sm font-semibold text-zinc-700">Photo Preview</DialogTitle>
+              <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7 text-zinc-400 hover:text-zinc-900" onClick={() => setPreviewImage(null)}>
+                <X className="h-4 w-4" />
               </Button>
+            </DialogHeader>
+            <div className="p-4">
+              {previewImage && <ZoomableImage src={previewImage} alt="Preview" />}
             </div>
           </DialogContent>
         </Dialog>
@@ -1586,12 +1590,15 @@ export default function ReturnProcessPage() {
       {legacyDamages.length === 0 && null}
 
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-zinc-100/80 border-none sm:rounded-lg">
-          <div className="relative w-full h-[80vh] flex items-center justify-center">
-            <img src={previewImage!} alt="Preview" className="max-w-full max-h-full object-contain" />
-            <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => setPreviewImage(null)}>
-              <X className="h-6 w-6" />
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border border-zinc-200 sm:rounded-2xl">
+          <DialogHeader className="px-4 pt-4 pb-3 border-b border-zinc-100">
+            <DialogTitle className="text-sm font-semibold text-zinc-700">Photo Preview</DialogTitle>
+            <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7 text-zinc-400 hover:text-zinc-900" onClick={() => setPreviewImage(null)}>
+              <X className="h-4 w-4" />
             </Button>
+          </DialogHeader>
+          <div className="p-4">
+            {previewImage && <ZoomableImage src={previewImage} alt="Preview" />}
           </div>
         </DialogContent>
       </Dialog>

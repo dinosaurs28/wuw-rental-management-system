@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ZoomableImage } from "@/components/ui/ZoomableImage";
 import { cn } from "@/lib/utils";
 import {
   Check,
@@ -187,10 +188,9 @@ export const KycDocumentList = ({
           </DialogHeader>
           <div className="p-4">
             {previewImage?.url && (
-              <img
+              <ZoomableImage
                 src={previewImage.url}
                 alt={previewImage.title}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
               />
             )}
           </div>
