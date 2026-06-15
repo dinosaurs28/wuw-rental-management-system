@@ -10,6 +10,7 @@ import { AdvanceDepositService } from "../../services/booking/advance-deposit.se
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { financialStateService, branchPaymentConfigService, refundService } from "../../services/payment/index.js";
 import type { PaymentMethod } from "@repo/database/client";
+import { runNoShowAutoCancel } from "../../jobs/noShowAutoCancel.worker.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -973,5 +974,130 @@ export const GetNoShowEligibleBookings = async (req: Request, res: Response) => 
   } catch (error) {
     console.error("[GetNoShowEligibleBookings] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+// ── Cancellation Dashboard ────────────────────────────────────────────────────
+
+export const GetCancellationStats = async (req: Request, res: Response) => {
+  const branchId = req.branch_Id;
+
+  try {
+    const now = TimezoneService.getCurrentTime();
+    const startOfToday = TimezoneService.toPrisma(TimezoneService.startOfDay(now));
+    const startOf7Days = TimezoneService.toPrisma(now.minus({ days: 7 }));
+    const startOf30Days = TimezoneService.toPrisma(now.minus({ days: 30 }));
+
+    const [todayCancelledCount, last7DaysCancelledCount, last30DaysCancelledCount, totalCancelledCount, autoCancelledCount] = await Promise.all([
+      prisma.booking.count({ where: { branchId, status: BookingStatus.CANCELLED, cancelledAt: { gte: startOfToday } } }),
+      prisma.booking.count({ where: { branchId, status: BookingStatus.CANCELLED, cancelledAt: { gte: startOf7Days } } }),
+      prisma.booking.count({ where: { branchId, status: BookingStatus.CANCELLED, cancelledAt: { gte: startOf30Days } } }),
+      prisma.booking.count({ where: { branchId, status: BookingStatus.CANCELLED } }),
+      prisma.booking.count({
+        where: {
+          branchId,
+          status: BookingStatus.CANCELLED,
+          cancellationReason: { contains: "Auto-cancelled", mode: "insensitive" },
+        },
+      }),
+    ]);
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: {
+        todayCancelledCount,
+        last7DaysCancelledCount,
+        last30DaysCancelledCount,
+        totalCancelledCount,
+        autoCancelledCount,
+        manualCancelledCount: totalCancelledCount - autoCancelledCount,
+      },
+    });
+  } catch (error) {
+    console.error("[GetCancellationStats] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+export const GetCancellationHistory = async (req: Request, res: Response) => {
+  const branchId = req.branch_Id;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+  const { startDate, endDate } = req.query;
+
+  try {
+    const dateFilter: any = {};
+    if (startDate) {
+      dateFilter.gte = TimezoneService.toPrisma(
+        TimezoneService.startOfDay(TimezoneService.parseISO(startDate as string))
+      );
+    }
+    if (endDate) {
+      dateFilter.lte = TimezoneService.toPrisma(
+        TimezoneService.endOfDay(TimezoneService.parseISO(endDate as string))
+      );
+    }
+
+    const where: any = { branchId, status: BookingStatus.CANCELLED };
+    if (Object.keys(dateFilter).length > 0) {
+      where.cancelledAt = dateFilter;
+    }
+
+    const [total, bookings] = await Promise.all([
+      prisma.booking.count({ where }),
+      prisma.booking.findMany({
+        where,
+        select: {
+          publicId: true,
+          startAt: true,
+          endAt: true,
+          cancelledAt: true,
+          cancellationReason: true,
+          totalFinal: true,
+          advanceAmount: true,
+          customer: {
+            select: {
+              user: { select: { name: true, phone: true, email: true } },
+            },
+          },
+          items: {
+            select: {
+              vehicle: { select: { make: true, model: true, regNo: true } },
+            },
+            take: 1,
+          },
+          cancellationInvoice: {
+            select: { advanceAmount: true, cancellationFee: true },
+          },
+        },
+        orderBy: { cancelledAt: "desc" },
+        take: limit,
+        skip,
+      }),
+    ]);
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: bookings,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    console.error("[GetCancellationHistory] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+export const TriggerNoShowAutoCancelManual = async (req: Request, res: Response) => {
+  try {
+    const result = await runNoShowAutoCancel();
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: `Auto-cancellation run complete. ${result.cancelledCount} booking(s) cancelled.`,
+      data: result,
+    });
+  } catch (error) {
+    console.error("[TriggerNoShowAutoCancelManual] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Failed to run auto-cancellation" });
   }
 };

@@ -59,7 +59,7 @@ const financialsItems = [
 const operationsItems = [
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
   { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
-  { label: "No-Show", path: "/manager/no-show", icon: UserX },
+  { label: "Cancellations", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },
 ];
 

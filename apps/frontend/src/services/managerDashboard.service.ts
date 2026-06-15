@@ -85,6 +85,32 @@ export interface Employee {
   status: "ACTIVE" | "INACTIVE";
 }
 
+export interface CancellationStats {
+  todayCancelledCount: number;
+  last7DaysCancelledCount: number;
+  last30DaysCancelledCount: number;
+  totalCancelledCount: number;
+  autoCancelledCount: number;
+  manualCancelledCount: number;
+}
+
+export interface CancelledBooking {
+  publicId: string;
+  startAt: string;
+  endAt: string;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  totalFinal: string;
+  advanceAmount: string | null;
+  customer: {
+    user: { name: string; phone: string | null; email: string };
+  };
+  items: {
+    vehicle: { make: string; model: string; regNo: string };
+  }[];
+  cancellationInvoice: { advanceAmount: string; cancellationFee: string } | null;
+}
+
 export interface NoShowBooking {
   publicId: string;
   startAt: string;
@@ -258,6 +284,29 @@ export const managerDashboardService = {
       { timeout: 10000 },
     );
     return response.data;
+  },
+
+  getCancellationStats: async (): Promise<CancellationStats> => {
+    const response = await apiClient.get("/branchManager/dashboard/cancellations/stats", { timeout: 10000 });
+    return response.data.data as CancellationStats;
+  },
+
+  getCancellationHistory: async (params: {
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: CancelledBooking[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> => {
+    const response = await apiClient.get("/branchManager/dashboard/cancellations", {
+      params,
+      timeout: 10000,
+    });
+    return { data: response.data.data, pagination: response.data.pagination };
+  },
+
+  triggerNoShowAutoCancel: async (): Promise<{ cancelledCount: number; bookingIds: string[] }> => {
+    const response = await apiClient.post("/branchManager/dashboard/cancellations/trigger-cron", {}, { timeout: 60000 });
+    return response.data.data as { cancelledCount: number; bookingIds: string[] };
   },
 
   getInsuranceExpiryReports: async () => {

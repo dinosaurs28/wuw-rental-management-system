@@ -16,6 +16,9 @@ import {
   GetConfirmationDetails,
   GetBookingVehicleDetails,
   GetNoShowEligibleBookings,
+  GetCancellationStats,
+  GetCancellationHistory,
+  TriggerNoShowAutoCancelManual,
 } from "../../controller/branchManager/bookings.controller.js";
 import {
   GetAvailableVehicles,
@@ -116,6 +119,9 @@ router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
 router.get("/dashboard/bookings/no-show-eligible", ManagerCheck, GetNoShowEligibleBookings);
+router.get("/dashboard/cancellations/stats", ManagerCheck, GetCancellationStats);
+router.get("/dashboard/cancellations", ManagerCheck, GetCancellationHistory);
+router.post("/dashboard/cancellations/trigger-cron", ManagerCheck, TriggerNoShowAutoCancelManual);
 router.get(
   "/dashboard/bookings/manager-confirmations",
   ManagerCheck,
