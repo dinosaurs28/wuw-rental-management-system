@@ -5,6 +5,7 @@ import {
     Loader2,
     Search,
     Car,
+    Bike,
     Clock,
 } from "lucide-react";
 
@@ -77,20 +78,24 @@ export const SearchForm = () => {
                             <Loader2 className="size-[22px] animate-spin" /> Loading
                         </div>
                     ) : (
-                        categories.map(category => (
-                            <button
-                                key={category.publicId}
-                                onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
-                                className={cn(
-                                    "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
-                                    categoryPublicId === category.publicId
-                                        ? "bg-zinc-900 text-white"
-                                        : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
-                                )}>
-                                <Car className="size-[22px]" strokeWidth={1.8} />
-                                {category.name}
-                            </button>
-                        ))
+                        categories.map(category => {
+                            const isTwoWheeler = /\b(two|2)\b|bike|scooter/i.test(category.name);
+                            const CategoryIcon = isTwoWheeler ? Bike : Car;
+                            return (
+                                <button
+                                    key={category.publicId}
+                                    onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
+                                    className={cn(
+                                        "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
+                                        categoryPublicId === category.publicId
+                                            ? "bg-zinc-900 text-white"
+                                            : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
+                                    )}>
+                                    <CategoryIcon className="size-[22px]" strokeWidth={1.8} />
+                                    {category.name}
+                                </button>
+                            );
+                        })
                     )}
                 </div>
 
@@ -106,7 +111,7 @@ export const SearchForm = () => {
                             onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
                             disabled={isLoading || isError}
                         >
-                            <SelectTrigger className="w-full h-[64px] bg-white border-[1.5px] border-zinc-200 rounded-[14px] px-5 text-left font-medium text-zinc-900 hover:border-zinc-300 focus:border-zinc-900 transition-colors shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
+                            <SelectTrigger className="w-full h-[64px] data-[size=default]:h-[64px] bg-white border-[1.5px] border-zinc-200 rounded-[14px] px-5 text-left font-medium text-zinc-900 hover:border-zinc-300 focus:border-zinc-900 transition-colors shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
                                 <div className="flex items-center gap-[14px] text-[19px] font-medium tracking-[-0.01em] w-full min-w-0">
                                     <Search className="size-[22px] shrink-0 text-zinc-500" strokeWidth={2} />
                                     <span className={cn("truncate flex-1", !branchPublicId && "text-[#8a8a93]")}>

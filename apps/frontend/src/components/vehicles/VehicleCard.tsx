@@ -28,27 +28,13 @@ export const VehicleCard = ({
       : vehicle.category.name;
   };
 
-  const getDisplayPrice = () => {
-    if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
-      return vehicle.pricingDetails.finalPrice;
-    }
-    return "pricing" in vehicle
-      ? vehicle.pricing.daily
-      : vehicle.customPricing;
-  };
-
-  const getPriceLabel = () => {
-    if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
-      const typeMap: Record<string, string> = {
-        HOURLY: "/ hr",
-        HALF_DAY: "/ half day",
-        FULL_DAY: "/ day",
-        MULTI_DAY: "/ total",
-      };
-      return typeMap[vehicle.pricingDetails.type] || "/ day";
-    }
-    return "/ day";
-  };
+  // Daily rate is always available; total is computed only once a rental period is chosen
+  const dailyPrice =
+    "pricing" in vehicle ? vehicle.pricing.daily : vehicle.customPricing;
+  const totalPrice =
+    "pricingDetails" in vehicle && vehicle.pricingDetails
+      ? vehicle.pricingDetails.finalPrice
+      : null;
 
   const getDurationLabel = () => {
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
@@ -175,13 +161,20 @@ export const VehicleCard = ({
           </div>
 
           {/* Price */}
-          <div className="flex items-baseline gap-[9px]">
-            <span className="text-[34px] font-extrabold tracking-[-0.02em] leading-none">
-              ₹{getDisplayPrice() as number}
-            </span>
-            <span className="text-[17px] font-semibold text-[#c5c7cb]">
-              {getPriceLabel()}
-            </span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-[9px]">
+              <span className="text-[34px] font-extrabold tracking-[-0.02em] leading-none text-[#f0500a]">
+                ₹{dailyPrice as number}
+              </span>
+              <span className="text-[17px] font-semibold text-[#c5c7cb]">
+                / day
+              </span>
+            </div>
+            {totalPrice != null && (
+              <span className="text-[15px] font-semibold text-[#c5c7cb]">
+                ₹{totalPrice} total
+              </span>
+            )}
           </div>
         </div>
       </div>
