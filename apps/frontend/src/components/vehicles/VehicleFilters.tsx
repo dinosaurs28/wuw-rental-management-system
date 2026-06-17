@@ -5,8 +5,8 @@ import {
   Search,
   X,
   ArrowUpDown,
-  Grid3X3,
   MapPin,
+  Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -51,10 +51,19 @@ interface VehicleFiltersProps {
 }
 
 const SORT_OPTIONS = [
-  { value: "default", label: "Default" },
+  { value: "default", label: "Recommended" },
   { value: "price_low_to_high", label: "Price: Low to High" },
   { value: "price_high_to_low", label: "Price: High to Low" },
 ];
+
+const fieldShell =
+  "flex items-stretch h-[58px] rounded-[14px] border-[1.5px] border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-900";
+
+const labelClass =
+  "block text-[13px] font-bold tracking-[-0.01em] text-zinc-900 mb-2 pl-1";
+
+const timeInputClass =
+  "h-full bg-transparent border-0 text-zinc-900 font-medium text-[15px] tracking-[-0.01em] focus:outline-none w-[78px] [color-scheme:light] appearance-none cursor-pointer p-0 pr-7 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer";
 
 export const VehicleFilters = ({
   branches,
@@ -74,7 +83,7 @@ export const VehicleFilters = ({
   onSortChange,
   onSearchChange,
   onReset,
-  showBranchSelector = true, // Default to true for backward compatibility
+  showBranchSelector = true,
   pickupTime,
   returnTime,
   onPickupTimeChange,
@@ -100,228 +109,217 @@ export const VehicleFilters = ({
   }, [localSearch, onSearchChange, searchQuery]);
 
   const categoryOptions = [
-    { value: "all", label: "All Categories" },
-    ...categories.map((category) => ({
-      value: category.publicId,
-      label: category.name,
-    })),
+    { value: "all", label: "All" },
+    ...categories.map((c) => ({ value: c.publicId, label: c.name })),
   ];
 
   return (
-    <div className="bg-white rounded-[2rem] border border-zinc-200 shadow-2xl p-6 md:p-8 relative overflow-hidden">
-      {/* Subtle Inner Glow */}
-      <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+    <div className="space-y-5">
+      {/* Booking bar — rental criteria (branch + dates + times) */}
+      <div className="bg-white rounded-[22px] border border-zinc-200 shadow-[0_1px_2px_rgba(20,20,30,0.04),0_18px_50px_-30px_rgba(20,20,30,0.18)] p-5 md:p-6">
+        <div
+          className={cn(
+            "grid grid-cols-1 sm:grid-cols-2 gap-5 items-end",
+            showBranchSelector
+              ? "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_minmax(0,1.4fr)_auto]"
+              : "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_auto]",
+          )}
+        >
+          {/* Branch */}
+          {showBranchSelector && (
+            <div className="w-full">
+              <label className={labelClass}>Branch</label>
+              <Select
+                value={selectedBranch}
+                onValueChange={onBranchChange}
+                disabled={branchesLoading}
+              >
+                <SelectTrigger className="w-full h-[58px] data-[size=default]:h-[58px] bg-white border-[1.5px] border-zinc-200 rounded-[14px] px-5 font-medium text-zinc-900 hover:border-zinc-300 focus:border-zinc-900 shadow-none focus:ring-0 focus:ring-offset-0">
+                  <div className="flex items-center gap-3 overflow-hidden text-[15px]">
+                    <MapPin className="size-[18px] text-zinc-500 shrink-0" strokeWidth={2} />
+                    <SelectValue
+                      placeholder={branchesLoading ? "Loading..." : "Select branch"}
+                    />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
+                  {branches.map((branch) => (
+                    <SelectItem
+                      key={branch.publicId}
+                      value={branch.publicId}
+                      className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-0.5 cursor-pointer py-2.5 font-medium"
+                    >
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-      {/* Main Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6 relative z-10">
-        {/* Branch Selector */}
-        {showBranchSelector && (
+          {/* Pickup date + time */}
           <div className="w-full">
-            <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-              Branch
-            </label>
-            <Select
-              value={selectedBranch}
-              onValueChange={onBranchChange}
-              disabled={branchesLoading}
-            >
-              <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <MapPin className="size-4 text-zinc-400 shrink-0" />
-                  <SelectValue
-                    placeholder={
-                      branchesLoading ? "Loading..." : "Select branch"
+            <label className={labelClass}>Pick-up date</label>
+            <div className={fieldShell}>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "flex items-center gap-3 flex-1 min-w-0 h-full rounded-none justify-start px-4 bg-transparent hover:bg-[#fafafb] border-0 shadow-none font-medium",
+                      !pickupDate ? "text-[#8a8a93]" : "text-zinc-900",
+                    )}
+                  >
+                    <CalendarIcon className="size-[18px] shrink-0 text-zinc-900" strokeWidth={1.8} />
+                    <span className="text-[15px] font-medium truncate">
+                      {pickupDate ? format(pickupDate, "MMM dd") : "Select"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-2xl border-zinc-200 bg-white shadow-2xl" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={pickupDate || undefined}
+                    onSelect={onPickupDateChange}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
+              <div className="relative flex items-center h-full px-3 hover:bg-[#fafafb] transition-colors shrink-0">
+                <input
+                  type="time"
+                  value={pickupTime || "10:00"}
+                  onChange={(e) => onPickupTimeChange?.(e.target.value)}
+                  className={timeInputClass}
+                />
+                <Clock className="size-[15px] shrink-0 text-zinc-900 pointer-events-none absolute right-3" strokeWidth={2} />
+              </div>
+            </div>
+          </div>
+
+          {/* Return date + time */}
+          <div className="w-full">
+            <label className={labelClass}>Return date</label>
+            <div className={fieldShell}>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "flex items-center gap-3 flex-1 min-w-0 h-full rounded-none justify-start px-4 bg-transparent hover:bg-[#fafafb] border-0 shadow-none font-medium",
+                      !returnDate ? "text-[#8a8a93]" : "text-zinc-900",
+                    )}
+                  >
+                    <CalendarIcon className="size-[18px] shrink-0 text-zinc-900" strokeWidth={1.8} />
+                    <span className="text-[15px] font-medium truncate">
+                      {returnDate ? format(returnDate, "MMM dd") : "Select"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-2xl border-zinc-200 bg-white shadow-2xl" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={returnDate || undefined}
+                    onSelect={onReturnDateChange}
+                    disabled={(date) =>
+                      pickupDate ? date < pickupDate : date < new Date()
                     }
                   />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
-                {branches.map((branch) => (
-                  <SelectItem
-                    key={branch.publicId}
-                    value={branch.publicId}
-                    className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
-                  >
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                </PopoverContent>
+              </Popover>
+              <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
+              <div className="relative flex items-center h-full px-3 hover:bg-[#fafafb] transition-colors shrink-0">
+                <input
+                  type="time"
+                  value={returnTime || "10:00"}
+                  onChange={(e) => onReturnTimeChange?.(e.target.value)}
+                  className={timeInputClass}
+                />
+                <Clock className="size-[15px] shrink-0 text-zinc-900 pointer-events-none absolute right-3" strokeWidth={2} />
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Pickup Date */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Pickup Date
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-14 w-full justify-start text-left font-medium bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5",
-                  !pickupDate && "text-zinc-500 hover:text-zinc-900",
-                )}
-              >
-                <CalendarIcon className="mr-3 size-4 text-zinc-400 shrink-0" />
-                <span className="truncate">
-                  {pickupDate
-                    ? format(pickupDate, "MMM dd, yyyy")
-                    : "Select date"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-auto p-0 rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl"
-              align="start"
+          {/* Reset */}
+          <div className="w-full lg:w-auto">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setLocalSearch("");
+                onReset();
+              }}
+              className="h-[58px] w-full lg:w-auto px-6 rounded-[14px] text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 font-semibold transition-colors"
             >
-              <Calendar
-                mode="single"
-                selected={pickupDate || undefined}
-                onSelect={onPickupDateChange}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return date < today;
-                }}
-              />
-            </PopoverContent>
-          </Popover>
+              <X className="size-4 mr-1.5" />
+              Reset
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {/* Pickup Time */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Pickup Time
-          </label>
-          <input
-            type="time"
-            value={pickupTime || "10:00"}
-            onChange={(e) => onPickupTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
-        </div>
-
-        {/* Return Date */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Return Date
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-14 w-full justify-start text-left font-medium bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5",
-                  !returnDate && "text-zinc-500 hover:text-zinc-900",
-                )}
-              >
-                <CalendarIcon className="mr-3 size-4 text-zinc-400 shrink-0" />
-                <span className="truncate">
-                  {returnDate
-                    ? format(returnDate, "MMM dd, yyyy")
-                    : "Select date"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-auto p-0 rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl"
-              align="start"
-            >
-              <Calendar
-                mode="single"
-                selected={returnDate || undefined}
-                onSelect={onReturnDateChange}
-                disabled={(date) =>
-                  pickupDate ? date < pickupDate : date < new Date()
-                }
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Return Time */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Return Time
-          </label>
-          <input
-            type="time"
-            value={returnTime || "10:00"}
-            onChange={(e) => onReturnTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
-        </div>
-
-        {/* Category */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Category
-          </label>
-          <Select
-            value={category}
-            onValueChange={onCategoryChange}
-            disabled={categoriesLoading}
-          >
-            <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <Grid3X3 className="size-4 text-zinc-400 shrink-0" />
-                <SelectValue />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
-              {categoryOptions.map((cat) => (
-                <SelectItem
-                  key={cat.value}
-                  value={cat.value}
-                  className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
-                >
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Sort */}
-        <div className="w-full">
-          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
-            Sort By
-          </label>
+      {/* Toolbar — sort + category pills + search */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+        {/* Sort + category pills */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <ArrowUpDown className="size-4 text-zinc-400 shrink-0" />
-                <SelectValue />
-              </div>
+            <SelectTrigger className="h-[52px] data-[size=default]:h-[52px] w-auto gap-2 bg-[#f3f3f5] border-0 text-zinc-900 rounded-full px-5 font-semibold text-[15px] hover:bg-[#e9e9ec] shadow-none focus:ring-0 focus:ring-offset-0">
+              <ArrowUpDown className="size-[17px] text-zinc-700 shrink-0" strokeWidth={2} />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
               {SORT_OPTIONS.map((opt) => (
                 <SelectItem
                   key={opt.value}
                   value={opt.value}
-                  className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
+                  className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-0.5 cursor-pointer py-2.5 font-medium"
                 >
                   {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
 
-      {/* Search and Reset Row */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-zinc-200 relative z-10">
-        {/* Search Input */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-zinc-400" />
+          <div className="h-7 w-px bg-zinc-200 mx-1 hidden sm:block" />
+
+          {categoriesLoading ? (
+            <span className="text-[15px] font-semibold text-zinc-400 px-2">
+              Loading categories…
+            </span>
+          ) : (
+            categoryOptions.map((cat) => {
+              const active = category === cat.value;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => onCategoryChange(cat.value)}
+                  className={cn(
+                    "h-[52px] px-6 rounded-full text-[15px] font-semibold tracking-[-0.01em] transition-colors whitespace-nowrap",
+                    active
+                      ? "bg-zinc-900 text-white"
+                      : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]",
+                  )}
+                >
+                  {cat.label}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full lg:w-[320px] shrink-0">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-[18px] text-zinc-400" />
           <Input
             type="text"
-            placeholder="Search by make or model..."
+            placeholder="Search make or model…"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="h-14 pl-14 bg-white border-zinc-200 text-zinc-900 rounded-full focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all placeholder:text-zinc-400 text-base"
+            className="h-[52px] pl-12 pr-11 bg-white border-[1.5px] border-zinc-200 text-zinc-900 rounded-full hover:border-zinc-300 focus-visible:border-zinc-900 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors placeholder:text-zinc-400 text-[15px] font-medium"
           />
           {localSearch && (
             <button
@@ -329,25 +327,12 @@ export const VehicleFilters = ({
                 setLocalSearch("");
                 onSearchChange("");
               }}
-              className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-zinc-400 hover:text-zinc-900 transition-all"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-900 transition-colors"
             >
               <X className="size-4" />
             </button>
           )}
         </div>
-
-        {/* Reset Button */}
-        <Button
-          variant="outline"
-          onClick={() => {
-            setLocalSearch("");
-            onReset();
-          }}
-          className="h-14 px-8 border-zinc-200 bg-transparent text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-full font-bold tracking-wide transition-all"
-        >
-          <X className="size-4 mr-2" />
-          Reset
-        </Button>
       </div>
     </div>
   );

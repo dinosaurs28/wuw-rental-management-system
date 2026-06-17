@@ -261,7 +261,7 @@ export const VehiclesPage = () => {
     : undefined;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
+    <div className="min-h-screen flex flex-col bg-white scroll-smooth">
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
@@ -286,18 +286,16 @@ export const VehiclesPage = () => {
         </Breadcrumb>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-5xl font-serif font-black text-zinc-900 tracking-tight">
-              Select Your Vehicle
+            <h1 className="text-4xl md:text-6xl font-serif text-zinc-950 tracking-tight leading-[0.95]">
+              Which car do you <br className="hidden sm:block" />
+              want to <span className="text-orange-500 italic">drive?</span>
             </h1>
-            <p className="text-zinc-400 font-medium mt-2">
-              Find the perfect luxury companion for your journey
-            </p>
           </div>
-          <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-zinc-100 px-4 py-2 rounded-full border border-zinc-200">
-            <span className="text-zinc-900 text-lg mr-2">{vehicleCount}</span>
-            Results found
+          <div className="text-[15px] font-semibold text-zinc-500 shrink-0">
+            <span className="text-zinc-900 font-bold">{vehicleCount}</span>{" "}
+            {vehicleCount === 1 ? "vehicle" : "vehicles"} available
           </div>
         </div>
 
