@@ -11,14 +11,19 @@ import { useSignIn, useSignUp } from "@/hooks/useAuth";
 import type { SignInInput, SignUpInput } from "@/services/auth.service";
 import { authService } from "@/services/auth.service";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { Eye, EyeOff } from "lucide-react";
-// Icons
-// import { GoogleIcon } from "@/components/icons/GoogleIcon";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface SignInPageProps {
   defaultTab?: "sign-in" | "sign-up";
 }
+
+const fieldClass =
+  "h-[58px] w-full rounded-[14px] bg-white border-[1.5px] border-zinc-200 px-5 text-[16px] font-medium text-zinc-900 placeholder:text-[#8a8a93] transition-colors hover:border-zinc-300 focus-visible:border-zinc-900 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none";
+
+const labelClass =
+  "text-[13px] font-bold tracking-[-0.01em] text-zinc-900 pl-1";
 
 export default function SignInPage({
   defaultTab = "sign-in",
@@ -57,33 +62,33 @@ export default function SignInPage({
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2 mb-5 bg-zinc-100/80 p-1 rounded-full h-12">
+        {/* Tabs styled like the landing page category pills */}
+        <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#f3f3f5] p-[5px] rounded-full h-[54px]">
           <TabsTrigger
             value="sign-in"
-            className="rounded-full text-zinc-500 data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-md font-bold text-xs sm:text-sm transition-all h-full"
+            className="rounded-full text-zinc-500 data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:shadow-sm font-semibold text-[15px] tracking-[-0.01em] transition-all h-full"
           >
             Sign In
           </TabsTrigger>
           <TabsTrigger
             value="sign-up"
-            className="rounded-full text-zinc-500 data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-md font-bold text-xs sm:text-sm transition-all h-full"
+            className="rounded-full text-zinc-500 data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:shadow-sm font-semibold text-[15px] tracking-[-0.01em] transition-all h-full"
           >
             Register
           </TabsTrigger>
         </TabsList>
 
-        <div className="grid gap-3 mb-5">
+        <div className="grid gap-5 mb-5">
           <Button
             variant="outline"
-            className="w-full flex items-center justify-center gap-3 h-12 rounded-full font-bold border-zinc-200 text-zinc-700 bg-white shadow-sm hover:bg-zinc-50 hover:text-zinc-950 transition-all text-sm"
+            className="w-full flex items-center justify-center gap-3 h-[58px] rounded-[14px] font-semibold text-[16px] border-[1.5px] border-zinc-200 text-zinc-800 bg-white shadow-none hover:bg-zinc-50 hover:border-zinc-300 hover:text-zinc-950 transition-colors"
             onClick={() => authService.googleSignIn()}
           >
-            {/* Placeholder for Google Icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              height="18"
+              height="20"
               viewBox="0 0 24 24"
-              width="18"
+              width="20"
             >
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -105,19 +110,19 @@ export default function SignInPage({
             </svg>
             Continue with Google
           </Button>
-          <div className="relative my-1">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-zinc-200" />
             </div>
-            <div className="relative flex justify-center text-[9px] font-bold uppercase tracking-[0.2em]">
-              <span className="bg-white px-3 text-zinc-400">
+            <div className="relative flex justify-center text-[11px] font-bold uppercase tracking-[0.18em]">
+              <span className="bg-white px-4 text-zinc-400">
                 Or continue with email
               </span>
             </div>
           </div>
         </div>
 
-        <div className="overflow-visible min-h-[290px]">
+        <div className="overflow-visible min-h-[300px]">
           <AnimatePresence mode="wait" initial={false}>
             {activeTab === "sign-in" ? (
               <motion.div
@@ -132,38 +137,32 @@ export default function SignInPage({
               >
                 <form
                   onSubmit={signInForm.handleSubmit(onSignIn)}
-                  className="space-y-4 pt-1"
+                  className="space-y-4"
                 >
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="signin-email"
-                      className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-4"
-                    >
-                      Email Address
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email" className={labelClass}>
+                      Email address
                     </Label>
                     <Input
                       id="signin-email"
                       placeholder="name@example.com"
-                      className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm"
+                      className={fieldClass}
                       {...signInForm.register("email")}
                     />
                     {signInForm.formState.errors.email && (
-                      <p className="text-[10px] font-bold pl-4 text-red-500">
+                      <p className="text-[12px] font-semibold pl-1 text-red-500">
                         {signInForm.formState.errors.email.message}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between pl-4 pr-4">
-                      <Label
-                        htmlFor="signin-password"
-                        className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
-                      >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between pl-1 pr-1">
+                      <Label htmlFor="signin-password" className={labelClass}>
                         Password
                       </Label>
                       <a
                         href="#"
-                        className="text-[10px] text-orange-600 font-bold uppercase tracking-wider hover:text-orange-700 transition-colors"
+                        className="text-[13px] text-[#f0500a] font-bold hover:text-[#d9470a] transition-colors"
                       >
                         Forgot?
                       </a>
@@ -173,7 +172,7 @@ export default function SignInPage({
                         id="signin-password"
                         type={showSignInPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 pr-12 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
+                        className={cn(fieldClass, "pr-12")}
                         {...signInForm.register("password")}
                       />
                       <button
@@ -182,37 +181,38 @@ export default function SignInPage({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
                         tabIndex={-1}
                       >
-                        {showSignInPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        {showSignInPassword ? (
+                          <EyeOff className="size-5" />
+                        ) : (
+                          <Eye className="size-5" />
+                        )}
                       </button>
                     </div>
                     {signInForm.formState.errors.password && (
-                      <p className="text-[10px] font-bold pl-4 text-red-500">
+                      <p className="text-[12px] font-semibold pl-1 text-red-500">
                         {signInForm.formState.errors.password.message}
                       </p>
                     )}
                   </div>
 
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={!isSignInPending ? { scale: 1.01 } : {}}
+                    whileTap={!isSignInPending ? { scale: 0.99 } : {}}
                     type="submit"
-                    className="w-full h-12 rounded-full bg-zinc-950 hover:bg-orange-500 text-white font-bold text-sm uppercase tracking-widest transition-all duration-300 shadow-lg shadow-zinc-950/20 hover:shadow-orange-500/30 flex items-center justify-center gap-2 mt-3"
+                    className="w-full h-[58px] rounded-[14px] bg-[#f0500a] hover:bg-[#d9470a] text-white font-bold text-[17px] tracking-[-0.01em] transition-colors flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     disabled={isSignInPending}
                   >
-                    {isSignInPending ? "Verifying..." : "Sign In"}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="size-4"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
+                    {isSignInPending ? (
+                      <>
+                        <Loader2 className="size-5 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Sign In
+                        <ArrowRight className="size-5" />
+                      </>
+                    )}
                   </motion.button>
                 </form>
               </motion.div>
@@ -229,51 +229,42 @@ export default function SignInPage({
               >
                 <form
                   onSubmit={signUpForm.handleSubmit(onSignUp)}
-                  className="space-y-4 pt-1"
+                  className="space-y-4"
                 >
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="signup-name"
-                      className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-4"
-                    >
-                      Full Name
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name" className={labelClass}>
+                      Full name
                     </Label>
                     <Input
                       id="signup-name"
                       placeholder="John Doe"
-                      className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm"
+                      className={fieldClass}
                       {...signUpForm.register("name")}
                     />
                     {signUpForm.formState.errors.name && (
-                      <p className="text-[10px] font-bold pl-4 text-red-500">
+                      <p className="text-[12px] font-semibold pl-1 text-red-500">
                         {signUpForm.formState.errors.name.message}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="signup-email"
-                      className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-4"
-                    >
-                      Email Address
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className={labelClass}>
+                      Email address
                     </Label>
                     <Input
                       id="signup-email"
                       placeholder="name@example.com"
-                      className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm"
+                      className={fieldClass}
                       {...signUpForm.register("email")}
                     />
                     {signUpForm.formState.errors.email && (
-                      <p className="text-[10px] font-bold pl-4 text-red-500">
+                      <p className="text-[12px] font-semibold pl-1 text-red-500">
                         {signUpForm.formState.errors.email.message}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="signup-password"
-                      className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-4"
-                    >
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className={labelClass}>
                       Password
                     </Label>
                     <div className="relative">
@@ -281,7 +272,7 @@ export default function SignInPage({
                         id="signup-password"
                         type={showSignUpPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        className="h-12 rounded-full bg-zinc-50/50 border-zinc-200 px-5 pr-12 font-medium focus-visible:ring-zinc-950 focus-visible:bg-white transition-all hover:bg-zinc-50 text-sm tracking-[0.2em] placeholder:tracking-normal"
+                        className={cn(fieldClass, "pr-12")}
                         {...signUpForm.register("password")}
                       />
                       <button
@@ -290,36 +281,37 @@ export default function SignInPage({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
                         tabIndex={-1}
                       >
-                        {showSignUpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        {showSignUpPassword ? (
+                          <EyeOff className="size-5" />
+                        ) : (
+                          <Eye className="size-5" />
+                        )}
                       </button>
                     </div>
                     {signUpForm.formState.errors.password && (
-                      <p className="text-[10px] font-bold pl-4 text-red-500">
+                      <p className="text-[12px] font-semibold pl-1 text-red-500">
                         {signUpForm.formState.errors.password.message}
                       </p>
                     )}
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={!isSignUpPending ? { scale: 1.01 } : {}}
+                    whileTap={!isSignUpPending ? { scale: 0.99 } : {}}
                     type="submit"
-                    className="w-full h-12 rounded-full bg-zinc-950 hover:bg-orange-500 text-white font-bold text-sm uppercase tracking-widest transition-all duration-300 shadow-lg shadow-zinc-950/20 hover:shadow-orange-500/30 flex items-center justify-center gap-2 mt-3"
+                    className="w-full h-[58px] rounded-[14px] bg-[#f0500a] hover:bg-[#d9470a] text-white font-bold text-[17px] tracking-[-0.01em] transition-colors flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     disabled={isSignUpPending}
                   >
-                    {isSignUpPending ? "Creating..." : "Create Account"}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="size-4"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
+                    {isSignUpPending ? (
+                      <>
+                        <Loader2 className="size-5 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        Create Account
+                        <ArrowRight className="size-5" />
+                      </>
+                    )}
                   </motion.button>
                 </form>
               </motion.div>
@@ -328,18 +320,24 @@ export default function SignInPage({
         </div>
       </Tabs>
 
-      <div className="mt-6 text-center text-[10px] sm:text-xs font-medium text-zinc-400 px-2 leading-relaxed">
+      <div className="mt-7 text-center text-[12px] font-medium text-zinc-400 px-2 leading-relaxed">
         By continuing, you agree to our{" "}
-        <a href="#" className="underline hover:text-zinc-600 transition-colors">
+        <a
+          href="#"
+          className="underline hover:text-zinc-600 transition-colors"
+        >
           Terms of Service
         </a>{" "}
         &{" "}
-        <a href="#" className="underline hover:text-zinc-600 transition-colors">
+        <a
+          href="#"
+          className="underline hover:text-zinc-600 transition-colors"
+        >
           Privacy Policy
         </a>
         .
         <br />
-        Secure authentication via Drive Elite Identity.
+        Secure authentication via WUW Rentals Identity.
       </div>
     </AuthLayout>
   );
