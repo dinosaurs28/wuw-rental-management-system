@@ -18,6 +18,10 @@ export interface Booking {
   endAt: string;
   days: number;
   total: number;
+  isAdvancePayment: boolean;
+  advanceAmount: number;
+  remainingBalance: number;
+  amountPaid: number;
   createdAt: string;
   vehicles: BookingVehicle[];
 }

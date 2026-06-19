@@ -24,6 +24,7 @@ const DEFAULT_CONFIG = {
   refundApprovalRequired: true,
   onlineRefundEnabled: true,
   delayedCashAlertHours: 2,
+  customerPaymentMode: 'ADVANCE_ONLY' as const,
 } as const;
 
 class BranchPaymentConfigService {
@@ -45,6 +46,7 @@ class BranchPaymentConfigService {
       refundApprovalRequired?: boolean;
       onlineRefundEnabled?: boolean;
       delayedCashAlertHours?: number;
+      customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
     },
     actor: ActorContext,
   ): Promise<BranchPaymentConfig> {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, MapPin, Check, Loader2, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,6 +47,13 @@ export const VehiclePricingCard = ({
 
   const pickupDate = getStartDate();
   const returnDate = getEndDate();
+
+  // Auto-select payment flow based on branch config
+  useEffect(() => {
+    const mode = vehicle.customerPaymentMode ?? 'ADVANCE_ONLY';
+    if (mode === 'FULL_ONLY') setPaymentFlow('FULL');
+    else if (mode !== 'BOTH') setPaymentFlow('ADVANCE');
+  }, [vehicle.customerPaymentMode]);
 
   const formattedPickupDate = pickupDate
     ? format(pickupDate, "MMM dd, yyyy")
@@ -282,51 +289,74 @@ export const VehiclePricingCard = ({
           </div>
         </div>
 
-        {/* Advance Payment Option */}
+        {/* Payment Plan */}
         {!!vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && !!pd && (
           <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentFlow("FULL")}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
-                  paymentFlow === "FULL"
-                    ? "bg-white text-zinc-950 border-zinc-900 shadow-sm"
-                    : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
+            {vehicle.customerPaymentMode === 'BOTH' ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentFlow("FULL")}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
+                      paymentFlow === "FULL"
+                        ? "bg-white text-zinc-950 border-zinc-900 shadow-sm"
+                        : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
+                    )}
+                  >
+                    <Check className={cn("size-4", paymentFlow === "FULL" ? "text-zinc-900" : "text-zinc-400")} />
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      Full Pay
+                    </span>
+                    <span className="text-xs font-medium">
+                      {formatCurrency(pd.finalTotal)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentFlow("ADVANCE")}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
+                      paymentFlow === "ADVANCE"
+                        ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                        : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
+                    )}
+                  >
+                    <Wallet className="size-4" />
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      Advance
+                    </span>
+                    <span className="text-xs font-medium">
+                      {formatCurrency(vehicle.advancePayAmount)} now
+                    </span>
+                  </button>
+                </div>
+                {paymentFlow === "ADVANCE" ? (
+                  <div className="text-xs text-zinc-400 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Pay now (advance)</span>
+                      <span className="text-orange-400 font-bold">
+                        {formatCurrency(vehicle.advancePayAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Remaining (at pickup)</span>
+                      <span className="text-zinc-300">
+                        {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-400 text-center">
+                    Pay the full amount upfront — no balance due at pickup.
+                  </p>
                 )}
-              >
-                <Check className={cn("size-4", paymentFlow === "FULL" ? "text-zinc-900" : "text-zinc-400")} />
-                <span className="text-xs font-black uppercase tracking-wider">
-                  Full Pay
-                </span>
-                <span className="text-xs font-medium">
-                  {formatCurrency(pd.finalTotal)}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentFlow("ADVANCE")}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
-                  paymentFlow === "ADVANCE"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                    : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
-                )}
-              >
-                <Wallet className="size-4" />
-                <span className="text-xs font-black uppercase tracking-wider">
-                  Advance
-                </span>
-                <span className="text-xs font-medium">
-                  {formatCurrency(vehicle.advancePayAmount)} now
-                </span>
-              </button>
-            </div>
-            {paymentFlow === "ADVANCE" ? (
+              </>
+            ) : (
               <div className="text-xs text-zinc-400 space-y-1">
                 <div className="flex justify-between">
                   <span>Pay now (advance)</span>
@@ -341,10 +371,6 @@ export const VehiclePricingCard = ({
                   </span>
                 </div>
               </div>
-            ) : (
-              <p className="text-xs text-zinc-400 text-center">
-                Pay the full amount upfront — no balance due at pickup.
-              </p>
             )}
           </div>
         )}

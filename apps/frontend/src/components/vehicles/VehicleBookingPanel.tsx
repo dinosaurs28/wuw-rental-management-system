@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -81,6 +81,13 @@ export const VehicleBookingPanel = ({
 
   const hasAdvance = !!group.advancePayAmount && group.advancePayAmount > 0 && !!pd;
   const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
+
+  // Auto-select payment flow based on branch config
+  useEffect(() => {
+    const mode = group.customerPaymentMode ?? 'ADVANCE_ONLY';
+    if (mode === 'FULL_ONLY') setPaymentFlow('FULL');
+    else if (mode !== 'BOTH') setPaymentFlow('ADVANCE');
+  }, [group.customerPaymentMode]);
 
   const sectionTitle =
     "text-base font-black text-zinc-900 tracking-tight mb-4";
@@ -181,11 +188,11 @@ export const VehicleBookingPanel = ({
           </section>
         )}
 
-        {/* Payment plan — fills the "Booking option" slot with real data */}
+        {/* Payment plan */}
         {pd && (
           <section>
             <h3 className={sectionTitle}>Payment plan</h3>
-            {hasAdvance ? (
+            {hasAdvance && group.customerPaymentMode === 'BOTH' ? (
               <div className="space-y-3">
                 <button
                   type="button"
@@ -258,6 +265,20 @@ export const VehicleBookingPanel = ({
                     {fmt(group.advancePayAmount)}
                   </span>
                 </button>
+              </div>
+            ) : hasAdvance ? (
+              <div className="rounded-2xl border-2 border-[#FF5F00] p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-zinc-900 flex items-center gap-2">
+                    <Wallet className="size-4 text-[#FF5F00]" /> Advance payment
+                  </p>
+                  <span className="rounded-full bg-[#FF5F00] px-3 py-1 text-xs font-bold text-white">
+                    {fmt(group.advancePayAmount)} now
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-500">
+                  {fmt(pd.finalTotal - group.advancePayAmount)} remaining due at pickup.
+                </p>
               </div>
             ) : (
               <div className="rounded-2xl border-2 border-zinc-900 p-4 flex items-center gap-3">

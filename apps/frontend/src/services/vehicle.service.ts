@@ -56,6 +56,7 @@ export interface VehicleGroupDetails {
   deposit: number;
   availability: boolean | null;
   advancePayAmount: number;
+  customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
   pricingDetails: {
     basePrice: number;
     discountAmount: number;
@@ -224,6 +225,7 @@ export interface VehicleDetails {
     enabled?: boolean;
   } | null;
   advancePayAmount?: number;
+  customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
   hasFastag?: boolean;
   fastagNumber?: string;
   pricing: {

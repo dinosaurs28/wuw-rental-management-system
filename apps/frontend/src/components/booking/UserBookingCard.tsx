@@ -136,11 +136,16 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-200 mt-2">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
-                  Total Amount
+                  {booking.isAdvancePayment ? "Amount Paid" : "Total Amount"}
                 </span>
                 <span className="text-2xl font-bold text-zinc-900 font-mono tracking-tight">
-                  {formatCurrency(booking.total)}
+                  {formatCurrency(booking.amountPaid ?? booking.total)}
                 </span>
+                {booking.isAdvancePayment && booking.remainingBalance > 0 && (
+                  <span className="text-xs text-zinc-500 mt-0.5">
+                    +{formatCurrency(booking.remainingBalance)} due at pickup · {formatCurrency(booking.total)} total
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <InvoiceDownloadButton

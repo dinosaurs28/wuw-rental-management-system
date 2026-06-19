@@ -51,16 +51,19 @@ function TripCard({ trip }: { trip: BookingTrip }) {
       onPress={() => router.push({
         pathname: '/trip/[bookingId]',
         params: {
-          bookingId:     trip.bookingId,
-          status:        trip.status,
-          make:          v?.make ?? '',
-          model:         v?.model ?? '',
-          thumbnail:     v?.thumbnail ?? '',
-          startAt:       trip.startAt,
-          endAt:         trip.endAt,
-          days:          String(trip.days),
-          total:         String(trip.total),
-          paymentStatus: trip.paymentStatus ?? '',
+          bookingId:        trip.bookingId,
+          status:           trip.status,
+          make:             v?.make ?? '',
+          model:            v?.model ?? '',
+          thumbnail:        v?.thumbnail ?? '',
+          startAt:          trip.startAt,
+          endAt:            trip.endAt,
+          days:             String(trip.days),
+          total:            String(trip.total),
+          amountPaid:       String(trip.amountPaid ?? trip.total),
+          isAdvancePayment: String(trip.isAdvancePayment ?? false),
+          remainingBalance: String(trip.remainingBalance ?? 0),
+          paymentStatus:    trip.paymentStatus ?? '',
         },
       })}
       activeOpacity={0.88}
@@ -90,9 +93,16 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           {formatDate(trip.startAt)} → {formatDate(trip.endAt)} · {trip.days}d
         </Text>
         <View style={styles.cardBottom}>
-          <Text style={styles.total}>
-            ₹{Number(trip.total).toLocaleString('en-IN')}
-          </Text>
+          <View>
+            <Text style={styles.total}>
+              ₹{Number(trip.amountPaid ?? trip.total).toLocaleString('en-IN')} paid
+            </Text>
+            {trip.isAdvancePayment && Number(trip.remainingBalance) > 0 && (
+              <Text style={styles.remaining}>
+                +₹{Number(trip.remainingBalance).toLocaleString('en-IN')} at pickup
+              </Text>
+            )}
+          </View>
           <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
         </View>
       </View>
@@ -297,6 +307,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.displayBold,
     fontSize: 15,
     color: Colors.ink,
+  },
+  remaining: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.ink3,
+    marginTop: 1,
   },
   empty: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 40 },
   emptyIcon: {

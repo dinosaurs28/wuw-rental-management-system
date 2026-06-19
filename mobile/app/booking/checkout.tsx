@@ -69,7 +69,7 @@ export default function Checkout() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  const [paymentFlow, setPaymentFlow] = useState<'FULL' | 'ADVANCE'>('FULL');
+  const [paymentFlow, setPaymentFlow] = useState<'FULL' | 'ADVANCE'>('ADVANCE');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Active hold state — populated after a successful POST and surfaced as a
@@ -82,6 +82,14 @@ export default function Checkout() {
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
+
+  // Set payment flow based on branch config when vehicle data loads
+  useEffect(() => {
+    if (!vehicle) return;
+    const mode = vehicle.customerPaymentMode ?? 'ADVANCE_ONLY';
+    if (mode === 'FULL_ONLY') setPaymentFlow('FULL');
+    else setPaymentFlow('ADVANCE');
+  }, [vehicle?.customerPaymentMode]);
 
   // Countdown ticker — runs only while a hold is active.
   useEffect(() => {
@@ -164,6 +172,7 @@ export default function Checkout() {
         status: 'AVAILABLE',
         deposit: d.deposit ?? 0,
         advancePayAmount: Number(d.advancePayAmount ?? 0),
+        customerPaymentMode: d.customerPaymentMode ?? 'ADVANCE_ONLY',
         pricingDetails: d.pricingDetails ?? null,
       } as VehicleDetail;
     },
@@ -438,8 +447,8 @@ export default function Checkout() {
           )}
         </View>
 
-        {/* Payment plan */}
-        {hasAdvanceOption ? (
+        {/* Payment plan — only show selector when branch allows both options */}
+        {hasAdvanceOption && vehicle.customerPaymentMode === 'BOTH' ? (
           <>
             <Text style={styles.sectionTitle}>Payment plan</Text>
             <View style={styles.planSegment}>

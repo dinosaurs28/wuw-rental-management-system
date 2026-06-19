@@ -120,6 +120,12 @@ enum DepositMethod {
   UPI
 }
 
+enum CustomerPaymentMode {
+  ADVANCE_ONLY
+  FULL_ONLY
+  BOTH
+}
+
 enum PaymentStatus {
   CREATED
   SUCCESS
@@ -1580,6 +1586,8 @@ model BranchPaymentConfig {
   onlineRefundEnabled          Boolean  @default(true)
   // Hours after which a COLLECTED (unconfirmed) cash triggers a fraud alert
   delayedCashAlertHours        Int      @default(2)
+  // Controls which payment flows customers see at booking time
+  customerPaymentMode          CustomerPaymentMode @default(ADVANCE_ONLY)
 
   branch    Branch   @relation(fields: [branchId], references: [id])
   createdAt DateTime @default(now())

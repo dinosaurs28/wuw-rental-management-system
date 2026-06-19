@@ -5,6 +5,7 @@ import { z } from "zod";
 // Fields a MANAGER can update for their own branch
 export const updateBranchPaymentConfigSchema = z.object({
   requireShiftSettlement: z.boolean().optional(),
+  customerPaymentMode: z.enum(["ADVANCE_ONLY", "FULL_ONLY", "BOTH"]).optional(),
 });
 
 // Fields only ADMIN can change

@@ -412,7 +412,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     }
 
     // Use images from the representative vehicle only
-    const allImages: string[] = representativeVehicle.images.map((img) => img.file.url);
+    const allImages: string[] = representativeVehicle.images.map((img: any) => img.file.url);
 
     // Compute pricing from the representative vehicle
     let pricingDetails: any = null;
@@ -465,6 +465,15 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     const firstCat = groupVehicles[0]!.category;
     const firstBranch = groupVehicles[0]!.branch;
 
+    let groupCustomerPaymentMode = 'ADVANCE_ONLY';
+    try {
+      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
+        where: { branchId: firstBranch.id },
+        select: { customerPaymentMode: true },
+      });
+      groupCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
+    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+
     const response = {
       groupKey,
       make,
@@ -479,6 +488,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       availability,
       pricingDetails,
       advancePayAmount: Number(representativeVehicle.advancePayAmount ?? 0),
+      customerPaymentMode: groupCustomerPaymentMode,
     };
 
     try {
@@ -642,7 +652,16 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       availability = false;
     }
 
-    const imageUrls = vehicleData.images.map((img) => img.file.url);
+    let singleCustomerPaymentMode = 'ADVANCE_ONLY';
+    try {
+      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
+        where: { branchId: vehicleData.branchId },
+        select: { customerPaymentMode: true },
+      });
+      singleCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
+    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+
+    const imageUrls = vehicleData.images.map((img: any) => img.file.url);
     const response = {
       publicId:         vehicleData.publicId,
       make:             vehicleData.make,
@@ -653,6 +672,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       category:         vehicleData.category.name,
       branch:           vehicleData.branch.name,
       advancePayAmount: vehicleData.advancePayAmount,
+      customerPaymentMode: singleCustomerPaymentMode,
       images:           imageUrls,
       pricing:          { daily: pricingDetails?.pricingBreakdown?.applicablePrice },
       deposit,

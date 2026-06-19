@@ -58,6 +58,9 @@ export default function TripDetail() {
     endAt: string;
     days: string;
     total: string;
+    amountPaid: string;
+    isAdvancePayment: string;
+    remainingBalance: string;
     paymentStatus: string;
   }>();
 
@@ -71,8 +74,15 @@ export default function TripDetail() {
     endAt,
     days,
     total,
+    amountPaid,
+    isAdvancePayment,
+    remainingBalance,
     paymentStatus,
   } = params;
+
+  const paidAmount = Number(amountPaid ?? total);
+  const isAdvance = isAdvancePayment === 'true';
+  const remaining = Number(remainingBalance ?? 0);
 
   const color = STATUS_COLOR[status] ?? Colors.ink3;
   const showQR = status === 'CONFIRMED' || status === 'HOLD' || status === 'PICKED_UP';
@@ -149,9 +159,25 @@ export default function TripDetail() {
           <View style={styles.card}>
             <InfoRow
               icon="cash-outline"
-              label="Total"
-              value={`₹${Number(total).toLocaleString('en-IN')}`}
+              label="Amount Paid"
+              value={`₹${paidAmount.toLocaleString('en-IN')}`}
             />
+            {isAdvance && remaining > 0 && (
+              <>
+                <View style={styles.divider} />
+                <InfoRow
+                  icon="time-outline"
+                  label="Due at pickup"
+                  value={`₹${remaining.toLocaleString('en-IN')}`}
+                />
+                <View style={styles.divider} />
+                <InfoRow
+                  icon="receipt-outline"
+                  label="Total booking"
+                  value={`₹${Number(total).toLocaleString('en-IN')}`}
+                />
+              </>
+            )}
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
