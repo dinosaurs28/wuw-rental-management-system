@@ -276,6 +276,18 @@ export default function ReturnProcessPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.pickupFuelLevel]);
 
+  // ── Auto-calculate fuel deficit charge from vehicle's fuelBar rate ──────────
+  useEffect(() => {
+    const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
+    if (!fuelBarRate || !hasFuelDeficit || !returnFuelLevel || !pickupFuelLevel) return;
+    const deficitBars = FUEL_LEVEL_ORDER[pickupFuelLevel] - FUEL_LEVEL_ORDER[returnFuelLevel];
+    if (deficitBars > 0) {
+      setFuelCharge(String(Math.ceil(deficitBars * fuelBarRate)));
+      setFuelDeficit(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnFuelLevel, vehicle?.fuelBar]);
+
   // ── Restore session on page reload ─────────────────────────────────────────
   useEffect(() => {
     if (!bookingId || !useSessionFlow || returnSession || isCompleted) return;

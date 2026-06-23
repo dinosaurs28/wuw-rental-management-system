@@ -598,6 +598,7 @@ model Vehicle {
   regNo           String        @unique
   odo             Int
   fuelLevel       Int           @default(0)
+  fuelBar         Decimal?      @db.Decimal(10, 2)
   advancePayAmount Decimal      @default(0)
   insuranceExpiry DateTime
   status          VehicleStatus @default(AVAILABLE)

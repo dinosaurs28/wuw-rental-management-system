@@ -99,6 +99,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
       extraHourRate,
       isCustomPricingEnabled,
       advancePayAmount,
+      fuelBar,
       fastagNumber,
       hasFastag,
     } = validation.data;
@@ -124,6 +125,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
         regNo,
         odo: Number(odo),
         advancePayAmount: advancePayAmount ?? 0,
+        fuelBar: fuelBar ?? null,
         fastagNumber: fastagNumber ?? null,
         hasFastag: hasFastag ?? false,
         insuranceExpiry: new Date(insuranceExpiry),

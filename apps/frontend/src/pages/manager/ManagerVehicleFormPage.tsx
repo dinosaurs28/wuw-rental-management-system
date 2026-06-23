@@ -90,6 +90,7 @@ const vehicleSchema = z.object({
   extraHourRate: z.coerce.number().min(0, "Extra Hour rate must be non-negative"),
   isCustomPricingEnabled: z.boolean(),
   advancePayAmount: z.coerce.number().min(0, "Advance amount must be non-negative").optional(),
+  fuelBar: z.coerce.number().min(0, "Fuel charge per bar must be non-negative").optional(),
   insuranceExpiry: z.date({
     required_error: "Insurance Expiry is required",
   }),
@@ -134,6 +135,7 @@ export const ManagerVehicleFormPage = () => {
       extraHourRate: 100,
       isCustomPricingEnabled: true,
       advancePayAmount: 0,
+      fuelBar: 0,
       policyNumber: "",
       provider: "",
       images: [],
@@ -185,6 +187,7 @@ export const ManagerVehicleFormPage = () => {
             extraHourRate: vehicle.customPricing?.extraHourRate ? Number(vehicle.customPricing.extraHourRate) : 100,
             isCustomPricingEnabled: vehicle.customPricing?.enabled ?? true,
             advancePayAmount: vehicle.advancePayAmount ? Number(vehicle.advancePayAmount) : 0,
+            fuelBar: vehicle.fuelBar ? Number(vehicle.fuelBar) : 0,
             insuranceExpiry: vehicle.insuranceExpiry
               ? new Date(vehicle.insuranceExpiry)
               : undefined,
@@ -240,6 +243,9 @@ export const ManagerVehicleFormPage = () => {
       formData.append("isCustomPricingEnabled", data.isCustomPricingEnabled.toString());
       if (data.advancePayAmount !== undefined) {
         formData.append("advancePayAmount", data.advancePayAmount.toString());
+      }
+      if (data.fuelBar !== undefined) {
+        formData.append("fuelBar", data.fuelBar.toString());
       }
 
       data.images.forEach((img: any) => {
@@ -747,10 +753,10 @@ export const ManagerVehicleFormPage = () => {
 
                     <Separator />
 
-                    {/* Advance Payment */}
-                    <div>
-                      <h3 className="text-sm font-medium text-neutral-700 mb-4">Advance Payment</h3>
-                      <div className="max-w-xs">
+                    {/* Advance Payment + Fuel Bar */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <h3 className="text-sm font-medium text-neutral-700 mb-4">Advance Payment</h3>
                         <FormField
                           control={form.control}
                           name="advancePayAmount"
@@ -762,6 +768,25 @@ export const ManagerVehicleFormPage = () => {
                               </FormControl>
                               <p className="text-xs text-neutral-400 mt-1.5">
                                 Set 0 to disable advance payment requirement.
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-neutral-700 mb-4">Fuel Deficit Rate</h3>
+                        <FormField
+                          control={form.control}
+                          name="fuelBar"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-neutral-700">Charge per Bar (₹)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" placeholder="0 (manual entry)" className="h-11" {...field} />
+                              </FormControl>
+                              <p className="text-xs text-neutral-400 mt-1.5">
+                                Auto-fills deficit charge at return. Set 0 for manual entry.
                               </p>
                               <FormMessage />
                             </FormItem>

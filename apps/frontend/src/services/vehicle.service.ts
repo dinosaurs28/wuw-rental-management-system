@@ -225,6 +225,7 @@ export interface VehicleDetails {
     enabled?: boolean;
   } | null;
   advancePayAmount?: number;
+  fuelBar?: number | null;
   customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
   hasFastag?: boolean;
   fastagNumber?: string;

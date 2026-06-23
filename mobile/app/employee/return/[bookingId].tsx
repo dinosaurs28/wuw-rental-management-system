@@ -60,6 +60,7 @@ interface BookingDetail {
       regNo: string;
       category: string;
       odo: number | null;
+      fuelBar?: number | null;
       hasFastag?: boolean | null;
     };
   }>;
@@ -184,6 +185,14 @@ export default function ReturnProcess() {
   const pickupPct = fuelLevelToPct(booking?.pickupFuelLevel ?? null);
   const returnPct = fuelLevelToPct(returnFuel);
   const fuelDeficitPct = Math.max(0, pickupPct - returnPct);
+
+  // Auto-calculate fuel deficit charge from vehicle's fuelBar rate
+  useEffect(() => {
+    const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
+    if (!fuelBarRate || fuelDeficitPct <= 0) return;
+    const deficitBars = fuelDeficitPct / 10;
+    setFuelChargeStr(String(Math.ceil(deficitBars * fuelBarRate)));
+  }, [returnFuel, vehicle?.fuelBar]);
 
   const computeMutation = useMutation({
     mutationFn: async () => {

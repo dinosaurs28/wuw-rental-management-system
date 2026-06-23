@@ -679,6 +679,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                 regNo: true,
                 status: true,
                 odo: true,
+                fuelBar: true,
                 hasFastag: true,
                 images: {
                   where: { isThumbnail: true },
