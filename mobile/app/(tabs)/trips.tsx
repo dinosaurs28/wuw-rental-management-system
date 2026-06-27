@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Fonts } from '../../constants/colors';
@@ -43,6 +44,7 @@ function formatDate(iso: string) {
 function TripCard({ trip }: { trip: BookingTrip }) {
   const router = useRouter();
   const v = trip.vehicles[0];
+  const extraVehicles = trip.vehicles.length - 1;
 
   return (
     <TouchableOpacity
@@ -51,6 +53,7 @@ function TripCard({ trip }: { trip: BookingTrip }) {
         pathname: '/trip/[bookingId]',
         params: {
           bookingId:     trip.bookingId,
+          id:            String(trip.id),
           status:        trip.status,
           make:          v?.make ?? '',
           model:         v?.model ?? '',
@@ -60,6 +63,8 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           days:          String(trip.days),
           total:         String(trip.total),
           paymentStatus: trip.paymentStatus ?? '',
+          // full vehicle list so trip detail can render every vehicle (#39)
+          vehiclesJson:  JSON.stringify(trip.vehicles),
         },
       })}
       activeOpacity={0.88}
@@ -78,6 +83,7 @@ function TripCard({ trip }: { trip: BookingTrip }) {
         <View style={styles.cardTop}>
           <Text style={styles.carName} numberOfLines={1}>
             {v ? `${v.make} ${v.model}` : 'Vehicle'}
+            {extraVehicles > 0 ? ` +${extraVehicles}` : ''}
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[trip.status] + '22' }]}>
             <Text style={[styles.statusText, { color: STATUS_COLOR[trip.status] }]}>
@@ -103,21 +109,51 @@ export default function Trips() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
-  const { data: bookings, isLoading, error } = useQuery({
-    queryKey: ['bookings', activeTab],
-    queryFn: async () => {
-      const res = await userApi.bookings(1, 20);
-      console.log(`[trips] API response status=${res.status} data=${JSON.stringify(res.data?.data?.map((b: any) => ({ id: b.bookingId, status: b.status, paymentStatus: b.paymentStatus })))}`);
-      return res;
+  const {
+    data,
+    isLoading,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['bookings'],
+    queryFn: async ({ pageParam }) => {
+      const res = await userApi.bookings(pageParam, 20);
+      return res.data as { data: BookingTrip[]; meta: { page: number; totalPages: number } };
     },
-    select: (res) => {
-      const all: BookingTrip[] = res.data.data ?? [];
-      if (activeTab === 'active') return all.filter((b) => b.status === 'PICKED_UP');
-      if (activeTab === 'upcoming') return all.filter((b) => b.status === 'CONFIRMED' || b.status === 'HOLD');
-      return all.filter((b) => b.status === 'RETURNED' || b.status === 'CANCELLED');
-    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta && lastPage.meta.page < lastPage.meta.totalPages
+        ? lastPage.meta.page + 1
+        : undefined,
   });
-  if (error) console.error('[trips] query error:', error);
+
+  // Refetch when the tab/screen regains focus (status changes after pickup/return/payment).
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
+
+  const allBookings: BookingTrip[] = (data?.pages ?? []).flatMap((p) => p.data ?? []);
+  const bookings =
+    activeTab === 'active'
+      ? allBookings.filter((b) => b.status === 'PICKED_UP')
+      : activeTab === 'upcoming'
+      ? allBookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'HOLD')
+      : allBookings.filter((b) => b.status === 'RETURNED' || b.status === 'CANCELLED');
+
+  // The list endpoint returns ALL statuses unpaginated-by-status, so a tab's matches
+  // may live on later pages. Keep pulling pages until the filtered list is long enough
+  // to scroll (so onEndReached can take over) or every page is loaded — otherwise a
+  // short/empty first page would show a false "no rentals" state and never paginate.
+  useEffect(() => {
+    if (!isLoading && hasNextPage && !isFetchingNextPage && bookings.length < 8) {
+      fetchNextPage();
+    }
+  }, [bookings.length, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -150,6 +186,18 @@ export default function Trips() {
           keyExtractor={(b) => b.bookingId}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.orange} />
+          }
+          onEndReachedThreshold={0.4}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator style={styles.footerLoader} color={Colors.orange} />
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
@@ -207,6 +255,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: { color: Colors.white },
   loader: { marginTop: 60 },
+  footerLoader: { marginVertical: 16 },
   list: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, gap: 12 },
   card: {
     flexDirection: 'row',

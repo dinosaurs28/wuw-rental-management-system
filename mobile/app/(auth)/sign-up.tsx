@@ -13,9 +13,13 @@ import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { authApi } from '../../lib/api';
+import { useAuthStore } from '../../store/auth';
+import { LEGAL_URLS } from '../../constants/links';
+import type { User } from '../../types/api';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -34,6 +38,7 @@ type FormData = z.infer<typeof schema>;
 export default function SignUp() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const signIn = useAuthStore((s) => s.signIn);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
 
@@ -47,6 +52,20 @@ export default function SignUp() {
     setLoading(true);
     try {
       await authApi.signUp(data.name, data.email, data.password);
+      // Email signups are auto-verified, so an immediate sign-in returns a token —
+      // log the user straight in instead of bouncing them to the sign-in screen.
+      try {
+        const res = await authApi.signIn(data.email, data.password);
+        const payload = res.data?.data as (User & { accessToken?: string }) | undefined;
+        if (payload?.accessToken) {
+          const { accessToken, ...user } = payload;
+          await signIn(accessToken, user as User);
+          router.replace('/(tabs)');
+          return;
+        }
+      } catch {
+        // auto sign-in failed (e.g. unverified / transient) — fall back to manual sign-in below
+      }
       setToast({ title: 'Account created!', message: 'Sign in to get started.', type: 'success' });
       setTimeout(() => router.replace('/(auth)/sign-in'), 1800);
     } catch (err: any) {
@@ -136,8 +155,18 @@ export default function SignUp() {
 
         <Text style={styles.terms}>
           By continuing you agree to our{' '}
-          <Text style={styles.termsLink}>Terms</Text> &{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>.
+          <Text
+            style={styles.termsLink}
+            onPress={() => WebBrowser.openBrowserAsync(LEGAL_URLS.terms)}
+          >
+            Terms
+          </Text>{' '}&{' '}
+          <Text
+            style={styles.termsLink}
+            onPress={() => WebBrowser.openBrowserAsync(LEGAL_URLS.privacy)}
+          >
+            Privacy Policy
+          </Text>.
         </Text>
 
         <TouchableOpacity

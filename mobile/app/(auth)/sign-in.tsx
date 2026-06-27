@@ -45,8 +45,17 @@ export default function SignIn() {
     setLoading(true);
     try {
       const res = await authApi.signIn(data.email, data.password);
-      const { accessToken, ...user } = res.data.data as User & { accessToken: string };
-      await signIn(accessToken, user);
+      const payload = res.data?.data as (User & { accessToken?: string }) | undefined;
+      // 201 (no accessToken) → the account exists but the email isn't verified yet.
+      if (!payload?.accessToken) {
+        setToast({
+          title: 'Verify your account',
+          message: 'Your account isn’t verified yet. Please complete verification with our team to continue.',
+        });
+        return;
+      }
+      const { accessToken, ...user } = payload;
+      await signIn(accessToken, user as User);
       router.replace('/(tabs)');
     } catch (err: any) {
       const msg = err.response?.data?.message

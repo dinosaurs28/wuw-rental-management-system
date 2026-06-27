@@ -19,19 +19,15 @@ import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
+import TimeFieldPicker, { timeLabel } from '../../components/ui/TimeFieldPicker';
+import ImageCarousel from '../../components/cars/ImageCarousel';
+import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import type { VehicleDetail } from '../../types/api';
 
 const { width, height } = Dimensions.get('window');
 const HERO_HEIGHT = height * 0.42;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const INCLUDED: { icon: IoniconName; label: string }[] = [
-  { icon: 'shield-checkmark-outline', label: 'Insurance covered' },
-  { icon: 'headset-outline',           label: '24/7 Support' },
-  { icon: 'speedometer-outline',       label: '200 km/day free' },
-  { icon: 'construct-outline',         label: 'Roadside assist' },
-];
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(d: Date) {
@@ -54,6 +50,17 @@ function defaultEnd() {
   return d;
 }
 
+// Combine a date with a "HH:mm" time string into a new Date.
+function withTime(date: Date, hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = new Date(date);
+  d.setHours(h ?? 10, m ?? 0, 0, 0);
+  return d;
+}
+function timeOf(d: Date) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function VehicleDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -62,6 +69,7 @@ export default function VehicleDetail() {
   const [showPicker, setShowPicker] = useState(false);
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
+  const [timePicker, setTimePicker] = useState<null | 'start' | 'end'>(null);
   const toggle = useSavedStore(s => s.toggle);
   const savedList = useSavedStore(s => s.saved);
 
@@ -69,7 +77,7 @@ export default function VehicleDetail() {
   const nights = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
 
   const { data: vehicle, isLoading, isFetching } = useQuery({
-    queryKey: ['vehicle', id, startDate.toDateString(), endDate.toDateString()],
+    queryKey: ['vehicle', id, startDate.toISOString(), endDate.toISOString()],
     queryFn: () =>
       isGroupKey
         ? vehiclesApi.groupDetail(id!, { start: startDate.toISOString(), end: endDate.toISOString() })
@@ -115,21 +123,34 @@ export default function VehicleDetail() {
     );
   }
 
-  const heroImage = vehicle.images?.[0];
+  const hasImages = (vehicle.images?.length ?? 0) > 0;
   const isAvail = vehicle.availability !== false;
   const saved = savedList.some(v => v.publicId === vehicle.publicId);
   const pd = vehicle.pricingDetails;
-  // Compute true per-night rate: basePrice / nights when multi-day, else listing daily
-  const perNightPrice = pd
-    ? Math.round(pd.basePrice / Math.max(nights, 1))
-    : vehicle.pricing?.daily ?? null;
+  const pb = pd?.pricingBreakdown;
+  // Real period info from the engine (replaces locally-computed 'nights')
+  const realPeriodLabel = pb ? periodLabel(pb.periodType) : null;
+  const realDuration = pb ? durationLabel(pb.duration) : null;
+  // Per-period applicable rate (e.g. day/hour rate) + its unit label
+  const unitPrice = pb ? Math.round(pb.applicablePrice) : (vehicle.pricing?.daily ?? null);
+  const unit = pb ? unitLabel(pb.periodType) : '/day';
+
+  // Real "what's included" — built only from data the API actually returns
+  // (replaces the previous hardcoded marketing strings).
+  const inclusions: { icon: IoniconName; label: string }[] = [];
+  if (pd) {
+    if (pd.freeKmLimit) inclusions.push({ icon: 'speedometer-outline', label: `${pd.freeKmLimit} km included` });
+    if (pd.extraKmRate) inclusions.push({ icon: 'navigate-outline', label: `₹${pd.extraKmRate}/km after limit` });
+    if (pd.deposit) inclusions.push({ icon: 'shield-checkmark-outline', label: `₹${pd.deposit.toLocaleString('en-IN')} refundable deposit` });
+    if (pd.taxRate) inclusions.push({ icon: 'receipt-outline', label: `Incl. ${pd.taxRate}% GST` });
+  }
 
   return (
     <View style={styles.root}>
       {/* ── Hero ── */}
       <View style={[styles.hero, { height: HERO_HEIGHT }]}>
-        {heroImage ? (
-          <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+        {hasImages ? (
+          <ImageCarousel images={vehicle.images} style={StyleSheet.absoluteFillObject} />
         ) : (
           <LinearGradient colors={['#1a1a1a', '#2d2d2d', '#111']} style={StyleSheet.absoluteFillObject}>
             <View style={styles.heroGlow} />
@@ -176,7 +197,7 @@ export default function VehicleDetail() {
               activeOpacity={0.85}
               onPress={() => Share.share({
                 title: `${vehicle.make} ${vehicle.model}`,
-                message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${perNightPrice != null ? ` From ₹${perNightPrice.toLocaleString('en-IN')}/night.` : ''}`,
+                message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}`,
               })}
             >
               <Ionicons name="share-outline" size={20} color={Colors.white} />
@@ -192,10 +213,10 @@ export default function VehicleDetail() {
               <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.65)" />
               <Text style={styles.heroBranch}>{vehicle.branch}</Text>
             </View>
-            {perNightPrice != null && (
+            {unitPrice != null && (
               <View style={styles.heroPricePill}>
-                <Text style={styles.heroPriceText}>₹{perNightPrice.toLocaleString('en-IN')}</Text>
-                <Text style={styles.heroPriceDay}>/night</Text>
+                <Text style={styles.heroPriceText}>₹{unitPrice.toLocaleString('en-IN')}</Text>
+                <Text style={styles.heroPriceDay}>{unit}</Text>
               </View>
             )}
           </View>
@@ -224,16 +245,39 @@ export default function VehicleDetail() {
           </View>
         </TouchableOpacity>
 
-        {/* Nights + availability badge */}
+        {/* Time selection */}
+        <View style={styles.timeCard}>
+          <TouchableOpacity style={styles.timeHalf} onPress={() => setTimePicker('start')} activeOpacity={0.8}>
+            <Ionicons name="time-outline" size={15} color={Colors.ink3} />
+            <View>
+              <Text style={styles.dateLabel}>PICKUP TIME</Text>
+              <Text style={styles.timeValue}>{timeLabel(timeOf(startDate))}</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.dateDivider} />
+          <TouchableOpacity style={styles.timeHalf} onPress={() => setTimePicker('end')} activeOpacity={0.8}>
+            <Ionicons name="time-outline" size={15} color={Colors.ink3} />
+            <View>
+              <Text style={styles.dateLabel}>RETURN TIME</Text>
+              <Text style={styles.timeValue}>{timeLabel(timeOf(endDate))}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Period / duration + availability badge */}
         <View style={styles.badgeRow}>
           <View style={styles.nightsBadge}>
-            <Ionicons name="moon-outline" size={12} color={Colors.ink3} />
-            <Text style={styles.nightsText}>{nights} night{nights !== 1 ? 's' : ''}</Text>
+            <Ionicons name="time-outline" size={12} color={Colors.ink3} />
+            <Text style={styles.nightsText}>
+              {realPeriodLabel
+                ? `${realPeriodLabel}${realDuration ? ` · ${realDuration}` : ''}`
+                : `${nights} night${nights !== 1 ? 's' : ''}`}
+            </Text>
           </View>
           <View style={[styles.availBadge, !isAvail && styles.availBadgeRed]}>
             <View style={[styles.availDot, !isAvail && styles.availDotRed]} />
             <Text style={[styles.availText, !isAvail && styles.availTextRed]}>
-              {vehicle.availability === null ? 'Checking...' : isAvail ? `${vehicle.availableCount ?? ''} available` : 'Unavailable'}
+              {vehicle.availability === null ? 'Checking...' : isAvail ? (typeof vehicle.availableCount === 'number' ? `${vehicle.availableCount} available` : 'Available') : 'Unavailable'}
             </Text>
           </View>
           {isFetching && !isLoading && (
@@ -244,7 +288,7 @@ export default function VehicleDetail() {
         {/* Stat pills */}
         <View style={styles.statRow}>
           <StatPill icon="layers-outline" label="Type" value={vehicle.category} />
-          {pd?.freeKmLimit ? <StatPill icon="speedometer-outline" label="Free km" value={`${pd.freeKmLimit} km/day`} /> : null}
+          {pd?.freeKmLimit ? <StatPill icon="speedometer-outline" label="Free km" value={`${pd.freeKmLimit} km`} /> : null}
           {pd?.deposit ? <StatPill icon="shield-outline" label="Deposit" value={`₹${pd.deposit.toLocaleString('en-IN')}`} accent /> : null}
           {pd?.extraKmRate ? <StatPill icon="navigate-outline" label="Extra km" value={`₹${pd.extraKmRate}/km`} /> : null}
         </View>
@@ -267,25 +311,29 @@ export default function VehicleDetail() {
 
         {tab === 'overview' && (
           <>
-            {/* What's included */}
-            <Text style={styles.sectionTitle}>What's included</Text>
-            <View style={styles.includedGrid}>
-              {INCLUDED.map(item => (
-                <View key={item.label} style={styles.includedCard}>
-                  <View style={styles.includedIconWrap}>
-                    <Ionicons name={item.icon} size={20} color={Colors.orange} />
-                  </View>
-                  <Text style={styles.includedLabel}>{item.label}</Text>
+            {/* What's included — real terms from the rate, not marketing copy */}
+            {inclusions.length > 0 ? (
+              <>
+                <Text style={styles.sectionTitle}>What's included</Text>
+                <View style={styles.includedGrid}>
+                  {inclusions.map(item => (
+                    <View key={item.label} style={styles.includedCard}>
+                      <View style={styles.includedIconWrap}>
+                        <Ionicons name={item.icon} size={20} color={Colors.orange} />
+                      </View>
+                      <Text style={styles.includedLabel}>{item.label}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
+              </>
+            ) : null}
 
             {/* Pricing */}
             {pd ? (
               <>
                 <Text style={styles.sectionTitle}>Pricing breakdown</Text>
                 <View style={styles.priceCard}>
-                  <PriceLine label={`Base rate (${nights} night${nights !== 1 ? 's' : ''})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
+                  <PriceLine label={`Base rate (${realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
                   <PriceLine label="Deposit (refundable)" value={`₹${pd.deposit.toLocaleString('en-IN')}`} />
                   <PriceLine label={`Tax (GST ${pd.taxRate}%)`} value={`₹${pd.taxAmount.toLocaleString('en-IN')}`} />
                   {pd.discountAmount > 0 && (
@@ -313,7 +361,7 @@ export default function VehicleDetail() {
                 { icon: 'location-outline' as IoniconName,        label: 'Branch',        value: vehicle.branch },
                 { icon: 'checkmark-circle-outline' as IoniconName,label: 'Status',        value: vehicle.status ?? 'Available' },
                 ...(pd ? [
-                  { icon: 'speedometer-outline' as IoniconName,   label: 'Free km/day',   value: `${pd.freeKmLimit} km` },
+                  { icon: 'speedometer-outline' as IoniconName,   label: 'Free km',       value: `${pd.freeKmLimit} km` },
                   { icon: 'navigate-outline' as IoniconName,      label: 'Extra km rate', value: `₹${pd.extraKmRate}/km` },
                 ] : []),
               ].map(({ icon, label, value }, i, arr) => (
@@ -338,12 +386,12 @@ export default function VehicleDetail() {
               <Text style={styles.ctaPrice}>
                 ₹{(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}
               </Text>
-              <Text style={styles.ctaNote}>total · {nights} night{nights !== 1 ? 's' : ''}</Text>
+              <Text style={styles.ctaNote}>total · {realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`}</Text>
             </>
-          ) : perNightPrice != null ? (
+          ) : unitPrice != null ? (
             <>
-              <Text style={styles.ctaPrice}>₹{perNightPrice.toLocaleString('en-IN')}</Text>
-              <Text style={styles.ctaNote}>/night · select dates</Text>
+              <Text style={styles.ctaPrice}>₹{unitPrice.toLocaleString('en-IN')}</Text>
+              <Text style={styles.ctaNote}>{unit} · select dates</Text>
             </>
           ) : (
             <Text style={styles.ctaNote}>Select dates to see price</Text>
@@ -369,13 +417,28 @@ export default function VehicleDetail() {
         </TouchableOpacity>
       </View>
 
-      {/* Date picker */}
+      {/* Date picker — preserve the chosen times when dates change */}
       <DateRangePicker
         visible={showPicker}
         startDate={startDate}
         endDate={endDate}
-        onConfirm={(s, e) => { setStartDate(s); setEndDate(e); }}
+        onConfirm={(s, e) => {
+          setStartDate(withTime(s, timeOf(startDate)));
+          setEndDate(withTime(e, timeOf(endDate)));
+        }}
         onClose={() => setShowPicker(false)}
+      />
+
+      {/* Time picker */}
+      <TimeFieldPicker
+        visible={timePicker !== null}
+        value={timePicker === 'end' ? timeOf(endDate) : timeOf(startDate)}
+        title={timePicker === 'end' ? 'Return time' : 'Pickup time'}
+        onSelect={(t) => {
+          if (timePicker === 'end') setEndDate((d) => withTime(d, t));
+          else setStartDate((d) => withTime(d, t));
+        }}
+        onClose={() => setTimePicker(null)}
       />
     </View>
   );
@@ -476,6 +539,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Time card
+  timeCard: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  timeHalf: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  timeValue: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink, marginTop: 2 },
 
   // Badge row
   badgeRow: {

@@ -17,6 +17,7 @@ import { vehiclesApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import CarCard from '../../components/cars/CarCard';
 import VehicleQuickView from '../../components/cars/VehicleQuickView';
+import FilterSheet, { type FilterValue } from '../../components/cars/FilterSheet';
 import Avatar from '../../components/ui/Avatar';
 import type { Vehicle } from '../../types/api';
 
@@ -38,7 +39,12 @@ function normalizeGroup(g: any): Vehicle {
     branch: g.branch,
     availableCount: g.availableCount,
     images,
-    pricing: { daily: g.pricing?.daily ?? null },
+    pricing: {
+      daily: g.pricing?.daily ?? null,
+      hourly: g.pricing?.hourly ?? null,
+      halfDay: g.pricing?.halfDay ?? null,
+    },
+    priceInfo: g.pricingDetails ?? null,
     availability: true,
   };
 }
@@ -50,6 +56,8 @@ export default function Browse() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
+  const [sort, setSort] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: branches, isLoading: branchesLoading } = useQuery<Branch[]>({
     queryKey: ['branches'],
@@ -71,12 +79,13 @@ export default function Browse() {
   const browseEnd   = useMemo(() => new Date(Date.now() + 2 * 86_400_000).toISOString(), [today]);
 
   const { data: allVehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today],
+    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today, sort ?? 'default'],
     queryFn: () => vehiclesApi.list({
       limit: 100,
       start: browseStart,
       end: browseEnd,
       branch: selectedBranch?.publicId,
+      sort: (sort as any) || undefined,
     }),
     select: (res) => {
       const groups = (res.data?.data ?? []) as any[];
@@ -127,9 +136,18 @@ export default function Browse() {
           <Ionicons name="search-outline" size={16} color={Colors.ink3} />
         </View>
         <Text style={styles.searchPlaceholder}>Search cars…</Text>
-        <View style={styles.searchFilter}>
-          <Ionicons name="options-outline" size={16} color={Colors.ink3} />
-        </View>
+        <TouchableOpacity
+          style={[styles.searchFilter, (sort || selectedCategory) && styles.searchFilterActive]}
+          onPress={() => setFilterOpen(true)}
+          hitSlop={8}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="options-outline"
+            size={16}
+            color={(sort || selectedCategory) ? Colors.white : Colors.ink3}
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
 
       {/* Branch selector */}
@@ -256,6 +274,22 @@ export default function Browse() {
         vehicle={quickViewVehicle}
         onClose={() => setQuickViewVehicle(null)}
       />
+
+      {/* Filter / sort sheet */}
+      <FilterSheet
+        visible={filterOpen}
+        branches={(branches ?? []).map((b) => ({ id: b.publicId, label: b.name }))}
+        categories={[...new Set((allVehicles ?? []).map((v) => v.category).filter(Boolean))]
+          .sort()
+          .map((n) => ({ id: n, label: n }))}
+        value={{ branch: selectedBranch?.publicId ?? null, category: selectedCategory, sort }}
+        onApply={(v: FilterValue) => {
+          setSelectedBranch(v.branch ? (branches ?? []).find((b) => b.publicId === v.branch) ?? null : null);
+          setSelectedCategory(v.category);
+          setSort(v.sort);
+        }}
+        onClose={() => setFilterOpen(false)}
+      />
     </View>
   );
 }
@@ -319,6 +353,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  searchFilterActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
 
   // Branch selector
   branchLoaderRow: { paddingVertical: 8, alignItems: 'center' },

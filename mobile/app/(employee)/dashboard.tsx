@@ -27,6 +27,8 @@ interface Shift {
   publicId: string;
   status: string;
   openedAt: string;
+  expectedTotal?: string | null; // confirmed cash in drawer (Decimal string)
+  pendingTotal?: string | null;  // collected, awaiting manager confirmation
 }
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
@@ -81,7 +83,7 @@ export default function EmployeeDashboard() {
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<DashboardStats>({
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['employee', 'dashboard-stats'],
     queryFn: async () => {
       const res = await employeeApi.dashboardStats();
@@ -90,7 +92,7 @@ export default function EmployeeDashboard() {
     staleTime: 60_000,
   });
 
-  const { data: shiftData, isLoading: shiftLoading, refetch: refetchShift } = useQuery<Shift | null>({
+  const { data: shiftData, isLoading: shiftLoading, isFetching: shiftFetching, refetch: refetchShift } = useQuery<Shift | null>({
     queryKey: ['employee', 'active-shift'],
     queryFn: async () => {
       const res = await employeeApi.getActiveShift();
@@ -106,7 +108,7 @@ export default function EmployeeDashboard() {
     },
   });
 
-  const refreshing = statsLoading || shiftLoading;
+  const refreshing = statsFetching || shiftFetching;
 
   const onRefresh = () => {
     refetchStats();
@@ -155,23 +157,37 @@ export default function EmployeeDashboard() {
         {shiftLoading ? (
           <ActivityIndicator color={Colors.orange} size="small" />
         ) : shiftData ? (
-          <View style={styles.shiftActive}>
-            <View style={styles.shiftActiveLeft}>
-              <View style={styles.shiftDot} />
-              <View>
-                <Text style={styles.shiftActiveTitle}>Shift Active</Text>
-                <Text style={styles.shiftActiveTime}>
-                  Started at {formatTime(shiftData.openedAt)}
-                </Text>
+          <View>
+            <View style={styles.shiftActive}>
+              <View style={styles.shiftActiveLeft}>
+                <View style={styles.shiftDot} />
+                <View>
+                  <Text style={styles.shiftActiveTitle}>Shift Active</Text>
+                  <Text style={styles.shiftActiveTime}>
+                    Started at {formatTime(shiftData.openedAt)}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.closeShiftBtn}
+                onPress={() => router.push('/employee/shift/close')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.closeShiftText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.shiftCashRow}>
+              <View style={styles.shiftCashItem}>
+                <Text style={styles.shiftCashLabel}>In drawer (confirmed)</Text>
+                <Text style={styles.shiftCashValue}>₹{Number(shiftData.expectedTotal ?? 0).toLocaleString('en-IN')}</Text>
+              </View>
+              <View style={styles.shiftCashDivider} />
+              <View style={styles.shiftCashItem}>
+                <Text style={styles.shiftCashLabel}>Pending confirmation</Text>
+                <Text style={styles.shiftCashValuePending}>₹{Number(shiftData.pendingTotal ?? 0).toLocaleString('en-IN')}</Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.closeShiftBtn}
-              onPress={() => router.push('/employee/shift/close')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.closeShiftText}>Close</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.shiftInactive}>
@@ -224,10 +240,15 @@ export default function EmployeeDashboard() {
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionsGrid}>
         <QuickAction
+          label="New Booking"
+          icon="add-circle-outline"
+          onPress={() => router.push('/employee/customer/search')}
+          accent
+        />
+        <QuickAction
           label="Pickup Queue"
           icon="arrow-up-circle-outline"
           onPress={() => router.push('/(employee)/bookings')}
-          accent
         />
         <QuickAction
           label="Return Queue"
@@ -359,6 +380,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#e53e3e',
   },
+  shiftCashRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
+  shiftCashItem: { flex: 1, gap: 3 },
+  shiftCashDivider: { width: 1, height: 32, backgroundColor: Colors.hairline, marginHorizontal: 12 },
+  shiftCashLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
+  shiftCashValue: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
+  shiftCashValuePending: { fontFamily: Fonts.displayBold, fontSize: 18, color: '#d97706', letterSpacing: -0.4 },
 
   shiftInactive: {
     flexDirection: 'row',

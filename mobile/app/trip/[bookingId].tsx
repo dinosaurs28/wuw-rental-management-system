@@ -1,9 +1,15 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
+import { userApi } from '../../lib/api';
+import type { BookingVehicle } from '../../types/api';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -49,6 +55,7 @@ export default function TripDetail() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     bookingId: string;
+    id: string;
     status: string;
     make: string;
     model: string;
@@ -58,10 +65,12 @@ export default function TripDetail() {
     days: string;
     total: string;
     paymentStatus: string;
+    vehiclesJson: string;
   }>();
 
   const {
     bookingId,
+    id,
     status,
     make,
     model,
@@ -71,10 +80,85 @@ export default function TripDetail() {
     days,
     total,
     paymentStatus,
+    vehiclesJson,
   } = params;
 
+  // Full vehicle list (#39) — render every vehicle, not just the first.
+  const vehicles = useMemo<BookingVehicle[]>(() => {
+    try {
+      const parsed = JSON.parse(vehiclesJson ?? '[]');
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      /* fall through to the single-vehicle fallback */
+    }
+    return make ? [{ publicId: bookingId, make, model, thumbnail: thumbnail || null, finalTotal: Number(total) || 0 }] : [];
+  }, [vehiclesJson, make, model, thumbnail, total, bookingId]);
+
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+
   const color = STATUS_COLOR[status] ?? Colors.ink3;
-  const showQR = status === 'CONFIRMED' || status === 'HOLD' || status === 'PICKED_UP';
+  // A HOLD is unpaid/unconfirmed and pickup is blocked server-side — no pickup QR for it.
+  const showQR = status === 'CONFIRMED' || status === 'PICKED_UP';
+  const canCancelHold = status === 'HOLD';
+
+  const cancelHold = () => {
+    if (cancelBusy) return;
+    Alert.alert(
+      'Cancel booking',
+      'Release this held booking? This frees the vehicle for other customers and cannot be undone.',
+      [
+        { text: 'Keep booking', style: 'cancel' },
+        {
+          text: 'Cancel booking',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelBusy(true);
+            try {
+              await userApi.cancelHold(bookingId);
+              router.replace('/(tabs)/trips');
+            } catch (err: any) {
+              Alert.alert('Could not cancel', err?.response?.data?.message ?? 'Please try again.');
+            } finally {
+              setCancelBusy(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+  const numericId = Number(id);
+  const canInvoice = (status === 'CONFIRMED' || status === 'RETURNED') && Number.isFinite(numericId) && numericId > 0;
+
+  const openInvoice = async () => {
+    if (!canInvoice || invoiceBusy) return;
+    setInvoiceBusy(true);
+    try {
+      const res = await userApi.invoiceDownload(numericId);
+      const d = res.data ?? {};
+      if (d.cached && d.pdfUrl) {
+        await WebBrowser.openBrowserAsync(d.pdfUrl);
+        return;
+      }
+      if (d.generating && d.invoiceId) {
+        for (let i = 0; i < 40; i++) {
+          await sleep(3000);
+          const s = (await userApi.invoiceStatus(d.invoiceId)).data ?? {};
+          if (s.state === 'completed' && s.pdfUrl) {
+            await WebBrowser.openBrowserAsync(s.pdfUrl);
+            return;
+          }
+          if (s.state === 'failed') throw new Error('Invoice generation failed');
+        }
+        throw new Error('Invoice is taking longer than expected');
+      }
+      throw new Error(d.message ?? 'Invoice is not available yet');
+    } catch (err: any) {
+      Alert.alert('Invoice', err?.response?.data?.message ?? err?.message ?? 'Could not download invoice. Please try again.');
+    } finally {
+      setInvoiceBusy(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -93,22 +177,29 @@ export default function TripDetail() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Vehicle card */}
-        <View style={styles.vehicleCard}>
-          {thumbnail ? (
-            <Image source={{ uri: thumbnail }} style={styles.vehiclePhoto} resizeMode="cover" />
-          ) : (
-            <View style={[styles.vehiclePhoto, styles.vehiclePhotoPlaceholder]}>
-              <Ionicons name="car-sport-outline" size={40} color={Colors.ink4} />
+        {/* Vehicle card(s) — one per vehicle on the booking */}
+        {vehicles.map((veh, i) => (
+          <View key={veh.publicId ?? i} style={[styles.vehicleCard, i > 0 && styles.vehicleCardStacked]}>
+            {veh.thumbnail ? (
+              <Image source={{ uri: veh.thumbnail }} style={styles.vehiclePhoto} resizeMode="cover" />
+            ) : (
+              <View style={[styles.vehiclePhoto, styles.vehiclePhotoPlaceholder]}>
+                <Ionicons name="car-sport-outline" size={40} color={Colors.ink4} />
+              </View>
+            )}
+            <View style={styles.vehicleInfo}>
+              <Text style={styles.vehicleName}>{veh.make} {veh.model}</Text>
+              {i === 0 ? (
+                <Text style={styles.bookingRef} numberOfLines={1} ellipsizeMode="middle">
+                  Ref: {bookingId}
+                </Text>
+              ) : null}
+              {vehicles.length > 1 && veh.finalTotal != null ? (
+                <Text style={styles.vehiclePrice}>₹{Number(veh.finalTotal).toLocaleString('en-IN')}</Text>
+              ) : null}
             </View>
-          )}
-          <View style={styles.vehicleInfo}>
-            <Text style={styles.vehicleName}>{make} {model}</Text>
-            <Text style={styles.bookingRef} numberOfLines={1} ellipsizeMode="middle">
-              Ref: {bookingId}
-            </Text>
           </View>
-        </View>
+        ))}
 
         {/* QR Code — for employee to scan at pickup */}
         {showQR && (
@@ -159,12 +250,44 @@ export default function TripDetail() {
               </View>
               <View style={[styles.payBadge, { backgroundColor: paymentStatus === 'SUCCESS' ? '#2d9d6120' : '#f59e0b20' }]}>
                 <Text style={[styles.payBadgeText, { color: paymentStatus === 'SUCCESS' ? '#2d9d61' : '#d97706' }]}>
-                  {paymentStatus === 'SUCCESS' ? 'Paid' : paymentStatus ?? '—'}
+                  {paymentStatus === 'SUCCESS'
+                    ? 'Paid'
+                    : paymentStatus === 'FAILED'
+                    ? 'Failed'
+                    : paymentStatus === 'REFUNDED'
+                    ? 'Refunded'
+                    : paymentStatus
+                    ? 'Pending'
+                    : '—'}
                 </Text>
               </View>
             </View>
           </View>
         </View>
+
+        {/* Invoice — available once confirmed/returned */}
+        {canInvoice && (
+          <TouchableOpacity style={styles.invoiceBtn} onPress={openInvoice} disabled={invoiceBusy} activeOpacity={0.85}>
+            {invoiceBusy ? (
+              <ActivityIndicator size="small" color={Colors.ink} />
+            ) : (
+              <Ionicons name="download-outline" size={18} color={Colors.ink} />
+            )}
+            <Text style={styles.invoiceBtnText}>{invoiceBusy ? 'Preparing invoice…' : 'Download invoice (PDF)'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Cancel a held (unpaid) booking — releases the vehicle (#43) */}
+        {canCancelHold && (
+          <TouchableOpacity style={styles.cancelBtn} onPress={cancelHold} disabled={cancelBusy} activeOpacity={0.85}>
+            {cancelBusy ? (
+              <ActivityIndicator size="small" color="#e53e3e" />
+            ) : (
+              <Ionicons name="close-circle-outline" size={18} color="#e53e3e" />
+            )}
+            <Text style={styles.cancelBtnText}>{cancelBusy ? 'Cancelling…' : 'Cancel this booking'}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* What to bring — only for upcoming */}
         {(status === 'CONFIRMED' || status === 'HOLD') && (
@@ -232,6 +355,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
     marginBottom: 20,
   },
+  vehicleCardStacked: { marginTop: -10 },
+  vehiclePrice: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange, marginTop: 2 },
   vehiclePhoto: { width: 110, height: 90 },
   vehiclePhotoPlaceholder: {
     backgroundColor: '#f0f0ee',
@@ -306,6 +431,34 @@ const styles = StyleSheet.create({
 
   payBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   payBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11 },
+
+  invoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingVertical: 15,
+    marginBottom: 20,
+  },
+  invoiceBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff5f5',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    paddingVertical: 15,
+    marginBottom: 20,
+  },
+  cancelBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#e53e3e' },
 
   bringRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bringIcon: {

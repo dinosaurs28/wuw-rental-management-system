@@ -85,6 +85,16 @@ export default function CustomerSearch() {
         </TouchableOpacity>
       </View>
 
+      {/* New customer */}
+      <TouchableOpacity
+        style={styles.newCustomerBtn}
+        onPress={() => router.push('/employee/customer/create')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="person-add-outline" size={16} color={Colors.orange} />
+        <Text style={styles.newCustomerText}>New walk-in customer</Text>
+      </TouchableOpacity>
+
       {/* Results */}
       {!submitted ? (
         <View style={styles.emptyState}>
@@ -182,6 +192,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBtnDisabled: { opacity: 0.35 },
+
+  newCustomerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ff6a1f30',
+    backgroundColor: '#ff6a1f0d',
+  },
+  newCustomerText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
 
   loader: { marginTop: 60 },
   list: { paddingHorizontal: 20, paddingBottom: 100, gap: 8 },

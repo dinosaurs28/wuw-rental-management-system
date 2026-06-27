@@ -2,6 +2,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'rea
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { unitLabel, periodLabel } from '../../lib/pricing';
 import type { Vehicle } from '../../types/api';
 
 const { width } = Dimensions.get('window');
@@ -17,6 +18,13 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
   const thumb = vehicle.images?.[0];
 
   const handlePress = onPress ?? (() => router.push(`/vehicle/${vehicle.publicId}`));
+
+  // Duration-aware headline RATE: when dates were queried, show the per-period rate
+  // (priceInfo.price) with its matching per-period unit; else the flat daily rate.
+  // The trip total is shown on the details/checkout screens. Badge = real period type.
+  const price = vehicle.priceInfo?.price ?? vehicle.pricing?.daily ?? null;
+  const priceUnit = vehicle.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/day';
+  const badge = vehicle.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
 
   return (
     <TouchableOpacity
@@ -42,15 +50,22 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
 
       {/* Info */}
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {vehicle.make} {vehicle.model}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {vehicle.make} {vehicle.model}
+          </Text>
+          {badge && (
+            <View style={styles.periodBadge}>
+              <Text style={styles.periodBadgeText}>{badge}</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.row}>
-          {vehicle.pricing?.daily != null ? (
+          {price != null ? (
             <Text style={styles.price}>
-              ₹{vehicle.pricing.daily.toLocaleString('en-IN')}
-              <Text style={styles.perDay}>/day</Text>
+              ₹{price.toLocaleString('en-IN')}
+              <Text style={styles.perDay}> {priceUnit}</Text>
             </Text>
           ) : (
             <Text style={styles.price}>—</Text>
@@ -100,11 +115,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   info: { padding: 12, gap: 6 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   name: {
+    flex: 1,
     fontFamily: Fonts.bodySemiBold,
     fontSize: 13,
     color: Colors.ink,
     lineHeight: 18,
+  },
+  periodBadge: {
+    backgroundColor: Colors.bg,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  periodBadgeText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 9,
+    color: Colors.ink3,
+    letterSpacing: 0.2,
   },
   row: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ import { Colors, Fonts } from '../constants/colors';
 import { vehiclesApi } from '../lib/api';
 import CarCard from '../components/cars/CarCard';
 import VehicleQuickView from '../components/cars/VehicleQuickView';
+import FilterSheet, { type FilterValue } from '../components/cars/FilterSheet';
 import type { Vehicle } from '../types/api';
 
 function normalizeGroup(g: any): Vehicle {
@@ -30,7 +31,12 @@ function normalizeGroup(g: any): Vehicle {
     branch: g.branch,
     availableCount: g.availableCount,
     images,
-    pricing: { daily: g.pricing?.daily ?? null },
+    pricing: {
+      daily: g.pricing?.daily ?? null,
+      hourly: g.pricing?.hourly ?? null,
+      halfDay: g.pricing?.halfDay ?? null,
+    },
+    priceInfo: g.pricingDetails ?? null,
     availability: true,
   };
 }
@@ -42,12 +48,34 @@ export default function Search() {
   const [searchText, setSearchText] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [sort, setSort] = useState<string | null>(null);
+
+  const filtersActive = !!(branchId || categoryId || sort);
+
+  const { data: branches } = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => (await vehiclesApi.branches()).data?.data ?? [],
+    select: (rows: any[]) => rows as { publicId: string; name: string }[],
+    staleTime: 5 * 60_000,
+  });
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => (await vehiclesApi.categories()).data?.data ?? [],
+    select: (rows: any[]) => rows as { publicId: string; name: string }[],
+    staleTime: 5 * 60_000,
+  });
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['search', searchText],
+    queryKey: ['search', searchText, branchId ?? '', categoryId ?? '', sort ?? ''],
     queryFn: () =>
       vehiclesApi.list({
         search: searchText || undefined,
+        branch: branchId || undefined,
+        category: categoryId || undefined,
+        sort: (sort as any) || undefined,
         limit: 40,
       }),
     select: (res) => {
@@ -62,7 +90,7 @@ export default function Search() {
         })
         .map(normalizeGroup);
     },
-    enabled: submitted,
+    enabled: submitted || filtersActive,
   });
 
   return (
@@ -90,14 +118,22 @@ export default function Search() {
             </TouchableOpacity>
           )}
         </View>
+        <TouchableOpacity
+          style={[styles.filterBtn, filtersActive && styles.filterBtnActive]}
+          onPress={() => setFilterOpen(true)}
+          hitSlop={8}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="options-outline" size={18} color={filtersActive ? Colors.white : Colors.ink} />
+        </TouchableOpacity>
       </View>
 
       {/* Results */}
-      {!submitted ? (
+      {!submitted && !filtersActive ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Find your car</Text>
           <Text style={styles.emptySubtitle}>
-            Search by make or model and press search.
+            Search by make or model, or tap the filter icon to browse by branch, category & price.
           </Text>
         </View>
       ) : isLoading ? (
@@ -133,6 +169,20 @@ export default function Search() {
         vehicle={quickViewVehicle}
         onClose={() => setQuickViewVehicle(null)}
       />
+
+      <FilterSheet
+        visible={filterOpen}
+        branches={(branches ?? []).map((b) => ({ id: b.publicId, label: b.name }))}
+        categories={(categories ?? []).map((c) => ({ id: c.publicId, label: c.name }))}
+        value={{ branch: branchId, category: categoryId, sort }}
+        onApply={(v: FilterValue) => {
+          setBranchId(v.branch);
+          setCategoryId(v.category);
+          setSort(v.sort);
+          setSubmitted(true);
+        }}
+        onClose={() => setFilterOpen(false)}
+      />
     </View>
   );
 }
@@ -148,6 +198,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  filterBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   searchBarWrap: {
     flex: 1,
     flexDirection: 'row',

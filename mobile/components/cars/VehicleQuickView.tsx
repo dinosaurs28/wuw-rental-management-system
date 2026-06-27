@@ -12,11 +12,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { unitLabel, periodLabel } from '../../lib/pricing';
 import type { Vehicle } from '../../types/api';
 
 const { height } = Dimensions.get('window');
-
-const INCLUDED = ['Insurance coverage', '24/7 Support', '200 km/day', 'Roadside assist'];
 
 interface Props {
   vehicle: Vehicle | null;
@@ -25,6 +24,11 @@ interface Props {
 
 export default function VehicleQuickView({ vehicle, onClose }: Props) {
   const router = useRouter();
+
+  // Per-period rate (priceInfo.price) + its matching unit; labelled "{period} rate".
+  const price = vehicle?.priceInfo?.price ?? vehicle?.pricing?.daily ?? null;
+  const priceUnit = vehicle?.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/day';
+  const periodBadge = vehicle?.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
 
   const handleViewDetails = () => {
     const id = vehicle!.publicId;
@@ -68,11 +72,11 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                 <Ionicons name="close" size={16} color={Colors.ink} />
               </TouchableOpacity>
 
-              {vehicle?.pricing?.daily != null && (
+              {price != null && (
                 <View style={styles.pricePill}>
                   <Text style={styles.pricePillText}>
-                    ₹{vehicle.pricing.daily.toLocaleString('en-IN')}
-                    <Text style={styles.pricePillDay}>/day</Text>
+                    ₹{price.toLocaleString('en-IN')}
+                    <Text style={styles.pricePillDay}> {priceUnit}</Text>
                   </Text>
                 </View>
               )}
@@ -111,17 +115,23 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                 ) : null}
               </View>
 
-              {/* What's included */}
-              <Text style={styles.sectionLabel}>What's included</Text>
-              <View style={styles.includedGrid}>
-                {INCLUDED.map((item) => (
-                  <View key={item} style={styles.includedItem}>
-                    <View style={styles.checkWrap}>
-                      <Ionicons name="checkmark" size={11} color="#2d9d61" />
-                    </View>
-                    <Text style={styles.includedText}>{item}</Text>
-                  </View>
-                ))}
+              {/* Pricing — real period rate; full inclusions on the details screen */}
+              <Text style={styles.sectionLabel}>Pricing</Text>
+              <View style={styles.priceSummary}>
+                <View style={styles.priceSummaryRow}>
+                  <Text style={styles.priceSummaryLabel}>
+                    {periodBadge ? `${periodBadge} rate` : 'Daily rate'}
+                  </Text>
+                  <Text style={styles.priceSummaryValue}>
+                    {price != null ? `₹${price.toLocaleString('en-IN')} ${priceUnit}` : '—'}
+                  </Text>
+                </View>
+                <View style={styles.priceHintRow}>
+                  <Ionicons name="information-circle-outline" size={14} color={Colors.ink3} />
+                  <Text style={styles.priceHint}>
+                    Free-km limit, deposit & full breakdown on the details screen.
+                  </Text>
+                </View>
               </View>
             </ScrollView>
 
@@ -254,32 +264,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
     marginBottom: 12,
   },
-  includedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  priceSummary: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    padding: 14,
     gap: 10,
   },
-  includedItem: {
+  priceSummaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    width: '46%',
+    justifyContent: 'space-between',
   },
-  checkWrap: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#e8f5ee',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  includedText: {
-    fontFamily: Fonts.body,
-    fontSize: 13,
-    color: Colors.ink2,
-    flex: 1,
-  },
+  priceSummaryLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  priceSummaryValue: { fontFamily: Fonts.displayBold, fontSize: 16, color: Colors.ink, letterSpacing: -0.3 },
+  priceHintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  priceHint: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 16 },
   cta: {
     padding: 20,
     paddingBottom: 36,
