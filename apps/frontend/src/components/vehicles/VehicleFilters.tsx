@@ -240,9 +240,14 @@ export const VehicleFilters = ({
                 mode="single"
                 selected={returnDate || undefined}
                 onSelect={onReturnDateChange}
-                disabled={(date) =>
-                  pickupDate ? date < pickupDate : date < new Date()
-                }
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (!pickupDate) return date < today;
+                  // Compare calendar day only so same day as pickup is always selectable
+                  const pickupDay = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+                  return date < pickupDay || date < today;
+                }}
               />
             </PopoverContent>
           </Popover>

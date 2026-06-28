@@ -79,16 +79,36 @@ export const EmployeeVehiclePricingCard = ({
   }, []);
 
   const returnDisabledDays = useMemo(() => {
-    if (startDate) return { before: startDate };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return { before: today };
+    if (!startDate) return { before: today };
+    // Use start-of-day so same calendar day as pickup is selectable
+    const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    return { before: startDay.getTime() < today.getTime() ? today : startDay };
   }, [startDate]);
+
+  const isDateRangeValid = useMemo(() => {
+    if (!startDate || !endDate) return true;
+    const start = new Date(startDate);
+    const [sh, sm] = (startTime || "10:00").split(":").map(Number);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(endDate);
+    const [eh, em] = (endTime || "10:00").split(":").map(Number);
+    end.setHours(eh, em, 0, 0);
+    return end > start;
+  }, [startDate, endDate, startTime, endTime]);
 
   const handleStartDateSelect = (date: Date | undefined) => {
     if (!date) return;
-    const newEnd = endDate && date > endDate ? date : endDate || date;
-    setDates(date, newEnd);
+    // Only push end date forward if it's strictly before the new start day
+    if (endDate) {
+      const startDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endDay   = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      const newEnd = endDay < startDay ? date : endDate;
+      setDates(date, newEnd);
+    } else {
+      setDates(date, date);
+    }
   };
 
   const handleEndDateSelect = (date: Date | undefined) => {
@@ -98,7 +118,7 @@ export const EmployeeVehiclePricingCard = ({
   };
 
   const canBook =
-    isAvailable && startDate && endDate && !isRefetching && !disabled && hasCompleteKyc;
+    isAvailable && startDate && endDate && isDateRangeValid && !isRefetching && !disabled && hasCompleteKyc;
 
   return (
     <Card className="overflow-hidden border border-zinc-200 shadow-lg">
@@ -230,7 +250,7 @@ export const EmployeeVehiclePricingCard = ({
             </div>
           )}
 
-          {pd && !isRefetching && (
+          {pd && isDateRangeValid && !isRefetching && (
             <>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-200 rounded-full uppercase tracking-wide">
@@ -288,7 +308,13 @@ export const EmployeeVehiclePricingCard = ({
             </>
           )}
 
-          {!pd && !isRefetching && (
+          {!isDateRangeValid && startDate && endDate && !isRefetching && (
+            <p className="text-sm text-red-500 text-center py-2 font-semibold">
+              Return date/time must be after pickup date/time
+            </p>
+          )}
+
+          {!pd && isDateRangeValid && !isRefetching && (
             <p className="text-sm text-zinc-500 text-center py-2">
               Select dates & times to see pricing
             </p>
@@ -296,14 +322,16 @@ export const EmployeeVehiclePricingCard = ({
         </div>
 
         {/* Deposit */}
-        <div className="px-6 py-4 bg-zinc-50 border-b border-zinc-100">
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-600">Security Deposit</span>
-            <span className="text-zinc-900 font-medium">
-              {formatCurrency(vehicle.deposit)}
-            </span>
+        {!!vehicle.deposit && vehicle.deposit > 0 && (
+          <div className="px-6 py-4 bg-zinc-50 border-b border-zinc-100">
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600">Security Deposit</span>
+              <span className="text-zinc-900 font-medium">
+                {formatCurrency(vehicle.deposit)}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Payment Type */}
         <div className="px-6 py-4 border-b border-zinc-100">

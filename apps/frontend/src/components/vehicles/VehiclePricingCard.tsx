@@ -65,6 +65,18 @@ export const VehiclePricingCard = ({
   const isAvailable = vehicle.availability;
   const pd = vehicle.pricingDetails;
 
+  // Validate that return datetime is strictly after pickup datetime
+  const isDateRangeValid = useMemo(() => {
+    if (!pickupDate || !returnDate) return true;
+    const start = new Date(pickupDate);
+    const [sh, sm] = (startTime || "10:00").split(":").map(Number);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(returnDate);
+    const [eh, em] = (endTime || "10:00").split(":").map(Number);
+    end.setHours(eh, em, 0, 0);
+    return end > start;
+  }, [pickupDate, returnDate, startTime, endTime]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -81,10 +93,12 @@ export const VehiclePricingCard = ({
   }, []);
 
   const returnDisabledDays = useMemo(() => {
-    if (pickupDate) return { before: pickupDate };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return { before: today };
+    if (!pickupDate) return { before: today };
+    // Use start-of-day so same calendar day as pickup is selectable
+    const pickupDay = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+    return { before: pickupDay.getTime() < today.getTime() ? today : pickupDay };
   }, [pickupDate]);
 
   const handlePickupDateChange = (date: Date | undefined) => {
@@ -95,7 +109,7 @@ export const VehiclePricingCard = ({
     setEndDate(date || null);
   };
 
-  const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
+  const canBook = isAvailable && pickupDate && returnDate && isDateRangeValid && !isRefetching;
 
   return (
     <Card className="overflow-hidden bg-white border border-zinc-200 shadow-2xl rounded-[2rem]">
@@ -213,7 +227,7 @@ export const VehiclePricingCard = ({
             </div>
           )}
 
-          {pd && !isRefetching && (
+          {pd && isDateRangeValid && !isRefetching && (
             <>
               {/* Period type badge */}
               <div className="flex items-center gap-2 mb-2">
@@ -272,7 +286,13 @@ export const VehiclePricingCard = ({
             </>
           )}
 
-          {!pd && !isRefetching && (
+          {!isDateRangeValid && pickupDate && returnDate && !isRefetching && (
+            <p className="text-sm text-red-500 text-center py-4 font-semibold">
+              Return date/time must be after pickup date/time
+            </p>
+          )}
+
+          {!pd && isDateRangeValid && !isRefetching && (
             <p className="text-base text-zinc-500 text-center py-4 font-medium">
               Select dates & times to see pricing
             </p>
@@ -280,17 +300,19 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Deposit Info */}
-        <div className="px-5 py-4 sm:px-8 sm:py-6 bg-zinc-50 border-b border-zinc-200">
-          <div className="flex justify-between text-base">
-            <span className="text-zinc-400">Security Deposit</span>
-            <span className="text-zinc-900 font-medium">
-              {formatCurrency(vehicle.deposit)}
-            </span>
+        {!!vehicle.deposit && vehicle.deposit > 0 && (
+          <div className="px-5 py-4 sm:px-8 sm:py-6 bg-zinc-50 border-b border-zinc-200">
+            <div className="flex justify-between text-base">
+              <span className="text-zinc-400">Security Deposit</span>
+              <span className="text-zinc-900 font-medium">
+                {formatCurrency(vehicle.deposit)}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Payment Plan */}
-        {!!vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && !!pd && (
+        {!!vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && !!pd && isDateRangeValid && (
           <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useParams,
   useNavigate,
@@ -75,13 +75,26 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || getCurrentTime()}`
       : null);
 
+  const isDateRangeValid =
+    !startDateTime || !endDateTime
+      ? true
+      : new Date(endDateTime) > new Date(startDateTime);
+
+  // Keep last valid datetimes so the query key stays stable when range is invalid
+  const lastValidStart = useRef(startDateTime);
+  const lastValidEnd   = useRef(endDateTime);
+  if (isDateRangeValid) {
+    lastValidStart.current = startDateTime;
+    lastValidEnd.current   = endDateTime;
+  }
+
   const { data: groupResponse, isLoading, isRefetching, error } = useQuery({
-    queryKey: ["employee-vehicle-group", groupKey, startDateTime, endDateTime],
+    queryKey: ["employee-vehicle-group", groupKey, lastValidStart.current, lastValidEnd.current],
     queryFn: () =>
       employeeService.getVehicleGroupDetails(
         groupKey,
-        startDateTime ?? undefined,
-        endDateTime ?? undefined,
+        lastValidStart.current ?? undefined,
+        lastValidEnd.current ?? undefined,
       ),
     enabled: !!groupKey,
     staleTime: 30 * 1000,

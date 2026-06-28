@@ -11,11 +11,12 @@ interface EmployeeVehiclesResponse {
   };
 }
 
-export const useEmployeeVehicles = (filters: any) => {
+export const useEmployeeVehicles = (filters: any, options?: { enabled?: boolean }) => {
   return useQuery<EmployeeVehiclesResponse>({
     queryKey: ["employee-vehicles", filters],
     queryFn: () => employeeService.searchVehicles(filters),
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
   });
 };

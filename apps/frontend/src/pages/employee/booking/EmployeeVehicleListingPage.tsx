@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Lock, ShieldOff } from "lucide-react";
@@ -133,7 +133,7 @@ export default function EmployeeVehicleListingPage() {
     data: vehiclesData,
     isLoading: initialLoading,
     isFetching,
-  } = useEmployeeVehicles(filters);
+  } = useEmployeeVehicles(filters, { enabled: isDateRangeValid });
   const isLoading = initialLoading || isFetching;
   const vehicles = vehiclesData?.data || [];
   const vehicleCount = vehiclesData?.pagination?.total || vehicles.length || 0;
@@ -165,6 +165,24 @@ export default function EmployeeVehicleListingPage() {
   const endDateTime = selectedReturnDate
     ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
     : undefined;
+
+  // Validate that end datetime is strictly after start datetime
+  const isDateRangeValid = useMemo(() => {
+    if (!startDateTime || !endDateTime) return true;
+    return new Date(endDateTime) > new Date(startDateTime);
+  }, [startDateTime, endDateTime]);
+
+  // Show a single toast when the range becomes invalid
+  const prevInvalidRef = useRef(false);
+  useEffect(() => {
+    const bothSet = !!(selectedPickupDate && selectedReturnDate);
+    if (!isDateRangeValid && bothSet && !prevInvalidRef.current) {
+      toast.error("Return date/time must be after pickup date/time");
+      prevInvalidRef.current = true;
+    } else if (isDateRangeValid) {
+      prevInvalidRef.current = false;
+    }
+  }, [isDateRangeValid, selectedPickupDate, selectedReturnDate]);
 
   const customerPublicId = customerSession.get()?.publicId;
 
@@ -242,11 +260,16 @@ export default function EmployeeVehicleListingPage() {
             onBranchChange={() => {}}
             onPickupDateChange={(date) => {
               setSelectedPickupDate(date ?? null);
-              if (date) {
-                const nextDay = new Date(date);
-                nextDay.setDate(nextDay.getDate() + 1);
-                setSelectedReturnDate(nextDay);
-              } else {
+              if (date && selectedReturnDate) {
+                // Only push return to next day if it's strictly before the new pickup day
+                const pickupDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                const returnDay = new Date(selectedReturnDate.getFullYear(), selectedReturnDate.getMonth(), selectedReturnDate.getDate());
+                if (returnDay < pickupDay) {
+                  const nextDay = new Date(date);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  setSelectedReturnDate(nextDay);
+                }
+              } else if (!date) {
                 setSelectedReturnDate(null);
               }
             }}

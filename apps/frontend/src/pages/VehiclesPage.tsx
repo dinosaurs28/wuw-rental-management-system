@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -22,6 +22,7 @@ import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
 import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -66,6 +67,30 @@ export const VehiclesPage = () => {
 
   // Debounced search
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Validate that end datetime is strictly after start datetime
+  const isDateRangeValid = useMemo(() => {
+    if (!selectedPickupDate || !selectedReturnDate) return true;
+    const start = new Date(selectedPickupDate);
+    const [sh, sm] = pickupTime.split(":").map(Number);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(selectedReturnDate);
+    const [eh, em] = returnTime.split(":").map(Number);
+    end.setHours(eh, em, 0, 0);
+    return end > start;
+  }, [selectedPickupDate, selectedReturnDate, pickupTime, returnTime]);
+
+  // Show a single toast when the range becomes invalid
+  const prevInvalidRef = useRef(false);
+  useEffect(() => {
+    const bothSet = !!(selectedPickupDate && selectedReturnDate);
+    if (!isDateRangeValid && bothSet && !prevInvalidRef.current) {
+      toast.error("Return date/time must be after pickup date/time");
+      prevInvalidRef.current = true;
+    } else if (isDateRangeValid) {
+      prevInvalidRef.current = false;
+    }
+  }, [isDateRangeValid, selectedPickupDate, selectedReturnDate]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -140,10 +165,10 @@ export const VehiclesPage = () => {
     currentPage,
   ]);
 
-  // Fetch vehicles - Only when branch is selected
+  // Fetch vehicles - only when branch is selected and date range is valid
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(
     filters,
-    { enabled: !!selectedBranch },
+    { enabled: !!selectedBranch && isDateRangeValid },
   );
 
   const vehicles = vehiclesData?.data || [];
@@ -160,21 +185,21 @@ export const VehiclesPage = () => {
 
   const handlePickupDateChange = useCallback(
     (date: Date | undefined) => {
-      const nextDay = date ? new Date(date) : null;
-      if (nextDay) {
-        nextDay.setDate(nextDay.getDate() + 1);
-      }
-
       setSelectedPickupDate(date || null);
 
-      // If we have a valid date and no return date (or return date is before pickup date), set next day
-      // Also update store in one go if possible, or sequentially but ensuring local state is consistent
-      if (date && (!selectedReturnDate || selectedReturnDate <= date)) {
-        setSelectedReturnDate(nextDay);
-        setSearchCriteria({
-          pickupDate: date,
-          returnDate: nextDay,
-        });
+      if (date && selectedReturnDate) {
+        // Compare calendar days only — same day is allowed (time validation handles the rest)
+        const pickupDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const returnDay = new Date(selectedReturnDate.getFullYear(), selectedReturnDate.getMonth(), selectedReturnDate.getDate());
+        if (returnDay < pickupDay) {
+          // Return day is strictly before new pickup day → push to next day
+          const nextDay = new Date(date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setSelectedReturnDate(nextDay);
+          setSearchCriteria({ pickupDate: date, returnDate: nextDay });
+        } else {
+          setSearchCriteria({ pickupDate: date });
+        }
       } else {
         setSearchCriteria({ pickupDate: date || null });
       }

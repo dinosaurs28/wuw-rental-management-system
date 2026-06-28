@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useParams,
   Link,
@@ -112,10 +112,24 @@ export const VehicleGroupDetailsPage = () => {
     setEndTime(`${hh}:${mm}`);
   }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
 
+  const isDateRangeValid = useMemo(() => {
+    if (!startDateTime || !endDateTime) return true;
+    return new Date(endDateTime) > new Date(startDateTime);
+  }, [startDateTime, endDateTime]);
+
+  // Keep the last valid datetimes so the query key stays stable when the range
+  // becomes invalid — this prevents React Query from clearing cached group data.
+  const lastValidStart = useRef(startDateTime);
+  const lastValidEnd   = useRef(endDateTime);
+  if (isDateRangeValid) {
+    lastValidStart.current = startDateTime;
+    lastValidEnd.current   = endDateTime;
+  }
+
   const { data, isLoading, isError, isFetching } = useVehicleGroupDetails(
     groupKey,
-    startDateTime,
-    endDateTime,
+    lastValidStart.current,
+    lastValidEnd.current,
   );
 
   const group = data?.data;

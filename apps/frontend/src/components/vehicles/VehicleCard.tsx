@@ -123,10 +123,16 @@ export const VehicleCard = ({
             className="absolute inset-0"
             style={{
               background: [
-                "radial-gradient(120% 50% at 50% 74%, rgba(232,235,237,.92) 0%, rgba(150,156,160,.34) 42%, rgba(11,12,15,0) 72%)",
-                "radial-gradient(112% 78% at 56% 47%, #c6cbce 0%, #8b9095 28%, #44484d 53%, rgba(11,12,15,0) 80%)",
-                "radial-gradient(145% 125% at 50% 38%, rgba(0,0,0,0) 52%, rgba(7,8,10,.9) 100%)",
-                "linear-gradient(180deg, #0b0c0f 0%, #101217 52%, #090a0d 100%)",
+                // Warm amber glow — upper-right (matches reference card)
+                "radial-gradient(ellipse 88% 62% at 82% 14%, rgba(172,118,62,.46) 0%, rgba(120,82,42,.22) 48%, transparent 74%)",
+                // Cool silver floor reflection beneath the car
+                "radial-gradient(ellipse 118% 44% at 50% 76%, rgba(228,232,236,.90) 0%, rgba(148,154,160,.30) 46%, transparent 72%)",
+                // Main studio backdrop (silver-gray sphere)
+                "radial-gradient(ellipse 108% 76% at 54% 46%, #c4c9ce 0%, #8a9098 27%, #42484e 52%, transparent 80%)",
+                // Edge vignette
+                "radial-gradient(ellipse 148% 128% at 50% 38%, transparent 50%, rgba(6,7,10,.92) 100%)",
+                // Base
+                "linear-gradient(180deg, #0b0c0f 0%, #101318 52%, #08090c 100%)",
               ].join(", "),
             }}
           />

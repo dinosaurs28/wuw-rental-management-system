@@ -5,8 +5,17 @@ import {
     Loader2,
     Search,
     Car,
+    Bike,
     Clock,
 } from "lucide-react";
+
+const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (/two.wheel|2.wheel|bike|scooter|moto|cycle/.test(lower)) {
+        return Bike;
+    }
+    return Car;
+};
 
 import { useBranches } from "@/hooks/useBranches";
 import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
@@ -78,20 +87,23 @@ export const SearchForm = () => {
                             <Loader2 className="size-[22px] animate-spin" /> Loading
                         </div>
                     ) : (
-                        categories.map(category => (
-                            <button
-                                key={category.publicId}
-                                onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
-                                className={cn(
-                                    "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
-                                    categoryPublicId === category.publicId
-                                        ? "bg-zinc-900 text-white"
-                                        : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
-                                )}>
-                                <Car className="size-[22px]" strokeWidth={1.8} />
-                                {category.name}
-                            </button>
-                        ))
+                        categories.map(category => {
+                            const CategoryIcon = getCategoryIcon(category.name);
+                            return (
+                                <button
+                                    key={category.publicId}
+                                    onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
+                                    className={cn(
+                                        "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
+                                        categoryPublicId === category.publicId
+                                            ? "bg-zinc-900 text-white"
+                                            : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
+                                    )}>
+                                    <CategoryIcon className="size-[22px]" strokeWidth={1.8} />
+                                    {category.name}
+                                </button>
+                            );
+                        })
                     )}
                 </div>
 
