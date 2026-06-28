@@ -1,5 +1,5 @@
 import { r2 } from "../lib/r2.client.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 
@@ -13,25 +13,29 @@ interface UploadResult {
 }
 
 /**
- * Uploads invoice PDF to Cloudflare R2 and creates FileObject record
- * @param pdfBuffer - PDF file as Buffer
- * @param invoiceNumber - Invoice number for file naming
- * @param bookingId - Booking ID for folder organization
- * @returns File ID and URL
+ * Uploads invoice PDF to Cloudflare R2 and creates a FileObject record.
+ *
+ * Each upload gets a timestamp-versioned key so every regeneration produces a
+ * unique URL, bypassing Cloudflare CDN cache for `.r2.dev` public buckets.
+ *
+ * When `previousFileObjectId` is supplied (regeneration path), the old R2
+ * object and FileObject row are deleted after the new upload succeeds.
  */
 export async function uploadInvoicePDFToR2(
   pdfBuffer: Buffer,
   invoiceNumber: string,
   bookingId: number,
+  previousFileObjectId?: number,
 ): Promise<UploadResult> {
   try {
     console.log(`[R2 Upload] Uploading invoice ${invoiceNumber} to R2`);
 
-    // Create safe filename from invoice number (replace slashes with dashes)
     const safeInvoiceNumber = invoiceNumber.replace(/\//g, "-");
-    const key = `invoices/${safeInvoiceNumber}.pdf`;
+    // Timestamp suffix guarantees a unique URL on every upload — prevents CDN
+    // cache from serving a stale PDF when the same invoice is regenerated.
+    const version = Date.now();
+    const key = `invoices/${safeInvoiceNumber}-v${version}.pdf`;
 
-    // Upload to R2
     await r2.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -44,11 +48,10 @@ export async function uploadInvoicePDFToR2(
 
     console.log(`[R2 Upload] Successfully uploaded to R2: ${key}`);
 
-    // Create FileObject record in database
     const fileObject = await prisma.fileObject.create({
       data: {
         publicId: createID(),
-        key: key,
+        key,
         url: `${R2_PUBLIC_URL}/${key}`,
         mime: "application/pdf",
         size: pdfBuffer.length,
@@ -56,6 +59,21 @@ export async function uploadInvoicePDFToR2(
     });
 
     console.log(`[R2 Upload] Created FileObject record: ${fileObject.id}`);
+
+    // Clean up the previous version from R2 and the DB after the new one is safe
+    if (previousFileObjectId) {
+      try {
+        const oldFile = await prisma.fileObject.findUnique({ where: { id: previousFileObjectId } });
+        if (oldFile) {
+          await r2.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: oldFile.key }));
+          await prisma.fileObject.delete({ where: { id: previousFileObjectId } });
+          console.log(`[R2 Upload] Deleted old file: ${oldFile.key}`);
+        }
+      } catch (cleanupErr) {
+        // Non-fatal — old file will just remain in R2 unused
+        console.warn(`[R2 Upload] Could not clean up old file ${previousFileObjectId}:`, cleanupErr);
+      }
+    }
 
     return {
       fileId: fileObject.id,

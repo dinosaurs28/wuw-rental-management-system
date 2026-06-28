@@ -307,6 +307,11 @@ export async function transformBookingToInvoiceData(
       `${nonTaxableSections.length} non-taxable section(s).`,
   );
 
+  // Calculate actual rental duration from the final startAt/endAt (covers extensions).
+  // booking.days stores only the original booking days and is not updated on extension.
+  const rentalMs = booking.endAt.getTime() - booking.startAt.getTime();
+  const actualDays = Math.max(1, Math.ceil(rentalMs / (1000 * 60 * 60 * 24)));
+
   return {
     invoiceNumber:
       booking.invoice.invoiceNumber ||
@@ -329,7 +334,7 @@ export async function transformBookingToInvoiceData(
     bookingPublicId: booking.publicId,
     startDate: booking.startAt,
     endDate: booking.endAt,
-    days: booking.days,
+    days: actualDays,
 
     cgstRate,
     sgstRate,

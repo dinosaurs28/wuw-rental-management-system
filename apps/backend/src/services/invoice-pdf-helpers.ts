@@ -46,6 +46,13 @@ export const SIMPLE_COLS = {
   amount: { x: 420, w: 125 },
 };
 
+// Extension table: Description | Extra Days | Amount
+export const EXTENSION_COLS = {
+  desc:   { x: L,   w: 320 },
+  days:   { x: 370, w: 75  },
+  amount: { x: 455, w: 90  },
+};
+
 // ─── Render context ────────────────────────────────────────────────────────────
 
 export class PDFRenderContext {
@@ -87,7 +94,9 @@ export class PDFRenderContext {
 // ─── Formatting helpers ────────────────────────────────────────────────────────
 
 export function fmt(n: number): string {
-  return `₹${n.toLocaleString("en-IN", {
+  // ₹ (U+20B9) is not in PDFKit's built-in Helvetica WinAnsi encoding and
+  // renders as superscript-1. Use the universally-supported "Rs." prefix instead.
+  return `Rs.${n.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -350,6 +359,52 @@ export function drawRentalTableRow(
   ctx.advance(4);
 }
 
+// ─── Extension table (Description | Extra Days | Amount) ──────────────────────
+
+export function drawExtensionTableHeader(ctx: PDFRenderContext): void {
+  if (ctx.willOverflow(28)) ctx.addPage();
+
+  filledRect(ctx, L, ctx.y, W, 20, C.pageBg);
+  ctx.doc.font("Helvetica-Bold").fontSize(8).fillColor(C.black);
+
+  const y = ctx.y + 6;
+  ctx.doc.text("Description", EXTENSION_COLS.desc.x, y, { width: EXTENSION_COLS.desc.w });
+  ctx.doc.text("Extra Days", EXTENSION_COLS.days.x, y, { width: EXTENSION_COLS.days.w, align: "center" });
+  ctx.doc.text("Amount", EXTENSION_COLS.amount.x, y, { width: EXTENSION_COLS.amount.w, align: "right" });
+
+  ctx.advance(20);
+  rule(ctx, C.border);
+  ctx.advance(4);
+}
+
+export function drawExtensionTableRow(
+  ctx: PDFRenderContext,
+  item: { description: string; quantity?: number; amount: number },
+): void {
+  if (ctx.willOverflow(30)) ctx.addPage();
+
+  const y = ctx.y;
+  ctx.doc.font("Helvetica").fontSize(9).fillColor(C.black);
+
+  ctx.doc.text(item.description, EXTENSION_COLS.desc.x, y, { width: EXTENSION_COLS.desc.w });
+  ctx.doc.text(
+    String(item.quantity ?? 1),
+    EXTENSION_COLS.days.x,
+    y,
+    { width: EXTENSION_COLS.days.w, align: "center" },
+  );
+  ctx.doc.text(
+    fmt(item.amount),
+    EXTENSION_COLS.amount.x,
+    y,
+    { width: EXTENSION_COLS.amount.w, align: "right" },
+  );
+
+  ctx.advance(26);
+  rule(ctx, C.border);
+  ctx.advance(4);
+}
+
 // ─── Simple (description + amount) table ──────────────────────────────────────
 
 export function drawSimpleTableHeader(
@@ -520,9 +575,10 @@ export function drawSummaryTable(ctx: PDFRenderContext): void {
 
   for (const sec of d.taxableSections) {
     const label =
-      sec.type === "VEHICLE_RENTAL"
-        ? "Vehicle Rental (before GST)"
-        : "Damage Penalty (before GST)";
+      sec.type === "VEHICLE_RENTAL"   ? "Vehicle Rental (before GST)"  :
+      sec.type === "EXTENSION_CHARGES" ? "Extension Charges (before GST)" :
+      sec.type === "DAMAGE_PENALTY"    ? "Damage Penalty (before GST)"  :
+      `${sec.title} (before GST)`;
     row(label, fmt(sec.subtotalBeforeTax - sec.discount));
   }
 

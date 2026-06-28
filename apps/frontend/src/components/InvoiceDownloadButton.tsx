@@ -126,13 +126,11 @@ export function InvoiceDownloadButton({
 
   if (isLoading) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground">
+      <Button variant="outline" size="sm" className="gap-1.5" disabled>
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="hidden sm:inline">{message}</span>
-        {progress > 0 && (
-          <span className="text-xs">({Math.round(progress)}%)</span>
-        )}
-      </div>
+        <span className="hidden sm:inline">Invoice</span>
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      </Button>
     );
   }
 
