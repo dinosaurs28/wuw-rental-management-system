@@ -463,21 +463,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
     grandAdvanceAmount = Number(grandAdvanceAmount.toFixed(2));
 
-    const isAdvancePayment = payment_flow === "ADVANCE";
-
-    // Validate advance payment eligibility
-    if (isAdvancePayment) {
-      if (grandAdvanceAmount <= 0) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "Advance payment is not configured for the selected vehicle(s). Please use full payment.",
-        });
-      }
-      if (grandAdvanceAmount >= grandFinalTotal) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "Advance amount must be less than the total amount. Please use full payment.",
-        });
-      }
-    }
+    // Fall back to FULL if ADVANCE was requested but no advance amount is configured,
+    // or if the configured advance amount is ≥ the total (which would make it a full payment anyway).
+    const isAdvancePayment =
+      payment_flow === "ADVANCE" &&
+      grandAdvanceAmount > 0 &&
+      grandAdvanceAmount < grandFinalTotal;
 
     const chargeAmount = isAdvancePayment ? grandAdvanceAmount : grandFinalTotal;
 

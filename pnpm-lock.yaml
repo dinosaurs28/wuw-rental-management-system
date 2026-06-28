@@ -24,7 +24,7 @@ importers:
         specifier: ^3.958.0
         version: 3.1004.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.958.0
+        specifier: ^3.1004.0
         version: 3.1004.0
       '@repo/database':
         specifier: workspace:*
