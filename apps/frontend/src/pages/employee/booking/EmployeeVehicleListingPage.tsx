@@ -129,6 +129,18 @@ export default function EmployeeVehicleListingPage() {
     currentPage,
   ]);
 
+  // Build datetime strings and validate range before the query hook
+  const startDateTime = selectedPickupDate
+    ? `${format(selectedPickupDate, "yyyy-MM-dd")}T${pickupTime}`
+    : undefined;
+  const endDateTime = selectedReturnDate
+    ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
+    : undefined;
+  const isDateRangeValid = useMemo(() => {
+    if (!startDateTime || !endDateTime) return true;
+    return new Date(endDateTime) > new Date(startDateTime);
+  }, [startDateTime, endDateTime]);
+
   const {
     data: vehiclesData,
     isLoading: initialLoading,
@@ -158,19 +170,7 @@ export default function EmployeeVehicleListingPage() {
     setCurrentPage(1);
   }, []);
 
-  // Build datetime strings for VehicleCard URL params
-  const startDateTime = selectedPickupDate
-    ? `${format(selectedPickupDate, "yyyy-MM-dd")}T${pickupTime}`
-    : undefined;
-  const endDateTime = selectedReturnDate
-    ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
-    : undefined;
-
-  // Validate that end datetime is strictly after start datetime
-  const isDateRangeValid = useMemo(() => {
-    if (!startDateTime || !endDateTime) return true;
-    return new Date(endDateTime) > new Date(startDateTime);
-  }, [startDateTime, endDateTime]);
+  // startDateTime / endDateTime / isDateRangeValid declared above useEmployeeVehicles
 
   // Show a single toast when the range becomes invalid
   const prevInvalidRef = useRef(false);
