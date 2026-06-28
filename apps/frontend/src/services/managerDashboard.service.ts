@@ -111,6 +111,26 @@ export interface CancelledBooking {
   cancellationInvoice: { advanceAmount: string; cancellationFee: string } | null;
 }
 
+export interface FleetBooking {
+  publicId: string;
+  startAt: string;
+  endAt: string;
+  totalFinal: string;
+  status: "CONFIRMED" | "PICKED_UP";
+  customer: {
+    publicId: string;
+    user: { name: string; email: string };
+  };
+  items: {
+    vehicle: {
+      make: string;
+      model: string;
+      regNo: string;
+      images: { file: { url: string } }[];
+    };
+  }[];
+}
+
 export interface NoShowBooking {
   publicId: string;
   startAt: string;
@@ -256,6 +276,22 @@ export const managerDashboardService = {
       role: e.role,
       status: "ACTIVE",
     }));
+  },
+
+  getFleetPickedUp: async (limit = 50, date?: string): Promise<FleetBooking[]> => {
+    const response = await apiClient.get("/branchManager/dashboard/bookings/pending", {
+      params: { limit, ...(date ? { date } : {}) },
+      timeout: 10000,
+    });
+    return response.data.data.bookings || [];
+  },
+
+  getFleetUpcoming: async (limit = 50, date?: string): Promise<FleetBooking[]> => {
+    const response = await apiClient.get("/branchManager/dashboard/bookings/active", {
+      params: { limit, ...(date ? { date } : {}) },
+      timeout: 10000,
+    });
+    return response.data.data.bookings || [];
   },
 
   getNoShowEligible: async (page = 1, limit = 20, graceHours = 0) => {

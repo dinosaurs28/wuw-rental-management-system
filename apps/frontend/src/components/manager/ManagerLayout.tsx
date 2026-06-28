@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   LogOut,
   User,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
@@ -65,6 +66,7 @@ const operationsItems = [
 
 const topLevelItems = [
   { label: "Dashboard", path: "/manager/dashboard", icon: LayoutDashboard },
+  { label: "Fleet", path: "/manager/fleet", icon: Truck },
   { label: "Vehicles", path: "/manager/vehicles", icon: Car },
   { label: "Employees", path: "/manager/employees", icon: Users },
 ];

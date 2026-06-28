@@ -53,6 +53,7 @@ import { DisplacedBookingsPage } from "./pages/manager/DisplacedBookingsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
 import NoShowCancellationsPage from "./pages/manager/NoShowCancellationsPage";
+import { FleetStatusPage } from "./pages/manager/FleetStatusPage";
 import { DamageReportsPage } from "./pages/manager/DamageReportsPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
@@ -213,6 +214,7 @@ function App() {
             path="/manager/no-show"
             element={<NoShowCancellationsPage />}
           />
+          <Route path="/manager/fleet" element={<FleetStatusPage />} />
           <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"

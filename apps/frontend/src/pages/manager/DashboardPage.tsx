@@ -199,6 +199,7 @@ export const DashboardPage = () => {
               <StaffActivity activities={staffActivity} isLoading={isLoading} />
             </div>
           </div>
+
         </div>
       </div>
 
