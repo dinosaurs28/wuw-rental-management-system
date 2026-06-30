@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   RefreshControl,
   StyleSheet,
   Text,
@@ -13,9 +12,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Fonts } from '../../constants/colors';
 import { userApi } from '../../lib/api';
+import StudioImage from '../../components/cars/StudioImage';
+import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import type { BookingTrip, BookingStatus } from '../../types/api';
 
 type Tab = 'active' | 'upcoming' | 'past';
@@ -26,12 +26,19 @@ const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: 'past', label: 'Past' },
 ];
 
-const STATUS_COLOR: Record<BookingStatus, string> = {
-  HOLD: Colors.ink3,
-  CONFIRMED: '#2d9d61',
-  PICKED_UP: Colors.orange,
-  RETURNED: Colors.ink3,
-  CANCELLED: '#e53e3e',
+const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
+  HOLD: 'warn',
+  CONFIRMED: 'good',
+  PICKED_UP: 'info',
+  RETURNED: 'neutral',
+  CANCELLED: 'bad',
+};
+const STATUS_LABEL: Record<BookingStatus, string> = {
+  HOLD: 'Pending',
+  CONFIRMED: 'Confirmed',
+  PICKED_UP: 'Active',
+  RETURNED: 'Returned',
+  CANCELLED: 'Cancelled',
 };
 
 function formatDate(iso: string) {
@@ -69,27 +76,14 @@ function TripCard({ trip }: { trip: BookingTrip }) {
       })}
       activeOpacity={0.88}
     >
-      <View style={styles.cardPhoto}>
-        {v?.thumbnail ? (
-          <Image source={{ uri: v.thumbnail }} style={styles.photo} resizeMode="cover" />
-        ) : (
-          <LinearGradient
-            colors={['#1a1a1a', '#2a2a2a']}
-            style={styles.photo}
-          />
-        )}
-      </View>
+      <StudioImage uri={v?.thumbnail} radius={0} contain={false} style={styles.photo} />
       <View style={styles.cardInfo}>
         <View style={styles.cardTop}>
           <Text style={styles.carName} numberOfLines={1}>
             {v ? `${v.make} ${v.model}` : 'Vehicle'}
             {extraVehicles > 0 ? ` +${extraVehicles}` : ''}
           </Text>
-          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[trip.status] + '22' }]}>
-            <Text style={[styles.statusText, { color: STATUS_COLOR[trip.status] }]}>
-              {trip.status}
-            </Text>
-          </View>
+          <StatusBadge label={STATUS_LABEL[trip.status] ?? trip.status} tone={STATUS_TONE[trip.status] ?? 'neutral'} />
         </View>
         <Text style={styles.dates}>
           {formatDate(trip.startAt)} → {formatDate(trip.endAt)} · {trip.days}d

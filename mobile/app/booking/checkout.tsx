@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi, userApi } from '../../lib/api';
+import StudioImage from '../../components/cars/StudioImage';
 import { LEGAL_URLS } from '../../constants/links';
 import type { VehicleDetail, KycDocument } from '../../types/api';
 
@@ -94,7 +95,8 @@ export default function Checkout() {
         : vehiclesApi.detail(vehicleId!, { start: startDate.toISOString(), end: endDate.toISOString() }),
     select: (res) => {
       const d = res.data.data as any;
-      if (!isGroupKey) return d as VehicleDetail;
+      // advancePayAmount is a Decimal STRING on the wire — parse it like the group branch below.
+      if (!isGroupKey) return { ...d, advancePayAmount: Number(d.advancePayAmount ?? 0) } as VehicleDetail;
       const images: string[] = (d.imageUrl ?? d.images ?? [])
         .map((img: any) => (typeof img === 'string' ? img : img?.file?.url ?? null))
         .filter(Boolean);
@@ -289,11 +291,7 @@ export default function Checkout() {
         {/* Car summary */}
         <View style={styles.section}>
           <View style={styles.carRow}>
-            {vehicle.images?.[0] ? (
-              <Image source={{ uri: vehicle.images[0] }} style={styles.carThumb} resizeMode="cover" />
-            ) : (
-              <View style={[styles.carThumb, styles.carThumbPlaceholder]} />
-            )}
+            <StudioImage uri={vehicle.images?.[0]} radius={10} contain style={styles.carThumb} />
             <View style={styles.carInfo}>
               <Text style={styles.carName}>{vehicle.make} {vehicle.model}</Text>
               <Text style={styles.carMeta}>{vehicle.category} · {vehicle.branch}</Text>

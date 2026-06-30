@@ -7,9 +7,9 @@ import { Colors, Fonts } from '../../constants/colors';
 
 type StepIcon = React.ComponentProps<typeof Ionicons>['name'];
 const STEPS: { icon: StepIcon; title: string; desc: string }[] = [
-  { icon: 'document-text-outline', title: 'Check your trips',      desc: 'View full details in My Trips.' },
-  { icon: 'call-outline',          title: 'Host will contact you', desc: 'Expect a message before pickup.' },
-  { icon: 'key-outline',           title: 'Pickup',               desc: 'Bring your license on the day.' },
+  { icon: 'document-text-outline', title: 'Check your booking',  desc: 'Full details are saved in My Trips.' },
+  { icon: 'card-outline',          title: 'Verify your licence', desc: 'Add your driving licence ahead of pickup day.' },
+  { icon: 'key-outline',           title: 'Collect your car',    desc: 'Bring your driving licence on pickup day.' },
 ];
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -56,8 +56,8 @@ export default function Confirmation() {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Success illustration */}
-        <LinearGradient colors={['#fff3ec', '#ffe8db']} style={styles.illustration}>
+        {/* Success illustration — green check (universal "confirmed") */}
+        <LinearGradient colors={['#eafaf0', '#d7f5e3']} style={styles.illustration}>
           <View style={styles.checkCircle}>
             <Ionicons name="checkmark" size={36} color={Colors.white} />
           </View>
@@ -69,7 +69,7 @@ export default function Confirmation() {
           <Text style={styles.titleAccent}>set.</Text>
         </Text>
         <Text style={styles.subtitle}>
-          Your booking is confirmed. The host will get in touch shortly.
+          Your reservation is confirmed — all the details are saved in My Trips.
         </Text>
 
         {/* Booking summary */}
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.orange,
+    backgroundColor: Colors.availGood,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.black,

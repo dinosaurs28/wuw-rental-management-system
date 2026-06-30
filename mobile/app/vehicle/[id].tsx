@@ -22,6 +22,7 @@ import DateRangePicker from '../../components/ui/DateRangePicker';
 import TimeFieldPicker, { timeLabel } from '../../components/ui/TimeFieldPicker';
 import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
+import { availabilityColor, availabilityLabel } from '../../lib/availability';
 import type { VehicleDetail } from '../../types/api';
 
 const { width, height } = Dimensions.get('window');
@@ -84,7 +85,7 @@ export default function VehicleDetail() {
         : vehiclesApi.detail(id!, { start: startDate.toISOString(), end: endDate.toISOString() }),
     select: (res) => {
       const d = res.data.data as any;
-      if (!isGroupKey) return d as VehicleDetail;
+      if (!isGroupKey) return { ...d, advancePayAmount: Number(d.advancePayAmount ?? 0) } as VehicleDetail;
       return {
         publicId: d.groupKey,
         make: d.make,
@@ -274,12 +275,24 @@ export default function VehicleDetail() {
                 : `${nights} night${nights !== 1 ? 's' : ''}`}
             </Text>
           </View>
-          <View style={[styles.availBadge, !isAvail && styles.availBadgeRed]}>
-            <View style={[styles.availDot, !isAvail && styles.availDotRed]} />
-            <Text style={[styles.availText, !isAvail && styles.availTextRed]}>
-              {vehicle.availability === null ? 'Checking...' : isAvail ? (typeof vehicle.availableCount === 'number' ? `${vehicle.availableCount} available` : 'Available') : 'Unavailable'}
-            </Text>
-          </View>
+          {(() => {
+            const avColor = vehicle.availability === null
+              ? Colors.ink3
+              : isAvail
+              ? availabilityColor(vehicle.availableCount ?? 99)
+              : Colors.availNone;
+            const avLabel = vehicle.availability === null
+              ? 'Checking…'
+              : isAvail
+              ? availabilityLabel(vehicle.availableCount) ?? 'Available'
+              : 'Unavailable';
+            return (
+              <View style={[styles.availBadge, { backgroundColor: avColor + '1f', borderColor: avColor + '40' }]}>
+                <View style={[styles.availDot, { backgroundColor: avColor }]} />
+                <Text style={[styles.availText, { color: avColor }]}>{avLabel}</Text>
+              </View>
+            );
+          })()}
           {isFetching && !isLoading && (
             <ActivityIndicator size="small" color={Colors.orange} />
           )}

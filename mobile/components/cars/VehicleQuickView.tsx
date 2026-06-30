@@ -26,7 +26,9 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
   const router = useRouter();
 
   // Per-period rate (priceInfo.price) + its matching unit; labelled "{period} rate".
-  const price = vehicle?.priceInfo?.price ?? vehicle?.pricing?.daily ?? null;
+  // Treat a 0 rate as unpriced so we show "—" rather than "₹0".
+  const rawPrice = vehicle?.priceInfo?.price ?? vehicle?.pricing?.daily ?? null;
+  const price = rawPrice && rawPrice > 0 ? rawPrice : null;
   const priceUnit = vehicle?.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/day';
   const periodBadge = vehicle?.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
 

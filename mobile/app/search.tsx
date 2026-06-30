@@ -2,58 +2,49 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
 import { vehiclesApi } from '../lib/api';
+import { normalizeGroups } from '../lib/vehicles';
 import CarCard from '../components/cars/CarCard';
 import VehicleQuickView from '../components/cars/VehicleQuickView';
 import FilterSheet, { type FilterValue } from '../components/cars/FilterSheet';
+import SearchCard, { type SearchQuery } from '../components/cars/SearchCard';
+import ItinerarySummary from '../components/cars/ItinerarySummary';
 import type { Vehicle } from '../types/api';
-
-function normalizeGroup(g: any): Vehicle {
-  const images: string[] = (g.imageUrl ?? [])
-    .map((img: any) => img?.file?.url ?? null)
-    .filter(Boolean);
-  return {
-    publicId: g.groupKey,
-    make: g.make,
-    model: g.model,
-    category: g.category,
-    branch: g.branch,
-    availableCount: g.availableCount,
-    images,
-    pricing: {
-      daily: g.pricing?.daily ?? null,
-      hourly: g.pricing?.hourly ?? null,
-      halfDay: g.pricing?.halfDay ?? null,
-    },
-    priceInfo: g.pricingDetails ?? null,
-    availability: true,
-  };
-}
 
 export default function Search() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ branch?: string; branchName?: string; start?: string; end?: string }>();
 
   const [searchText, setSearchText] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [quickViewVehicle, setQuickViewVehicle] = useState<Vehicle | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [branchId, setBranchId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const [branchId, setBranchId] = useState<string | null>(params.branch ?? null);
+  const [branchName, setBranchName] = useState<string | null>(params.branchName ?? null);
+  const [start, setStart] = useState<string | null>(params.start ?? null);
+  const [end, setEnd] = useState<string | null>(params.end ?? null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<string | null>(null);
 
+  const dated = !!(start && end);
   const filtersActive = !!(branchId || categoryId || sort);
+  const active = dated || submitted || filtersActive || searchText.length > 0;
 
   const { data: branches } = useQuery({
     queryKey: ['branches'],
@@ -69,29 +60,29 @@ export default function Search() {
   });
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['search', searchText, branchId ?? '', categoryId ?? '', sort ?? ''],
+    queryKey: ['search', searchText, branchId ?? '', categoryId ?? '', sort ?? '', start ?? '', end ?? ''],
     queryFn: () =>
       vehiclesApi.list({
         search: searchText || undefined,
         branch: branchId || undefined,
         category: categoryId || undefined,
         sort: (sort as any) || undefined,
+        start: start || undefined,
+        end: end || undefined,
         limit: 40,
       }),
-    select: (res) => {
-      const groups = (res.data?.data ?? []) as any[];
-      const seen = new Set<string>();
-      return groups
-        .filter(g => {
-          const key = g.groupKey;
-          if (!key || seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        })
-        .map(normalizeGroup);
-    },
-    enabled: submitted || filtersActive,
+    select: (res) => normalizeGroups((res.data?.data ?? []) as any[]),
+    enabled: active,
   });
+
+  const applyEdit = (q: SearchQuery) => {
+    setBranchId(q.branchId);
+    setBranchName(q.branchName);
+    setStart(q.start);
+    setEnd(q.end);
+    setEditOpen(false);
+    setSubmitted(true);
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -110,7 +101,7 @@ export default function Search() {
             onChangeText={setSearchText}
             returnKeyType="search"
             onSubmitEditing={() => setSubmitted(true)}
-            autoFocus
+            autoFocus={!dated}
           />
           {searchText.length > 0 && (
             <TouchableOpacity onPress={() => { setSearchText(''); setSubmitted(false); }} hitSlop={8}>
@@ -119,17 +110,24 @@ export default function Search() {
           )}
         </View>
         <TouchableOpacity
-          style={[styles.filterBtn, filtersActive && styles.filterBtnActive]}
+          style={[styles.filterBtn, (sort || categoryId) && styles.filterBtnActive]}
           onPress={() => setFilterOpen(true)}
           hitSlop={8}
           activeOpacity={0.8}
         >
-          <Ionicons name="options-outline" size={18} color={filtersActive ? Colors.white : Colors.ink} />
+          <Ionicons name="options-outline" size={18} color={sort || categoryId ? Colors.white : Colors.ink} />
         </TouchableOpacity>
       </View>
 
+      {/* Itinerary summary (when arrived with dates) */}
+      {dated ? (
+        <View style={styles.summaryWrap}>
+          <ItinerarySummary branchName={branchName} start={start} end={end} onEdit={() => setEditOpen(true)} />
+        </View>
+      ) : null}
+
       {/* Results */}
-      {!submitted && !filtersActive ? (
+      {!active ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Find your car</Text>
           <Text style={styles.emptySubtitle}>
@@ -141,11 +139,11 @@ export default function Search() {
       ) : (
         <>
           <Text style={styles.resultCount}>
-            {results?.length ?? 0} result{results?.length !== 1 ? 's' : ''}
+            {results?.length ?? 0} result{results?.length !== 1 ? 's' : ''} found
           </Text>
           <FlatList
             data={results ?? []}
-            keyExtractor={(v, i) => v.publicId ? `${v.publicId}-${i}` : String(i)}
+            keyExtractor={(v, i) => (v.publicId ? `${v.publicId}-${i}` : String(i))}
             numColumns={2}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.grid}
@@ -155,20 +153,12 @@ export default function Search() {
                 <Text style={styles.noResultsText}>No vehicles match your search.</Text>
               </View>
             }
-            renderItem={({ item }) => (
-              <CarCard
-                vehicle={item}
-                onPress={() => setQuickViewVehicle(item)}
-              />
-            )}
+            renderItem={({ item }) => <CarCard vehicle={item} onPress={() => setQuickViewVehicle(item)} />}
           />
         </>
       )}
 
-      <VehicleQuickView
-        vehicle={quickViewVehicle}
-        onClose={() => setQuickViewVehicle(null)}
-      />
+      <VehicleQuickView vehicle={quickViewVehicle} onClose={() => setQuickViewVehicle(null)} />
 
       <FilterSheet
         visible={filterOpen}
@@ -177,26 +167,43 @@ export default function Search() {
         value={{ branch: branchId, category: categoryId, sort }}
         onApply={(v: FilterValue) => {
           setBranchId(v.branch);
+          setBranchName(v.branch ? (branches ?? []).find((b) => b.publicId === v.branch)?.name ?? branchName : null);
           setCategoryId(v.category);
           setSort(v.sort);
           setSubmitted(true);
         }}
         onClose={() => setFilterOpen(false)}
       />
+
+      {/* Edit-search modal */}
+      <Modal visible={editOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setEditOpen(false)}>
+        <View style={styles.editOverlay}>
+          <TouchableWithoutFeedback onPress={() => setEditOpen(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <View style={styles.editSheet}>
+            <View style={styles.handle} />
+            <Text style={styles.editTitle}>Edit search</Text>
+            <View style={{ paddingHorizontal: 16 }}>
+              <SearchCard
+                branches={branches ?? []}
+                defaultBranchId={branchId}
+                initialStart={start ?? undefined}
+                initialEnd={end ?? undefined}
+                ctaLabel="Update results"
+                onSubmit={applyEdit}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    gap: 10,
-  },
+  topRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 10 },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   filterBtn: {
     width: 48,
@@ -221,13 +228,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.hairline,
   },
-  searchInput: {
-    flex: 1,
-    fontFamily: Fonts.body,
-    fontSize: 15,
-    color: Colors.ink,
-    padding: 0,
-  },
+  searchInput: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.ink, padding: 0 },
+  summaryWrap: { paddingHorizontal: 20, paddingBottom: 4 },
   resultCount: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 13,
@@ -242,20 +244,13 @@ const styles = StyleSheet.create({
   row: { gap: 12, marginBottom: 12 },
   loader: { marginTop: 60 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
-  emptyTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 22,
-    color: Colors.ink,
-    letterSpacing: -0.5,
-  },
-  emptySubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.ink3,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 21,
-  },
+  emptyTitle: { fontFamily: Fonts.display, fontSize: 22, color: Colors.ink, letterSpacing: -0.5 },
+  emptySubtitle: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3, textAlign: 'center', marginTop: 8, lineHeight: 21 },
   noResults: { alignItems: 'center', paddingTop: 40 },
   noResultsText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3 },
+
+  editOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  editSheet: { backgroundColor: Colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 36 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.ink4, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  editTitle: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.3, paddingHorizontal: 20, marginBottom: 12 },
 });
