@@ -63,17 +63,41 @@ function getScheduleForDay(
   };
 }
 
+/** Get hours, minutes, and dayOfWeek formatted in branch timezone (Asia/Kolkata). */
+export function getBranchLocalTime(date: Date): { hours: number; minutes: number; dayOfWeek: number } {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+    weekday: 'long'
+  });
+  const parts = formatter.formatToParts(date);
+  let hour = 0;
+  let minute = 0;
+  let weekdayLong = 'Sunday';
+  for (const part of parts) {
+    if (part.type === 'hour') hour = parseInt(part.value, 10) % 24;
+    else if (part.type === 'minute') minute = parseInt(part.value, 10);
+    else if (part.type === 'weekday') weekdayLong = part.value;
+  }
+  const dayOfWeek = DAY_NAMES.indexOf(weekdayLong as any);
+  return { hours: hour, minutes: minute, dayOfWeek: dayOfWeek >= 0 ? dayOfWeek : 0 };
+}
+
 function formatDayTime(date: Date, openTime: string): string {
-  const dayName = DAY_NAMES[date.getDay()] ?? "";
+  const { dayOfWeek } = getBranchLocalTime(date);
+  const dayName = DAY_NAMES[dayOfWeek] ?? "";
   return `${dayName} ${formatScheduleTime(openTime)}`;
 }
 
 function findBumpTarget(config: BranchScheduleConfig, pickupLocal: Date, maxDays = 7): Date | null {
-  const pickupMins = pickupLocal.getHours() * 60 + pickupLocal.getMinutes();
+  const { hours: pHours, minutes: pMinutes } = getBranchLocalTime(pickupLocal);
+  const pickupMins = pHours * 60 + pMinutes;
   let candidate = new Date(pickupLocal.getTime() + 24 * 60 * 60 * 1000);
 
   for (let i = 0; i < maxDays; i++) {
-    const dow = candidate.getDay();
+    const { dayOfWeek: dow } = getBranchLocalTime(candidate);
     const day = getScheduleForDay(config, dow);
     if (day.isOpen && pickupMins >= day.openMinutes && pickupMins < day.closeMinutes) {
       return candidate;
@@ -91,14 +115,14 @@ export function validateBookingSchedule(
   if (config.is24Hours || config.schedules.length === 0) return { status: "OK" };
 
   // Pickup checks
-  const pickupDow = pickupLocal.getDay();
+  const { dayOfWeek: pickupDow, hours: pickupHours, minutes: pickupMinsVal } = getBranchLocalTime(pickupLocal);
   const pickupDay = getScheduleForDay(config, pickupDow);
 
   if (!pickupDay.isOpen) {
     return { status: "PICKUP_CLOSED_DAY", closedDayName: DAY_NAMES[pickupDow] };
   }
 
-  const pickupMins = pickupLocal.getHours() * 60 + pickupLocal.getMinutes();
+  const pickupMins = pickupHours * 60 + pickupMinsVal;
 
   if (pickupMins < pickupDay.openMinutes) {
     return { status: "PICKUP_BEFORE_OPEN", openingTime: minutesToDisplay(pickupDay.openMinutes) };
@@ -109,13 +133,14 @@ export function validateBookingSchedule(
   }
 
   // Return checks
-  const returnDow = returnLocal.getDay();
+  const { dayOfWeek: returnDow, hours: returnHours, minutes: returnMinsVal } = getBranchLocalTime(returnLocal);
   const returnDay = getScheduleForDay(config, returnDow);
 
   if (!returnDay.isOpen) {
     const bump = findBumpTarget(config, pickupLocal);
     if (!bump) return { status: "NO_OPEN_DAY_IN_WINDOW" };
-    const nextDay = getScheduleForDay(config, bump.getDay());
+    const { dayOfWeek: nextDow } = getBranchLocalTime(bump);
+    const nextDay = getScheduleForDay(config, nextDow);
     return {
       status: "RETURN_BUMPED",
       adjustedReturn: bump,
@@ -124,7 +149,7 @@ export function validateBookingSchedule(
     };
   }
 
-  const returnMins = returnLocal.getHours() * 60 + returnLocal.getMinutes();
+  const returnMins = returnHours * 60 + returnMinsVal;
   const closeMins = returnDay.closeMinutes;
   const graceEndMins = closeMins + config.graceMinutes;
 
@@ -140,7 +165,8 @@ export function validateBookingSchedule(
 
   const bump = findBumpTarget(config, pickupLocal);
   if (!bump) return { status: "NO_OPEN_DAY_IN_WINDOW" };
-  const nextDay = getScheduleForDay(config, bump.getDay());
+  const { dayOfWeek: nextDow } = getBranchLocalTime(bump);
+  const nextDay = getScheduleForDay(config, nextDow);
   return {
     status: "RETURN_BUMPED",
     closingTime: minutesToDisplay(closeMins),
