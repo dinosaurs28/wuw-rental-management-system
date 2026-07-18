@@ -11,7 +11,7 @@ import {
   GetBranchManagers,
   CreateBranchManager,
   UpdateBranchManager,
-  DeleteBranchManager,
+  SetBranchManagerStatus,
 } from "../../controller/admin/branchManager.controller.js";
 import { GetBranchRevenue } from "../../controller/admin/report.controller.js";
 import {
@@ -62,7 +62,7 @@ router.patch("/dashboard/branches/:branchPublicId/grace", AdminCheck, updateBran
 router.get("/dashboard/branches/:branchId/managers", AdminCheck, GetBranchManagers);
 router.post("/dashboard/branches/:branchId/managers", AdminCheck, CreateBranchManager);
 router.put("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, UpdateBranchManager);
-router.delete("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, DeleteBranchManager);
+router.patch("/dashboard/branches/:branchId/managers/:managerId/status", AdminCheck, SetBranchManagerStatus);
 router.get("/dashboard/reports/revenue", AdminCheck, GetBranchRevenue);
 router.get("/dashboard/reports/revenue-trends", AdminCheck, GetRevenueTrends);
 router.get(

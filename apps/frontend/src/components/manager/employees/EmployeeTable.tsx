@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Loader2, Trash2, Pencil, Phone, Copy, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { MoreHorizontal, Loader2, UserX, UserCheck, Pencil, Phone, Copy, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   type BranchEmployee,
   branchEmployeeService,
@@ -79,22 +80,23 @@ export function EmployeeTable({
 }: EmployeeTableProps) {
   const [editingEmployee, setEditingEmployee] = useState<BranchEmployee | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<BranchEmployee | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<BranchEmployee | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const handleToggleStatus = async () => {
+    if (!statusTarget) return;
+    const nextIsActive = !statusTarget.isActive;
     try {
-      setIsDeleting(true);
-      await branchEmployeeService.delete(deleteTarget.publicId);
-      toast.success("Employee deleted successfully");
-      setDeleteTarget(null);
+      setIsUpdatingStatus(true);
+      await branchEmployeeService.setStatus(statusTarget.publicId, nextIsActive);
+      toast.success(`Employee ${nextIsActive ? "activated" : "deactivated"} successfully`);
+      setStatusTarget(null);
       if (onEmployeeUpdated) onEmployeeUpdated();
     } catch (error) {
-      console.error("Failed to delete employee", error);
-      toast.error("Failed to delete employee");
+      console.error("Failed to update employee status", error);
+      toast.error("Failed to update employee status");
     } finally {
-      setIsDeleting(false);
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -133,6 +135,7 @@ export function EmployeeTable({
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Employee</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Contact</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Role</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Status</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Joined</th>
               <th className="px-5 py-3.5 w-12"></th>
             </tr>
@@ -162,6 +165,9 @@ export function EmployeeTable({
                     {employee.role || "Staff"}
                   </Badge>
                 </td>
+                <td className="px-5 py-4">
+                  <StatusBadge status={employee.isActive ? "ACTIVE" : "INACTIVE"} />
+                </td>
                 <td className="px-5 py-4 text-sm text-neutral-500">
                   {format(new Date(employee.createdAt), "MMM d, yyyy")}
                 </td>
@@ -188,13 +194,23 @@ export function EmployeeTable({
                         <Pencil className="h-3.5 w-3.5" />
                         Edit Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="gap-2 text-red-600 focus:text-red-600"
-                        onClick={() => setDeleteTarget(employee)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
+                      {employee.isActive ? (
+                        <DropdownMenuItem
+                          className="gap-2 text-red-600 focus:text-red-600"
+                          onClick={() => setStatusTarget(employee)}
+                        >
+                          <UserX className="h-3.5 w-3.5" />
+                          Deactivate
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          className="gap-2 text-emerald-600 focus:text-emerald-600"
+                          onClick={() => setStatusTarget(employee)}
+                        >
+                          <UserCheck className="h-3.5 w-3.5" />
+                          Activate
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -240,13 +256,23 @@ export function EmployeeTable({
                     <Pencil className="h-3.5 w-3.5" />
                     Edit Details
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2 text-red-600 focus:text-red-600"
-                    onClick={() => setDeleteTarget(employee)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete
-                  </DropdownMenuItem>
+                  {employee.isActive ? (
+                    <DropdownMenuItem
+                      className="gap-2 text-red-600 focus:text-red-600"
+                      onClick={() => setStatusTarget(employee)}
+                    >
+                      <UserX className="h-3.5 w-3.5" />
+                      Deactivate
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      className="gap-2 text-emerald-600 focus:text-emerald-600"
+                      onClick={() => setStatusTarget(employee)}
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                      Activate
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -255,9 +281,12 @@ export function EmployeeTable({
                 <Phone className="w-3 h-3" />
                 {employee.phone}
               </div>
-              <Badge className={`${getRoleBadge(employee.role)} border shadow-none font-medium text-xs`}>
-                {employee.role || "Staff"}
-              </Badge>
+              <div className="flex items-center gap-1.5">
+                <StatusBadge status={employee.isActive ? "ACTIVE" : "INACTIVE"} />
+                <Badge className={`${getRoleBadge(employee.role)} border shadow-none font-medium text-xs`}>
+                  {employee.role || "Staff"}
+                </Badge>
+              </div>
             </div>
           </div>
         ))}
@@ -302,28 +331,32 @@ export function EmployeeTable({
         onSuccess={() => { if (onEmployeeUpdated) onEmployeeUpdated(); }}
       />
 
-      {/* Delete Confirm */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      {/* Status Toggle Confirm */}
+      <AlertDialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+            <AlertDialogTitle>
+              {statusTarget?.isActive ? "Deactivate Employee" : "Activate Employee"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-neutral-900">{deleteTarget?.name}</span>?
-              Their account will be permanently removed and they will lose access immediately.
+              Are you sure you want to {statusTarget?.isActive ? "deactivate" : "activate"}{" "}
+              <span className="font-semibold text-neutral-900">{statusTarget?.name}</span>?{" "}
+              {statusTarget?.isActive
+                ? "They will lose access immediately, but their account and data will be preserved."
+                : "They will regain access to their account immediately."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isUpdatingStatus}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-500 hover:bg-red-600 text-white"
-              onClick={handleDelete}
-              disabled={isDeleting}
+              className={statusTarget?.isActive ? "bg-red-500 hover:bg-red-600 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              onClick={handleToggleStatus}
+              disabled={isUpdatingStatus}
             >
-              {isDeleting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting...</>
+              {isUpdatingStatus ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{statusTarget?.isActive ? "Deactivating..." : "Activating..."}</>
               ) : (
-                "Delete Employee"
+                statusTarget?.isActive ? "Deactivate Employee" : "Activate Employee"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

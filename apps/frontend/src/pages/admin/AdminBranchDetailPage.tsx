@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
     adminService,
     type AdminBranch,
@@ -41,7 +42,8 @@ import {
     Plus,
     Loader2,
     Edit2,
-    Trash2,
+    UserX,
+    UserCheck,
     Users,
     MapPin,
     Phone,
@@ -59,8 +61,8 @@ export const AdminBranchDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [isAddManagerOpen, setIsAddManagerOpen] = useState(false);
     const [editingManager, setEditingManager] = useState<BranchManager | null>(null);
-    const [deletingManager, setDeletingManager] = useState<BranchManager | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [statusTargetManager, setStatusTargetManager] = useState<BranchManager | null>(null);
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
     const fetchData = async () => {
         if (!branchId) return;
@@ -89,18 +91,19 @@ export const AdminBranchDetailPage = () => {
         fetchData();
     }, [branchId]);
 
-    const handleDeleteManager = async () => {
-        if (!deletingManager || !branchId) return;
+    const handleToggleManagerStatus = async () => {
+        if (!statusTargetManager || !branchId) return;
+        const nextIsActive = !statusTargetManager.isActive;
         try {
-            setIsDeleting(true);
-            await adminService.deleteBranchManager(branchId, deletingManager.publicId);
-            toast.success("Manager removed successfully");
-            setDeletingManager(null);
+            setIsUpdatingStatus(true);
+            await adminService.setBranchManagerStatus(branchId, statusTargetManager.publicId, nextIsActive);
+            toast.success(`Manager ${nextIsActive ? "activated" : "deactivated"} successfully`);
+            setStatusTargetManager(null);
             fetchData();
         } catch {
-            toast.error("Failed to remove manager");
+            toast.error("Failed to update manager status");
         } finally {
-            setIsDeleting(false);
+            setIsUpdatingStatus(false);
         }
     };
 
@@ -200,6 +203,7 @@ export const AdminBranchDetailPage = () => {
                                         <TableRow className="hover:bg-transparent border-b-neutral-200">
                                             <TableHead className="pl-6 h-11 font-medium text-neutral-600 text-xs uppercase tracking-wider">Name</TableHead>
                                             <TableHead className="font-medium text-neutral-600 text-xs uppercase tracking-wider">Email</TableHead>
+                                            <TableHead className="font-medium text-neutral-600 text-xs uppercase tracking-wider">Status</TableHead>
                                             <TableHead className="font-medium text-neutral-600 text-xs uppercase tracking-wider">Added</TableHead>
                                             <TableHead className="text-right pr-6 font-medium text-neutral-600 text-xs uppercase tracking-wider">Actions</TableHead>
                                         </TableRow>
@@ -207,7 +211,7 @@ export const AdminBranchDetailPage = () => {
                                     <TableBody>
                                         {managers.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="h-[240px] text-center">
+                                                <TableCell colSpan={5} className="h-[240px] text-center">
                                                     <EmptyManagersState onAdd={() => setIsAddManagerOpen(true)} />
                                                 </TableCell>
                                             </TableRow>
@@ -217,7 +221,7 @@ export const AdminBranchDetailPage = () => {
                                                     key={manager.publicId}
                                                     manager={manager}
                                                     onEdit={() => setEditingManager(manager)}
-                                                    onDelete={() => setDeletingManager(manager)}
+                                                    onToggleStatus={() => setStatusTargetManager(manager)}
                                                 />
                                             ))
                                         )}
@@ -238,7 +242,7 @@ export const AdminBranchDetailPage = () => {
                                                 key={manager.publicId}
                                                 manager={manager}
                                                 onEdit={() => setEditingManager(manager)}
-                                                onDelete={() => setDeletingManager(manager)}
+                                                onToggleStatus={() => setStatusTargetManager(manager)}
                                             />
                                         ))}
                                     </div>
@@ -274,32 +278,40 @@ export const AdminBranchDetailPage = () => {
                 />
             )}
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={!!deletingManager} onOpenChange={(open) => !open && setDeletingManager(null)}>
+            {/* Status Toggle Confirmation Dialog */}
+            <Dialog open={!!statusTargetManager} onOpenChange={(open) => !open && setStatusTargetManager(null)}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Remove Manager</DialogTitle>
+                        <DialogTitle>
+                            {statusTargetManager?.isActive ? "Deactivate Manager" : "Activate Manager"}
+                        </DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to remove{" "}
-                            <strong>{deletingManager?.name}</strong> as a branch manager?
-                            They will lose access to this branch immediately.
+                            Are you sure you want to {statusTargetManager?.isActive ? "deactivate" : "activate"}{" "}
+                            <strong>{statusTargetManager?.name}</strong> as a branch manager?{" "}
+                            {statusTargetManager?.isActive
+                                ? "They will lose access to this branch immediately, but their account and data will be preserved."
+                                : "They will regain access to this branch immediately."}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="flex-col sm:flex-row gap-2">
                         <Button
                             variant="outline"
-                            onClick={() => setDeletingManager(null)}
+                            onClick={() => setStatusTargetManager(null)}
                             className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
                         <Button
-                            className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
-                            onClick={handleDeleteManager}
-                            disabled={isDeleting}
+                            className={
+                                statusTargetManager?.isActive
+                                    ? "bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
+                            }
+                            onClick={handleToggleManagerStatus}
+                            disabled={isUpdatingStatus}
                         >
-                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Remove Manager
+                            {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {statusTargetManager?.isActive ? "Deactivate Manager" : "Activate Manager"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -454,11 +466,11 @@ function BranchInfoCard({ branch, onRefresh }: { branch: AdminBranch; onRefresh:
 function ManagerRow({
     manager,
     onEdit,
-    onDelete,
+    onToggleStatus,
 }: {
     manager: BranchManager;
     onEdit: () => void;
-    onDelete: () => void;
+    onToggleStatus: () => void;
 }) {
     return (
         <TableRow className="hover:bg-orange-50/20 transition-colors border-b-neutral-100">
@@ -473,6 +485,9 @@ function ManagerRow({
                 </div>
             </TableCell>
             <TableCell className="text-neutral-600 text-sm">{manager.email}</TableCell>
+            <TableCell>
+                <StatusBadge status={manager.isActive ? "ACTIVE" : "INACTIVE"} />
+            </TableCell>
             <TableCell className="text-neutral-500 text-sm whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-neutral-400" />
@@ -496,10 +511,14 @@ function ManagerRow({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={onDelete}
+                        className={
+                            manager.isActive
+                                ? "h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50"
+                                : "h-8 w-8 text-neutral-500 hover:text-emerald-600 hover:bg-emerald-50"
+                        }
+                        onClick={onToggleStatus}
                     >
-                        <Trash2 className="h-4 w-4" />
+                        {manager.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                     </Button>
                 </div>
             </TableCell>
@@ -512,11 +531,11 @@ function ManagerRow({
 function ManagerCard({
     manager,
     onEdit,
-    onDelete,
+    onToggleStatus,
 }: {
     manager: BranchManager;
     onEdit: () => void;
-    onDelete: () => void;
+    onToggleStatus: () => void;
 }) {
     return (
         <div className="p-4 flex items-center justify-between gap-3">
@@ -527,7 +546,10 @@ function ManagerCard({
                     </span>
                 </div>
                 <div className="min-w-0">
-                    <p className="font-medium text-neutral-900 text-sm truncate">{manager.name}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="font-medium text-neutral-900 text-sm truncate">{manager.name}</p>
+                        <StatusBadge status={manager.isActive ? "ACTIVE" : "INACTIVE"} />
+                    </div>
                     <p className="text-neutral-500 text-xs truncate">{manager.email}</p>
                     <p className="text-neutral-400 text-xs mt-0.5">
                         Added {new Date(manager.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
@@ -546,10 +568,14 @@ function ManagerCard({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={onDelete}
+                    className={
+                        manager.isActive
+                            ? "h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50"
+                            : "h-8 w-8 text-neutral-500 hover:text-emerald-600 hover:bg-emerald-50"
+                    }
+                    onClick={onToggleStatus}
                 >
-                    <Trash2 className="h-4 w-4" />
+                    {manager.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                 </Button>
             </div>
         </div>

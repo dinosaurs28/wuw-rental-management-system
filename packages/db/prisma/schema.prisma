@@ -232,9 +232,11 @@ model User {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
+  isActive              Boolean                @default(true)
 
   @@index([branchId])
   @@index([role])
+  @@index([isActive])
 }
 
 model UserProvider {
@@ -389,6 +391,8 @@ enum StaffActionType {
   CONFIRMED
   UPDATED
   DELETED
+  ACTIVATED
+  DEACTIVATED
   UPLOADED
   SWAPPED
   REFUNDED

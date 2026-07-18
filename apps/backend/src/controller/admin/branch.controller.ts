@@ -230,7 +230,7 @@ export const DeleteBranch = async (req: Request, res: Response) => {
                     branchId: branch.id,
                     role: Role.MANAGER
                 },
-                data: { deletedAt: new Date() }
+                data: { isActive: false }
             });
         });
 

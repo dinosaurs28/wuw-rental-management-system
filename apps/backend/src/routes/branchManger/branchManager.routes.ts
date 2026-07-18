@@ -53,7 +53,7 @@ import {
   GetEmployee,
   SearchEmployee,
   UpdateEmployee,
-  DeleteEmployee,
+  SetEmployeeStatus,
 } from "../../controller/branchManager/employee.controller.js";
 import {
   CreateDepositRule,
@@ -233,7 +233,7 @@ router.get("/dashboard/employees", ManagerCheck, SearchEmployee);
 router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee);
 router.post("/dashboard/employees", ManagerCheck, CreateEmployee);
 router.put("/dashboard/employees/:employeeId", ManagerCheck, UpdateEmployee);
-router.delete("/dashboard/employees/:employeeId", ManagerCheck, DeleteEmployee);
+router.patch("/dashboard/employees/:employeeId/status", ManagerCheck, SetEmployeeStatus);
 router.get("/dashboard/deposit-rules", ManagerCheck, GetDepositRules);
 router.post("/dashboard/deposit-rules", ManagerCheck, CreateDepositRule);
 router.put("/dashboard/deposit-rules/:id", ManagerCheck, UpdateDepositRule);

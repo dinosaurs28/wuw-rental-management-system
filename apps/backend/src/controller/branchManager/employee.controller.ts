@@ -6,8 +6,13 @@ import { StatusCode } from "../../types/statusCode.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
 import crypto from "crypto";
+import { z } from "zod";
 import { createID } from "../../utils/nanoID.js";
 import { hashpassword } from "../../utils/PasswordCrypt/password.js";
+
+const setStatusSchema = z.object({
+    isActive: z.boolean(),
+});
 
 export const SearchEmployee = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -20,7 +25,6 @@ export const SearchEmployee = async (req: Request, res: Response) => {
     const whereClause: any = {
         branchId: branchId,
         role: Role.STAFF,
-        deletedAt: null
     };
 
     if (search) {
@@ -43,6 +47,7 @@ export const SearchEmployee = async (req: Request, res: Response) => {
                     email: true,
                     phone: true,
                     role: true,
+                    isActive: true,
                     createdAt: true
                 },
                 skip,
@@ -87,6 +92,7 @@ export const GetEmployee = async (req: Request, res: Response) => {
                 email: true,
                 phone: true,
                 role: true,
+                isActive: true,
                 createdAt: true,
                 updatedAt: true
             }
@@ -276,17 +282,26 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
     }
 }
 
-export const DeleteEmployee = async (req: Request, res: Response) => {
+export const SetEmployeeStatus = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
     const { employeeId } = req.params;
+
+    const validation = setStatusSchema.safeParse(req.body);
+    if (!validation.success) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+            message: "Invalid Inputs",
+            error: validation.error
+        });
+    }
+
+    const { isActive } = validation.data;
 
     try {
         const user = await prisma.user.findFirst({
             where: {
                 publicId: employeeId,
                 branchId: branchId,
-                role: Role.STAFF,
-                deletedAt: null
+                role: Role.STAFF
             }
         });
 
@@ -294,27 +309,46 @@ export const DeleteEmployee = async (req: Request, res: Response) => {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Employee not found" });
         }
 
-        // Soft delete by setting deletedAt
         await prisma.user.update({
             where: { id: user.id },
-            data: {
-                deletedAt: new Date()
-            }
+            data: { isActive }
+        });
+
+        const manager = await prisma.user.findUnique({
+            where: { publicId: req.public_Id },
+            select: { id: true, name: true, role: true },
         });
 
         staffActivityService.logFromRequest(req, {
-            actionType: StaffActionType.DELETED,
+            actionType: isActive ? StaffActionType.ACTIVATED : StaffActionType.DEACTIVATED,
             entityType: StaffEntityType.EMPLOYEE,
             entityRef: user.publicId,
-            description: `Employee ${user.name} deactivated`,
+            description: `Employee ${user.name} ${isActive ? "activated" : "deactivated"}`,
+        });
+
+        auditService.log({
+            actorId: manager?.id,
+            actorName: manager?.name ?? "Unknown",
+            actorRole: manager?.role ?? Role.MANAGER,
+            actorBranchId: branchId,
+            action: isActive ? "EMPLOYEE_ACTIVATED" : "EMPLOYEE_DEACTIVATED",
+            category: AuditCategory.EMPLOYEE,
+            description: `Employee ${user.name} ${isActive ? "activated" : "deactivated"}`,
+            entity: "User",
+            entityId: user.publicId,
+            entityLabel: user.name,
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+            before: { isActive: user.isActive },
+            after: { isActive },
         });
 
         return res.status(StatusCode.OK).json({
-            message: "Employee deleted successfully"
+            message: `Employee ${isActive ? "activated" : "deactivated"} successfully`
         });
 
     } catch (error) {
-        console.error("DeleteEmployee Error:", error);
+        console.error("SetEmployeeStatus Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 }

@@ -5,6 +5,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { hashpassword } from "../../utils/PasswordCrypt/password.js";
 import { Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { z } from "zod";
 
 const createManagerSchema = z.object({
@@ -17,6 +18,10 @@ const updateManagerSchema = z.object({
     name: z.string().min(1).optional(),
     email: z.string().email().optional(),
     password: z.string().min(6).optional(),
+});
+
+const setStatusSchema = z.object({
+    isActive: z.boolean(),
 });
 
 export const GetBranchManagers = async (req: Request, res: Response) => {
@@ -41,6 +46,7 @@ export const GetBranchManagers = async (req: Request, res: Response) => {
                 publicId: true,
                 name: true,
                 email: true,
+                isActive: true,
                 createdAt: true,
             },
             orderBy: { createdAt: "asc" },
@@ -155,9 +161,16 @@ export const UpdateBranchManager = async (req: Request, res: Response) => {
     }
 };
 
-export const DeleteBranchManager = async (req: Request, res: Response) => {
+export const SetBranchManagerStatus = async (req: Request, res: Response) => {
     try {
         const { branchId, managerId } = req.params;
+        const validation = setStatusSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid Inputs", error: validation.error });
+        }
+
+        const { isActive } = validation.data;
 
         const branch = await prisma.branch.findUnique({ where: { publicId: branchId, deletedAt: null } });
         if (!branch) {
@@ -171,15 +184,38 @@ export const DeleteBranchManager = async (req: Request, res: Response) => {
 
         await prisma.user.update({
             where: { id: manager.id },
-            data: { deletedAt: new Date() },
+            data: { isActive },
         });
 
         await redis.del("admin:all_branches");
         await redis.del("branches");
 
-        return res.status(StatusCode.OK).json({ message: "Branch manager deleted successfully" });
+        const admin = await prisma.user.findUnique({
+            where: { publicId: req.public_Id },
+            select: { id: true, name: true, role: true },
+        });
+
+        auditService.log({
+            actorId: admin?.id,
+            actorName: admin?.name ?? "Unknown",
+            actorRole: admin?.role ?? Role.ADMIN,
+            action: isActive ? "MANAGER_ACTIVATED" : "MANAGER_DEACTIVATED",
+            category: AuditCategory.BRANCH,
+            description: `Branch manager ${manager.name} ${isActive ? "activated" : "deactivated"}`,
+            entity: "User",
+            entityId: manager.publicId,
+            entityLabel: manager.name,
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+            before: { isActive: manager.isActive },
+            after: { isActive },
+        });
+
+        return res.status(StatusCode.OK).json({
+            message: `Branch manager ${isActive ? "activated" : "deactivated"} successfully`,
+        });
     } catch (error) {
-        console.error("Delete Branch Manager Error:", error);
+        console.error("Set Branch Manager Status Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 };

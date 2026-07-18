@@ -34,6 +34,7 @@ export type BranchManager = {
     publicId: string;
     name: string;
     email: string;
+    isActive: boolean;
     createdAt: string;
 };
 
@@ -376,8 +377,8 @@ export const adminService = {
         await apiClient.put(`/admin/dashboard/branches/${branchId}/managers/${managerId}`, data);
     },
 
-    deleteBranchManager: async (branchId: string, managerId: string): Promise<void> => {
-        await apiClient.delete(`/admin/dashboard/branches/${branchId}/managers/${managerId}`);
+    setBranchManagerStatus: async (branchId: string, managerId: string, isActive: boolean): Promise<void> => {
+        await apiClient.patch(`/admin/dashboard/branches/${branchId}/managers/${managerId}/status`, { isActive });
     },
 
     getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {
