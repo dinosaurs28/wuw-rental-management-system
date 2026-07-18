@@ -41,6 +41,7 @@ import staffActivityRouter from "./staffActivity.routes.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import whatsappConfigRouter from "./whatsapp-config.routes.js";
+import userTransferRouter from "./userTransfer.routes.js";
 import {
   upsertBranchSchedule,
   updateBranchGrace,
@@ -119,6 +120,9 @@ router.use("/audit", auditRouter);
 
 // Staff Activity Logs
 router.use("/staff-activity", staffActivityRouter);
+
+// Cross-branch user staffing overview & transfer
+router.use("/dashboard/user-transfer", userTransferRouter);
 
 // Discount Rules
 router.use("/discount-rules", discountRouter);

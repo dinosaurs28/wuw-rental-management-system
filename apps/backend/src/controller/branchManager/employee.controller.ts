@@ -9,6 +9,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import { createID } from "../../utils/nanoID.js";
 import { hashpassword } from "../../utils/PasswordCrypt/password.js";
+import { redis } from "../../lib/redisconfig.js";
 
 const setStatusSchema = z.object({
     isActive: z.boolean(),
@@ -313,6 +314,8 @@ export const SetEmployeeStatus = async (req: Request, res: Response) => {
             where: { id: user.id },
             data: { isActive }
         });
+
+        await redis.del("admin:user_transfer_stats");
 
         const manager = await prisma.user.findUnique({
             where: { publicId: req.public_Id },

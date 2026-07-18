@@ -53,6 +53,62 @@ export type AdminBranch = {
     users?: BranchManager[];
 };
 
+export type RoleStaffingCounts = {
+    active: number;
+    inactive: number;
+    total: number;
+};
+
+export type BranchStaffingStats = {
+    branchId: string;
+    branchName: string;
+    managers: RoleStaffingCounts;
+    employees: RoleStaffingCounts;
+};
+
+export type BranchStaffingStatsResponse = {
+    data: BranchStaffingStats[];
+    totals: {
+        managers: RoleStaffingCounts;
+        employees: RoleStaffingCounts;
+    };
+};
+
+export type TransferableUser = {
+    publicId: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: "MANAGER" | "STAFF";
+    isActive: boolean;
+    branchId: string | null;
+    branchName: string | null;
+    createdAt: string;
+};
+
+export type GetBranchUsersResponse = {
+    data: TransferableUser[];
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+};
+
+export type GetBranchUsersParams = {
+    branchId?: string;
+    role?: "MANAGER" | "STAFF";
+    search?: string;
+    page?: number;
+    limit?: number;
+};
+
+export type TransferUserInput = {
+    toBranchId: string;
+    reason?: string;
+};
+
 export type CreateManagerInput = {
     name: string;
     email: string;
@@ -379,6 +435,20 @@ export const adminService = {
 
     setBranchManagerStatus: async (branchId: string, managerId: string, isActive: boolean): Promise<void> => {
         await apiClient.patch(`/admin/dashboard/branches/${branchId}/managers/${managerId}/status`, { isActive });
+    },
+
+    getBranchStaffingStats: async (): Promise<BranchStaffingStatsResponse> => {
+        const response = await apiClient.get<BranchStaffingStatsResponse>("/admin/dashboard/user-transfer/stats");
+        return response.data;
+    },
+
+    getBranchUsers: async (params: GetBranchUsersParams): Promise<GetBranchUsersResponse> => {
+        const response = await apiClient.get<GetBranchUsersResponse>("/admin/dashboard/user-transfer/users", { params });
+        return response.data;
+    },
+
+    transferUser: async (userPublicId: string, data: TransferUserInput): Promise<void> => {
+        await apiClient.patch(`/admin/dashboard/user-transfer/${userPublicId}/transfer`, data);
     },
 
     getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {

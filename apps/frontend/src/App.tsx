@@ -76,6 +76,7 @@ import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
+import { AdminUserTransferPage } from "./pages/admin/AdminUserTransferPage";
 import { InvoiceReportPage } from "./pages/admin/reports/InvoiceReportPage";
 import { ReceiptReportPage } from "./pages/admin/reports/ReceiptReportPage";
 import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
@@ -324,6 +325,7 @@ function App() {
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
             <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
             <Route path="/admin/staff-activity" element={<AdminStaffActivityPage />} />
+            <Route path="/admin/user-transfer" element={<AdminUserTransferPage />} />
           </Route>
         </Route>
 

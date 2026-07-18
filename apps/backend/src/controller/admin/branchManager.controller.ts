@@ -189,6 +189,7 @@ export const SetBranchManagerStatus = async (req: Request, res: Response) => {
 
         await redis.del("admin:all_branches");
         await redis.del("branches");
+        await redis.del("admin:user_transfer_stats");
 
         const admin = await prisma.user.findUnique({
             where: { publicId: req.public_Id },
