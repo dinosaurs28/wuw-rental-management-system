@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import { forgotPasswordSchema, resetPasswordSchema } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
-import { requestPasswordReset, resetPassword, PortalPath } from "./passwordReset.service.js";
-import { rateLimit } from "../../utils/rateLimiter.js";
+import { requestPasswordReset, resetPassword, safeRateLimit, PortalPath } from "./passwordReset.service.js";
 
 export function makeForgotPasswordController(portalPath: PortalPath) {
   return async (req: Request, res: Response) => {
@@ -29,7 +28,7 @@ export function makeForgotPasswordController(portalPath: PortalPath) {
 
 export async function resetPasswordController(req: Request, res: Response) {
   if (req.ip) {
-    const allowed = await rateLimit(`pwreset:confirm:ip:${req.ip}`, 10, 3600);
+    const allowed = await safeRateLimit(`pwreset:confirm:ip:${req.ip}`, 10, 3600);
     if (!allowed) {
       return res.status(StatusCode.TOO_MANY_REQUESTS).json({
         message: "Too many attempts. Please try again later.",

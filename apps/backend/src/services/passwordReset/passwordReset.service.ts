@@ -16,6 +16,21 @@ function hashToken(rawToken: string): string {
   return crypto.createHash("sha256").update(rawToken).digest("hex");
 }
 
+// Fails open: if the rate limiter itself is unavailable (e.g. Redis down),
+// we don't want that to take down the entire password reset flow.
+export async function safeRateLimit(
+  key: string,
+  limit: number,
+  ttl: number,
+): Promise<boolean> {
+  try {
+    return await rateLimit(key, limit, ttl);
+  } catch (error) {
+    console.error(`Rate limiter unavailable for key ${key}:`, error);
+    return true;
+  }
+}
+
 export async function requestPasswordReset(
   email: string,
   portalPath: PortalPath,
@@ -25,9 +40,9 @@ export async function requestPasswordReset(
   const normalizedEmail = email.toLowerCase().trim();
 
   const ipLimitOk = ip
-    ? await rateLimit(`pwreset:req:ip:${ip}`, 5, 3600)
+    ? await safeRateLimit(`pwreset:req:ip:${ip}`, 5, 3600)
     : true;
-  const emailLimitOk = await rateLimit(
+  const emailLimitOk = await safeRateLimit(
     `pwreset:req:email:${normalizedEmail}`,
     3,
     3600,
