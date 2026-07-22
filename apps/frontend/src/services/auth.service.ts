@@ -44,6 +44,25 @@ export const authService = {
     return { ...response.data, status: response.status };
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    password: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/reset-password",
+      { token, password },
+    );
+    return response.data;
+  },
+
   checkAuth: async (google?: boolean) => {
     const queryParam = google ? "?google=true" : "";
     const response = await apiClient.get<CheckAuthResponse>(

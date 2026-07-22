@@ -31,6 +31,25 @@ export const employeeService = {
     return response.data;
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/employee/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    password: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/employee/auth/reset-password",
+      { token, password },
+    );
+    return response.data;
+  },
+
   searchVehicles: async (filters: any) => {
     const params = new URLSearchParams();
     // Map filters to query params

@@ -22,12 +22,14 @@ export interface GetEmployeesResponse {
 
 export interface CreateEmployeeInput {
     name: string;
+    email: string;
     phone: string;
     password: string;
 }
 
 export interface UpdateEmployeeInput {
     name?: string;
+    email?: string;
     phone?: string;
     // role?: string; // Role update might be separate or here, keeping simple for now
 }

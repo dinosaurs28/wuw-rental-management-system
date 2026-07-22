@@ -46,7 +46,10 @@
       "Bash(dir C:\\\\Freelance\\\\vrms\\\\apps\\\\backend\\\\src\\\\utils\\\\payment *)",
       "Bash(Test-Path C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\components\\\\customer *)",
       "Bash(pnpm build *)",
-      "Bash(pnpm --filter backend build)"
+      "Bash(pnpm --filter backend build)",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/.env\")",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/apps/backend/.env\")",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/apps/frontend/.env\")"
     ]
   }
 }

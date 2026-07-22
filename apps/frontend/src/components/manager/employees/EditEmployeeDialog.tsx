@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Phone, User } from "lucide-react";
+import { Loader2, Phone, User, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 
 const updateEmployeeSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
 });
 
@@ -71,6 +72,7 @@ export function EditEmployeeDialog({
     resolver: zodResolver(updateEmployeeSchema),
     defaultValues: {
       name: "",
+      email: "",
       phone: "",
     },
   });
@@ -79,6 +81,7 @@ export function EditEmployeeDialog({
     if (employee) {
       form.reset({
         name: employee.name,
+        email: employee.email,
         phone: employee.phone,
       });
     }
@@ -139,6 +142,27 @@ export function EditEmployeeDialog({
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <Input
                           placeholder="e.g. Ravi Kumar"
+                          className="pl-9 h-11"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-neutral-700">Email Address</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <Input
+                          type="email"
+                          placeholder="e.g. ravi.kumar@example.com"
                           className="pl-9 h-11"
                           {...field}
                         />

@@ -395,6 +395,16 @@ export const adminService = {
         return response.data;
     },
 
+    forgotPassword: async (email: string): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>("/admin/auth/forgot-password", { email });
+        return response.data;
+    },
+
+    resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>("/admin/auth/reset-password", { token, password });
+        return response.data;
+    },
+
     getBranches: async (): Promise<AdminBranch[]> => {
         const response = await apiClient.get<{ data: AdminBranch[] }>("/admin/dashboard/branches");
         return response.data.data; // Assuming backend returns { data: [...] } standard wrapper, or direct array. Let's check backend controller.

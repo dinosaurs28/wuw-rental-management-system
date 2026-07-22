@@ -4,6 +4,14 @@ import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
 import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import EmployeeForgotPasswordPage from "./pages/auth/EmployeeForgotPasswordPage";
+import EmployeeResetPasswordPage from "./pages/auth/EmployeeResetPasswordPage";
+import BranchManagerForgotPasswordPage from "./pages/auth/BranchManagerForgotPasswordPage";
+import BranchManagerResetPasswordPage from "./pages/auth/BranchManagerResetPasswordPage";
+import AdminForgotPasswordPage from "./pages/auth/AdminForgotPasswordPage";
+import AdminResetPasswordPage from "./pages/auth/AdminResetPasswordPage";
 import OtpPage from "./pages/auth/OtpPage";
 import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
@@ -128,7 +136,11 @@ function App() {
             element={<SignInPage defaultTab="sign-up" />}
           />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
+          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/auth/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
+          <Route path="/employee/forgot-password" element={<EmployeeForgotPasswordPage />} />
+          <Route path="/employee/reset-password/:token" element={<EmployeeResetPasswordPage />} />
           <Route
             path="/employee/booking/status/:transactionId"
             element={<EmployeeBookingStatusPage />}
@@ -139,7 +151,11 @@ function App() {
           path="/branch-manager/sign-in"
           element={<BranchManagerSignInPage />}
         />
+        <Route path="/branch-manager/forgot-password" element={<BranchManagerForgotPasswordPage />} />
+        <Route path="/branch-manager/reset-password/:token" element={<BranchManagerResetPasswordPage />} />
         <Route path="/admin/sign-in" element={<AdminSignInPage />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPasswordPage />} />
+        <Route path="/admin/reset-password/:token" element={<AdminResetPasswordPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>

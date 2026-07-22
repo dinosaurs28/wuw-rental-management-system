@@ -197,6 +197,7 @@ model User {
   branch          Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   emailOtps             EmailVerificationOtp[]
+  passwordResetTokens   PasswordResetToken[]
   providers             UserProvider[]
   customerProfile       Customer?
   actorAuditLogs        AuditLog[]     @relation("ActorAuditLogs")
@@ -264,6 +265,21 @@ model EmailVerificationOtp {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // CUSTOMER & KYC

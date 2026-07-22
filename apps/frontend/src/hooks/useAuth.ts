@@ -73,6 +73,38 @@ export const useSignUp = () => {
   });
 };
 
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: (email: string) => authService.forgotPassword(email),
+    onSuccess: (response) => {
+      toast.success(response.message);
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || "Failed to send reset link";
+      toast.error(message);
+    },
+  });
+};
+
+export const useResetPassword = () => {
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      authService.resetPassword(token, password),
+    onSuccess: (response) => {
+      toast.success(response.message);
+      navigate("/auth/sign-in");
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || "Failed to reset password";
+      toast.error(message);
+    },
+  });
+};
+
 export const useSendOtp = () => {
   return useMutation({
     mutationFn: (phone: string) => authService.sendOtp(phone),

@@ -13,12 +13,18 @@ import { googleSignIn } from "../../controller/auth/google.controller.js";
 import { googleMobileSignIn } from "../../controller/auth/google-mobile.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { StatusCode } from "../../types/statusCode.js";
+import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
 
 const router: Router = Router();
 
 //Auth router for Normal Login And Google Auth
 
 router.post("/email/signup", emailAuthController);
+router.post("/forgot-password", makeForgotPasswordController("auth"));
+router.post("/reset-password", resetPasswordController);
 router.post("/email/signin", emailAuthControllerSignin);
 router.route("/email/verify-otp").post(generateOTP);
 router.post("/email/verify-otp/code", verifyOTP);

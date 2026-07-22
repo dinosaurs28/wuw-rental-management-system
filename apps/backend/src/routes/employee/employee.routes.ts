@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { Login } from "../../controller/employee/login.controller.js";
 import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
+import {
   searchVehicles,
   getEmployeeVehicleDetails,
   getEmployeeVehicleGroupDetails,
@@ -80,6 +84,8 @@ import dashboardRouter from "./dashboard.routes.js";
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.post("/auth/forgot-password", makeForgotPasswordController("employee"));
+router.post("/auth/reset-password", resetPasswordController);
 router.get("/booking", EmployeeCheck, BookingController);
 router.get("/booking/:bookingId/scan", EmployeeCheck, ScanBooking);
 router.get("/return", EmployeeCheck, returnController);

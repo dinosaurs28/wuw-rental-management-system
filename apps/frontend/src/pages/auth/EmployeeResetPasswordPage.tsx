@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
-import { emailAuthSchemaSignin } from "@repo/schemas";
-import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
+import { resetPasswordSchema } from "@repo/schemas";
+import { employeeService } from "@/services/employee.service";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,38 +16,33 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function EmployeeSignInPage() {
+type ResetPasswordFormInput = Omit<z.infer<typeof resetPasswordSchema>, "token">;
+
+export default function EmployeeResetPasswordPage() {
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { login } = useEmployeeAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Define schema locally if not exactly matching remote or just use remote
-  // Using imported schema
-  const form = useForm<z.infer<typeof emailAuthSchemaSignin>>({
-    resolver: zodResolver(emailAuthSchemaSignin),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  const form = useForm<ResetPasswordFormInput>({
+    resolver: zodResolver(resetPasswordSchema.omit({ token: true })),
+    defaultValues: { password: "" },
   });
 
-  async function onSubmit(values: z.infer<typeof emailAuthSchemaSignin>) {
+  async function onSubmit(values: ResetPasswordFormInput) {
     setIsLoading(true);
     try {
-      await login(values);
-      toast.success("Welcome back!", {
-        description: "You have successfully signed in.",
-      });
-      navigate("/employee/dashboard");
+      const response = await employeeService.resetPassword(
+        token ?? "",
+        values.password,
+      );
+      toast.success(response.message);
+      navigate("/employee/sign-in");
     } catch (error: any) {
-      console.error(error);
-      toast.error("Authentication Failed", {
-        description:
-          error.response?.data?.message || "Invalid email or password.",
+      toast.error("Could not reset password", {
+        description: error.response?.data?.message || "Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -56,7 +51,6 @@ export default function EmployeeSignInPage() {
 
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
-      {/* Left Side - Hero Image */}
       <div className="hidden lg:block relative h-full w-full bg-zinc-800 overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2694&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
         <div className="relative z-20 flex h-full flex-col justify-between p-12 text-white">
@@ -77,15 +71,14 @@ export default function EmployeeSignInPage() {
         </div>
       </div>
 
-      {/* Right Side - Auth Form */}
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="mx-auto w-full max-w-[400px] space-y-6">
           <div className="flex flex-col space-y-2 text-center lg:text-left">
             <h1 className="text-3xl font-semibold tracking-tight">
-              Welcome back
+              Set a new password
             </h1>
             <p className="text-sm text-muted-foreground">
-              Enter your credentials to access your account.
+              Choose a new password for your account.
             </p>
           </div>
 
@@ -93,44 +86,16 @@ export default function EmployeeSignInPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="staff@company.com"
-                        type="email"
-                        autoComplete="email"
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
-                      <Link
-                        to="/employee/forgot-password"
-                        className="text-sm font-medium text-primary hover:underline md:hidden"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           placeholder="••••••••"
                           type={showPassword ? "text" : "password"}
-                          autoComplete="current-password"
+                          autoComplete="new-password"
                           disabled={isLoading}
                           className="pr-10"
                           {...field}
@@ -150,46 +115,19 @@ export default function EmployeeSignInPage() {
                 )}
               />
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" />
-                  <label
-                    htmlFor="remember"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Keep me signed in
-                  </label>
-                </div>
-                <Link
-                  to="/employee/forgot-password"
-                  className="hidden text-sm font-medium text-primary hover:underline md:block"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Resetting..." : "Reset password"}
               </Button>
             </form>
           </Form>
 
-          <p className="px-8 text-center text-sm text-muted-foreground">
-            By clicking continue, you agree to our{" "}
-            <a
-              href="#"
+          <p className="text-center text-sm text-muted-foreground">
+            <Link
+              to="/employee/sign-in"
               className="underline underline-offset-4 hover:text-primary"
             >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="#"
-              className="underline underline-offset-4 hover:text-primary"
-            >
-              Privacy Policy
-            </a>
-            .
+              Back to sign in
+            </Link>
           </p>
         </div>
       </div>

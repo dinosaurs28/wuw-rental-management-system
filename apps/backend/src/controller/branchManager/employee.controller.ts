@@ -122,13 +122,10 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         });
     }
 
-    const { name, phone, password } = validation.data;
+    const { name, email: rawEmail, phone, password } = validation.data;
 
     try {
-        // Check if phone already exists in this branch/system? 
-        // User schema has unique email. Phone is not unique in schema, but good to check.
-        // We are using phone to generate email, so duplicate phone -> duplicate email.
-        const email = `${phone}@staff.wuw.com`;
+        const email = rawEmail.toLowerCase().trim();
 
         const existingUser = await prisma.user.findFirst({
             where: {
@@ -140,7 +137,7 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         });
 
         if (existingUser) {
-            return res.status(StatusCode.CONFLICT).json({ message: "Employee with this phone already exists" });
+            return res.status(StatusCode.CONFLICT).json({ message: "Employee with this email or phone already exists" });
         }
 
         const passwordHash = await hashpassword(password);
@@ -221,6 +218,7 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
     }
 
     const { name, phone } = validation.data;
+    const email = validation.data.email.toLowerCase().trim();
 
     try {
         const user = await prisma.user.findFirst({
@@ -236,16 +234,16 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Employee not found" });
         }
 
-        // Check if phone is being changed and if it conflicts
-        if (phone !== user.phone) {
-            const existingPhone = await prisma.user.findFirst({
+        // Check if phone or email is being changed and if it conflicts
+        if (phone !== user.phone || email !== user.email) {
+            const existingUser = await prisma.user.findFirst({
                 where: {
-                    phone: phone,
+                    OR: [{ phone }, { email }],
                     id: { not: user.id }
                 }
             });
-            if (existingPhone) {
-                return res.status(StatusCode.CONFLICT).json({ message: "Phone number already in use" });
+            if (existingUser) {
+                return res.status(StatusCode.CONFLICT).json({ message: "Phone number or email already in use" });
             }
         }
 
@@ -253,6 +251,7 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             where: { id: user.id },
             data: {
                 name,
+                email,
                 phone
             },
             select: {

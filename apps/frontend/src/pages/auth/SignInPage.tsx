@@ -11,6 +11,7 @@ import { useSignIn, useSignUp } from "@/hooks/useAuth";
 import type { SignInInput, SignUpInput } from "@/services/auth.service";
 import { authService } from "@/services/auth.service";
 import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -160,12 +161,12 @@ export default function SignInPage({
                       <Label htmlFor="signin-password" className={labelClass}>
                         Password
                       </Label>
-                      <a
-                        href="#"
+                      <Link
+                        to="/auth/forgot-password"
                         className="text-[13px] text-[#f0500a] font-bold hover:text-[#d9470a] transition-colors"
                       >
                         Forgot?
-                      </a>
+                      </Link>
                     </div>
                     <div className="relative">
                       <Input

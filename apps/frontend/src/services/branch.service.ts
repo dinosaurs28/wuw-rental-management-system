@@ -67,4 +67,23 @@ export const branchManagerService = {
     );
     return response.data;
   },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/branchManager/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    password: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/branchManager/auth/reset-password",
+      { token, password },
+    );
+    return response.data;
+  },
 };

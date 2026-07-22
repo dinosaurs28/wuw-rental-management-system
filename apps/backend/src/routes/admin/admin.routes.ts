@@ -2,6 +2,10 @@ import { Router } from "express";
 import { Login } from "../../controller/admin/auth.controller.js";
 import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
 import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
+import {
   GetAllBranches,
   CreateBranch,
   EditBranch,
@@ -50,6 +54,8 @@ import {
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.post("/auth/forgot-password", makeForgotPasswordController("admin"));
+router.post("/auth/reset-password", resetPasswordController);
 router.get("/dashboard/branches", AdminCheck, GetAllBranches);
 router.post("/dashboard/branches/create", AdminCheck, CreateBranch);
 router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);

@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { Login } from "../../controller/branchManager/login.controller.js";
 import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
+import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller.js";
 import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller.js";
 import {
@@ -109,6 +113,8 @@ import {
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.post("/auth/forgot-password", makeForgotPasswordController("branchManager"));
+router.post("/auth/reset-password", resetPasswordController);
 router.get("/dashboard/branch/schedule", ManagerCheck, getManagerBranchSchedule);
 router.patch("/dashboard/branch/schedule", ManagerCheck, upsertManagerBranchSchedule);
 router.patch("/dashboard/branch/grace", ManagerCheck, updateManagerBranchGrace);
