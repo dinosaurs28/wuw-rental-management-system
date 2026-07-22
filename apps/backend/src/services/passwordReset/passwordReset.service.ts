@@ -17,7 +17,7 @@ function hashToken(rawToken: string): string {
 }
 
 // Fails open: if the rate limiter itself is unavailable (e.g. Redis down),
-// we don't want that to take down the entire password reset flow.
+// we don't want that to take down the entire password reset flow..
 export async function safeRateLimit(
   key: string,
   limit: number,
