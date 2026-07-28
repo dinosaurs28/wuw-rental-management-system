@@ -56,7 +56,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Only customers reset through the public endpoint (mirrors signin, which
     // only issues tokens to CUSTOMER accounts). Staff/admin reset elsewhere.
-    if (user && user.role === Role.CUSTOMER) {
+    if (user && user.role === Role.CUSTOMER && !user.deletedAt) {
       const allowed1 = await rateLimit(`pwreset_send_1min:${user.id}`, 1, 60);
       const allowed2 = await rateLimit(`pwreset_send_hour:${user.id}`, 5, 3600);
 
@@ -125,7 +125,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const { otp, password } = parsed.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== Role.CUSTOMER) {
+    if (!user || user.role !== Role.CUSTOMER || user.deletedAt) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: INVALID_CODE_MESSAGE,
       });

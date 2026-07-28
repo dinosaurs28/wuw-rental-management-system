@@ -46,3 +46,7 @@ expo-env.d.ts
 # build artifacts (APK/AAB are too large for git)
 *.apk
 *.aab
+
+# Google Play service account key (NEVER commit)
+google-play-service-account.json
+*-service-account.json

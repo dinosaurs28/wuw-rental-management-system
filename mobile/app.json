@@ -7,16 +7,25 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#0a0a0a",
+    "primaryColor": "#ff6a1f",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.wuw.cars"
+      "bundleIdentifier": "com.whatuwantrentals.cars"
     },
     "android": {
-      "package": "com.wuw.cars",
+      "package": "com.whatuwantrentals.cars",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -28,8 +37,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0a0a0a",
-          "image": "./assets/icon.png",
-          "imageWidth": 180
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220
         }
       ],
       "expo-secure-store",
@@ -42,13 +51,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "WUW needs access to your photos to upload KYC documents."
+          "photosPermission": "WUW needs access to your photos so you can upload your driving licence and other KYC documents.",
+          "cameraPermission": "WUW needs camera access so you can photograph your driving licence and vehicle condition.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "WUW needs camera access to scan booking QR codes."
+          "cameraPermission": "WUW needs camera access to scan booking QR codes and capture vehicle condition photos.",
+          "microphonePermission": false,
+          "recordAudioAndroidPermission": false
         }
       ]
     ],

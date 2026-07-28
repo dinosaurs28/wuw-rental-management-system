@@ -119,6 +119,11 @@ export const userApi = {
     api.delete('/api/user/kyc', { data: { id: publicId, customer_public_id: customerPublicId } }),
   cancelHold: (holdId: string) =>
     api.delete(`/api/user/booking/hold/${holdId}`),
+
+  // Permanent account deletion. `password` is omitted for Google-linked
+  // accounts (they have no password). 409 => an active booking blocks it.
+  deleteAccount: (confirmText: string, password?: string) =>
+    api.delete('/api/user/account', { data: { confirmText, password } }),
   // { data: { customerId, cancellations: [...], totalCancellations, totalOutstanding } }
   // Money fields (cancellationFee, totalOutstanding) arrive as STRINGS.
   cancellationHistory: () =>

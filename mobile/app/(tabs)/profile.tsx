@@ -338,6 +338,16 @@ export default function Profile() {
           <Ionicons name="log-out-outline" size={18} color="#dc2626" />
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
+
+        {/* Account deletion — required in-app by Google Play policy for apps
+            that allow in-app account creation. */}
+        <TouchableOpacity
+          style={styles.deleteAccountBtn}
+          onPress={() => router.push('/delete-account')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.deleteAccountText}>Delete account</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -584,4 +594,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff5f5',
   },
   signOutText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: '#dc2626' },
+
+  /* Delete account — deliberately low-emphasis so it can't be hit by mistake,
+     but always reachable (Google Play requires an in-app deletion path). */
+  deleteAccountBtn: { alignItems: 'center', paddingVertical: 18, marginTop: 4 },
+  deleteAccountText: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.ink3,
+    textDecorationLine: 'underline',
+  },
 });
