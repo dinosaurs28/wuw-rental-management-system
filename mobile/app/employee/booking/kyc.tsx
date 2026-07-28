@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../../lib/image';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import type { KycType, KycSide } from '../../../types/api';
 
@@ -62,7 +63,9 @@ export default function WalkinKycScreen() {
 
   const pickAndUpload = async (source: 'camera' | 'gallery') => {
     if (!customer) return;
-    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', quality: 0.7, allowsEditing: false };
+    // quality 1: prepareImageForUpload re-encodes anyway, so compressing here
+    // only adds a second decode/encode pass.
+    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', quality: 1, allowsEditing: false };
     let result: ImagePicker.ImagePickerResult;
     if (source === 'camera') {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -75,25 +78,26 @@ export default function WalkinKycScreen() {
     const asset = result.assets[0];
     if (!asset) return;
 
-    const mimeType = asset.mimeType ?? 'image/jpeg';
-    const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/heic': 'heic', 'image/webp': 'webp' };
-    const ext = extMap[mimeType] ?? asset.uri.split('.').pop() ?? 'jpg';
-    const fileName = `kyc_${docType.toLowerCase()}_${side.toLowerCase()}_${Date.now()}.${ext}`;
-
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append('file', { uri: asset.uri, name: fileName, type: mimeType } as any);
-      form.append('kyc_type', docType);
-      form.append('side', side);
-      form.append('customer_public_id', customer.publicId);
+      // Raw camera output is 3–8 MB and is rejected by the reverse proxy
+      // before it reaches the API — always downscale first.
+      const file = await prepareImageForUpload(
+        asset,
+        `kyc_${docType.toLowerCase()}_${side.toLowerCase()}_${Date.now()}`,
+      );
+      const form = toUploadForm(file, {
+        kyc_type: docType,
+        side,
+        customer_public_id: customer.publicId,
+      });
       const res = await employeeApi.walkinKycUpload(form);
       // Auto-select the freshly uploaded document for the booking.
       const newId: string | undefined = res.data?.fileId;
       if (newId) setCustomerKycId(newId);
       await qc.invalidateQueries({ queryKey: ['employee', 'walkin-kyc', customer.publicId] });
     } catch (err: any) {
-      Alert.alert('Upload failed', err?.response?.data?.message ?? 'Could not upload the document.');
+      Alert.alert('Upload failed', uploadErrorMessage(err, 'Could not upload the document.'));
     } finally {
       setUploading(false);
     }

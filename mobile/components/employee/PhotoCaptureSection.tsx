@@ -11,6 +11,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../lib/image';
 
 export interface CapturedPhoto {
   fileId: string;
@@ -35,13 +36,6 @@ interface Props {
   genericLabel?: string;
 }
 
-const EXT_MAP: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/heic': 'heic',
-  'image/webp': 'webp',
-};
-
 export default function PhotoCaptureSection({
   fields,
   allowGeneric = true,
@@ -59,10 +53,12 @@ export default function PhotoCaptureSection({
         Alert.alert('Camera access needed', 'Enable camera access to take photos.');
         return null;
       }
-      const r = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+      // quality 1: prepareImageForUpload re-encodes anyway, so compressing
+      // here only adds a second decode/encode pass.
+      const r = await ImagePicker.launchCameraAsync({ quality: 1 });
       return r.canceled ? null : r.assets[0] ?? null;
     }
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.7 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 1 });
     return r.canceled ? null : r.assets[0] ?? null;
   };
 
@@ -79,10 +75,10 @@ export default function PhotoCaptureSection({
     if (!asset) return;
     setBusy(slotKey);
     try {
-      const mime = asset.mimeType ?? 'image/jpeg';
-      const ext = EXT_MAP[mime] ?? asset.uri.split('.').pop() ?? 'jpg';
-      const form = new FormData();
-      form.append('file', { uri: asset.uri, name: `photo_${Date.now()}.${ext}`, type: mime } as any);
+      // Raw camera output is 3–8 MB and is rejected by the reverse proxy
+      // before it reaches the API — always downscale first.
+      const file = await prepareImageForUpload(asset, `photo_${Date.now()}`);
+      const form = toUploadForm(file);
       const { fileId, url } = await upload(form);
       // Replace any existing photo for a labeled slot; append for generic.
       const next = label
@@ -90,7 +86,7 @@ export default function PhotoCaptureSection({
         : [...value, { fileId, url }];
       onChange(next);
     } catch (err: any) {
-      Alert.alert('Upload failed', err?.response?.data?.message ?? 'Could not upload the photo.');
+      Alert.alert('Upload failed', uploadErrorMessage(err));
     } finally {
       setBusy(null);
     }

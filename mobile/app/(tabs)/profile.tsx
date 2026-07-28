@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../lib/image';
 import * as DocumentPicker from 'expo-document-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { Colors, Fonts } from '../../constants/colors';
@@ -80,9 +80,12 @@ export default function Profile() {
   });
 
   const uploadDoc = async (type: KycType, side: KycSide) => {
+    // quality is left at 1 deliberately: prepareImageForUpload re-encodes
+    // anyway, so asking the picker to compress first costs a second full
+    // decode/encode pass and is the main reason selection felt slow.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
-      quality: 0.8,
+      quality: 1,
       allowsEditing: false,
     });
     if (result.canceled) return;
@@ -90,47 +93,22 @@ export default function Profile() {
     const asset = result.assets[0];
     if (!asset) return;
 
-    // Derive extension from URI or mimeType
-    const mimeType = asset.mimeType ?? 'image/jpeg';
-    const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/heic': 'heic', 'image/webp': 'webp' };
-    const ext = extMap[mimeType] ?? asset.uri.split('.').pop() ?? 'jpg';
-
-    // #37 — resize + compress before upload to avoid slow/large uploads on mobile data.
-    // Falls back to the original asset if manipulation fails for any reason.
-    let uploadUri = asset.uri;
-    let uploadMime = mimeType;
-    let fileName = `kyc_${type.toLowerCase()}_${side.toLowerCase()}_${Date.now()}.${ext}`;
-    try {
-      const compressed = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 1600 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG },
-      );
-      uploadUri = compressed.uri;
-      uploadMime = 'image/jpeg';
-      fileName = `kyc_${type.toLowerCase()}_${side.toLowerCase()}_${Date.now()}.jpg`;
-    } catch {
-      /* manipulation unavailable/failed — upload the original asset */
-    }
-
     setUploading(`${type}:${side}`);
     try {
-      const form = new FormData();
-      form.append('file', { uri: uploadUri, name: fileName, type: uploadMime } as any);
-      form.append('type', type);
-      // Mandatory FRONT/BACK — backend 400s without it (the bug this fixes).
-      form.append('side', side);
+      const file = await prepareImageForUpload(
+        asset,
+        `kyc_${type.toLowerCase()}_${side.toLowerCase()}_${Date.now()}`,
+      );
+      // `side` is mandatory — the backend 400s without it.
+      const form = toUploadForm(file, { type, side });
+
       await userApi.uploadKyc(form);
       queryClient.invalidateQueries({ queryKey: ['kyc'] });
       setToast({ title: `${SIDE_LABEL[side]} uploaded`, type: 'success' });
     } catch (err: any) {
-      const status = err.response?.status;
       setToast({
-        title: status === 409 ? 'Already uploaded' : 'Upload failed',
-        message:
-          status === 409
-            ? 'This side already exists. Remove it first to replace.'
-            : err.response?.data?.message ?? 'Something went wrong.',
+        title: err.response?.status === 409 ? 'Already uploaded' : 'Upload failed',
+        message: uploadErrorMessage(err, 'Something went wrong.'),
         type: 'error',
       });
     } finally {

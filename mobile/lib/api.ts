@@ -3,6 +3,10 @@ import { useAuthStore } from '../store/auth';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000') as string;
 
+// Photo uploads run far longer than a JSON round-trip on mobile data, so they
+// opt out of the 15s default below rather than aborting mid-transfer.
+export const UPLOAD_TIMEOUT_MS = 60_000;
+
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 15_000,
@@ -114,6 +118,7 @@ export const userApi = {
   uploadKyc: (formData: FormData) =>
     api.post('/api/user/kyc', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   deleteKyc: (publicId: string, customerPublicId: string) =>
     api.delete('/api/user/kyc', { data: { id: publicId, customer_public_id: customerPublicId } }),
@@ -164,6 +169,7 @@ export const employeeApi = {
   uploadPickupImage: (formData: FormData) =>
     api.post('/api/employee/pickup/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   deletePickupImage: (publicId: string) =>
     api.delete(`/api/employee/pickup/image/${publicId}`),
@@ -188,6 +194,7 @@ export const employeeApi = {
   uploadReturnImage: (formData: FormData) =>
     api.post('/api/employee/return/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   completeReturn: (bookingId: string, body?: {
     returnImageIds?: string[];
@@ -273,6 +280,7 @@ export const employeeApi = {
   walkinKycUpload: (formData: FormData) =>
     api.post('/api/employee/walkin/kyc/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   walkinKycDelete: (id: string) =>
     api.delete('/api/employee/walkin/kyc', { data: { id } }),
@@ -316,6 +324,7 @@ export const employeeApi = {
   uploadDamageImage: (formData: FormData) =>
     api.post('/api/employee/damage/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   reportDamage: (body: {
     bookingId: string;

@@ -75,7 +75,47 @@ Separately: `terms.html`, `refund.html`, `AdminLayout.tsx` and
 `ManagerProfilePage.tsx` all publish `support@whatuwantrental.in` — a domain with
 **no MX records at all**, so mail to it bounces. Fix those to a working address.
 
-### 1.4 Closed-testing requirement (personal developer accounts)
+### 1.4 Raise `client_max_body_size` on the API's nginx
+
+The API origin runs `nginx/1.24.0 (Ubuntu)` behind Cloudflare with
+`client_max_body_size` left at its **1 MiB default**. Any multipart upload above
+that is rejected with **413** before it reaches Express, so nothing appears in
+the application logs. Measured precisely:
+
+```
+1,048,000 bytes -> 403 (reached Express)
+1,049,000 bytes -> 413 (rejected by nginx)
+```
+
+This breaks photo upload — employee pickup/return/damage photos send raw camera
+output (3–8 MB) and fail every time. A reviewer testing a booking will hit KYC
+upload, so treat this as release-blocking.
+
+On the VPS, inside the API `server { }` block (or in `http { }` to apply
+globally):
+
+```nginx
+client_max_body_size 20m;
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Verify (403 = passed nginx and hit auth; 413 = still blocked):
+
+```bash
+head -c 3000000 /dev/urandom > /tmp/blob.bin
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -F "file=@/tmp/blob.bin;type=image/jpeg" -F "type=DL" -F "side=FRONT" \
+  https://api.whatuwantrentals.com/api/user/kyc
+```
+
+The app now downscales every image to 1280px/JPEG-55 before upload
+(`mobile/lib/image.ts`), which keeps normal uploads far below the limit — but
+that is defence in depth, not a substitute for fixing the server.
+
+### 1.5 Closed-testing requirement (personal developer accounts)
 
 If the Play developer account is a **personal** account created after 13 Nov 2023,
 Google requires a **closed test with at least 12 testers opted in continuously for
@@ -326,6 +366,7 @@ Manual checks on a real device before rolling out:
 - [ ] Backend deployed — forgot-password returns 400, `DELETE /api/user/account` returns 403
 - [ ] Frontend deployed — `/legal/delete-account` returns 200
 - [ ] Support mailbox verified; `whatuwantrental.in` addresses corrected
+- [ ] nginx client_max_body_size raised (uploads over 1 MiB 413 otherwise)
 - [ ] Developer account type checked; closed test started if personal
 - [ ] `eas build --profile production` succeeds and yields an `.aab`
 - [ ] Keystore backed up / Play App Signing enrolled
