@@ -33,7 +33,7 @@ function RootLayoutNav() {
   const segments = useSegments();
 
   useEffect(() => {
-    if (!isLoaded || segments.length === 0) return;
+    if (!isLoaded || segments.length < 1) return;
     const inAuthGroup = segments[0] === '(auth)';
     const inEmployeeGroup = segments[0] === '(employee)' || segments[0] === 'employee';
 

@@ -36,7 +36,7 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
       onPress={handlePress}
       activeOpacity={0.9}
     >
-      <StudioImage uri={thumb} height={120} radius={0} contain>
+      <StudioImage uri={thumb} height={128} radius={0} contain={false} scrim>
         <View style={styles.imgTop}>
           {vehicle.category ? <Chip label={vehicle.category} variant="glass" /> : <View />}
         </View>

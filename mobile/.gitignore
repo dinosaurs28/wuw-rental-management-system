@@ -42,3 +42,7 @@ yarn-error.*
 
 expo-env.d.ts
 # @end expo-cli
+
+# build artifacts (APK/AAB are too large for git)
+*.apk
+*.aab

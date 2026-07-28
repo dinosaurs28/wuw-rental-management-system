@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   ScrollView,
   Share,
   StyleSheet,
@@ -14,28 +13,31 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
-import TimeFieldPicker, { timeLabel } from '../../components/ui/TimeFieldPicker';
+import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
 import type { VehicleDetail } from '../../types/api';
 
 const { width, height } = Dimensions.get('window');
-const HERO_HEIGHT = height * 0.42;
+const HERO_HEIGHT = height * 0.38;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function fmtDate(d: Date) {
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
-}
-function fmtDateFull(d: Date) {
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+
+// "12 Jul | 12:00"
+function fmtStamp(d: Date) {
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} | ${hh}:${mm}`;
 }
 
 function defaultStart() {
@@ -50,6 +52,11 @@ function defaultEnd() {
   d.setHours(10, 0, 0, 0);
   return d;
 }
+function parseParamDate(iso: string | undefined, fallback: () => Date): Date {
+  if (!iso) return fallback();
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? fallback() : d;
+}
 
 // Combine a date with a "HH:mm" time string into a new Date.
 function withTime(date: Date, hhmm: string) {
@@ -62,14 +69,17 @@ function timeOf(d: Date) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+// Sixt-style vehicle page: hero image, green-check inclusions, big uppercase
+// title, "category | branch" line, real-data spec grid, payment options and a
+// sticky Book-now bar. All facts come from the API — nothing invented.
 export default function VehicleDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, start: startParam, end: endParam } = useLocalSearchParams<{ id: string; start?: string; end?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<'overview' | 'specs'>('overview');
+  const isFocused = useIsFocused();
   const [showPicker, setShowPicker] = useState(false);
-  const [startDate, setStartDate] = useState(defaultStart);
-  const [endDate, setEndDate] = useState(defaultEnd);
+  const [startDate, setStartDate] = useState<Date>(() => parseParamDate(startParam, defaultStart));
+  const [endDate, setEndDate] = useState<Date>(() => parseParamDate(endParam, defaultEnd));
   const [timePicker, setTimePicker] = useState<null | 'start' | 'end'>(null);
   const toggle = useSavedStore(s => s.toggle);
   const savedList = useSavedStore(s => s.saved);
@@ -129,266 +139,226 @@ export default function VehicleDetail() {
   const saved = savedList.some(v => v.publicId === vehicle.publicId);
   const pd = vehicle.pricingDetails;
   const pb = pd?.pricingBreakdown;
-  // Real period info from the engine (replaces locally-computed 'nights')
   const realPeriodLabel = pb ? periodLabel(pb.periodType) : null;
   const realDuration = pb ? durationLabel(pb.duration) : null;
-  // Per-period applicable rate (e.g. day/hour rate) + its unit label
   const unitPrice = pb ? Math.round(pb.applicablePrice) : (vehicle.pricing?.daily ?? null);
   const unit = pb ? unitLabel(pb.periodType) : '/day';
+  const total = pd ? pd.finalTotal + pd.deposit : null;
 
-  // Real "what's included" — built only from data the API actually returns
-  // (replaces the previous hardcoded marketing strings).
-  const inclusions: { icon: IoniconName; label: string }[] = [];
-  if (pd) {
-    if (pd.freeKmLimit) inclusions.push({ icon: 'speedometer-outline', label: `${pd.freeKmLimit} km included` });
-    if (pd.extraKmRate) inclusions.push({ icon: 'navigate-outline', label: `₹${pd.extraKmRate}/km after limit` });
-    if (pd.deposit) inclusions.push({ icon: 'shield-checkmark-outline', label: `₹${pd.deposit.toLocaleString('en-IN')} refundable deposit` });
-    if (pd.taxRate) inclusions.push({ icon: 'receipt-outline', label: `Incl. ${pd.taxRate}% GST` });
-  }
+  // Green check lines — real rate terms only.
+  const checks: string[] = [];
+  if (pd?.freeKmLimit) checks.push(`${pd.freeKmLimit} km included`);
+  if (pd?.deposit) checks.push(`₹${pd.deposit.toLocaleString('en-IN')} refundable deposit`);
+
+  // Spec grid — only fields the API actually returns.
+  const specs: { icon: IoniconName; label: string }[] = [];
+  if (typeof vehicle.availableCount === 'number') specs.push({ icon: 'car-outline', label: `${vehicle.availableCount} available` });
+  if (vehicle.category) specs.push({ icon: 'grid-outline', label: vehicle.category });
+  if (vehicle.branch) specs.push({ icon: 'location-outline', label: vehicle.branch });
+  if (pd?.freeKmLimit) specs.push({ icon: 'speedometer-outline', label: `${pd.freeKmLimit} km included` });
+  if (pd?.extraKmRate) specs.push({ icon: 'navigate-outline', label: `₹${pd.extraKmRate}/km after limit` });
+  if (pd?.taxRate) specs.push({ icon: 'receipt-outline', label: `Incl. ${pd.taxRate}% GST` });
+
+  // Real payment flows (mirrors checkout: FULL always, ADVANCE when valid).
+  const advance = vehicle.advancePayAmount ?? 0;
+  const canAdvance = total != null && advance > 0 && advance < total;
+
+  const avColor = vehicle.availability === null
+    ? Colors.onDarkMuted
+    : isAvail
+    ? availabilityColor(vehicle.availableCount ?? 99)
+    : Colors.availNone;
+  const avLabel = vehicle.availability === null
+    ? 'Checking…'
+    : isAvail
+    ? availabilityLabel(vehicle.availableCount) ?? 'Available'
+    : 'Unavailable';
 
   return (
     <View style={styles.root}>
-      {/* ── Hero ── */}
-      <View style={[styles.hero, { height: HERO_HEIGHT }]}>
-        {hasImages ? (
-          <ImageCarousel images={vehicle.images} style={StyleSheet.absoluteFillObject} />
-        ) : (
-          <LinearGradient colors={['#1a1a1a', '#2d2d2d', '#111']} style={StyleSheet.absoluteFillObject}>
-            <View style={styles.heroGlow} />
-          </LinearGradient>
-        )}
+      {isFocused ? <StatusBar style="light" /> : null}
 
-        <LinearGradient
-          colors={['rgba(0,0,0,0.55)', 'transparent', 'rgba(0,0,0,0.75)']}
-          locations={[0, 0.4, 1]}
-          style={StyleSheet.absoluteFillObject}
-        />
-
-        {/* Controls */}
-        <View style={[styles.heroTop, { top: insets.top + 12 }]}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()} hitSlop={8} activeOpacity={0.85}>
-            <Ionicons name="arrow-back" size={20} color={Colors.white} />
-          </TouchableOpacity>
-          <View style={styles.heroTopRight}>
-            <TouchableOpacity
-              style={[styles.iconBtn, saved && styles.iconBtnSaved]}
-              hitSlop={8}
-              activeOpacity={0.85}
-              onPress={() => toggle({
-                publicId: vehicle.publicId,
-                make: vehicle.make,
-                model: vehicle.model,
-                category: vehicle.category,
-                branch: vehicle.branch,
-                images: vehicle.images,
-                pricing: vehicle.pricing,
-                availability: vehicle.availability,
-                availableCount: vehicle.availableCount,
-              })}
-            >
-              <Ionicons
-                name={saved ? 'heart' : 'heart-outline'}
-                size={20}
-                color={saved ? '#e53e3e' : Colors.white}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              hitSlop={8}
-              activeOpacity={0.85}
-              onPress={() => Share.share({
-                title: `${vehicle.make} ${vehicle.model}`,
-                message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}`,
-              })}
-            >
-              <Ionicons name="share-outline" size={20} color={Colors.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Hero bottom */}
-        <View style={styles.heroBottom}>
-          <Text style={styles.heroName}>{vehicle.make} {vehicle.model}</Text>
-          <View style={styles.heroMeta}>
-            <View style={styles.heroBranchRow}>
-              <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.65)" />
-              <Text style={styles.heroBranch}>{vehicle.branch}</Text>
-            </View>
-            {unitPrice != null && (
-              <View style={styles.heroPricePill}>
-                <Text style={styles.heroPriceText}>₹{unitPrice.toLocaleString('en-IN')}</Text>
-                <Text style={styles.heroPriceDay}>{unit}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </View>
-
-      {/* ── Scroll content ── */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Date picker card */}
-        <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.85}>
-          <View style={styles.dateHalf}>
-            <Text style={styles.dateLabel}>PICKUP</Text>
-            <Text style={styles.dateValue}>{fmtDateFull(startDate)}</Text>
+        {/* ── Hero ── */}
+        <View style={[styles.hero, { height: HERO_HEIGHT }]}>
+          {hasImages ? (
+            <ImageCarousel images={vehicle.images} style={StyleSheet.absoluteFillObject} />
+          ) : (
+            <LinearGradient colors={['#2b303a', '#181b21', '#0f1116']} style={StyleSheet.absoluteFillObject}>
+              <View style={styles.heroPlaceholder}>
+                <Ionicons name="car-sport-outline" size={64} color="rgba(255,255,255,0.16)" />
+              </View>
+            </LinearGradient>
+          )}
+
+          <View style={[styles.heroTop, { top: insets.top + 12 }]}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()} hitSlop={8} activeOpacity={0.85}>
+              <Ionicons name="arrow-back" size={20} color={Colors.white} />
+            </TouchableOpacity>
+            <View style={styles.heroTopRight}>
+              <TouchableOpacity
+                style={[styles.iconBtn, saved && styles.iconBtnSaved]}
+                hitSlop={8}
+                activeOpacity={0.85}
+                onPress={() => toggle({
+                  publicId: vehicle.publicId,
+                  make: vehicle.make,
+                  model: vehicle.model,
+                  category: vehicle.category,
+                  branch: vehicle.branch,
+                  images: vehicle.images,
+                  pricing: vehicle.pricing,
+                  availability: vehicle.availability,
+                  availableCount: vehicle.availableCount,
+                })}
+              >
+                <Ionicons
+                  name={saved ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={saved ? '#e53e3e' : Colors.white}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                hitSlop={8}
+                activeOpacity={0.85}
+                onPress={() => Share.share({
+                  title: `${vehicle.make} ${vehicle.model}`,
+                  message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}`,
+                })}
+              >
+                <Ionicons name="share-outline" size={20} color={Colors.white} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.dateDivider} />
-          <View style={styles.dateHalf}>
-            <Text style={styles.dateLabel}>RETURN</Text>
-            <Text style={styles.dateValue}>{fmtDateFull(endDate)}</Text>
+        </View>
+
+        {/* ── Green check inclusions ── */}
+        {checks.length > 0 ? (
+          <View style={styles.checkStrip}>
+            {checks.map((c) => (
+              <View key={c} style={styles.checkRow}>
+                <Ionicons name="checkmark" size={18} color={Colors.availGood} />
+                <Text style={styles.checkText}>{c}</Text>
+              </View>
+            ))}
           </View>
-          <View style={styles.dateEditBtn}>
-            <Ionicons name="calendar-outline" size={16} color={Colors.orange} />
+        ) : null}
+
+        {/* ── Title block ── */}
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>{vehicle.make} {vehicle.model}</Text>
+          <Text style={styles.titleSub}>
+            {[vehicle.category, vehicle.branch].filter(Boolean).join(' | ')}
+          </Text>
+        </View>
+
+        {/* ── Spec grid (real fields only) ── */}
+        {specs.length > 0 ? (
+          <View style={styles.specGrid}>
+            {specs.map((s) => (
+              <View key={s.label} style={styles.specItem}>
+                <Ionicons name={s.icon} size={19} color={Colors.onDark} />
+                <Text style={styles.specText} numberOfLines={2}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* ── Itinerary — tap dates for calendar, times for time picker ── */}
+        <TouchableOpacity style={styles.itinCard} onPress={() => setShowPicker(true)} activeOpacity={0.85}>
+          <View style={styles.itinHalf}>
+            <Text style={styles.itinLabel}>PICKUP</Text>
+            <Text style={styles.itinValue}>{fmtStamp(startDate)}</Text>
+            <TouchableOpacity onPress={() => setTimePicker('start')} hitSlop={8}>
+              <Text style={styles.itinTimeLink}>Change time</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.itinDivider} />
+          <View style={styles.itinHalf}>
+            <Text style={styles.itinLabel}>RETURN</Text>
+            <Text style={styles.itinValue}>{fmtStamp(endDate)}</Text>
+            <TouchableOpacity onPress={() => setTimePicker('end')} hitSlop={8}>
+              <Text style={styles.itinTimeLink}>Change time</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.itinEdit}>
+            <Ionicons name="pencil" size={16} color={Colors.white} />
           </View>
         </TouchableOpacity>
 
-        {/* Time selection */}
-        <View style={styles.timeCard}>
-          <TouchableOpacity style={styles.timeHalf} onPress={() => setTimePicker('start')} activeOpacity={0.8}>
-            <Ionicons name="time-outline" size={15} color={Colors.ink3} />
-            <View>
-              <Text style={styles.dateLabel}>PICKUP TIME</Text>
-              <Text style={styles.timeValue}>{timeLabel(timeOf(startDate))}</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.dateDivider} />
-          <TouchableOpacity style={styles.timeHalf} onPress={() => setTimePicker('end')} activeOpacity={0.8}>
-            <Ionicons name="time-outline" size={15} color={Colors.ink3} />
-            <View>
-              <Text style={styles.dateLabel}>RETURN TIME</Text>
-              <Text style={styles.timeValue}>{timeLabel(timeOf(endDate))}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Period / duration + availability badge */}
+        {/* Period + availability */}
         <View style={styles.badgeRow}>
-          <View style={styles.nightsBadge}>
-            <Ionicons name="time-outline" size={12} color={Colors.ink3} />
-            <Text style={styles.nightsText}>
+          <View style={styles.periodBadge}>
+            <Ionicons name="time-outline" size={12} color={Colors.onDarkMuted} />
+            <Text style={styles.periodText}>
               {realPeriodLabel
                 ? `${realPeriodLabel}${realDuration ? ` · ${realDuration}` : ''}`
                 : `${nights} night${nights !== 1 ? 's' : ''}`}
             </Text>
           </View>
-          {(() => {
-            const avColor = vehicle.availability === null
-              ? Colors.ink3
-              : isAvail
-              ? availabilityColor(vehicle.availableCount ?? 99)
-              : Colors.availNone;
-            const avLabel = vehicle.availability === null
-              ? 'Checking…'
-              : isAvail
-              ? availabilityLabel(vehicle.availableCount) ?? 'Available'
-              : 'Unavailable';
-            return (
-              <View style={[styles.availBadge, { backgroundColor: avColor + '1f', borderColor: avColor + '40' }]}>
-                <View style={[styles.availDot, { backgroundColor: avColor }]} />
-                <Text style={[styles.availText, { color: avColor }]}>{avLabel}</Text>
-              </View>
-            );
-          })()}
-          {isFetching && !isLoading && (
-            <ActivityIndicator size="small" color={Colors.orange} />
-          )}
+          <View style={[styles.availBadge, { backgroundColor: avColor + '1f', borderColor: avColor + '40' }]}>
+            <View style={[styles.availDot, { backgroundColor: avColor }]} />
+            <Text style={[styles.availText, { color: avColor }]}>{avLabel}</Text>
+          </View>
+          {isFetching && !isLoading && <ActivityIndicator size="small" color={Colors.orange} />}
         </View>
 
-        {/* Stat pills */}
-        <View style={styles.statRow}>
-          <StatPill icon="layers-outline" label="Type" value={vehicle.category} />
-          {pd?.freeKmLimit ? <StatPill icon="speedometer-outline" label="Free km" value={`${pd.freeKmLimit} km`} /> : null}
-          {pd?.deposit ? <StatPill icon="shield-outline" label="Deposit" value={`₹${pd.deposit.toLocaleString('en-IN')}`} accent /> : null}
-          {pd?.extraKmRate ? <StatPill icon="navigate-outline" label="Extra km" value={`₹${pd.extraKmRate}/km`} /> : null}
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabBar}>
-          {(['overview', 'specs'] as const).map(t => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.tabItem, tab === t && styles.tabItemActive]}
-              onPress={() => setTab(t)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
-                {t === 'overview' ? 'Overview' : 'Specs'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {tab === 'overview' && (
+        {/* ── Pricing breakdown ── */}
+        {pd ? (
           <>
-            {/* What's included — real terms from the rate, not marketing copy */}
-            {inclusions.length > 0 ? (
-              <>
-                <Text style={styles.sectionTitle}>What's included</Text>
-                <View style={styles.includedGrid}>
-                  {inclusions.map(item => (
-                    <View key={item.label} style={styles.includedCard}>
-                      <View style={styles.includedIconWrap}>
-                        <Ionicons name={item.icon} size={20} color={Colors.orange} />
-                      </View>
-                      <Text style={styles.includedLabel}>{item.label}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : null}
-
-            {/* Pricing */}
-            {pd ? (
-              <>
-                <Text style={styles.sectionTitle}>Pricing breakdown</Text>
-                <View style={styles.priceCard}>
-                  <PriceLine label={`Base rate (${realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
-                  <PriceLine label="Deposit (refundable)" value={`₹${pd.deposit.toLocaleString('en-IN')}`} />
-                  <PriceLine label={`Tax (GST ${pd.taxRate}%)`} value={`₹${pd.taxAmount.toLocaleString('en-IN')}`} />
-                  {pd.discountAmount > 0 && (
-                    <PriceLine label="Discount" value={`-₹${pd.discountAmount.toLocaleString('en-IN')}`} valueColor="#2d9d61" />
-                  )}
-                  <View style={styles.priceDivider} />
-                  <PriceLine label="Total" value={`₹${(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}`} bold />
-                </View>
-              </>
-            ) : (
-              <View style={styles.noPriceHint}>
-                <Ionicons name="calendar-outline" size={20} color={Colors.ink4} />
-                <Text style={styles.noPriceText}>Select dates above to see pricing</Text>
-              </View>
-            )}
-          </>
-        )}
-
-        {tab === 'specs' && (
-          <>
-            <Text style={styles.sectionTitle}>Vehicle specs</Text>
-            <View style={styles.specsCard}>
-              {[
-                { icon: 'layers-outline' as IoniconName,          label: 'Category',      value: vehicle.category },
-                { icon: 'location-outline' as IoniconName,        label: 'Branch',        value: vehicle.branch },
-                { icon: 'checkmark-circle-outline' as IoniconName,label: 'Status',        value: vehicle.status ?? 'Available' },
-                ...(pd ? [
-                  { icon: 'speedometer-outline' as IoniconName,   label: 'Free km',       value: `${pd.freeKmLimit} km` },
-                  { icon: 'navigate-outline' as IoniconName,      label: 'Extra km rate', value: `₹${pd.extraKmRate}/km` },
-                ] : []),
-              ].map(({ icon, label, value }, i, arr) => (
-                <View key={label} style={[styles.specRow, i === arr.length - 1 && styles.specRowLast]}>
-                  <View style={styles.specIconWrap}>
-                    <Ionicons name={icon} size={16} color={Colors.ink3} />
-                  </View>
-                  <Text style={styles.specLabel}>{label}</Text>
-                  <Text style={styles.specValue}>{value}</Text>
-                </View>
-              ))}
+            <Text style={styles.sectionTitle}>Pricing breakdown</Text>
+            <View style={styles.darkCard}>
+              <PriceLine label={`Base rate (${realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
+              <PriceLine label="Deposit (refundable)" value={`₹${pd.deposit.toLocaleString('en-IN')}`} />
+              <PriceLine label={`Tax (GST ${pd.taxRate}%)`} value={`₹${pd.taxAmount.toLocaleString('en-IN')}`} />
+              {pd.discountAmount > 0 && (
+                <PriceLine label="Discount" value={`-₹${pd.discountAmount.toLocaleString('en-IN')}`} valueColor={Colors.availGood} />
+              )}
+              <View style={styles.priceDivider} />
+              <PriceLine label="Total" value={`₹${(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}`} bold />
             </View>
           </>
+        ) : (
+          <View style={styles.noPriceHint}>
+            <Ionicons name="calendar-outline" size={20} color={Colors.onDarkMuted} />
+            <Text style={styles.noPriceText}>Select dates above to see pricing</Text>
+          </View>
         )}
+
+        {/* ── Payment options (real flows from checkout) ── */}
+        {total != null ? (
+          <>
+            <Text style={styles.sectionTitle}>Payment options</Text>
+            <View style={styles.darkCard}>
+              <View style={styles.payRow}>
+                <Ionicons name="card-outline" size={20} color={Colors.onDark} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.payTitle}>Pay in full</Text>
+                  <Text style={styles.paySub}>₹{total.toLocaleString('en-IN')} now · deposit included</Text>
+                </View>
+              </View>
+              {canAdvance ? (
+                <>
+                  <View style={styles.priceDivider} />
+                  <View style={styles.payRow}>
+                    <Ionicons name="time-outline" size={20} color={Colors.onDark} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.payTitle}>Reserve with advance</Text>
+                      <Text style={styles.paySub}>
+                        ₹{advance.toLocaleString('en-IN')} now · ₹{(total - advance).toLocaleString('en-IN')} at pickup
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
 
       {/* ── Sticky CTA ── */}
@@ -396,9 +366,7 @@ export default function VehicleDetail() {
         <View style={styles.ctaLeft}>
           {pd ? (
             <>
-              <Text style={styles.ctaPrice}>
-                ₹{(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}
-              </Text>
+              <Text style={styles.ctaPrice}>₹{(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}</Text>
               <Text style={styles.ctaNote}>total · {realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`}</Text>
             </>
           ) : unitPrice != null ? (
@@ -457,18 +425,6 @@ export default function VehicleDetail() {
   );
 }
 
-function StatPill({ icon, label, value, accent }: { icon: IoniconName; label: string; value: string; accent?: boolean }) {
-  return (
-    <View style={[styles.statPill, accent && styles.statPillAccent]}>
-      <Ionicons name={icon} size={14} color={accent ? Colors.orange : Colors.ink3} />
-      <View>
-        <Text style={[styles.statPillLabel, accent && styles.statPillLabelAccent]}>{label}</Text>
-        <Text style={[styles.statPillValue, accent && styles.statPillValueAccent]}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
 function PriceLine({ label, value, bold, valueColor }: { label: string; value: string; bold?: boolean; valueColor?: string }) {
   return (
     <View style={styles.priceLine}>
@@ -481,18 +437,16 @@ function PriceLine({ label, value, bold, valueColor }: { label: string; value: s
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg },
-  errorText: { fontFamily: Fonts.display, fontSize: 18, color: Colors.ink },
+  root: { flex: 1, backgroundColor: Colors.bgDark },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgDark },
+  errorText: { fontFamily: Fonts.display, fontSize: 18, color: Colors.white },
   backLink: { marginTop: 12 },
   backLinkText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.orange },
 
+  scroll: { flex: 1 },
+
   hero: { width, overflow: 'hidden', backgroundColor: '#111' },
-  heroGlow: {
-    position: 'absolute', top: '15%', left: '10%',
-    width: '40%', height: '60%', borderRadius: 100,
-    backgroundColor: Colors.orange, opacity: 0.1,
-  },
+  heroPlaceholder: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   heroTop: {
     position: 'absolute', left: 16, right: 16,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -500,7 +454,7 @@ const styles = StyleSheet.create({
   heroTopRight: { flexDirection: 'row', gap: 8 },
   iconBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.32)',
+    backgroundColor: 'rgba(0,0,0,0.38)',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -508,210 +462,99 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(229,62,62,0.2)',
     borderColor: 'rgba(229,62,62,0.4)',
   },
-  heroBottom: { position: 'absolute', bottom: 20, left: 20, right: 20 },
-  heroName: {
-    fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.white,
-    letterSpacing: -0.8, lineHeight: 33, marginBottom: 10,
-  },
-  heroMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroBranchRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  heroBranch: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  heroPricePill: {
-    flexDirection: 'row', alignItems: 'baseline', gap: 2,
-    backgroundColor: Colors.orange, borderRadius: 999,
-    paddingHorizontal: 14, paddingVertical: 8,
-  },
-  heroPriceText: { fontFamily: Fonts.displayBold, fontSize: 17, color: Colors.white, letterSpacing: -0.4 },
-  heroPriceDay: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.75)' },
 
-  scroll: { flex: 1 },
+  checkStrip: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.onDark },
 
-  // Date card
-  dateCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    backgroundColor: Colors.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
+  titleBlock: { paddingHorizontal: 20, paddingTop: 18 },
+  title: {
+    fontFamily: Fonts.displayBold, fontSize: 32, lineHeight: 37,
+    color: Colors.white, letterSpacing: -0.6, textTransform: 'uppercase',
   },
-  dateHalf: { flex: 1, padding: 16 },
-  dateDivider: { width: 1, height: 40, backgroundColor: Colors.hairline },
-  dateLabel: {
-    fontFamily: Fonts.bodyMedium, fontSize: 9,
-    color: Colors.ink3, letterSpacing: 0.9, marginBottom: 5,
-  },
-  dateValue: {
-    fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink,
-  },
-  dateEditBtn: {
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  titleSub: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginTop: 8 },
 
-  // Time card
-  timeCard: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
+  specGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: 20, paddingTop: 20, rowGap: 16,
   },
-  timeHalf: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
-  timeValue: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink, marginTop: 2 },
+  specItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 12 },
+  specText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 14.5, color: Colors.onDark },
 
-  // Badge row
+  itinCard: {
+    marginHorizontal: 16, marginTop: 24,
+    backgroundColor: Colors.surfaceDark, borderRadius: 18,
+    flexDirection: 'row', alignItems: 'center', overflow: 'hidden',
+  },
+  itinHalf: { flex: 1, padding: 16 },
+  itinDivider: { width: 1, height: 56, backgroundColor: Colors.hairlineOnDark },
+  itinLabel: { fontFamily: Fonts.bodyMedium, fontSize: 9, color: Colors.onDarkMuted, letterSpacing: 0.9, marginBottom: 5 },
+  itinValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14.5, color: Colors.white },
+  itinTimeLink: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.orange, marginTop: 5 },
+  itinEdit: { paddingHorizontal: 14 },
+
   badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 16, marginTop: 12,
   },
-  nightsBadge: {
+  periodBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.surface, borderRadius: 999,
+    backgroundColor: Colors.surfaceDark, borderRadius: 999,
     paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1, borderColor: Colors.hairline,
   },
-  nightsText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
+  periodText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.onDarkMuted },
   availBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(45,157,97,0.12)', borderRadius: 999,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1, borderColor: 'rgba(45,157,97,0.25)',
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1,
   },
-  availBadgeRed: {
-    backgroundColor: 'rgba(220,53,69,0.12)',
-    borderColor: 'rgba(220,53,69,0.25)',
-  },
-  availDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2d9d61' },
-  availDotRed: { backgroundColor: '#dc3545' },
-  availText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#2d9d61' },
-  availTextRed: { color: '#dc3545' },
-
-  // Stat pills
-  statRow: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: 16, paddingTop: 14, gap: 10,
-  },
-  statPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderWidth: 1, borderColor: Colors.hairline,
-  },
-  statPillAccent: { backgroundColor: '#fff5f0', borderColor: '#ff6a1f25' },
-  statPillLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.ink3, letterSpacing: 0.2 },
-  statPillLabelAccent: { color: '#ff6a1f99' },
-  statPillValue: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink, marginTop: 1 },
-  statPillValueAccent: { color: Colors.orange },
-
-  // Tabs
-  tabBar: {
-    flexDirection: 'row',
-    marginHorizontal: 16, marginTop: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 14, padding: 4,
-    borderWidth: 1, borderColor: Colors.hairline,
-  },
-  tabItem: { flex: 1, paddingVertical: 10, borderRadius: 11, alignItems: 'center' },
-  tabItemActive: { backgroundColor: Colors.ink },
-  tabLabel: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink3 },
-  tabLabelActive: { color: Colors.white },
+  availDot: { width: 6, height: 6, borderRadius: 3 },
+  availText: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
 
   sectionTitle: {
-    fontFamily: Fonts.displayBold, fontSize: 17, color: Colors.ink,
-    letterSpacing: -0.4, paddingHorizontal: 16, marginTop: 28, marginBottom: 14,
+    fontFamily: Fonts.displayBold, fontSize: 19, color: Colors.white,
+    letterSpacing: -0.4, paddingHorizontal: 20, marginTop: 28, marginBottom: 14,
+  },
+  darkCard: {
+    marginHorizontal: 16, backgroundColor: Colors.surfaceDark,
+    borderRadius: 18, padding: 18, gap: 2,
   },
 
-  includedGrid: {
-    paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 12,
-  },
-  includedCard: {
-    width: '46.5%', backgroundColor: Colors.surface,
-    borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: Colors.hairline, gap: 10,
-  },
-  includedIconWrap: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: Colors.orangeSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  includedLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink, lineHeight: 18 },
-
-  // Price
-  priceCard: {
-    marginHorizontal: 16, backgroundColor: Colors.surface,
-    borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: Colors.hairline, gap: 2,
-  },
   priceLine: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', paddingVertical: 7,
   },
-  priceLineLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
-  priceLineLabelBold: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
-  priceLineValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
-  priceLineValueBold: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.5 },
-  priceDivider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 6 },
+  priceLineLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.onDarkMuted },
+  priceLineLabelBold: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  priceLineValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDark },
+  priceLineValueBold: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.white, letterSpacing: -0.5 },
+  priceDivider: { height: 1, backgroundColor: Colors.hairlineOnDark, marginVertical: 6 },
 
   noPriceHint: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginHorizontal: 16, marginTop: 16,
-    backgroundColor: Colors.surface, borderRadius: 14,
-    padding: 16, borderWidth: 1, borderColor: Colors.hairline,
+    marginHorizontal: 16, marginTop: 24,
+    backgroundColor: Colors.surfaceDark, borderRadius: 14, padding: 16,
   },
-  noPriceText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
+  noPriceText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.onDarkMuted },
 
-  // Specs
-  specsCard: {
-    marginHorizontal: 16, backgroundColor: Colors.surface,
-    borderRadius: 18, borderWidth: 1, borderColor: Colors.hairline, overflow: 'hidden',
-  },
-  specRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: Colors.hairline, gap: 12,
-  },
-  specRowLast: { borderBottomWidth: 0 },
-  specIconWrap: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.bg,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  specLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
-  specValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
+  payRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 },
+  payTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  paySub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.onDarkMuted, marginTop: 2 },
 
-  // CTA
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface,
-    borderTopWidth: 1, borderTopColor: Colors.hairline,
+    backgroundColor: Colors.surfaceDark,
+    borderTopWidth: 1, borderTopColor: Colors.hairlineOnDark,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 14,
   },
   ctaLeft: { flex: 1, marginRight: 16 },
-  ctaPrice: {
-    fontFamily: Fonts.displayBold, fontSize: 22, color: Colors.ink, letterSpacing: -0.6,
-  },
-  ctaNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginTop: 2 },
+  ctaPrice: { fontFamily: Fonts.displayBold, fontSize: 22, color: Colors.white, letterSpacing: -0.6 },
+  ctaNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.onDarkMuted, marginTop: 2 },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: Colors.orange, borderRadius: 16,
     paddingVertical: 15, paddingHorizontal: 24,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
   },
-  ctaBtnDisabled: { backgroundColor: Colors.ink4, shadowOpacity: 0 },
+  ctaBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.18)' },
   ctaBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white, letterSpacing: 0.2 },
 });

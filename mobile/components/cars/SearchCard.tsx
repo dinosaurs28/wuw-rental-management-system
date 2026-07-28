@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import DateRangePicker from '../ui/DateRangePicker';
-import TimeFieldPicker, { timeLabel } from '../ui/TimeFieldPicker';
+import TimeFieldPicker from '../ui/TimeFieldPicker';
 
 export interface SearchQuery {
   branchId: string;
@@ -27,7 +27,9 @@ interface Branch {
 
 interface Props {
   branches: Branch[];
-  defaultBranchId?: string | null;
+  /** controlled branch — single source of truth shared with the screen */
+  branch: Branch | null;
+  onBranchChange: (b: Branch) => void;
   initialStart?: string;
   initialEnd?: string;
   ctaLabel?: string;
@@ -42,8 +44,17 @@ function fmtD(d: Date) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-export default function SearchCard({ branches, defaultBranchId, initialStart, initialEnd, ctaLabel = 'Show vehicles', onSubmit }: Props) {
-  const [branch, setBranch] = useState<Branch | null>(null);
+// Sixt-style dark search box: pickup branch row, one combined
+// "12 Jul | 12:00 – 15 Jul | 12:00" row, and a large orange CTA.
+export default function SearchCard({
+  branches,
+  branch,
+  onBranchChange,
+  initialStart,
+  initialEnd,
+  ctaLabel = 'Show offers',
+  onSubmit,
+}: Props) {
   const [start, setStart] = useState<Date>(() => (initialStart ? new Date(initialStart) : new Date(Date.now() + 86_400_000)));
   const [end, setEnd] = useState<Date>(() => (initialEnd ? new Date(initialEnd) : new Date(Date.now() + 2 * 86_400_000)));
   const [pickupTime, setPickupTime] = useState('10:00');
@@ -53,19 +64,6 @@ export default function SearchCard({ branches, defaultBranchId, initialStart, in
   const [dateOpen, setDateOpen] = useState(false);
   const [pickupOpen, setPickupOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
-
-  // Track the controlled default branch (so tapping a branch chip on Home keeps the
-  // card in sync), falling back to the first branch only when nothing is selected.
-  useEffect(() => {
-    if (branches.length === 0) return;
-    setBranch((prev) => {
-      if (defaultBranchId) {
-        const match = branches.find((b) => b.publicId === defaultBranchId);
-        if (match) return match;
-      }
-      return prev ?? branches[0];
-    });
-  }, [branches, defaultBranchId]);
 
   const submit = () => {
     if (!branch) {
@@ -80,83 +78,81 @@ export default function SearchCard({ branches, defaultBranchId, initialStart, in
     });
   };
 
+  const branchPicker = (
+    <Modal visible={branchOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setBranchOpen(false)}>
+      <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={() => setBranchOpen(false)}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+        <View style={styles.sheet}>
+          <View style={styles.handle} />
+          <Text style={styles.sheetTitle}>Pick-up branch</Text>
+          <FlatList
+            data={branches}
+            keyExtractor={(b) => b.publicId}
+            style={styles.sheetList}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => {
+              const active = item.publicId === branch?.publicId;
+              return (
+                <TouchableOpacity
+                  style={[styles.branchRow, active && styles.branchRowActive]}
+                  onPress={() => { onBranchChange(item); setBranchOpen(false); }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="location-outline" size={16} color={active ? Colors.orange : Colors.onDarkMuted} />
+                  <Text style={[styles.branchRowText, active && styles.branchRowTextActive]}>{item.name}</Text>
+                  {active && <Ionicons name="checkmark" size={18} color={Colors.orange} />}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.card}>
-      {/* Branch */}
+      {/* Pick-up branch */}
       <TouchableOpacity style={styles.row} onPress={() => setBranchOpen(true)} activeOpacity={0.7}>
-        <Ionicons name="location-outline" size={18} color={Colors.ink} />
-        <View style={styles.rowBody}>
-          <Text style={styles.rowLabel}>BRANCH</Text>
-          <Text style={styles.rowValue} numberOfLines={1}>{branch?.name ?? 'Select a branch'}</Text>
-        </View>
-        <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
+        <Ionicons name="location-outline" size={20} color={Colors.white} />
+        <Text style={styles.rowValue} numberOfLines={1}>
+          {branch?.name ?? 'Select a branch'}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={Colors.onDarkMuted} />
       </TouchableOpacity>
+      <View style={styles.underline} />
 
-      <View style={styles.divider} />
-
-      {/* Dates */}
-      <TouchableOpacity style={styles.row} onPress={() => setDateOpen(true)} activeOpacity={0.7}>
-        <Ionicons name="calendar-outline" size={18} color={Colors.ink} />
-        <View style={styles.rowBody}>
-          <Text style={styles.rowLabel}>DATES</Text>
-          <Text style={styles.rowValue}>{fmtD(start)} — {fmtD(end)}</Text>
+      {/* Dates & times — "12 Jul | 12:00 – 15 Jul | 12:00" */}
+      <View style={styles.row}>
+        <Ionicons name="calendar-outline" size={19} color={Colors.white} />
+        <View style={styles.dateSeg}>
+          <TouchableOpacity onPress={() => setDateOpen(true)} hitSlop={6}>
+            <Text style={styles.rowValue}>{fmtD(start)}</Text>
+          </TouchableOpacity>
+          <Text style={styles.sep}>|</Text>
+          <TouchableOpacity onPress={() => setPickupOpen(true)} hitSlop={6}>
+            <Text style={styles.rowValue}>{pickupTime}</Text>
+          </TouchableOpacity>
+          <Text style={styles.dash}>–</Text>
+          <TouchableOpacity onPress={() => setDateOpen(true)} hitSlop={6}>
+            <Text style={styles.rowValue}>{fmtD(end)}</Text>
+          </TouchableOpacity>
+          <Text style={styles.sep}>|</Text>
+          <TouchableOpacity onPress={() => setReturnOpen(true)} hitSlop={6}>
+            <Text style={styles.rowValue}>{returnTime}</Text>
+          </TouchableOpacity>
         </View>
-        <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
-      </TouchableOpacity>
-
-      <View style={styles.divider} />
-
-      {/* Times */}
-      <View style={styles.timeRow}>
-        <TouchableOpacity style={styles.timeField} onPress={() => setPickupOpen(true)} activeOpacity={0.7}>
-          <Text style={styles.rowLabel}>PICKUP</Text>
-          <Text style={styles.rowValue}>{timeLabel(pickupTime)}</Text>
-        </TouchableOpacity>
-        <View style={styles.timeDivider} />
-        <TouchableOpacity style={styles.timeField} onPress={() => setReturnOpen(true)} activeOpacity={0.7}>
-          <Text style={styles.rowLabel}>RETURN</Text>
-          <Text style={styles.rowValue}>{timeLabel(returnTime)}</Text>
-        </TouchableOpacity>
       </View>
+      <View style={styles.underline} />
 
       {/* CTA */}
       <TouchableOpacity style={styles.cta} onPress={submit} activeOpacity={0.88}>
         <Text style={styles.ctaText}>{ctaLabel}</Text>
       </TouchableOpacity>
 
-      {/* Branch picker */}
-      <Modal visible={branchOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setBranchOpen(false)}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => setBranchOpen(false)}>
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.sheetTitle}>Choose a branch</Text>
-            <FlatList
-              data={branches}
-              keyExtractor={(b) => b.publicId}
-              style={styles.sheetList}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => {
-                const active = item.publicId === branch?.publicId;
-                return (
-                  <TouchableOpacity
-                    style={[styles.branchRow, active && styles.branchRowActive]}
-                    onPress={() => { setBranch(item); setBranchOpen(false); }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="location-outline" size={16} color={active ? Colors.orange : Colors.ink3} />
-                    <Text style={[styles.branchRowText, active && styles.branchRowTextActive]}>{item.name}</Text>
-                    {active && <Ionicons name="checkmark" size={18} color={Colors.orange} />}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
+      {branchPicker}
       <DateRangePicker
         visible={dateOpen}
         startDate={start}
@@ -172,35 +168,43 @@ export default function SearchCard({ branches, defaultBranchId, initialStart, in
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 24,
-    padding: 8,
+    backgroundColor: 'rgba(24,26,31,0.97)',
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
     borderWidth: 1,
-    borderColor: Colors.hairline,
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 13 },
-  rowBody: { flex: 1 },
-  rowLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 9.5, color: Colors.ink3, letterSpacing: 1, marginBottom: 2 },
-  rowValue: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink, letterSpacing: -0.2 },
-  divider: { height: 1, backgroundColor: Colors.hairline, marginHorizontal: 12 },
-  timeRow: { flexDirection: 'row', alignItems: 'center' },
-  timeField: { flex: 1, paddingHorizontal: 24, paddingVertical: 13 },
-  timeDivider: { width: 1, alignSelf: 'stretch', backgroundColor: Colors.hairline, marginVertical: 8 },
-  cta: { backgroundColor: Colors.orange, borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  ctaText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white, letterSpacing: 0.2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 18 },
+  rowValue: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.white, letterSpacing: -0.2, flexShrink: 1 },
+  dateSeg: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  sep: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted },
+  dash: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginHorizontal: 2 },
+  underline: { height: 1, backgroundColor: Colors.hairlineOnDark, marginLeft: 34 },
 
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { backgroundColor: Colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 28, maxHeight: '70%' },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.ink4, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
-  sheetTitle: { fontFamily: Fonts.displayBold, fontSize: 17, color: Colors.ink, letterSpacing: -0.3, paddingHorizontal: 20, marginBottom: 8 },
+  cta: {
+    backgroundColor: Colors.orange,
+    borderRadius: 14,
+    paddingVertical: 17,
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  ctaText: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.white, letterSpacing: 0.1 },
+
+  // Branch picker sheet (dark)
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: { backgroundColor: Colors.surfaceDark, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 28, maxHeight: '70%' },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.25)', alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  sheetTitle: { fontFamily: Fonts.displayBold, fontSize: 17, color: Colors.white, letterSpacing: -0.3, paddingHorizontal: 20, marginBottom: 8 },
   sheetList: { paddingHorizontal: 16 },
   branchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 14, borderRadius: 12 },
-  branchRowActive: { backgroundColor: Colors.orangeSoft },
-  branchRowText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 15, color: Colors.ink2 },
-  branchRowTextActive: { fontFamily: Fonts.bodySemiBold, color: Colors.ink },
+  branchRowActive: { backgroundColor: 'rgba(255,106,31,0.14)' },
+  branchRowText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 15, color: Colors.onDark },
+  branchRowTextActive: { fontFamily: Fonts.bodySemiBold, color: Colors.white },
 });

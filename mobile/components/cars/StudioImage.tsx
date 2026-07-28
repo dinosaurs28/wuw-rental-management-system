@@ -8,15 +8,18 @@ interface Props {
   uri?: string | null;
   height?: number;
   radius?: number;
-  /** contain = cinematic "floating car" studio look; cover = fill */
+  /** contain = cinematic "floating car" studio look; cover = fill the frame */
   contain?: boolean;
+  /** darken top + bottom edges so overlaid chips stay legible on any photo */
+  scrim?: boolean;
   style?: ViewStyle;
   /** overlay content (chips, badges, controls) */
   children?: ReactNode;
 }
 
-// Cinematic near-black panel behind vehicle imagery (the Sixt "studio" treatment).
-export default function StudioImage({ uri, height = 152, radius = 18, contain = true, style, children }: Props) {
+// Near-black panel behind vehicle imagery. Use `contain` for transparent cut-outs,
+// `cover` + `scrim` for real catalog photos that carry their own backgrounds.
+export default function StudioImage({ uri, height = 152, radius = 18, contain = true, scrim = false, style, children }: Props) {
   return (
     <View style={[{ height, borderRadius: radius, overflow: 'hidden', backgroundColor: Colors.cardDark }, style]}>
       <LinearGradient
@@ -32,6 +35,12 @@ export default function StudioImage({ uri, height = 152, radius = 18, contain = 
           <Ionicons name="car-sport-outline" size={40} color="rgba(255,255,255,0.16)" />
         </View>
       )}
+      {scrim ? (
+        <>
+          <LinearGradient colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']} style={styles.scrimTop} pointerEvents="none" />
+          <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']} style={styles.scrimBottom} pointerEvents="none" />
+        </>
+      ) : null}
       {children}
     </View>
   );
@@ -40,4 +49,6 @@ export default function StudioImage({ uri, height = 152, radius = 18, contain = 
 const styles = StyleSheet.create({
   img: { width: '100%', height: '100%' },
   placeholder: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  scrimTop: { position: 'absolute', top: 0, left: 0, right: 0, height: '42%' },
+  scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%' },
 });

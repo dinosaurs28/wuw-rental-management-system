@@ -91,6 +91,13 @@ export const authApi = {
   signUp: (name: string, email: string, password: string) =>
     api.post('/api/auth/email/signup', { name, email, password }),
   me: () => api.get('/api/auth/me?google=true'),
+  // Self-service password reset (email OTP). forgotPassword always resolves 200
+  // with a generic message (no account-existence leak); resetPassword returns
+  // 400 "Invalid or expired reset code." for any bad email/OTP/expiry.
+  forgotPassword: (email: string) =>
+    api.post('/api/auth/email/forgot-password', { email }),
+  resetPassword: (email: string, otp: string, password: string) =>
+    api.post('/api/auth/email/reset-password', { email, otp, password }),
 };
 
 // ─── user ─────────────────────────────────────────────────────────────────

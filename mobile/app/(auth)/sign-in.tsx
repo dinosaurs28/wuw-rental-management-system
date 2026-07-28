@@ -123,6 +123,13 @@ export default function SignIn() {
             autoComplete="password"
             error={errors.password?.message}
           />
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => router.push('/(auth)/forgot-password')}
+            hitSlop={8}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
         </View>
 
         <Button
@@ -171,6 +178,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   form: { gap: 16, marginBottom: 28 },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -4 },
+  forgotText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.orange,
+    letterSpacing: 0.1,
+  },
   switchRow: { marginTop: 24, alignItems: 'center' },
   switchText: {
     fontFamily: Fonts.body,

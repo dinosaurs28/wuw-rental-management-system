@@ -14,6 +14,10 @@ export const Colors = {
   // Cinematic "studio" surfaces — near-black panels behind vehicle imagery.
   cardDark: '#101217',
   cardDarkElevated: '#1a1d24',
+  // Full dark-theme screens (home / offers / vehicle detail).
+  bgDark: '#0e0f13',
+  surfaceDark: '#1b1e24',
+  hairlineOnDark: 'rgba(255,255,255,0.10)',
   // Hairline + chip surfaces drawn over dark imagery (glass effect).
   glass: 'rgba(255,255,255,0.12)',
   glassHairline: 'rgba(255,255,255,0.18)',
