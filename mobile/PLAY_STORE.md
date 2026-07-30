@@ -1,4 +1,4 @@
-# Google Play Store — Release Guide (WUW Cars)
+# Google Play Store — Release Guide (WUW Rentals)
 
 Operating manual for shipping the Expo app in `mobile/` to Google Play. Written
 for an agent or engineer picking this up cold.
@@ -7,18 +7,18 @@ for an agent or engineer picking this up cold.
 
 | Field | Value |
 |---|---|
-| Package / applicationId | `com.whatuwantrentals.cars` |
-| App name | WUW Cars |
+| Package / applicationId | `com.whatuwantrentals.rentals` |
+| App name | WUW Rentals |
 | EAS project ID | `ddb96052-cb64-4baf-a780-dccbfaeb6284` |
 | EAS owner | `sushanshetty` |
 | Expo SDK / RN | 54 / 0.81.5 |
 | targetSdk / compileSdk | 36 (Android 16) — meets Play's API-35+ minimum |
 | Production API | `https://api.whatuwantrentals.com` |
 
-> The package name was changed from `com.wuw.cars` to `com.whatuwantrentals.cars`
-> before first publish. **Once an app is published under a package name, that name
-> is permanent** — it cannot be renamed, reused, or reclaimed, even after deleting
-> the app. Never change it again.
+> The package name was changed (most recently to `com.whatuwantrentals.rentals`,
+> alongside the app rename to **WUW Rentals**) before first publish. **Once an app is
+> published under a package name, that name is permanent** — it cannot be renamed,
+> reused, or reclaimed, even after deleting the app. Never change it again.
 
 ---
 
@@ -132,7 +132,7 @@ and nothing else can shorten it.
 
 Do not redo these.
 
-- **`app.json`** — package/bundle id `com.whatuwantrentals.cars`; adaptive icon;
+- **`app.json`** — package/bundle id `com.whatuwantrentals.rentals`; adaptive icon;
   `blockedPermissions: [RECORD_AUDIO]`; splash wired to `assets/splash-icon.png`.
 - **`eas.json`** — `appVersionSource: remote` (EAS owns `versionCode`, so an
   upload can never collide with a used version code); `production` builds an
@@ -170,8 +170,8 @@ tracking; that is the vehicles, not the app. Answer the Data safety form for
 ## 3. One-time Play Console setup
 
 1. **Create the app** — Play Console → All apps → Create app.
-   - Name `WUW Cars`, language English, type **App**, **Free**.
-2. **Create the app entry with the exact package name** `com.whatuwantrentals.cars`
+   - Name `WUW Rentals`, language English, type **App**, **Free**.
+2. **Create the app entry with the exact package name** `com.whatuwantrentals.rentals`
    (set implicitly by the first uploaded bundle — the first upload must be manual).
 3. **App access** — the app is entirely behind a login. You **must** give Google
    working demo credentials or it will be rejected as untestable.

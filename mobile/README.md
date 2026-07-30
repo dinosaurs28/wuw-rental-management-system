@@ -1,4 +1,4 @@
-# WUW Cars — Mobile App
+# WUW Rentals — Mobile App
 
 React Native + Expo app for WUW Rentals.
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "WUW Cars",
+    "name": "WUW Rentals",
     "slug": "wuw-cars",
     "version": "1.0.0",
     "scheme": "wuw",
@@ -12,10 +12,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.whatuwantrentals.cars"
+      "bundleIdentifier": "com.whatuwantrentals.rentals"
     },
     "android": {
-      "package": "com.whatuwantrentals.cars",
+      "package": "com.whatuwantrentals.rentals",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0a"
