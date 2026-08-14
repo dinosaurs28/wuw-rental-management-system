@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,505 +9,285 @@ import {
   View,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 
-interface BookingDetail {
-  publicId: string;
-  startAt: string;
-  endAt: string;
-  status: string;
-  totalFinal: string | number;
-  days?: number;
-  customer: { user: { publicId: string; name: string; phone?: string } };
-  items: {
-    vehicle: {
-      publicId: string;
-      make: string;
-      model: string;
-      regNo: string;
-      images?: { file: { url: string } }[];
-    };
-  }[];
+const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
+
+function Line({ label, value, bold, credit }: { label: string; value: string; bold?: boolean; credit?: boolean }) {
+  return (
+    <View style={styles.line}>
+      <Text style={[styles.lineLabel, bold && styles.lineLabelBold]}>{label}</Text>
+      <Text style={[styles.lineValue, bold && styles.lineValueBold, credit && styles.credit]}>{value}</Text>
+    </View>
+  );
 }
 
-const formatPrice = (n: number | string | null | undefined) =>
-  `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
-
-function formatRemaining(ms: number) {
-  if (ms <= 0) return '00:00';
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-export default function EmployeeBookingSummary() {
-  const router = useRouter();
-  const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{
-    bookingId: string;
-    transactionId?: string;
-    expiresAt?: string;
-    paymentURL?: string;
-    rehold_id?: string;
-    rehold_isGroup?: string;
-    rehold_customer?: string;
-    rehold_kyc?: string;
-    rehold_start?: string;
-    rehold_end?: string;
-    rehold_paymentType?: string;
-  }>();
-  const { bookingId, transactionId, expiresAt, paymentURL } = params;
-  const canReHold =
-    !!params.rehold_id &&
-    !!params.rehold_customer &&
-    !!params.rehold_kyc &&
-    !!params.rehold_start &&
-    !!params.rehold_end;
-
-  const [currentBookingId, setCurrentBookingId] = useState<string>(
-    String(bookingId ?? ''),
-  );
-  const [currentTxnId, setCurrentTxnId] = useState<string>(
-    String(transactionId ?? ''),
-  );
-  const [currentExpiresAt, setCurrentExpiresAt] = useState<string>(
-    String(expiresAt ?? ''),
-  );
-  const [currentPaymentURL, setCurrentPaymentURL] = useState<string>(
-    String(paymentURL ?? ''),
-  );
-
-  const expiresAtMs = useMemo(
-    () => (currentExpiresAt ? new Date(currentExpiresAt).getTime() : 0),
-    [currentExpiresAt],
-  );
-  const [now, setNow] = useState(() => Date.now());
-  const [cancelling, setCancelling] = useState(false);
-  const [paying, setPaying] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [completed, setCompleted] = useState(false);
-  const [reholding, setReholding] = useState(false);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Live countdown
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const remainingMs = Math.max(0, expiresAtMs - now);
-  const expired = expiresAtMs > 0 && remainingMs <= 0;
-
-  const { data: booking, isLoading: bookingLoading } = useQuery<BookingDetail>({
-    queryKey: ['employee', 'booking-detail', currentBookingId],
-    queryFn: async () => {
-      const res = await employeeApi.getPickupDetails(currentBookingId);
-      return res.data?.data as BookingDetail;
-    },
-    enabled: !!currentBookingId,
-    staleTime: 5_000,
+function fmtDateTime(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true,
   });
+}
 
-  const txnId = currentTxnId;
-  const isCash = txnId.startsWith('CASH_');
-  const isOnline = !!currentPaymentURL && !isCash;
+export default function WalkinSummaryScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { customer, vehicle, start, end, customerKycId, reset } = useEmployeeBookingStore();
 
-  const handleCancel = async () => {
-    if (!currentBookingId) return;
-    setCancelling(true);
-    try {
-      await employeeApi.cancelEmployeeHold(currentBookingId);
-      qc.invalidateQueries({ queryKey: ['employee', 'booking-detail', currentBookingId] });
-      router.replace('/employee' as any);
-    } catch (err: any) {
-      Alert.alert(
-        'Cancel failed',
-        err?.response?.data?.message ?? 'Could not cancel the hold.',
-      );
-    } finally {
-      setCancelling(false);
-    }
-  };
+  const [payMethod, setPayMethod] = useState<'CASH' | 'ONLINE'>('CASH');
+  const [phase, setPhase] = useState<'REVIEW' | 'PAYING' | 'DONE'>('REVIEW');
+  const [statusText, setStatusText] = useState('');
+  const [bookingRef, setBookingRef] = useState('');
+  const holdRef = useRef<{ holdId: string; transactionId: string } | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const handleReHold = async () => {
-    if (!canReHold) return;
-    setReholding(true);
-    try {
-      const isGroup = params.rehold_isGroup === '1';
-      const body: any = {
-        customer_public_id: String(params.rehold_customer),
-        customer_kyc_id: String(params.rehold_kyc),
-        start: String(params.rehold_start),
-        end: String(params.rehold_end),
-        payment_type: (params.rehold_paymentType as 'CASH' | 'ONLINE') ?? 'CASH',
-      };
-      if (isGroup) {
-        body.group_key = String(params.rehold_id);
-      } else {
-        body.vehicles = [String(params.rehold_id)];
-      }
-      const res = await employeeApi.createEmployeeBooking(body);
-      const data = res.data?.data;
-      if (!data?.bookingId) throw new Error('Missing bookingId');
-      setCurrentBookingId(String(data.bookingId));
-      setCurrentTxnId(String(data.transactionId ?? ''));
-      setCurrentExpiresAt(String(data.expiresAt ?? ''));
-      setCurrentPaymentURL(String(data.paymentURL ?? ''));
-      setCompleted(false);
-      qc.invalidateQueries({
-        queryKey: ['employee', 'booking-detail', data.bookingId],
-      });
-    } catch (err: any) {
-      Alert.alert(
-        'Re-hold failed',
-        err?.response?.data?.message ?? 'Could not re-create the booking hold.',
-      );
-    } finally {
-      setReholding(false);
-    }
-  };
+  // Hold countdown
+  useEffect(() => {
+    if (secondsLeft == null) return;
+    if (secondsLeft <= 0) return;
+    const t = setInterval(() => setSecondsLeft((s) => (s == null ? null : Math.max(0, s - 1))), 1000);
+    return () => clearInterval(t);
+  }, [secondsLeft]);
 
-  const promptCancel = () => {
-    Alert.alert(
-      'Cancel booking hold?',
-      'The vehicle will be released for the selected dates. This cannot be undone.',
-      [
-        { text: 'Stay here', style: 'cancel' },
-        { text: 'Cancel hold', style: 'destructive', onPress: handleCancel },
-      ],
-    );
-  };
-
-  const pollStatus = async (txn: string): Promise<'Success' | 'Failed' | 'Pending'> => {
-    const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
-    for (let attempt = 0; attempt < POLL_DELAYS.length + 1; attempt++) {
-      if (!mountedRef.current) return 'Pending';
-      try {
-        const res = await employeeApi.verifyOnlinePayment(txn);
-        const status = res.data?.status as 'Success' | 'Failed' | 'Pending' | undefined;
-        if (status === 'Success') return 'Success';
-        if (status === 'Failed') return 'Failed';
-      } catch {
-        // ignore and retry
-      }
-      const delay = POLL_DELAYS[attempt] ?? 5000;
-      if (attempt < POLL_DELAYS.length) await new Promise((r) => setTimeout(r, delay));
-    }
-    return 'Pending';
-  };
-
-  const handlePayCash = async () => {
-    if (!txnId) {
-      Alert.alert('Error', 'Missing transaction id.');
-      return;
-    }
-    if (expired) {
-      Alert.alert('Hold expired', 'Please re-create the booking hold.');
-      return;
-    }
-    setPaying(true);
-    setVerifying(true);
-    try {
-      const status = await pollStatus(txnId);
-      if (!mountedRef.current) return;
-      if (status === 'Success') {
-        setCompleted(true);
-        qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-        Alert.alert('Booking confirmed', 'Cash collection logged successfully.');
-      } else if (status === 'Failed') {
-        Alert.alert('Failed', 'Booking confirmation failed. Try again.');
-      } else {
-        Alert.alert(
-          'Pending',
-          'Confirmation is still processing. Check the dashboard in a moment.',
-        );
-      }
-    } finally {
-      setPaying(false);
-      setVerifying(false);
-    }
-  };
-
-  const handlePayOnline = async () => {
-    if (!paymentURL || !txnId) {
-      Alert.alert('Error', 'Online payment link unavailable.');
-      return;
-    }
-    if (expired) {
-      Alert.alert('Hold expired', 'Please re-create the booking hold.');
-      return;
-    }
-    setPaying(true);
-    try {
-      const browserResult = await WebBrowser.openAuthSessionAsync(
-        String(paymentURL),
-        'wuw://payment/callback',
-      );
-      if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
-        Alert.alert(
-          'Payment cancelled',
-          'Payment page closed. The booking hold will expire shortly if not paid.',
-        );
-        return;
-      }
-      setVerifying(true);
-      const status = await pollStatus(txnId);
-      if (!mountedRef.current) return;
-      if (status === 'Success') {
-        setCompleted(true);
-        qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-        Alert.alert('Payment received', 'Booking confirmed.');
-      } else if (status === 'Failed') {
-        Alert.alert('Payment failed', 'Please retry or use cash.');
-      } else {
-        Alert.alert('Pending', 'Payment is still processing. Check dashboard later.');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Could not open payment page.');
-    } finally {
-      setPaying(false);
-      setVerifying(false);
-    }
-  };
-
-  const handleReturnToDashboard = () => {
-    router.replace('/employee' as any);
-  };
-
-  if (bookingLoading) {
+  if (!customer || !vehicle || !start || !end || !customerKycId) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.orange} size="large" />
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.replace('/employee/customer/search')} style={styles.back} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Summary</Text>
+        </View>
+        <View style={styles.empty}>
+          <Ionicons name="alert-circle-outline" size={40} color={Colors.ink4} />
+          <Text style={styles.emptyTitle}>Booking details incomplete</Text>
+          <TouchableOpacity onPress={() => router.replace('/employee/booking/vehicles')}>
+            <Text style={styles.retry}>Back to vehicle selection</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
-  const item = booking?.items?.[0];
-  const totalFinal = booking?.totalFinal;
+  const pd = vehicle.pricingDetails;
+  const days = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000));
+  const deposit = pd?.deposit ?? vehicle.deposit ?? 0;
+  const base = pd ? pd.basePrice : (vehicle.dailyPrice ?? 0) * days;
+  const discount = pd?.discountAmount ?? 0;
+  const tax = pd?.taxAmount ?? 0;
+  const finalTotal = pd ? pd.finalTotal : base + tax;
+  const grandTotal = finalTotal + deposit;
+
+  const poll = async (transactionId: string) => {
+    for (let i = 0; i < POLL_DELAYS.length; i++) {
+      if (!mountedRef.current) return false;
+      try {
+        const res = await employeeApi.bookingPaymentStatus(transactionId);
+        const status = res.data?.status;
+        if (status === 'Success') return true;
+        if (status === 'Failed') return false;
+      } catch {
+        /* transient */
+      }
+      await new Promise((r) => setTimeout(r, POLL_DELAYS[i]));
+    }
+    return false;
+  };
+
+  const confirm = async () => {
+    setPhase('PAYING');
+    // Retrying after a failed attempt: release the previous hold so we don't orphan it.
+    if (holdRef.current) {
+      setStatusText('Releasing previous hold…');
+      try { await employeeApi.cancelBookingHold(holdRef.current.holdId); } catch { /* ignore */ }
+      holdRef.current = null;
+      setSecondsLeft(null);
+    }
+    setStatusText('Creating booking…');
+    try {
+      const res = await employeeApi.createBooking({
+        group_key: vehicle.groupKey,
+        customer_public_id: customer.publicId,
+        customer_kyc_id: customerKycId,
+        start,
+        end,
+        payment_type: payMethod,
+      });
+      const data = res.data?.data ?? {};
+      const holdId: string = data.bookingId;
+      const transactionId: string = data.transactionId;
+      const paymentURL: string | undefined = data.paymentURL;
+      holdRef.current = { holdId, transactionId };
+      if (typeof data.expiresIn === 'number') setSecondsLeft(data.expiresIn);
+      setBookingRef(holdId);
+
+      if (payMethod === 'ONLINE' && paymentURL) {
+        setStatusText('Waiting for payment…');
+        await WebBrowser.openAuthSessionAsync(paymentURL, 'wuw://payment/callback');
+      } else {
+        setStatusText('Confirming cash payment…');
+      }
+
+      const ok = await poll(transactionId);
+      if (!mountedRef.current) return;
+      if (ok) {
+        setPhase('DONE');
+      } else {
+        setPhase('REVIEW');
+        Alert.alert(
+          'Payment not completed',
+          payMethod === 'ONLINE'
+            ? 'The online payment was not confirmed. Retry, switch to cash, or cancel the hold.'
+            : 'Could not confirm the booking. Please retry.',
+        );
+      }
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      setPhase('REVIEW');
+      Alert.alert('Booking failed', err?.response?.data?.message ?? 'Could not create the booking.');
+    }
+  };
+
+  const cancel = async () => {
+    const hold = holdRef.current;
+    const finish = () => { reset(); router.replace('/(employee)/dashboard'); };
+    if (!hold) { finish(); return; }
+    Alert.alert('Cancel booking', 'Discard this booking hold?', [
+      { text: 'Keep', style: 'cancel' },
+      {
+        text: 'Cancel booking',
+        style: 'destructive',
+        onPress: async () => {
+          try { await employeeApi.cancelBookingHold(hold.holdId); } catch { /* ignore */ }
+          finish();
+        },
+      },
+    ]);
+  };
+
+  if (phase === 'DONE') {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+        <View style={styles.successBody}>
+          <View style={styles.successIcon}>
+            <Ionicons name="checkmark-circle" size={64} color="#10b981" />
+          </View>
+          <Text style={styles.successTitle}>Booking Confirmed</Text>
+          <Text style={styles.successSub}>
+            {vehicle.make} {vehicle.model} booked for {customer.name}.
+          </Text>
+          <Text style={styles.successRef}>#{bookingRef.slice(-8).toUpperCase()}</Text>
+          <TouchableOpacity
+            style={styles.doneBtn}
+            onPress={() => { reset(); router.replace('/(employee)/dashboard'); }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.doneBtnText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const paying = phase === 'PAYING';
+  const mm = secondsLeft != null ? String(Math.floor(secondsLeft / 60)).padStart(2, '0') : null;
+  const ss = secondsLeft != null ? String(secondsLeft % 60).padStart(2, '0') : null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => (completed ? router.replace('/employee' as any) : promptCancel())}
-          style={styles.back}
-          hitSlop={8}
-        >
-          <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+        <TouchableOpacity onPress={() => (paying ? null : router.back())} style={styles.back} hitSlop={8} disabled={paying}>
+          <Ionicons name="arrow-back" size={22} color={paying ? Colors.ink4 : Colors.ink} />
         </TouchableOpacity>
-        <View style={styles.headerTitles}>
-          <Text style={styles.title}>Booking Summary</Text>
-          <Text style={styles.subtitle}>
-            {completed ? 'Confirmed' : `Hold #${currentBookingId.slice(0, 8)}`}
-          </Text>
-        </View>
-        {expiresAtMs > 0 && !completed && (
-          <View style={[styles.timerPill, expired && styles.timerExpired]}>
-            <Ionicons
-              name="time-outline"
-              size={14}
-              color={expired ? '#ef4444' : Colors.ink2}
-            />
-            <Text style={[styles.timerText, expired && styles.timerTextExpired]}>
-              {formatRemaining(remainingMs)}
-            </Text>
-          </View>
-        )}
+        <Text style={styles.title}>Review &amp; Confirm</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Vehicle card */}
-        {item && (
-          <View style={styles.card}>
-            <View style={styles.vehicleRow}>
-              <View style={styles.vehicleIcon}>
-                <Ionicons name="car-sport-outline" size={26} color={Colors.orange} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vehicleName}>
-                  {item.vehicle.make} {item.vehicle.model}
-                </Text>
-                <Text style={styles.vehicleMeta}>
-                  {item.vehicle.regNo}
-                </Text>
-              </View>
-            </View>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
+        {holdRef.current && secondsLeft != null && secondsLeft > 0 && (
+          <View style={styles.holdBanner}>
+            <Ionicons name="time-outline" size={16} color="#d97706" />
+            <Text style={styles.holdText}>Hold expires in {mm}:{ss} — complete payment</Text>
           </View>
         )}
 
-        {/* Customer card */}
-        {booking?.customer && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Customer</Text>
-            <Text style={styles.cardValue}>{booking.customer.user.name}</Text>
-            {booking.customer.user.phone && (
-              <Text style={styles.cardSub}>{booking.customer.user.phone}</Text>
-            )}
-          </View>
-        )}
-
-        {/* Rental period */}
-        {booking?.startAt && booking?.endAt && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Rental period</Text>
-            <View style={styles.periodRow}>
-              <View style={styles.periodCol}>
-                <Text style={styles.periodLabel}>PICKUP</Text>
-                <Text style={styles.periodValue}>
-                  {new Date(booking.startAt).toLocaleString('en-IN', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
-                </Text>
-              </View>
-              <Ionicons name="arrow-forward" size={16} color={Colors.ink4} />
-              <View style={styles.periodCol}>
-                <Text style={styles.periodLabel}>RETURN</Text>
-                <Text style={styles.periodValue}>
-                  {new Date(booking.endAt).toLocaleString('en-IN', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
-                </Text>
-              </View>
-            </View>
-            {booking.days != null && (
-              <Text style={styles.daysNote}>
-                {booking.days} day{booking.days > 1 ? 's' : ''}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Total */}
+        {/* Customer */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>Total to collect</Text>
-          <Text style={styles.totalValue}>{formatPrice(totalFinal)}</Text>
-          <Text style={styles.cardSub}>
-            Includes deposit. {isCash ? 'Cash on counter.' : 'Online via PhonePe.'}
-          </Text>
+          <View style={styles.row}>
+            <View style={styles.avatar}><Text style={styles.avatarText}>{customer.name.charAt(0).toUpperCase()}</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardName}>{customer.name}</Text>
+              {customer.phone && <Text style={styles.cardMeta}>{customer.phone}</Text>}
+            </View>
+          </View>
         </View>
 
-        {/* Status */}
-        {completed ? (
-          <View style={[styles.statusBox, styles.statusGreenBg]}>
-            <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-            <Text style={styles.statusGreenText}>Booking confirmed and collected.</Text>
-          </View>
-        ) : expired ? (
-          <View style={[styles.statusBox, styles.statusRedBg]}>
-            <Ionicons name="alert-circle-outline" size={20} color="#ef4444" />
-            <Text style={styles.statusRedText}>
-              Hold expired. {canReHold ? 'Tap Re-hold to extend.' : 'Cancel and start again.'}
-            </Text>
-          </View>
-        ) : verifying ? (
-          <View style={[styles.statusBox, styles.statusAmberBg]}>
-            <ActivityIndicator size="small" color="#f59e0b" />
-            <Text style={styles.statusAmberText}>Verifying payment...</Text>
-          </View>
-        ) : null}
+        {/* Vehicle + dates */}
+        <View style={styles.card}>
+          <Text style={styles.cardName}>{vehicle.make} {vehicle.model}</Text>
+          <Text style={styles.cardMeta}>{vehicle.category} · {vehicle.branch}</Text>
+          <View style={styles.divider} />
+          <Line label="Pickup" value={fmtDateTime(start)} />
+          <Line label="Return" value={fmtDateTime(end)} />
+          <Line label="Duration" value={`${days} day${days !== 1 ? 's' : ''}`} />
+        </View>
+
+        {/* Price breakdown */}
+        <Text style={styles.sectionLabel}>Price breakdown</Text>
+        <View style={styles.card}>
+          <Line label={`Base (${days} day${days !== 1 ? 's' : ''})`} value={`₹${base.toLocaleString('en-IN')}`} />
+          {discount > 0 && <Line label="Discount" value={`−₹${discount.toLocaleString('en-IN')}`} credit />}
+          <Line label={`GST${pd ? ` (${pd.taxRate}%)` : ''}`} value={`₹${tax.toLocaleString('en-IN')}`} />
+          <Line label="Deposit (refundable)" value={`₹${deposit.toLocaleString('en-IN')}`} />
+          <View style={styles.divider} />
+          <Line label="Grand total" value={`₹${grandTotal.toLocaleString('en-IN')}`} bold />
+        </View>
+
+        {/* Payment method */}
+        <Text style={styles.sectionLabel}>Payment method</Text>
+        <View style={styles.methodRow}>
+          {(['CASH', 'ONLINE'] as const).map((m) => (
+            <TouchableOpacity
+              key={m}
+              style={[styles.methodBtn, payMethod === m && styles.methodBtnActive]}
+              onPress={() => !paying && setPayMethod(m)}
+              activeOpacity={0.8}
+              disabled={paying}
+            >
+              <Ionicons
+                name={m === 'CASH' ? 'wallet-outline' : 'qr-code-outline'}
+                size={18}
+                color={payMethod === m ? Colors.white : Colors.ink2}
+              />
+              <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
+                {m === 'CASH' ? 'Cash' : 'Online'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
 
-      {/* CTA */}
-      <View style={[styles.cta, { paddingBottom: insets.bottom + 14 }]}>
-        {completed ? (
-          <TouchableOpacity
-            style={[styles.ctaBtn, styles.ctaPrimary]}
-            onPress={handleReturnToDashboard}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.ctaPrimaryText}>Return to dashboard</Text>
-          </TouchableOpacity>
-        ) : expired && canReHold ? (
-          <>
-            <TouchableOpacity
-              style={[styles.ctaBtn, styles.ctaPrimary, reholding && styles.ctaDisabled]}
-              onPress={handleReHold}
-              disabled={reholding}
-              activeOpacity={0.85}
-            >
-              {reholding ? (
-                <ActivityIndicator color={Colors.white} size="small" />
-              ) : (
-                <Text style={styles.ctaPrimaryText}>Re-hold booking</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.ctaBtn, styles.ctaSecondary]}
-              onPress={() => router.replace('/employee' as any)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.ctaSecondaryText}>Return to dashboard</Text>
-            </TouchableOpacity>
-          </>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        {paying ? (
+          <View style={styles.payingRow}>
+            <ActivityIndicator size="small" color={Colors.orange} />
+            <Text style={styles.payingText}>{statusText}</Text>
+          </View>
         ) : (
           <>
-            {isOnline ? (
-              <TouchableOpacity
-                style={[
-                  styles.ctaBtn,
-                  styles.ctaPrimary,
-                  (paying || expired) && styles.ctaDisabled,
-                ]}
-                onPress={handlePayOnline}
-                disabled={paying || expired}
-                activeOpacity={0.85}
-              >
-                {paying ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <Text style={styles.ctaPrimaryText}>
-                    Pay online · {formatPrice(totalFinal)}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.ctaBtn,
-                  styles.ctaPrimary,
-                  (paying || expired) && styles.ctaDisabled,
-                ]}
-                onPress={handlePayCash}
-                disabled={paying || expired}
-                activeOpacity={0.85}
-              >
-                {paying ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <Text style={styles.ctaPrimaryText}>
-                    Confirm cash · {formatPrice(totalFinal)}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.ctaBtn, styles.ctaSecondary]}
-              onPress={promptCancel}
-              disabled={cancelling}
-              activeOpacity={0.85}
-            >
-              {cancelling ? (
-                <ActivityIndicator color={Colors.ink} size="small" />
-              ) : (
-                <Text style={styles.ctaSecondaryText}>Cancel hold</Text>
-              )}
+            <TouchableOpacity style={styles.cta} onPress={confirm} activeOpacity={0.85}>
+              <Text style={styles.ctaText}>
+                {holdRef.current ? 'Retry payment' : `Confirm & ${payMethod === 'CASH' ? 'collect cash' : 'pay online'}`}
+              </Text>
+              <Text style={styles.ctaTotal}>₹{grandTotal.toLocaleString('en-IN')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={cancel} activeOpacity={0.8}>
+              <Text style={styles.cancelText}>{holdRef.current ? 'Cancel booking' : 'Discard'}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -518,169 +298,67 @@ export default function EmployeeBookingSummary() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  center: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    gap: 12,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, gap: 12 },
   back: { width: 36, height: 36, justifyContent: 'center' },
-  headerTitles: { flex: 1 },
-  title: {
-    fontFamily: Fonts.displayBold,
-    fontSize: 20,
-    color: Colors.ink,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.ink3,
-    marginTop: 2,
-  },
-  timerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  timerExpired: { borderColor: '#ef4444' },
-  timerText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
-    color: Colors.ink2,
-  },
-  timerTextExpired: { color: '#ef4444' },
+  title: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 200, gap: 12 },
+  content: { paddingHorizontal: 20, gap: 10 },
 
-  card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    borderRadius: 16,
-    padding: 16,
-    gap: 4,
+  holdBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#fffbeb', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#fde68a',
   },
-  cardLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 11,
-    color: Colors.ink3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-    marginBottom: 4,
-  },
-  cardValue: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 16,
-    color: Colors.ink,
-  },
-  cardSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2 },
+  holdText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#92400e' },
 
-  vehicleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  vehicleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: Colors.orangeSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
-  vehicleMeta: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginTop: 2 },
+  card: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.hairline, padding: 16, gap: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.orange, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.white },
+  cardName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
+  cardMeta: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginTop: 2 },
 
-  periodRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 4,
-  },
-  periodCol: { flex: 1 },
-  periodLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 9,
-    color: Colors.ink3,
-    letterSpacing: 0.9,
-  },
-  periodValue: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
-    color: Colors.ink,
-    marginTop: 2,
-  },
-  daysNote: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 12,
-    color: Colors.orange,
-    marginTop: 8,
-  },
+  divider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 8 },
 
-  totalValue: {
-    fontFamily: Fonts.displayBold,
-    fontSize: 28,
-    color: Colors.ink,
-    letterSpacing: -0.6,
-    marginTop: 4,
-  },
+  sectionLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3, textTransform: 'uppercase', letterSpacing: 1, marginTop: 8 },
 
-  statusBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 14,
-    padding: 14,
-  },
-  statusGreenBg: { backgroundColor: '#10b98115' },
-  statusRedBg: { backgroundColor: '#fee2e2' },
-  statusAmberBg: { backgroundColor: '#fef3c7' },
-  statusGreenText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#10b981', flex: 1 },
-  statusRedText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#b91c1c', flex: 1 },
-  statusAmberText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#92400e', flex: 1 },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 },
+  lineLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
+  lineLabelBold: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
+  lineValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
+  lineValueBold: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
+  credit: { color: '#10b981' },
 
+  methodRow: { flexDirection: 'row', gap: 10 },
+  methodBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
+  },
+  methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
+  methodTextActive: { color: Colors.white },
+
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
   cta: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: Colors.hairline,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.orange, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 20,
+    shadowColor: Colors.black, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
-  ctaBtn: {
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaPrimary: { backgroundColor: Colors.orange },
-  ctaPrimaryText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 15,
-    color: Colors.white,
-    letterSpacing: 0.2,
-  },
-  ctaSecondary: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  ctaSecondaryText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
-  ctaDisabled: { opacity: 0.55 },
+  ctaText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  ctaTotal: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.white },
+  cancelBtn: { alignItems: 'center', paddingVertical: 10 },
+  cancelText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink3 },
+  payingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
+  payingText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink2 },
+
+  empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  emptyTitle: { fontFamily: Fonts.display, fontSize: 18, color: Colors.ink2, letterSpacing: -0.4 },
+  retry: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange, marginTop: 6 },
+
+  successBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 14 },
+  successIcon: { width: 100, height: 100, borderRadius: 30, backgroundColor: '#10b98115', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  successTitle: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.ink, letterSpacing: -0.8 },
+  successSub: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3, textAlign: 'center', lineHeight: 22 },
+  successRef: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink3, letterSpacing: 1 },
+  doneBtn: { backgroundColor: Colors.ink, borderRadius: 16, paddingVertical: 17, paddingHorizontal: 40, alignItems: 'center', marginTop: 16, width: '100%' },
+  doneBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white },
 });

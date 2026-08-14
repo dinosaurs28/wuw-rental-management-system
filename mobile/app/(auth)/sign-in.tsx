@@ -20,7 +20,6 @@ import { useAuthStore } from '../../store/auth';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import GoogleSignInButton, { isGoogleConfigured } from '../../components/auth/GoogleSignInButton';
 import type { User } from '../../types/api';
 
 const schema = z.object({
@@ -36,13 +35,6 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ title: string; message?: string } | null>(null);
 
-  const handleGoogleIdToken = async (idToken: string) => {
-    const res = await authApi.googleSignIn(idToken);
-    const { accessToken, ...user } = res.data.data as User & { accessToken: string };
-    await signIn(accessToken, user);
-    router.replace('/(tabs)');
-  };
-
   const {
     control,
     handleSubmit,
@@ -53,18 +45,22 @@ export default function SignIn() {
     setLoading(true);
     try {
       const res = await authApi.signIn(data.email, data.password);
-      const { accessToken, ...user } = res.data.data as User & { accessToken: string };
-      await signIn(accessToken, user);
+      const payload = res.data?.data as (User & { accessToken?: string }) | undefined;
+      // 201 (no accessToken) → the account exists but the email isn't verified yet.
+      if (!payload?.accessToken) {
+        setToast({
+          title: 'Verify your account',
+          message: 'Your account isn’t verified yet. Please complete verification with our team to continue.',
+        });
+        return;
+      }
+      const { accessToken, ...user } = payload;
+      await signIn(accessToken, user as User);
       router.replace('/(tabs)');
     } catch (err: any) {
-      const serverMsg = err.response?.data?.message;
-      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
-      const isNetwork = !err.response && (err.code === 'ECONNREFUSED' || err.message?.includes('Network'));
-      const msg = serverMsg
-        ?? (isTimeout
-          ? 'Server is taking too long to respond. Try again in a moment.'
-          : isNetwork
-          ? 'Cannot reach the server. Check your internet and try again.'
+      const msg = err.response?.data?.message
+        ?? (err.code === 'ECONNREFUSED' || err.message?.includes('Network')
+          ? 'Cannot reach server. Check your connection.'
           : 'Something went wrong. Please try again.');
       setToast({ title: 'Sign in failed', message: msg });
     } finally {
@@ -130,9 +126,9 @@ export default function SignIn() {
           <TouchableOpacity
             style={styles.forgotRow}
             onPress={() => router.push('/(auth)/forgot-password')}
-            hitSlop={6}
+            hitSlop={8}
           >
-            <Text style={styles.forgotLink}>Forgot password?</Text>
+            <Text style={styles.forgotText}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
 
@@ -141,28 +137,6 @@ export default function SignIn() {
           onPress={handleSubmit(onSubmit)}
           loading={loading}
         />
-
-        {isGoogleConfigured ? (
-          <>
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            <GoogleSignInButton
-              onIdToken={handleGoogleIdToken}
-              onError={(message) => setToast({ title: 'Google sign-in failed', message })}
-            />
-          </>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.phoneRow}
-          onPress={() => router.push('/(auth)/phone')}
-        >
-          <Ionicons name="call-outline" size={18} color={Colors.ink2} style={{ marginRight: 8 }} />
-          <Text style={styles.phoneLink}>Sign in with phone</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.switchRow}
@@ -205,24 +179,13 @@ const styles = StyleSheet.create({
   },
   form: { gap: 16, marginBottom: 28 },
   forgotRow: { alignSelf: 'flex-end', marginTop: -4 },
-  forgotLink: {
+  forgotText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 13,
     color: Colors.orange,
+    letterSpacing: 0.1,
   },
-  phoneRow: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
-  phoneLink: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 14,
-    color: Colors.ink2,
-  },
-  switchRow: { marginTop: 8, alignItems: 'center' },
+  switchRow: { marginTop: 24, alignItems: 'center' },
   switchText: {
     fontFamily: Fonts.body,
     fontSize: 14,
@@ -231,21 +194,5 @@ const styles = StyleSheet.create({
   switchLink: {
     fontFamily: Fonts.bodySemiBold,
     color: Colors.orange,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-    gap: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.hairline,
-  },
-  dividerText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 12,
-    color: Colors.ink3,
   },
 });

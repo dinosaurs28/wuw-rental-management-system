@@ -1,20 +1,23 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
-import WhatsappFab from '../../components/ui/WhatsappFab';
+import { userApi } from '../../lib/api';
+import { startsInLabel } from '../../lib/dates';
+import StudioImage from '../../components/cars/StudioImage';
+import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
+import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
+import VerifyLicenseCard, { type DLStatus } from '../../components/ui/VerifyLicenseCard';
+import type { BookingVehicle } from '../../types/api';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const STATUS_COLOR: Record<string, string> = {
-  HOLD:      '#8b8b8b',
-  CONFIRMED: '#2d9d61',
-  PICKED_UP: '#ff6a1f',
-  RETURNED:  '#8b8b8b',
-  CANCELLED: '#e53e3e',
-};
 
 const STATUS_LABEL: Record<string, string> = {
   HOLD:      'Pending Payment',
@@ -23,6 +26,23 @@ const STATUS_LABEL: Record<string, string> = {
   RETURNED:  'Returned',
   CANCELLED: 'Cancelled',
 };
+
+const STATUS_TONE: Record<string, BadgeTone> = {
+  HOLD:      'warn',
+  CONFIRMED: 'good',
+  PICKED_UP: 'info',
+  RETURNED:  'neutral',
+  CANCELLED: 'bad',
+};
+
+function dlStatusFrom(rows: any[]): DLStatus {
+  const dls = (rows ?? []).filter((d) => d?.type === 'DL');
+  if (dls.length === 0) return 'none';
+  if (dls.some((d) => d.status === 'APPROVED')) return 'approved';
+  if (dls.some((d) => d.status === 'PENDING')) return 'pending';
+  if (dls.some((d) => d.status === 'REJECTED')) return 'rejected';
+  return 'none';
+}
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -50,6 +70,7 @@ export default function TripDetail() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     bookingId: string;
+    id: string;
     status: string;
     make: string;
     model: string;
@@ -58,14 +79,13 @@ export default function TripDetail() {
     endAt: string;
     days: string;
     total: string;
-    amountPaid: string;
-    isAdvancePayment: string;
-    remainingBalance: string;
     paymentStatus: string;
+    vehiclesJson: string;
   }>();
 
   const {
     bookingId,
+    id,
     status,
     make,
     model,
@@ -74,18 +94,99 @@ export default function TripDetail() {
     endAt,
     days,
     total,
-    amountPaid,
-    isAdvancePayment,
-    remainingBalance,
     paymentStatus,
+    vehiclesJson,
   } = params;
 
-  const paidAmount = Number(amountPaid ?? total);
-  const isAdvance = isAdvancePayment === 'true';
-  const remaining = Number(remainingBalance ?? 0);
+  // Full vehicle list (#39) — render every vehicle, not just the first.
+  const vehicles = useMemo<BookingVehicle[]>(() => {
+    try {
+      const parsed = JSON.parse(vehiclesJson ?? '[]');
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      /* fall through to the single-vehicle fallback */
+    }
+    return make ? [{ publicId: bookingId, make, model, thumbnail: thumbnail || null, finalTotal: Number(total) || 0 }] : [];
+  }, [vehiclesJson, make, model, thumbnail, total, bookingId]);
 
-  const color = STATUS_COLOR[status] ?? Colors.ink3;
-  const showQR = status === 'CONFIRMED' || status === 'HOLD' || status === 'PICKED_UP';
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+
+  const upcoming = status === 'HOLD' || status === 'CONFIRMED';
+  // Real DL/KYC status drives the "verify your licence" card (only for upcoming trips).
+  const { data: dlStatus = 'none' } = useQuery<DLStatus>({
+    queryKey: ['user-kyc-dl'],
+    queryFn: async () => {
+      const res = await userApi.kyc();
+      const rows = (res.data?.kyc ?? res.data?.data ?? []) as any[];
+      return dlStatusFrom(rows);
+    },
+    enabled: upcoming,
+    staleTime: 60_000,
+  });
+  const startsLabel = startsInLabel(startAt);
+
+  // A HOLD is unpaid/unconfirmed and pickup is blocked server-side — no pickup QR for it.
+  const showQR = status === 'CONFIRMED' || status === 'PICKED_UP';
+  const canCancelHold = status === 'HOLD';
+
+  const cancelHold = () => {
+    if (cancelBusy) return;
+    Alert.alert(
+      'Cancel booking',
+      'Release this held booking? This frees the vehicle for other customers and cannot be undone.',
+      [
+        { text: 'Keep booking', style: 'cancel' },
+        {
+          text: 'Cancel booking',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelBusy(true);
+            try {
+              await userApi.cancelHold(bookingId);
+              router.replace('/(tabs)/trips');
+            } catch (err: any) {
+              Alert.alert('Could not cancel', err?.response?.data?.message ?? 'Please try again.');
+            } finally {
+              setCancelBusy(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+  const numericId = Number(id);
+  const canInvoice = (status === 'CONFIRMED' || status === 'RETURNED') && Number.isFinite(numericId) && numericId > 0;
+
+  const openInvoice = async () => {
+    if (!canInvoice || invoiceBusy) return;
+    setInvoiceBusy(true);
+    try {
+      const res = await userApi.invoiceDownload(numericId);
+      const d = res.data ?? {};
+      if (d.cached && d.pdfUrl) {
+        await WebBrowser.openBrowserAsync(d.pdfUrl);
+        return;
+      }
+      if (d.generating && d.invoiceId) {
+        for (let i = 0; i < 40; i++) {
+          await sleep(3000);
+          const s = (await userApi.invoiceStatus(d.invoiceId)).data ?? {};
+          if (s.state === 'completed' && s.pdfUrl) {
+            await WebBrowser.openBrowserAsync(s.pdfUrl);
+            return;
+          }
+          if (s.state === 'failed') throw new Error('Invoice generation failed');
+        }
+        throw new Error('Invoice is taking longer than expected');
+      }
+      throw new Error(d.message ?? 'Invoice is not available yet');
+    } catch (err: any) {
+      Alert.alert('Invoice', err?.response?.data?.message ?? err?.message ?? 'Could not download invoice. Please try again.');
+    } finally {
+      setInvoiceBusy(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -95,31 +196,33 @@ export default function TripDetail() {
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trip Details</Text>
-        <View style={[styles.statusBadge, { backgroundColor: color + '20' }]}>
-          <Text style={[styles.statusText, { color }]}>{STATUS_LABEL[status] ?? status}</Text>
-        </View>
+        <StatusBadge label={STATUS_LABEL[status] ?? status} tone={STATUS_TONE[status] ?? 'neutral'} />
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Vehicle card */}
-        <View style={styles.vehicleCard}>
-          {thumbnail ? (
-            <Image source={{ uri: thumbnail }} style={styles.vehiclePhoto} resizeMode="cover" />
-          ) : (
-            <View style={[styles.vehiclePhoto, styles.vehiclePhotoPlaceholder]}>
-              <Ionicons name="car-sport-outline" size={40} color={Colors.ink4} />
+        {/* Vehicle card(s) — one per vehicle on the booking */}
+        {vehicles.map((veh, i) => (
+          <View key={veh.publicId ?? i} style={[styles.vehicleCard, i > 0 && styles.vehicleCardStacked]}>
+            <StudioImage uri={veh.thumbnail} height={96} radius={0} contain style={styles.vehiclePhoto} />
+            <View style={styles.vehicleInfo}>
+              {i === 0 && startsLabel ? (
+                <StatusBadge label={startsLabel} tone="info" style={{ marginBottom: 6 }} />
+              ) : null}
+              <Text style={styles.vehicleName}>{veh.make} {veh.model}</Text>
+              {i === 0 ? (
+                <Text style={styles.bookingRef} numberOfLines={1} ellipsizeMode="middle">
+                  Ref: {bookingId}
+                </Text>
+              ) : null}
+              {vehicles.length > 1 && veh.finalTotal != null ? (
+                <Text style={styles.vehiclePrice}>₹{Number(veh.finalTotal).toLocaleString('en-IN')}</Text>
+              ) : null}
             </View>
-          )}
-          <View style={styles.vehicleInfo}>
-            <Text style={styles.vehicleName}>{make} {model}</Text>
-            <Text style={styles.bookingRef} numberOfLines={1} ellipsizeMode="middle">
-              Ref: {bookingId}
-            </Text>
           </View>
-        </View>
+        ))}
 
         {/* QR Code — for employee to scan at pickup */}
         {showQR && (
@@ -141,16 +244,16 @@ export default function TripDetail() {
           </View>
         )}
 
-        {/* Booking details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Booking Info</Text>
-          <View style={styles.card}>
-            <InfoRow icon="calendar-outline"   label="Pickup"   value={fmt(startAt)} />
-            <View style={styles.divider} />
-            <InfoRow icon="calendar-outline"   label="Return"   value={fmt(endAt)} />
-            <View style={styles.divider} />
-            <InfoRow icon="time-outline"       label="Duration" value={`${days} day${Number(days) !== 1 ? 's' : ''}`} />
+        {/* Verify licence — only for upcoming trips, driven by real KYC DL status */}
+        {upcoming ? (
+          <View style={styles.section}>
+            <VerifyLicenseCard status={dlStatus} onVerify={() => router.push('/(tabs)/profile')} />
           </View>
+        ) : null}
+
+        {/* Itinerary — reservation # + pickup/return datetimes (no station: bookings carry no branch) */}
+        <View style={styles.section}>
+          <ItineraryTimeline reservationNumber={bookingId} start={startAt} end={endAt} />
         </View>
 
         {/* Payment */}
@@ -159,25 +262,9 @@ export default function TripDetail() {
           <View style={styles.card}>
             <InfoRow
               icon="cash-outline"
-              label="Amount Paid"
-              value={`₹${paidAmount.toLocaleString('en-IN')}`}
+              label="Total"
+              value={`₹${Number(total).toLocaleString('en-IN')}`}
             />
-            {isAdvance && remaining > 0 && (
-              <>
-                <View style={styles.divider} />
-                <InfoRow
-                  icon="time-outline"
-                  label="Due at pickup"
-                  value={`₹${remaining.toLocaleString('en-IN')}`}
-                />
-                <View style={styles.divider} />
-                <InfoRow
-                  icon="receipt-outline"
-                  label="Total booking"
-                  value={`₹${Number(total).toLocaleString('en-IN')}`}
-                />
-              </>
-            )}
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
@@ -186,12 +273,44 @@ export default function TripDetail() {
               </View>
               <View style={[styles.payBadge, { backgroundColor: paymentStatus === 'SUCCESS' ? '#2d9d6120' : '#f59e0b20' }]}>
                 <Text style={[styles.payBadgeText, { color: paymentStatus === 'SUCCESS' ? '#2d9d61' : '#d97706' }]}>
-                  {paymentStatus === 'SUCCESS' ? 'Paid' : paymentStatus ?? '—'}
+                  {paymentStatus === 'SUCCESS'
+                    ? 'Paid'
+                    : paymentStatus === 'FAILED'
+                    ? 'Failed'
+                    : paymentStatus === 'REFUNDED'
+                    ? 'Refunded'
+                    : paymentStatus
+                    ? 'Pending'
+                    : '—'}
                 </Text>
               </View>
             </View>
           </View>
         </View>
+
+        {/* Invoice — available once confirmed/returned */}
+        {canInvoice && (
+          <TouchableOpacity style={styles.invoiceBtn} onPress={openInvoice} disabled={invoiceBusy} activeOpacity={0.85}>
+            {invoiceBusy ? (
+              <ActivityIndicator size="small" color={Colors.ink} />
+            ) : (
+              <Ionicons name="download-outline" size={18} color={Colors.ink} />
+            )}
+            <Text style={styles.invoiceBtnText}>{invoiceBusy ? 'Preparing invoice…' : 'Download invoice (PDF)'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Cancel a held (unpaid) booking — releases the vehicle (#43) */}
+        {canCancelHold && (
+          <TouchableOpacity style={styles.cancelBtn} onPress={cancelHold} disabled={cancelBusy} activeOpacity={0.85}>
+            {cancelBusy ? (
+              <ActivityIndicator size="small" color="#e53e3e" />
+            ) : (
+              <Ionicons name="close-circle-outline" size={18} color="#e53e3e" />
+            )}
+            <Text style={styles.cancelBtnText}>{cancelBusy ? 'Cancelling…' : 'Cancel this booking'}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* What to bring — only for upcoming */}
         {(status === 'CONFIRMED' || status === 'HOLD') && (
@@ -200,7 +319,7 @@ export default function TripDetail() {
             <View style={styles.card}>
               {[
                 { icon: 'card-outline' as IoniconName,            text: 'Valid driving license (original)' },
-                { icon: 'phone-portrait-outline' as IoniconName,  text: 'This QR code for verification' },
+                ...(showQR ? [{ icon: 'phone-portrait-outline' as IoniconName, text: 'This QR code for verification' }] : []),
                 { icon: 'shield-checkmark-outline' as IoniconName, text: 'Your Aadhaar or govt. ID' },
               ].map((item, i, arr) => (
                 <View key={item.text}>
@@ -217,7 +336,6 @@ export default function TripDetail() {
           </View>
         )}
       </ScrollView>
-      <WhatsappFab bookingId={bookingId} bottom={insets.bottom + 24} />
     </View>
   );
 }
@@ -260,6 +378,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
     marginBottom: 20,
   },
+  vehicleCardStacked: { marginTop: -10 },
+  vehiclePrice: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange, marginTop: 2 },
   vehiclePhoto: { width: 110, height: 90 },
   vehiclePhotoPlaceholder: {
     backgroundColor: '#f0f0ee',
@@ -334,6 +454,34 @@ const styles = StyleSheet.create({
 
   payBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   payBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11 },
+
+  invoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingVertical: 15,
+    marginBottom: 20,
+  },
+  invoiceBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff5f5',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    paddingVertical: 15,
+    marginBottom: 20,
+  },
+  cancelBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#e53e3e' },
 
   bringRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bringIcon: {

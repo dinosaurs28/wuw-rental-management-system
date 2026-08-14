@@ -1,34 +1,31 @@
 {
   "expo": {
     "name": "WUW Rentals",
-    "slug": "wuw",
+    "slug": "wuw-cars",
     "version": "1.0.0",
     "scheme": "wuw",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#0a0a0a",
+    "primaryColor": "#ff6a1f",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#04040e"
-    },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.wuw.cars"
+      "bundleIdentifier": "com.whatuwantrentals.cars"
     },
     "android": {
-      "package": "com.wuw.cars",
+      "package": "com.whatuwantrentals.cars",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#04040e"
+        "backgroundColor": "#0a0a0a"
       },
       "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -36,6 +33,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0a0a0a",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220
+        }
+      ],
       "expo-secure-store",
       "expo-audio",
       [
@@ -47,13 +52,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "WUW needs access to your photos to upload KYC documents."
+          "photosPermission": "WUW needs access to your photos so you can upload your driving licence and other KYC documents.",
+          "cameraPermission": "WUW needs camera access so you can photograph your driving licence and vehicle condition.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "WUW needs camera access to scan booking QR codes."
+          "cameraPermission": "WUW needs camera access to scan booking QR codes and capture vehicle condition photos.",
+          "microphonePermission": false,
+          "recordAudioAndroidPermission": false
         }
       ],
       [
@@ -72,7 +81,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e96247c6-c93e-4d56-94d9-04431ef454ff"
+        "projectId": "ddb96052-cb64-4baf-a780-dccbfaeb6284"
       }
     },
     "owner": "sushanshetty"

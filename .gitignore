@@ -39,4 +39,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Claude Code (local agent worktrees / scratch)
+.claude/worktrees/
 .gstack/

@@ -3,13 +3,13 @@ import { useAuthStore } from '../store/auth';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000') as string;
 
-if (__DEV__) {
-  console.log('[api] BASE_URL =', BASE_URL);
-}
+// Photo uploads run far longer than a JSON round-trip on mobile data, so they
+// opt out of the 15s default below rather than aborting mid-transfer.
+export const UPLOAD_TIMEOUT_MS = 60_000;
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 30_000,
+  timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -23,29 +23,7 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (res) => res,
-  async (err) => {
-    const cfg = err.config ?? {};
-    const isNetworkError = !err.response;
-
-    if (__DEV__ && isNetworkError) {
-      console.log(
-        '[api] network error',
-        cfg.method?.toUpperCase(),
-        (cfg.baseURL ?? '') + (cfg.url ?? ''),
-        '| code:', err.code,
-        '| message:', err.message,
-      );
-    }
-
-    // One automatic retry on network errors (transient cellular drops, DNS
-    // blips, TLS resumption hiccups). Never retry HTTP error responses —
-    // those are real and meaningful.
-    if (isNetworkError && !cfg.__retried) {
-      cfg.__retried = true;
-      await new Promise((r) => setTimeout(r, 1000));
-      return api.request(cfg);
-    }
-
+  (err) => {
     if (err.response?.status === 401) {
       useAuthStore.getState().signOut();
     }
@@ -75,6 +53,38 @@ export const vehiclesApi = {
     api.get(`/api/public/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
   categories: () => api.get('/api/public/categories'),
   branches: () => api.get('/api/public/branches'),
+  // Coupon preview (stateless). Returns { data: { valid, discountAmount, ... } }, always HTTP 200.
+  validateCoupon: (body: {
+    couponCode: string;
+    vehiclePublicId?: string;
+    groupKey?: string;
+    startAt: string;
+    endAt: string;
+  }) => api.post('/api/public/discount/validate', body),
+  // Customer booking summary + payment initiation (creates a 10-min HOLD).
+  createBooking: (body: {
+    vehicles: string[];
+    groupKeys: string[];
+    start: string;
+    end: string;
+    file_public_id: string;
+    payment_type: 'CASH' | 'ONLINE';
+    payment_flow: 'FULL' | 'ADVANCE';
+    couponCode?: string;
+  }) => api.post('/api/public/vehicles/booking', body),
+};
+
+// ─── payment / config ───────────────────────────────────────────────────────
+
+export const paymentApi = {
+  // Customer online payment status: { status: 'Success' | 'Pending' | 'Failed' }
+  status: (transactionId: string) =>
+    api.get(`/api/payment/status/${transactionId}`),
+};
+
+export const configApi = {
+  // { data: { phoneNumber, messageTemplate, isEnabled } | null }
+  whatsapp: () => api.get('/api/config/whatsapp'),
 };
 
 // ─── auth ─────────────────────────────────────────────────────────────────
@@ -84,11 +94,14 @@ export const authApi = {
     api.post('/api/auth/email/signin', { email, password }),
   signUp: (name: string, email: string, password: string) =>
     api.post('/api/auth/email/signup', { name, email, password }),
-  // Mobile Google sign-in: client obtains an idToken via expo-auth-session,
-  // backend verifies and returns a JWT in the response body.
-  googleSignIn: (idToken: string) =>
-    api.post('/api/auth/google/mobile', { idToken }),
   me: () => api.get('/api/auth/me?google=true'),
+  // Self-service password reset (email OTP). forgotPassword always resolves 200
+  // with a generic message (no account-existence leak); resetPassword returns
+  // 400 "Invalid or expired reset code." for any bad email/OTP/expiry.
+  forgotPassword: (email: string) =>
+    api.post('/api/auth/email/forgot-password', { email }),
+  resetPassword: (email: string, otp: string, password: string) =>
+    api.post('/api/auth/email/reset-password', { email, otp, password }),
 };
 
 // ─── user ─────────────────────────────────────────────────────────────────
@@ -105,19 +118,366 @@ export const userApi = {
   uploadKyc: (formData: FormData) =>
     api.post('/api/user/kyc', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
   deleteKyc: (publicId: string, customerPublicId: string) =>
     api.delete('/api/user/kyc', { data: { id: publicId, customer_public_id: customerPublicId } }),
-  // Customer-side hold cancellation (different from employeeApi.cancelEmployeeHold).
   cancelHold: (holdId: string) =>
     api.delete(`/api/user/booking/hold/${holdId}`),
+
+  // Permanent account deletion. `password` is omitted for Google-linked
+  // accounts (they have no password). 409 => an active booking blocks it.
+  deleteAccount: (confirmText: string, password?: string) =>
+    api.delete('/api/user/account', { data: { confirmText, password } }),
+  // { data: { customerId, cancellations: [...], totalCancellations, totalOutstanding } }
+  // Money fields (cancellationFee, totalOutstanding) arrive as STRINGS.
+  cancellationHistory: () =>
+    api.get('/api/user/cancellation-history'),
+
+  // ── invoice (async PDF generation) ────────────────────────────────────────
+  // bookingId is the NUMERIC booking.id (not the publicId UUID).
+  invoiceDownload: (bookingId: number) =>
+    api.post('/api/invoices/download', { bookingId }),
+  invoiceStatus: (invoiceId: number) =>
+    api.get(`/api/invoices/status/${invoiceId}`),
+  invoiceRegenerate: (bookingId: number) =>
+    api.post('/api/invoices/regenerate', { bookingId }),
   // Customer-side payment status polling (thin wrapper over the public endpoint).
-  // Returns { status: 'Success' | 'Pending' | 'Failed', message?: string }
   verifyPayment: (transactionId: string) =>
     api.get(`/api/payment/status/${transactionId}`),
 };
 
-// ─── discount ─────────────────────────────────────────────────────────────
+// ─── employee ─────────────────────────────────────────────────────────────
+
+export const employeeApi = {
+  login: (email: string, password: string) =>
+    api.post('/api/employee/auth/login', { email, password }),
+  dashboardStats: () => api.get('/api/employee/dashboard/stats'),
+  getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
+  openShift: () => api.post('/api/employee/payment/shifts'),
+  closeShift: (publicId: string, body: { actualTotal: number; discrepancyExplanation?: string }) =>
+    api.post(`/api/employee/payment/shifts/${publicId}/close`, body),
+  listPickups: (params?: { date?: string }) =>
+    api.get('/api/employee/booking', { params }),
+  listReturns: (params?: { date?: string }) =>
+    api.get('/api/employee/return', { params }),
+  scanBooking: (bookingId: string) =>
+    api.get(`/api/employee/booking/${bookingId}/scan`),
+  searchCustomer: (query: string) =>
+    api.get('/api/employee/customer/search', { params: { q: query } }),
+  getCustomer: (publicId: string) =>
+    api.get(`/api/employee/customer/${publicId}`),
+  getPickupDetails: (bookingId: string) =>
+    api.get(`/api/employee/pickup/${bookingId}`),
+  uploadPickupImage: (formData: FormData) =>
+    api.post('/api/employee/pickup/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  deletePickupImage: (publicId: string) =>
+    api.delete(`/api/employee/pickup/image/${publicId}`),
+  completePickup: (bookingId: string, body: {
+    odo: number;
+    fuelLevel: number;
+    // "1".."10"; required by backend only when the branch fuel module is enabled,
+    // optional otherwise — mobile always sends it to be safe.
+    pickupFuelLevel?: string;
+    pickupImageIds?: string[];
+    captureImages?: { fileId: string; label: string }[];
+    requireManagerConfirmation?: boolean;
+    payRemainingAtPickup?: boolean;
+    // gated by booking.frozenChargeConfig.safetyDepositEnabled
+    safetyDepositRequest?: { requestedAmount: number; reason: string };
+  }) => api.post(`/api/employee/pickup/${bookingId}`, body),
+  getReturnDetails: (bookingId: string) =>
+    api.get(`/api/employee/return/${bookingId}`),
+  // pre-delivery reference photos captured at pickup, for return comparison
+  getPickupCaptures: (bookingId: string) =>
+    api.get(`/api/employee/return/${bookingId}/pickup-captures`),
+  uploadReturnImage: (formData: FormData) =>
+    api.post('/api/employee/return/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  completeReturn: (bookingId: string, body?: {
+    returnImageIds?: string[];
+    requireManagerConfirmation?: boolean;
+  }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
+  getBookingKyc: (bookingId: string) =>
+    api.get(`/api/employee/kyc/${bookingId}`),
+  verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>
+    api.patch(`/api/employee/kyc/${kycId}/status`, { status }),
+
+  // ── remaining / advance balance collection (pickup + return) ──────────────
+  initiateRemainingPaymentPickup: (
+    bookingId: string,
+    body: { method: 'CASH' | 'ONLINE_RAZORPAY'; paidDuring: 'PICKUP' },
+  ) => api.post(`/api/employee/pickup/${bookingId}/initiate-remaining-payment`, body),
+  initiateRemainingPaymentReturn: (
+    bookingId: string,
+    body: { method: 'CASH' | 'ONLINE_RAZORPAY'; paidDuring: 'RETURN' },
+  ) => api.post(`/api/employee/return/${bookingId}/initiate-remaining-payment`, body),
+  remainingPaymentStatus: (transactionId: string) =>
+    api.get(`/api/employee/payment/remaining-status/${transactionId}`),
+
+  // ── return: charge session lifecycle ──────────────────────────────────────
+  deleteReturnImage: (publicId: string) =>
+    api.delete(`/api/employee/return/image/${publicId}`),
+  computeReturnSession: (
+    bookingId: string,
+    body: {
+      endOdometer: number;
+      returnFuelLevel?: string;
+      extraKmCharge?: number;
+      fuelCharge?: number;
+      fastagAmount?: number;
+      fastagNotes?: string;
+      otherCharges?: { label: string; amount: number }[];
+      returnImageIds?: string[];
+    },
+  ) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
+  getReturnSession: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/return/session`),
+  recordSessionPayment: (
+    sessionPublicId: string,
+    body: {
+      method: 'CASH' | 'ONLINE';
+      amount: number;
+      idempotencyKey: string;
+      notes?: string;
+      onlineTransactionRef?: string;
+      onlineGateway?: string;
+    },
+  ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
+  recordSessionRefund: (
+    sessionPublicId: string,
+    body: {
+      method: 'CASH' | 'ONLINE';
+      amount: number;
+      idempotencyKey: string;
+      notes?: string;
+    },
+  ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
+
+  // ── walk-in customer creation (phone OTP + profile) ───────────────────────
+  walkinInitiate: (phone: string) =>
+    api.post('/api/employee/walkin/initiate', { phone }),
+  walkinVerify: (customerPublicId: string, otp: string) =>
+    api.post('/api/employee/walkin/verify', { customer_public_id: customerPublicId, otp }),
+  walkinComplete: (body: {
+    customer_public_id: string;
+    name: string;
+    email: string;
+    addressLine1: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+    dob?: string;
+    alternatePhone?: string;
+  }) => api.post('/api/employee/walkin/complete', body),
+
+  // ── walk-in KYC ───────────────────────────────────────────────────────────
+  walkinKycList: (customerPublicId: string) =>
+    api.get(`/api/employee/walkin/kyc/${customerPublicId}`),
+  walkinKycUpload: (formData: FormData) =>
+    api.post('/api/employee/walkin/kyc/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  walkinKycDelete: (id: string) =>
+    api.delete('/api/employee/walkin/kyc', { data: { id } }),
+
+  // ── walk-in vehicle selection ─────────────────────────────────────────────
+  vehicleCategories: () => api.get('/api/employee/vehicles/categories'),
+  searchVehicles: (params?: {
+    search?: string;
+    category?: string;
+    sort?: 'price_low_to_high' | 'price_high_to_low';
+    start?: string;
+    end?: string;
+    limit?: number;
+    offset?: number;
+  }) => api.get('/api/employee/vehicles/search', { params }),
+  vehicleGroupDetail: (groupKey: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
+  vehicleDetail: (id: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/employee/vehicles/${id}`, { params }),
+
+  // ── walk-in booking create / hold / pay ───────────────────────────────────
+  createBooking: (body: {
+    vehicles?: string[];
+    group_key?: string;
+    customer_public_id: string;
+    customer_kyc_id: string;
+    start: string;
+    end: string;
+    payment_type: 'CASH' | 'ONLINE';
+  }) => api.post('/api/employee/booking/create', body),
+  cancelBookingHold: (holdId: string) =>
+    api.delete(`/api/employee/booking/hold/${holdId}`),
+  bookingPaymentStatus: (transactionId: string) =>
+    api.get(`/api/employee/booking/payment-status/${transactionId}`),
+
+  // ── pickup pre-delivery photos ────────────────────────────────────────────
+  pickupCaptureConfig: (bookingId: string) =>
+    api.get(`/api/employee/pickup/${bookingId}/capture-config`),
+
+  // ── damage reporting (return) ─────────────────────────────────────────────
+  uploadDamageImage: (formData: FormData) =>
+    api.post('/api/employee/damage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  reportDamage: (body: {
+    bookingId: string;
+    odo: number;
+    fuelLevel: number; // 0..100 percent
+    severity: string; // 'Minor' | 'Moderate' | 'Severe'
+    chargeType: 'PENALTY' | 'COMPENSATION';
+    damageImageIds: string[];
+    returnImageIds: string[];
+    notes?: Record<string, unknown>;
+  }) => api.post('/api/employee/damage/report', body),
+
+  // ── vehicle swap at pickup (#51) ──────────────────────────────────────────
+  // bookingId = booking publicId. AvailableVehicle.id is the NUMERIC vehicle id.
+  getAvailableVehicles: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/available-vehicles`),
+  swapVehicle: (
+    bookingId: string,
+    body: {
+      newVehicleId: number; // NUMERIC vehicle id from available-vehicles list
+      reason: 'CUSTOMER_REQUEST' | 'MAINTENANCE' | 'UPGRADE' | 'DOWNGRADE' | 'DAMAGE' | 'OTHER';
+      reasonNotes?: string;
+      markOriginalForMaintenance?: boolean;
+      originalVehicleNotes?: string; // required when markOriginalForMaintenance
+    },
+  ) => api.post(`/api/employee/bookings/${bookingId}/swap-vehicle`, body),
+
+  // ── counter discount (coupon + manual) (#52) — money fields are STRINGS ────
+  getDiscountSummary: (bookingId: string) =>
+    api.get(`/api/employee/discount/bookings/${bookingId}/discount-summary`),
+  applyDiscountCoupon: (bookingId: string, couponCode: string) =>
+    api.post(`/api/employee/discount/bookings/${bookingId}/apply-coupon`, { couponCode }),
+  removeDiscountCoupon: (bookingId: string) =>
+    api.delete(`/api/employee/discount/bookings/${bookingId}/apply-coupon`),
+  applyManualDiscount: (bookingId: string, body: { amount: number; reason: string }) =>
+    api.post(`/api/employee/discount/bookings/${bookingId}/manual-discount`, body),
+
+  // ── booking extension at counter (#53) — newEndAt MUST be ISO-8601 UTC 'Z' ─
+  evaluateExtension: (body: { bookingPublicId: string; newEndAt: string; notes?: string }) =>
+    api.post('/api/employee/extensions/evaluate', body),
+  commitExtension: (body: {
+    extensionPublicId: string;
+    resolutionType: 'SAME_VEHICLE' | 'SWAP_CURRENT_TO_OTHER' | 'SWAP_FUTURE_BOOKING' | 'PARTIAL_EXTENSION';
+    idempotencyKey: string;
+    notes?: string;
+  }) => api.post('/api/employee/extensions/commit', body),
+  collectExtension: (
+    extensionPublicId: string,
+    body: { method: 'CASH' | 'ONLINE'; onlineTransactionRef?: string },
+  ) => api.post(`/api/employee/extensions/${extensionPublicId}/collect`, body),
+
+  // ── counter payment panel (financial state + ledger + record) ─────────────
+  financialState: (bookingPublicId: string) =>
+    api.get(`/api/employee/payment/bookings/${bookingPublicId}/financial-state`),
+  bookingTransactions: (bookingPublicId: string) =>
+    api.get(`/api/employee/payment/bookings/${bookingPublicId}/transactions`),
+  recordPayment: (body: {
+    bookingPublicId: string;
+    purpose:
+      | 'ADVANCE'
+      | 'REMAINING_BALANCE'
+      | 'FULL_PAYMENT'
+      | 'EXTENSION'
+      | 'DAMAGE_FEE'
+      | 'SAFETY_DEPOSIT'
+      | 'OVERPAYMENT_REFUND'
+      | 'CANCELLATION_REFUND';
+    method: 'CASH' | 'ONLINE' | 'SPLIT';
+    totalAmount: number;
+    cashAmount?: number;
+    onlineAmount?: number;
+    onlineTransactionRef?: string;
+    onlineGateway?: string;
+    idempotencyKey: string;
+    notes?: string;
+  }) => api.post('/api/employee/payment/transactions', body),
+  // ── staging-era aliases ───────────────────────────────────────────────────
+  // Screens carried over from staging call these endpoints by different names.
+  // Aliasing is less invasive than renaming call sites in screens this merge
+  // is not otherwise touching.
+  listEmployeeVehicles: (params?: {
+    branch?: string;
+    category?: string;
+    sort?: string;
+    start?: string;
+    end?: string;
+    limit?: number;
+  }) => api.get('/api/employee/vehicles', { params }),
+  getEmployeeVehicle: (id: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/employee/vehicles/${id}`, { params }),
+  getEmployeeVehicleGroup: (groupKey: string, params?: { start?: string; end?: string }) =>
+    api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
+  getEmployeeVehicleCategories: () => api.get('/api/employee/vehicles/categories'),
+  createEmployeeBooking: (body: Record<string, unknown>) =>
+    api.post('/api/employee/booking/create', body),
+  cancelEmployeeHold: (holdId: string) =>
+    api.delete(`/api/employee/booking/hold/${holdId}`),
+  verifyRemainingPayment: (transactionId: string) =>
+    api.get(`/api/employee/payment/remaining-status/${transactionId}`),
+  verifyOnlinePayment: (transactionId: string) =>
+    api.get(`/api/payment/status/${transactionId}`),
+  uploadWalkinKyc: (formData: FormData) =>
+    api.post('/api/employee/walkin/kyc/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  getCustomerKyc: (customerPublicId: string) =>
+    api.get(`/api/employee/walkin/kyc/${customerPublicId}`),
+  deleteWalkinKyc: (publicId: string, customerPublicId: string) =>
+    api.delete('/api/employee/walkin/kyc', {
+      data: { id: publicId, customer_public_id: customerPublicId },
+    }),
+  verifyWalkinKyc: (kycPublicId: string, status: 'APPROVED' | 'REJECTED') =>
+    api.post('/api/employee/walkin/kyc/status', { fileId: kycPublicId, status }),
+
+  // ── pickup payment session (staging feature; its backend routes merged in) ─
+  initiatePickupSession: (
+    bookingId: string,
+    body: {
+      overrideRemainingBalance?: number;
+      safetyDepositAmount?: number;
+      safetyDepositReason?: string;
+      extensionPublicId?: string;
+      discountCode?: string;
+      odo?: number;
+      fuelLevel?: number;
+      pickupFuelLevel?: 'EMPTY' | 'QUARTER' | 'HALF' | 'THREE_QUARTER' | 'FULL';
+      pickupImageIds?: string[];
+      captureImages?: { fileId: string; label: string }[];
+    },
+  ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
+  getActivePickupSession: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/pickup-session`),
+  getPickupCaptureConfig: (bookingId: string) =>
+    api.get(`/api/employee/pickup/${bookingId}/capture-config`),
+  addDepositToPickupSession: (bookingId: string, body: { amount: number; reason: string }) =>
+    api.post(`/api/employee/bookings/${bookingId}/pickup-session/add-deposit`, body),
+  removeDepositFromPickupSession: (bookingId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-deposit`),
+  applyDiscountToPickupSession: (bookingId: string, body: { discountCode: string }) =>
+    api.post(`/api/employee/bookings/${bookingId}/pickup-session/apply-discount`, body),
+  removeDiscountFromPickupSession: (bookingId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
+  recordRefund: (
+    sessionPublicId: string,
+    body: { method: 'CASH' | 'ONLINE'; amount: number; idempotencyKey: string; notes?: string },
+  ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
+};
+
+// ─── discount ───────────────────────────────────────────────────────────────
 
 export interface CouponValidateBody {
   couponCode: string;
@@ -146,194 +506,4 @@ export type CouponValidateResult = CouponValidateValid | CouponValidateInvalid;
 export const discountApi = {
   validateCoupon: (body: CouponValidateBody) =>
     api.post<{ data: CouponValidateResult }>('/api/public/discount/validate', body),
-};
-
-// ─── employee ─────────────────────────────────────────────────────────────
-
-export const employeeApi = {
-  login: (email: string, password: string) =>
-    api.post('/api/employee/auth/login', { email, password }),
-  dashboardStats: () => api.get('/api/employee/dashboard/stats'),
-  getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
-  openShift: () => api.post('/api/employee/payment/shifts'),
-  closeShift: (publicId: string, body: { actualTotal: number; discrepancyExplanation?: string }) =>
-    api.post(`/api/employee/payment/shifts/${publicId}/close`, body),
-  listPickups: (params?: { date?: string }) =>
-    api.get('/api/employee/booking', { params }),
-  listReturns: (params?: { date?: string }) =>
-    api.get('/api/employee/return', { params }),
-  scanBooking: (bookingId: string) =>
-    api.get(`/api/employee/booking/${bookingId}/scan`),
-  searchCustomer: (query: string) =>
-    api.get('/api/employee/customer/search', { params: { q: query } }),
-  getCustomer: (publicId: string) =>
-    api.get(`/api/employee/customer/${publicId}`),
-  getPickupDetails: (bookingId: string) =>
-    api.get(`/api/employee/pickup/${bookingId}`),
-  uploadPickupImage: (formData: FormData) =>
-    api.post('/api/employee/pickup/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  deletePickupImage: (publicId: string) =>
-    api.delete(`/api/employee/pickup/image/${publicId}`),
-  completePickup: (bookingId: string, body: {
-    odo: number;
-    fuelLevel: number;
-    pickupImageIds?: string[];
-    requireManagerConfirmation?: boolean;
-  }) => api.post(`/api/employee/pickup/${bookingId}`, body),
-  // Pickup-flow: capture-config & session
-  getPickupCaptureConfig: (bookingId: string) =>
-    api.get(`/api/employee/pickup/${bookingId}/capture-config`),
-  initiatePickupSession: (bookingId: string, body: {
-    overrideRemainingBalance?: number;
-    safetyDepositAmount?: number;
-    safetyDepositReason?: string;
-    extensionPublicId?: string;
-    discountCode?: string;
-    odo?: number;
-    fuelLevel?: number;
-    pickupFuelLevel?: 'EMPTY' | 'QUARTER' | 'HALF' | 'THREE_QUARTER' | 'FULL';
-    pickupImageIds?: string[];
-    captureImages?: { fileId: string; label: string }[];
-  }) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
-  getActivePickupSession: (bookingId: string) =>
-    api.get(`/api/employee/bookings/${bookingId}/pickup-session`),
-  addDepositToPickupSession: (bookingId: string, body: { amount: number; reason: string }) =>
-    api.post(`/api/employee/bookings/${bookingId}/pickup-session/add-deposit`, body),
-  removeDepositFromPickupSession: (bookingId: string) =>
-    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-deposit`),
-  applyDiscountToPickupSession: (bookingId: string, body: { discountCode: string }) =>
-    api.post(`/api/employee/bookings/${bookingId}/pickup-session/apply-discount`, body),
-  removeDiscountFromPickupSession: (bookingId: string) =>
-    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
-  getReturnDetails: (bookingId: string) =>
-    api.get(`/api/employee/return/${bookingId}`),
-  uploadReturnImage: (formData: FormData) =>
-    api.post('/api/employee/return/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  completeReturn: (bookingId: string, body?: {
-    returnImageIds?: string[];
-    requireManagerConfirmation?: boolean;
-  }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
-  // Return-flow: pickup-time reference photos (shown read-only at return)
-  getPickupCaptures: (bookingId: string) =>
-    api.get(`/api/employee/return/${bookingId}/pickup-captures`),
-  // Return-flow: payment session (modern flow)
-  getReturnSession: (bookingId: string) =>
-    api.get(`/api/employee/bookings/${bookingId}/return/session`),
-  computeReturnSession: (bookingId: string, body: {
-    endOdometer: number;
-    returnFuelLevel?: string;
-    extraKmCharge?: number;
-    fuelCharge?: number;
-    fastagAmount?: number;
-    fastagNotes?: string;
-    otherCharges?: { label: string; amount: number }[];
-    returnImageIds?: string[];
-  }) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
-  // Return-flow: payment / refund recording
-  recordPayment: (sessionPublicId: string, body: {
-    method: 'CASH' | 'ONLINE';
-    amount: number;
-    idempotencyKey: string;
-    notes?: string;
-    onlineTransactionRef?: string;
-    onlineGateway?: string;
-  }) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
-  recordRefund: (sessionPublicId: string, body: {
-    method: 'CASH' | 'ONLINE';
-    amount: number;
-    idempotencyKey: string;
-    notes?: string;
-  }) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
-  // Return-flow: damage report
-  uploadDamageImage: (formData: FormData) =>
-    api.post('/api/employee/damage/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  reportDamage: (body: {
-    bookingId: string;
-    odo: number;
-    fuelLevel: number;
-    severity: string;
-    damageImageIds: string[];
-    notes: Record<string, any>;
-    returnImageIds: string[];
-  }) => api.post('/api/employee/damage/report', body),
-  getBookingKyc: (bookingId: string) =>
-    api.get(`/api/employee/kyc/${bookingId}`),
-  verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>
-    api.patch(`/api/employee/kyc/${kycId}/status`, { status }),
-
-  // ── walk-in customer onboarding ──────────────────────────────────────────
-  walkinInitiate: (body: { phone: string }) =>
-    api.post('/api/employee/walkin/initiate', body),
-  walkinVerify: (body: { customer_public_id: string; otp: string }) =>
-    api.post('/api/employee/walkin/verify', body),
-  walkinComplete: (body: {
-    customer_public_id: string;
-    name: string;
-    email: string;
-    dob?: string;
-    addressLine1: string;
-    city: string;
-    state: string;
-    country: string;
-    zipCode: string;
-    alternatePhone?: string;
-    gender?: string;
-  }) => api.post('/api/employee/walkin/complete', body),
-  uploadWalkinKyc: (formData: FormData) =>
-    api.post('/api/employee/walkin/kyc/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  deleteWalkinKyc: (publicId: string, customerPublicId: string) =>
-    api.delete('/api/employee/walkin/kyc', {
-      data: { id: publicId, customer_public_id: customerPublicId },
-    }),
-  getCustomerKyc: (customerPublicId: string) =>
-    api.get(`/api/employee/walkin/kyc/${customerPublicId}`),
-  verifyWalkinKyc: (kycPublicId: string, status: 'APPROVED' | 'REJECTED') =>
-    api.post('/api/employee/walkin/kyc/status', { fileId: kycPublicId, status }),
-
-  // ── booking-creation flow ────────────────────────────────────────────────
-  listEmployeeVehicles: (params?: {
-    search?: string;
-    category?: string;
-    sort?: 'price_low_to_high' | 'price_high_to_low';
-    start?: string;
-    end?: string;
-    limit?: number;
-    offset?: number;
-  }) => api.get('/api/employee/vehicles/search', { params }),
-  getEmployeeVehicle: (id: string, params?: { start?: string; end?: string }) =>
-    api.get(`/api/employee/vehicles/${id}`, { params }),
-  getEmployeeVehicleGroup: (
-    groupKey: string,
-    params?: { start?: string; end?: string },
-  ) =>
-    api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, {
-      params,
-    }),
-  getEmployeeVehicleCategories: () =>
-    api.get('/api/employee/vehicles/categories'),
-  createEmployeeBooking: (body: {
-    vehicles?: string[];
-    group_key?: string;
-    customer_public_id: string;
-    customer_kyc_id: string;
-    start: string;
-    end: string;
-    payment_type: 'CASH' | 'ONLINE';
-  }) => api.post('/api/employee/booking/create', body),
-  cancelEmployeeHold: (holdId: string) =>
-    api.delete(`/api/employee/booking/hold/${holdId}`),
-  verifyOnlinePayment: (transactionId: string) =>
-    api.get(`/api/payment/status/${transactionId}`),
-
-  // ── remaining-payment status polling ─────────────────────────────────────
-  verifyRemainingPayment: (transactionId: string) =>
-    api.get(`/api/employee/payment/remaining-status/${transactionId}`),
 };

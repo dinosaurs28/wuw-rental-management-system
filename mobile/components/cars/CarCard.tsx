@@ -1,8 +1,10 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Fonts } from '../../constants/colors';
+import { unitLabel, periodLabel } from '../../lib/pricing';
+import { availabilityLabel, availabilityColor } from '../../lib/availability';
+import StudioImage from './StudioImage';
+import Chip from '../ui/Chip';
 import type { Vehicle } from '../../types/api';
 
 const { width } = Dimensions.get('window');
@@ -11,72 +13,61 @@ const CARD_WIDTH = (width - 52) / 2;
 interface CarCardProps {
   vehicle: Vehicle;
   onPress?: () => void;
+  /** wider card for horizontal "recommended" rails */
+  width?: number;
 }
 
-export default function CarCard({ vehicle, onPress }: CarCardProps) {
+export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardProps) {
   const router = useRouter();
   const thumb = vehicle.images?.[0];
   const handlePress = onPress ?? (() => router.push(`/vehicle/${vehicle.publicId}`));
-  const available = vehicle.availableCount ?? 0;
-  const price = vehicle.pricing?.daily;
+
+  // Per-period headline RATE (priceInfo.price) + matching unit; total lives on detail.
+  // A 0 rate means "unpriced" (no custom/branch-default rate) → show the em-dash, not "₹0".
+  const rawPrice = vehicle.priceInfo?.price ?? vehicle.pricing?.daily ?? null;
+  const price = rawPrice && rawPrice > 0 ? rawPrice : null;
+  const priceUnit = vehicle.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/ day';
+  const badge = vehicle.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
+  const availLabel = availabilityLabel(vehicle.availableCount);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.92}>
-      {/* Photo hero */}
-      <View style={styles.photoContainer}>
-        {thumb ? (
-          <Image source={{ uri: thumb }} style={styles.photo} resizeMode="contain" />
-        ) : (
-          <View style={styles.placeholder}>
-            <Ionicons name="car-sport-outline" size={40} color="rgba(0,0,0,0.12)" />
-          </View>
-        )}
-
-        {/* Gradient mask for legible overlay text */}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.0)', 'rgba(0,0,0,0.72)']}
-          locations={[0, 0.45, 1]}
-          style={styles.gradient}
-          pointerEvents="none"
-        />
-
-        {/* Availability indicator — top right */}
-        {available > 0 && (
-          <View style={styles.availBadge}>
-            <View style={styles.availDot} />
-            <Text style={styles.availText}>{available}</Text>
-          </View>
-        )}
-
-        {/* Title overlay — bottom left */}
-        <View style={styles.titleOverlay}>
-          <Text style={styles.makeLabel} numberOfLines={1}>
-            {vehicle.make?.toUpperCase()}
-          </Text>
-          <Text style={styles.modelLabel} numberOfLines={1}>
-            {vehicle.model}
-          </Text>
+    <TouchableOpacity
+      style={[styles.card, { width: cardWidth ?? CARD_WIDTH }]}
+      onPress={handlePress}
+      activeOpacity={0.9}
+    >
+      <StudioImage uri={thumb} height={128} radius={0} contain={false} scrim>
+        <View style={styles.imgTop}>
+          {vehicle.category ? <Chip label={vehicle.category} variant="glass" /> : <View />}
         </View>
-      </View>
+        {badge ? (
+          <View style={styles.imgBottom}>
+            <Chip label={badge} variant="glass" />
+          </View>
+        ) : null}
+      </StudioImage>
 
-      {/* Editorial price footer */}
-      <View style={styles.footer}>
-        <View style={styles.priceWrap}>
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>
+          {vehicle.make} {vehicle.model}
+        </Text>
+
+        {availLabel ? (
+          <View style={styles.availRow}>
+            <View style={[styles.dot, { backgroundColor: availabilityColor(vehicle.availableCount) }]} />
+            <Text style={styles.avail}>{availLabel}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.priceRow}>
           {price != null ? (
-            <>
-              <Text style={styles.priceCurrency}>₹</Text>
-              <Text style={styles.priceAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-                {price.toLocaleString('en-IN')}
-              </Text>
-              <Text style={styles.priceUnit} numberOfLines={1}>/day</Text>
-            </>
+            <Text style={styles.price}>
+              ₹{price.toLocaleString('en-IN')}
+              <Text style={styles.unit}> {priceUnit}</Text>
+            </Text>
           ) : (
-            <Text style={styles.priceAmount}>—</Text>
+            <Text style={styles.price}>—</Text>
           )}
-        </View>
-
-        <View style={styles.arrowBtn}>
-          <Ionicons name="arrow-forward" size={12} color={Colors.ink} />
         </View>
       </View>
     </TouchableOpacity>
@@ -85,137 +76,34 @@ export default function CarCard({ vehicle, onPress }: CarCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
+    backgroundColor: Colors.cardDark,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.hairline,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.04,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-      },
-      android: { elevation: 1 },
-    }),
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  photoContainer: {
-    position: 'relative',
-    height: 158,
-    overflow: 'hidden',
-    backgroundColor: '#f6f6f4',
-  },
-  photo: { width: '100%', height: '100%' },
-  placeholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0ee',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-
-  // Availability badge — glassy, top-right
-  availBadge: {
+  imgTop: {
     position: 'absolute',
     top: 8,
+    left: 8,
     right: 8,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
-  availDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#22c55e',
-  },
-  availText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
-    color: Colors.ink,
-    letterSpacing: 0.2,
-  },
-
-  // Title overlay on photo
-  titleOverlay: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 10,
-  },
-  makeLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.78)',
-    letterSpacing: 1.4,
-    marginBottom: 2,
-  },
-  modelLabel: {
-    fontFamily: Fonts.displayBold,
-    fontSize: 18,
-    color: Colors.white,
-    letterSpacing: -0.4,
-    lineHeight: 22,
-  },
-
-  // Footer
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 6,
+    alignItems: 'flex-start',
   },
-  priceWrap: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flex: 1,
-    minWidth: 0,
-  },
-  priceCurrency: {
-    fontFamily: Fonts.display,
-    fontSize: 12,
-    color: Colors.ink2,
-    marginRight: 1,
-  },
-  priceAmount: {
+  imgBottom: { position: 'absolute', bottom: 8, left: 8 },
+  info: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 5 },
+  name: {
     fontFamily: Fonts.displayBold,
-    fontSize: 19,
-    color: Colors.ink,
-    letterSpacing: -0.6,
-    lineHeight: 22,
-    flexShrink: 1,
+    fontSize: 14,
+    color: Colors.white,
+    letterSpacing: -0.2,
+    textTransform: 'uppercase',
   },
-  priceUnit: {
-    fontFamily: Fonts.body,
-    fontSize: 10,
-    color: Colors.ink3,
-    marginLeft: 2,
-  },
-  arrowBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 999,
-    backgroundColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
+  availRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  avail: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.onDarkMuted },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 2 },
+  price: { fontFamily: Fonts.displayBold, fontSize: 16, color: Colors.white, letterSpacing: -0.3 },
+  unit: { fontFamily: Fonts.body, fontSize: 11, color: Colors.onDarkMuted },
 });

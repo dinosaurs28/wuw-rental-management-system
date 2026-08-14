@@ -7,15 +7,47 @@ import { Colors, Fonts } from '../../constants/colors';
 
 type StepIcon = React.ComponentProps<typeof Ionicons>['name'];
 const STEPS: { icon: StepIcon; title: string; desc: string }[] = [
-  { icon: 'document-text-outline', title: 'Check your trips',      desc: 'View full details in My Trips.' },
-  { icon: 'call-outline',          title: 'Host will contact you', desc: 'Expect a message before pickup.' },
-  { icon: 'key-outline',           title: 'Pickup',               desc: 'Bring your license on the day.' },
+  { icon: 'document-text-outline', title: 'Check your booking',  desc: 'Full details are saved in My Trips.' },
+  { icon: 'card-outline',          title: 'Verify your licence', desc: 'Add your driving licence ahead of pickup day.' },
+  { icon: 'key-outline',           title: 'Collect your car',    desc: 'Bring your driving licence on pickup day.' },
 ];
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDateTime(iso?: string) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}, ${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+function inr(v?: string) {
+  const n = Number(v);
+  return Number.isFinite(n) && v !== '' && v != null ? `₹${n.toLocaleString('en-IN')}` : null;
+}
 
 export default function Confirmation() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { holdId } = useLocalSearchParams<{ holdId?: string }>();
+  const { holdId, make, model, start, end, total, deposit, payNow, remaining, flow, coupon } =
+    useLocalSearchParams<{
+      holdId?: string;
+      make?: string;
+      model?: string;
+      start?: string;
+      end?: string;
+      total?: string;
+      deposit?: string;
+      payNow?: string;
+      remaining?: string;
+      flow?: string;
+      coupon?: string;
+    }>();
+
+  const isAdvance = flow === 'ADVANCE' && Number(remaining) > 0;
+  const vehicleName = [make, model].filter(Boolean).join(' ');
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -24,8 +56,8 @@ export default function Confirmation() {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Success illustration */}
-        <LinearGradient colors={['#fff3ec', '#ffe8db']} style={styles.illustration}>
+        {/* Success illustration — green check (universal "confirmed") */}
+        <LinearGradient colors={['#eafaf0', '#d7f5e3']} style={styles.illustration}>
           <View style={styles.checkCircle}>
             <Ionicons name="checkmark" size={36} color={Colors.white} />
           </View>
@@ -37,8 +69,37 @@ export default function Confirmation() {
           <Text style={styles.titleAccent}>set.</Text>
         </Text>
         <Text style={styles.subtitle}>
-          Your booking is confirmed. The host will get in touch shortly.
+          Your reservation is confirmed — all the details are saved in My Trips.
         </Text>
+
+        {/* Booking summary */}
+        {(vehicleName || holdId) && (
+          <View style={styles.summaryCard}>
+            {vehicleName ? <Text style={styles.summaryVehicle}>{vehicleName}</Text> : null}
+            {(start || end) && (
+              <View style={styles.summaryDates}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.ink3} />
+                <Text style={styles.summaryDatesText}>
+                  {fmtDateTime(start)}{end ? `  →  ${fmtDateTime(end)}` : ''}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.summaryDivider} />
+
+            {coupon ? (
+              <SummaryRow label="Coupon applied" value={coupon} accent />
+            ) : null}
+            {inr(deposit) ? <SummaryRow label="Deposit (refundable)" value={inr(deposit)!} /> : null}
+            {inr(total) ? <SummaryRow label="Booking total" value={inr(total)!} /> : null}
+            {inr(payNow) ? (
+              <SummaryRow label={isAdvance ? 'Paid now (advance)' : 'Paid'} value={inr(payNow)!} bold />
+            ) : null}
+            {isAdvance && inr(remaining) ? (
+              <SummaryRow label="Due at pickup" value={inr(remaining)!} />
+            ) : null}
+          </View>
+        )}
 
         {/* Booking reference */}
         {holdId && (
@@ -91,8 +152,37 @@ export default function Confirmation() {
   );
 }
 
+function SummaryRow({ label, value, bold, accent }: { label: string; value: string; bold?: boolean; accent?: boolean }) {
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={styles.summaryRowLabel}>{label}</Text>
+      <Text style={[styles.summaryRowValue, bold && styles.summaryRowValueBold, accent && styles.summaryRowValueAccent]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
+
+  summaryCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  summaryVehicle: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
+  summaryDates: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  summaryDatesText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  summaryDivider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 14 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
+  summaryRowLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
+  summaryRowValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
+  summaryRowValueBold: { fontFamily: Fonts.displayBold, fontSize: 17, color: Colors.ink, letterSpacing: -0.3 },
+  summaryRowValueAccent: { color: Colors.orange, fontFamily: Fonts.bodySemiBold },
 
   scroll: { paddingHorizontal: 24, paddingBottom: 24 },
 
@@ -108,7 +198,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.orange,
+    backgroundColor: Colors.availGood,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.black,

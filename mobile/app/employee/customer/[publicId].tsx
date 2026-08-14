@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 
 interface CustomerDetail {
   name: string;
@@ -41,6 +42,8 @@ export default function CustomerDetailScreen() {
   const { publicId } = useLocalSearchParams<{ publicId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const resetBooking = useEmployeeBookingStore((s) => s.reset);
+  const setBookingCustomer = useEmployeeBookingStore((s) => s.setCustomer);
 
   const { data: customer, isLoading, isError } = useQuery<CustomerDetail>({
     queryKey: ['employee', 'customer', publicId],
@@ -52,6 +55,13 @@ export default function CustomerDetailScreen() {
     staleTime: 60_000,
     retry: false,
   });
+
+  const startBooking = () => {
+    if (!customer) return;
+    resetBooking();
+    setBookingCustomer({ publicId: publicId as string, name: customer.name, phone: customer.phone ?? null });
+    router.push('/employee/booking/vehicles');
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -144,22 +154,24 @@ export default function CustomerDetailScreen() {
               </View>
             </View>
           )}
-
-          <TouchableOpacity
-            style={styles.startBookingBtn}
-            onPress={() =>
-              router.push(
-                `/employee/booking/customer-select?customerPublicId=${publicId}` as any,
-              )
-            }
-            activeOpacity={0.9}
-          >
-            <Ionicons name="add-circle-outline" size={18} color={Colors.white} />
-            <Text style={styles.startBookingBtnText}>Start new booking</Text>
-            <Ionicons name="arrow-forward" size={16} color={Colors.white} />
-          </TouchableOpacity>
         </ScrollView>
       ) : null}
+
+      {customer && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+          {customer.isProfileCompleted ? (
+            <TouchableOpacity style={styles.bookBtn} onPress={startBooking} activeOpacity={0.85}>
+              <Ionicons name="add-circle-outline" size={20} color={Colors.white} />
+              <Text style={styles.bookBtnText}>Create booking for this customer</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.footerNote}>
+              <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
+              <Text style={styles.footerNoteText}>Profile incomplete — cannot create a booking.</Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -227,22 +239,32 @@ const styles = StyleSheet.create({
   infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink, flex: 1, textAlign: 'right', marginLeft: 16 },
   divider: { height: 1, backgroundColor: Colors.hairline },
 
-  startBookingBtn: {
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: Colors.bg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
+  bookBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: Colors.orange,
-    borderRadius: 14,
-    paddingVertical: 15,
-    marginTop: 12,
+    borderRadius: 16,
+    paddingVertical: 17,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  startBookingBtnText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 15,
-    color: Colors.white,
-    letterSpacing: 0.2,
-    flex: 1,
-    textAlign: 'center',
-  },
+  bookBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  footerNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  footerNoteText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
 });

@@ -21,7 +21,10 @@ interface ActiveShift {
   publicId: string;
   status: string;
   openedAt: string;
+  expectedTotal?: number | string;
 }
+
+const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', {
@@ -40,6 +43,7 @@ export default function CloseShift() {
   const [explanation, setExplanation] = useState('');
   const [done, setDone] = useState(false);
   const [resultMsg, setResultMsg] = useState('');
+  const [closeResult, setCloseResult] = useState<{ discrepancy?: number; status?: string }>({});
 
   const { data: shift, isLoading: shiftLoading } = useQuery<ActiveShift | null>({
     queryKey: ['employee', 'active-shift'],
@@ -60,12 +64,22 @@ export default function CloseShift() {
     },
     onSuccess: (res) => {
       setResultMsg(res.data?.message ?? 'Shift closed successfully');
+      const d = res.data?.data ?? {};
+      setCloseResult({
+        discrepancy: d.discrepancy != null ? Number(d.discrepancy) : undefined,
+        status: d.status,
+      });
       setDone(true);
       qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
     },
   });
 
   const isValid = actualTotal.trim() !== '' && !isNaN(parseFloat(actualTotal)) && parseFloat(actualTotal) >= 0;
+  const expected = shift?.expectedTotal != null ? Number(shift.expectedTotal) : null;
+  // Backend requires a discrepancyExplanation whenever counted cash != expected.
+  const hasDiscrepancy = isValid && expected != null && parseFloat(actualTotal) !== expected;
+  const explanationRequired = hasDiscrepancy && explanation.trim() === '';
+  const canSubmit = isValid && !!shift && !mutation.isPending && !explanationRequired;
 
   if (done) {
     return (
@@ -79,6 +93,20 @@ export default function CloseShift() {
           </View>
           <Text style={styles.successTitle}>Shift Closed</Text>
           <Text style={styles.successSub}>{resultMsg}</Text>
+          {closeResult.discrepancy != null && (
+            <View style={[styles.discrepancyBox, closeResult.status === 'DISCREPANCY_FLAGGED' && styles.discrepancyBoxFlagged]}>
+              <Ionicons
+                name={closeResult.status === 'DISCREPANCY_FLAGGED' ? 'alert-circle' : 'checkmark-circle-outline'}
+                size={18}
+                color={closeResult.status === 'DISCREPANCY_FLAGGED' ? '#d97706' : '#10b981'}
+              />
+              <Text style={styles.discrepancyText}>
+                {closeResult.discrepancy === 0
+                  ? 'Cash matched the expected total exactly.'
+                  : `Discrepancy of ${inr(Math.abs(closeResult.discrepancy))} (${closeResult.discrepancy > 0 ? 'over' : 'short'})${closeResult.status === 'DISCREPANCY_FLAGGED' ? ' — flagged for reconciliation.' : '.'}`}
+              </Text>
+            </View>
+          )}
         </View>
         <TouchableOpacity
           style={styles.doneBtn}
@@ -132,12 +160,21 @@ export default function CloseShift() {
               <Ionicons name="key-outline" size={15} color={Colors.ink3} />
               <Text style={styles.shiftInfoText}>{shift.publicId.slice(-8).toUpperCase()}</Text>
             </View>
+            {expected != null && (
+              <View style={styles.shiftInfoRow}>
+                <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.shiftInfoText}>Expected cash: {inr(expected)}</Text>
+              </View>
+            )}
           </View>
         )}
 
         {/* Actual total input */}
         <View style={styles.fieldBlock}>
           <Text style={styles.fieldLabel}>Actual Cash in Hand (₹)</Text>
+          {expected != null && (
+            <Text style={styles.expectedHint}>System expects {inr(expected)} in the drawer</Text>
+          )}
           <View style={[styles.amountWrap, !isValid && actualTotal ? styles.amountWrapError : null]}>
             <Text style={styles.rupeeSymbol}>₹</Text>
             <TextInput
@@ -154,9 +191,11 @@ export default function CloseShift() {
 
         {/* Notes */}
         <View style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>Notes / Explanation (optional)</Text>
+          <Text style={styles.fieldLabel}>
+            {hasDiscrepancy ? 'Notes / Explanation (required — cash differs from expected)' : 'Notes / Explanation (optional)'}
+          </Text>
           <TextInput
-            style={styles.notesInput}
+            style={[styles.notesInput, explanationRequired && styles.notesInputError]}
             placeholder="Explain any discrepancy..."
             placeholderTextColor={Colors.ink4}
             value={explanation}
@@ -165,6 +204,9 @@ export default function CloseShift() {
             numberOfLines={4}
             textAlignVertical="top"
           />
+          {explanationRequired && (
+            <Text style={styles.fieldHint}>An explanation is required when the counted cash doesn’t match the expected total.</Text>
+          )}
         </View>
 
         {mutation.isError && (
@@ -180,9 +222,9 @@ export default function CloseShift() {
       {/* Bottom CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={[styles.closeBtn, (!isValid || !shift || mutation.isPending) && styles.closeBtnDisabled]}
+          style={[styles.closeBtn, !canSubmit && styles.closeBtnDisabled]}
           onPress={() => mutation.mutate()}
-          disabled={!isValid || !shift || mutation.isPending}
+          disabled={!canSubmit}
           activeOpacity={0.85}
         >
           {mutation.isPending ? (
@@ -258,6 +300,19 @@ const styles = StyleSheet.create({
     color: Colors.ink2,
     letterSpacing: 0.2,
   },
+  expectedHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: -2 },
+  discrepancyBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#10b98112',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  discrepancyBoxFlagged: { backgroundColor: '#f59e0b15' },
+  discrepancyText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2, lineHeight: 18 },
   amountWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -294,6 +349,8 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     minHeight: 100,
   },
+  notesInputError: { borderColor: '#e53e3e' },
+  fieldHint: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e', marginTop: 6 },
 
   errorBox: {
     flexDirection: 'row',

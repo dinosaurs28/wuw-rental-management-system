@@ -1,162 +1,104 @@
-import {
-  Alert,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
-
-const ADDRESS_LINE_1 = 'No. 16, Anath Nagar 1st Stage,';
-const ADDRESS_LINE_2 = 'Near Syndicate Circle';
-const ADDRESS_CITY = 'Manipal - 576104';
-const PHONE_PRIMARY = '+918000800469';
-const PHONE_SECONDARY = '+918000800468';
-const HOURS_LABEL = 'All Days of the Week';
-const HOURS_VALUE = '8:00 AM – 11:00 PM';
-const MAPS_QUERY = 'What U Want Rentals, Manipal';
-
-const WHATSAPP_NUMBER = (process.env.EXPO_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\D/g, '');
+import { CONTACT, whatsappUrl } from '../constants/links';
+import WhatsAppSupportButton from '../components/ui/WhatsAppSupportButton';
+import { useWhatsAppConfig } from '../hooks/useWhatsAppConfig';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-async function openLink(url: string) {
-  try {
-    await Linking.openURL(url);
-  } catch {
-    Alert.alert('Unable to open', 'Please try again later.');
-  }
-}
-
-function ContactCard({
+function Row({
   icon,
-  iconBg,
-  iconColor,
   label,
-  title,
-  subtitle,
+  value,
   onPress,
-  cta,
 }: {
   icon: IoniconName;
-  iconBg?: string;
-  iconColor?: string;
   label: string;
-  title: string;
-  subtitle?: string;
+  value: string;
   onPress?: () => void;
-  cta?: string;
 }) {
-  const Wrap: any = onPress ? TouchableOpacity : View;
   return (
-    <Wrap
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
-      <View style={[styles.cardIcon, { backgroundColor: iconBg ?? Colors.black }]}>
-        <Ionicons name={icon} size={18} color={iconColor ?? Colors.white} />
+    <TouchableOpacity style={styles.row} onPress={onPress} disabled={!onPress} activeOpacity={0.8}>
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon} size={18} color={Colors.orange} />
       </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.cardLabel}>{label}</Text>
-        <Text style={styles.cardTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.cardSubtitle}>{subtitle}</Text> : null}
-        {cta ? (
-          <View style={styles.ctaPill}>
-            <Text style={styles.ctaPillText}>{cta}</Text>
-          </View>
-        ) : null}
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue}>{value}</Text>
       </View>
-      {onPress ? (
-        <Ionicons name="chevron-forward" size={16} color={Colors.ink3} />
-      ) : null}
-    </Wrap>
+      {onPress && <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />}
+    </TouchableOpacity>
   );
 }
 
-export default function ContactScreen() {
+export default function Contact() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const handleWhatsApp = async () => {
-    if (!WHATSAPP_NUMBER) {
-      Alert.alert('WhatsApp not configured');
-      return;
-    }
-    const text = encodeURIComponent('Hi, I need help with my booking');
-    const appUrl = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${text}`;
-    const webUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
-    try {
-      const supported = await Linking.canOpenURL(appUrl);
-      await Linking.openURL(supported ? appUrl : webUrl);
-    } catch {
-      Alert.alert('Unable to open WhatsApp');
-    }
-  };
-
-  const handleMaps = () => {
-    const q = encodeURIComponent(MAPS_QUERY);
-    const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
-    openLink(url);
-  };
+  const { data: waConfig } = useWhatsAppConfig();
+  const waEnabled = !!waConfig && waConfig.isEnabled && !!waConfig.phoneNumber;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Get in touch</Text>
+        <Text style={styles.headerTitle}>Help & Contact</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          We're here to help. Reach out for bookings, inquiries, or anything else.
-        </Text>
+        <Text style={styles.intro}>We're here to help. Reach {CONTACT.businessName} any day of the week.</Text>
 
-        <ContactCard
-          icon="location-outline"
-          label="Location"
-          title={`${ADDRESS_LINE_1}\n${ADDRESS_LINE_2}`}
-          subtitle={ADDRESS_CITY}
-          onPress={handleMaps}
-          cta="Open in Maps"
-        />
+        <Text style={styles.sectionTitle}>Get in touch</Text>
+        <View style={styles.card}>
+          {CONTACT.phones.map((p, i) => (
+            <Row
+              key={p.tel}
+              icon="call-outline"
+              label={i === 0 ? 'Call us' : 'Alternate line'}
+              value={p.display}
+              onPress={() => Linking.openURL(p.tel)}
+            />
+          ))}
+        </View>
 
-        <ContactCard
-          icon="call-outline"
-          label="Phone"
-          title={PHONE_PRIMARY}
-          subtitle={PHONE_SECONDARY}
-          onPress={() => openLink(`tel:${PHONE_PRIMARY}`)}
-        />
+        <View style={{ marginTop: 12 }}>
+          {waEnabled ? (
+            <WhatsAppSupportButton label="Chat with us on WhatsApp" />
+          ) : (
+            <View style={styles.card}>
+              <Row
+                icon="logo-whatsapp"
+                label="WhatsApp"
+                value="Chat with us on WhatsApp"
+                onPress={() => Linking.openURL(whatsappUrl(CONTACT.whatsappFallback))}
+              />
+            </View>
+          )}
+        </View>
 
-        <ContactCard
-          icon="logo-whatsapp"
-          iconBg="#25D366"
-          iconColor={Colors.white}
-          label="WhatsApp"
-          title={WHATSAPP_NUMBER ? 'Chat with us on WhatsApp' : 'WhatsApp not configured'}
-          subtitle={WHATSAPP_NUMBER ? 'Quick replies during business hours' : undefined}
-          onPress={WHATSAPP_NUMBER ? handleWhatsApp : undefined}
-          cta={WHATSAPP_NUMBER ? 'Open WhatsApp' : undefined}
-        />
+        <Text style={styles.sectionTitle}>Visit us</Text>
+        <View style={styles.card}>
+          <Row
+            icon="location-outline"
+            label="Address"
+            value={`${CONTACT.address.line1} ${CONTACT.address.line2}, ${CONTACT.address.cityPin}`}
+            onPress={() => Linking.openURL(CONTACT.map.url)}
+          />
+          <Row icon="time-outline" label={CONTACT.hours.days} value={CONTACT.hours.time} />
+        </View>
 
-        <ContactCard
-          icon="time-outline"
-          label="Business Hours"
-          title={HOURS_VALUE}
-          subtitle={HOURS_LABEL}
-        />
+        <TouchableOpacity style={styles.mapBtn} onPress={() => Linking.openURL(CONTACT.map.url)} activeOpacity={0.85}>
+          <Ionicons name="map-outline" size={18} color={Colors.white} />
+          <Text style={styles.mapBtnText}>Open in Maps</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -172,73 +114,56 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.hairline,
-    backgroundColor: Colors.bg,
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    color: Colors.ink,
-    letterSpacing: -0.3,
-  },
-  scroll: { paddingHorizontal: 20, paddingTop: 20, gap: 12 },
-  intro: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.ink3,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardBody: { flex: 1, gap: 2 },
-  cardLabel: {
+  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontFamily: Fonts.display, fontSize: 18, color: Colors.ink, letterSpacing: -0.3 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16 },
+  intro: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3, lineHeight: 21, marginBottom: 8 },
+  sectionTitle: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 11,
     color: Colors.ink3,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 4,
+    marginTop: 24,
+    marginBottom: 10,
   },
-  cardTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 15,
-    color: Colors.ink,
-    lineHeight: 20,
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.hairline,
   },
-  cardSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 13,
-    color: Colors.ink3,
-    marginTop: 2,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
-  ctaPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.black,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginTop: 10,
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Colors.orangeSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ctaPillText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.white,
+  rowText: { flex: 1 },
+  rowLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginBottom: 2 },
+  rowValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    backgroundColor: Colors.ink,
+    borderRadius: 14,
+    paddingVertical: 15,
   },
+  mapBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
 });

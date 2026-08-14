@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,6 +17,12 @@ import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
 
 type Tab = 'pickups' | 'returns';
+
+// Local YYYY-MM-DD (the employee list endpoints filter by calendar day).
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface BookingItem {
   publicId: string;
@@ -99,6 +106,24 @@ export default function BookingsQueue() {
   const insets = useSafeAreaInsets();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<Tab>(tab === 'returns' ? 'returns' : 'pickups');
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const dateParam = ymd(selectedDate);
+
+  // Date strip: 3 days back → 13 days ahead (covers overdue returns + upcoming pickups).
+  const dateOptions = useMemo(() => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    return Array.from({ length: 17 }, (_, i) => {
+      const d = new Date(base);
+      d.setDate(base.getDate() - 3 + i);
+      return d;
+    });
+  }, []);
+  const todayStr = ymd(new Date());
 
   const {
     data: pickups,
@@ -106,10 +131,10 @@ export default function BookingsQueue() {
     refetch: refetchPickups,
     isError: pickupsError,
   } = useQuery<BookingItem[]>({
-    queryKey: ['employee', 'pickups'],
+    queryKey: ['employee', 'pickups', dateParam],
     queryFn: async () => {
       try {
-        const res = await employeeApi.listPickups();
+        const res = await employeeApi.listPickups({ date: dateParam });
         return (res.data?.data ?? []) as BookingItem[];
       } catch (err: any) {
         if (err.response?.status === 404) return [];
@@ -126,10 +151,10 @@ export default function BookingsQueue() {
     refetch: refetchReturns,
     isError: returnsError,
   } = useQuery<BookingItem[]>({
-    queryKey: ['employee', 'returns'],
+    queryKey: ['employee', 'returns', dateParam],
     queryFn: async () => {
       try {
-        const res = await employeeApi.listReturns();
+        const res = await employeeApi.listReturns({ date: dateParam });
         return (res.data?.data ?? []) as BookingItem[];
       } catch (err: any) {
         if (err.response?.status === 404) return [];
@@ -187,6 +212,32 @@ export default function BookingsQueue() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Date selector */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.dateStrip}
+      >
+        {dateOptions.map((d) => {
+          const ds = ymd(d);
+          const active = ds === dateParam;
+          const isToday = ds === todayStr;
+          return (
+            <TouchableOpacity
+              key={ds}
+              style={[styles.dateChip, active && styles.dateChipActive]}
+              onPress={() => setSelectedDate(d)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.dateChipDow, active && styles.dateChipTextActive]}>
+                {isToday ? 'Today' : WEEKDAYS[d.getDay()]}
+              </Text>
+              <Text style={[styles.dateChipNum, active && styles.dateChipTextActive]}>{d.getDate()}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* List */}
       {isLoading ? (
@@ -262,6 +313,22 @@ const styles = StyleSheet.create({
   tabActive: { borderColor: Colors.orange, backgroundColor: '#ff6a1f0d' },
   tabText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink3 },
   tabTextActive: { color: Colors.orange },
+
+  dateStrip: { paddingHorizontal: 20, gap: 8, paddingBottom: 14 },
+  dateChip: {
+    width: 52,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    alignItems: 'center',
+    gap: 2,
+  },
+  dateChipActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  dateChipDow: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.ink3, letterSpacing: 0.3 },
+  dateChipNum: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
+  dateChipTextActive: { color: Colors.white },
 
   list: { paddingHorizontal: 20, paddingBottom: 100, gap: 10 },
 

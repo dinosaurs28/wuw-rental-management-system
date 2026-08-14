@@ -8,6 +8,10 @@ import {
   generateOTP,
   verifyOTP,
 } from "../../controller/auth/email-verify.controller.js";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../../controller/auth/password-reset.controller.js";
 import passport from "../../utils/passport/google.js";
 import { googleSignIn } from "../../controller/auth/google.controller.js";
 import { googleMobileSignIn } from "../../controller/auth/google-mobile.controller.js";
@@ -26,6 +30,8 @@ router.post("/email/signup", emailAuthController);
 router.post("/forgot-password", makeForgotPasswordController("auth"));
 router.post("/reset-password", resetPasswordController);
 router.post("/email/signin", emailAuthControllerSignin);
+router.post("/email/forgot-password", forgotPassword);
+router.post("/email/reset-password", resetPassword);
 router.route("/email/verify-otp").post(generateOTP);
 router.post("/email/verify-otp/code", verifyOTP);
 router.get(

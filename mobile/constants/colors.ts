@@ -10,6 +10,27 @@ export const Colors = {
   ink3: '#8a8a8a',
   ink4: '#c8c8c8',
   hairline: 'rgba(0,0,0,0.08)',
+
+  // Cinematic "studio" surfaces — near-black panels behind vehicle imagery.
+  cardDark: '#101217',
+  cardDarkElevated: '#1a1d24',
+  // Full dark-theme screens (home / offers / vehicle detail).
+  bgDark: '#0e0f13',
+  surfaceDark: '#1b1e24',
+  hairlineOnDark: 'rgba(255,255,255,0.10)',
+  // Hairline + chip surfaces drawn over dark imagery (glass effect).
+  glass: 'rgba(255,255,255,0.12)',
+  glassHairline: 'rgba(255,255,255,0.18)',
+  onDark: 'rgba(255,255,255,0.92)',
+  onDarkMuted: 'rgba(255,255,255,0.62)',
+
+  // Availability / status semantics (consolidated from scattered inline hexes).
+  availGood: '#2d9d61',
+  availLow: '#d97706',
+  availNone: '#e53e3e',
+  availGoodSoft: '#e8f5ee',
+  availLowSoft: '#fef3c7',
+  availNoneSoft: '#fde8e8',
 } as const;
 
 export const Fonts = {

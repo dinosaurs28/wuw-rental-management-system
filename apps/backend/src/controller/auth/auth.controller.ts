@@ -86,6 +86,14 @@ export const emailAuthControllerSignin = async (
         email: emailower,
       },
     });
+    // A deleted account keeps its row (financial records reference it) but must
+    // never authenticate again. Its email is tombstoned, so this is defence in
+    // depth rather than the primary gate.
+    if (response?.deletedAt) {
+      return res.status(StatusCode.NOT_FOUND).json({
+        message: "This email address is not registered.",
+      });
+    }
     if (!response || !response.passwordHash) {
       auditService.log({
         actorName: "Unknown",

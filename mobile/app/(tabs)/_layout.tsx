@@ -1,45 +1,39 @@
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, Fonts } from '../../constants/colors';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: { name: string; icon: IoniconName }[] = [
-  { name: 'index',   icon: 'grid-outline' },
-  { name: 'trips',   icon: 'car-outline' },
-  { name: 'saved',   icon: 'heart-outline' },
-  { name: 'profile', icon: 'person-outline' },
+const TABS: { name: string; label: string; icon: IoniconName }[] = [
+  { name: 'index',   label: 'Rent',    icon: 'car-outline' },
+  { name: 'trips',   label: 'Trips',   icon: 'map-outline' },
+  { name: 'saved',   label: 'Saved',   icon: 'heart-outline' },
+  { name: 'profile', label: 'Profile', icon: 'person-outline' },
 ];
 
-function TabIcon({ focused, icon }: { focused: boolean; icon: IoniconName }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Ionicons
-        name={icon}
-        size={22}
-        color={focused ? Colors.orange : Colors.ink3}
-      />
-    </View>
-  );
-}
-
+// Sixt-style dark tab bar: labelled tabs, orange active tint.
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarActiveTintColor: Colors.orange,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.55)',
         tabBarStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: '#15161a',
           borderTopWidth: 1,
-          borderTopColor: Colors.hairline,
-          height: Platform.OS === 'ios' ? 84 : 64,
+          borderTopColor: 'rgba(255,255,255,0.08)',
+          height: Platform.OS === 'ios' ? 88 : 68,
           elevation: 0,
           shadowOpacity: 0,
         },
         tabBarItemStyle: {
-          paddingVertical: 6,
+          paddingVertical: 8,
+        },
+        tabBarLabelStyle: {
+          fontFamily: Fonts.bodyMedium,
+          fontSize: 12,
         },
       }}
     >
@@ -48,25 +42,11 @@ export default function TabLayout() {
           key={tab.name}
           name={tab.name}
           options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon focused={focused} icon={tab.icon} />
-            ),
+            title: tab.label,
+            tabBarIcon: ({ color }) => <Ionicons name={tab.icon} size={23} color={color} />,
           }}
         />
       ))}
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  iconWrap: {
-    width: 48,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: '#ff6a1f14',
-  },
-});

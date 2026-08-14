@@ -32,7 +32,28 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
 });
 
+// Account deletion (Google Play "Data deletion" policy requirement).
+// `password` is only required for PASSWORD-provider accounts — Google-linked
+// accounts have no passwordHash, so the typed confirmation is the sole gate.
+export const deleteAccountSchema = z.object({
+  confirmText: z.literal("DELETE", {
+    errorMap: () => ({ message: 'Type DELETE exactly to confirm' }),
+  }),
+  password: z.string().min(1, "Password is required").optional(),
+});
+
+// There are two reset mechanisms, because the two clients have different
+// constraints. The web sends an emailed link carrying a single-use token
+// (POST /auth/reset-password, all roles). The mobile app can't rely on a
+// browser hand-off, so it verifies a 6-digit code instead
+// (POST /auth/email/reset-password, customers only).
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
+  password: passwordRule,
+});
+
+export const resetPasswordWithOtpSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  otp: otpSchema.shape.otp,
   password: passwordRule,
 });

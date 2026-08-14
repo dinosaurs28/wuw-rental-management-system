@@ -59,7 +59,7 @@ export default function WalkinInitiate() {
 
     setSending(true);
     try {
-      const res = await employeeApi.walkinInitiate({ phone: cleaned });
+      const res = await employeeApi.walkinInitiate(cleaned);
       setCustomerPublicId(res.data.customer_public_id);
       setReceivedOtp(res.data.otp ? String(res.data.otp) : null);
       setOtpSent(true);
@@ -93,7 +93,7 @@ export default function WalkinInitiate() {
     setOtpError(null);
     setVerifying(true);
     try {
-      await employeeApi.walkinVerify({ customer_public_id: customerPublicId, otp });
+      await employeeApi.walkinVerify(customerPublicId, otp);
       router.replace({
         pathname: '/employee/walkin/profile',
         params: {

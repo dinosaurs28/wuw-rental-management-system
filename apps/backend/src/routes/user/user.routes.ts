@@ -14,6 +14,7 @@ import {
 import { upload } from "../../middlewares/upload.middleware.js";
 // import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller.js"; // Cash payment — temporarily disabled
 import { cancelHold } from "../../controller/booking/cancelHold.controller.js";
+import { deleteAccount } from "../../controller/user/account-deletion.controller.js";
 import {
   EvaluateExtension as CustomerEvaluateExtension,
   CommitExtension as CustomerCommitExtension,
@@ -38,6 +39,9 @@ router.post("/kyc", authCheckJwt, upload.single("file"), UploadKycDocument);
 router.delete("/kyc", authCheckJwt, DeleteKycDocument);
 // router.post("/payment/cash", authCheckJwt, checkPaymentForCash); // Cash payment — temporarily disabled
 router.delete("/booking/hold/:holdId", authCheckJwt, cancelHold);
+
+// Self-service account deletion (Google Play data-deletion policy).
+router.delete("/account", authCheckJwt, deleteAccount);
 
 // Customer coupon validation (authenticated — enforces per-user limits)
 router.post("/discount/validate", authCheckJwt, ValidateCustomerCoupon);
