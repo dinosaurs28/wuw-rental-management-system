@@ -5,6 +5,8 @@ import {
   emailAuthSchema,
   emailAuthSchemaSignin,
   otpSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from "@repo/schemas";
 import Cookies from "js-cookie";
 
@@ -12,6 +14,8 @@ import Cookies from "js-cookie";
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 export type SignUpInput = z.infer<typeof emailAuthSchema>;
 export type OtpVerifyInput = z.infer<typeof otpSchema> & { phone: string };
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export interface AuthResponse {
   message: string;
@@ -59,6 +63,29 @@ export const authService = {
   signUp: async (data: SignUpInput) => {
     const response = await apiClient.post<AuthResponse>(
       "/auth/email/signup",
+      data,
+    );
+    return response.data;
+  },
+
+  // Self-service password reset (email OTP), customers only — staff and admins
+  // are reset by an administrator. forgotPassword always resolves 200 with the
+  // same generic message whether or not the account exists, so the caller must
+  // not treat success as proof that an email went out.
+  forgotPassword: async (data: ForgotPasswordInput) => {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/email/forgot-password",
+      data,
+    );
+    return response.data;
+  },
+
+  // Returns 400 with a deliberately vague "Invalid or expired reset code." for
+  // a wrong email, wrong OTP, or an expired one — there is nothing more precise
+  // to show the user.
+  resetPassword: async (data: ResetPasswordInput) => {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/email/reset-password",
       data,
     );
     return response.data;

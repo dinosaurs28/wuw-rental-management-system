@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -161,12 +162,12 @@ export default function SignInPage({
                       >
                         Password
                       </Label>
-                      <a
-                        href="#"
+                      <Link
+                        to="/auth/forgot-password"
                         className="text-[10px] text-orange-600 font-bold uppercase tracking-wider hover:text-orange-700 transition-colors"
                       >
                         Forgot?
-                      </a>
+                      </Link>
                     </div>
                     <div className="relative">
                       <Input

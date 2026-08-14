@@ -5,6 +5,7 @@ import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
 import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
 import OtpPage from "./pages/auth/OtpPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
@@ -123,6 +124,10 @@ function App() {
             element={<SignInPage defaultTab="sign-up" />}
           />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
+          <Route
+            path="/auth/forgot-password"
+            element={<ForgotPasswordPage />}
+          />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
           <Route
             path="/employee/booking/status/:transactionId"
