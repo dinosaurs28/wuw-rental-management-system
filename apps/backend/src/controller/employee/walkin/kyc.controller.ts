@@ -3,14 +3,10 @@ import { StatusCode } from "../../../types/statusCode.js";
 import { prisma, KycType, KycSide, KycStatus } from "@repo/database/client";
 import { createID } from "../../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../../services/staffActivity/staffActivity.service.js";
-import { r2 } from "../../../lib/r2.client.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { uploadKycToR2, generatePresignedUrl } from "../../../services/r2-upload.js";
 import fs from "fs/promises";
 import path from "path";
 import { processImage } from "../../../utils/image-processor.js";
-
-const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
-const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 export const UploadWalkinKyc = async (req: Request, res: Response) => {
   const { kyc_type, side } = req.body;
@@ -62,43 +58,25 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
       });
     }
 
-    // Upload to R2
-    const fileContent = await fs.readFile(file.path);
-    const ext = path.extname(file.originalname);
-    const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const key = `kyc/${date}/${createID()}${ext}`;
-
-    // Process image with Sharp
-    const processed = await processImage(fileContent);
-
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: processed.buffer,
-        ContentType: processed.mimeType,
-      }),
-    );
-
-    // Clean up local file
+    const rawContent = await fs.readFile(file.path);
     await fs.unlink(file.path);
 
-    // 1. Create FileObject
-    const filePublicId = createID();
-    const fileRecord = await prisma.fileObject.create({
-      data: {
-        publicId: filePublicId,
-        key: key,
-        url: `${R2_PUBLIC_URL}/${key}`,
-        mime: processed.mimeType,
-        size: processed.size,
-      },
-    });
+    const ext = path.extname(file.originalname);
+    const date = new Date().toISOString().split("T")[0];
+    const key = `kyc/${date}/${createID()}${ext}`;
 
-    // 2. Create or Update CustomerKyc
-    const kycPublicId = createID();
+    const processed = await processImage(rawContent);
 
-    // Check if KYC of this type already exists for customer
+    const { fileId: uploadedFileId } = await uploadKycToR2(
+      processed.buffer,
+      key,
+      processed.mimeType,
+      processed.size,
+    );
+
+    // Fetch the FileObject we just created so we have its id
+    const fileRecord = await prisma.fileObject.findUnique({ where: { id: uploadedFileId } })!;
+
     const existingKyc = await prisma.customerKyc.findUnique({
       where: {
         customerId_type_side: {
@@ -113,19 +91,16 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     if (existingKyc) {
       kycRecord = await prisma.customerKyc.update({
         where: { id: existingKyc.id },
-        data: {
-          fileId: fileRecord.id,
-          status: KycStatus.PENDING,
-        },
+        data: { fileId: uploadedFileId, status: KycStatus.PENDING },
       });
     } else {
       kycRecord = await prisma.customerKyc.create({
         data: {
-          publicId: kycPublicId,
+          publicId: createID(),
           customerId: customerId,
           type: kyc_type as KycType,
           side: side as KycSide,
-          fileId: fileRecord.id,
+          fileId: uploadedFileId,
           status: KycStatus.PENDING,
         },
       });
@@ -138,11 +113,13 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
       description: `Walk-in KYC ${existingKyc ? "updated" : "uploaded"} for customer ${customerId}`,
     });
 
+    const presignedUrl = await generatePresignedUrl(key);
+
     return res.status(StatusCode.CREATED).json({
       message: "Walk-in KYC Uploaded Successfully",
       fileId: kycRecord.publicId,
-      url: fileRecord.url,
-      realFileId: fileRecord.publicId,
+      url: presignedUrl,
+      realFileId: fileRecord?.publicId,
     });
   } catch (error) {
     console.error("Error uploading Walk-in KYC:", error);

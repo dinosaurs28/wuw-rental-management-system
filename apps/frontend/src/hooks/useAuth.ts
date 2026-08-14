@@ -4,8 +4,6 @@ import type {
   SignInInput,
   SignUpInput,
   OtpVerifyInput,
-  ForgotPasswordInput,
-  ResetPasswordInput,
 } from "../services/auth.service";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -75,30 +73,33 @@ export const useSignUp = () => {
   });
 };
 
-// Step 1 of the reset. Deliberately has no onSuccess toast: the backend answers
-// identically for known and unknown emails, so the page shows one neutral
-// "check your inbox" message instead of anything that could confirm an account.
 export const useForgotPassword = () => {
   return useMutation({
-    mutationFn: (data: ForgotPasswordInput) =>
-      authService.forgotPassword(data),
+    mutationFn: (email: string) => authService.forgotPassword(email),
+    onSuccess: (response) => {
+      toast.success(response.message);
+    },
     onError: (error: any) => {
       const message =
-        error.response?.data?.message ||
-        "Could not send the reset code. Please try again.";
+        error.response?.data?.message || "Failed to send reset link";
       toast.error(message);
     },
   });
 };
 
-// Step 2. Navigation is left to the caller so it can show the success state
-// before moving the user to sign-in.
 export const useResetPassword = () => {
+  const navigate = useNavigate();
+
   return useMutation({
-    mutationFn: (data: ResetPasswordInput) => authService.resetPassword(data),
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      authService.resetPassword(token, password),
+    onSuccess: (response) => {
+      toast.success(response.message);
+      navigate("/auth/sign-in");
+    },
     onError: (error: any) => {
       const message =
-        error.response?.data?.message || "Could not reset the password";
+        error.response?.data?.message || "Failed to reset password";
       toast.error(message);
     },
   });

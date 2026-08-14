@@ -33,7 +33,23 @@
       "Skill(create-implementation-plan)",
       "Bash(not exist *)",
       "Bash(sed -n '125,180p' /c/Freelance/vrms/apps/backend/src/controller/user/booking.controller.ts)",
-      "Bash(sed -n '125,180p' /c/Freelance/vrms/apps/backend/src/controller/booking.controller.ts)"
+      "Bash(sed -n '125,180p' /c/Freelance/vrms/apps/backend/src/controller/booking.controller.ts)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Freelance\\\\vrms\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "PowerShell(head *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\" -Recurse -Depth 2)",
+      "Bash(Select-Object -First 50)",
+      "Bash(dir \"C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\components\\\\ui\" /b)",
+      "Bash(pnpm --filter frontend exec tsc --noEmit)",
+      "Bash(dir /s /b \"C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\pages\")",
+      "Bash(findstr /i \"employee\\\\|booking\\\\|mybook\")",
+      "Bash(dir C:\\\\Freelance\\\\vrms\\\\apps\\\\backend\\\\src\\\\utils\\\\payment *)",
+      "Bash(Test-Path C:\\\\Freelance\\\\vrms\\\\apps\\\\frontend\\\\src\\\\components\\\\customer *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm --filter backend build)",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/.env\")",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/apps/backend/.env\")",
+      "Bash(awk -F= '{print $1}' \"C:/Freelance/vrms/apps/frontend/.env\")"
     ]
   }
 }

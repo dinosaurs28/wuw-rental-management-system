@@ -16,7 +16,10 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "report": "tsx scripts/vrms-report.ts",
+    "cleanup": "tsx scripts/cleanup-transactions.ts",
+    "seed:vehicles": "tsx scripts/seed-vehicles.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
@@ -26,7 +29,8 @@
     "nanoid": "^5.1.6",
     "prisma": "5.22.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "xlsx": "^0.18.5"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

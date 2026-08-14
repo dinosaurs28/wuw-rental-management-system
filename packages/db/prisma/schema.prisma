@@ -96,6 +96,18 @@ enum BookingStatus {
   HOLD_EXPIRED
 }
 
+enum VehicleTypeClass {
+  TWO_WHEELER
+  FOUR_WHEELER
+  OTHER
+}
+
+enum BookingRestrictionMode {
+  NONE
+  SAME_CATEGORY
+  ANY_VEHICLE
+}
+
 enum BookingPhotoType {
   PRE_DELIVERY
   POST_RETURN
@@ -106,6 +118,12 @@ enum DepositMethod {
   ONLINE_RAZORPAY
   CASH
   UPI
+}
+
+enum CustomerPaymentMode {
+  ADVANCE_ONLY
+  FULL_ONLY
+  BOTH
 }
 
 enum PaymentStatus {
@@ -179,6 +197,7 @@ model User {
   branch          Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   emailOtps             EmailVerificationOtp[]
+  passwordResetTokens   PasswordResetToken[]
   providers             UserProvider[]
   customerProfile       Customer?
   actorAuditLogs        AuditLog[]     @relation("ActorAuditLogs")
@@ -214,9 +233,11 @@ model User {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
+  isActive              Boolean                @default(true)
 
   @@index([branchId])
   @@index([role])
+  @@index([isActive])
 }
 
 model UserProvider {
@@ -244,6 +265,21 @@ model EmailVerificationOtp {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // CUSTOMER & KYC
@@ -343,8 +379,24 @@ model Branch {
   extensions              BookingExtension[]
   paymentSessions         PaymentSession[]
   creditEntries           CustomerCreditEntry[]
+  schedules               BranchSchedule[]
+  graceMinutes            Int                      @default(0)
+  is24Hours               Boolean                  @default(false)
+  bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
+}
+
+model BranchSchedule {
+  id        Int     @id @default(autoincrement())
+  branchId  Int
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  dayOfWeek Int     // 0 = Sunday … 6 = Saturday
+  isOpen    Boolean @default(true)
+  openTime  String  // "09:00" — 24-hr HH:mm, branch-local time
+  closeTime String  // "22:00" — 24-hr HH:mm, branch-local time
+
+  @@unique([branchId, dayOfWeek])
 }
 
 enum StaffActionType {
@@ -355,6 +407,8 @@ enum StaffActionType {
   CONFIRMED
   UPDATED
   DELETED
+  ACTIVATED
+  DEACTIVATED
   UPLOADED
   SWAPPED
   REFUNDED
@@ -520,11 +574,12 @@ model BranchPricingSetting {
 // VEHICLES
 
 model VehicleCategory {
-  id          Int     @id @default(autoincrement())
-  publicId    String  @unique
+  id          Int              @id @default(autoincrement())
+  publicId    String           @unique
   name        String
   description String?
-  rank        Int     @default(1)
+  rank        Int              @default(1)
+  typeClass   VehicleTypeClass @default(OTHER)
 
   pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
@@ -563,6 +618,7 @@ model Vehicle {
   regNo           String        @unique
   odo             Int
   fuelLevel       Int           @default(0)
+  fuelBar         Decimal?      @db.Decimal(10, 2)
   advancePayAmount Decimal      @default(0)
   insuranceExpiry DateTime
   status          VehicleStatus @default(AVAILABLE)
@@ -1551,6 +1607,8 @@ model BranchPaymentConfig {
   onlineRefundEnabled          Boolean  @default(true)
   // Hours after which a COLLECTED (unconfirmed) cash triggers a fraud alert
   delayedCashAlertHours        Int      @default(2)
+  // Controls which payment flows customers see at booking time
+  customerPaymentMode          CustomerPaymentMode @default(ADVANCE_ONLY)
 
   branch    Branch   @relation(fields: [branchId], references: [id])
   createdAt DateTime @default(now())
@@ -1711,9 +1769,11 @@ model BookingExtension {
   affectedBookingIds   Int[]                    // Internal IDs of future bookings displaced (if SWAP_FUTURE_BOOKING)
 
   // Payment linkage (PaymentTransaction with purpose=EXTENSION)
-  paymentTransactionId Int?                     @unique
+  paymentTransactionId  Int?    @unique
+  // PhonePe transaction ID for customer self-pay extensions
+  phonePeTransactionId  String? @unique
   // VehicleSwap linkage (for SWAP_CURRENT_TO_OTHER)
-  vehicleSwapId        Int?                     @unique
+  vehicleSwapId         Int?    @unique
 
   // Actor
   actorId              Int
@@ -1777,6 +1837,13 @@ model BranchChargeConfig {
 
   // Payment session / ledger-based financial flow
   usePaymentSessions Boolean @default(false)
+
+  // Extension button visibility window (customer portal)
+  // Short rental = booking duration <= extensionThresholdHours
+  // Button becomes visible N hours before rental ends
+  extensionThresholdHours   Int @default(24) // duration threshold (hrs) to pick short vs long window
+  extensionWindowShortHours Int @default(6)  // show button this many hrs before end for short rentals
+  extensionWindowLongHours  Int @default(12) // show button this many hrs before end for long rentals
 
   branch    Branch   @relation(fields: [branchId], references: [id])
   createdAt DateTime @default(now())

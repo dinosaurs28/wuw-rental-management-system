@@ -65,10 +65,10 @@ function BookingCard({ booking, type }: { booking: BookingItem; type: Tab }) {
     >
       <View style={styles.cardTop}>
         <View style={styles.cardVehicle}>
-          <Text style={styles.vehicleName}>
+          <Text style={styles.vehicleName} numberOfLines={2}>
             {vehicle ? `${vehicle.make} ${vehicle.model}` : 'Vehicle'}
           </Text>
-          {vehicle?.regNo && <Text style={styles.regNo}>{vehicle.regNo}</Text>}
+          {vehicle?.regNo && <Text style={styles.regNo} numberOfLines={1}>{vehicle.regNo}</Text>}
         </View>
         <View style={[styles.statusBadge, type === 'pickups' ? styles.statusPickup : styles.statusReturn]}>
           <Text style={[styles.statusText, type === 'pickups' ? styles.statusPickupText : styles.statusReturnText]}>
@@ -340,11 +340,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
     gap: 12,
   },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardVehicle: { gap: 2 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  cardVehicle: { flex: 1, gap: 2, minWidth: 0 },
   vehicleName: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.ink },
   regNo: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
   statusBadge: {
+    flexShrink: 0,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,

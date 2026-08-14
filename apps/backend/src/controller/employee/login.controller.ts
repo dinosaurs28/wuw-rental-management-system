@@ -54,6 +54,28 @@ export const Login = async (req: Request, res: Response) => {
         message: "Access Denied: Employees Only",
       });
     }
+
+    if (!user.isActive) {
+      auditService.log({
+        actorId: user.id,
+        actorName: user.name,
+        actorRole: user.role,
+        actorBranchId: user.branchId ?? undefined,
+        action: "LOGIN_FAILED",
+        category: AuditCategory.AUTH,
+        severity: AuditSeverity.WARNING,
+        description: `Staff login failed — account deactivated for ${user.email}`,
+        entity: "User",
+        entityId: user.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { attemptedEmail: email },
+      });
+      return res.status(StatusCode.FORBIDDEN).json({
+        message: "Your account has been deactivated. Please contact your branch manager.",
+      });
+    }
+
     const isPasswordValid = await comparehash(
       password,
       user.passwordHash as string,

@@ -34,6 +34,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
+import {
+  BookingTypeLimitModal,
+  type TypeClassConflict,
+} from "@/components/booking/BookingTypeLimitModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -76,6 +80,8 @@ export const BookingConfirmationPage = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
+  const [limitConflicts, setLimitConflicts] = useState<TypeClassConflict[]>([]);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Block browser back button while booking hold is active
   useEffect(() => {
@@ -188,6 +194,14 @@ export const BookingConfirmationPage = () => {
           rentalDays: response.data.items[0]?.days,
         });
       } catch (err: any) {
+        // Booking type-class limit exceeded — show modal instead of error screen
+        if (err?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+          setLimitConflicts(err.response.data.conflicts ?? []);
+          setShowLimitModal(true);
+          setIsLoading(false);
+          return;
+        }
+
         const message =
           err?.response?.data?.message ||
           "Failed to create booking. Please try again.";
@@ -782,6 +796,12 @@ export const BookingConfirmationPage = () => {
       </main>
 
       <Footer />
+
+      <BookingTypeLimitModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        conflicts={limitConflicts}
+      />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
+import { generatePresignedUrl } from "../services/r2-upload.js";
 
 /**
  * GET /api/receipts/:bookingId
@@ -51,6 +52,9 @@ export async function getReceipt(req: Request, res: Response) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
+    const pdfKey = receipt.receiptPdfFile?.key ?? null;
+    const pdfUrl = pdfKey ? await generatePresignedUrl(pdfKey) : null;
+
     return res.status(200).json({
       success: true,
       data: {
@@ -61,8 +65,8 @@ export async function getReceipt(req: Request, res: Response) {
         refundAmount: receipt.refundAmount,
         lineItems: receipt.lineItems,
         generatedAt: receipt.generatedAt,
-        pdfUrl: receipt.receiptPdfFile?.url ?? null,
-        pdfReady: !!receipt.receiptPdfFile?.url,
+        pdfUrl,
+        pdfReady: !!pdfKey,
       },
     });
   } catch (error) {

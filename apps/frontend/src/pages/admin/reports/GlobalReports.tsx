@@ -36,6 +36,7 @@ interface GlobalKPIStats {
   };
   totalCustomers: {
     count: number;
+    allTime?: number;
     growth: number;
   };
   avgBookingValue: {
@@ -92,7 +93,7 @@ export const GlobalReports = () => {
       if (selectedBranchId !== "all")
         params.append("branchId", selectedBranchId);
       if (selectedCategories.length > 0)
-        params.append("categoryId", selectedCategories[0]); // Taking first for now as backend simplified
+        params.append("categories", selectedCategories.join(","));
       if (dateRange.start)
         params.append("startDate", dateRange.start.toISOString());
       if (dateRange.end) params.append("endDate", dateRange.end.toISOString());
@@ -314,7 +315,11 @@ export const GlobalReports = () => {
             colorTheme="cyan"
             loading={loading}
             trend={data?.totalCustomers.growth}
-            subtitle={loading ? undefined : "Lifetime registered users"}
+            subtitle={
+              loading
+                ? undefined
+                : `${formatNumber(data?.totalCustomers.allTime || 0)} all-time registered`
+            }
           />
         </div>
 

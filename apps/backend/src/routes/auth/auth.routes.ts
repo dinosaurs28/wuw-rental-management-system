@@ -14,14 +14,21 @@ import {
 } from "../../controller/auth/password-reset.controller.js";
 import passport from "../../utils/passport/google.js";
 import { googleSignIn } from "../../controller/auth/google.controller.js";
+import { googleMobileSignIn } from "../../controller/auth/google-mobile.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { StatusCode } from "../../types/statusCode.js";
+import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
 
 const router: Router = Router();
 
 //Auth router for Normal Login And Google Auth
 
 router.post("/email/signup", emailAuthController);
+router.post("/forgot-password", makeForgotPasswordController("auth"));
+router.post("/reset-password", resetPasswordController);
 router.post("/email/signin", emailAuthControllerSignin);
 router.post("/email/forgot-password", forgotPassword);
 router.post("/email/reset-password", resetPassword);
@@ -42,6 +49,10 @@ router.get(
   }),
   googleSignIn,
 );
+// Mobile-only: accepts an idToken and returns a JWT in the response body.
+// Distinct from /google + /google/callback which use the passport redirect
+// flow with httpOnly cookies (web-friendly only).
+router.post("/google/mobile", googleMobileSignIn);
 router.get("/me", authCheckJwt, ProfileInfo);
 router.get("/logout", authCheckJwt, (req, res) => {
   return res

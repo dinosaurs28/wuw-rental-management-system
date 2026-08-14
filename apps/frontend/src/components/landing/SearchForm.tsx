@@ -5,8 +5,17 @@ import {
     Loader2,
     Search,
     Car,
+    Bike,
     Clock,
 } from "lucide-react";
+
+const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (/two.wheel|2.wheel|bike|scooter|moto|cycle/.test(lower)) {
+        return Bike;
+    }
+    return Car;
+};
 
 import { useBranches } from "@/hooks/useBranches";
 import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
@@ -27,6 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { motion } from "motion/react";
 
 export const SearchForm = () => {
@@ -77,20 +87,23 @@ export const SearchForm = () => {
                             <Loader2 className="size-[22px] animate-spin" /> Loading
                         </div>
                     ) : (
-                        categories.map(category => (
-                            <button
-                                key={category.publicId}
-                                onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
-                                className={cn(
-                                    "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
-                                    categoryPublicId === category.publicId
-                                        ? "bg-zinc-900 text-white"
-                                        : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
-                                )}>
-                                <Car className="size-[22px]" strokeWidth={1.8} />
-                                {category.name}
-                            </button>
-                        ))
+                        categories.map(category => {
+                            const CategoryIcon = getCategoryIcon(category.name);
+                            return (
+                                <button
+                                    key={category.publicId}
+                                    onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
+                                    className={cn(
+                                        "flex items-center gap-[9px] h-[52px] px-6 border-none rounded-full text-[18px] font-semibold tracking-[-0.01em] cursor-pointer transition-all duration-150 focus:outline-none whitespace-nowrap",
+                                        categoryPublicId === category.publicId
+                                            ? "bg-zinc-900 text-white"
+                                            : "bg-[#f3f3f5] text-zinc-900 hover:bg-[#e9e9ec]"
+                                    )}>
+                                    <CategoryIcon className="size-[22px]" strokeWidth={1.8} />
+                                    {category.name}
+                                </button>
+                            );
+                        })
                     )}
                 </div>
 
@@ -168,21 +181,13 @@ export const SearchForm = () => {
                                 </PopoverContent>
                             </Popover>
                             <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
-                            <div className="relative flex items-center h-full px-[14px] hover:bg-[#fafafb] transition-colors shrink-0">
-                                <input
-                                    type="time"
-                                    onClick={(e) => {
-                                        try {
-                                            if ('showPicker' in HTMLInputElement.prototype) {
-                                                e.currentTarget.showPicker();
-                                            }
-                                        } catch (err) { }
-                                    }}
+                            <div className="flex items-center h-full px-[14px] gap-1 hover:bg-[#fafafb] transition-colors">
+                                <Clock className="size-[18px] shrink-0 text-zinc-400" strokeWidth={2} />
+                                <TimeSelect
                                     value={pickupTime || "10:00"}
-                                    onChange={(e) => setSearchCriteria({ pickupTime: e.target.value })}
-                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[19px] tracking-[-0.01em] focus:outline-none w-[110px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                    onChange={(v) => setSearchCriteria({ pickupTime: v })}
+                                    triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
                                 />
-                                <Clock className="size-[18px] shrink-0 text-zinc-900 pointer-events-none absolute right-[14px]" strokeWidth={2} />
                             </div>
                         </div>
                     </div>
@@ -223,21 +228,13 @@ export const SearchForm = () => {
                                 </PopoverContent>
                             </Popover>
                             <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
-                            <div className="relative flex items-center h-full px-[14px] hover:bg-[#fafafb] transition-colors shrink-0">
-                                <input
-                                    type="time"
-                                    onClick={(e) => {
-                                        try {
-                                            if ('showPicker' in HTMLInputElement.prototype) {
-                                                e.currentTarget.showPicker();
-                                            }
-                                        } catch (err) { }
-                                    }}
+                            <div className="flex items-center h-full px-[14px] gap-1 hover:bg-[#fafafb] transition-colors">
+                                <Clock className="size-[18px] shrink-0 text-zinc-400" strokeWidth={2} />
+                                <TimeSelect
                                     value={returnTime || "10:00"}
-                                    onChange={(e) => setSearchCriteria({ returnTime: e.target.value })}
-                                    className="h-full bg-transparent border-0 text-zinc-900 font-medium text-[19px] tracking-[-0.01em] focus:outline-none w-[110px] [color-scheme:light] appearance-none cursor-pointer p-0 m-0 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                    onChange={(v) => setSearchCriteria({ returnTime: v })}
+                                    triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
                                 />
-                                <Clock className="size-[18px] shrink-0 text-zinc-900 pointer-events-none absolute right-[14px]" strokeWidth={2} />
                             </div>
                         </div>
                     </div>

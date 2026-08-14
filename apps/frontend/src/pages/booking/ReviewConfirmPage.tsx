@@ -1,8 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { CouponInput } from "@/components/discount/CouponInput";
+import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
+import {
+  BookingTypeLimitModal,
+  type TypeClassConflict,
+} from "@/components/booking/BookingTypeLimitModal";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,10 +31,13 @@ import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useSearchStore } from "@/store/search.store";
 
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitConflicts, setLimitConflicts] = useState<TypeClassConflict[]>([]);
 
   // Get all booking state from store
   const {
@@ -52,6 +63,26 @@ export const ReviewConfirmPage = () => {
     hasVehicleSelected,
   } = useVehicleRentalStore();
 
+  // Build ISO strings for the booking limit pre-flight check
+  const startISO = useMemo(() => {
+    if (!startDate || !startTime) return undefined;
+    const [y, m, d] = startDate.split("-").map(Number);
+    const [h, mi] = startTime.split(":").map(Number);
+    return new Date(y, m - 1, d, h, mi, 0).toISOString();
+  }, [startDate, startTime]);
+
+  const endISO = useMemo(() => {
+    if (!endDate || !endTime) return undefined;
+    const [y, m, d] = endDate.split("-").map(Number);
+    const [h, mi] = endTime.split(":").map(Number);
+    return new Date(y, m - 1, d, h, mi, 0).toISOString();
+  }, [endDate, endTime]);
+
+  const { branchPublicId } = useSearchStore();
+  const { restrictedTypeClasses, conflictDetails, blockedAll, anyVehicleConflict } = useCustomerBookingLimits(startISO, endISO, branchPublicId ?? undefined);
+  const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict } = useBookingScheduleVerdict(schedule, startISO, endISO);
+
   // Clear any stale booking intent when the user lands here — prevents a
   // subsequent unrelated sign-in from incorrectly redirecting to review.
   useEffect(() => {
@@ -64,7 +95,7 @@ export const ReviewConfirmPage = () => {
   // Check if form is valid for submission
   const isFormValid = selectedKycFilePublicId && paymentType && termsAccepted;
 
-  // Handle Confirm & Pay click - just validate and navigate
+  // Handle Confirm & Pay click - validate, check type-class limits, then navigate
   const handleConfirmAndPay = () => {
     if (
       (!selectedVehicleId && !selectedGroupKey) ||
@@ -74,6 +105,51 @@ export const ReviewConfirmPage = () => {
       !paymentType
     ) {
       toast.error("Please complete all required fields");
+      return;
+    }
+
+    // Pre-flight: block if schedule verdict is a hard pickup violation
+    if (
+      scheduleVerdict &&
+      (scheduleVerdict.status === "PICKUP_CLOSED_DAY" ||
+        scheduleVerdict.status === "PICKUP_BEFORE_OPEN" ||
+        scheduleVerdict.status === "PICKUP_AT_OR_AFTER_CLOSE" ||
+        scheduleVerdict.status === "NO_OPEN_DAY_IN_WINDOW")
+    ) {
+      toast.error("Booking times conflict with branch operating hours. Please adjust your pickup or return time.");
+      return;
+    }
+
+    // Pre-flight: surface any type-class / any-vehicle conflict before the API call
+    if (blockedAll && anyVehicleConflict) {
+      setLimitConflicts([{
+        typeClass: "TWO_WHEELER" as any,
+        reason: "ANY_VEHICLE" as any,
+        existingBookingPublicId: anyVehicleConflict.bookingPublicId,
+        existingVehicleMake: anyVehicleConflict.vehicleMake,
+        existingVehicleModel: anyVehicleConflict.vehicleModel,
+        existingBookingStart: anyVehicleConflict.startAt,
+        existingBookingEnd: anyVehicleConflict.endAt,
+        existingBookingStatus: anyVehicleConflict.status,
+      }]);
+      setShowLimitModal(true);
+      return;
+    }
+
+    if (restrictedTypeClasses.size > 0) {
+      const conflicts: TypeClassConflict[] = Object.entries(conflictDetails).map(
+        ([tc, slot]) => ({
+          typeClass: tc,
+          existingBookingPublicId: slot.bookingPublicId,
+          existingVehicleMake: slot.vehicleMake,
+          existingVehicleModel: slot.vehicleModel,
+          existingBookingStart: slot.startAt,
+          existingBookingEnd: slot.endAt,
+          existingBookingStatus: slot.status,
+        }),
+      );
+      setLimitConflicts(conflicts);
+      setShowLimitModal(true);
       return;
     }
 
@@ -217,10 +293,17 @@ export const ReviewConfirmPage = () => {
                     />
                   </div>
 
+                  {/* Schedule warning — show when times conflict with branch hours */}
+                  {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+                    <div className="mt-4">
+                      <ScheduleWarningBanner verdict={scheduleVerdict} />
+                    </div>
+                  )}
+
                   {/* Confirm & Pay Button */}
                   <Button
                     onClick={handleConfirmAndPay}
-                    disabled={!isFormValid}
+                    disabled={!isFormValid || blockedAll || (scheduleVerdict?.status === "PICKUP_CLOSED_DAY" || scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" || scheduleVerdict?.status === "PICKUP_AT_OR_AFTER_CLOSE" || scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW")}
                     className="w-full mt-6 h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all duration-200"
                   >
                     <Lock className="mr-2 size-5" />
@@ -243,6 +326,12 @@ export const ReviewConfirmPage = () => {
       </main>
 
       <Footer />
+
+      <BookingTypeLimitModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        conflicts={limitConflicts}
+      />
     </div>
   );
 };

@@ -67,7 +67,20 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
       },
       skip,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        publicId: true,
+        status: true,
+        paymentStatus: true,
+        startAt: true,
+        endAt: true,
+        days: true,
+        totalFinal: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        createdAt: true,
         items: {
           include: {
             vehicle: {
@@ -100,6 +113,12 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
       endAt: booking.endAt,
       days: booking.days,
       total: booking.totalFinal,
+      isAdvancePayment: booking.isAdvancePayment,
+      advanceAmount: Number(booking.advanceAmount),
+      remainingBalance: booking.remainingPaidAt ? 0 : Number(booking.remainingBalance),
+      amountPaid: !booking.isAdvancePayment || booking.remainingPaidAt
+        ? Number(booking.totalFinal)
+        : Number(booking.advanceAmount),
       createdAt: booking.createdAt,
       vehicles: booking.items.map((item) => ({
         publicId: item.vehicle.publicId,

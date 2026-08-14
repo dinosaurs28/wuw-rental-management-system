@@ -26,7 +26,7 @@ import {
 
 import { DamageEvidence } from "@/components/manager/damage/DamageEvidence";
 import { DamageSummary } from "@/components/manager/damage/DamageSummary";
-import { FinancialCalculation } from "@/components/manager/damage/FinancialCalculation";
+import { FinancialCalculation, type DamagePaymentMethod } from "@/components/manager/damage/FinancialCalculation";
 import { VehicleDisposition } from "@/components/manager/damage/VehicleDisposition";
 
 import {
@@ -47,12 +47,11 @@ export const DamageReviewPage = () => {
 
   // Form State
   const [finalCost, setFinalCost] = useState<number>(0);
-  const [disposition, setDisposition] = useState<
-    "AVAILABLE" | "MAINTENANCE" | "DAMAGED"
-  >("AVAILABLE");
-  const [paymentMethod, setPaymentMethod] = useState<
-    "CASH" | "ONLINE_RAZORPAY" | undefined
-  >(undefined);
+  const [disposition, setDisposition] = useState<"AVAILABLE" | "MAINTENANCE" | "DAMAGED">("AVAILABLE");
+  const [paymentMethod, setPaymentMethod] = useState<DamagePaymentMethod | undefined>(undefined);
+  const [cashAmount, setCashAmount] = useState(0);
+  const [onlineAmount, setOnlineAmount] = useState(0);
+  const [onlineTransactionRef, setOnlineTransactionRef] = useState("");
   const [managerNotes, setManagerNotes] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -70,14 +69,10 @@ export const DamageReviewPage = () => {
       setIsLoading(true);
       const data = await getDamageReport(id);
       setReport(data);
-
-      // Initialize form defaults
       setFinalCost(data.financialHint.estimatedCost || 0);
-      // Default disposition logic could be smarter, but 'AVAILABLE' is a safe default unless major damage.
     } catch (error: any) {
       console.error("Failed to load report", error);
-      const msg =
-        error.response?.data?.message || "Failed to load damage report";
+      const msg = error.response?.data?.message || "Failed to load damage report";
       toast.error(msg);
       if (error.response?.status === 401 || error.response?.status === 403) {
         navigate("/branch-manager/sign-in");
@@ -92,11 +87,32 @@ export const DamageReviewPage = () => {
   const handleConfirmClose = async () => {
     if (!report) return;
 
-    const balance = report.booking.deposit - finalCost;
-    const isDue = balance < 0;
+    const gstRate = report.financialHint.gstRate ?? 18;
+    const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
+    const totalDamage = finalCost + taxAmount;
+    const additionalCharges = report.financialHint.additionalCharges ?? 0;
+    const net = additionalCharges + totalDamage - report.booking.deposit;
+    const isDue = net > 0;
 
     if (isDue && !paymentMethod) {
       toast.error("Please select a payment method for the due amount.");
+      return;
+    }
+
+    if (paymentMethod === "SPLIT") {
+      const splitTotal = cashAmount + onlineAmount;
+      if (Math.abs(splitTotal - Math.abs(net)) > 0.01) {
+        toast.error(`Split amounts must total ₹${Math.abs(net).toFixed(2)}`);
+        return;
+      }
+      if (onlineAmount > 0 && !onlineTransactionRef.trim()) {
+        toast.error("Transaction reference required for the online portion.");
+        return;
+      }
+    }
+
+    if (paymentMethod === "ONLINE_RAZORPAY" && !onlineTransactionRef.trim()) {
+      toast.error("Transaction reference required for online payment.");
       return;
     }
 
@@ -106,15 +122,18 @@ export const DamageReviewPage = () => {
         disposition,
         finalCost,
         paymentMethod,
+        cashAmount: paymentMethod === "SPLIT" ? cashAmount : undefined,
+        onlineAmount: paymentMethod === "SPLIT" ? onlineAmount : undefined,
+        onlineTransactionRef: (paymentMethod === "ONLINE_RAZORPAY" || (paymentMethod === "SPLIT" && onlineAmount > 0))
+          ? onlineTransactionRef
+          : undefined,
         redirectUrl: `${window.location.origin}/manager/payment/fine-status`,
       });
 
       if (response.paymentUrl) {
-        // Redirect to payment gateway
         window.location.href = response.paymentUrl;
       } else {
         toast.success("Damage Report Closed Successfully");
-        // Redirect to dashboard or success page
         navigate("/manager/dashboard");
       }
     } catch (error: any) {
@@ -141,8 +160,9 @@ export const DamageReviewPage = () => {
   const gstRate = report.financialHint.gstRate ?? 18;
   const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
   const totalDamage = finalCost + taxAmount;
-  const balance = report.booking.deposit - totalDamage;
-  const isRefund = balance >= 0;
+  const additionalCharges = report.financialHint.additionalCharges ?? 0;
+  const net = additionalCharges + totalDamage - report.booking.deposit;
+  const isRefund = net <= 0;
 
   return (
     <ManagerLayout>
@@ -152,21 +172,15 @@ export const DamageReviewPage = () => {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard?tab=damage">
-                  Damage Reports
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/manager/dashboard?tab=damage">Damage Reports</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>
-                  Review {report.damageReportId.slice(-6).toUpperCase()}
-                </BreadcrumbPage>
+                <BreadcrumbPage>Review {report.damageReportId.slice(-6).toUpperCase()}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -184,8 +198,7 @@ export const DamageReviewPage = () => {
                   </Badge>
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Booking #{report.booking.bookingId.slice(-6)} •{" "}
-                  {report.vehicle.currentStatus}
+                  Booking #{report.booking.bookingId.slice(-6)} • {report.vehicle.currentStatus}
                 </p>
               </div>
             </div>
@@ -206,10 +219,8 @@ export const DamageReviewPage = () => {
               images={report.images}
               damageDetails={report.damageDetails}
               vehicleType={
-                report.vehicle.make.includes("Scooter")
-                  ? "Two Wheeler"
-                  : "Four Wheeler"
-              } // Naive check
+                report.vehicle.make.includes("Scooter") ? "Two Wheeler" : "Four Wheeler"
+              }
             />
           </div>
 
@@ -221,26 +232,17 @@ export const DamageReviewPage = () => {
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center space-y-4">
                 <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
                 <div>
-                  <h3 className="text-xl font-bold text-green-800">
-                    Damage Report Closed
-                  </h3>
-                  <p className="text-green-700">
-                    This report has been approved and settled.
-                  </p>
+                  <h3 className="text-xl font-bold text-green-800">Damage Report Closed</h3>
+                  <p className="text-green-700">This report has been approved and settled.</p>
                 </div>
                 <div className="text-left bg-white p-4 rounded-md border border-green-100 flex justify-center">
                   <div className="text-center">
-                    <label className="text-xs text-gray-500 block mb-1">
-                      Disposition
-                    </label>
-                    <Badge variant="outline">
-                      {report.vehicle.currentStatus}
-                    </Badge>
+                    <label className="text-xs text-gray-500 block mb-1">Disposition</label>
+                    <Badge variant="outline">{report.vehicle.currentStatus}</Badge>
                   </div>
                 </div>
               </div>
             ) : (
-              /* Manager Inputs (Only for Pending) */
               <div className="space-y-6">
                 <CardWrapper title="Manager Remarks">
                   <textarea
@@ -253,10 +255,17 @@ export const DamageReviewPage = () => {
 
                 <FinancialCalculation
                   deposit={report.booking.deposit}
+                  additionalCharges={additionalCharges}
                   finalCost={finalCost}
                   setFinalCost={setFinalCost}
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}
+                  cashAmount={cashAmount}
+                  setCashAmount={setCashAmount}
+                  onlineAmount={onlineAmount}
+                  setOnlineAmount={setOnlineAmount}
+                  onlineTransactionRef={onlineTransactionRef}
+                  setOnlineTransactionRef={setOnlineTransactionRef}
                   chargeType={report.chargeType}
                   gstRate={gstRate}
                 />
@@ -270,15 +279,11 @@ export const DamageReviewPage = () => {
           </div>
         </div>
 
-        {/* Sticky Footer Actions (Only for Pending) */}
+        {/* Sticky Footer Actions */}
         {report.status !== "APPROVED" && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50 md:pl-64">
             <div className="max-w-[1440px] mx-auto flex items-center justify-between md:justify-end gap-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate(-1)}
-                disabled={isSubmitting}
-              >
+              <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
                 Cancel / Needs Info
               </Button>
 
@@ -286,16 +291,9 @@ export const DamageReviewPage = () => {
                 <DialogTrigger asChild>
                   <Button
                     size="lg"
-                    className={cn(
-                      "min-w-[200px]",
-                      isRefund
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-primary",
-                    )}
+                    className={cn("min-w-[200px]", isRefund ? "bg-green-600 hover:bg-green-700" : "bg-primary")}
                   >
-                    {isRefund
-                      ? "Confirm Refund & Close"
-                      : "Confirm Payment & Close"}
+                    {isRefund ? "Confirm Refund & Close" : "Confirm Payment & Close"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -310,9 +308,15 @@ export const DamageReviewPage = () => {
                   </DialogHeader>
 
                   <div className="space-y-3 py-4 text-sm bg-gray-50 p-4 rounded-md">
+                    {additionalCharges > 0 && (
+                      <div className="flex justify-between text-orange-700">
+                        <span>Additional Return Charges:</span>
+                        <span className="font-semibold">+ {formatCurrency(additionalCharges)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>Base Damage Cost:</span>
-                      <span className="font-semibold">{formatCurrency(finalCost)}</span>
+                      <span className="font-semibold">+ {formatCurrency(finalCost)}</span>
                     </div>
                     {report.chargeType === "PENALTY" && taxAmount > 0 && (
                       <div className="flex justify-between text-orange-700">
@@ -320,9 +324,15 @@ export const DamageReviewPage = () => {
                         <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
                       </div>
                     )}
+                    <div className="flex justify-between text-blue-700">
+                      <span>Safety Deposit:</span>
+                      <span className="font-semibold">− {formatCurrency(report.booking.deposit)}</span>
+                    </div>
                     <div className="flex justify-between font-semibold border-t pt-2">
-                      <span>Total Damage Due:</span>
-                      <span className="text-red-700">{formatCurrency(totalDamage)}</span>
+                      <span>Net:</span>
+                      <span className={isRefund ? "text-green-700" : "text-red-700"}>
+                        {isRefund ? `Refund ${formatCurrency(Math.abs(net))}` : `Collect ${formatCurrency(net)}`}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Settlement Type:</span>
@@ -330,11 +340,13 @@ export const DamageReviewPage = () => {
                         {isRefund ? "REFUND" : "COLLECTION DUE"}
                       </span>
                     </div>
-                    {!isRefund && (
+                    {!isRefund && paymentMethod && (
                       <div className="flex justify-between">
                         <span>Payment Method:</span>
                         <span className="font-semibold">
-                          {paymentMethod?.replace("_", " ")}
+                          {paymentMethod === "SPLIT"
+                            ? `Split (₹${cashAmount} cash + ₹${onlineAmount} online)`
+                            : paymentMethod.replace("_", " ")}
                         </span>
                       </div>
                     )}
@@ -345,22 +357,15 @@ export const DamageReviewPage = () => {
                   </div>
 
                   <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsConfirmOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
                       Cancel
                     </Button>
                     <Button
                       onClick={handleConfirmClose}
                       disabled={isSubmitting}
-                      className={cn(
-                        isRefund ? "bg-green-600 hover:bg-green-700" : "",
-                      )}
+                      className={cn(isRefund ? "bg-green-600 hover:bg-green-700" : "")}
                     >
-                      {isSubmitting && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {isRefund ? "Process Refund" : "Collect & Close"}
                     </Button>
                   </DialogFooter>

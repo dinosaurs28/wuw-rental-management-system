@@ -1,9 +1,8 @@
 import { Worker, Job } from "bullmq";
 import Redis from "ioredis";
-import { r2 } from "../lib/r2.client.js";
+import { r2, PUBLIC_BUCKET, PRIVATE_BUCKET } from "../lib/r2.client.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-// Lazy initialization to ensure environment variables are loaded first
 let connection: Redis | null = null;
 
 function getConnection(): Redis {
@@ -23,38 +22,34 @@ function getConnection(): Redis {
         return delay;
       },
       tls: redisUrl.startsWith("rediss://")
-        ? {
-            rejectUnauthorized: true,
-          }
+        ? { rejectUnauthorized: true }
         : undefined,
     });
   }
   return connection;
 }
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
-
 let fileCleanupWorker: Worker | null = null;
 
 export function initFileCleanupWorker(): void {
-  if (fileCleanupWorker) return; // Already initialized
+  if (fileCleanupWorker) return;
 
   fileCleanupWorker = new Worker(
     "{bull}file-cleanup",
     async (job: Job) => {
-      const { key } = job.data;
-      console.log(`Processing file cleanup for key: ${key}`);
+      // `bucket` is passed by callers that know the target bucket.
+      // Defaults to the public bucket for backward compatibility with
+      // existing pickup/return/damage photo cleanup jobs.
+      const { key, bucket } = job.data;
+      const targetBucket = bucket ?? PUBLIC_BUCKET;
+
+      console.log(`[FileCleanup] Deleting ${key} from bucket ${targetBucket}`);
 
       try {
-        await r2.send(
-          new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-          }),
-        );
-        console.log(`Successfully deleted file from R2: ${key}`);
+        await r2.send(new DeleteObjectCommand({ Bucket: targetBucket, Key: key }));
+        console.log(`[FileCleanup] Deleted: ${key}`);
       } catch (error) {
-        console.error(`Failed to delete file ${key} from R2:`, error);
+        console.error(`[FileCleanup] Failed to delete ${key}:`, error);
         throw error;
       }
     },

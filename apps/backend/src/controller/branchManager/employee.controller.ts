@@ -6,8 +6,14 @@ import { StatusCode } from "../../types/statusCode.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
 import crypto from "crypto";
+import { z } from "zod";
 import { createID } from "../../utils/nanoID.js";
 import { hashpassword } from "../../utils/PasswordCrypt/password.js";
+import { redis } from "../../lib/redisconfig.js";
+
+const setStatusSchema = z.object({
+    isActive: z.boolean(),
+});
 
 export const SearchEmployee = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -20,7 +26,6 @@ export const SearchEmployee = async (req: Request, res: Response) => {
     const whereClause: any = {
         branchId: branchId,
         role: Role.STAFF,
-        deletedAt: null
     };
 
     if (search) {
@@ -43,6 +48,7 @@ export const SearchEmployee = async (req: Request, res: Response) => {
                     email: true,
                     phone: true,
                     role: true,
+                    isActive: true,
                     createdAt: true
                 },
                 skip,
@@ -87,6 +93,7 @@ export const GetEmployee = async (req: Request, res: Response) => {
                 email: true,
                 phone: true,
                 role: true,
+                isActive: true,
                 createdAt: true,
                 updatedAt: true
             }
@@ -115,13 +122,10 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         });
     }
 
-    const { name, phone, password } = validation.data;
+    const { name, email: rawEmail, phone, password } = validation.data;
 
     try {
-        // Check if phone already exists in this branch/system? 
-        // User schema has unique email. Phone is not unique in schema, but good to check.
-        // We are using phone to generate email, so duplicate phone -> duplicate email.
-        const email = `${phone}@staff.wuw.com`;
+        const email = rawEmail.toLowerCase().trim();
 
         const existingUser = await prisma.user.findFirst({
             where: {
@@ -133,7 +137,7 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         });
 
         if (existingUser) {
-            return res.status(StatusCode.CONFLICT).json({ message: "Employee with this phone already exists" });
+            return res.status(StatusCode.CONFLICT).json({ message: "Employee with this email or phone already exists" });
         }
 
         const passwordHash = await hashpassword(password);
@@ -214,6 +218,7 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
     }
 
     const { name, phone } = validation.data;
+    const email = validation.data.email.toLowerCase().trim();
 
     try {
         const user = await prisma.user.findFirst({
@@ -229,16 +234,16 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Employee not found" });
         }
 
-        // Check if phone is being changed and if it conflicts
-        if (phone !== user.phone) {
-            const existingPhone = await prisma.user.findFirst({
+        // Check if phone or email is being changed and if it conflicts
+        if (phone !== user.phone || email !== user.email) {
+            const existingUser = await prisma.user.findFirst({
                 where: {
-                    phone: phone,
+                    OR: [{ phone }, { email }],
                     id: { not: user.id }
                 }
             });
-            if (existingPhone) {
-                return res.status(StatusCode.CONFLICT).json({ message: "Phone number already in use" });
+            if (existingUser) {
+                return res.status(StatusCode.CONFLICT).json({ message: "Phone number or email already in use" });
             }
         }
 
@@ -246,6 +251,7 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             where: { id: user.id },
             data: {
                 name,
+                email,
                 phone
             },
             select: {
@@ -276,17 +282,26 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
     }
 }
 
-export const DeleteEmployee = async (req: Request, res: Response) => {
+export const SetEmployeeStatus = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
     const { employeeId } = req.params;
+
+    const validation = setStatusSchema.safeParse(req.body);
+    if (!validation.success) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+            message: "Invalid Inputs",
+            error: validation.error
+        });
+    }
+
+    const { isActive } = validation.data;
 
     try {
         const user = await prisma.user.findFirst({
             where: {
                 publicId: employeeId,
                 branchId: branchId,
-                role: Role.STAFF,
-                deletedAt: null
+                role: Role.STAFF
             }
         });
 
@@ -294,27 +309,48 @@ export const DeleteEmployee = async (req: Request, res: Response) => {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Employee not found" });
         }
 
-        // Soft delete by setting deletedAt
         await prisma.user.update({
             where: { id: user.id },
-            data: {
-                deletedAt: new Date()
-            }
+            data: { isActive }
+        });
+
+        await redis.del("admin:user_transfer_stats");
+
+        const manager = await prisma.user.findUnique({
+            where: { publicId: req.public_Id },
+            select: { id: true, name: true, role: true },
         });
 
         staffActivityService.logFromRequest(req, {
-            actionType: StaffActionType.DELETED,
+            actionType: isActive ? StaffActionType.ACTIVATED : StaffActionType.DEACTIVATED,
             entityType: StaffEntityType.EMPLOYEE,
             entityRef: user.publicId,
-            description: `Employee ${user.name} deactivated`,
+            description: `Employee ${user.name} ${isActive ? "activated" : "deactivated"}`,
+        });
+
+        auditService.log({
+            actorId: manager?.id,
+            actorName: manager?.name ?? "Unknown",
+            actorRole: manager?.role ?? Role.MANAGER,
+            actorBranchId: branchId,
+            action: isActive ? "EMPLOYEE_ACTIVATED" : "EMPLOYEE_DEACTIVATED",
+            category: AuditCategory.EMPLOYEE,
+            description: `Employee ${user.name} ${isActive ? "activated" : "deactivated"}`,
+            entity: "User",
+            entityId: user.publicId,
+            entityLabel: user.name,
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+            before: { isActive: user.isActive },
+            after: { isActive },
         });
 
         return res.status(StatusCode.OK).json({
-            message: "Employee deleted successfully"
+            message: `Employee ${isActive ? "activated" : "deactivated"} successfully`
         });
 
     } catch (error) {
-        console.error("DeleteEmployee Error:", error);
+        console.error("SetEmployeeStatus Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 }

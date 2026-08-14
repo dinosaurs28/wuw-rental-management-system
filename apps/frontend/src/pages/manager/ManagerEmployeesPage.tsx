@@ -29,13 +29,11 @@ export const ManagerEmployeesPage = () => {
     limit: 10,
   });
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 on search
+      setPagination((prev) => ({ ...prev, page: 1 }));
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -55,7 +53,6 @@ export const ManagerEmployeesPage = () => {
       }));
     } catch (error) {
       console.error("Failed to fetch employees", error);
-      // toast.error("Failed to load employees"); // Avoid spamming error on mount if auth fails (redirect handled elsewhere)
     } finally {
       setIsLoading(false);
     }
@@ -76,14 +73,14 @@ export const ManagerEmployeesPage = () => {
   return (
     <ManagerLayout>
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8 pb-12">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
           <div>
             <Breadcrumb className="mb-2">
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/manager/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -91,26 +88,34 @@ export const ManagerEmployeesPage = () => {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-              Employee Management
-            </h1>
-            <p className="text-neutral-500 mt-1">
-              Manage branch employees and their access.
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
+                Employee Management
+              </h1>
+              {!isLoading && pagination.total > 0 && (
+                <span className="inline-flex items-center justify-center h-6 px-2.5 rounded-full bg-neutral-100 text-neutral-600 text-xs font-semibold">
+                  {pagination.total}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-neutral-500 mt-1">
+              Manage branch staff accounts and their access.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1 md:max-w-sm">
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <Input
               placeholder="Search by name or phone..."
-              className="pl-9 bg-white"
+              className="pl-9 h-11 bg-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="ml-auto">
+          <div className="flex-shrink-0">
             <CreateEmployeeDialog onSuccess={handleEmployeeCreated} />
           </div>
         </div>

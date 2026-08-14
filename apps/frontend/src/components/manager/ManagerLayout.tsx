@@ -15,9 +15,11 @@ import {
   Settings2,
   BookOpen,
   Activity,
+  Clock,
   ShieldCheck,
   LogOut,
   User,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
@@ -57,12 +59,14 @@ const financialsItems = [
 
 const operationsItems = [
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
-  { label: "No-Show", path: "/manager/no-show", icon: UserX },
+  { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
+  { label: "Cancellations", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },
 ];
 
 const topLevelItems = [
   { label: "Dashboard", path: "/manager/dashboard", icon: LayoutDashboard },
+  { label: "Fleet", path: "/manager/fleet", icon: Truck },
   { label: "Vehicles", path: "/manager/vehicles", icon: Car },
   { label: "Employees", path: "/manager/employees", icon: Users },
 ];

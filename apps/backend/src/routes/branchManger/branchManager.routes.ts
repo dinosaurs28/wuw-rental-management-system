@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { Login } from "../../controller/branchManager/login.controller.js";
 import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
+import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller.js";
 import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller.js";
 import {
@@ -16,6 +20,9 @@ import {
   GetConfirmationDetails,
   GetBookingVehicleDetails,
   GetNoShowEligibleBookings,
+  GetCancellationStats,
+  GetCancellationHistory,
+  TriggerNoShowAutoCancelManual,
 } from "../../controller/branchManager/bookings.controller.js";
 import {
   GetAvailableVehicles,
@@ -50,7 +57,7 @@ import {
   GetEmployee,
   SearchEmployee,
   UpdateEmployee,
-  DeleteEmployee,
+  SetEmployeeStatus,
 } from "../../controller/branchManager/employee.controller.js";
 import {
   CreateDepositRule,
@@ -95,15 +102,32 @@ import {
   RejectSafetyDepositRequest,
 } from "../../controller/branchManager/safety-deposit-request.controller.js";
 import { UpdateVehicleFastag } from "../../controller/branchManager/vehicle.controller.js";
+import {
+  getManagerBranchSchedule,
+  upsertManagerBranchSchedule,
+  updateManagerBranchGrace,
+  getBookingRestrictionConfig,
+  updateBookingRestrictionMode,
+} from "../../controller/branchManager/branchSchedule.controller.js";
 
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.post("/auth/forgot-password", makeForgotPasswordController("branchManager"));
+router.post("/auth/reset-password", resetPasswordController);
+router.get("/dashboard/branch/schedule", ManagerCheck, getManagerBranchSchedule);
+router.patch("/dashboard/branch/schedule", ManagerCheck, upsertManagerBranchSchedule);
+router.patch("/dashboard/branch/grace", ManagerCheck, updateManagerBranchGrace);
+router.get("/dashboard/branch/booking-restriction", ManagerCheck, getBookingRestrictionConfig);
+router.patch("/dashboard/branch/booking-restriction", ManagerCheck, updateBookingRestrictionMode);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
 router.get("/dashboard/bookings/no-show-eligible", ManagerCheck, GetNoShowEligibleBookings);
+router.get("/dashboard/cancellations/stats", ManagerCheck, GetCancellationStats);
+router.get("/dashboard/cancellations", ManagerCheck, GetCancellationHistory);
+router.post("/dashboard/cancellations/trigger-cron", ManagerCheck, TriggerNoShowAutoCancelManual);
 router.get(
   "/dashboard/bookings/manager-confirmations",
   ManagerCheck,
@@ -215,7 +239,7 @@ router.get("/dashboard/employees", ManagerCheck, SearchEmployee);
 router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee);
 router.post("/dashboard/employees", ManagerCheck, CreateEmployee);
 router.put("/dashboard/employees/:employeeId", ManagerCheck, UpdateEmployee);
-router.delete("/dashboard/employees/:employeeId", ManagerCheck, DeleteEmployee);
+router.patch("/dashboard/employees/:employeeId/status", ManagerCheck, SetEmployeeStatus);
 router.get("/dashboard/deposit-rules", ManagerCheck, GetDepositRules);
 router.post("/dashboard/deposit-rules", ManagerCheck, CreateDepositRule);
 router.put("/dashboard/deposit-rules/:id", ManagerCheck, UpdateDepositRule);

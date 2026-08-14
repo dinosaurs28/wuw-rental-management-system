@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { emailAuthSchemaSignin } from "@repo/schemas";
@@ -158,18 +158,12 @@ export default function BranchManagerSignInPage() {
                     Keep me signed in
                   </label>
                 </div>
-                <a
-                  href="#"
+                <Link
+                  to="/branch-manager/forgot-password"
                   className="text-sm font-medium text-primary hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast.info(
-                      "Please contact IT support to reset your password.",
-                    );
-                  }}
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

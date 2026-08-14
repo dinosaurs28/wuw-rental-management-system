@@ -177,7 +177,7 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
     select: {
       id: true,
       totalFinal: true,
-      invoice: { select: { id: true } },
+      invoice: { select: { id: true, invoicePdfFileId: true } },
       branch: {
         select: {
           gstRule: { select: { cgstRate: true, sgstRate: true } },
@@ -192,6 +192,9 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
   }
 
   const invoiceId = booking.invoice.id;
+  // Capture the old file ID before nulling it — passed to the worker so it can
+  // delete the stale R2 object and FileObject row after the new PDF is uploaded.
+  const previousFileObjectId = booking.invoice.invoicePdfFileId ?? undefined;
   const cgstRate = booking.branch.gstRule ? Number(booking.branch.gstRule.cgstRate) : 9;
   const sgstRate = booking.branch.gstRule ? Number(booking.branch.gstRule.sgstRate) : 9;
   const totalGstRate = cgstRate + sgstRate;
@@ -244,7 +247,7 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
     });
   });
 
-  await queueInvoiceGeneration(bookingId, invoiceId);
+  await queueInvoiceGeneration(bookingId, invoiceId, true, previousFileObjectId);
 
   console.log(
     `[finalizeInvoice] Done — booking ${bookingId}: total ₹${newTotal.toFixed(2)}, ` +

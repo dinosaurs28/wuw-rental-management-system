@@ -226,12 +226,14 @@ export const paymentSessionService = {
   async recordPayment(
     sessionPublicId: string,
     payload: {
-      method: "CASH" | "ONLINE";
+      method: "CASH" | "ONLINE" | "SPLIT";
       amount: number;
       idempotencyKey: string;
       notes?: string;
       onlineTransactionRef?: string;
       onlineGateway?: string;
+      cashAmount?: number;
+      onlineAmount?: number;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(

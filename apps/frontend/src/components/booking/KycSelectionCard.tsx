@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ZoomableImage } from "@/components/ui/ZoomableImage";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useKycStore } from "@/store/kyc.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -185,11 +186,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
           </DialogHeader>
           <div className="p-4">
             {previewImage?.url && (
-              <img
-                src={previewImage.url}
-                alt={previewImage.title}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
-              />
+              <ZoomableImage src={previewImage.url} alt={previewImage.title} />
             )}
           </div>
         </DialogContent>

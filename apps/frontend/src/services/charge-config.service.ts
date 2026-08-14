@@ -17,6 +17,10 @@ export interface BranchChargeConfig {
   safetyDepositEnabled: boolean;
   safetyDepositRequiresApproval: boolean;
   usePaymentSessions: boolean;
+  // Extension button visibility window
+  extensionThresholdHours: number;
+  extensionWindowShortHours: number;
+  extensionWindowLongHours: number;
 }
 
 export const chargeConfigService = {

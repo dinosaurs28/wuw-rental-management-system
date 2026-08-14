@@ -42,6 +42,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-audio",
       [
         "expo-font",
         {
@@ -62,6 +63,15 @@
           "cameraPermission": "WUW needs camera access to scan booking QR codes and capture vehicle condition photos.",
           "microphonePermission": false,
           "recordAudioAndroidPermission": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": false,
+            "networkSecurityConfig": "./android-network-security-config.xml"
+          }
         }
       ]
     ],

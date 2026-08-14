@@ -244,6 +244,22 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
         });
       }
 
+      // Abandon any open RETURN payment session — manager will handle full settlement
+      const openReturnSession = await tx.paymentSession.findFirst({
+        where: {
+          bookingId: booking.id,
+          sessionType: "RETURN",
+          status: { in: ["AWAITING_PAYMENT", "PAYMENT_INITIATED"] },
+        },
+        select: { id: true },
+      });
+      if (openReturnSession) {
+        await (tx as any).paymentSession.update({
+          where: { id: openReturnSession.id },
+          data: { status: "ABANDONED" },
+        });
+      }
+
       return report;
     }, { timeout: 30000 });
 

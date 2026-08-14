@@ -1,18 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { LucideBookDashed, LucideLogOut, Menu, X } from "lucide-react";
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
+import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuthStore();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -25,137 +25,117 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 lg:px-8 py-6 pointer-events-none transition-all duration-300">
-      <div className="max-w-[1600px] mx-auto pointer-events-auto">
-        <div
-          className={`
-                        flex items-center justify-between mx-auto rounded-[2rem] md:rounded-full px-6 md:px-8 transition-all duration-500
-                        ${
-                          isScrolled
-                            ? "bg-white text-zinc-950 shadow-[0_8px_30px_rgb(0,0,0,0.08)] py-4 border border-zinc-200/50"
-                            : "bg-zinc-900 text-white shadow-xl py-5 border border-zinc-800"
-                        }
-                    `}
-        >
-          {/* Logo */}
-          <Link to="/" className="flex items-center group relative z-50">
-            <img
-              src={isScrolled ? "/logo.png" : "/logo-W.png"}
-              alt="WUW Rentals Logo"
-              className="h-10 md:h-12 w-auto object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-[0_2px_10px_rgba(255,255,255,0.1)]"
-            />
-          </Link>
+    <header 
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-white/5",
+        scrolled ? "bg-black/90 backdrop-blur-xl shadow-2xl py-0" : "bg-gradient-to-b from-black/80 to-transparent py-2"
+      )}
+    >
+      <div className="w-full max-w-[1920px] mx-auto px-4 md:px-6 lg:px-12 h-20 flex items-center justify-between">
+        
+        {/* Left Side: Logo */}
+        <Link to="/" className="flex items-center flex-shrink-0 group">
+          <img
+            src="/logo-W.png"
+            alt="WUW Rentals Logo"
+            className="h-8 md:h-10 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+          />
+        </Link>
 
+        {/* Right Side: Actions (Desktop) */}
+        <div className="hidden md:flex items-center gap-2 lg:gap-4">
 
-          {/* Right Side Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => navigate("/dashboard")}
-                  className={`rounded-full h-11 px-6 font-bold shadow-sm transition-all hover:scale-105 active:scale-95 ${
-                    isScrolled
-                      ? "bg-zinc-100 text-zinc-950 hover:bg-zinc-200"
-                      : "bg-zinc-800 text-white hover:bg-zinc-700"
-                  }`}
-                >
-                  <LucideBookDashed className="size-4 mr-2" />
-                  Bookings
-                </Button>
-                <Button
-                  onClick={handleLogout}
-                  className="rounded-full h-11 px-6 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 font-bold transition-all shadow-none"
-                >
-                  <LucideLogOut className="size-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/auth/user/signin"
-                  className={`text-sm font-bold px-4 py-2 rounded-full transition-colors ${
-                    isScrolled
-                      ? "text-zinc-950 hover:bg-zinc-100"
-                      : "text-white hover:bg-zinc-800"
-                  }`}
-                >
-                  Sign in
-                </Link>
-                <Button
-                  onClick={() => navigate("/auth/user/signup")}
-                  className={`rounded-full h-11 px-6 font-bold shadow-md transition-all hover:scale-105 active:scale-95 ${
-                    isScrolled
-                      ? "bg-zinc-950 text-white hover:bg-zinc-800 hover:shadow-xl"
-                      : "bg-white text-zinc-950 hover:bg-zinc-100 hover:shadow-xl"
-                  }`}
-                >
-                  Start driving
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button
-            className={`md:hidden flex items-center justify-center size-10 rounded-full transition-colors relative z-50 ${
-              mobileMenuOpen
-                ? "bg-zinc-100 text-zinc-900"
-                : isScrolled
-                  ? "bg-zinc-100 text-zinc-900"
-                  : "bg-zinc-800 text-white"
-            }`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )}
-          </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="relative group px-4 py-2 flex items-center gap-2 text-sm font-bold text-gray-200 hover:text-white transition-colors uppercase tracking-wider"
+              >
+                <LayoutDashboard className="size-4 opacity-70 group-hover:opacity-100" />
+                Manage Bookings
+                <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-[#FF5F00] group-hover:w-full group-hover:left-0 transition-all duration-300 rounded-t-sm" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 hover:text-[#FF5F00] transition-all duration-300 uppercase tracking-wider"
+              >
+                <LogOut className="size-4" /> Log out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 pl-2">
+              <Link
+                to="/auth/user/signin"
+                className="relative group px-4 py-2 flex items-center gap-2 text-sm font-bold text-gray-200 hover:text-white transition-colors uppercase tracking-wider"
+              >
+                <UserIcon className="size-5 opacity-70 group-hover:opacity-100" />
+                Log in
+                <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-[#FF5F00] group-hover:w-full group-hover:left-0 transition-all duration-300 rounded-t-sm" />
+              </Link>
+              <Link
+                to="/auth/user/signup"
+                className="px-6 py-2.5 rounded-full text-sm font-bold text-white bg-[#FF5F00] hover:bg-[#E55500] hover:shadow-[0_0_15px_rgba(255,95,0,0.4)] transition-all duration-300 uppercase tracking-wider"
+              >
+                Register
+              </Link>
+            </div>
+          )}
         </div>
 
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-24 left-4 right-4 bg-white rounded-[2rem] shadow-2xl overflow-hidden p-6 border border-zinc-200 flex flex-col gap-2 origin-top animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
+        {/* Mobile Menu Toggle */}
+        <button
+          className="md:hidden flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+        </button>
+      </div>
 
-            {isAuthenticated ? (
-              <div className="flex flex-col gap-3 pt-2">
-                <Button
-                  onClick={() => {
-                    navigate("/dashboard");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full rounded-2xl h-14 bg-zinc-950 text-white text-lg font-bold"
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  onClick={handleLogout}
-                  className="w-full rounded-2xl h-14 bg-red-50 text-red-600 text-lg font-bold"
-                  variant="outline"
-                >
-                  Sign out
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 pt-2">
-                <Button
-                  onClick={() => navigate("/auth/user/signin")}
-                  className="w-full rounded-full h-14 bg-zinc-100 text-zinc-950 hover:bg-zinc-200 text-lg font-bold"
-                  variant="ghost"
-                >
-                  Sign in
-                </Button>
-                <Button
-                  onClick={() => navigate("/auth/user/signup")}
-                  className="w-full rounded-full h-14 bg-orange-500 text-white hover:bg-orange-600 text-lg font-bold shadow-lg shadow-orange-500/20"
-                >
-                  Start driving
-                </Button>
-              </div>
-            )}
-          </div>
+      {/* Mobile Navigation Menu */}
+      <div 
+        className={cn(
+            "md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-xl border-b border-white/10 flex flex-col pointer-events-auto transition-all duration-300 overflow-hidden",
+            mobileMenuOpen ? "max-h-[500px] opacity-100 py-2" : "max-h-0 opacity-0 py-0"
         )}
+      >
+        <div className="flex flex-col">
+          {isAuthenticated ? (
+            <>
+              <button
+                onClick={() => {
+                  navigate("/dashboard");
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-3 px-6 py-4 text-left font-bold text-white hover:bg-white/5 uppercase tracking-wider transition-colors"
+              >
+                <LayoutDashboard className="size-5" /> Manage Bookings
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-6 py-4 text-left font-bold text-[#FF5F00] hover:bg-white/5 transition-colors uppercase tracking-wider"
+              >
+                <LogOut className="size-5" /> Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/auth/user/signin"
+                className="flex items-center gap-3 px-6 py-4 text-left font-bold text-white hover:bg-white/5 uppercase tracking-wider transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <UserIcon className="size-5" /> Log in
+              </Link>
+              <Link
+                to="/auth/user/signup"
+                className="flex items-center gap-3 px-6 py-4 text-left font-bold text-[#FF5F00] hover:bg-white/5 transition-colors uppercase tracking-wider pl-[3.25rem]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

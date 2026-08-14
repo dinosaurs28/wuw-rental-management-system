@@ -2,6 +2,10 @@ import { Router } from "express";
 import { Login } from "../../controller/admin/auth.controller.js";
 import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
 import {
+  makeForgotPasswordController,
+  resetPasswordController,
+} from "../../services/passwordReset/passwordReset.controller.js";
+import {
   GetAllBranches,
   CreateBranch,
   EditBranch,
@@ -11,7 +15,7 @@ import {
   GetBranchManagers,
   CreateBranchManager,
   UpdateBranchManager,
-  DeleteBranchManager,
+  SetBranchManagerStatus,
 } from "../../controller/admin/branchManager.controller.js";
 import { GetBranchRevenue } from "../../controller/admin/report.controller.js";
 import {
@@ -23,6 +27,7 @@ import {
 import { GetDailySummary } from "../../controller/admin/dailySummaryController.js";
 import { GetSalesReport } from "../../controller/admin/salesReportController.js";
 import { GetVehicleHistory } from "../../controller/admin/vehicleHistoryController.js";
+import { GetVehicleReportList } from "../../controller/admin/vehicleReportController.js";
 import { GetVehicleAvailability } from "../../controller/admin/vehicleAvailabilityController.js";
 import { GetInsurancePermitExpiry } from "../../controller/admin/insurancePermitController.js";
 import { GetCollectionReport } from "../../controller/admin/collectionReportController.js";
@@ -40,20 +45,31 @@ import staffActivityRouter from "./staffActivity.routes.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import whatsappConfigRouter from "./whatsapp-config.routes.js";
+import userTransferRouter from "./userTransfer.routes.js";
+import {
+  upsertBranchSchedule,
+  updateBranchGrace,
+} from "../../controller/admin/branchSchedule.controller.js";
 
 const router: Router = Router();
 
 router.post("/auth/login", Login);
+router.post("/auth/forgot-password", makeForgotPasswordController("admin"));
+router.post("/auth/reset-password", resetPasswordController);
 router.get("/dashboard/branches", AdminCheck, GetAllBranches);
 router.post("/dashboard/branches/create", AdminCheck, CreateBranch);
 router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);
 router.delete("/dashboard/branches/delete/:branchId", AdminCheck, DeleteBranch);
 
+// Branch schedule configuration
+router.patch("/dashboard/branches/:branchPublicId/schedule", AdminCheck, upsertBranchSchedule);
+router.patch("/dashboard/branches/:branchPublicId/grace", AdminCheck, updateBranchGrace);
+
 // Branch Manager CRUD (multiple managers per branch)
 router.get("/dashboard/branches/:branchId/managers", AdminCheck, GetBranchManagers);
 router.post("/dashboard/branches/:branchId/managers", AdminCheck, CreateBranchManager);
 router.put("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, UpdateBranchManager);
-router.delete("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, DeleteBranchManager);
+router.patch("/dashboard/branches/:branchId/managers/:managerId/status", AdminCheck, SetBranchManagerStatus);
 router.get("/dashboard/reports/revenue", AdminCheck, GetBranchRevenue);
 router.get("/dashboard/reports/revenue-trends", AdminCheck, GetRevenueTrends);
 router.get(
@@ -72,6 +88,7 @@ router.get("/dashboard/reports/global-kpi", AdminCheck, getGlobalKpiStats);
 // New Reports System Routes (All 8 Reports)
 router.get("/dashboard/reports/daily-summary", AdminCheck, GetDailySummary);
 router.get("/dashboard/reports/sales", AdminCheck, GetSalesReport);
+router.get("/dashboard/reports/vehicles", AdminCheck, GetVehicleReportList);
 router.get(
   "/dashboard/reports/vehicle-history/:vehicleId",
   AdminCheck,
@@ -109,6 +126,9 @@ router.use("/audit", auditRouter);
 
 // Staff Activity Logs
 router.use("/staff-activity", staffActivityRouter);
+
+// Cross-branch user staffing overview & transfer
+router.use("/dashboard/user-transfer", userTransferRouter);
 
 // Discount Rules
 router.use("/discount-rules", discountRouter);

@@ -57,6 +57,13 @@ class CouponValidationService {
       }
     }
 
+    // Layer 3.5 — per-customer restriction (BRANCH coupons restricted to specific customers)
+    if (rule.scope === "BRANCH" && rule.targetCustomerIds.length > 0) {
+      if (!rule.targetCustomerIds.includes(ctx.customerId)) {
+        return fail("COUPON_USER_RESTRICTED", "This coupon is not available for your account.");
+      }
+    }
+
     // Layer 4 — customer eligibility
     const bookingCount = await prisma.booking.count({
       where: {

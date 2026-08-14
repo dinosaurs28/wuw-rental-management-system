@@ -20,6 +20,7 @@ export interface DamageReport {
   images: { url: string }[];
   financialHint: {
     deposit: number;
+    additionalCharges: number;
     estimatedCost: number;
     gstRate: number;
   };
@@ -28,8 +29,11 @@ export interface DamageReport {
 export interface CloseDamagePayload {
   disposition: "AVAILABLE" | "MAINTENANCE" | "DAMAGED";
   finalCost: number;
-  paymentMethod?: "CASH" | "ONLINE_RAZORPAY";
-  redirectUrl?: string; // Add redirectUrl for custom redirection after payment
+  paymentMethod?: "CASH" | "ONLINE_RAZORPAY" | "SPLIT";
+  redirectUrl?: string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  onlineTransactionRef?: string;
 }
 
 export interface CloseDamageResponse {

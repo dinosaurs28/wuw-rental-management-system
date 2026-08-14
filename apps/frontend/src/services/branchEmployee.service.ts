@@ -6,6 +6,7 @@ export interface BranchEmployee {
     email: string;
     phone: string;
     role: string;
+    isActive: boolean;
     createdAt: string;
 }
 
@@ -21,12 +22,14 @@ export interface GetEmployeesResponse {
 
 export interface CreateEmployeeInput {
     name: string;
+    email: string;
     phone: string;
     password: string;
 }
 
 export interface UpdateEmployeeInput {
     name?: string;
+    email?: string;
     phone?: string;
     // role?: string; // Role update might be separate or here, keeping simple for now
 }
@@ -51,7 +54,7 @@ export const branchEmployeeService = {
         await apiClient.put(`/branchManager/dashboard/employees/${id}`, data);
     },
 
-    delete: async (id: string): Promise<void> => {
-        await apiClient.delete(`/branchManager/dashboard/employees/${id}`);
+    setStatus: async (id: string, isActive: boolean): Promise<void> => {
+        await apiClient.patch(`/branchManager/dashboard/employees/${id}/status`, { isActive });
     },
 };

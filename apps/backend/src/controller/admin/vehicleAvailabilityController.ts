@@ -2,96 +2,102 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { exportVehicleAvailabilityToExcel } from "../../utils/exportToExcel.js";
-import { exportVehicleAvailabilityToCSV } from "../../utils/exportToCSV.js";
+import {
+  resolveReportRange,
+  parseCategoryIds,
+  buildVehicleWhere,
+  exportRowsToCSV,
+  csvDate,
+} from "../../utils/reporting/index.js";
 
 /**
- * Vehicle Availability Report Controller
- * GET /api/dashboard/reports/vehicle-availability
+ * Vehicle Availability Report (spec §4.6) — operational, no revenue.
  *
- * Query Parameters:
- * - startDate: string (required) - Format: YYYY-MM-DD
- * - endDate: string (required) - Format: YYYY-MM-DD
- * - branchId: string (optional) - Filter by branch
- * - categoryId: number (optional) - Filter by vehicle category
- * - export: 'xlsx' | 'csv' (optional)
+ * Conformed to spec:
+ * - Vehicle filter via shared buildVehicleWhere: branch + category + EXCLUDE
+ *   inactive vehicles by default.
+ * - "Booked" on a day = a booking with status in [CONFIRMED, PICKED_UP] overlaps
+ *   that day (HOLD excluded).
+ * - Adds the two missing fields: Next Available From and Booked Dates in Range.
+ * - Booked days counted as DISTINCT calendar days in range (no double counting
+ *   across overlapping bookings) so Free Days = range days - booked days >= 0.
+ * - "Show Only Available" toggle filters to vehicles with at least one free day.
+ * - Sort: most free days first. CSV in spec column order, inline via reporting/csv.
+ *
+ * GET /api/dashboard/reports/vehicle-availability
+ * Query: startDate, endDate (or preset/from/to), branchId, categoryId/categories,
+ *        availableOnly ("true"|"1"), export ("xlsx"|"csv").
  */
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+/** Start-of-day clone. */
+const dayStart = (d: Date): Date => {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c;
+};
+
+/** A "DD-MM" date label for the "Booked Dates in Range" ranges (no year, spec). */
+const ddmm = (d: Date): string => {
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  return `${day}-${month}`;
+};
+
+const ACTIVE_BOOKING_STATUSES = ["CONFIRMED", "PICKED_UP"] as const;
+
 export const GetVehicleAvailability = async (req: Request, res: Response) => {
   try {
     const {
-      startDate,
-      endDate,
       branchId,
+      branch,
       categoryId,
+      categories,
+      availableOnly,
       export: exportFormat,
     } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Start date and end date are required",
-      });
-    }
+    // Date range (availability window). Supports preset OR explicit start/end.
+    const { start, end, days: totalDays } = resolveReportRange({
+      preset: req.query.preset,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      from: req.query.from,
+      to: req.query.to,
+    });
 
-    const start = new Date(startDate as string);
-    const end = new Date(endDate as string);
+    const branchPublicId =
+      branchId && String(branchId) !== "all"
+        ? String(branchId)
+        : branch && String(branch) !== "all"
+          ? String(branch)
+          : undefined;
+    const categoryPublicIds = parseCategoryIds(categories ?? categoryId);
+    const showOnlyAvailable =
+      String(availableOnly) === "true" || String(availableOnly) === "1";
 
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    // Canonical vehicle filter: branch + category + EXCLUDE inactive (spec §4.6).
+    const vehicleWhere = buildVehicleWhere({
+      branchPublicId,
+      categoryPublicIds,
+      includeInactive: false,
+    });
 
-    // Build filter conditions
-    const vehicleFilter: any = {
-      deletedAt: null,
-    };
-
-    if (branchId && branchId !== "all") {
-      const branch = await prisma.branch.findUnique({
-        where: { publicId: branchId as string },
-      });
-      if (branch) {
-        vehicleFilter.branchId = branch.id;
-      }
-    }
-
-    if (categoryId) {
-      vehicleFilter.categoryId = parseInt(categoryId as string);
-    }
-
-    // ========================================================================
-    // Fetch all vehicles and their bookings in the date range
-    // ========================================================================
-
-    const [vehicles, totalVehicles, categories] = await Promise.all([
-      // Get all vehicles with their bookings
+    const [vehicles, categoriesList] = await Promise.all([
       prisma.vehicle.findMany({
-        where: vehicleFilter,
+        where: vehicleWhere,
         include: {
-          category: {
-            select: {
-              name: true,
-              id: true,
-            },
-          },
-          branch: {
-            select: {
-              name: true,
-              publicId: true,
-            },
-          },
+          category: { select: { name: true, id: true } },
+          branch: { select: { name: true, publicId: true } },
           bookingItems: {
             where: {
               booking: {
-                OR: [
-                  {
-                    startAt: {
-                      lte: end,
-                    },
-                    endAt: {
-                      gte: start,
-                    },
-                  },
-                ],
-                status: {
-                  in: ["HOLD", "CONFIRMED", "PICKED_UP"],
-                },
+                // overlap with the availability window
+                startAt: { lte: end },
+                endAt: { gte: start },
+                // Booked = CONFIRMED or PICKED_UP only (HOLD excluded, spec §4.6)
+                status: { in: [...ACTIVE_BOOKING_STATUSES] },
                 deletedAt: null,
               },
             },
@@ -99,48 +105,24 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
               booking: {
                 include: {
                   customer: {
-                    include: {
-                      user: {
-                        select: {
-                          name: true,
-                          phone: true,
-                        },
-                      },
-                    },
+                    include: { user: { select: { name: true, phone: true } } },
                   },
                 },
               },
             },
-            orderBy: {
-              booking: {
-                startAt: "asc",
-              },
-            },
+            orderBy: { booking: { startAt: "asc" } },
           },
         },
         orderBy: [{ status: "asc" }, { regNo: "asc" }],
       }),
-
-      // Total vehicle count
-      prisma.vehicle.count({
-        where: vehicleFilter,
-      }),
-
-      // Categories summary
-      prisma.vehicleCategory.findMany({
-        select: {
-          id: true,
-          name: true,
-        },
-      }),
+      prisma.vehicleCategory.findMany({ select: { id: true, name: true } }),
     ]);
 
-    // ========================================================================
-    // Calculate availability metrics
-    // ========================================================================
+    const totalVehicles = vehicles.length;
+    const now = new Date();
+    const todayStart = dayStart(now);
+    const rangeStartDay = dayStart(start);
 
-    const totalDays =
-      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     let totalAvailableDays = 0;
     let totalBookedDays = 0;
     let currentlyAvailable = 0;
@@ -158,138 +140,170 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
         days: item.booking.days,
       }));
 
-      // Calculate booked days in the date range
-      let bookedDaysInRange = 0;
-      bookings.forEach((booking) => {
-        const bookingStart = new Date(booking.startDate);
-        const bookingEnd = new Date(booking.endDate);
+      // ----- Distinct booked calendar days within the range (no double count) --
+      const bookedDaySet = new Set<number>();
+      // Human-readable booked ranges (clamped to window), "12-05 to 15-05".
+      const bookedRangeLabels: string[] = [];
 
-        const overlapStart = bookingStart > start ? bookingStart : start;
-        const overlapEnd = bookingEnd < end ? bookingEnd : end;
+      vehicle.bookingItems.forEach((item) => {
+        const bs = item.booking.startAt;
+        const be = item.booking.endAt;
+        const overlapStart = bs > start ? bs : start;
+        const overlapEnd = be < end ? be : end;
+        if (overlapStart > overlapEnd) return;
 
-        if (overlapStart <= overlapEnd) {
-          const days =
-            Math.ceil(
-              (overlapEnd.getTime() - overlapStart.getTime()) /
-                (1000 * 60 * 60 * 24),
-            ) + 1;
-          bookedDaysInRange += days;
+        const sDay = dayStart(overlapStart);
+        const eDay = dayStart(overlapEnd);
+        for (
+          let d = sDay.getTime();
+          d <= eDay.getTime();
+          d += MS_PER_DAY
+        ) {
+          // index relative to range start, keyed for distinctness
+          bookedDaySet.add(Math.round((d - rangeStartDay.getTime()) / MS_PER_DAY));
         }
+        bookedRangeLabels.push(`${ddmm(sDay)} to ${ddmm(eDay)}`);
       });
 
-      const availableDaysInRange = totalDays - bookedDaysInRange;
+      const bookedDaysInRange = bookedDaySet.size;
+      const availableDaysInRange = Math.max(0, totalDays - bookedDaysInRange);
+      const bookedDatesInRange = bookedRangeLabels.join(", ");
+
       const utilizationRate =
         totalDays > 0
-          ? ((bookedDaysInRange / totalDays) * 100).toFixed(1)
-          : "0.0";
+          ? parseFloat(((bookedDaysInRange / totalDays) * 100).toFixed(1))
+          : 0;
 
       totalAvailableDays += availableDaysInRange;
       totalBookedDays += bookedDaysInRange;
 
-      // Check current status
-      const now = new Date();
-      const isCurrentlyRented = bookings.some(
+      // ----- Current status (Available / Booked / Maintenance) -----------------
+      const isCurrentlyBooked = bookings.some(
         (b) =>
           new Date(b.startDate) <= now &&
           new Date(b.endDate) >= now &&
-          b.status === "PICKED_UP",
+          (b.status === "PICKED_UP" || b.status === "CONFIRMED"),
       );
 
-      if (isCurrentlyRented) {
-        currentlyRented++;
-      } else if (vehicle.status === "AVAILABLE") {
-        currentlyAvailable++;
+      let currentStatus: "Available" | "Booked" | "Maintenance";
+      if (vehicle.status === "MAINTENANCE") {
+        currentStatus = "Maintenance";
+      } else if (isCurrentlyBooked || vehicle.status === "OUT_FOR_RENTAL") {
+        currentStatus = "Booked";
+      } else {
+        currentStatus = "Available";
       }
 
-      // Count upcoming bookings
-      const upcoming = bookings.filter((b) => new Date(b.startDate) > now);
-      upcomingBookings += upcoming.length;
+      if (currentStatus === "Booked") currentlyRented++;
+      else if (currentStatus === "Available") currentlyAvailable++;
+
+      // ----- Next Available From -----------------------------------------------
+      // max(today, MAX(endAt)+1) over CONFIRMED/PICKED_UP bookings ending today
+      // or later; "today / Available" when there are none.
+      let nextAvailableFrom: Date = todayStart;
+      const futureEnds = bookings
+        .filter((b) => new Date(b.endDate) >= todayStart)
+        .map((b) => new Date(b.endDate));
+      if (futureEnds.length > 0) {
+        const maxEnd = new Date(
+          Math.max(...futureEnds.map((d) => d.getTime())),
+        );
+        const dayAfter = dayStart(maxEnd);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+        nextAvailableFrom = dayAfter > todayStart ? dayAfter : todayStart;
+      }
+
+      // Upcoming bookings (start in the future) — kept for summary widget.
+      upcomingBookings += bookings.filter(
+        (b) => new Date(b.startDate) > now,
+      ).length;
 
       return {
         vehicleId: vehicle.publicId,
         regNo: vehicle.regNo,
         make: vehicle.make,
         model: vehicle.model,
+        vehicleName: `${vehicle.make} ${vehicle.model}`,
         category: vehicle.category.name,
         branch: vehicle.branch.name,
         status: vehicle.status,
+        currentStatus,
         totalDays,
         bookedDays: bookedDaysInRange,
         availableDays: availableDaysInRange,
-        utilizationRate: parseFloat(utilizationRate),
+        freeDays: availableDaysInRange,
+        utilizationRate,
+        nextAvailableFrom: nextAvailableFrom.toISOString(),
+        bookedDatesInRange,
         bookings,
-        currentStatus: isCurrentlyRented ? "RENTED" : vehicle.status,
       };
     });
 
-    // ========================================================================
-    // Category-wise breakdown
-    // ========================================================================
+    // Sort: most free days first (spec §4.6).
+    vehicleData.sort((a, b) => b.freeDays - a.freeDays);
 
-    const categoryBreakdown = categories.map((category) => {
+    const visibleVehicles = showOnlyAvailable
+      ? vehicleData.filter((v) => v.freeDays > 0)
+      : vehicleData;
+
+    // ----- Category breakdown (backward-compatible widget) ---------------------
+    const categoryBreakdown = categoriesList.map((category) => {
       const categoryVehicles = vehicleData.filter(
         (v) => v.category === category.name,
       );
       const total = categoryVehicles.length;
       const available = categoryVehicles.filter(
-        (v) => v.currentStatus === "AVAILABLE",
+        (v) => v.currentStatus === "Available",
       ).length;
       const rented = categoryVehicles.filter(
-        (v) => v.currentStatus === "RENTED",
+        (v) => v.currentStatus === "Booked",
       ).length;
       const maintenance = categoryVehicles.filter(
-        (v) => v.currentStatus === "MAINTENANCE",
+        (v) => v.currentStatus === "Maintenance",
       ).length;
-      const inactive = categoryVehicles.filter(
-        (v) => v.currentStatus === "INACTIVE",
-      ).length;
-
       const avgUtilization =
         total > 0
-          ? (
-              categoryVehicles.reduce((sum, v) => sum + v.utilizationRate, 0) /
-              total
-            ).toFixed(1)
-          : "0.0";
-
+          ? parseFloat(
+              (
+                categoryVehicles.reduce((s, v) => s + v.utilizationRate, 0) /
+                total
+              ).toFixed(1),
+            )
+          : 0;
       return {
         category: category.name,
         total,
         available,
         rented,
         maintenance,
-        inactive,
-        avgUtilization: parseFloat(avgUtilization),
+        inactive: 0, // inactive vehicles are excluded per spec §4.6
+        avgUtilization,
       };
     });
 
-    // ========================================================================
-    // Summary metrics
-    // ========================================================================
-
     const overallUtilization =
       totalVehicles > 0 && totalDays > 0
-        ? ((totalBookedDays / (totalVehicles * totalDays)) * 100).toFixed(1)
-        : "0.0";
+        ? parseFloat(
+            ((totalBookedDays / (totalVehicles * totalDays)) * 100).toFixed(1),
+          )
+        : 0;
 
     const summary = {
       totalVehicles,
       currentlyAvailable,
       currentlyRented,
-      inMaintenance: vehicles.filter((v) => v.status === "MAINTENANCE").length,
-      inactive: vehicles.filter((v) => v.status === "INACTIVE").length,
+      inMaintenance: vehicleData.filter(
+        (v) => v.currentStatus === "Maintenance",
+      ).length,
+      inactive: 0, // excluded per spec §4.6
       upcomingBookings,
-      overallUtilization: parseFloat(overallUtilization),
+      overallUtilization,
       dateRange: {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
         totalDays,
       },
     };
-
-    // ========================================================================
-    // Build response
-    // ========================================================================
 
     const reportData = {
       metadata: {
@@ -298,28 +312,56 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
           startDate: start.toISOString().split("T")[0],
           endDate: end.toISOString().split("T")[0],
         },
-        branch: branchId && branchId !== "all" ? branchId : "All Branches",
+        branch: branchPublicId ?? "All Branches",
+        availableOnly: showOnlyAvailable,
       },
       summary,
       categoryBreakdown,
-      vehicles: vehicleData,
+      vehicles: visibleVehicles,
     };
 
-    // ========================================================================
-    // Handle export if requested
-    // ========================================================================
-
+    // ----- Export -------------------------------------------------------------
     if (exportFormat === "xlsx") {
-      const filename = `vehicle-availability-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}`;
+      const filename = `vehicle-availability-${csvDate(start)}-${csvDate(end)}`;
       return await exportVehicleAvailabilityToExcel(res, reportData, filename);
     }
 
     if (exportFormat === "csv") {
-      const filename = `vehicle-availability-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}`;
-      return exportVehicleAvailabilityToCSV(res, reportData, filename);
+      // Spec §4.6 column order.
+      const columns = [
+        "Vehicle Reg No",
+        "Vehicle Name",
+        "Category",
+        "Branch",
+        "Current Status",
+        "Next Available From",
+        "Booked Dates in Range",
+        "Total Booked Days",
+        "Total Free Days",
+      ];
+      const rows = visibleVehicles.map((v) => ({
+        "Vehicle Reg No": v.regNo,
+        "Vehicle Name": v.vehicleName,
+        Category: v.category,
+        Branch: v.branch,
+        "Current Status": v.currentStatus,
+        "Next Available From":
+          v.currentStatus === "Available" &&
+          dayStart(new Date(v.nextAvailableFrom)).getTime() ===
+            todayStart.getTime()
+            ? "Available"
+            : csvDate(v.nextAvailableFrom),
+        "Booked Dates in Range": v.bookedDatesInRange,
+        "Total Booked Days": v.bookedDays,
+        "Total Free Days": v.freeDays,
+      }));
+      return exportRowsToCSV(res, {
+        columns,
+        rows,
+        filename: `vehicle-availability-${csvDate(start)}-${csvDate(end)}`,
+      });
     }
 
-    // Return JSON response
     return res.status(StatusCode.OK).json({
       message: "Vehicle availability report generated successfully",
       data: reportData,

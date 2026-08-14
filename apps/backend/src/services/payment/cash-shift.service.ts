@@ -252,7 +252,7 @@ class CashShiftService {
 
   async listForBranch(
     branchId: number,
-    filters: { status?: string; page?: number; pageSize?: number },
+    filters: { status?: string; page?: number; pageSize?: number; from?: Date; to?: Date },
   ): Promise<PaginatedShifts> {
     const page = filters.page ?? 1;
     const pageSize = filters.pageSize ?? 20;
@@ -260,6 +260,15 @@ class CashShiftService {
 
     const where: any = { branchId };
     if (filters.status) where.status = filters.status;
+    if (filters.from || filters.to) {
+      where.openedAt = {};
+      if (filters.from) where.openedAt.gte = filters.from;
+      if (filters.to) {
+        const end = new Date(filters.to);
+        end.setHours(23, 59, 59, 999);
+        where.openedAt.lte = end;
+      }
+    }
 
     const [shifts, total] = await Promise.all([
       prisma.cashShift.findMany({

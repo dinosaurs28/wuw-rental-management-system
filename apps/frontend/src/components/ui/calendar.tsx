@@ -8,18 +8,10 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
-  type DropdownProps,
 } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import "react-day-picker/dist/style.css";
 
 function Calendar({
@@ -40,7 +32,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        "bg-white group/calendar p-6",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className,
@@ -54,84 +46,64 @@ function Calendar({
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
         months: cn(
-          "flex gap-4 flex-col md:flex-row relative",
+          "flex gap-10 flex-col lg:flex-row relative",
           defaultClassNames.months,
         ),
-        month: cn("flex flex-col w-full gap-4", defaultClassNames.month),
+        month: cn("flex flex-col gap-4 w-[300px]", defaultClassNames.month),
         nav: cn(
-          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between z-10 pointer-events-none",
+          "flex items-center gap-1 w-full absolute top-2 inset-x-0 justify-between z-10 pointer-events-none",
           defaultClassNames.nav,
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "pointer-events-auto size-(--cell-size) bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-8 bg-transparent hover:bg-gray-100 text-gray-900 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-none",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "pointer-events-auto size-(--cell-size) bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-8 bg-transparent hover:bg-gray-100 text-gray-900 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-none",
           defaultClassNames.button_next,
         ),
         month_caption: cn(
-          "flex items-center justify-center h-(--cell-size) w-full px-(--cell-size) font-serif",
+          "flex items-center justify-center h-10 w-full font-sans mb-2",
           defaultClassNames.month_caption,
         ),
-        dropdowns: cn(
-          "w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5",
-          defaultClassNames.dropdowns,
-        ),
-        dropdown_root: cn(
-          "relative flex items-center border border-zinc-200 bg-white rounded-md px-2 py-0.5",
-          defaultClassNames.dropdown_root,
-        ),
-        dropdown: cn(
-          "absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer", 
-          defaultClassNames.dropdown
-        ),
         caption_label: cn(
-          "select-none font-bold text-lg text-zinc-900 tracking-wide",
+          "select-none font-black text-xl text-black tracking-tight capitalize",
           defaultClassNames.caption_label,
         ),
-        table: "w-full border-collapse mt-2",
-        weekdays: cn("flex", defaultClassNames.weekdays),
+        table: "w-full border-collapse",
+        weekdays: cn("grid grid-cols-7", defaultClassNames.weekdays),
         weekday: cn(
-          "text-zinc-500 flex-1 font-bold text-[0.7rem] uppercase tracking-widest select-none mb-3",
+          "text-gray-500 flex items-center justify-center font-bold text-xs uppercase tracking-widest select-none mb-4",
           defaultClassNames.weekday,
         ),
-        week: cn("flex w-full mt-1", defaultClassNames.week),
-        week_number_header: cn(
-          "select-none w-(--cell-size)",
-          defaultClassNames.week_number_header,
-        ),
-        week_number: cn(
-          "text-[0.8rem] select-none text-zinc-500",
-          defaultClassNames.week_number,
-        ),
+        week: cn("grid grid-cols-7 mt-2", defaultClassNames.week),
         day: cn(
-          "relative w-full h-full p-0 text-center [&:last-child[data-selected=true]_button]:rounded-r-full group/day aspect-square select-none",
+          "relative flex items-center justify-center p-0 text-center [&:last-child[data-selected=true]_button]:rounded-r-xl group/day select-none",
           props.showWeekNumber
-            ? "[&:nth-child(2)[data-selected=true]_button]:rounded-l-full"
-            : "[&:first-child[data-selected=true]_button]:rounded-l-full",
+            ? "[&:nth-child(2)[data-selected=true]_button]:rounded-l-xl"
+            : "[&:first-child[data-selected=true]_button]:rounded-l-xl",
           defaultClassNames.day,
         ),
         range_start: cn(
-          "rounded-l-full bg-white/10",
+          "rounded-l-xl",
           defaultClassNames.range_start,
         ),
         range_middle: cn("rounded-none", defaultClassNames.range_middle),
         range_end: cn(
-          "rounded-r-full bg-white/10",
+          "rounded-r-xl",
           defaultClassNames.range_end,
         ),
         today: cn(
-          "bg-zinc-100 text-zinc-900 rounded-full data-[selected=true]:rounded-none data-[selected=true]:bg-transparent font-bold",
+          "bg-gray-100 text-black rounded-xl font-bold",
           defaultClassNames.today,
         ),
         outside: cn(
-          "text-zinc-400 aria-selected:text-zinc-400",
+          "text-gray-300 aria-selected:text-gray-300",
           defaultClassNames.outside,
         ),
-        disabled: cn("text-zinc-700 opacity-50", defaultClassNames.disabled),
+        disabled: cn("text-gray-300 opacity-50", defaultClassNames.disabled),
         hidden: cn("invisible", defaultClassNames.hidden),
         ...classNames,
       }}
@@ -149,68 +121,27 @@ function Calendar({
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
             return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+              <ChevronLeftIcon className={cn("size-5", className)} strokeWidth={3} {...props} />
             );
           }
-
           if (orientation === "right") {
             return (
               <ChevronRightIcon
-                className={cn("size-4", className)}
+                className={cn("size-5", className)}
+                strokeWidth={3}
                 {...props}
               />
             );
           }
-
           return (
-            <ChevronDownIcon className={cn("size-4", className)} {...props} />
+            <ChevronDownIcon className={cn("size-5", className)} strokeWidth={3} {...props} />
           );
         },
         DayButton: CalendarDayButton,
-        Dropdown: CalendarDropdown,
-        WeekNumber: ({ children, ...props }) => {
-          return (
-            <td {...props}>
-              <div className="flex size-(--cell-size) items-center justify-center text-center">
-                {children}
-              </div>
-            </td>
-          );
-        },
         ...components,
       }}
       {...props}
     />
-  );
-}
-
-function CalendarDropdown({ value, onChange, options }: DropdownProps) {
-  return (
-    <Select
-      value={String(value)}
-      onValueChange={(val) => {
-        const syntheticEvent = {
-          target: { value: val },
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange?.(syntheticEvent);
-      }}
-    >
-      <SelectTrigger className="h-7 border-zinc-200 bg-white px-2 py-0.5 text-sm font-medium focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="max-h-56 overflow-y-auto" position="popper">
-        {options?.map((opt) => (
-          <SelectItem
-            key={opt.value}
-            value={String(opt.value)}
-            disabled={opt.disabled}
-            className="text-sm"
-          >
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
 
@@ -243,13 +174,13 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "flex outline-none size-full flex-col items-center justify-center gap-1 leading-none font-medium transition-all duration-300",
-        "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 rounded-full",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-        "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[selected-single=true]:font-bold data-[selected-single=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",
-        "data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-start=true]:rounded-l-full data-[range-start=true]:rounded-r-none data-[range-start=true]:font-bold data-[range-start=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",
-        "data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-end=true]:rounded-r-full data-[range-end=true]:rounded-l-none data-[range-end=true]:font-bold data-[range-end=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",
-        "data-[range-middle=true]:bg-primary/20 data-[range-middle=true]:text-white data-[range-middle=true]:rounded-none",
+        "flex outline-none w-10 h-10 items-center justify-center font-bold transition-all duration-200",
+        "text-gray-900 hover:bg-gray-100 hover:text-black rounded-xl",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/50",
+        "data-[selected-single=true]:bg-[#1A1A1A] data-[selected-single=true]:text-white data-[selected-single=true]:rounded-xl",
+        "data-[range-start=true]:bg-[#1A1A1A] data-[range-start=true]:text-white data-[range-start=true]:rounded-l-xl data-[range-start=true]:rounded-r-none",
+        "data-[range-end=true]:bg-[#1A1A1A] data-[range-end=true]:text-white data-[range-end=true]:rounded-r-xl data-[range-end=true]:rounded-l-none",
+        "data-[range-middle=true]:bg-gray-100 data-[range-middle=true]:text-gray-900 data-[range-middle=true]:rounded-none data-[range-middle=true]:hover:bg-gray-200",
         "group-data-[focused=true]/day:relative group-[.rdp-day_button:focus-visible]:z-10",
         "[&>span]:text-xs [&>span]:opacity-70 !ring-0 !outline-none",
         defaultClassNames.day,
@@ -260,4 +191,4 @@ function CalendarDayButton({
   );
 }
 
-export { Calendar, CalendarDayButton, CalendarDropdown };
+export { Calendar, CalendarDayButton };

@@ -11,6 +11,8 @@ export interface EmployeeAuthResponse {
     name: string;
     email: string;
     role: string;
+    branchPublicId?: string | null;
+    branchName?: string | null;
   };
 }
 
@@ -25,6 +27,25 @@ export const employeeService = {
     const response = await apiClient.post<EmployeeAuthResponse>(
       "/employee/auth/login",
       data,
+    );
+    return response.data;
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/employee/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    password: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/employee/auth/reset-password",
+      { token, password },
     );
     return response.data;
   },
@@ -71,6 +92,33 @@ export const employeeService = {
       { params: { start: startDate, end: endDate } },
     );
     return response.data;
+  },
+
+  getCustomerBookingLimits: async (
+    customerPublicId: string,
+    start: string,
+    end: string,
+  ) => {
+    const response = await apiClient.get(
+      `/employee/customer/${customerPublicId}/booking-limits`,
+      { params: { start, end } },
+    );
+    return response.data as {
+      usedTypeClasses: Partial<
+        Record<
+          "TWO_WHEELER" | "FOUR_WHEELER",
+          {
+            bookingPublicId: string;
+            vehicleMake: string;
+            vehicleModel: string;
+            startAt: string;
+            endAt: string;
+            status: "HOLD" | "CONFIRMED" | "PICKED_UP";
+            holdExpiresAt: string | null;
+          }
+        >
+      >;
+    };
   },
 
   scanBooking: async (bookingId: string): Promise<{

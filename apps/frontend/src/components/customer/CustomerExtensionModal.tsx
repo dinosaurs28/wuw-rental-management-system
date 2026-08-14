@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { format, addDays } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info } from "lucide-react";
+import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,15 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+  Calendar as CalendarPicker,
+} from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -30,7 +24,7 @@ import {
   type ExtensionEvaluation,
 } from "@/services/extension.service";
 
-type Step = "date" | "result" | "payment" | "done";
+type Step = "date" | "result" | "pay" | "redirecting";
 
 interface CustomerExtensionModalProps {
   open: boolean;
@@ -40,14 +34,12 @@ interface CustomerExtensionModalProps {
   onSuccess?: () => void;
 }
 
-const gateways = ["UPI", "Razorpay", "Other"] as const;
-
-function formatCurrency(amount: string) {
+function formatCurrency(amount: string | number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(parseFloat(amount));
+  }).format(Number(amount));
 }
 
 export function CustomerExtensionModal({
@@ -55,38 +47,35 @@ export function CustomerExtensionModal({
   bookingPublicId,
   currentEndAt,
   onClose,
-  onSuccess,
 }: CustomerExtensionModalProps) {
   const [step, setStep] = useState<Step>("date");
-
-  // Step 1 state
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [calOpen, setCalOpen] = useState(false);
-  const [notes, setNotes] = useState("");
-
-  // Step 2 state
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [isInitiating, setIsInitiating] = useState(false);
   const [evalError, setEvalError] = useState<string | null>(null);
-
-  // Step 3 state — online only for customers
-  const [txnRef, setTxnRef] = useState("");
-  const [gateway, setGateway] = useState<string>("UPI");
-  const [isCommitting, setIsCommitting] = useState(false);
-
-  const idempotencyKey = useRef(crypto.randomUUID());
 
   const minDate = addDays(new Date(currentEndAt), 1);
 
-  function handleClose() {
+  async function cancelPendingExtension(pubId: string) {
+    try {
+      await extensionService.customerCancelExtension(pubId);
+    } catch {
+      // best-effort — ignore errors (e.g. already cancelled)
+    }
+  }
+
+  async function handleClose() {
+    // If we evaluated but never paid, cancel the pending extension so the
+    // booking is unlocked and the customer can try again later.
+    if (evaluation) {
+      await cancelPendingExtension(evaluation.extensionPublicId);
+    }
     setStep("date");
     setSelectedDate(undefined);
     setEvaluation(null);
     setEvalError(null);
-    setTxnRef("");
-    setGateway("UPI");
-    setNotes("");
-    idempotencyKey.current = crypto.randomUUID();
     onClose();
   }
 
@@ -95,97 +84,66 @@ export function CustomerExtensionModal({
     setIsEvaluating(true);
     setEvalError(null);
     try {
+      // Use noon IST for the new end time
       const newEndAt = new Date(
         Date.UTC(
           selectedDate.getFullYear(),
           selectedDate.getMonth(),
           selectedDate.getDate(),
-          12,
-          0,
-          0
-        )
+          6, 30, 0, // 12:00 IST = 06:30 UTC
+        ),
       ).toISOString();
 
-      const res = await extensionService.customerEvaluate(
-        bookingPublicId,
-        newEndAt,
-        notes || undefined
-      );
+      const res = await extensionService.customerEvaluate(bookingPublicId, newEndAt);
       setEvaluation(res.data);
-
-      // Check if there's an available option
-      const hasOption = res.data.resolutionOptions.some(
-        (o) =>
-          o.type === "SAME_VEHICLE" ||
-          o.type === "SWAP_CURRENT_TO_OTHER" ||
-          o.type === "PARTIAL_EXTENSION"
-      );
-
-      if (!hasOption) {
-        setStep("result");
-      } else {
-        setStep("result");
-      }
+      setStep("result");
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        "Failed to check availability. Please try again.";
-      setEvalError(msg);
+      setEvalError(
+        err?.response?.data?.message ?? "Failed to check availability. Please try again.",
+      );
     } finally {
       setIsEvaluating(false);
     }
   }
 
-  async function handleCommit() {
+  async function handleInitiatePayment() {
     if (!evaluation) return;
-    if (!txnRef.trim()) {
-      toast.error("Please enter your payment transaction reference.");
-      return;
-    }
-    setIsCommitting(true);
+    setIsInitiating(true);
     try {
-      await extensionService.customerCommit({
-        extensionPublicId: evaluation.extensionPublicId,
-        paymentMethod: "ONLINE",
-        onlineTransactionRef: txnRef.trim(),
-        onlineGateway: gateway as any,
-        idempotencyKey: idempotencyKey.current,
-      });
-      setStep("done");
-      toast.success("Extension request submitted successfully!");
-      onSuccess?.();
-    } catch (err: any) {
-      toast.error(
-        err?.response?.data?.message || "Failed to submit extension."
+      const res = await extensionService.customerInitiatePayment(
+        evaluation.extensionPublicId,
+        `${window.location.origin}/my-bookings`,
       );
-    } finally {
-      setIsCommitting(false);
+      if (res.data?.redirectUrl) {
+        setStep("redirecting");
+        // Small delay so user sees the "redirecting" state
+        setTimeout(() => {
+          window.location.href = res.data.redirectUrl;
+        }, 800);
+      } else {
+        toast.error("Could not initiate payment — no redirect URL received");
+        setIsInitiating(false);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to initiate payment");
+      setIsInitiating(false);
     }
   }
 
-  // Determine customer-visible result
-  const getResultView = () => {
+  // Determine what to show the customer (hide internal conflict details)
+  const resultView = (() => {
     if (!evaluation) return null;
-    const { resolutionOptions, pricing } = evaluation;
-    const hasPartial = resolutionOptions.find(
-      (o) => o.type === "PARTIAL_EXTENSION"
+    const opts = evaluation.resolutionOptions;
+    const hasFullAvail = opts.some(
+      (o) => o.type === "SAME_VEHICLE" || o.type === "SWAP_CURRENT_TO_OTHER",
     );
-    const hasAvailable = resolutionOptions.find(
-      (o) =>
-        o.type === "SAME_VEHICLE" || o.type === "SWAP_CURRENT_TO_OTHER"
-    );
+    const partial = opts.find((o) => o.type === "PARTIAL_EXTENSION");
+    if (hasFullAvail) return { type: "available" as const };
+    if (partial) return { type: "partial" as const, partialNewEndAt: partial.partialNewEndAt };
+    return { type: "none" as const };
+  })();
 
-    if (hasAvailable) {
-      return { type: "available" as const, option: hasAvailable, pricing };
-    }
-    if (hasPartial) {
-      return { type: "partial" as const, option: hasPartial, pricing };
-    }
-    return { type: "none" as const, option: null, pricing };
-  };
-
-  const resultView = step === "result" ? getResultView() : null;
-  const additionalAmount = evaluation?.resolutionOptions[0]?.additionalAmount;
+  const additionalAmount = evaluation?.pricing.additionalAmount ?? "0";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -196,11 +154,11 @@ export function CustomerExtensionModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Step 1: Date selection */}
+        {/* ── Step 1: Pick a date ── */}
         {step === "date" && (
           <div className="space-y-5 pt-2">
             <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-sm text-gray-600">
-              <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
               <span>
                 Current end:{" "}
                 <span className="font-semibold text-gray-800">
@@ -210,30 +168,25 @@ export function CustomerExtensionModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label>New end date</Label>
+              <Label>New return date</Label>
               <Popover open={calOpen} onOpenChange={setCalOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
+                      !selectedDate && "text-muted-foreground",
                     )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
-                    {selectedDate
-                      ? format(selectedDate, "dd MMM yyyy")
-                      : "Select a date"}
+                    {selectedDate ? format(selectedDate, "dd MMM yyyy") : "Select a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <CalendarPicker
                     mode="single"
                     selected={selectedDate}
-                    onSelect={(d) => {
-                      setSelectedDate(d);
-                      setCalOpen(false);
-                    }}
+                    onSelect={(d) => { setSelectedDate(d); setCalOpen(false); }}
                     disabled={(d) => d < minDate}
                     initialFocus
                   />
@@ -243,17 +196,13 @@ export function CustomerExtensionModal({
 
             {evalError && (
               <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <AlertCircle className="h-4 w-4 shrink-0" />
                 {evalError}
               </div>
             )}
 
             <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleClose}
-              >
+              <Button variant="outline" className="flex-1" onClick={handleClose}>
                 Cancel
               </Button>
               <Button
@@ -264,228 +213,125 @@ export function CustomerExtensionModal({
                 {isEvaluating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    Check
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
+                  <>Check <ArrowRight className="ml-2 h-4 w-4" /></>
                 )}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 2: Result */}
-        {step === "result" && resultView && (
+        {/* ── Step 2: Result ── */}
+        {step === "result" && resultView && evaluation && (
           <div className="space-y-5 pt-2">
             {resultView.type === "available" && (
-              <>
-                <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-                  <div className="flex items-center gap-2 text-green-800 font-semibold mb-1">
-                    <Check className="h-4 w-4" />
-                    Extension available
-                  </div>
-                  <p className="text-sm text-green-700">
-                    {resultView.option.type === "SWAP_CURRENT_TO_OTHER"
-                      ? "Extension confirmed with an equivalent vehicle."
-                      : "Extension available for the full duration."}
-                  </p>
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+                <div className="flex items-center gap-2 text-green-800 font-semibold mb-1 text-sm">
+                  <Check className="h-4 w-4" />
+                  Extension available
                 </div>
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Original duration</span>
-                    <span className="font-medium">
-                      {resultView.pricing.originalDays} days
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">New duration</span>
-                    <span className="font-medium">
-                      {resultView.pricing.newDays} days
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm border-t border-gray-200 pt-2 mt-2">
-                    <span className="font-semibold text-gray-700">
-                      Additional charge
-                    </span>
-                    <span className="font-bold text-orange-600 text-base">
-                      {formatCurrency(resultView.option.additionalAmount)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setStep("date")}
-                  >
-                    ← Back
-                  </Button>
-                  <Button
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                    onClick={() => setStep("payment")}
-                  >
-                    Pay Online →
-                  </Button>
-                </div>
-              </>
+                <p className="text-xs text-green-700">
+                  Extension available for the full duration.
+                </p>
+              </div>
             )}
 
             {resultView.type === "partial" && (
-              <>
-                <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
-                  <div className="flex items-center gap-2 text-yellow-800 font-semibold mb-1">
-                    <Info className="h-4 w-4" />
-                    Partial extension only
-                  </div>
-                  <p className="text-sm text-yellow-700">
-                    Full extension not available. We can extend until{" "}
-                    <span className="font-semibold">
-                      {resultView.option.partialNewEndAt
-                        ? format(
-                            new Date(resultView.option.partialNewEndAt),
-                            "dd MMM yyyy"
-                          )
-                        : "a limited date"}
-                    </span>
-                    .
-                  </p>
+              <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+                <div className="flex items-center gap-2 text-yellow-800 font-semibold mb-1 text-sm">
+                  <Info className="h-4 w-4" />
+                  Partial extension only
                 </div>
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm flex justify-between">
-                  <span className="text-gray-500">Additional charge</span>
-                  <span className="font-bold text-orange-600">
-                    {formatCurrency(resultView.option.additionalAmount)}
+                <p className="text-xs text-yellow-700">
+                  Full extension not available. We can extend until{" "}
+                  <span className="font-semibold">
+                    {resultView.partialNewEndAt
+                      ? format(new Date(resultView.partialNewEndAt), "dd MMM yyyy")
+                      : "a limited date"}
                   </span>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleClose}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                    onClick={() => setStep("payment")}
-                  >
-                    Accept Partial →
-                  </Button>
-                </div>
-              </>
+                  .
+                </p>
+              </div>
             )}
 
             {resultView.type === "none" && (
               <>
                 <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                  <div className="flex items-center gap-2 text-red-800 font-semibold mb-1">
+                  <div className="flex items-center gap-2 text-red-800 font-semibold mb-1 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     No extension available
                   </div>
-                  <p className="text-sm text-red-700">
+                  <p className="text-xs text-red-700">
                     Sorry, no extension is available for the requested dates.
                     Please contact the branch for assistance.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleClose}
-                >
+                <Button variant="outline" className="w-full" onClick={handleClose}>
                   Close
                 </Button>
+              </>
+            )}
+
+            {resultView.type !== "none" && (
+              <>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Duration</span>
+                    <span className="font-medium">
+                      {evaluation.pricing.originalDays} → {evaluation.pricing.newDays} days
+                      <span className="text-orange-500 ml-1">
+                        (+{evaluation.pricing.newDays - evaluation.pricing.originalDays})
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Original total</span>
+                    <span className="font-medium">{formatCurrency(evaluation.pricing.originalTotalFinal)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 pt-2 mt-1">
+                    <span className="font-semibold text-gray-700">Additional charge</span>
+                    <span className="font-bold text-orange-600 text-base">
+                      {formatCurrency(additionalAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={async () => {
+                      if (evaluation) await cancelPendingExtension(evaluation.extensionPublicId);
+                      setEvaluation(null);
+                      setStep("date");
+                    }}
+                  >
+                    ← Back
+                  </Button>
+                  <Button
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={handleInitiatePayment}
+                    disabled={isInitiating}
+                  >
+                    {isInitiating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>Pay {formatCurrency(additionalAmount)} <ExternalLink className="ml-2 h-4 w-4" /></>
+                    )}
+                  </Button>
+                </div>
               </>
             )}
           </div>
         )}
 
-        {/* Step 3: Payment */}
-        {step === "payment" && (
-          <div className="space-y-5 pt-2">
-            <div className="rounded-lg bg-orange-50 border border-orange-100 px-4 py-3 flex items-center justify-between text-sm">
-              <span className="text-orange-700 font-medium">Amount due</span>
-              <span className="text-orange-800 font-bold text-base">
-                {additionalAmount ? formatCurrency(additionalAmount) : "—"}
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Payment gateway</Label>
-                <Select value={gateway} onValueChange={setGateway}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {gateways.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>
-                  Transaction reference{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g. UPI ref / UTR number"
-                  value={txnRef}
-                  onChange={(e) => setTxnRef(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter the reference number from your payment app
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setStep("result")}
-              >
-                ← Back
-              </Button>
-              <Button
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={handleCommit}
-                disabled={isCommitting || !txnRef.trim()}
-              >
-                {isCommitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Submit Payment"
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Done */}
-        {step === "done" && (
-          <div className="py-8 text-center space-y-4">
-            <div className="mx-auto w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-              <Check className="h-7 w-7 text-green-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 text-base">
-                Request submitted!
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Your extension request has been submitted. The branch team will
-                confirm your extension shortly.
-              </p>
-            </div>
-            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" onClick={handleClose}>
-              Done
-            </Button>
+        {/* ── Redirecting to PhonePe ── */}
+        {step === "redirecting" && (
+          <div className="py-12 text-center space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto" />
+            <p className="font-semibold text-gray-900">Redirecting to PhonePe…</p>
+            <p className="text-sm text-muted-foreground">
+              Please complete your payment on the PhonePe page.
+            </p>
           </div>
         )}
       </DialogContent>

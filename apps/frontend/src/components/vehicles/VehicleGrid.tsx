@@ -25,6 +25,10 @@ interface VehicleGridProps {
   basePath?: string;
   startDateTime?: string;
   endDateTime?: string;
+  variant?: "light" | "dark";
+  restrictedTypeClasses?: Set<string>;
+  blockedAll?: boolean;
+  limitsLoading?: boolean;
 }
 
 // Memoized vehicle card for optimization
@@ -82,6 +86,10 @@ export const VehicleGrid = ({
   basePath,
   startDateTime,
   endDateTime,
+  variant = "light",
+  restrictedTypeClasses,
+  blockedAll = false,
+  limitsLoading = false,
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -104,15 +112,33 @@ export const VehicleGrid = ({
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
+        <div className={cn(
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+          variant === "dark" ? "gap-[26px]" : "gap-6"
+        )}>
           {Array.from({ length: 9 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex flex-col rounded-[22px] overflow-hidden bg-[#101217]"
-            >
-              <Skeleton className="h-[440px] w-full rounded-none bg-zinc-800/60" />
-              <div className="h-[60px] bg-zinc-800/40" />
-            </div>
+            variant === "dark" ? (
+              <div
+                key={i}
+                className="flex flex-col rounded-[22px] overflow-hidden bg-[#101217]"
+              >
+                <Skeleton className="h-[440px] w-full rounded-none bg-zinc-800/60" />
+                <div className="h-[60px] bg-zinc-800/40" />
+              </div>
+            ) : (
+              <div
+                key={i}
+                className="flex flex-col space-y-4 rounded-2xl p-5 bg-white border border-zinc-200"
+              >
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-3/4 rounded bg-zinc-200" />
+                  <Skeleton className="h-4 w-1/2 rounded bg-zinc-100" />
+                </div>
+                <Skeleton className="h-32 w-full rounded-lg bg-zinc-100" />
+                <Skeleton className="h-7 w-28 rounded bg-zinc-200" />
+                <Skeleton className="h-11 w-full rounded bg-zinc-200" />
+              </div>
+            )
           ))}
         </div>
       </div>
@@ -127,16 +153,26 @@ export const VehicleGrid = ({
   return (
     <div className="space-y-8">
       {/* Vehicle Grid - No separate scroll container */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[26px]">
-        {vehicles.map((vehicle) => (
-          <MemoizedVehicleCard
-            key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
-            vehicle={vehicle}
-            basePath={basePath}
-            startDateTime={startDateTime}
-            endDateTime={endDateTime}
-          />
-        ))}
+      <div className={cn(
+        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+        variant === "dark" ? "gap-[26px]" : "gap-6"
+      )}>
+        {vehicles.map((vehicle) => {
+          const tc = "typeClass" in vehicle ? (vehicle as any).typeClass : undefined;
+          const isRestricted = blockedAll || !!(tc && restrictedTypeClasses?.has(tc));
+          return (
+            <MemoizedVehicleCard
+              key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
+              vehicle={vehicle}
+              basePath={basePath}
+              startDateTime={startDateTime}
+              endDateTime={endDateTime}
+              variant={variant}
+              isRestricted={isRestricted}
+              limitsLoading={limitsLoading}
+            />
+          );
+        })}
       </div>
 
       {/* Pagination */}

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getCurrentTime } from "@/utils/formatters";
 
 interface SearchState {
   branchPublicId: string | null;
@@ -18,8 +19,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   categoryPublicId: "all",
   pickupDate: new Date(),
   returnDate: null,
-  pickupTime: "10:00",
-  returnTime: "10:00",
+  pickupTime: getCurrentTime(),
+  returnTime: getCurrentTime(),
   setSearchCriteria: (criteria) => set((state) => ({ ...state, ...criteria })),
   resetSearch: () =>
     set({

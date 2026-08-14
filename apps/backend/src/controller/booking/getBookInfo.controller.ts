@@ -4,6 +4,16 @@ import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  checkCustomerTypeClassLimits,
+  checkCustomerTypeClassLimitsInTx,
+  type VehicleWithTypeClass,
+} from "../../utils/booking/customerTypeClassLimits.js";
+import {
+  validateBookingSchedule,
+  buildScheduleErrorMessage,
+  type BranchScheduleConfig,
+} from "../../utils/booking/branchScheduleValidator.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
@@ -250,6 +260,94 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       }
     }
 
+    // ── Type-class limit pre-check ────────────────────────────────────────────
+    // Build a representative entry for each groupKey slot using its categoryId
+    // so we can detect conflicts before the transaction resolves the actual vehicle.
+    const groupKeyRepVehicles: VehicleWithTypeClass[] = [];
+    if (resolvedGroupKeys.length > 0) {
+      const groupCategoryIds = resolvedGroupKeys.map((gk) => parseGroupKey(gk)!.categoryId);
+      const groupCategories = await prisma.vehicleCategory.findMany({
+        where: { id: { in: groupCategoryIds } },
+        select: { id: true, typeClass: true },
+      });
+      const categoryTypeMap = new Map(groupCategories.map((c) => [c.id, c.typeClass]));
+      for (const gk of resolvedGroupKeys) {
+        const gkParsed = parseGroupKey(gk)!;
+        groupKeyRepVehicles.push({
+          id: 0,
+          make: gkParsed.make,
+          model: gkParsed.model,
+          category: { typeClass: categoryTypeMap.get(gkParsed.categoryId) ?? "OTHER" },
+        });
+      }
+    }
+
+    // ── Branch schedule + restriction mode ───────────────────────────────────
+    let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
+
+    if (bookingBranchId) {
+      const branchData = await prisma.branch.findUnique({
+        where: { id: bookingBranchId },
+        select: {
+          graceMinutes: true,
+          is24Hours: true,
+          bookingRestrictionMode: true,
+          schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
+        },
+      });
+
+      if (branchData) {
+        branchRestrictionMode = branchData.bookingRestrictionMode as "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
+
+        const scheduleConfig: BranchScheduleConfig = {
+          schedules: branchData.schedules,
+          graceMinutes: branchData.graceMinutes,
+          is24Hours: branchData.is24Hours,
+        };
+
+        const pickupLocal = startDateDt.toJSDate();
+        const returnLocal = endDateDt.toJSDate();
+
+        const verdict = validateBookingSchedule(scheduleConfig, pickupLocal, returnLocal);
+
+        if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_VIOLATION",
+            message: buildScheduleErrorMessage(verdict),
+            verdict,
+          });
+        }
+
+        if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+            message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours. Please confirm the new return time.`,
+            verdict,
+          });
+        }
+      }
+    }
+
+    const { conflicts: typeClassConflicts } = await checkCustomerTypeClassLimits(
+      customerId,
+      [...vehiclesData, ...groupKeyRepVehicles],
+      startDate,
+      endDate,
+      { restrictionMode: branchRestrictionMode, branchId: bookingBranchId ?? undefined },
+    );
+    if (typeClassConflicts.length > 0) {
+      const c = typeClassConflicts[0]!;
+      const message =
+        c.reason === "ANY_VEHICLE"
+          ? "You already have an active booking at this branch that overlaps the selected dates. Only one vehicle booking is allowed at a time."
+          : `You already have an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates. Only one ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking is allowed at a time.`;
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message,
+        conflicts: typeClassConflicts,
+      });
+    }
+
     for (const v of vehiclesData) {
 
       // Calculate pricing via Phase 2 Pricing Engine
@@ -365,21 +463,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
     grandAdvanceAmount = Number(grandAdvanceAmount.toFixed(2));
 
-    const isAdvancePayment = payment_flow === "ADVANCE";
-
-    // Validate advance payment eligibility
-    if (isAdvancePayment) {
-      if (grandAdvanceAmount <= 0) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "Advance payment is not configured for the selected vehicle(s). Please use full payment.",
-        });
-      }
-      if (grandAdvanceAmount >= grandFinalTotal) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "Advance amount must be less than the total amount. Please use full payment.",
-        });
-      }
-    }
+    // Fall back to FULL if ADVANCE was requested but no advance amount is configured,
+    // or if the configured advance amount is ≥ the total (which would make it a full payment anyway).
+    const isAdvancePayment =
+      payment_flow === "ADVANCE" &&
+      grandAdvanceAmount > 0 &&
+      grandAdvanceAmount < grandFinalTotal;
 
     const chargeAmount = isAdvancePayment ? grandAdvanceAmount : grandFinalTotal;
 
@@ -507,6 +596,28 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         });
       }
 
+      // Race-condition guard: re-validate type-class limit inside the transaction
+      const allResolvedVehicles = [...vehiclesData, ...resolvedGroupVehicles];
+      const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
+        tx as any,
+        customerId,
+        allResolvedVehicles,
+        startDate,
+        endDate,
+        { restrictionMode: branchRestrictionMode, branchId: bookingBranchId ?? undefined },
+      );
+      if (txTypeClassConflicts.length > 0) {
+        const c = txTypeClassConflicts[0]!;
+        const msg =
+          c.reason === "ANY_VEHICLE"
+            ? "You already have an active booking at this branch that overlaps the selected dates."
+            : `You already have an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
+        throw Object.assign(new Error(msg), {
+          code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+          conflicts: txTypeClassConflicts,
+        });
+      }
+
       const newBooking = await tx.booking.create({
         data: {
           publicId: createID(),
@@ -570,6 +681,20 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           finalTotal: i.finalTotal,
         })),
       });
+
+      // Record coupon usage log so totalUsageLimit / perUserLimit checks are enforced
+      const appliedCouponRuleId = items[0]?.couponRuleId ?? null;
+      if (appliedCouponRuleId) {
+        await tx.couponUsageLog.create({
+          data: {
+            discountRuleId: appliedCouponRuleId,
+            bookingId: newBooking.id,
+            customerId,
+            branchId: newBooking.branchId,
+            discountedAmount: new Decimal(grandDiscountTotal),
+          },
+        });
+      }
 
       return newBooking;
     }, { timeout: 20000 });
@@ -655,6 +780,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     if (e?.code === "INVALID_GROUP_KEY") {
       return res.status(StatusCode.BAD_REQUEST).json({ message: e.message });
+    }
+    if (e?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: e.message,
+        conflicts: e.conflicts ?? [],
+      });
     }
     console.error("Error generating booking summary:", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

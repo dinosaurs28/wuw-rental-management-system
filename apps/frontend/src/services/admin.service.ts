@@ -34,6 +34,7 @@ export type BranchManager = {
     publicId: string;
     name: string;
     email: string;
+    isActive: boolean;
     createdAt: string;
 };
 
@@ -50,6 +51,62 @@ export type AdminBranch = {
         bookings: number;
     };
     users?: BranchManager[];
+};
+
+export type RoleStaffingCounts = {
+    active: number;
+    inactive: number;
+    total: number;
+};
+
+export type BranchStaffingStats = {
+    branchId: string;
+    branchName: string;
+    managers: RoleStaffingCounts;
+    employees: RoleStaffingCounts;
+};
+
+export type BranchStaffingStatsResponse = {
+    data: BranchStaffingStats[];
+    totals: {
+        managers: RoleStaffingCounts;
+        employees: RoleStaffingCounts;
+    };
+};
+
+export type TransferableUser = {
+    publicId: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: "MANAGER" | "STAFF";
+    isActive: boolean;
+    branchId: string | null;
+    branchName: string | null;
+    createdAt: string;
+};
+
+export type GetBranchUsersResponse = {
+    data: TransferableUser[];
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+};
+
+export type GetBranchUsersParams = {
+    branchId?: string;
+    role?: "MANAGER" | "STAFF";
+    search?: string;
+    page?: number;
+    limit?: number;
+};
+
+export type TransferUserInput = {
+    toBranchId: string;
+    reason?: string;
 };
 
 export type CreateManagerInput = {
@@ -338,6 +395,16 @@ export const adminService = {
         return response.data;
     },
 
+    forgotPassword: async (email: string): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>("/admin/auth/forgot-password", { email });
+        return response.data;
+    },
+
+    resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>("/admin/auth/reset-password", { token, password });
+        return response.data;
+    },
+
     getBranches: async (): Promise<AdminBranch[]> => {
         const response = await apiClient.get<{ data: AdminBranch[] }>("/admin/dashboard/branches");
         return response.data.data; // Assuming backend returns { data: [...] } standard wrapper, or direct array. Let's check backend controller.
@@ -376,8 +443,22 @@ export const adminService = {
         await apiClient.put(`/admin/dashboard/branches/${branchId}/managers/${managerId}`, data);
     },
 
-    deleteBranchManager: async (branchId: string, managerId: string): Promise<void> => {
-        await apiClient.delete(`/admin/dashboard/branches/${branchId}/managers/${managerId}`);
+    setBranchManagerStatus: async (branchId: string, managerId: string, isActive: boolean): Promise<void> => {
+        await apiClient.patch(`/admin/dashboard/branches/${branchId}/managers/${managerId}/status`, { isActive });
+    },
+
+    getBranchStaffingStats: async (): Promise<BranchStaffingStatsResponse> => {
+        const response = await apiClient.get<BranchStaffingStatsResponse>("/admin/dashboard/user-transfer/stats");
+        return response.data;
+    },
+
+    getBranchUsers: async (params: GetBranchUsersParams): Promise<GetBranchUsersResponse> => {
+        const response = await apiClient.get<GetBranchUsersResponse>("/admin/dashboard/user-transfer/users", { params });
+        return response.data;
+    },
+
+    transferUser: async (userPublicId: string, data: TransferUserInput): Promise<void> => {
+        await apiClient.patch(`/admin/dashboard/user-transfer/${userPublicId}/transfer`, data);
     },
 
     getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {
@@ -425,14 +506,41 @@ export const adminService = {
         return response.data;
     },
 
-    // Daily Summary Report
-    getDailySummaryReport: async (params: { date: string; branchId?: string; export?: 'xlsx' | 'csv' }): Promise<any> => {
+    // Daily Summary Report (multi-day: one row per day in range)
+    getDailySummaryReport: async (params: {
+        startDate?: string;
+        endDate?: string;
+        preset?: string;
+        date?: string;
+        branchId?: string;
+        categories?: string;
+        export?: 'xlsx' | 'csv';
+    }): Promise<any> => {
         const config = params.export ? {
             params,
             responseType: 'blob' as const
         } : { params };
 
         const response = await apiClient.get('/admin/dashboard/reports/daily-summary', config);
+        return response.data;
+    },
+
+    // Vehicle Reports (per-vehicle list with performance metrics)
+    getVehicleReportList: async (params: {
+        startDate?: string;
+        endDate?: string;
+        preset?: string;
+        branchId?: string;
+        categories?: string;
+        vehicleStatus?: string;
+        export?: 'xlsx' | 'csv';
+    }): Promise<any> => {
+        const config = params.export ? {
+            params,
+            responseType: 'blob' as const
+        } : { params };
+
+        const response = await apiClient.get('/admin/dashboard/reports/vehicles', config);
         return response.data;
     },
 
@@ -458,6 +566,8 @@ export const adminService = {
         startDate: string;
         endDate: string;
         branchId?: string;
+        categories?: string;
+        availableOnly?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -473,7 +583,9 @@ export const adminService = {
     getInsurancePermitExpiryReport: async (params: {
         alertType?: 'insurance' | 'permit' | 'all';
         daysThreshold?: number;
+        expiryStatus?: string;
         branchId?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -491,6 +603,9 @@ export const adminService = {
         endDate: string;
         branchId?: string;
         paymentMethod?: string;
+        paymentMode?: string;
+        staffId?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -506,6 +621,9 @@ export const adminService = {
     getFleetExecutiveReport: async (params: {
         startDate: string;
         endDate: string;
+        branchId?: string;
+        executiveId?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -522,6 +640,8 @@ export const adminService = {
         startDate: string;
         endDate: string;
         branchId?: string;
+        gstType?: string;
+        categories?: string;
         export?: 'xlsx' | 'csv';
     }): Promise<any> => {
         const config = params.export ? {
@@ -586,10 +706,14 @@ export const adminService = {
         endDate: string;
         branchId?: string;
         status?: string;
+        paymentStatus?: string;
+        customer?: string;
         page?: string;
         limit?: string;
+        export?: 'xlsx' | 'csv';
     }): Promise<any> => {
-        const response = await apiClient.get('/admin/dashboard/reports/invoices', { params });
+        const config = params.export ? { params, responseType: 'blob' as const } : { params };
+        const response = await apiClient.get('/admin/dashboard/reports/invoices', config);
         return response.data;
     },
 
@@ -599,10 +723,14 @@ export const adminService = {
         startDate: string;
         endDate: string;
         branchId?: string;
+        paymentMode?: string;
+        staffId?: string;
         page?: string;
         limit?: string;
+        export?: 'xlsx' | 'csv';
     }): Promise<any> => {
-        const response = await apiClient.get('/admin/dashboard/reports/receipts', { params });
+        const config = params.export ? { params, responseType: 'blob' as const } : { params };
+        const response = await apiClient.get('/admin/dashboard/reports/receipts', config);
         return response.data;
     },
 
@@ -613,10 +741,14 @@ export const adminService = {
         endDate?: string;
         branchId?: string;
         search?: string;
+        customerType?: string;
+        categories?: string;
         page?: string;
         limit?: string;
+        export?: 'xlsx' | 'csv';
     }): Promise<any> => {
-        const response = await apiClient.get('/admin/dashboard/reports/customers', { params });
+        const config = params.export ? { params, responseType: 'blob' as const } : { params };
+        const response = await apiClient.get('/admin/dashboard/reports/customers', config);
         return response.data;
     },
 };

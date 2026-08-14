@@ -157,6 +157,8 @@ export const VehicleDetailsPage = () => {
     const currentState = useVehicleRentalStore.getState();
     const currentStartDate = currentState.getStartDate();
     const currentEndDate = currentState.getEndDate();
+    const savedStartTime = currentState.startTime;
+    const savedEndTime   = currentState.endTime;
 
     // Capture payment plan before clearVehicleSelection resets it to defaults
     const savedPaymentFlow   = currentState.paymentFlow;
@@ -191,9 +193,11 @@ export const VehicleDetailsPage = () => {
       branch: getBranchName(vehicle.branch),
     });
 
-    // Restore dates and payment plan (clearVehicleSelection wiped them)
+    // Restore dates, times, and payment plan (clearVehicleSelection wiped them)
     if (currentStartDate) setStartDate(currentStartDate);
     if (currentEndDate) setEndDate(currentEndDate);
+    currentState.setStartTime(savedStartTime);
+    currentState.setEndTime(savedEndTime);
     currentState.setPaymentFlow(savedPaymentFlow);
     currentState.setAdvancePayAmount(savedAdvanceAmount);
 

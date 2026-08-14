@@ -234,7 +234,7 @@ export const GetExtensionDetail = async (req: Request, res: Response): Promise<v
 
 /**
  * GET /api/branchManager/extensions/displaced-bookings
- * Manager views bookings displaced by extension conflicts.
+ * Manager views bookings displaced by extension conflicts, with customer contact info.
  */
 export const GetDisplacedBookings = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -246,6 +246,69 @@ export const GetDisplacedBookings = async (req: Request, res: Response): Promise
     });
   } catch (error: any) {
     console.error("GetDisplacedBookings Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/branchManager/extensions/displaced-bookings/:bookingPublicId/resolve
+ * Manager resolves a displaced booking:
+ *   CONFIRM_SWAP       — customer agreed, clear from dashboard
+ *   CANCEL_WITH_REFUND — customer declined, cancel + refund
+ *   CANCEL_NO_REFUND   — customer declined, cancel without refund
+ */
+export const ResolveDisplacedBooking = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingPublicId } = req.params;
+    const { action, refundAmount, refundMethod, notes } = req.body;
+
+    if (!["CONFIRM_SWAP", "CANCEL_WITH_REFUND", "CANCEL_NO_REFUND"].includes(action)) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        message: "action must be CONFIRM_SWAP, CANCEL_WITH_REFUND, or CANCEL_NO_REFUND",
+      });
+      return;
+    }
+
+    if (action === "CANCEL_WITH_REFUND") {
+      if (!refundAmount || !refundMethod) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          message: "refundAmount and refundMethod are required for CANCEL_WITH_REFUND",
+        });
+        return;
+      }
+      if (!["CASH", "ONLINE"].includes(refundMethod)) {
+        res.status(StatusCode.BAD_REQUEST).json({ message: "refundMethod must be CASH or ONLINE" });
+        return;
+      }
+    }
+
+    const actor = await buildActorContext(req);
+    await extensionService.resolveDisplacedBooking(
+      bookingPublicId!,
+      action,
+      actor,
+      refundAmount,
+      refundMethod,
+      notes,
+    );
+
+    const messages: Record<string, string> = {
+      CONFIRM_SWAP: "Swap confirmed — booking removed from displaced list",
+      CANCEL_WITH_REFUND: "Booking cancelled and refund request created",
+      CANCEL_NO_REFUND: "Booking cancelled without refund",
+    };
+
+    res.status(StatusCode.OK).json({ message: messages[action] });
+  } catch (error: any) {
+    console.error("ResolveDisplacedBooking Error:", error);
+    if (error.message?.includes("not found") || error.message?.includes("not displaced")) {
+      res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+      return;
+    }
+    if (error.message?.includes("Access denied")) {
+      res.status(StatusCode.FORBIDDEN).json({ message: error.message });
+      return;
+    }
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

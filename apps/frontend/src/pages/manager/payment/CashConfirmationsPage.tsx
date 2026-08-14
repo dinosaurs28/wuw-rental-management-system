@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,25 +48,14 @@ function formatCollectedAt(iso: string): { label: string; isOld: boolean } {
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
-// ── Confirm/Reject Modal ──────────────────────────────────────────────────────
+// ── Review Modal ──────────────────────────────────────────────────────────────
 
-function ReviewModal({
-  item,
-  onClose,
-  onDone,
-}: {
-  item: PendingCashItem;
-  onClose: () => void;
-  onDone: () => void;
-}) {
+function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose: () => void; onDone: () => void }) {
   const [notes, setNotes] = useState("");
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -80,16 +69,11 @@ function ReviewModal({
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to confirm.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleReject = async () => {
-    if ((rejectionReason || "").trim().length < 5) {
-      toast.error("Rejection reason must be at least 5 characters.");
-      return;
-    }
+    if ((rejectionReason || "").trim().length < 5) { toast.error("Rejection reason must be at least 5 characters."); return; }
     setLoading(true);
     try {
       await paymentService.rejectCash(item.transactionPublicId, rejectionReason.trim());
@@ -97,121 +81,76 @@ function ReviewModal({
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to reject.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {rejectMode ? "Reject Cash Payment" : "Confirm Cash Payment"}
-          </DialogTitle>
-        </DialogHeader>
-
-        {!rejectMode ? (
-          <div className="space-y-4 py-2">
-            {/* Details */}
-            <div className="bg-neutral-50 rounded-lg p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Booking</span>
-                <span className="font-medium">{item.bookingPublicId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Customer</span>
-                <span className="font-medium">{item.customerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Purpose</span>
-                <span className="font-medium">{purposeLabels[item.purpose] ?? item.purpose}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Amount</span>
-                <span className="font-semibold text-neutral-900">
-                  ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Collected by</span>
-                <span className="font-medium">{item.employeeName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Collected at</span>
-                <span className="font-medium">{formatDateTime(item.collectedAt)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any notes for the record…"
-                rows={2}
-                className="resize-none"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-neutral-600">
-              Provide a reason for rejecting this cash payment of{" "}
-              <strong>₹ {parseFloat(item.amount).toLocaleString("en-IN")}</strong> from{" "}
-              <strong>{item.customerName}</strong>.
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+        <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/60">
+          <DialogHeader>
+            <DialogTitle className="text-[15px]">
+              {rejectMode ? "Reject Cash Payment" : "Review Cash Payment"}
+            </DialogTitle>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {item.customerName} — ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </p>
-            <div className="space-y-1.5">
-              <Label htmlFor="reason">
-                Rejection reason <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="reason"
-                placeholder="e.g. Cash amount was short by ₹500"
-                rows={3}
-                className="resize-none"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              />
-              {(rejectionReason || "").length > 0 && (rejectionReason || "").trim().length < 5 && (
-                <p className="text-xs text-red-500">Minimum 5 characters required.</p>
-              )}
-            </div>
-          </div>
-        )}
+          </DialogHeader>
+        </div>
 
-        <DialogFooter className="gap-2">
+        <div className="px-6 py-5">
+          {!rejectMode ? (
+            <div className="space-y-4">
+              <div className="bg-neutral-50 rounded-xl border border-neutral-100 divide-y divide-neutral-100 text-sm overflow-hidden">
+                {[
+                  ["Booking", item.bookingPublicId],
+                  ["Customer", item.customerName],
+                  ["Purpose", purposeLabels[item.purpose] ?? item.purpose],
+                  ["Amount", `₹ ${parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`],
+                  ["Collected by", item.employeeName],
+                  ["Collected at", formatDateTime(item.collectedAt)],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-neutral-500 text-xs">{label}</span>
+                    <span className={`font-medium text-xs ${label === "Amount" ? "text-neutral-900 font-semibold text-sm" : "text-neutral-800"}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-neutral-600">Notes (optional)</Label>
+                <Textarea placeholder="Any notes for the record…" rows={2} className="resize-none text-sm" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
+                Rejecting payment of <strong>₹ {parseFloat(item.amount).toLocaleString("en-IN")}</strong> from <strong>{item.customerName}</strong>.
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-neutral-600">Rejection reason <span className="text-red-500">*</span></Label>
+                <Textarea placeholder="e.g. Cash amount was short by ₹500" rows={3} className="resize-none text-sm" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
+                {(rejectionReason || "").length > 0 && (rejectionReason || "").trim().length < 5 && (
+                  <p className="text-xs text-red-500">Minimum 5 characters required.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/40 gap-2">
           {!rejectMode ? (
             <>
-              <Button
-                variant="outline"
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => setRejectMode(true)}
-                disabled={loading}
-              >
-                <XCircle className="w-4 h-4 mr-1.5" />
-                Reject
+              <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 gap-1.5" onClick={() => setRejectMode(true)} disabled={loading}>
+                <XCircle className="w-4 h-4" /> Reject
               </Button>
-              <Button
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={handleConfirm}
-                disabled={loading}
-              >
-                <CheckCircle className="w-4 h-4 mr-1.5" />
-                {loading ? "Confirming…" : "Confirm Cash"}
+              <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5" onClick={handleConfirm} disabled={loading}>
+                <CheckCircle className="w-4 h-4" /> {loading ? "Confirming…" : "Confirm Cash"}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setRejectMode(false)} disabled={loading}>
-                Cancel
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={handleReject}
-                disabled={loading}
-              >
+              <Button variant="outline" onClick={() => setRejectMode(false)} disabled={loading}>Back</Button>
+              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={loading}>
                 {loading ? "Rejecting…" : "Confirm Rejection"}
               </Button>
             </>
@@ -222,7 +161,7 @@ function ReviewModal({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Tab ───────────────────────────────────────────────────────────────────────
 
 export function CashConfirmationsTab() {
   const { setPendingCashCount } = usePaymentStore();
@@ -240,132 +179,88 @@ export function CashConfirmationsTab() {
       setItems(res.data || []);
       setTotal(res.total || 0);
       setPendingCashCount(res.total || 0);
-    } catch {
-      toast.error("Failed to load pending confirmations.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load pending confirmations."); }
+    finally { setLoading(false); }
   }, [page, setPendingCashCount]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleDone = () => {
-    setSelected(null);
-    load();
-  };
-
+  const handleDone = () => { setSelected(null); load(); };
   const totalPages = Math.ceil(total / pageSize);
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Pending Cash Confirmations</h2>
-            <p className="text-sm text-neutral-500 mt-1">
-              Review and confirm cash collected by employees
-            </p>
+            <h2 className="text-base font-semibold text-neutral-900">Pending Cash Confirmations</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">Review and confirm cash collected by employees</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={load}
-              disabled={loading}
-              className="h-9 px-3 text-neutral-600 border-neutral-200"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+          <div className="flex items-center gap-2">
             {total > 0 && (
-              <span className="bg-orange-100 text-orange-700 text-sm font-semibold px-3 py-1 rounded-full">
+              <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                 {total} pending
               </span>
             )}
+            <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-8 gap-1.5 text-xs">
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
           {loading ? (
-            <div className="py-16 text-center text-neutral-400 text-sm">Loading…</div>
+            <div className="divide-y divide-neutral-100">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-28" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-36 flex-1" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-24" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-16" />
+                  <div className="h-8 bg-neutral-100 rounded-lg animate-pulse w-20" />
+                </div>
+              ))}
+            </div>
           ) : (!items || items.length === 0) ? (
-            <div className="py-16 text-center">
-              <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-3" />
+            <div className="py-20 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
               <p className="font-medium text-neutral-700">All caught up!</p>
               <p className="text-sm text-neutral-400 mt-1">No pending cash confirmations.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-neutral-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Booking
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Customer
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Purpose
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Amount
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Employee
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Collected
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Action
-                    </th>
+                  <tr className="border-b border-neutral-100 bg-neutral-50/80">
+                    {["Booking", "Customer", "Purpose", "Amount", "Employee", "Collected", ""].map((h) => (
+                      <th key={h} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" || h === "" ? "text-right" : "text-left"}`}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {(items || []).map((item) => {
                     const { label, isOld } = formatCollectedAt(item.collectedAt);
                     return (
-                      <tr
-                        key={item.transactionPublicId}
-                        className={`hover:bg-neutral-50 transition-colors ${isOld ? "bg-red-50/30" : ""}`}
-                      >
-                        <td className="px-4 py-3.5 font-mono text-xs text-neutral-600">
-                          {item.bookingPublicId}
+                      <tr key={item.transactionPublicId} className={`hover:bg-neutral-50/60 transition-colors ${isOld ? "bg-red-50/20" : ""}`}>
+                        <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{item.bookingPublicId}</td>
+                        <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm">{item.customerName}</td>
+                        <td className="px-5 py-3.5 text-sm text-neutral-600">{purposeLabels[item.purpose] ?? item.purpose}</td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm">
+                          ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="px-4 py-3.5 font-medium text-neutral-900">
-                          {item.customerName}
-                        </td>
-                        <td className="px-4 py-3.5 text-neutral-600">
-                          {purposeLabels[item.purpose] ?? item.purpose}
-                        </td>
-                        <td className="px-4 py-3.5 text-right font-semibold text-neutral-900">
-                          ₹ {parseFloat(item.amount).toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="px-4 py-3.5 text-neutral-600">{item.employeeName}</td>
-                        <td className="px-4 py-3.5">
-                          <span
-                            className={`inline-flex items-center gap-1 text-xs font-medium ${
-                              isOld ? "text-red-600" : "text-neutral-500"
-                            }`}
-                          >
-                            {isOld && <AlertTriangle className="w-3.5 h-3.5" />}
-                            {!isOld && <Clock className="w-3.5 h-3.5" />}
+                        <td className="px-5 py-3.5 text-sm text-neutral-600">{item.employeeName}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${isOld ? "text-red-600" : "text-neutral-500"}`}>
+                            {isOld ? <AlertTriangle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
                             {label}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <Button
-                            size="sm"
-                            className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs"
-                            onClick={() => setSelected(item)}
-                          >
+                        <td className="px-5 py-3.5 text-right">
+                          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs px-3" onClick={() => setSelected(item)}>
                             Review
                           </Button>
                         </td>
@@ -380,39 +275,24 @@ export function CashConfirmationsTab() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm text-neutral-500">
-            <span>
-              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Previous
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-neutral-500">
+              Showing <span className="font-medium text-neutral-700">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)}</span> of <span className="font-medium text-neutral-700">{total}</span>
+            </p>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
+              <span className="text-sm text-neutral-600 px-2">Page {page} of {totalPages}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
       </div>
 
-      {selected && (
-        <ReviewModal
-          item={selected}
-          onClose={() => setSelected(null)}
-          onDone={handleDone}
-        />
-      )}
+      {selected && <ReviewModal item={selected} onClose={() => setSelected(null)} onDone={handleDone} />}
     </>
   );
 }

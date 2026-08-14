@@ -15,7 +15,7 @@ import {
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Method = "CASH" | "ONLINE";
+type Method = "CASH" | "ONLINE" | "SPLIT";
 type Gateway = "UPI" | "Razorpay" | "Other";
 
 const GATEWAYS: Gateway[] = ["UPI", "Razorpay", "Other"];
@@ -31,11 +31,20 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
   const [method, setMethod] = useState<Method>("CASH");
   const [txnRef, setTxnRef] = useState("");
   const [gateway, setGateway] = useState<Gateway>("UPI");
+  const [splitCash, setSplitCash] = useState("");
+  const [splitOnline, setSplitOnline] = useState("");
 
   const netPayable = parseFloat(session.netPayable);
   const isZeroBalance = netPayable === 0;
   const isRefund = netPayable < 0;
   const amount = Math.abs(netPayable);
+
+  // Validate split amounts
+  const splitCashNum = parseFloat(splitCash) || 0;
+  const splitOnlineNum = parseFloat(splitOnline) || 0;
+  const splitTotal = splitCashNum + splitOnlineNum;
+  const splitValid = method !== "SPLIT" || Math.abs(splitTotal - amount) < 0.01;
+  const splitNeedsRef = method === "SPLIT" && splitOnlineNum > 0 && !txnRef.trim();
 
   const zeroMutation = useMutation({
     mutationFn: () =>
@@ -49,22 +58,35 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
   });
 
   const payMutation = useMutation({
-    mutationFn: () =>
-      paymentSessionService.recordPayment(session.publicId, {
+    mutationFn: () => {
+      if (method === "SPLIT") {
+        return paymentSessionService.recordPayment(session.publicId, {
+          method: "SPLIT",
+          amount,
+          idempotencyKey,
+          notes: `Split: ₹${splitCashNum.toFixed(2)} cash + ₹${splitOnlineNum.toFixed(2)} online`,
+          cashAmount: splitCashNum,
+          onlineAmount: splitOnlineNum,
+          onlineTransactionRef: txnRef || undefined,
+          onlineGateway: splitOnlineNum > 0 ? gateway : undefined,
+        });
+      }
+      return paymentSessionService.recordPayment(session.publicId, {
         method,
         amount,
         idempotencyKey,
         notes: `${method === "CASH" ? "Cash" : "Online"} payment of ₹${amount.toFixed(2)}`,
         onlineTransactionRef: method === "ONLINE" ? txnRef : undefined,
         onlineGateway: method === "ONLINE" ? gateway : undefined,
-      }),
+      });
+    },
     onSuccess,
   });
 
   const refundMutation = useMutation({
     mutationFn: () =>
       paymentSessionService.recordRefund(session.publicId, {
-        method,
+        method: method === "SPLIT" ? "CASH" : method,
         amount,
         idempotencyKey,
         notes: `${method === "CASH" ? "Cash" : "Online"} refund of ₹${amount.toFixed(2)}`,
@@ -74,7 +96,12 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
 
   const isLoading = payMutation.isPending || refundMutation.isPending;
   const error = payMutation.error || refundMutation.error;
-  const canSubmit = method === "CASH" || txnRef.trim().length > 0;
+  const canSubmit = (() => {
+    if (method === "CASH") return true;
+    if (method === "ONLINE") return txnRef.trim().length > 0;
+    // SPLIT
+    return splitValid && !splitNeedsRef;
+  })();
 
   if (session.status === "COMPLETED") {
     return (
@@ -88,7 +115,6 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
     return null;
   }
 
-  // Zero-balance: no money changes hands — skip the payment form entirely
   if (isZeroBalance) {
     return (
       <div className={cn("rounded-lg border bg-card shadow-sm", className)}>
@@ -134,8 +160,8 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
 
         {/* Method toggle — only for payments, not refunds */}
         {!isRefund && (
-          <div className="grid grid-cols-2 gap-2">
-            {(["CASH", "ONLINE"] as Method[]).map((m) => (
+          <div className="grid grid-cols-3 gap-2">
+            {(["CASH", "ONLINE", "SPLIT"] as Method[]).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -147,7 +173,7 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
                     : "border-neutral-200 hover:border-neutral-300 text-neutral-700",
                 )}
               >
-                {m === "CASH" ? "Cash" : "Online"}
+                {m === "CASH" ? "Cash" : m === "ONLINE" ? "Online" : "Split"}
               </button>
             ))}
           </div>
@@ -184,6 +210,65 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
           </div>
         )}
 
+        {/* Split fields */}
+        {!isRefund && method === "SPLIT" && (
+          <div className="space-y-3 p-3 rounded-lg bg-neutral-50 border">
+            <p className="text-xs text-muted-foreground font-medium">
+              Total to split: ₹{amount.toFixed(2)}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cash Amount (₹)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={amount}
+                  placeholder="0"
+                  value={splitCash}
+                  onChange={(e) => {
+                    setSplitCash(e.target.value);
+                    const cash = parseFloat(e.target.value) || 0;
+                    setSplitOnline(String(Math.max(0, amount - cash).toFixed(2)));
+                  }}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Online Amount (₹)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={amount}
+                  placeholder="0"
+                  value={splitOnline}
+                  onChange={(e) => {
+                    setSplitOnline(e.target.value);
+                    const online = parseFloat(e.target.value) || 0;
+                    setSplitCash(String(Math.max(0, amount - online).toFixed(2)));
+                  }}
+                  className="h-10"
+                />
+              </div>
+            </div>
+            {!splitValid && splitCash && splitOnline && (
+              <p className="text-xs text-red-600">Cash + Online must equal ₹{amount.toFixed(2)}</p>
+            )}
+            {splitOnlineNum > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  UPI / Transaction ID <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="e.g. UPI ref / txn ID"
+                  value={txnRef}
+                  onChange={(e) => setTxnRef(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {!isRefund && method === "CASH" && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
             Cash payments require manager confirmation. The booking will be processed immediately, but a manager must verify the cash.
@@ -207,7 +292,9 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
               ? `Refund ₹${amount.toFixed(2)} (${method === "ONLINE" ? "Online" : "Cash"})`
               : method === "CASH"
                 ? `Mark ₹${amount.toFixed(2)} as collected (Cash)`
-                : `Record Online Payment ₹${amount.toFixed(2)}`}
+                : method === "ONLINE"
+                  ? `Record Online Payment ₹${amount.toFixed(2)}`
+                  : `Record Split Payment ₹${amount.toFixed(2)}`}
         </Button>
       </div>
     </div>

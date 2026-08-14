@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { paymentService, type BranchTransaction, type TransactionStatus } from "@/services/payment.service";
 
 const purposeLabels: Record<string, string> = {
@@ -22,12 +29,12 @@ const methodLabels: Record<string, string> = {
 };
 
 const statusConfig: Record<TransactionStatus, { label: string; className: string }> = {
-  INITIATED: { label: "Initiated", className: "bg-blue-50 text-blue-700" },
-  COLLECTED: { label: "Collected", className: "bg-yellow-50 text-yellow-700" },
-  CONFIRMED: { label: "Confirmed", className: "bg-green-50 text-green-700" },
-  REJECTED: { label: "Rejected", className: "bg-red-50 text-red-700" },
-  FAILED: { label: "Failed", className: "bg-red-50 text-red-700" },
-  REFUNDED: { label: "Refunded", className: "bg-purple-50 text-purple-700" },
+  INITIATED: { label: "Initiated", className: "bg-blue-50 text-blue-700 border-blue-100" },
+  COLLECTED: { label: "Collected", className: "bg-yellow-50 text-yellow-700 border-yellow-100" },
+  CONFIRMED: { label: "Confirmed", className: "bg-green-50 text-green-700 border-green-100" },
+  REJECTED: { label: "Rejected", className: "bg-red-50 text-red-700 border-red-100" },
+  FAILED: { label: "Failed", className: "bg-red-50 text-red-700 border-red-100" },
+  REFUNDED: { label: "Refunded", className: "bg-purple-50 text-purple-700 border-purple-100" },
 };
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -42,11 +49,8 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
@@ -68,14 +72,10 @@ export function TransactionsTab() {
       setTotal(result.total);
     } catch {
       // silently fail — table stays empty
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [page, statusFilter]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
@@ -83,87 +83,86 @@ export function TransactionsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={statusFilter}
-          onChange={(e) => handleStatusChange(e.target.value)}
-          className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-300"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={load}
-          disabled={loading}
-          className="ml-auto gap-1.5"
-        >
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1">
+          <h2 className="text-base font-semibold text-neutral-900">All Transactions</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">Complete payment history for this branch</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter || "__all__"} onValueChange={(v) => handleStatusChange(v === "__all__" ? "" : v)}>
+            <SelectTrigger className="h-9 w-44 text-sm">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4}>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value || "__all__"} value={o.value || "__all__"}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-9 gap-1.5 text-xs">
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-        {transactions.length === 0 && !loading ? (
-          <div className="py-16 text-center text-sm text-neutral-400">
-            No transactions found.
+      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+        {loading ? (
+          <div className="divide-y divide-neutral-100">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-24" />
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-28" />
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-28 flex-1" />
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-20" />
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-16" />
+                <div className="h-3 bg-neutral-100 rounded animate-pulse w-20 text-right" />
+                <div className="h-5 bg-neutral-100 rounded-full animate-pulse w-20" />
+              </div>
+            ))}
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center mb-3">
+              <ReceiptText className="w-6 h-6 text-neutral-400" />
+            </div>
+            <p className="font-medium text-neutral-700">No transactions found</p>
+            <p className="text-sm text-neutral-400 mt-1">
+              {statusFilter ? `No transactions with status "${statusFilter.toLowerCase()}".` : "No payment transactions recorded yet."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
-                <tr className="border-b border-neutral-100 bg-neutral-50 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Booking</th>
-                  <th className="px-4 py-3">Customer</th>
-                  <th className="px-4 py-3">Purpose</th>
-                  <th className="px-4 py-3">Method</th>
-                  <th className="px-4 py-3">Ref #</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">By</th>
+                <tr className="border-b border-neutral-100 bg-neutral-50/80">
+                  {["Date", "Booking", "Customer", "Purpose", "Method", "Ref #", "Amount", "Status", "By"].map((h) => (
+                    <th key={h} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {transactions.map((txn) => {
-                  const sc = statusConfig[txn.status] ?? { label: txn.status, className: "bg-neutral-100 text-neutral-600" };
+                  const sc = statusConfig[txn.status] ?? { label: txn.status, className: "bg-neutral-100 text-neutral-600 border-neutral-200" };
                   return (
-                    <tr key={txn.transactionPublicId} className="hover:bg-neutral-50 transition-colors">
-                      <td className="px-4 py-3 whitespace-nowrap text-neutral-500">
-                        {formatDateTime(txn.createdAt)}
+                    <tr key={txn.transactionPublicId} className="hover:bg-neutral-50/60 transition-colors">
+                      <td className="px-5 py-3.5 text-xs text-neutral-500 whitespace-nowrap">{formatDateTime(txn.createdAt)}</td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{txn.bookingPublicId}</td>
+                      <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm whitespace-nowrap">{txn.customerName}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600">{purposeLabels[txn.purpose] ?? txn.purpose}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600">{methodLabels[txn.method] ?? txn.method}</td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-400">{txn.onlineTransactionRef ?? <span className="text-neutral-200">—</span>}</td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm whitespace-nowrap">
+                        ₹ {parseFloat(txn.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-neutral-700">
-                        {txn.bookingPublicId}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-800 font-medium">
-                        {txn.customerName}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600">
-                        {purposeLabels[txn.purpose] ?? txn.purpose}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600">
-                        {methodLabels[txn.method] ?? txn.method}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-neutral-500">
-                        {txn.onlineTransactionRef ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-neutral-900">
-                        ₹{parseFloat(txn.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.className}`}>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${sc.className}`}>
                           {sc.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-neutral-500 text-xs">
-                        {txn.employeeName ?? "—"}
-                      </td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-500">{txn.employeeName ?? "—"}</td>
                     </tr>
                   );
                 })}
@@ -175,26 +174,14 @@ export function TransactionsTab() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-neutral-500">
-          <span>{total} transaction{total !== 1 ? "s" : ""}</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <span className="text-xs">Page {page} of {totalPages}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-neutral-500">
+            Showing <span className="font-medium text-neutral-700">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)}</span> of <span className="font-medium text-neutral-700">{total}</span>
+          </p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-sm text-neutral-600 px-2">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}><ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       )}

@@ -267,7 +267,7 @@ export default function EmployeeCustomerSelectPage() {
             Customer: {customerSession.get()?.name || "Unknown"} <br />
             Phone: {customerSession.get()?.phone || "Unknown"}
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2">
             <Button variant="destructive" onClick={handleClearSession}>
               Clear & Start New
             </Button>

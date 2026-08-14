@@ -18,84 +18,39 @@ export interface ReportMetadata {
 // Daily Summary Report Types
 // ============================================================================
 
-export interface DailySummaryRevenue {
-  bookingValue: number;           // totalFinal committed at booking creation time today
-  invoicedAmount: number;         // actual billed amount from invoices finalized today
-  invoicedCount: number;
-  advanceCollected: number;       // advance payments collected today
-  safetyDepositCollected: number; // safety deposit collected today
-  damageFeesCollected: number;    // damage fees collected today
-  totalCollected: number;         // all payments collected today (all purposes)
-}
-
-export interface DailySummaryBookings {
+// Multi-day shape: one row per calendar day in the selected range.
+export interface DailySummaryDay {
+  date: string; // DD-MM-YYYY
   newBookings: number;
-  pickups: number;
-  returns: number;
+  activeTrips: number;
+  completed: number;
+  revenue: number;
+  cashCollected: number;
+  upiCollected: number;
+  outstanding: number;
   cancellations: number;
-  active: number;
 }
 
-export interface DailySummaryVehicles {
-  availableStartOfDay: number;
-  availableEndOfDay: number;
-  rentedOut: number;
-  returned: number;
-  currentUtilization: number;
-}
-
-export interface CollectionBreakdownItem {
-  method: string;
-  amount: number;
-  count: number;
-}
-
-export interface DailySummaryCollections {
-  cash: number;
-  online: number;
-  split: number;
-  total: number;
-  breakdown: CollectionBreakdownItem[];
-  byPurpose: {
-    advance: number;
-    safetyDeposit: number;
-    damageFees: number;
-  };
-}
-
-export interface DailySummaryDamages {
-  newReports: number;
-  totalEstimatedCost: number; // estimated cost at time of filing
-  approvedCount: number;
-  totalFinalCost: number;     // final cost charged (approved reports)
-  collected: number;          // damage fees actually paid by customers today
-  pendingApproval: number;
-}
-
-export interface DailySummaryMaintenance {
-  vehiclesServiced: number;
-  totalCost: number;
-}
-
-export interface DailySummaryComparison {
-  revenueVsYesterday: number;
-  bookingsVsYesterday: number;
-  revenueVsLastWeekSameDay: number;
+export interface DailySummaryTotals {
+  newBookings: number;
+  activeTrips: number;
+  completed: number;
+  revenue: number;
+  cashCollected: number;
+  upiCollected: number;
+  outstanding: number;
+  cancellations: number;
 }
 
 export interface DailySummaryReport {
   metadata: {
-    date: string;
+    period: { start: string; end: string };
+    days: number;
     branch: string;
     generatedAt: string;
   };
-  revenue: DailySummaryRevenue;
-  bookings: DailySummaryBookings;
-  vehicles: DailySummaryVehicles;
-  collections: DailySummaryCollections;
-  damages: DailySummaryDamages;
-  maintenance: DailySummaryMaintenance;
-  comparison: DailySummaryComparison;
+  days: DailySummaryDay[];
+  totals: DailySummaryTotals;
 }
 
 // ============================================================================

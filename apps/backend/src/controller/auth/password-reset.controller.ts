@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { forgotPasswordSchema, resetPasswordSchema } from "@repo/schemas";
+import {
+  forgotPasswordSchema,
+  resetPasswordWithOtpSchema,
+} from "@repo/schemas";
 import { prisma, Role } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import {
@@ -113,7 +116,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const resetPassword = async (req: Request, res: Response) => {
   try {
-    const parsed = resetPasswordSchema.safeParse(req.body);
+    const parsed = resetPasswordWithOtpSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Validation Error",

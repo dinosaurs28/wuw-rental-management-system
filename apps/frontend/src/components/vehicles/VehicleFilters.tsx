@@ -23,7 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
+import type { BranchScheduleConfig } from "@/services/branch.service";
+import type { ScheduleVerdict } from "@/utils/branchScheduleValidator";
 
 interface VehicleFiltersProps {
   branches: { publicId: string; name: string }[];
@@ -48,6 +53,8 @@ interface VehicleFiltersProps {
   returnTime?: string;
   onPickupTimeChange?: (time: string) => void;
   onReturnTimeChange?: (time: string) => void;
+  schedule?: BranchScheduleConfig;
+  scheduleVerdict?: ScheduleVerdict | null;
 }
 
 const SORT_OPTIONS = [
@@ -79,6 +86,8 @@ export const VehicleFilters = ({
   returnTime,
   onPickupTimeChange,
   onReturnTimeChange,
+  schedule,
+  scheduleVerdict,
 }: VehicleFiltersProps) => {
   // Local state for immediate input response
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -195,12 +204,10 @@ export const VehicleFilters = ({
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Pickup Time
           </label>
-          <input
-            type="time"
-            value={pickupTime || "10:00"}
-            onChange={(e) => onPickupTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
+          <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
+            <TimeSelect value={pickupTime || "10:00"} onChange={(v) => onPickupTimeChange?.(v)} className="w-full" />
+          </div>
+          <BranchHoursBadge schedule={schedule} date={pickupDate} />
         </div>
 
         {/* Return Date */}
@@ -233,9 +240,14 @@ export const VehicleFilters = ({
                 mode="single"
                 selected={returnDate || undefined}
                 onSelect={onReturnDateChange}
-                disabled={(date) =>
-                  pickupDate ? date < pickupDate : date < new Date()
-                }
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (!pickupDate) return date < today;
+                  // Compare calendar day only so same day as pickup is always selectable
+                  const pickupDay = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+                  return date < pickupDay || date < today;
+                }}
               />
             </PopoverContent>
           </Popover>
@@ -246,12 +258,10 @@ export const VehicleFilters = ({
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Return Time
           </label>
-          <input
-            type="time"
-            value={returnTime || "10:00"}
-            onChange={(e) => onReturnTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
-          />
+          <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
+            <TimeSelect value={returnTime || "10:00"} onChange={(v) => onReturnTimeChange?.(v)} className="w-full" />
+          </div>
+          <BranchHoursBadge schedule={schedule} date={returnDate} />
         </div>
 
         {/* Category */}
@@ -310,6 +320,13 @@ export const VehicleFilters = ({
           </Select>
         </div>
       </div>
+
+      {/* Schedule warning banner */}
+      {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+        <div className="mt-6 relative z-10">
+          <ScheduleWarningBanner verdict={scheduleVerdict} />
+        </div>
+      )}
 
       {/* Search and Reset Row */}
       <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-zinc-200 relative z-10">

@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Booking } from "@/services/userBookings.service";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingQRModal } from "./BookingQRModal";
 import { InvoiceDownloadButton } from "@/components/InvoiceDownloadButton";
-// import { CustomerExtensionModal } from "@/components/customer/CustomerExtensionModal";
+import { CustomerExtensionModal } from "@/components/customer/CustomerExtensionModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { QrCode, Calendar, Clock, Car/*, ArrowUpRight*/ } from "lucide-react";
+import { QrCode, Calendar, Clock, Car, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
+import { extensionService } from "@/services/extension.service";
 
 interface UserBookingCardProps {
   booking: Booking;
@@ -15,7 +17,18 @@ interface UserBookingCardProps {
 
 export function UserBookingCard({ booking }: UserBookingCardProps) {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  // const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+
+  const isActive =
+    booking.status === "CONFIRMED" || booking.status === "PICKED_UP";
+
+  // Check eligibility — only fetched for active bookings
+  const { data: eligibility } = useQuery({
+    queryKey: ["extension-eligibility", booking.bookingId],
+    queryFn: () => extensionService.customerCheckEligibility(booking.bookingId),
+    enabled: isActive,
+    staleTime: 60_000,
+  });
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM dd, yyyy");
@@ -28,6 +41,8 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  const showExtendButton = isActive && eligibility?.eligible === true;
 
   return (
     <>
@@ -48,10 +63,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
             </div>
             <div className="flex items-center gap-2">
               <BookingStatusBadge status={booking.status} />
-              <BookingStatusBadge
-                status={booking.paymentStatus}
-                type="payment"
-              />
+              <BookingStatusBadge status={booking.paymentStatus} type="payment" />
             </div>
           </div>
 
@@ -95,7 +107,6 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                   key={vehicle.publicId}
                   className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 transition-colors"
                 >
-                  {/* Vehicle Thumbnail */}
                   <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
                     {vehicle.thumbnail ? (
                       <img
@@ -109,8 +120,6 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                       </div>
                     )}
                   </div>
-
-                  {/* Vehicle Info */}
                   <div className="flex flex-1 flex-col justify-center">
                     <h4 className="text-base font-bold text-zinc-900 tracking-wide">
                       {vehicle.make} {vehicle.model}
@@ -127,30 +136,33 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-200 mt-2">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
-                  Total Amount
+                  {booking.isAdvancePayment ? "Amount Paid" : "Total Amount"}
                 </span>
                 <span className="text-2xl font-bold text-zinc-900 font-mono tracking-tight">
-                  {formatCurrency(booking.total)}
+                  {formatCurrency(booking.amountPaid ?? booking.total)}
                 </span>
+                {booking.isAdvancePayment && booking.remainingBalance > 0 && (
+                  <span className="text-xs text-zinc-500 mt-0.5">
+                    +{formatCurrency(booking.remainingBalance)} due at pickup · {formatCurrency(booking.total)} total
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <InvoiceDownloadButton
                   bookingId={booking.id}
                   bookingStatus={booking.status}
                 />
-                {/* Extension feature temporarily disabled
-                {booking.status === "CONFIRMED" && (
+                {showExtendButton && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 rounded-full h-10 border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 font-medium px-4 transition-all"
+                    className="gap-2 rounded-full h-10 border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-600 font-semibold px-4 transition-all"
                     onClick={() => setIsExtendModalOpen(true)}
                   >
                     <ArrowUpRight className="h-4 w-4" />
                     <span className="hidden sm:inline">Extend</span>
                   </Button>
                 )}
-                */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -162,12 +174,10 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 </Button>
               </div>
             </div>
-
           </div>
         </CardContent>
       </Card>
 
-      {/* QR Code Modal */}
       <BookingQRModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
@@ -175,7 +185,6 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
         bookingStatus={booking.status}
       />
 
-      {/* Extension Modal — temporarily disabled
       {isExtendModalOpen && (
         <CustomerExtensionModal
           open={isExtendModalOpen}
@@ -184,7 +193,6 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
           onClose={() => setIsExtendModalOpen(false)}
         />
       )}
-      */}
     </>
   );
 }

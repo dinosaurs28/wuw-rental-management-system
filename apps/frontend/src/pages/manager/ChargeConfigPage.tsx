@@ -16,7 +16,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Layers,
+  Wallet,
 } from "lucide-react";
+import apiClient from "@/lib/axios";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +53,9 @@ const DEFAULT_CONFIG: BranchChargeConfig = {
   safetyDepositEnabled: false,
   safetyDepositRequiresApproval: true,
   usePaymentSessions: false,
+  extensionThresholdHours: 24,
+  extensionWindowShortHours: 6,
+  extensionWindowLongHours: 12,
 };
 
 function ActiveModulesBar({ config }: { config: BranchChargeConfig }) {
@@ -105,14 +110,32 @@ function SectionHeader({
   );
 }
 
+type CustomerPaymentMode = 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
+
+const PAYMENT_MODE_OPTIONS: { value: CustomerPaymentMode; label: string; description: string }[] = [
+  { value: 'ADVANCE_ONLY', label: 'Advance only', description: 'Customers pay an advance now, remaining at pickup' },
+  { value: 'FULL_ONLY', label: 'Full payment only', description: 'Customers must pay the full amount at booking' },
+  { value: 'BOTH', label: 'Customer chooses', description: 'Customers can pick advance or full payment' },
+];
+
 export function ChargeConfigPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<BranchChargeConfig>(DEFAULT_CONFIG);
   const [isDirty, setIsDirty] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<CustomerPaymentMode>('ADVANCE_ONLY');
+  const [paymentModeDirty, setPaymentModeDirty] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["branch-charge-config"],
     queryFn: chargeConfigService.getConfig,
+  });
+
+  const { data: paymentConfigData } = useQuery({
+    queryKey: ["branch-payment-config"],
+    queryFn: async () => {
+      const res = await apiClient.get("/branchManager/payment/config");
+      return res.data.data;
+    },
   });
 
   useEffect(() => {
@@ -121,6 +144,13 @@ export function ChargeConfigPage() {
       setIsDirty(false);
     }
   }, [data]);
+
+  useEffect(() => {
+    if (paymentConfigData?.customerPaymentMode) {
+      setPaymentMode(paymentConfigData.customerPaymentMode);
+      setPaymentModeDirty(false);
+    }
+  }, [paymentConfigData]);
 
   const mutation = useMutation({
     mutationFn: () => chargeConfigService.upsertConfig(form),
@@ -133,6 +163,18 @@ export function ChargeConfigPage() {
       toast.error(
         err?.response?.data?.message ?? "Failed to save configuration.",
       );
+    },
+  });
+
+  const paymentModeMutation = useMutation({
+    mutationFn: () => apiClient.patch("/branchManager/payment/config", { customerPaymentMode: paymentMode }),
+    onSuccess: () => {
+      toast.success("Payment mode saved.");
+      queryClient.invalidateQueries({ queryKey: ["branch-payment-config"] });
+      setPaymentModeDirty(false);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? "Failed to save payment mode.");
     },
   });
 
@@ -205,6 +247,47 @@ export function ChargeConfigPage() {
 
         {/* Active modules summary bar */}
         <ActiveModulesBar config={form} />
+
+        {/* ── Section: Customer Booking Payment Mode ────────────────────── */}
+        <div className="bg-white rounded-lg border shadow-sm px-5 py-5 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-orange-500" />
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-800">Customer Payment Mode</h2>
+                <p className="text-xs text-neutral-400 mt-0.5">Controls which payment options customers see during booking</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 flex-shrink-0"
+              onClick={() => paymentModeMutation.mutate()}
+              disabled={paymentModeMutation.isPending || !paymentModeDirty}
+            >
+              {paymentModeMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+              {paymentModeDirty ? "Save" : "Saved"}
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {PAYMENT_MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setPaymentMode(opt.value); setPaymentModeDirty(true); }}
+                className={`text-left p-4 rounded-xl border-2 transition-all ${
+                  paymentMode === opt.value
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                }`}
+              >
+                <p className={`text-sm font-semibold ${paymentMode === opt.value ? 'text-orange-700' : 'text-neutral-800'}`}>
+                  {opt.label}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">{opt.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ── Section: Mileage & Time ─────────────────────────────────── */}
         <div>
@@ -467,6 +550,80 @@ export function ChargeConfigPage() {
               enabled={form.usePaymentSessions}
               onToggle={(v) => update("usePaymentSessions", v)}
             />
+          </div>
+        </div>
+
+        {/* Extension Button Visibility Window */}
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+              <Clock className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Extension Button Visibility</h2>
+              <p className="text-sm text-muted-foreground">
+                Controls when the "Extend Rental" button appears in the customer portal
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Short/Long threshold (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={72}
+                value={form.extensionThresholdHours}
+                onChange={(e) =>
+                  update("extensionThresholdHours", parseInt(e.target.value) || 24)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Rentals ≤ this duration are "short"
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Short rental window (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={24}
+                value={form.extensionWindowShortHours}
+                onChange={(e) =>
+                  update("extensionWindowShortHours", parseInt(e.target.value) || 6)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Show button N hrs before end for short rentals
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-600">
+                Long rental window (hours)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={48}
+                value={form.extensionWindowLongHours}
+                onChange={(e) =>
+                  update("extensionWindowLongHours", parseInt(e.target.value) || 12)
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Show button N hrs before end for long rentals
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-orange-50 border border-orange-100 px-4 py-3 text-xs text-orange-700">
+            <strong>Example:</strong> With threshold=24h, short-window=6h, long-window=12h — a 12hr booking shows the
+            extend button in the last 6hrs; a 3-day booking shows it in the last 12hrs.
           </div>
         </div>
 

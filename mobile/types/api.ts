@@ -27,6 +27,7 @@ export interface VehicleDetail extends Vehicle {
   status: string;
   deposit: number;
   advancePayAmount: number;
+  customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
   pricingDetails: PricingDetails | null;
   availableCount?: number;
 }
@@ -69,6 +70,10 @@ export interface BookingTrip {
   endAt: string;
   days: number;
   total: number;
+  isAdvancePayment: boolean;
+  advanceAmount: number;
+  remainingBalance: number;
+  amountPaid: number;
   createdAt: string;
   vehicles: BookingVehicle[];
 }

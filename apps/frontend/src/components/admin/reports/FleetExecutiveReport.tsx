@@ -26,11 +26,20 @@ import { adminService } from "@/services/admin.service";
 import { FilterPanel } from "@/components/ui/FilterPanel";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { DataTable } from "@/components/ui/DataTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { abbreviateAmount } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
   type DateRangePreset,
 } from "@/utils/exportHelpers";
+import type { ColumnDef } from "@tanstack/react-table";
 
 interface FleetExecutiveReportProps {
   startDate: string;
@@ -73,6 +82,28 @@ interface OperationalMetrics {
   maintenanceRate: number;
 }
 
+interface ExecutiveRow {
+  executiveId: string;
+  executiveName: string;
+  branchName: string;
+  bookingsHandled: number;
+  totalRevenue: number;
+  cashCollected: number;
+  upiCollected: number;
+  outstanding: number;
+  cancellations: number;
+}
+
+interface ExecutivesSummary {
+  executiveCount: number;
+  bookingsHandled: number;
+  totalRevenue: number;
+  cashCollected: number;
+  upiCollected: number;
+  outstanding: number;
+  cancellations: number;
+}
+
 interface FleetExecutiveData {
   metadata: {
     generatedAt: string;
@@ -85,6 +116,8 @@ interface FleetExecutiveData {
   branchPerformance: BranchPerformance[];
   categoryPerformance: CategoryPerformance[];
   operationalMetrics: OperationalMetrics;
+  executives: ExecutiveRow[];
+  executivesSummary: ExecutivesSummary;
 }
 
 export const FleetExecutiveReport = ({
@@ -102,6 +135,34 @@ export const FleetExecutiveReport = ({
   const [data, setData] = useState<FleetExecutiveData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string>("all");
+  const [selectedExecutive, setSelectedExecutive] = useState<string>("all");
+  const [branches, setBranches] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  // Executive dropdown options, captured only from the UNFILTERED fetch so the
+  // list does not collapse to a single entry once an executive is selected.
+  const [executiveOptions, setExecutiveOptions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+
+  // Fetch branches once for the branch filter.
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const result = await adminService.getBranches();
+        setBranches(
+          result.map((branch) => ({
+            value: branch.publicId,
+            label: branch.name,
+          })),
+        );
+      } catch (err) {
+        console.error("Failed to fetch branches:", err);
+      }
+    };
+    fetchBranches();
+  }, []);
 
   // Initialize date range from preset
   useEffect(() => {
@@ -117,20 +178,38 @@ export const FleetExecutiveReport = ({
     if (startDate && endDate) {
       fetchReportData();
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedBranch, selectedExecutive]);
 
   const fetchReportData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const params = {
+      const params: {
+        startDate: string;
+        endDate: string;
+        branchId?: string;
+        executiveId?: string;
+      } = {
         startDate: startDate!.toISOString().split("T")[0],
         endDate: endDate!.toISOString().split("T")[0],
       };
+      if (selectedBranch !== "all") params.branchId = selectedBranch;
+      if (selectedExecutive !== "all") params.executiveId = selectedExecutive;
 
       const result = await adminService.getFleetExecutiveReport(params);
-      setData(result.data);
+      const reportData: FleetExecutiveData = result.data;
+      setData(reportData);
+
+      // Only refresh the executive dropdown from an unfiltered response so the
+      // option list stays complete (a filtered response returns one row only).
+      if (selectedExecutive === "all" && reportData.executives) {
+        setExecutiveOptions(
+          reportData.executives
+            .filter((e) => e.executiveId !== "unassigned")
+            .map((e) => ({ value: e.executiveId, label: e.executiveName })),
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -144,6 +223,9 @@ export const FleetExecutiveReport = ({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
     });
+    if (selectedBranch !== "all") params.set("branchId", selectedBranch);
+    if (selectedExecutive !== "all")
+      params.set("executiveId", selectedExecutive);
     const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
     return `${baseUrl}/admin/dashboard/reports/fleet-executive?${params.toString()}`;
   };
@@ -154,10 +236,79 @@ export const FleetExecutiveReport = ({
 
   const handleResetFilters = () => {
     setDateRangePreset("30days");
+    setSelectedBranch("all");
+    setSelectedExecutive("all");
     const { startDate: start, endDate: end } = getDateRangeFromPreset("30days");
     setStartDate(start);
     setEndDate(end);
   };
+
+  const executiveColumns: ColumnDef<ExecutiveRow>[] = [
+    {
+      accessorKey: "executiveName",
+      header: "Executive Name",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.original.executiveName}</div>
+      ),
+    },
+    {
+      accessorKey: "branchName",
+      header: "Branch",
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.branchName}</div>
+      ),
+    },
+    {
+      accessorKey: "bookingsHandled",
+      header: "Bookings Handled",
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.bookingsHandled}</div>
+      ),
+    },
+    {
+      accessorKey: "totalRevenue",
+      header: "Total Revenue",
+      cell: ({ row }) => (
+        <div className="text-right font-semibold font-mono">
+          ₹{row.original.totalRevenue.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "cashCollected",
+      header: "Cash Collected",
+      cell: ({ row }) => (
+        <div className="text-right font-mono">
+          ₹{row.original.cashCollected.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "upiCollected",
+      header: "UPI Collected",
+      cell: ({ row }) => (
+        <div className="text-right font-mono">
+          ₹{row.original.upiCollected.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "outstanding",
+      header: "Outstanding",
+      cell: ({ row }) => (
+        <div className="text-right font-mono">
+          ₹{row.original.outstanding.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "cancellations",
+      header: "Cancellations",
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.cancellations}</div>
+      ),
+    },
+  ];
 
   if (loading) {
     return (
@@ -271,10 +422,36 @@ export const FleetExecutiveReport = ({
           setStartDate(start);
           setEndDate(end);
         }}
-        showBranchFilter={false}
+        showBranchFilter
+        branches={branches}
+        selectedBranch={selectedBranch}
+        onBranchChange={setSelectedBranch}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-      />
+      >
+        {/* Executive Filter */}
+        {executiveOptions.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Executive</label>
+            <Select
+              value={selectedExecutive}
+              onValueChange={setSelectedExecutive}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Executives" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Executives</SelectItem>
+                {executiveOptions.map((exec) => (
+                  <SelectItem key={exec.value} value={exec.value}>
+                    {exec.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </FilterPanel>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -307,6 +484,65 @@ export const FleetExecutiveReport = ({
           isLoading={loading}
         />
       </div>
+
+      {/* Executive Performance (per-staff) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <BarChartIcon className="h-5 w-5 text-orange-500" />
+            Executive Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={executiveColumns}
+            data={data.executives || []}
+            isLoading={loading}
+            pageSize={25}
+            emptyMessage="No executive activity found for the selected filters"
+          />
+          {data.executivesSummary && data.executives.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">Bookings</p>
+                <p className="font-semibold">
+                  {data.executivesSummary.bookingsHandled}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">Total Revenue</p>
+                <p className="font-semibold font-mono">
+                  ₹{data.executivesSummary.totalRevenue.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">Cash Collected</p>
+                <p className="font-semibold font-mono">
+                  ₹{data.executivesSummary.cashCollected.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">UPI Collected</p>
+                <p className="font-semibold font-mono">
+                  ₹{data.executivesSummary.upiCollected.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">Outstanding</p>
+                <p className="font-semibold font-mono">
+                  ₹{data.executivesSummary.outstanding.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-muted-foreground">Cancellations</p>
+                <p className="font-semibold">
+                  {data.executivesSummary.cancellations}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Operational Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

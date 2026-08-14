@@ -33,6 +33,7 @@ import {
   MessageCircle,
   ScrollText,
   Activity,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -82,6 +83,11 @@ const items = [
     title: "Staff Activity",
     url: "/admin/staff-activity",
     icon: Activity,
+  },
+  {
+    title: "Branch Transfer",
+    url: "/admin/user-transfer",
+    icon: ArrowRightLeft,
   },
 ];
 

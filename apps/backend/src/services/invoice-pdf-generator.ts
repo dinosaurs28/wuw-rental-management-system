@@ -8,6 +8,8 @@ import {
   drawSectionHeader,
   drawRentalTableHeader,
   drawRentalTableRow,
+  drawExtensionTableHeader,
+  drawExtensionTableRow,
   drawSimpleTableHeader,
   drawSimpleTableRow,
   drawSectionTotals,
@@ -22,11 +24,12 @@ import {
 function renderVehicleRentalSection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
+  letter: string,
 ): void {
   const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
   const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
 
-  drawSectionHeader(ctx, "A.  Vehicle Rental", C.taxable, C.taxableAccent);
+  drawSectionHeader(ctx, `${letter}  Vehicle Rental`, C.taxable, C.taxableAccent);
   drawRentalTableHeader(ctx);
 
   for (const item of section.items) {
@@ -36,17 +39,43 @@ function renderVehicleRentalSection(
   drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
 }
 
-/** Renders the Damage Penalty section. */
-function renderDamagePenaltySection(
+/** Renders the Extension Charges section (3-column: Description / Extra Days / Amount). */
+function renderExtensionChargesSection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
+  letter: string,
 ): void {
   const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
   const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
 
   drawSectionHeader(
     ctx,
-    "B.  Damage Penalty",
+    `${letter}  Rental Extension Charges`,
+    C.taxable,
+    C.taxableAccent,
+    "GST applicable",
+  );
+  drawExtensionTableHeader(ctx);
+
+  for (const item of section.items) {
+    drawExtensionTableRow(ctx, item);
+  }
+
+  drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
+}
+
+/** Renders the Damage Penalty section. */
+function renderDamagePenaltySection(
+  ctx: PDFRenderContext,
+  section: InvoiceSection,
+  letter: string,
+): void {
+  const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
+  const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
+
+  drawSectionHeader(
+    ctx,
+    `${letter}  Damage Penalty`,
     C.penalty,
     C.penaltyAccent,
     "GST applicable",
@@ -151,14 +180,17 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
       let taxableTotal = 0;
 
-      for (const section of invoiceData.taxableSections) {
+      invoiceData.taxableSections.forEach((section, idx) => {
+        const letter = String.fromCharCode(65 + idx) + ".";
         if (section.type === "VEHICLE_RENTAL") {
-          renderVehicleRentalSection(ctx, section);
+          renderVehicleRentalSection(ctx, section, letter);
+        } else if (section.type === "EXTENSION_CHARGES") {
+          renderExtensionChargesSection(ctx, section, letter);
         } else if (section.type === "DAMAGE_PENALTY") {
-          renderDamagePenaltySection(ctx, section);
+          renderDamagePenaltySection(ctx, section, letter);
         }
         taxableTotal += section.sectionTotal;
-      }
+      });
 
       drawPageSubtotalBar(
         ctx,

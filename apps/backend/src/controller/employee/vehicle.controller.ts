@@ -18,8 +18,12 @@ import { DateTime } from "luxon";
 
 const pricingEngine = new PricingEngineService();
 
+function normalizeStr(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function buildGroupKey(make: string, model: string, categoryId: number, branchId: number): string {
-  return `${make}__${model}__${categoryId}__${branchId}`;
+  return `${normalizeStr(make)}__${normalizeStr(model)}__${categoryId}__${branchId}`;
 }
 
 function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
@@ -95,7 +99,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
     const vehicles = await prisma.vehicle.findMany({
       where,
       include: {
-        category: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, typeClass: true } },
         branch: { select: { id: true, name: true } },
         images: {
           where: { isThumbnail: true },
@@ -147,6 +151,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
       make: string;
       model: string;
       category: string;
+      typeClass: string;
       branch: string;
       availableCount: number;
       imageUrl: any[];
@@ -180,9 +185,10 @@ export const searchVehicles = async (req: Request, res: Response) => {
       if (!existing) {
         groupMap.set(gk, {
           groupKey: gk,
-          make: v.make,
-          model: v.model,
+          make: normalizeStr(v.make),
+          model: normalizeStr(v.model),
           category: v.category.name,
+          typeClass: v.category.typeClass,
           branch: v.branch.name,
           availableCount: 1,
           imageUrl: v.images,
@@ -206,6 +212,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
       make: g.make,
       model: g.model,
       category: g.category,
+      typeClass: g.typeClass,
       branch: g.branch,
       availableCount: g.availableCount,
       imageUrl: g.imageUrl,

@@ -99,6 +99,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
       extraHourRate,
       isCustomPricingEnabled,
       advancePayAmount,
+      fuelBar,
       fastagNumber,
       hasFastag,
     } = validation.data;
@@ -124,6 +125,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
         regNo,
         odo: Number(odo),
         advancePayAmount: advancePayAmount ?? 0,
+        fuelBar: fuelBar ?? null,
         fastagNumber: fastagNumber ?? null,
         hasFastag: hasFastag ?? false,
         insuranceExpiry: new Date(insuranceExpiry),
@@ -497,7 +499,15 @@ export const GetVehicleById = async (req: Request, res: Response) => {
 
 export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
-  const { q } = req.query;
+  const { q, status, page: pageQuery, limit: limitQuery } = req.query;
+
+  const page = Math.max(1, parseInt(pageQuery as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(limitQuery as string) || 20));
+  const skip = (page - 1) * limit;
+
+  const today = new Date();
+  const in30Days = new Date(today);
+  in30Days.setDate(today.getDate() + 30);
 
   const whereClause: any = {
     branchId: branchId,
@@ -513,39 +523,43 @@ export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
     ];
   }
 
+  if (status === "expired") {
+    whereClause.insuranceExpiry = { lt: today };
+  } else if (status === "expiring_soon") {
+    whereClause.insuranceExpiry = { gte: today, lte: in30Days };
+  } else if (status === "valid") {
+    whereClause.insuranceExpiry = { gt: in30Days };
+  }
+
   try {
-    const vehicles = await prisma.vehicle.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        publicId: true,
-        make: true,
-        model: true,
-        regNo: true,
-        insuranceExpiry: true,
-        images: {
-          where: { isThumbnail: true },
-          select: {
-            file: {
-              select: { url: true },
-            },
+    const [vehicles, total, expiredCount, expiringSoonCount] = await Promise.all([
+      prisma.vehicle.findMany({
+        where: whereClause,
+        select: {
+          publicId: true,
+          make: true,
+          model: true,
+          regNo: true,
+          insuranceExpiry: true,
+          images: {
+            where: { isThumbnail: true },
+            select: { file: { select: { url: true } } },
+            take: 1,
           },
-          take: 1,
-        },
-        insuranceRecords: {
-          orderBy: { validTill: "desc" },
-          take: 1,
-          select: {
-            policyNumber: true,
-            provider: true,
-            validTill: true,
+          insuranceRecords: {
+            orderBy: { validTill: "desc" },
+            take: 1,
+            select: { policyNumber: true, provider: true, validTill: true },
           },
         },
-      },
-      orderBy: {
-        insuranceExpiry: "asc", // Soonest expiry first
-      },
-    });
+        orderBy: { insuranceExpiry: "asc" },
+        skip,
+        take: limit,
+      }),
+      prisma.vehicle.count({ where: whereClause }),
+      prisma.vehicle.count({ where: { branchId, deletedAt: null, insuranceExpiry: { lt: today } } }),
+      prisma.vehicle.count({ where: { branchId, deletedAt: null, insuranceExpiry: { gte: today, lte: in30Days } } }),
+    ]);
 
     const reportData = vehicles.map((v) => {
       const latestInsurance = v.insuranceRecords[0];
@@ -564,6 +578,13 @@ export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       data: reportData,
+      total,
+      page,
+      limit,
+      summary: {
+        expired: expiredCount,
+        expiringSoon: expiringSoonCount,
+      },
     });
   } catch (error) {
     console.error("GetInsuranceExpiryReport Error:", error);

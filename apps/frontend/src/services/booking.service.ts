@@ -177,6 +177,7 @@ export interface EmployeeBooking {
       category: string;
       odo: number;
       fuelLevel: number;
+      fuelBar?: number | null;
       hasFastag?: boolean;
       images: {
         file: {

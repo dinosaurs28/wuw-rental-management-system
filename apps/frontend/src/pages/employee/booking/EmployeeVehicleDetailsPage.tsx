@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { Shield, Users, Fuel, Settings2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
+import { getCurrentTime } from "@/utils/formatters";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -72,12 +73,12 @@ export const EmployeeVehicleDetailsPage = () => {
   const startDateTime =
     urlStart ||
     (startDate
-      ? `${format(new Date(startDate), "yyyy-MM-dd")}T${startTime || "10:00"}`
+      ? `${format(new Date(startDate), "yyyy-MM-dd")}T${startTime || getCurrentTime()}`
       : null);
   const endDateTime =
     urlEnd ||
     (endDate
-      ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || "10:00"}`
+      ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || getCurrentTime()}`
       : null);
 
   // Queries

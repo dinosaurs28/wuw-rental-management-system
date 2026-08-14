@@ -54,6 +54,20 @@ export const CreateBranch = async (req: Request, res: Response) => {
                 }
             });
 
+            // Booking price calculation requires a GSTRule row to exist for the branch.
+            // Default to 9% CGST + 9% SGST (standard GST split) so a new branch is bookable
+            // immediately; the GST number itself is left blank for the manager to fill in.
+            await tx.gSTRule.create({
+                data: {
+                    publicId: createID(),
+                    branchId: newBranch.id,
+                    gstNumber: "",
+                    cgstRate: 9,
+                    sgstRate: 9,
+                    igstRate: 0,
+                }
+            });
+
             return { branch: newBranch, manager: newManager };
         });
 
@@ -230,7 +244,7 @@ export const DeleteBranch = async (req: Request, res: Response) => {
                     branchId: branch.id,
                     role: Role.MANAGER
                 },
-                data: { deletedAt: new Date() }
+                data: { isActive: false }
             });
         });
 

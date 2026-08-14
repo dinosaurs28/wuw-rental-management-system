@@ -1,22 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, CreditCard, DollarSign, Activity } from "lucide-react";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+  DollarSign,
+  CreditCard,
+  Smartphone,
+  Banknote,
+  Wallet,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,47 +26,34 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { adminService } from "@/services/admin.service";
 
+type PaymentModeFilter = "all" | "Cash" | "UPI" | "Gateway" | "Credit";
+
 interface CollectionReportProps {
   startDate: string;
   endDate: string;
   branchId?: string;
-  paymentMethod?: "CASH" | "UPI" | "ONLINE" | "all";
+  paymentMode?: PaymentModeFilter;
 }
 
-interface MethodBreakdown {
-  CASH: { amount: number; count: number };
-  UPI: { amount: number; count: number };
-  ONLINE: { amount: number; count: number };
-}
-
-interface BranchBreakdown {
-  branchName: string;
-  branchId: string;
-  totalCollected: number;
-  transactionCount: number;
-  byMethod: {
-    CASH: number;
-    UPI: number;
-    ONLINE: number;
-  };
-}
-
-interface DailyTrend {
+interface CollectionRow {
   date: string;
-  amount: number;
-  count: number;
-}
-
-interface Payment {
-  paymentId: string;
   bookingId: string;
   customerName: string;
-  customerPhone: string;
-  amount: number;
-  method: string;
-  type: string;
+  vehicleRegNo: string;
+  paymentMode: string;
+  amountCollected: number;
+  collectedBy: string;
   branch: string;
-  collectedAt: string;
+  referenceNo: string;
+}
+
+interface CollectionSummary {
+  totalCash: number;
+  totalUpi: number;
+  totalGateway: number;
+  totalCredit: number;
+  grandTotalCollected: number;
+  totalTransactions: number;
 }
 
 interface CollectionReportData {
@@ -87,24 +64,18 @@ interface CollectionReportData {
       endDate: string;
     };
     branch: string;
-    paymentMethod: string;
+    paymentMode: string;
+    staff: string;
   };
-  summary: {
-    totalCollected: number;
-    totalTransactions: number;
-    averageTransaction: number;
-    methodBreakdown: MethodBreakdown;
-  };
-  branchBreakdown: BranchBreakdown[];
-  dailyTrend: DailyTrend[];
-  payments: Payment[];
+  summary: CollectionSummary;
+  data: CollectionRow[];
 }
 
 export const CollectionReport = ({
   startDate: initialStartDate,
   endDate: initialEndDate,
   branchId: initialBranchId = "all",
-  paymentMethod: initialPaymentMethod = "all",
+  paymentMode: initialPaymentMode = "all",
 }: CollectionReportProps) => {
   const [dateRangePreset, setDateRangePreset] =
     useState<DateRangePreset>("30days");
@@ -115,7 +86,8 @@ export const CollectionReport = ({
     initialEndDate ? new Date(initialEndDate) : undefined,
   );
   const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
-  const [paymentMethod, setPaymentMethod] = useState(initialPaymentMethod);
+  const [paymentMode, setPaymentMode] =
+    useState<PaymentModeFilter>(initialPaymentMode);
   const [data, setData] = useState<CollectionReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,19 +124,27 @@ export const CollectionReport = ({
     if (startDate && endDate) {
       fetchReportData();
     }
-  }, [startDate, endDate, selectedBranch, paymentMethod]);
+  }, [startDate, endDate, selectedBranch, paymentMode]);
 
   const fetchReportData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const params = {
+      const params: {
+        startDate: string;
+        endDate: string;
+        branchId: string;
+        paymentMode?: string;
+      } = {
         startDate: startDate!.toISOString().split("T")[0],
         endDate: endDate!.toISOString().split("T")[0],
         branchId: selectedBranch,
-        paymentMethod,
       };
+
+      if (paymentMode !== "all") {
+        params.paymentMode = paymentMode;
+      }
 
       const result = await adminService.getCollectionReport(params);
       setData(result.data);
@@ -181,8 +161,11 @@ export const CollectionReport = ({
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
       branchId: selectedBranch,
-      paymentMethod,
+      export: "csv",
     });
+    if (paymentMode !== "all") {
+      params.set("paymentMode", paymentMode);
+    }
     const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
     return `${baseUrl}/admin/dashboard/reports/collection?${params.toString()}`;
   };
@@ -197,15 +180,15 @@ export const CollectionReport = ({
     setStartDate(start);
     setEndDate(end);
     setSelectedBranch("all");
-    setPaymentMethod("all");
+    setPaymentMode("all");
   };
 
-  const columns: ColumnDef<Payment>[] = [
+  const columns: ColumnDef<CollectionRow>[] = [
     {
-      accessorKey: "paymentId",
-      header: "Payment ID",
+      accessorKey: "date",
+      header: "Date",
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.paymentId}</span>
+        <span className="text-sm">{formatDate(row.original.date)}</span>
       ),
     },
     {
@@ -217,103 +200,54 @@ export const CollectionReport = ({
     },
     {
       accessorKey: "customerName",
-      header: "Customer",
+      header: "Customer Name",
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.customerName}</div>
-          <div className="text-xs text-gray-500">
-            {row.original.customerPhone}
-          </div>
-        </div>
+        <span className="font-medium">{row.original.customerName}</span>
       ),
     },
     {
-      accessorKey: "amount",
-      header: "Amount",
+      accessorKey: "vehicleRegNo",
+      header: "Vehicle Reg No",
       cell: ({ row }) => (
-        <span className="font-medium">
-          {formatCurrency(row.original.amount)}
+        <span className="font-mono text-xs">{row.original.vehicleRegNo}</span>
+      ),
+    },
+    {
+      accessorKey: "paymentMode",
+      header: "Payment Mode",
+      cell: ({ row }) => <span>{row.original.paymentMode}</span>,
+    },
+    {
+      accessorKey: "amountCollected",
+      header: "Amount Collected",
+      cell: ({ row }) => (
+        <span className="font-semibold font-mono">
+          {formatCurrency(row.original.amountCollected)}
         </span>
       ),
     },
     {
-      accessorKey: "method",
-      header: "Method",
+      accessorKey: "collectedBy",
+      header: "Collected By",
       cell: ({ row }) => (
-        <span className="capitalize">{row.original.method.toLowerCase()}</span>
+        <span className="text-sm">{row.original.collectedBy}</span>
       ),
     },
     {
-      accessorKey: "collectedAt",
-      header: "Date",
-      cell: ({ row }) => <span>{formatDate(row.original.collectedAt)}</span>,
+      accessorKey: "branch",
+      header: "Branch",
+      cell: ({ row }) => <span className="text-sm">{row.original.branch}</span>,
+    },
+    {
+      accessorKey: "referenceNo",
+      header: "Reference No",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.referenceNo || "—"}
+        </span>
+      ),
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-48" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-24" />
-          </div>
-        </div>
-
-        {/* Filters Skeleton */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Summary Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-32 mb-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Charts Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-[300px] w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-[300px] w-full" />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -325,22 +259,7 @@ export const CollectionReport = ({
     );
   }
 
-  if (!data) return null;
-
-  // Prepare chart data for payment method distribution
-  const methodChartData = Object.entries(data.summary.methodBreakdown).map(
-    ([method, values]) => ({
-      name: method,
-      value: values.amount,
-      count: values.count,
-    }),
-  );
-
-  const COLORS = {
-    CASH: "#10b981", // green
-    UPI: "#3b82f6", // blue
-    ONLINE: "#f59e0b", // amber
-  };
+  const summary = data?.summary;
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -382,182 +301,79 @@ export const CollectionReport = ({
         onReset={handleResetFilters}
       >
         <div className="space-y-2">
-          <label className="text-sm font-medium">Payment Method</label>
+          <label className="text-sm font-medium">Payment Mode</label>
           <Select
-            value={paymentMethod}
-            onValueChange={(value) => setPaymentMethod(value as any)}
+            value={paymentMode}
+            onValueChange={(value) =>
+              setPaymentMode(value as PaymentModeFilter)
+            }
           >
             <SelectTrigger>
-              <SelectValue placeholder="All Methods" />
+              <SelectValue placeholder="All Modes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Methods</SelectItem>
-              <SelectItem value="CASH">Cash</SelectItem>
+              <SelectItem value="all">All Modes</SelectItem>
+              <SelectItem value="Cash">Cash</SelectItem>
               <SelectItem value="UPI">UPI</SelectItem>
-              <SelectItem value="ONLINE">Online</SelectItem>
+              <SelectItem value="Gateway">Gateway</SelectItem>
+              <SelectItem value="Credit">Credit</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </FilterPanel>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
-          title="Total Collection"
-          value={data ? formatCurrency(data.summary.totalCollected) : "₹0"}
-          icon={DollarSign}
+          title="Total Cash"
+          value={formatCurrency(summary?.totalCash || 0)}
+          icon={Banknote}
           variant="revenue"
           isLoading={loading}
         />
         <MetricCard
-          title="Total Transactions"
-          value={data?.summary.totalTransactions.toString() || "0"}
-          icon={Activity}
+          title="Total UPI"
+          value={formatCurrency(summary?.totalUpi || 0)}
+          icon={Smartphone}
           variant="bookings"
           isLoading={loading}
         />
         <MetricCard
-          title="Avg. Transaction"
-          value={data ? formatCurrency(data.summary.averageTransaction) : "₹0"}
-          icon={TrendingUp}
-          variant="default"
+          title="Total Gateway"
+          value={formatCurrency(summary?.totalGateway || 0)}
+          icon={CreditCard}
+          variant="fleet"
           isLoading={loading}
         />
         <MetricCard
-          title="Cash Collection"
-          value={
-            data
-              ? formatCurrency(data.summary.methodBreakdown.CASH.amount)
-              : "₹0"
-          }
-          icon={CreditCard}
+          title="Total Credit"
+          value={formatCurrency(summary?.totalCredit || 0)}
+          icon={Wallet}
           variant="collection"
+          isLoading={loading}
+        />
+        <MetricCard
+          title="Grand Total Collected"
+          value={formatCurrency(summary?.grandTotalCollected || 0)}
+          icon={DollarSign}
+          variant="default"
           isLoading={loading}
         />
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Payment Method Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Method Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={methodChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {methodChartData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={COLORS[entry.name as keyof typeof COLORS]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number) =>
-                    `₹${value.toLocaleString("en-IN")}`
-                  }
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Daily Collection Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Daily Collection Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data.dailyTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(value: number) =>
-                    `₹${value.toLocaleString("en-IN")}`
-                  }
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="amount"
-                  stroke="#FF5F00"
-                  strokeWidth={2}
-                  name="Amount Collected"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Branch Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Branch-wise Collection</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.branchBreakdown}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="branchName" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value: number) =>
-                  `₹${value.toLocaleString("en-IN")}`
-                }
-              />
-              <Legend />
-              <Bar
-                dataKey="byMethod.CASH"
-                stackId="a"
-                fill={COLORS.CASH}
-                name="Cash"
-              />
-              <Bar
-                dataKey="byMethod.UPI"
-                stackId="a"
-                fill={COLORS.UPI}
-                name="UPI"
-              />
-              <Bar
-                dataKey="byMethod.ONLINE"
-                stackId="a"
-                fill={COLORS.ONLINE}
-                name="Online"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Recent Payments Table */}
+      {/* Transactions Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-orange-500" />
-            Recent Transactions
+            Collection Transactions
+            {summary ? ` (${summary.totalTransactions})` : ""}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
             columns={columns}
-            data={data?.payments || []}
+            data={data?.data || []}
             isLoading={loading}
             emptyMessage="No transactions found"
           />

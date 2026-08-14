@@ -1,56 +1,67 @@
 import { Job } from "bullmq";
 import { getInvoiceQueue } from "../lib/queue.client.js";
 
-interface InvoiceJobData {
+export interface InvoiceJobData {
   bookingId: number;
   invoiceId: number;
+  previousFileObjectId?: number;
 }
 
 /**
- * Queues a new invoice generation job
- * @param bookingId - Booking ID
- * @param invoiceId - Invoice ID
- * @returns The queued job
+ * Queues a new invoice generation job.
+ *
+ * @param forceNew - When true (regeneration path), a timestamp-unique jobId is
+ *   used so BullMQ always creates a fresh job regardless of any prior completed
+ *   job with the same base ID. Without this, BullMQ returns the old completed
+ *   job when the same jobId is re-added, silently skipping regeneration.
  */
 export async function queueInvoiceGeneration(
   bookingId: number,
   invoiceId: number,
+  forceNew = false,
+  previousFileObjectId?: number,
 ) {
-  const jobId = `invoice-${invoiceId}`;
   const queue = getInvoiceQueue();
 
-  // Check if job already exists
+  // ── Forced regeneration: always create a brand-new job ───────────────────
+  if (forceNew) {
+    const jobId = `invoice-${invoiceId}-regen-${Date.now()}`;
+    const job = await queue.add(
+      "generate-invoice",
+      { bookingId, invoiceId, previousFileObjectId } as InvoiceJobData,
+      { jobId },
+    );
+    console.log(`[Queue] Force-queued regeneration job ${jobId} for booking ${bookingId}`);
+    return job;
+  }
+
+  // ── Initial generation: deduplicate by fixed jobId ────────────────────────
+  const jobId = `invoice-${invoiceId}`;
+
   const existingJob = await queue.getJob(jobId);
   if (existingJob) {
     const state = await existingJob.getState();
     if (["waiting", "active"].includes(state)) {
-      console.log(
-        `[Queue] Job already exists and is active/waiting for invoice ${invoiceId}`,
-      );
+      console.log(`[Queue] Job already active/waiting for invoice ${invoiceId}`);
       return existingJob;
     }
 
-    // If job exists but is failed or completed, remove it so we can retry
+    // Remove completed/failed job before re-queuing
     try {
       await existingJob.remove();
-      console.log(
-        `[Queue] Removed existing ${state} job for invoice ${invoiceId}`,
-      );
+      console.log(`[Queue] Removed existing ${state} job for invoice ${invoiceId}`);
     } catch (error) {
       console.error(`[Queue] Failed to remove existing job:`, error);
     }
   }
 
-  // Queue new job with unique jobId to prevent duplicates
   const job = await queue.add(
     "generate-invoice",
     { bookingId, invoiceId } as InvoiceJobData,
-    { jobId }, // Prevents duplicate jobs
+    { jobId },
   );
 
-  console.log(
-    `[Queue] Queued invoice generation job ${jobId} for booking ${bookingId}`,
-  );
+  console.log(`[Queue] Queued invoice generation job ${jobId} for booking ${bookingId}`);
   return job;
 }
 

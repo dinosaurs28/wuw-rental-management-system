@@ -4,6 +4,7 @@ import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
+import { generatePresignedUrl } from "../../services/r2-upload.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -36,28 +37,28 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         message: "Booking not found",
       });
     }
-    // Fetch ALL KYC documents for this customer, not just the booking-linked one
     const allKycRecords = await prisma.customerKyc.findMany({
       where: { customerId: booking.customer.id },
       select: {
         publicId: true,
         type: true,
         status: true,
-        file: {
-          select: { url: true, mime: true },
-        },
+        file: { select: { key: true, mime: true } },
       },
       orderBy: { createdAt: "asc" },
     });
 
-    const kycDocs = allKycRecords
-      .filter((k) => k.file)
-      .map((k) => ({
-        publicId: k.publicId,
-        type: k.type || "UNKNOWN",
-        status: k.status || "UNKNOWN",
-        file: { url: k.file!.url, mime: k.file!.mime },
-      }));
+    const kycDocs = await Promise.all(
+      allKycRecords
+        .filter((k) => k.file)
+        .map(async (k) => ({
+          publicId: k.publicId,
+          type: k.type || "UNKNOWN",
+          status: k.status || "UNKNOWN",
+          // Employees get a 15-minute window to view the document
+          file: { url: await generatePresignedUrl(k.file!.key, 900), mime: k.file!.mime },
+        })),
+    );
 
     if (kycDocs.length === 0) {
       return res.status(StatusCode.NOT_FOUND).json({

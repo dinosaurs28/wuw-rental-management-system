@@ -263,8 +263,10 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         createdAt: true,
         booking: {
           select: {
+            id: true,
             publicId: true,
             totalDeposit: true,
+            safetyDeposit: true,
             branchId: true,
             branch: {
               select: {
@@ -313,6 +315,19 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
     const cgstRate = gstRule ? Number(gstRule.cgstRate) : 9;
     const sgstRate = gstRule ? Number(gstRule.sgstRate) : 9;
 
+    // Fetch return session to get additional charges (extra km, fuel, etc.)
+    const returnSession = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: report.booking.id,
+        sessionType: "RETURN",
+        status: { in: ["AWAITING_PAYMENT", "PAYMENT_INITIATED", "COMPLETED", "ABANDONED"] },
+      },
+      select: { totalCharges: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const additionalCharges = returnSession ? Math.max(0, Number(returnSession.totalCharges)) : 0;
+    const safetyDeposit = Number(report.booking.safetyDeposit ?? 0);
+
     // Transform response to match strict format
     const responseData = {
       damageReportId: report.publicId,
@@ -320,7 +335,7 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
       chargeType: report.chargeType ?? "PENALTY",
       booking: {
         bookingId: report.booking.publicId,
-        deposit: Number(report.booking.totalDeposit),
+        deposit: safetyDeposit,
       },
       vehicle: {
         regNo: report.vehicle.regNo,
@@ -331,7 +346,8 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
       damageDetails: report.notes,
       images: report.photos.map((p) => ({ url: p.file.url })),
       financialHint: {
-        deposit: Number(report.booking.totalDeposit),
+        deposit: safetyDeposit,
+        additionalCharges,
         estimatedCost: Number(report.estimatedCost),
         gstRate: cgstRate + sgstRate,
       },
@@ -356,7 +372,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       });
     }
 
-    const { disposition, finalCost, paymentMethod } = validation.data;
+    const { disposition, finalCost, paymentMethod, cashAmount: splitCash, onlineAmount: splitOnline, onlineTransactionRef } = validation.data;
     const damageReportId = req.params.damageReportId;
     const managerId = req.public_Id;
     const branchId = req.branch_Id;
@@ -380,6 +396,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       },
     });
 
+
     if (!damageReport) {
       return res
         .status(StatusCode.NOT_FOUND)
@@ -402,21 +419,34 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
     }
 
     // 3. Financial Calculation
-    const depositAmount = Number(booking.totalDeposit);
+    const safetyDepositAmount = Number(booking.safetyDeposit ?? 0);
+
+    // Fetch additional charges from the return session (if any)
+    const returnSession = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: "RETURN",
+        status: { in: ["AWAITING_PAYMENT", "PAYMENT_INITIATED", "COMPLETED", "ABANDONED"] },
+      },
+      select: { id: true, totalCharges: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const additionalCharges = returnSession ? Math.max(0, Number(returnSession.totalCharges)) : 0;
 
     // chargeType is authoritative from what staff set during damage report creation
     const activeChargeType = damageReport.chargeType ?? "PENALTY";
-    
+
     // Calculate the tax
     const taxCalculation = await damageChargeService.calculateDamageTax(
       finalCost,
       activeChargeType,
       branchId
     );
-    
+
     // Total fine includes tax
     const fineAmountInclTax = finalCost + taxCalculation.taxAmount;
-    const balance = depositAmount - fineAmountInclTax; // Positive = Refund, Negative = Due
+    // net = additionalCharges + damageCharge - safetyDeposit (positive = customer pays, negative = refund)
+    const balance = safetyDepositAmount - additionalCharges - fineAmountInclTax;
 
     const managerUser = await prisma.user.findUnique({
       where: { publicId: managerId },
@@ -463,6 +493,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           });
         }
       }
+      // SPLIT and CASH are handled fully in the transaction below
     }
 
     // 5. Transaction
@@ -517,7 +548,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
         isFullySettled = true;
       } else {
-        // Due Amount
+        // Due Amount — customer owes |balance|
         const dueAmount = Math.abs(balance);
 
         if (!paymentMethod) {
@@ -550,7 +581,43 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                 onlineAmount: "0.00",
                 collectedById: managerUser.id,
                 collectedAt: new Date(),
-                notes: `Damage fine collected (cash) — report ${damageReport.publicId}`,
+                notes: `Damage settlement collected (cash) — report ${damageReport.publicId}`,
+              },
+            });
+
+            isFullySettled = true;
+          }
+        } else if (paymentMethod === "SPLIT") {
+          const cash = Math.abs(splitCash ?? 0);
+          const online = Math.abs(splitOnline ?? 0);
+
+          if (booking.invoice) {
+            await tx.payment.create({
+              data: {
+                publicId: createID(),
+                invoiceId: booking.invoice.id,
+                method: DepositMethod.CASH,
+                amount: dueAmount,
+                status: PaymentStatus.SUCCESS,
+              },
+            });
+
+            await tx.paymentTransaction.create({
+              data: {
+                publicId: createID(),
+                idempotencyKey: `damage-split:${damageReport.publicId}`,
+                bookingId: booking.id,
+                branchId: booking.branchId,
+                purpose: PaymentPurpose.DAMAGE_FEE,
+                method: "SPLIT" as PaymentMethod,
+                status: "COLLECTED",
+                totalAmount: dueAmount.toFixed(2),
+                cashAmount: cash.toFixed(2),
+                onlineAmount: online.toFixed(2),
+                onlineTransactionRef: onlineTransactionRef ?? null,
+                collectedById: managerUser.id,
+                collectedAt: new Date(),
+                notes: `Damage settlement split (₹${cash} cash + ₹${online} online) — report ${damageReport.publicId}`,
               },
             });
 
@@ -564,7 +631,6 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                 invoiceId: booking.invoice.id,
                 method: DepositMethod.ONLINE_RAZORPAY,
                 amount: dueAmount,
-                // Store transaction ID for verification mapping
                 razorpayOrderId: onlineTransactionId,
                 status: PaymentStatus.CREATED,
               },
@@ -584,12 +650,20 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                 onlineAmount: dueAmount.toFixed(2),
                 onlineTransactionRef: onlineTransactionId,
                 collectedById: managerUser.id,
-                notes: `Damage fine (online pending) — report ${damageReport.publicId}`,
+                notes: `Damage settlement (online pending) — report ${damageReport.publicId}`,
               },
             });
           }
           isFullySettled = false;
         }
+      }
+
+      // Abandon the return session (if any) — manager's settlement covers everything
+      if (returnSession?.id) {
+        await (tx as any).paymentSession.update({
+          where: { id: returnSession.id },
+          data: { status: "ABANDONED" },
+        });
       }
 
       // 6. Add Damage Charge to Invoice

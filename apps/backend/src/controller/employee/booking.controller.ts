@@ -3,6 +3,15 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  checkCustomerTypeClassLimits,
+  checkCustomerTypeClassLimitsInTx,
+} from "../../utils/booking/customerTypeClassLimits.js";
+import {
+  validateBookingSchedule,
+  buildScheduleErrorMessage,
+  type BranchScheduleConfig,
+} from "../../utils/booking/branchScheduleValidator.js";
 import { parseGroupKey } from "./vehicle.controller.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -257,6 +266,78 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       }
     }
 
+    // ── Branch schedule + restriction mode ───────────────────────────────────
+    const bypassSchedule =
+      req.body.bypassSchedule === true && ["ADMIN", "MANAGER"].includes(staff.role);
+
+    let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
+
+    {
+      const branchData = await prisma.branch.findUnique({
+        where: { id: req.branch_Id },
+        select: {
+          graceMinutes: true,
+          is24Hours: true,
+          bookingRestrictionMode: true,
+          schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
+        },
+      });
+
+      if (branchData) {
+        branchRestrictionMode = branchData.bookingRestrictionMode as "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
+
+        if (!bypassSchedule) {
+          const scheduleConfig: BranchScheduleConfig = {
+            schedules: branchData.schedules,
+            graceMinutes: branchData.graceMinutes,
+            is24Hours: branchData.is24Hours,
+          };
+
+          const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+
+          if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+            return res.status(StatusCode.BAD_REQUEST).json({
+              code: "BRANCH_SCHEDULE_VIOLATION",
+              message: buildScheduleErrorMessage(verdict),
+              verdict,
+            });
+          }
+
+          if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+              code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+              message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
+              verdict,
+            });
+          }
+        }
+      }
+    }
+
+    // ── Type-class limit check ─────────────────────────────────────────────────
+    const bypassLimit =
+      req.body.bypassTypeClassLimit === true &&
+      ["ADMIN", "MANAGER"].includes(staff.role);
+    const { conflicts: typeClassConflicts } = await checkCustomerTypeClassLimits(
+      customer.customerProfile.id,
+      vehiclesData,
+      startDate,
+      endDate,
+      { bypassLimit, restrictionMode: branchRestrictionMode, branchId: req.branch_Id },
+    );
+    if (typeClassConflicts.length > 0) {
+      const c = typeClassConflicts[0]!;
+      const message =
+        c.reason === "ANY_VEHICLE"
+          ? "This customer already has an active booking at this branch that overlaps the selected dates."
+          : `This customer already has an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message,
+        conflicts: typeClassConflicts,
+      });
+    }
+
     // ── Pricing via PricingEngineService (TASK-010 / TASK-011) ───────────────
     // Fixes the 13-hour bug: PricingEngineService uses DurationCalculatorService
     // which correctly classifies 13 hours as FULL_DAY (not 2 calendar days).
@@ -394,6 +475,29 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const totalTaxRate = items[0]?.taxRate ?? 0;
 
     const booking = await prisma.$transaction(async (tx) => {
+      // Race-condition guard: re-check inside transaction before committing
+      if (!bypassLimit) {
+        const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
+          tx as any,
+          customer.customerProfile!.id,
+          vehiclesData,
+          startDate,
+          endDate,
+          { restrictionMode: branchRestrictionMode, branchId: req.branch_Id },
+        );
+        if (txTypeClassConflicts.length > 0) {
+          const c = txTypeClassConflicts[0]!;
+          const msg =
+            c.reason === "ANY_VEHICLE"
+              ? "This customer already has an active booking at this branch that overlaps the selected dates."
+              : `This customer already has an active ${c.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler"} booking that overlaps the selected dates.`;
+          throw Object.assign(new Error(msg), {
+            code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+            conflicts: txTypeClassConflicts,
+          });
+        }
+      }
+
       const newBooking = await tx.booking.create({
         data: {
           publicId:     createID(),
@@ -509,7 +613,14 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         expiresIn:     holdExpiry,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
+        message: error.message,
+        conflicts: error.conflicts ?? [],
+      });
+    }
     console.error("Create Employee Booking Error:", error);
     return res
       .status(StatusCode.INTERNAL_SERVER_ERROR)
@@ -568,6 +679,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                 regNo: true,
                 status: true,
                 odo: true,
+                fuelBar: true,
                 hasFastag: true,
                 images: {
                   where: { isThumbnail: true },

@@ -19,7 +19,11 @@ import {
   EvaluateExtension as CustomerEvaluateExtension,
   CommitExtension as CustomerCommitExtension,
   CancelExtension as CustomerCancelExtension,
+  GetExtensionEligibility,
+  InitiateExtensionPayment,
+  VerifyExtensionPayment,
 } from "../../controller/customer/extension.controller.js";
+import { ValidateCustomerCoupon } from "../../controller/user/coupon-validate.controller.js";
 const router: Router = Router();
 
 router.get("/booking", authCheckJwt, getUserBookings);
@@ -39,9 +43,15 @@ router.delete("/booking/hold/:holdId", authCheckJwt, cancelHold);
 // Self-service account deletion (Google Play data-deletion policy).
 router.delete("/account", authCheckJwt, deleteAccount);
 
+// Customer coupon validation (authenticated — enforces per-user limits)
+router.post("/discount/validate", authCheckJwt, ValidateCustomerCoupon);
+
 // Customer extension routes
+router.get("/bookings/:bookingPublicId/extension-eligibility", authCheckJwt, GetExtensionEligibility);
 router.post("/bookings/:bookingPublicId/extensions/evaluate", authCheckJwt, CustomerEvaluateExtension);
 router.post("/extensions/commit", authCheckJwt, CustomerCommitExtension);
 router.post("/extensions/:extensionPublicId/cancel", authCheckJwt, CustomerCancelExtension);
+router.post("/extensions/:extensionPublicId/initiate-payment", authCheckJwt, InitiateExtensionPayment);
+router.post("/extensions/verify-payment/:merchantTransactionId", authCheckJwt, VerifyExtensionPayment);
 
 export default router;

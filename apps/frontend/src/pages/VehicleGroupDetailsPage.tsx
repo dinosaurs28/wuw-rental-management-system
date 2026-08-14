@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useParams,
   Link,
@@ -23,6 +23,9 @@ import { useVehicleGroupDetails } from "@/hooks/useVehicleGroupDetails";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useSearchStore } from "@/store/search.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 
 export const VehicleGroupDetailsPage = () => {
   const { groupKey: encodedGroupKey } = useParams<{ groupKey: string }>();
@@ -32,6 +35,7 @@ export const VehicleGroupDetailsPage = () => {
 
   const searchPickupDate = useSearchStore((state) => state.pickupDate);
   const searchReturnDate = useSearchStore((state) => state.returnDate);
+  const branchPublicId   = useSearchStore((state) => state.branchPublicId);
 
   const { isAuthenticated } = useAuthStore();
 
@@ -93,10 +97,39 @@ export const VehicleGroupDetailsPage = () => {
   const startDateTime = startDate && startTime ? `${startDate}T${startTime}` : null;
   const endDateTime   = endDate   && endTime   ? `${endDate}T${endTime}`     : null;
 
+  const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(schedule, startDateTime ?? undefined, endDateTime ?? undefined);
+
+  // Write-back: when return is bumped, update the store so the pricing card reflects the new time
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setEndDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    setEndTime(`${hh}:${mm}`);
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
+
+  const isDateRangeValid = useMemo(() => {
+    if (!startDateTime || !endDateTime) return true;
+    return new Date(endDateTime) > new Date(startDateTime);
+  }, [startDateTime, endDateTime]);
+
+  // Keep the last valid datetimes so the query key stays stable when the range
+  // becomes invalid — this prevents React Query from clearing cached group data.
+  const lastValidStart = useRef(startDateTime);
+  const lastValidEnd   = useRef(endDateTime);
+  if (isDateRangeValid) {
+    lastValidStart.current = startDateTime;
+    lastValidEnd.current   = endDateTime;
+  }
+
   const { data, isLoading, isError, isFetching } = useVehicleGroupDetails(
     groupKey,
-    startDateTime,
-    endDateTime,
+    lastValidStart.current,
+    lastValidEnd.current,
   );
 
   const group = data?.data;
@@ -129,9 +162,11 @@ export const VehicleGroupDetailsPage = () => {
   const handleBookVehicle = useCallback(() => {
     if (!groupKey || !group) return;
 
-    // Capture raw date strings before clearVehicleSelection wipes them
+    // Capture all date/time state before clearVehicleSelection wipes them
     const savedStartDate = startDate;
     const savedEndDate   = endDate;
+    const savedStartTime = startTime;
+    const savedEndTime   = endTime;
 
     // Capture payment plan before clearVehicleSelection resets it to defaults
     const savedPaymentFlow    = useVehicleRentalStore.getState().paymentFlow;
@@ -151,9 +186,11 @@ export const VehicleGroupDetailsPage = () => {
       branch:   group.branch,
     });
 
-    // Restore dates and payment plan (clearVehicleSelection wiped them)
+    // Restore dates, times, and payment plan (clearVehicleSelection wiped them)
     if (savedStartDate) setStartDate(new Date(savedStartDate));
     if (savedEndDate)   setEndDate(new Date(savedEndDate));
+    setStartTime(savedStartTime);
+    setEndTime(savedEndTime);
     useVehicleRentalStore.getState().setPaymentFlow(savedPaymentFlow);
     useVehicleRentalStore.getState().setAdvancePayAmount(savedAdvanceAmount);
 
@@ -183,10 +220,14 @@ export const VehicleGroupDetailsPage = () => {
     paymentFlow,
     startDate,
     endDate,
+    startTime,
+    endTime,
     setGroupKey,
     setVehicleFullDetails,
     setStartDate,
     setEndDate,
+    setStartTime,
+    setEndTime,
     setPricePerDay,
     setDeposit,
     setApiPricingDetails,
@@ -327,6 +368,13 @@ export const VehicleGroupDetailsPage = () => {
             {group.branch}
           </p>
         </div>
+
+        {/* Schedule warning banner */}
+        {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+          <div className="mb-6">
+            <ScheduleWarningBanner verdict={scheduleVerdict} />
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-stretch">

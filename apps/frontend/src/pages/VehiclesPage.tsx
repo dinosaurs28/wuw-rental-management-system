@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -17,7 +17,12 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchStore } from "@/store/search.store";
+import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
+import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -62,6 +67,30 @@ export const VehiclesPage = () => {
 
   // Debounced search
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Validate that end datetime is strictly after start datetime
+  const isDateRangeValid = useMemo(() => {
+    if (!selectedPickupDate || !selectedReturnDate) return true;
+    const start = new Date(selectedPickupDate);
+    const [sh, sm] = pickupTime.split(":").map(Number);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(selectedReturnDate);
+    const [eh, em] = returnTime.split(":").map(Number);
+    end.setHours(eh, em, 0, 0);
+    return end > start;
+  }, [selectedPickupDate, selectedReturnDate, pickupTime, returnTime]);
+
+  // Show a single toast when the range becomes invalid
+  const prevInvalidRef = useRef(false);
+  useEffect(() => {
+    const bothSet = !!(selectedPickupDate && selectedReturnDate);
+    if (!isDateRangeValid && bothSet && !prevInvalidRef.current) {
+      toast.error("Return date/time must be after pickup date/time");
+      prevInvalidRef.current = true;
+    } else if (isDateRangeValid) {
+      prevInvalidRef.current = false;
+    }
+  }, [isDateRangeValid, selectedPickupDate, selectedReturnDate]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -136,10 +165,10 @@ export const VehiclesPage = () => {
     currentPage,
   ]);
 
-  // Fetch vehicles - Only when branch is selected
+  // Fetch vehicles - only when branch is selected and date range is valid
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(
     filters,
-    { enabled: !!selectedBranch },
+    { enabled: !!selectedBranch && isDateRangeValid },
   );
 
   const vehicles = vehiclesData?.data || [];
@@ -156,21 +185,21 @@ export const VehiclesPage = () => {
 
   const handlePickupDateChange = useCallback(
     (date: Date | undefined) => {
-      const nextDay = date ? new Date(date) : null;
-      if (nextDay) {
-        nextDay.setDate(nextDay.getDate() + 1);
-      }
-
       setSelectedPickupDate(date || null);
 
-      // If we have a valid date and no return date (or return date is before pickup date), set next day
-      // Also update store in one go if possible, or sequentially but ensuring local state is consistent
-      if (date && (!selectedReturnDate || selectedReturnDate <= date)) {
-        setSelectedReturnDate(nextDay);
-        setSearchCriteria({
-          pickupDate: date,
-          returnDate: nextDay,
-        });
+      if (date && selectedReturnDate) {
+        // Compare calendar days only — same day is allowed (time validation handles the rest)
+        const pickupDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const returnDay = new Date(selectedReturnDate.getFullYear(), selectedReturnDate.getMonth(), selectedReturnDate.getDate());
+        if (returnDay < pickupDay) {
+          // Return day is strictly before new pickup day → push to next day
+          const nextDay = new Date(date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setSelectedReturnDate(nextDay);
+          setSearchCriteria({ pickupDate: date, returnDate: nextDay });
+        } else {
+          setSearchCriteria({ pickupDate: date });
+        }
       } else {
         setSearchCriteria({ pickupDate: date || null });
       }
@@ -260,6 +289,43 @@ export const VehiclesPage = () => {
       })()
     : undefined;
 
+  // Booking type-class limits — declared after startDateTime/endDateTime so the hook
+  // receives the correct values on first render (avoids temporal dead zone access)
+  const {
+    restrictedTypeClasses,
+    conflictDetails,
+    blockedAll,
+    anyVehicleConflict,
+    isLoading: limitsLoading,
+  } = useCustomerBookingLimits(startDateTime, endDateTime, selectedBranch || undefined);
+
+  const restrictionBannerLabel = useMemo(() => {
+    if (blockedAll) return ["all vehicles"];
+    const labels: string[] = [];
+    if (restrictedTypeClasses.has("TWO_WHEELER")) labels.push("two-wheeler");
+    if (restrictedTypeClasses.has("FOUR_WHEELER")) labels.push("four-wheeler");
+    return labels;
+  }, [restrictedTypeClasses, blockedAll]);
+
+  // Branch schedule — used for hours badge and schedule conflict warnings
+  const { schedule } = useBranchSchedule(selectedBranch || undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(schedule, startDateTime, endDateTime);
+
+  // Write-back: when return is bumped, persist the adjusted date/time to local state + store
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    const newDate = new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate());
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    const newTime = `${hh}:${mm}`;
+    setSelectedReturnDate(newDate);
+    setReturnTime(newTime);
+    setSearchCriteria({ returnDate: newDate, returnTime: newTime });
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setSearchCriteria]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
@@ -286,20 +352,63 @@ export const VehiclesPage = () => {
         </Breadcrumb>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-5xl font-serif font-black text-zinc-900 tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-black tracking-tight uppercase">
               Select Your Vehicle
             </h1>
-            <p className="text-zinc-400 font-medium mt-2">
-              Find the perfect luxury companion for your journey
+            <p className="text-gray-500 font-bold mt-2 uppercase tracking-wide text-sm">
+              Premium fleet at your disposal
             </p>
           </div>
-          <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-zinc-100 px-4 py-2 rounded-full border border-zinc-200">
-            <span className="text-zinc-900 text-lg mr-2">{vehicleCount}</span>
-            Results found
+          <div className="text-xs font-black text-white tracking-widest uppercase bg-[#1A1A1A] px-5 py-3 rounded-none shadow-md">
+            <span className="text-[#FF5F00] text-lg mr-2">{vehicleCount}</span>
+            Results
           </div>
         </div>
+
+        {/* Booking restriction banner */}
+        {restrictionBannerLabel.length > 0 && startDateTime && endDateTime && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-950/60 border border-amber-800/60 rounded-xl px-5 py-4 text-amber-300">
+            <Lock className="size-5 shrink-0 mt-0.5" strokeWidth={2.2} />
+            <div>
+              <p className="font-bold text-sm uppercase tracking-wide text-amber-200">
+                Booking limit reached
+              </p>
+              {blockedAll && anyVehicleConflict ? (
+                <p className="text-sm mt-0.5 text-amber-300/90">
+                  You already have an active booking during these dates. Only one vehicle booking is allowed at a time.{" "}
+                  <span className="block mt-1 text-amber-400/80 text-xs font-medium">
+                    {anyVehicleConflict.vehicleMake} {anyVehicleConflict.vehicleModel} · until{" "}
+                    {new Date(anyVehicleConflict.endAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm mt-0.5 text-amber-300/90">
+                  You already have an active{" "}
+                  <span className="font-semibold text-amber-100">
+                    {restrictionBannerLabel.join(" and ")}
+                  </span>{" "}
+                  booking during these dates. Only one per type is allowed.{" "}
+                  {Object.values(conflictDetails).map((slot, i) => (
+                    <span key={i} className="block mt-1 text-amber-400/80 text-xs font-medium">
+                      {slot.vehicleMake} {slot.vehicleModel} · until{" "}
+                      {new Date(slot.endAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  ))}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="mb-6">
@@ -325,6 +434,8 @@ export const VehiclesPage = () => {
             returnTime={returnTime}
             onPickupTimeChange={handlePickupTimeChange}
             onReturnTimeChange={handleReturnTimeChange}
+            schedule={schedule}
+            scheduleVerdict={scheduleVerdict}
           />
         </div>
 
@@ -339,6 +450,10 @@ export const VehiclesPage = () => {
           onPageChange={handlePageChange}
           startDateTime={startDateTime}
           endDateTime={endDateTime}
+          variant="dark"
+          restrictedTypeClasses={restrictedTypeClasses}
+          blockedAll={blockedAll}
+          limitsLoading={limitsLoading}
         />
       </main>
 

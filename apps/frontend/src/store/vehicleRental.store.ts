@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { getCurrentTime } from "@/utils/formatters";
 
 interface VehicleRentalState {
   // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
@@ -189,8 +190,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       branch: null,
       startDate: null,
       endDate: null,
-      startTime: "10:00",
-      endTime: "10:00",
+      startTime: getCurrentTime(),
+      endTime: getCurrentTime(),
       dateSelectionTimestamp: null,
       rentalDays: 0,
       pricePerDay: 0,
@@ -203,7 +204,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       apiFinalTotal: 0,
       selectedKycFilePublicId: null,
       paymentType: null,
-      paymentFlow: "FULL",
+      paymentFlow: "ADVANCE",
       advancePayAmount: 0,
       couponCode: null,
       couponDiscountAmount: 0,
@@ -391,8 +392,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         set({
           startDate: null,
           endDate: null,
-          startTime: "10:00",
-          endTime: "10:00",
+          startTime: getCurrentTime(),
+          endTime: getCurrentTime(),
           dateSelectionTimestamp: null,
           rentalDays: 0,
           totalPrice: 0,
@@ -410,8 +411,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           branch: null,
           startDate: null,
           endDate: null,
-          startTime: "10:00",
-          endTime: "10:00",
+          startTime: getCurrentTime(),
+          endTime: getCurrentTime(),
           dateSelectionTimestamp: null,
           rentalDays: 0,
           pricePerDay: 0,
@@ -424,7 +425,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           apiFinalTotal: 0,
           selectedKycFilePublicId: null,
           paymentType: null,
-          paymentFlow: "FULL",
+          paymentFlow: "ADVANCE",
           advancePayAmount: 0,
           couponCode: null,
           couponDiscountAmount: 0,
@@ -443,7 +444,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         set({
           selectedKycFilePublicId: null,
           paymentType: null,
-          paymentFlow: "FULL",
+          paymentFlow: "ADVANCE",
           advancePayAmount: 0,
           couponCode: null,
           couponDiscountAmount: 0,
@@ -541,6 +542,11 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
     {
       name: "vehicle-rental-dates",
       storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { startTime, endTime, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

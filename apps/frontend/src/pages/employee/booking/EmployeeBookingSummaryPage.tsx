@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { bookingService } from "@/services/booking.service";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
+import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
 export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
@@ -77,9 +78,25 @@ export const EmployeeBookingSummaryPage = () => {
         }
       } catch (error: any) {
         console.error("Booking creation failed", error);
-        toast.error(
-          error.response?.data?.message || "Failed to create booking",
-        );
+
+        if (error?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+          const conflicts = error.response.data.conflicts ?? [];
+          const first = conflicts[0];
+          const label =
+            first?.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+          const vehicleName = first
+            ? `${first.existingVehicleMake} ${first.existingVehicleModel}`
+            : "";
+          toast.error(
+            `Customer already has an active ${label} booking${vehicleName ? ` (${vehicleName})` : ""} overlapping these dates. Use the override option if authorised.`,
+            { duration: 8000 },
+          );
+        } else {
+          toast.error(
+            error.response?.data?.message || "Failed to create booking",
+          );
+        }
+
         navigate(-1);
       } finally {
         setLoading(false);
@@ -92,13 +109,14 @@ export const EmployeeBookingSummaryPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50 pb-20">
-        <header className="bg-white border-b px-4 py-4 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+        <DashboardNavbar />
+        <header className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center gap-3">
             <Skeleton className="size-8 rounded-full" />
             <Skeleton className="h-6 w-32" />
           </div>
         </header>
-        <main className="container mx-auto px-4 py-6 space-y-6">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
           <Skeleton className="h-32 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
@@ -162,15 +180,17 @@ export const EmployeeBookingSummaryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-20">
-      {/* Header */}
-      <header className="bg-white border-b px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-zinc-50">
+      <DashboardNavbar />
+
+      {/* Sub-header */}
+      <header className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(true)}>
               <ArrowLeft className="size-5" />
             </Button>
-            <h1 className="text-lg font-semibold">Booking Summary</h1>
+            <h1 className="text-base font-semibold">Booking Summary</h1>
           </div>
           {holdExpiresAt && (
             <HoldCountdownTimer expiresAt={holdExpiresAt} onExpired={handleHoldExpired} />
@@ -202,7 +222,7 @@ export const EmployeeBookingSummaryPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Vehicle Card */}
         <div className="bg-white p-4 rounded-xl border shadow-sm flex gap-4">
           {/* Image handling */}
@@ -286,41 +306,39 @@ export const EmployeeBookingSummaryPage = () => {
 
 
         {/* Payment Action */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
-          <div className="container mx-auto max-w-md flex flex-col gap-3">
-            {paymentURL ? (
-              <Button
-                className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90"
-                onClick={() => (window.location.href = paymentURL)}
-              >
-                Pay Now {formatPrice(totals?.grandFinalTotal)}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
-                  Cash Payment — Confirm Collection
-                </div>
-                <Button
-                  className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"
-                  onClick={() =>
-                    navigate(
-                      `/employee/booking/status/${bookingData.data.transactionId}`,
-                    )
-                  }
-                >
-                  Complete Booking
-                </Button>
-              </div>
-            )}
-
+        <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col gap-3">
+          {paymentURL ? (
             <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowCancelDialog(true)}
+              className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90"
+              onClick={() => (window.location.href = paymentURL)}
             >
-              Return to Dashboard
+              Pay Now {formatPrice(totals?.grandFinalTotal)}
             </Button>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
+                Cash Payment — Confirm Collection
+              </div>
+              <Button
+                className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"
+                onClick={() =>
+                  navigate(
+                    `/employee/booking/status/${bookingData.data.transactionId}`,
+                  )
+                }
+              >
+                Complete Booking
+              </Button>
+            </div>
+          )}
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowCancelDialog(true)}
+          >
+            Return to Dashboard
+          </Button>
         </div>
       </main>
     </div>

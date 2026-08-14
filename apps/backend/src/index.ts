@@ -23,6 +23,7 @@ import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
 import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
+import { initNoShowAutoCancelWorker } from "./jobs/noShowAutoCancel.worker.js";
 import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
 import fs from "fs";
 
@@ -44,6 +45,7 @@ initBookingExpiryWorker();
 initInvoiceWorker();
 initDelayedCashAlertWorker();
 initInsuranceAlertWorker();
+initNoShowAutoCancelWorker();
 
 const app = express();
 
@@ -81,7 +83,7 @@ app.use("/api/config", configRouter);
 app.get("/health", (req: Request, res: Response) => {
   return res.status(StatusCode.OK).json({
     uptime: process.uptime(),
-    message: "Server is running ",
+    message: "Server is running",
     date: new Date(),
   });
 });

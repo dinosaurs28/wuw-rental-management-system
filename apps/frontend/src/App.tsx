@@ -4,8 +4,15 @@ import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
 import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
-import OtpPage from "./pages/auth/OtpPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import EmployeeForgotPasswordPage from "./pages/auth/EmployeeForgotPasswordPage";
+import EmployeeResetPasswordPage from "./pages/auth/EmployeeResetPasswordPage";
+import BranchManagerForgotPasswordPage from "./pages/auth/BranchManagerForgotPasswordPage";
+import BranchManagerResetPasswordPage from "./pages/auth/BranchManagerResetPasswordPage";
+import AdminForgotPasswordPage from "./pages/auth/AdminForgotPasswordPage";
+import AdminResetPasswordPage from "./pages/auth/AdminResetPasswordPage";
+import OtpPage from "./pages/auth/OtpPage";
 import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
@@ -35,6 +42,7 @@ import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 import RemainingPaymentStatusPage from "@/pages/employee/RemainingPaymentStatusPage";
 import ManagerCaptureConfigPage from "@/pages/manager/ManagerCaptureConfigPage";
+import BranchSchedulePage from "@/pages/manager/BranchSchedulePage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
 import { DashboardPage } from "./pages/manager/DashboardPage";
 import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
@@ -49,9 +57,12 @@ import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
 import { FinancialsDashboardPage } from "./pages/manager/payment/FinancialsDashboardPage";
 import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
+import { DisplacedBookingsPage } from "./pages/manager/DisplacedBookingsPage";
 import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { PaymentRecheckPage } from "./pages/manager/payment/PaymentRecheckPage";
-import { NoShowCancellationsPage } from "./pages/manager/NoShowCancellationsPage";
+import NoShowCancellationsPage from "./pages/manager/NoShowCancellationsPage";
+import { FleetStatusPage } from "./pages/manager/FleetStatusPage";
+import { DamageReportsPage } from "./pages/manager/DamageReportsPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
@@ -73,6 +84,7 @@ import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
+import { AdminUserTransferPage } from "./pages/admin/AdminUserTransferPage";
 import { InvoiceReportPage } from "./pages/admin/reports/InvoiceReportPage";
 import { ReceiptReportPage } from "./pages/admin/reports/ReceiptReportPage";
 import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
@@ -100,7 +112,7 @@ function App() {
       <AuthInitializer />
       <Toaster richColors position="top-center" />
       <Routes>
-        {/* Public Routes - No auth required */}
+        {/* Public Routes - No auth required  */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/group/:groupKey" element={<VehicleGroupDetailsPage />} />
@@ -124,11 +136,11 @@ function App() {
             element={<SignInPage defaultTab="sign-up" />}
           />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
-          <Route
-            path="/auth/forgot-password"
-            element={<ForgotPasswordPage />}
-          />
+          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/auth/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
+          <Route path="/employee/forgot-password" element={<EmployeeForgotPasswordPage />} />
+          <Route path="/employee/reset-password/:token" element={<EmployeeResetPasswordPage />} />
           <Route
             path="/employee/booking/status/:transactionId"
             element={<EmployeeBookingStatusPage />}
@@ -139,11 +151,16 @@ function App() {
           path="/branch-manager/sign-in"
           element={<BranchManagerSignInPage />}
         />
+        <Route path="/branch-manager/forgot-password" element={<BranchManagerForgotPasswordPage />} />
+        <Route path="/branch-manager/reset-password/:token" element={<BranchManagerResetPasswordPage />} />
         <Route path="/admin/sign-in" element={<AdminSignInPage />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPasswordPage />} />
+        <Route path="/admin/reset-password/:token" element={<AdminResetPasswordPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/my-bookings" element={<MyBookingsPage />} />
+          <Route path="/my-bookings/:transactionId" element={<MyBookingsPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification/kyc" element={<KycVerificationPage />} />
@@ -189,6 +206,7 @@ function App() {
           <Route path="/manager/gst-rules" element={<ManagerGSTRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
           <Route path="/manager/capture-configs" element={<ManagerCaptureConfigPage />} />
+          <Route path="/manager/branch-schedule" element={<BranchSchedulePage />} />
           <Route
             path="/manager/payment/fine-status/:transactionId"
             element={<FinePaymentStatusPage />}
@@ -213,6 +231,8 @@ function App() {
             path="/manager/no-show"
             element={<NoShowCancellationsPage />}
           />
+          <Route path="/manager/fleet" element={<FleetStatusPage />} />
+          <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"
             element={<Navigate to="/manager/payment/financials?tab=confirmations" replace />}
@@ -232,6 +252,10 @@ function App() {
           <Route
             path="/manager/payment/extensions"
             element={<ExtensionsPage />}
+          />
+          <Route
+            path="/manager/extensions/displaced"
+            element={<DisplacedBookingsPage />}
           />
           <Route
             path="/manager/payment/discounts"
@@ -317,6 +341,7 @@ function App() {
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
             <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
             <Route path="/admin/staff-activity" element={<AdminStaffActivityPage />} />
+            <Route path="/admin/user-transfer" element={<AdminUserTransferPage />} />
           </Route>
         </Route>
 

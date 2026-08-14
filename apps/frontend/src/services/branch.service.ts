@@ -37,11 +37,52 @@ export const fetchBranches = async (): Promise<BranchResponse["data"]> => {
   }
 };
 
+// ── Branch schedule ───────────────────────────────────────────────────────────
+
+export interface BranchScheduleRow {
+  dayOfWeek: number; // 0 = Sunday … 6 = Saturday
+  isOpen: boolean;
+  openTime: string;  // "HH:mm" 24-hr
+  closeTime: string; // "HH:mm" 24-hr
+}
+
+export interface BranchScheduleConfig {
+  schedules: BranchScheduleRow[];
+  graceMinutes: number;
+  is24Hours: boolean;
+}
+
+export async function fetchBranchSchedule(branchPublicId: string): Promise<BranchScheduleConfig> {
+  const { data } = await apiClient.get<BranchScheduleConfig>(
+    `/public/branch/${branchPublicId}/schedule`,
+  );
+  return data;
+}
+
 export const branchManagerService = {
   login: async (data: SignInInput): Promise<BranchManagerAuthResponse> => {
     const response = await apiClient.post<BranchManagerAuthResponse>(
       "/branchManager/auth/login",
       data,
+    );
+    return response.data;
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/branchManager/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    password: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/branchManager/auth/reset-password",
+      { token, password },
     );
     return response.data;
   },

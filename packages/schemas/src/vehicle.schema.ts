@@ -46,6 +46,7 @@ export const createVehicleSchema = z.object({
     .or(z.string().transform((v) => v === "true"))
     .optional(),
   advancePayAmount: z.coerce.number().min(0).optional(),
+  fuelBar: z.coerce.number().min(0).optional(),
   fastagNumber: z.string().optional(),
   hasFastag: z
     .boolean()
@@ -94,8 +95,18 @@ export const createDamageReportSchema = z.object({
 export const closeDamageReportSchema = z.object({
   disposition: z.enum(["AVAILABLE", "MAINTENANCE", "DAMAGED"]),
   finalCost: z.coerce.number().min(0, "Final cost must be non-negative"),
-  paymentMethod: z.enum(["CASH", "ONLINE_RAZORPAY"]).optional(),
+  paymentMethod: z.enum(["CASH", "ONLINE_RAZORPAY", "SPLIT"]).optional(),
   chargeType: z.enum(["PENALTY", "COMPENSATION"]).optional(),
+  cashAmount: z.coerce.number().min(0).optional(),
+  onlineAmount: z.coerce.number().min(0).optional(),
+  onlineTransactionRef: z.string().optional(),
+}).superRefine((d, ctx) => {
+  const needsOnlineRef =
+    d.paymentMethod === "ONLINE_RAZORPAY" ||
+    (d.paymentMethod === "SPLIT" && (d.onlineAmount ?? 0) > 0);
+  if (needsOnlineRef && !d.onlineTransactionRef?.trim()) {
+    ctx.addIssue({ code: "custom", message: "Transaction reference required for online portion", path: ["onlineTransactionRef"] });
+  }
 });
 
 export const createDepositRuleSchema = z.object({

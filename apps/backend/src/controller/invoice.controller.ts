@@ -5,6 +5,7 @@ import {
   getInvoiceJobStatus,
 } from "../utils/invoice-generation.queue.js";
 import { finalizeInvoice } from "../services/invoice-finalization.service.js";
+import { generatePresignedUrl } from "../services/r2-upload.js";
 
 /**
  * MAIN ENDPOINT: Download Invoice
@@ -86,15 +87,17 @@ export async function downloadInvoice(req: Request, res: Response) {
     }
 
     // ✅ CASE 1: PDF already exists (FAST PATH - Cached)
-    if (booking.invoice.invoicePdfFile?.url) {
+    if (booking.invoice.invoicePdfFile?.key) {
       console.log(
         `[Invoice Controller] Cache HIT - Invoice ${booking.invoice.id}`,
       );
 
+      const pdfUrl = await generatePresignedUrl(booking.invoice.invoicePdfFile.key);
+
       return res.status(200).json({
         success: true,
         cached: true,
-        pdfUrl: booking.invoice.invoicePdfFile.url,
+        pdfUrl,
         invoiceNumber: booking.invoice.invoiceNumber,
         generatedAt: booking.invoice.generatedAt,
       });
@@ -215,12 +218,13 @@ export async function getInvoiceStatus(req: Request, res: Response) {
     }
 
     // Check if PDF is ready
-    if (invoice.invoicePdfFile?.url) {
+    if (invoice.invoicePdfFile?.key) {
+      const pdfUrl = await generatePresignedUrl(invoice.invoicePdfFile.key);
       return res.status(200).json({
         success: true,
         state: "completed",
         progress: 100,
-        pdfUrl: invoice.invoicePdfFile.url,
+        pdfUrl,
         invoiceNumber: invoice.invoiceNumber,
         generatedAt: invoice.generatedAt,
       });

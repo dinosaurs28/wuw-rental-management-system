@@ -26,6 +26,9 @@ import {
   CreateManagerCoupon,
   ListManagerCoupons,
   GetManagerCouponLimits,
+  UpdateManagerCoupon,
+  DeactivateManagerCoupon,
+  SearchCustomerForCoupon,
 } from "../../controller/branchManager/manager-coupon.controller.js";
 
 const router: Router = Router();
@@ -50,8 +53,11 @@ router.post("/manual-discounts/:publicId/reject", RejectManualDiscount);
 
 // ── Manager coupon creation ───────────────────────────────────────────────────
 router.get("/coupons/limits", GetManagerCouponLimits);
+router.get("/coupons/customer-search", SearchCustomerForCoupon);
 router.get("/coupons", ListManagerCoupons);
 router.post("/coupons", CreateManagerCoupon);
+router.patch("/coupons/:publicId/deactivate", DeactivateManagerCoupon);
+router.patch("/coupons/:publicId", UpdateManagerCoupon);
 
 // ── Booking coupon & manual discount application ──────────────────────────────
 router.post("/bookings/:bookingId/apply-coupon", ApplyCoupon);

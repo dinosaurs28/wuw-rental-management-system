@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { getCurrentTime } from "@/utils/formatters";
 
 interface Pricing {
   baseTotal: number;
@@ -38,8 +39,8 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       selectedGroupKey: null,
       startDate: null,
       endDate: null,
-      startTime: "10:00",
-      endTime: "10:00",
+      startTime: getCurrentTime(),
+      endTime: getCurrentTime(),
       paymentType: "CASH",
       pricing: null,
       customerKycId: null,
@@ -67,6 +68,11 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
     }),
     {
       name: "employee-booking-storage",
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { startTime, endTime, ...rest } = state;
+        return rest;
+      },
       storage: createJSONStorage(() => ({
         getItem: (name) => {
           const str = sessionStorage.getItem(name);

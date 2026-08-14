@@ -1,14 +1,19 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
+import { getCurrentTime } from "@/utils/formatters";
 
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { Button } from "@/components/ui/button";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 
 import { useEmployeeVehicles } from "@/hooks/useEmployeeVehicles";
+import { useEmployeeCustomerBookingLimits } from "@/hooks/useEmployeeCustomerBookingLimits";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
 import { useQuery } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee.service";
@@ -21,7 +26,9 @@ const ITEMS_PER_PAGE = 9;
 
 export default function EmployeeVehicleListingPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useEmployeeAuthStore();
+  const { isAuthenticated, user: employeeUser } = useEmployeeAuthStore();
+  const canBypassSchedule = employeeUser?.role === "ADMIN" || employeeUser?.role === "MANAGER";
+  const [bypassSchedule, setBypassSchedule] = useState(false);
 
   const {
     setDates,
@@ -59,9 +66,9 @@ export default function EmployeeVehicleListingPage() {
     initialReturn,
   );
   const [pickupTime, setPickupTime] = useState<string>(
-    storeStartTime || "10:00",
+    storeStartTime || getCurrentTime(),
   );
-  const [returnTime, setReturnTime] = useState<string>(storeEndTime || "10:00");
+  const [returnTime, setReturnTime] = useState<string>(storeEndTime || getCurrentTime());
   const [category, setCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -122,11 +129,23 @@ export default function EmployeeVehicleListingPage() {
     currentPage,
   ]);
 
+  // Build datetime strings and validate range before the query hook
+  const startDateTime = selectedPickupDate
+    ? `${format(selectedPickupDate, "yyyy-MM-dd")}T${pickupTime}`
+    : undefined;
+  const endDateTime = selectedReturnDate
+    ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
+    : undefined;
+  const isDateRangeValid = useMemo(() => {
+    if (!startDateTime || !endDateTime) return true;
+    return new Date(endDateTime) > new Date(startDateTime);
+  }, [startDateTime, endDateTime]);
+
   const {
     data: vehiclesData,
     isLoading: initialLoading,
     isFetching,
-  } = useEmployeeVehicles(filters);
+  } = useEmployeeVehicles(filters, { enabled: isDateRangeValid });
   const isLoading = initialLoading || isFetching;
   const vehicles = vehiclesData?.data || [];
   const vehicleCount = vehiclesData?.pagination?.total || vehicles.length || 0;
@@ -143,21 +162,61 @@ export default function EmployeeVehicleListingPage() {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedReturnDate(tomorrow);
-    setPickupTime("10:00");
-    setReturnTime("10:00");
+    setPickupTime(getCurrentTime());
+    setReturnTime(getCurrentTime());
     setCategory("all");
     setSortBy("default");
     setSearchQuery("");
     setCurrentPage(1);
   }, []);
 
-  // Build datetime strings for VehicleCard URL params
-  const startDateTime = selectedPickupDate
-    ? `${format(selectedPickupDate, "yyyy-MM-dd")}T${pickupTime}`
-    : undefined;
-  const endDateTime = selectedReturnDate
-    ? `${format(selectedReturnDate, "yyyy-MM-dd")}T${returnTime}`
-    : undefined;
+  // startDateTime / endDateTime / isDateRangeValid declared above useEmployeeVehicles
+
+  // Show a single toast when the range becomes invalid
+  const prevInvalidRef = useRef(false);
+  useEffect(() => {
+    const bothSet = !!(selectedPickupDate && selectedReturnDate);
+    if (!isDateRangeValid && bothSet && !prevInvalidRef.current) {
+      toast.error("Return date/time must be after pickup date/time");
+      prevInvalidRef.current = true;
+    } else if (isDateRangeValid) {
+      prevInvalidRef.current = false;
+    }
+  }, [isDateRangeValid, selectedPickupDate, selectedReturnDate]);
+
+  const customerPublicId = customerSession.get()?.publicId;
+
+  const {
+    restrictedTypeClasses,
+    conflictDetails,
+    isLoading: limitsLoading,
+  } = useEmployeeCustomerBookingLimits(customerPublicId, startDateTime, endDateTime);
+
+  const restrictionBannerLabel = useMemo(() => {
+    const labels: string[] = [];
+    if (restrictedTypeClasses.has("TWO_WHEELER")) labels.push("two-wheeler");
+    if (restrictedTypeClasses.has("FOUR_WHEELER")) labels.push("four-wheeler");
+    return labels;
+  }, [restrictedTypeClasses]);
+
+  const { schedule } = useBranchSchedule(employeeUser?.branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(
+      bypassSchedule ? undefined : schedule,
+      startDateTime,
+      endDateTime,
+    );
+
+  // Write-back: persist bumped return to local state + store
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setSelectedReturnDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    setReturnTime(`${hh}:${mm}`);
+  }, [adjustedEndDateTime, scheduleVerdict?.status]);
 
   if (!isAuthenticated) return null;
 
@@ -201,11 +260,16 @@ export default function EmployeeVehicleListingPage() {
             onBranchChange={() => {}}
             onPickupDateChange={(date) => {
               setSelectedPickupDate(date ?? null);
-              if (date) {
-                const nextDay = new Date(date);
-                nextDay.setDate(nextDay.getDate() + 1);
-                setSelectedReturnDate(nextDay);
-              } else {
+              if (date && selectedReturnDate) {
+                // Only push return to next day if it's strictly before the new pickup day
+                const pickupDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                const returnDay = new Date(selectedReturnDate.getFullYear(), selectedReturnDate.getMonth(), selectedReturnDate.getDate());
+                if (returnDay < pickupDay) {
+                  const nextDay = new Date(date);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  setSelectedReturnDate(nextDay);
+                }
+              } else if (!date) {
                 setSelectedReturnDate(null);
               }
             }}
@@ -217,8 +281,65 @@ export default function EmployeeVehicleListingPage() {
             onSearchChange={setSearchQuery}
             onReset={handleReset}
             showBranchSelector={false}
+            schedule={bypassSchedule ? undefined : schedule}
+            scheduleVerdict={bypassSchedule ? null : scheduleVerdict}
           />
         </div>
+
+        {/* Schedule bypass toggle for ADMIN / MANAGER */}
+        {canBypassSchedule && (
+          <div className="mb-4 flex items-center gap-3 px-1">
+            <button
+              type="button"
+              onClick={() => setBypassSchedule((v) => !v)}
+              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-all ${
+                bypassSchedule
+                  ? "bg-amber-100 border-amber-400 text-amber-800"
+                  : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
+              }`}
+            >
+              <ShieldOff className="size-4 shrink-0" />
+              {bypassSchedule ? "Schedule bypass ON" : "Bypass schedule check"}
+            </button>
+            {bypassSchedule && (
+              <span className="text-xs text-amber-600 font-medium">
+                Branch operating hour restrictions are disabled for this booking
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Schedule warning banner */}
+        {!bypassSchedule && scheduleVerdict && scheduleVerdict.status !== "OK" && (
+          <div className="mb-6">
+            <ScheduleWarningBanner verdict={scheduleVerdict} />
+          </div>
+        )}
+
+        {/* Booking restriction banner */}
+        {restrictionBannerLabel.length > 0 && startDateTime && endDateTime && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 text-amber-800">
+            <Lock className="size-5 shrink-0 mt-0.5 text-amber-600" strokeWidth={2.2} />
+            <div>
+              <p className="font-bold text-sm text-amber-900">
+                Customer has an active {restrictionBannerLabel.join(" and ")} booking
+              </p>
+              <p className="text-sm mt-0.5 text-amber-700">
+                Vehicles of the same type are blocked for these dates.{" "}
+                {Object.values(conflictDetails).map((slot, i) => (
+                  <span key={i} className="block mt-1 text-xs font-medium text-amber-600">
+                    {slot.vehicleMake} {slot.vehicleModel} · until{" "}
+                    {new Date(slot.endAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
+        )}
 
         <VehicleGrid
           vehicles={vehicles}
@@ -231,6 +352,8 @@ export default function EmployeeVehicleListingPage() {
           basePath="/employee/vehicle"
           startDateTime={startDateTime}
           endDateTime={endDateTime}
+          restrictedTypeClasses={restrictedTypeClasses}
+          limitsLoading={limitsLoading}
         />
       </main>
     </div>

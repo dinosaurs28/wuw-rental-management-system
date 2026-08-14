@@ -8,7 +8,6 @@ import {
   Clock,
   PercentCircle,
   Loader2,
-  ChevronRight,
   RefreshCw,
 } from "lucide-react";
 
@@ -21,6 +20,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   managerDiscountService,
@@ -76,62 +76,62 @@ function ReviewModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Review Manual Discount Request</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+        <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/60">
+          <DialogHeader>
+            <DialogTitle className="text-[15px]">Review Discount Request</DialogTitle>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {discount.booking?.customer?.user.name ?? "—"} — {fmt(discount.amount)}
+            </p>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4 py-2">
-          {/* Summary row */}
-          <div className="bg-neutral-50 rounded-lg px-4 py-3 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-neutral-500">Booking</span>
-              <span className="font-mono text-neutral-900">{discount.booking?.publicId ?? "—"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">Customer</span>
-              <span>{discount.booking?.customer?.user.name ?? "—"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">Requested by</span>
-              <span>{discount.appliedBy}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">Discount amount</span>
-              <span className="font-semibold text-neutral-900">{fmt(discount.amount)}</span>
-            </div>
+        <div className="px-6 py-5 space-y-4">
+          {/* Details */}
+          <div className="bg-neutral-50 rounded-xl border border-neutral-100 divide-y divide-neutral-100 text-sm overflow-hidden">
+            {[
+              ["Booking", discount.booking?.publicId ?? "—"],
+              ["Customer", discount.booking?.customer?.user.name ?? "—"],
+              ["Requested by", discount.appliedBy],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between items-center px-4 py-2.5">
+                <span className="text-neutral-500 text-xs">{label}</span>
+                <span className="text-xs font-medium text-neutral-800 font-mono">{value}</span>
+              </div>
+            ))}
             {bookingTotal !== null && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Booking total</span>
-                  <span>{fmt(bookingTotal)}</span>
-                </div>
-                {afterDiscount !== null && (
-                  <div className="flex justify-between border-t border-neutral-200 pt-2">
-                    <span className="text-neutral-500">After discount</span>
-                    <span className="font-semibold text-green-700">{fmt(afterDiscount)}</span>
-                  </div>
-                )}
-              </>
+              <div className="flex justify-between items-center px-4 py-2.5">
+                <span className="text-neutral-500 text-xs">Booking total</span>
+                <span className="text-xs font-medium text-neutral-800">{fmt(bookingTotal)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center px-4 py-2.5">
+              <span className="text-neutral-500 text-xs">Discount amount</span>
+              <span className="text-sm font-bold text-neutral-900">{fmt(discount.amount)}</span>
+            </div>
+            {afterDiscount !== null && (
+              <div className="flex justify-between items-center px-4 py-3 bg-green-50/60">
+                <span className="text-xs font-semibold text-neutral-700">After discount</span>
+                <span className="text-sm font-bold text-green-700">{fmt(afterDiscount)}</span>
+              </div>
             )}
           </div>
 
           {/* Reason */}
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Reason provided</p>
-            <p className="text-sm text-neutral-800 bg-neutral-50 rounded-lg px-3 py-2 border border-neutral-100">
+          <div>
+            <p className="text-xs text-neutral-500 mb-1.5 font-medium uppercase tracking-wide">Reason</p>
+            <p className="text-sm text-neutral-800 bg-neutral-50 border border-neutral-100 rounded-xl px-4 py-3 leading-relaxed">
               {discount.reason}
             </p>
           </div>
 
           {/* Manager note */}
-          <div className="space-y-2">
-            <Label htmlFor="manager-note">Manager note (optional)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-neutral-600">Manager note <span className="text-neutral-400 font-normal">(optional)</span></Label>
             <Textarea
-              id="manager-note"
               placeholder="Add a note for the employee…"
               rows={2}
-              className="resize-none"
+              className="resize-none text-sm"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               disabled={isLoading}
@@ -139,31 +139,31 @@ function ReviewModal({
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <DialogFooter className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/40 gap-2">
           <Button
             variant="outline"
-            className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
+            className="flex-1 h-11 border-red-200 text-red-600 hover:bg-red-50 gap-1.5"
             onClick={() => { setAction("reject"); rejectMutation.mutate(); }}
             disabled={isLoading}
           >
-            {rejectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4 mr-1.5" />}
+            {rejectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
             Reject
           </Button>
           <Button
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white gap-1.5"
             onClick={() => { setAction("approve"); approveMutation.mutate(); }}
             disabled={isLoading}
           >
-            {approveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1.5" />}
+            {approveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Approve
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Tab ───────────────────────────────────────────────────────────────────────
 
 export function DiscountApprovalsTab() {
   const [selected, setSelected] = useState<ManualDiscount | null>(null);
@@ -178,125 +178,106 @@ export function DiscountApprovalsTab() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Discount Approvals</h2>
-            <p className="text-sm text-neutral-500 mt-1">Manual discount requests waiting for your review</p>
+            <h2 className="text-base font-semibold text-neutral-900">Discount Approvals</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">Manual discount requests waiting for your review</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading || isFetching}
-              className="h-9 px-3 text-neutral-600 border-neutral-200"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+          <div className="flex items-center gap-2">
             {discounts.length > 0 && (
-              <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-full px-4 py-1.5">
-                <Clock className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-semibold text-yellow-800">{discounts.length} pending</span>
-              </div>
+              <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                {discounts.length} pending
+              </span>
             )}
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading || isFetching} className="h-8 gap-1.5 text-xs">
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            </Button>
           </div>
         </div>
 
         {/* Content */}
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-lg border h-16 animate-pulse" />
-            ))}
-          </div>
-        ) : discounts.length === 0 ? (
-          <div className="bg-white rounded-lg border shadow-sm flex flex-col items-center py-16 text-center">
-            <PercentCircle className="w-12 h-12 text-neutral-200 mb-3" />
-            <p className="font-medium text-neutral-600">No pending discount requests</p>
-            <p className="text-sm text-neutral-400 mt-1">All manual discount requests have been reviewed.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-neutral-50">
-                    <th className="text-left px-5 py-3 font-medium text-neutral-500">Booking</th>
-                    <th className="text-left px-4 py-3 font-medium text-neutral-500">Customer</th>
-                    <th className="text-left px-4 py-3 font-medium text-neutral-500">Amount</th>
-                    <th className="text-left px-4 py-3 font-medium text-neutral-500">Reason</th>
-                    <th className="text-left px-4 py-3 font-medium text-neutral-500">Employee</th>
-                    <th className="text-left px-4 py-3 font-medium text-neutral-500">Requested</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {discounts.map((d) => (
-                    <tr key={d.publicId} className="hover:bg-neutral-50 transition-colors">
-                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-600">{d.booking?.publicId ?? "—"}</td>
-                      <td className="px-4 py-3.5">{d.booking?.customer?.user.name ?? "—"}</td>
-                      <td className="px-4 py-3.5 font-semibold text-neutral-900">{fmt(d.amount)}</td>
-                      <td className="px-4 py-3.5 max-w-[200px]">
-                        <p className="truncate text-neutral-600">{d.reason}</p>
-                      </td>
-                      <td className="px-4 py-3.5 text-neutral-600">{d.appliedBy}</td>
-                      <td className="px-4 py-3.5 text-neutral-500 text-xs">
-                        {format(new Date(d.requestedAt), "dd MMM, HH:mm")}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => setSelected(d)}
-                        >
-                          Review <ChevronRight className="w-3 h-3" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-neutral-100">
-              {discounts.map((d) => (
-                <div
-                  key={d.publicId}
-                  className="px-4 py-4 space-y-2 cursor-pointer hover:bg-neutral-50"
-                  onClick={() => setSelected(d)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-neutral-900">{fmt(d.amount)}</p>
-                      <p className="text-xs text-neutral-500 font-mono">{d.booking?.publicId ?? "—"}</p>
-                    </div>
-                    <Badge variant="outline" className="border-yellow-400 text-yellow-700 bg-yellow-50 gap-1 text-xs">
-                      <Clock className="w-3 h-3" /> Pending
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-neutral-600 truncate">{d.reason}</p>
-                  <p className="text-xs text-neutral-400">
-                    {d.appliedBy} • {format(new Date(d.requestedAt), "dd MMM, HH:mm")}
-                  </p>
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+          {isLoading ? (
+            <div className="divide-y divide-neutral-100">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-28" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-32 flex-1" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-20" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-24" />
+                  <div className="h-8 bg-neutral-100 rounded-lg animate-pulse w-20" />
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : discounts.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <PercentCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <p className="font-medium text-neutral-700">No pending discount requests</p>
+              <p className="text-sm text-neutral-400 mt-1">All manual discount requests have been reviewed.</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-neutral-50/80">
+                      {["Booking", "Customer", "Amount", "Reason", "Employee", "Requested", ""].map((h, i) => (
+                        <th key={i} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" || h === "" ? "text-right" : "text-left"}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {discounts.map((d) => (
+                      <tr key={d.publicId} className="hover:bg-neutral-50/60 transition-colors">
+                        <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{d.booking?.publicId ?? "—"}</td>
+                        <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm">{d.booking?.customer?.user.name ?? "—"}</td>
+                        <td className="px-5 py-3.5 text-right font-bold text-neutral-900 text-sm">{fmt(d.amount)}</td>
+                        <td className="px-5 py-3.5 max-w-[200px]">
+                          <p className="truncate text-sm text-neutral-600">{d.reason}</p>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm text-neutral-600">{d.appliedBy}</td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-500 whitespace-nowrap">{format(new Date(d.requestedAt), "dd MMM, HH:mm")}</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <Button size="sm" className="h-8 text-xs bg-orange-500 hover:bg-orange-600 text-white px-3" onClick={() => setSelected(d)}>
+                            Review
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-neutral-100">
+                {discounts.map((d) => (
+                  <div key={d.publicId} className="px-4 py-4 space-y-2.5 cursor-pointer hover:bg-neutral-50/60 active:bg-neutral-100/60" onClick={() => setSelected(d)}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-neutral-900">{fmt(d.amount)}</p>
+                        <p className="text-xs text-neutral-400 font-mono mt-0.5">{d.booking?.publicId ?? "—"}</p>
+                      </div>
+                      <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50 gap-1 text-xs">
+                        <Clock className="w-3 h-3" /> Pending
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-neutral-600 line-clamp-2">{d.reason}</p>
+                    <p className="text-xs text-neutral-400">{d.appliedBy} · {format(new Date(d.requestedAt), "dd MMM, HH:mm")}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {selected && (
-        <ReviewModal
-          discount={selected}
-          onClose={() => setSelected(null)}
-          onDone={() => setSelected(null)}
-        />
+        <ReviewModal discount={selected} onClose={() => setSelected(null)} onDone={() => setSelected(null)} />
       )}
     </>
   );

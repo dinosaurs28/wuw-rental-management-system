@@ -40,6 +40,7 @@ let invoiceWorker: Worker | null = null;
 interface InvoiceJobData {
   bookingId: number;
   invoiceId: number;
+  previousFileObjectId?: number;
 }
 
 export function initInvoiceWorker(): void {
@@ -48,7 +49,7 @@ export function initInvoiceWorker(): void {
   invoiceWorker = new Worker(
     "{bull}invoice-generation",
     async (job: Job<InvoiceJobData>) => {
-      const { bookingId, invoiceId } = job.data;
+      const { bookingId, invoiceId, previousFileObjectId } = job.data;
 
       try {
         console.log(
@@ -101,6 +102,7 @@ export function initInvoiceWorker(): void {
           pdfBuffer,
           invoiceNumber,
           bookingId,
+          previousFileObjectId,
         );
         await job.updateProgress(80);
 

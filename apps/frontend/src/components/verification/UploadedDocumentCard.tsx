@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ZoomableImage } from "@/components/ui/ZoomableImage";
 
 interface UploadedDocumentCardProps {
   document: KycDocument;
@@ -168,15 +169,14 @@ export const UploadedDocumentCard = ({
               <span className="sr-only">Close</span>
             </DialogClose>
           </DialogHeader>
-          <div className="relative w-full max-h-[75vh] min-h-[50vh] overflow-auto bg-zinc-100 flex items-center justify-center p-4">
+          <div className="relative w-full bg-zinc-100 p-4">
             {isImage ? (
-              <img
+              <ZoomableImage
                 src={document.file.url}
                 alt={getDocumentTypeName(document.type)}
-                className="w-auto h-auto max-w-full max-h-[70vh] object-contain rounded-lg shadow-xl"
               />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-6 text-zinc-500">
+              <div className="flex flex-col items-center justify-center gap-6 text-zinc-500 py-12">
                 <FileText className="w-20 h-20 opacity-50" />
                 <p className="text-sm font-medium">PDF Preview not available</p>
                 <Button

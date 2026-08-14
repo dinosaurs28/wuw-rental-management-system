@@ -98,6 +98,7 @@ async function main() {
   await prisma.branchPaymentConfig.deleteMany();
   await prisma.gSTRule.deleteMany();
   await prisma.vehiclePhotoCaptureConfig.deleteMany();
+  await prisma.branchSchedule.deleteMany();
 
   // Branch / category
   await prisma.branch.deleteMany();
@@ -114,6 +115,7 @@ async function main() {
       publicId: nanoid(),
       name: "Two Wheeler",
       description: "Bikes & Scooters",
+      typeClass: "TWO_WHEELER",
     },
   });
 
@@ -122,6 +124,7 @@ async function main() {
       publicId: nanoid(),
       name: "Four Wheeler",
       description: "Cars, SUVs",
+      typeClass: "FOUR_WHEELER",
     },
   });
 
@@ -145,7 +148,23 @@ async function main() {
     },
   });
 
-  // ── 3. Branch Charge Config ───────────────────────────────────────────────
+  // ── 3. Branch Schedule ────────────────────────────────────────────────────
+  // Mon–Sat open 9AM–10PM, Sunday closed, 30-min grace
+  await prisma.branch.update({
+    where: { id: manipalBranch.id },
+    data: { graceMinutes: 30, is24Hours: false },
+  });
+
+  const scheduleRows = [0, 1, 2, 3, 4, 5, 6].map((day) => ({
+    branchId: manipalBranch.id,
+    dayOfWeek: day,
+    isOpen: day !== 0, // Sunday (0) closed
+    openTime: "09:00",
+    closeTime: "22:00",
+  }));
+  await prisma.branchSchedule.createMany({ data: scheduleRows });
+
+  // ── 4. Branch Charge Config ───────────────────────────────────────────────
   await prisma.branchChargeConfig.create({
     data: {
       publicId: nanoid(),

@@ -20,8 +20,12 @@ const pricingEngine = new PricingEngineService();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function normalizeStr(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function buildGroupKey(make: string, model: string, categoryId: number, branchId: number): string {
-  return `${make}__${model}__${categoryId}__${branchId}`;
+  return `${normalizeStr(make)}__${normalizeStr(model)}__${categoryId}__${branchId}`;
 }
 
 function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
@@ -131,7 +135,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     const vehicles = await prisma.vehicle.findMany({
       where: filters,
       include: {
-        category: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, typeClass: true } },
         branch:   { select: { id: true, name: true } },
         images: {
           where: { isThumbnail: true },
@@ -226,6 +230,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       make: string;
       model: string;
       category: string;
+      typeClass: string;
       branch: string;
       availableCount: number;
       imageUrl: any[];
@@ -259,9 +264,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       if (!existing) {
         groupMap.set(gk, {
           groupKey: gk,
-          make: v.make,
-          model: v.model,
+          make: normalizeStr(v.make),
+          model: normalizeStr(v.model),
           category: v.category.name,
+          typeClass: v.category.typeClass,
           branch: v.branch.name,
           availableCount: 1,
           imageUrl: v.images,
@@ -288,6 +294,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       make:           g.make,
       model:          g.model,
       category:       g.category,
+      typeClass:      g.typeClass,
       branch:         g.branch,
       availableCount: g.availableCount,
       imageUrl:       g.imageUrl,
@@ -405,7 +412,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     }
 
     // Use images from the representative vehicle only
-    const allImages: string[] = representativeVehicle.images.map((img) => img.file.url);
+    const allImages: string[] = representativeVehicle.images.map((img: any) => img.file.url);
 
     // Compute pricing from the representative vehicle
     let pricingDetails: any = null;
@@ -458,6 +465,15 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     const firstCat = groupVehicles[0]!.category;
     const firstBranch = groupVehicles[0]!.branch;
 
+    let groupCustomerPaymentMode = 'ADVANCE_ONLY';
+    try {
+      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
+        where: { branchId: firstBranch.id },
+        select: { customerPaymentMode: true },
+      });
+      groupCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
+    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+
     const response = {
       groupKey,
       make,
@@ -472,6 +488,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       availability,
       pricingDetails,
       advancePayAmount: Number(representativeVehicle.advancePayAmount ?? 0),
+      customerPaymentMode: groupCustomerPaymentMode,
     };
 
     try {
@@ -635,7 +652,16 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       availability = false;
     }
 
-    const imageUrls = vehicleData.images.map((img) => img.file.url);
+    let singleCustomerPaymentMode = 'ADVANCE_ONLY';
+    try {
+      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
+        where: { branchId: vehicleData.branchId },
+        select: { customerPaymentMode: true },
+      });
+      singleCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
+    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+
+    const imageUrls = vehicleData.images.map((img: any) => img.file.url);
     const response = {
       publicId:         vehicleData.publicId,
       make:             vehicleData.make,
@@ -646,6 +672,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       category:         vehicleData.category.name,
       branch:           vehicleData.branch.name,
       advancePayAmount: vehicleData.advancePayAmount,
+      customerPaymentMode: singleCustomerPaymentMode,
       images:           imageUrls,
       pricing:          { daily: pricingDetails?.pricingBreakdown?.applicablePrice },
       deposit,

@@ -52,16 +52,11 @@ function RefundDetailModal({
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to approve refund.");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
   const handleReject = async () => {
-    if (rejectionReason.trim().length < 5) {
-      toast.error("Rejection reason must be at least 5 characters.");
-      return;
-    }
+    if (rejectionReason.trim().length < 5) { toast.error("Rejection reason must be at least 5 characters."); return; }
     setActionLoading(true);
     try {
       await paymentService.rejectRefund(publicId, rejectionReason.trim());
@@ -69,9 +64,7 @@ function RefundDetailModal({
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to reject refund.");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
   const handleDisburse = async () => {
@@ -82,202 +75,155 @@ function RefundDetailModal({
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to mark refund as disbursed.");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
     });
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {rejectMode ? "Reject Refund" : "Refund Request Detail"}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+        <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/60">
+          <DialogHeader>
+            <DialogTitle className="text-[15px]">
+              {rejectMode ? "Reject Refund" : "Refund Request Detail"}
+            </DialogTitle>
+            {refund && !loading && (
+              <p className="text-xs text-neutral-500 mt-0.5">
+                {refund.customerName} — ₹ {parseFloat(refund.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </p>
+            )}
+          </DialogHeader>
+        </div>
 
-        {loading ? (
-          <div className="py-8 text-center text-sm text-neutral-400">Loading…</div>
-        ) : refund ? (
-          <>
-            {!rejectMode ? (
-              <div className="space-y-4 py-2">
-                {/* Status badge */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500">Status</span>
-                  <RefundStatusBadge status={refund.status} />
+        <div className="px-6 py-5">
+          {loading ? (
+            <div className="py-8 flex flex-col gap-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <div className="h-3 bg-neutral-100 rounded animate-pulse w-24" />
+                  <div className="h-3 bg-neutral-100 rounded animate-pulse w-32" />
                 </div>
+              ))}
+            </div>
+          ) : refund ? (
+            <>
+              {!rejectMode ? (
+                <div className="space-y-4">
+                  {/* Status + details */}
+                  <div className="bg-neutral-50 rounded-xl border border-neutral-100 divide-y divide-neutral-100 text-sm overflow-hidden">
+                    <div className="flex justify-between items-center px-4 py-2.5">
+                      <span className="text-neutral-500 text-xs">Status</span>
+                      <RefundStatusBadge status={refund.status} />
+                    </div>
+                    {[
+                      ["Booking", refund.bookingPublicId],
+                      ["Customer", refund.customerName],
+                      ["Method", refund.method.toLowerCase()],
+                      ["Requested by", refund.requestedBy],
+                      ["Requested at", formatDate(refund.requestedAt)],
+                      ...(refund.approvedBy && refund.approvedAt
+                        ? [["Approved by", refund.approvedBy], ["Approved at", formatDate(refund.approvedAt)]]
+                        : []),
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between items-center px-4 py-2.5">
+                        <span className="text-neutral-500 text-xs">{label}</span>
+                        <span className="text-xs font-medium text-neutral-800 capitalize">{value}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center px-4 py-3 bg-neutral-100/60">
+                      <span className="text-sm font-semibold text-neutral-800">Amount</span>
+                      <span className="text-sm font-bold text-neutral-900">
+                        ₹ {parseFloat(refund.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
 
-                {/* Details */}
-                <div className="bg-neutral-50 rounded-lg px-4 py-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Booking</span>
-                    <span className="font-medium">{refund.bookingPublicId}</span>
+                  {/* Reason */}
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1.5 font-medium">Reason</p>
+                    <p className="text-sm text-neutral-800 bg-neutral-50 rounded-xl border border-neutral-100 px-4 py-3 leading-relaxed">
+                      {refund.reason}
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Customer</span>
-                    <span className="font-medium">{refund.customerName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Amount</span>
-                    <span className="font-semibold text-neutral-900">
-                      ₹ {parseFloat(refund.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Method</span>
-                    <span className="font-medium capitalize">{refund.method.toLowerCase()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Requested by</span>
-                    <span className="font-medium">{refund.requestedBy}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Requested at</span>
-                    <span className="font-medium">{formatDate(refund.requestedAt)}</span>
-                  </div>
-                  {refund.approvedBy && refund.approvedAt && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-500">Approved by</span>
-                        <span className="font-medium">{refund.approvedBy}</span>
+
+                  {/* APPROVED disburse */}
+                  {refund.status === "APPROVED" && (
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-sm text-green-700">
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        Approved — mark as disbursed once payment is sent.
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-500">Approved at</span>
-                        <span className="font-medium">{formatDate(refund.approvedAt)}</span>
-                      </div>
-                    </>
+                      {refund.method === "ONLINE" && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-neutral-600">Transaction Reference (optional)</Label>
+                          <Input placeholder="e.g. refund_pay_abc123" className="h-11" value={txnRef} onChange={(e) => setTxnRef(e.target.value)} />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-
-                {/* Reason */}
-                <div className="text-sm">
-                  <p className="text-neutral-500 mb-1">Reason</p>
-                  <p className="text-neutral-800 bg-neutral-50 rounded-lg px-3 py-2.5">
-                    {refund.reason}
-                  </p>
-                </div>
-
-                {/* APPROVED state — disburse form */}
-                {refund.status === "APPROVED" && (
-                  <div className="space-y-3 pt-2">
-                    <p className="text-sm font-medium text-green-700 bg-green-50 rounded-lg px-3 py-2">
-                      ✓ Refund approved — mark as disbursed when payment is sent.
-                    </p>
-                    {refund.method === "ONLINE" && (
-                      <div className="space-y-1.5">
-                        <Label htmlFor="disburseRef">Online Transaction Reference (optional)</Label>
-                        <Input
-                          id="disburseRef"
-                          placeholder="e.g. refund_pay_abc123"
-                          className="h-12"
-                          value={txnRef}
-                          onChange={(e) => setTxnRef(e.target.value)}
-                        />
-                      </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
+                    Rejecting refund of <strong>₹ {parseFloat(refund.amount).toLocaleString("en-IN")}</strong> for <strong>{refund.customerName}</strong>.
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-neutral-600">Rejection reason <span className="text-red-500">*</span></Label>
+                    <Textarea placeholder="e.g. Refund policy does not apply after 48h" rows={3} className="resize-none text-sm" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
+                    {rejectionReason.length > 0 && rejectionReason.trim().length < 5 && (
+                      <p className="text-xs text-red-500">Minimum 5 characters required.</p>
                     )}
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4 py-2">
-                <p className="text-sm text-neutral-600">
-                  Provide a reason for rejecting the refund of{" "}
-                  <strong>₹ {parseFloat(refund.amount).toLocaleString("en-IN")}</strong>.
-                </p>
-                <div className="space-y-1.5">
-                  <Label htmlFor="refundRejectReason">
-                    Rejection reason <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="refundRejectReason"
-                    placeholder="e.g. Refund policy does not apply after 48h"
-                    rows={3}
-                    className="resize-none"
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                  />
-                  {rejectionReason.length > 0 && rejectionReason.trim().length < 5 && (
-                    <p className="text-xs text-red-500">Minimum 5 characters required.</p>
-                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </>
+          ) : null}
+        </div>
 
-            <DialogFooter className="gap-2">
-              {refund.status === "PENDING_APPROVAL" && !rejectMode && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => setRejectMode(true)}
-                    disabled={actionLoading}
-                  >
-                    <XCircle className="w-4 h-4 mr-1.5" />
-                    Reject
-                  </Button>
-                  <Button
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                    onClick={handleApprove}
-                    disabled={actionLoading}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1.5" />
-                    {actionLoading ? "Approving…" : "Approve Refund"}
-                  </Button>
-                </>
-              )}
-              {refund.status === "APPROVED" && !rejectMode && (
-                <>
-                  <Button variant="outline" onClick={onClose} disabled={actionLoading}>
-                    Close
-                  </Button>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={handleDisburse}
-                    disabled={actionLoading}
-                  >
-                    <Send className="w-4 h-4 mr-1.5" />
-                    {actionLoading ? "Marking…" : "Mark as Disbursed"}
-                  </Button>
-                </>
-              )}
-              {rejectMode && (
-                <>
-                  <Button variant="outline" onClick={() => setRejectMode(false)} disabled={actionLoading}>
-                    Cancel
-                  </Button>
-                  <Button
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    onClick={handleReject}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? "Rejecting…" : "Confirm Rejection"}
-                  </Button>
-                </>
-              )}
-              {(refund.status === "COMPLETED" || refund.status === "REJECTED") && (
-                <Button variant="outline" onClick={onClose}>
-                  Close
+        {refund && !loading && (
+          <DialogFooter className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/40 gap-2">
+            {refund.status === "PENDING_APPROVAL" && !rejectMode && (
+              <>
+                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 gap-1.5" onClick={() => setRejectMode(true)} disabled={actionLoading}>
+                  <XCircle className="w-4 h-4" /> Reject
                 </Button>
-              )}
-            </DialogFooter>
-          </>
-        ) : null}
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5" onClick={handleApprove} disabled={actionLoading}>
+                  <CheckCircle className="w-4 h-4" /> {actionLoading ? "Approving…" : "Approve Refund"}
+                </Button>
+              </>
+            )}
+            {refund.status === "APPROVED" && !rejectMode && (
+              <>
+                <Button variant="outline" onClick={onClose} disabled={actionLoading}>Close</Button>
+                <Button className="bg-green-600 hover:bg-green-700 text-white gap-1.5" onClick={handleDisburse} disabled={actionLoading}>
+                  <Send className="w-4 h-4" /> {actionLoading ? "Marking…" : "Mark as Disbursed"}
+                </Button>
+              </>
+            )}
+            {rejectMode && (
+              <>
+                <Button variant="outline" onClick={() => setRejectMode(false)} disabled={actionLoading}>Back</Button>
+                <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={actionLoading}>
+                  {actionLoading ? "Rejecting…" : "Confirm Rejection"}
+                </Button>
+              </>
+            )}
+            {(refund.status === "COMPLETED" || refund.status === "REJECTED") && (
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Tab ───────────────────────────────────────────────────────────────────────
 
 export function RefundsTab() {
   const { setPendingRefundCount } = usePaymentStore();
@@ -291,121 +237,84 @@ export function RefundsTab() {
       const data = await paymentService.getPendingRefunds();
       setItems(data);
       setPendingRefundCount(data.length);
-    } catch {
-      toast.error("Failed to load pending refunds.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load pending refunds."); }
+    finally { setLoading(false); }
   }, [setPendingRefundCount]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
     });
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Pending Refund Approvals</h2>
-            <p className="text-sm text-neutral-500 mt-1">
-              Approve or reject customer refund requests
-            </p>
+            <h2 className="text-base font-semibold text-neutral-900">Pending Refund Approvals</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">Approve or reject customer refund requests</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={load}
-              disabled={loading}
-              className="h-9 px-3 text-neutral-600 border-neutral-200"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+          <div className="flex items-center gap-2">
             {items.length > 0 && (
-              <span className="bg-orange-100 text-orange-700 text-sm font-semibold px-3 py-1 rounded-full">
+              <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                 {items.length} pending
               </span>
             )}
+            <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-8 gap-1.5 text-xs">
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
           {loading ? (
-            <div className="py-16 text-center text-neutral-400 text-sm">Loading…</div>
+            <div className="divide-y divide-neutral-100">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-28" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-36 flex-1" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-20" />
+                  <div className="h-3.5 bg-neutral-100 rounded animate-pulse w-16" />
+                  <div className="h-8 bg-neutral-100 rounded-lg animate-pulse w-16" />
+                </div>
+              ))}
+            </div>
           ) : items.length === 0 ? (
-            <div className="py-16 text-center">
-              <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-3" />
+            <div className="py-20 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
               <p className="font-medium text-neutral-700">No pending refund approvals</p>
               <p className="text-sm text-neutral-400 mt-1">All refund requests have been handled.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-neutral-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Booking
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Customer
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Amount
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Method
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Requested
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Action
-                    </th>
+                  <tr className="border-b border-neutral-100 bg-neutral-50/80">
+                    {["Booking", "Customer", "Amount", "Method", "Status", "Requested", ""].map((h, i) => (
+                      <th key={i} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" || h === "" ? "text-right" : "text-left"}`}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {items.map((item) => (
-                    <tr key={item.publicId} className="hover:bg-neutral-50 transition-colors">
-                      <td className="px-4 py-3.5 font-mono text-xs text-neutral-600">
-                        {item.bookingPublicId}
-                      </td>
-                      <td className="px-4 py-3.5 font-medium text-neutral-900">
-                        {item.customerName}
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-semibold text-neutral-900">
+                    <tr key={item.publicId} className="hover:bg-neutral-50/60 transition-colors">
+                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{item.bookingPublicId}</td>
+                      <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm">{item.customerName}</td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm">
                         ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3.5 text-neutral-600 capitalize">
-                        {item.method.toLowerCase()}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <RefundStatusBadge status={item.status} />
-                      </td>
-                      <td className="px-4 py-3.5 text-neutral-500 text-xs">
-                        {formatDate(item.requestedAt)}
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <Button
-                          size="sm"
-                          className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs"
-                          onClick={() => setSelected(item.publicId)}
-                        >
+                      <td className="px-5 py-3.5 text-sm text-neutral-600 capitalize">{item.method.toLowerCase()}</td>
+                      <td className="px-5 py-3.5"><RefundStatusBadge status={item.status} /></td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-500">{formatDate(item.requestedAt)}</td>
+                      <td className="px-5 py-3.5 text-right">
+                        <Button size="sm" className="h-8 text-xs bg-orange-500 hover:bg-orange-600 text-white px-3" onClick={() => setSelected(item.publicId)}>
                           View
                         </Button>
                       </td>
@@ -419,14 +328,7 @@ export function RefundsTab() {
       </div>
 
       {selected && (
-        <RefundDetailModal
-          publicId={selected}
-          onClose={() => setSelected(null)}
-          onDone={() => {
-            setSelected(null);
-            load();
-          }}
-        />
+        <RefundDetailModal publicId={selected} onClose={() => setSelected(null)} onDone={() => { setSelected(null); load(); }} />
       )}
     </>
   );

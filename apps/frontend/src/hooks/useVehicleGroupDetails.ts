@@ -5,6 +5,7 @@ export const useVehicleGroupDetails = (
   groupKey: string,
   startDateTime: string | null,
   endDateTime: string | null,
+  options?: { enabled?: boolean },
 ) => {
   return useQuery({
     queryKey: ["vehicle-group-details", groupKey, startDateTime, endDateTime],
@@ -14,7 +15,7 @@ export const useVehicleGroupDetails = (
         startDateTime || undefined,
         endDateTime || undefined,
       ),
-    enabled: !!groupKey,
+    enabled: !!groupKey && (options?.enabled ?? true),
     staleTime: 30 * 1000,
   });
 };
