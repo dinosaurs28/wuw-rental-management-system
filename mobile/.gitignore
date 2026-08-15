@@ -33,6 +33,9 @@ yarn-error.*
 *.key
 *.mobileprovision
 .env*.local
+# EAS-exported keystore credentials (contains keystore/key passwords)
+credentials.json
+credentials/
 
 # typescript
 *.tsbuildinfo

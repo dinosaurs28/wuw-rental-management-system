@@ -22,7 +22,8 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO"
       ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
@@ -81,9 +82,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ddb96052-cb64-4baf-a780-dccbfaeb6284"
+        "projectId": "05793a28-9b7b-4db6-8b2d-75f22fd68de4"
       }
     },
-    "owner": "sushanshetty"
+    "owner": "dinosaurs28"
   }
 }
