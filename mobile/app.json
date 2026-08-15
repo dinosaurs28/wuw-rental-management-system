@@ -12,7 +12,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.whatuwantrentals.rentals"
+      "bundleIdentifier": "com.whatuwantrentals.rentals",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.whatuwantrentals.rentals",
@@ -23,6 +26,7 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.RECORD_AUDIO"
       ],
       "blockedPermissions": [
