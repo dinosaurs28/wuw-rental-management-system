@@ -34,7 +34,10 @@ export function MyBookingsPage() {
     setFilter,
   } = useBookingsStore();
 
-  // If landing from a PhonePe extension redirect, verify payment then refresh
+  // Extensions are now paid for in-page, so nothing normally lands here with a
+  // transactionId. The route is kept for stale links (an old SMS/email, a tab
+  // left open from the previous redirect flow): re-check that transaction, then
+  // drop it from the URL and show the bookings list as usual.
   useEffect(() => {
     if (!transactionId || !isAuthenticated) return;
     extensionService.verifyExtensionPayment(transactionId)

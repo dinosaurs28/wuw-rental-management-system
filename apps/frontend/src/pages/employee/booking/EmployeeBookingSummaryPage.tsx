@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { bookingService } from "@/services/booking.service";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
@@ -36,6 +37,8 @@ export const EmployeeBookingSummaryPage = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
+  const { openCheckout, isOpening } = useRazorpayCheckout();
   const bookingPayload = location.state?.bookingPayload;
 
   // Block browser back button while booking hold is active
@@ -162,7 +165,8 @@ export const EmployeeBookingSummaryPage = () => {
     startDate: startDateString,
     endDate: endDateString,
     totals,
-    paymentURL,
+    razorpay,
+    transactionId,
   } = bookingData?.data || {};
 
   const items = bookingData?.data?.items || [];
@@ -177,6 +181,54 @@ export const EmployeeBookingSummaryPage = () => {
 
   const formatPrice = (amount: number) => {
     return `₹ ${amount?.toLocaleString("en-IN") || "0"}`;
+  };
+
+  // Send the employee to the status screen with an outcome Checkout already
+  // resolved, so it renders straight away instead of re-polling the gateway.
+  const goToStatus = (
+    initialStatus?: "success" | "failed",
+    initialMessage?: string,
+  ) => {
+    allowNavigationRef.current = true;
+    navigate(`/employee/booking/status/${transactionId}`, {
+      state: { initialStatus, initialMessage },
+    });
+  };
+
+  // Opens Razorpay Checkout in-page for this booking.
+  const handleOnlinePayment = () => {
+    if (!razorpay || !transactionId) {
+      toast.error("Payment details are unavailable. Please start again.");
+      return;
+    }
+    setIsPaying(true);
+    void openCheckout({
+      razorpay,
+      transactionId,
+      description: "Vehicle booking",
+      role: "staff",
+      // /payment/status is customer-gated; staff have their own status route.
+      pollStatus: (id) => bookingService.verifyEmployeePayment(id),
+      onSuccess: () => {
+        setIsPaying(false);
+        goToStatus("success");
+      },
+      onPending: () => {
+        setIsPaying(false);
+        // Deliberately no resolved status: the gateway has not settled yet, so
+        // let the status page run its own retry loop as it always has.
+        goToStatus();
+      },
+      onFailure: (message) => {
+        setIsPaying(false);
+        toast.error(message);
+        goToStatus("failed", message);
+      },
+      onDismiss: () => {
+        setIsPaying(false);
+        toast.info("Payment cancelled. The booking hold is still active.");
+      },
+    });
   };
 
   return (
@@ -307,12 +359,15 @@ export const EmployeeBookingSummaryPage = () => {
 
         {/* Payment Action */}
         <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col gap-3">
-          {paymentURL ? (
+          {razorpay ? (
             <Button
               className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90"
-              onClick={() => (window.location.href = paymentURL)}
+              disabled={isPaying || isOpening}
+              onClick={handleOnlinePayment}
             >
-              Pay Now {formatPrice(totals?.grandFinalTotal)}
+              {isPaying || isOpening
+                ? "Opening secure payment…"
+                : `Pay Now ${formatPrice(totals?.grandFinalTotal)}`}
             </Button>
           ) : (
             <div className="space-y-3">

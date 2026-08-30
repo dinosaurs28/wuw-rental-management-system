@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
 
@@ -12,13 +12,27 @@ const MAX_RETRY_COUNT = 10;
 const RETRY_DELAY_MS = 3000;
 const COUNTDOWN_SECONDS = 10;
 
+type ResolvedStatus = "success" | "failed" | "pending";
+
+interface BookingStatusLocationState {
+  initialStatus?: ResolvedStatus;
+  initialMessage?: string;
+}
+
 export const BookingStatusPage = () => {
   const navigate = useNavigate();
   const { transactionId } = useParams<{ transactionId: string }>();
+  // Checkout resolves the outcome in-page and passes it here, so we can render
+  // it immediately. Landing here without state (a stale link, an old SMS) still
+  // falls back to polling the gateway below.
+  const { initialStatus, initialMessage } =
+    (useLocation().state as BookingStatusLocationState | null) ?? {};
   const [status, setStatus] = useState<
     "loading" | "success" | "failed" | "pending"
-  >("loading");
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  >(initialStatus ?? "loading");
+  const [errorMessage, setErrorMessage] = useState<string>(
+    initialMessage ?? "",
+  );
   const [retryCount, setRetryCount] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const { clearVehicleSelection } = useVehicleRentalStore();
@@ -95,13 +109,25 @@ export const BookingStatusPage = () => {
       return;
     }
 
+    // Outcome already known from Checkout — just clean up and start the
+    // countdown instead of asking the gateway again.
+    if (initialStatus) {
+      if (initialStatus === "success") {
+        clearVehicleSelection();
+        toast.success("Payment successful! Booking confirmed.");
+      }
+      startCountdown();
+      return;
+    }
+
     // Wait 5 seconds before checking payment status
     const timer = setTimeout(() => {
       checkPaymentStatus();
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [transactionId, navigate, checkPaymentStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionId, navigate, checkPaymentStatus, initialStatus]);
 
   // Countdown UI component
   const CountdownMessage = () => (

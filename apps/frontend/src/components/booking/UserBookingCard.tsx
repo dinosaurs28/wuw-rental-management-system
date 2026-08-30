@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { QrCode, Calendar, Clock, Car, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 import { extensionService } from "@/services/extension.service";
+import { useBookingsStore } from "@/store/bookings.store";
 
 interface UserBookingCardProps {
   booking: Booking;
@@ -18,6 +19,7 @@ interface UserBookingCardProps {
 export function UserBookingCard({ booking }: UserBookingCardProps) {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+  const fetchBookings = useBookingsStore((state) => state.fetchBookings);
 
   const isActive =
     booking.status === "CONFIRMED" || booking.status === "PICKED_UP";
@@ -191,6 +193,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
           bookingPublicId={booking.bookingId}
           currentEndAt={booking.endAt}
           onClose={() => setIsExtendModalOpen(false)}
+          onSuccess={() => void fetchBookings()}
         />
       )}
     </>

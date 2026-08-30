@@ -144,6 +144,58 @@ export interface RecordPaymentPayload {
 
 // ── Service ──────────────────────────────────────────────────────────────────
 
+// ── Razorpay gateway ─────────────────────────────────────────────────────────
+
+/** Signature payload returned by Razorpay Checkout on a successful payment. */
+export interface RazorpayVerifyPayload {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface GatewayPaymentStatus {
+  status: "Success" | "Pending" | "Failed";
+  message?: string;
+  redirectURL?: string;
+}
+
+/**
+ * Which role gate the verifying session sits behind. The same handler is
+ * mounted three times because `authCheckJwt`, `EmployeeCheck` and `ManagerCheck`
+ * are mutually exclusive — a staff session calling the customer path gets a 403.
+ */
+export type PaymentRole = "customer" | "staff" | "manager";
+
+const VERIFY_PATHS: Record<PaymentRole, string> = {
+  customer: "/payment/verify",
+  staff: "/payment/staff/verify",
+  manager: "/payment/manager/verify",
+};
+
+export const razorpayService = {
+  /**
+   * Fast confirmation path — verifies the Checkout signature server-side.
+   * Throws (400) when the signature does not match, (404) when the order id
+   * belongs to neither a booking nor an extension.
+   */
+  verify: (payload: RazorpayVerifyPayload, role: PaymentRole = "customer") =>
+    apiClient
+      .post<{ status: "Success"; message?: string; redirectURL?: string }>(
+        VERIFY_PATHS[role],
+        payload,
+      )
+      .then((r) => r.data),
+
+  /**
+   * Fallback poll — the webhook may confirm a payment even when the browser
+   * never reached the Checkout handler.
+   */
+  getStatus: (transactionId: string) =>
+    apiClient
+      .get<GatewayPaymentStatus>(`/payment/status/${transactionId}`)
+      .then((r) => r.data),
+};
+
 export const paymentService = {
   // Booking financial state
   getFinancialState: (bookingPublicId: string) =>

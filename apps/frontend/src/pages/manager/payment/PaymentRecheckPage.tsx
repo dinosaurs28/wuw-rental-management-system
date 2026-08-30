@@ -542,7 +542,7 @@ function BookingDetailPanel({
 
           {!gatewayResult && (
             <p className="text-xs text-neutral-400">
-              Click <strong>Recheck with Gateway</strong> to check the latest status from PhonePe.
+              Click <strong>Recheck with Gateway</strong> to check the latest status from Razorpay.
               If it returns Pending and the customer has bank proof, you can manually confirm.
             </p>
           )}
@@ -554,7 +554,7 @@ function BookingDetailPanel({
           <Info className="w-4 h-4 text-neutral-400 mt-0.5 shrink-0" />
           <p className="text-sm text-neutral-600">
             This booking is not eligible for a payment recheck. Only bookings in{" "}
-            <strong>HOLD</strong> status with a pending PhonePe transaction can be rechecked.
+            <strong>HOLD</strong> status with a pending Razorpay transaction can be rechecked.
           </p>
         </div>
       )}

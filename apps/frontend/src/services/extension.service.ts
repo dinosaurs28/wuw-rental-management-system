@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { RazorpayOrder } from "@/lib/razorpay";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -233,12 +234,12 @@ export const extensionService = {
       )
       .then((r) => r.data),
 
-  customerInitiatePayment: (extensionPublicId: string, redirectBaseUrl: string) =>
+  customerInitiatePayment: (extensionPublicId: string) =>
     apiClient
       .post<{
-        data: { redirectUrl: string; transactionId: string; amount: number };
+        data: { razorpay: RazorpayOrder; transactionId: string; amount: number };
         message: string;
-      }>(`/user/extensions/${extensionPublicId}/initiate-payment`, { redirectBaseUrl })
+      }>(`/user/extensions/${extensionPublicId}/initiate-payment`)
       .then((r) => r.data),
 
   customerCommit: (payload: {
@@ -257,9 +258,26 @@ export const extensionService = {
 
   verifyExtensionPayment: (merchantTransactionId: string) =>
     apiClient
-      .post<{ status: "CONFIRMED" | "PENDING"; message: string; data?: { newEndAt?: string } }>(
-        `/user/extensions/verify-payment/${merchantTransactionId}`
-      )
+      .post<{
+        status: "CONFIRMED" | "PENDING" | "FAILED";
+        message: string;
+        data?: {
+          newEndAt?: string;
+          /**
+           * FAILED means Razorpay reported a settled failure. An unreachable
+           * gateway reports PENDING with gatewayState "UNKNOWN" — unknown must
+           * never be rendered to the customer as a failure.
+           */
+          gatewayState?: "FAILED" | "PENDING" | "UNKNOWN";
+          /**
+           * Present when the backend refused a captured payment: the parent
+           * booking was cancelled, or the extension is no longer active. The
+           * accompanying `message` is written to be shown verbatim, so this is
+           * only for telling the two apart.
+           */
+          reason?: "CANCELLED" | "EXTENSION_CLOSED";
+        };
+      }>(`/user/extensions/verify-payment/${merchantTransactionId}`)
       .then((r) => r.data),
 
   customerCancelExtension: (extensionPublicId: string) =>
