@@ -1770,8 +1770,8 @@ model BookingExtension {
 
   // Payment linkage (PaymentTransaction with purpose=EXTENSION)
   paymentTransactionId  Int?    @unique
-  // PhonePe transaction ID for customer self-pay extensions
-  phonePeTransactionId  String? @unique
+  // Razorpay order ID (order_xxx) for customer self-pay extensions
+  gatewayTransactionId  String? @unique
   // VehicleSwap linkage (for SWAP_CURRENT_TO_OTHER)
   vehicleSwapId         Int?    @unique
 
