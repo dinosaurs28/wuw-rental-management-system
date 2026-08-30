@@ -8,12 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import RazorpayCheckout from 'react-native-razorpay';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
-import { employeeApi } from '../../../lib/api';
+import { employeeApi, verifyRazorpaySignature, type RazorpayOrder } from '../../../lib/api';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
@@ -122,14 +122,54 @@ export default function WalkinSummaryScreen() {
       const data = res.data?.data ?? {};
       const holdId: string = data.bookingId;
       const transactionId: string = data.transactionId;
-      const paymentURL: string | undefined = data.paymentURL;
+      // Null on the CASH branch (where transactionId is a CASH_xxx ref), so the
+      // presence of the order — not payMethod — decides whether Checkout opens.
+      const rzp: RazorpayOrder | null = data.razorpay ?? null;
       holdRef.current = { holdId, transactionId };
       if (typeof data.expiresIn === 'number') setSecondsLeft(data.expiresIn);
       setBookingRef(holdId);
 
-      if (payMethod === 'ONLINE' && paymentURL) {
+      if (rzp?.orderId && rzp?.keyId) {
         setStatusText('Waiting for payment…');
-        await WebBrowser.openAuthSessionAsync(paymentURL, 'wuw://payment/callback');
+        let payment;
+        try {
+          payment = await RazorpayCheckout.open({
+            key: rzp.keyId,
+            order_id: rzp.orderId,
+            amount: rzp.amount,
+            currency: rzp.currency || 'INR',
+            name: 'WUW Rentals',
+            description: `${vehicle.make} ${vehicle.model} · ${days} day${days !== 1 ? 's' : ''}`,
+            prefill: {
+              name: customer.name,
+              contact: customer.phone ?? '',
+            },
+            theme: { color: Colors.orange },
+          });
+        } catch (rzpErr: any) {
+          // Cancelled or failed. Keep the hold so the counter can retry or
+          // switch to cash before it expires — `cancel` releases it explicitly.
+          if (!mountedRef.current) return;
+          setPhase('REVIEW');
+          const description: string = rzpErr?.description ?? '';
+          Alert.alert(
+            /cancel/i.test(description) ? 'Payment cancelled' : 'Payment failed',
+            /cancel/i.test(description)
+              ? 'The payment sheet was closed. Retry, switch to cash, or cancel the hold.'
+              : description || 'The payment could not be completed. Retry or collect cash.',
+          );
+          return;
+        }
+
+        // Staff session → /api/payment/staff/verify, resolved by role in lib/api.
+        setStatusText('Verifying payment…');
+        try {
+          await verifyRazorpaySignature({
+            razorpay_order_id: payment.razorpay_order_id ?? rzp.orderId,
+            razorpay_payment_id: payment.razorpay_payment_id,
+            razorpay_signature: payment.razorpay_signature ?? '',
+          });
+        } catch { /* fall through — the poll below is the fallback */ }
       } else {
         setStatusText('Confirming cash payment…');
       }

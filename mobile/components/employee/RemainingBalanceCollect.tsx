@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import RazorpayCheckout from 'react-native-razorpay';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { employeeApi } from '../../lib/api';
+import { employeeApi, verifyRazorpaySignature, type RazorpayOrder } from '../../lib/api';
 
 interface Props {
   bookingId: string;
@@ -56,16 +56,44 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
     try {
       const res = await initiate('ONLINE_RAZORPAY');
       const data = res.data?.data ?? {};
-      const paymentURL: string | undefined = data.paymentURL;
       const transactionId: string | undefined = data.transactionId;
-      if (!paymentURL || !transactionId) {
+      // The CASH branch returns { amountCollected, method, paidDuring } with no
+      // order at all, so guard on the order rather than on what we requested.
+      const rzp: RazorpayOrder | null = data.razorpay ?? null;
+      if (!rzp?.orderId || !rzp?.keyId || !transactionId) {
         Alert.alert('Error', 'Could not start the online payment. Try cash instead.');
         return;
       }
 
-      await WebBrowser.openAuthSessionAsync(paymentURL, 'wuw://payment/callback');
+      try {
+        const payment = await RazorpayCheckout.open({
+          key: rzp.keyId,
+          order_id: rzp.orderId,
+          amount: rzp.amount,
+          currency: rzp.currency || 'INR',
+          name: 'WUW Rentals',
+          description: `Remaining balance · ₹${amount.toLocaleString('en-IN')}`,
+          theme: { color: Colors.orange },
+        });
+        // Staff session → /api/payment/staff/verify, resolved by role in lib/api.
+        try {
+          await verifyRazorpaySignature({
+            razorpay_order_id: payment.razorpay_order_id ?? rzp.orderId,
+            razorpay_payment_id: payment.razorpay_payment_id,
+            razorpay_signature: payment.razorpay_signature ?? '',
+          });
+        } catch { /* fall through — the poll below is the fallback */ }
+      } catch (rzpErr: any) {
+        // Cancelled or failed. Still poll: the sheet can be dismissed after the
+        // payment already went through, and the webhook may confirm it late.
+        const description: string = rzpErr?.description ?? '';
+        if (/cancel/i.test(description)) {
+          Alert.alert('Payment cancelled', 'The payment sheet was closed. Retry, or collect cash.');
+          return;
+        }
+      }
 
-      // Poll regardless of how the browser closed — the customer may have paid before dismissing.
+      // Poll regardless of how the sheet closed — the customer may have paid before dismissing.
       setVerifying(true);
       let confirmed = false;
       for (let i = 0; i < POLL_DELAYS.length; i++) {

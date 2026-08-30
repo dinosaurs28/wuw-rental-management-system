@@ -12,15 +12,17 @@ import {
   View,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import RazorpayCheckout from 'react-native-razorpay';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
-import { vehiclesApi, userApi } from '../../lib/api';
+import { vehiclesApi, userApi, type RazorpayOrder } from '../../lib/api';
+import { useAuthStore } from '../../store/auth';
 import StudioImage from '../../components/cars/StudioImage';
 import { LEGAL_URLS } from '../../constants/links';
-import type { VehicleDetail, KycDocument } from '../../types/api';
+import type { VehicleDetail, KycDocument, UserProfile } from '../../types/api';
 
 function DateInput({ label, value }: { label: string; value: string }) {
   return (
@@ -124,6 +126,15 @@ export default function Checkout() {
     select: (res) => (res.data.data ?? []) as KycDocument[],
   });
 
+  // Only used to prefill the Razorpay sheet — shares the ['profile'] cache with
+  // the profile tab, and a failure must never block checkout.
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => userApi.profile(),
+    select: (res) => res.data as UserProfile,
+  });
+  const authUser = useAuthStore((s) => s.user);
+
   const applyCoupon = async () => {
     const code = couponInput.trim();
     if (!code || !vehicle) return;
@@ -201,8 +212,8 @@ export default function Checkout() {
 
       const { holdId, data } = res.data;
       const totals = data?.totals ?? {};
-      const paymentURL: string | undefined = totals.paymentURL;
       const transactionId: string | undefined = totals.transactionId;
+      const rzp: RazorpayOrder | undefined = totals.razorpay;
 
       const confirmParams = {
         holdId,
@@ -218,24 +229,62 @@ export default function Checkout() {
         coupon: totals.appliedCouponCode ?? '',
       };
 
-      if (!paymentURL || !transactionId?.startsWith('MT')) {
+      if (!transactionId || !rzp?.orderId || !rzp?.keyId) {
         Alert.alert('Payment error', 'Could not initiate payment. Please try again or contact support.');
         return;
       }
 
-      const browserResult = await WebBrowser.openAuthSessionAsync(paymentURL, 'wuw://payment/callback');
-      if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
-        // #43 — release the inventory hold immediately instead of waiting 10 min to expire.
+      // #43 — release the inventory hold immediately instead of waiting 10 min to expire.
+      const releaseHold = async () => {
         try { await userApi.cancelHold(holdId); } catch { /* best-effort */ }
-        Alert.alert('Payment cancelled', 'You closed the payment page, so the booking hold was released.');
+      };
+
+      let payment;
+      try {
+        payment = await RazorpayCheckout.open({
+          key: rzp.keyId,
+          order_id: rzp.orderId,
+          amount: rzp.amount,
+          currency: rzp.currency || 'INR',
+          name: 'WUW Rentals',
+          description: `${vehicle.make} ${vehicle.model} · ${daysNow} day${daysNow !== 1 ? 's' : ''}`,
+          prefill: {
+            name: profile?.name ?? authUser?.name ?? '',
+            email: profile?.email ?? authUser?.email ?? '',
+            contact: profile?.phone ?? '',
+          },
+          theme: { color: Colors.orange },
+        });
+      } catch (rzpErr: any) {
+        // Razorpay rejects for both user cancellation and real failures.
+        await releaseHold();
+        if (!mountedRef.current) return;
+        const description: string = rzpErr?.description ?? '';
+        if (/cancel/i.test(description)) {
+          Alert.alert('Payment cancelled', 'You closed the payment page, so the booking hold was released.');
+        } else {
+          Alert.alert('Payment failed', description || 'The payment could not be completed. Please try again.');
+        }
         return;
       }
+
+      // Confirm the signature server-side. A failure here is not fatal — the
+      // status screen still polls, and the Razorpay webhook may confirm late.
+      let verified = false;
+      try {
+        await userApi.verifyRazorpaySignature({
+          razorpay_order_id: payment.razorpay_order_id ?? rzp.orderId,
+          razorpay_payment_id: payment.razorpay_payment_id,
+          razorpay_signature: payment.razorpay_signature ?? '',
+        });
+        verified = true;
+      } catch { /* fall through to polling */ }
 
       // #38 — hand off to the dedicated status screen (polls + success/pending/failed states).
       if (!mountedRef.current) return;
       router.replace({
         pathname: '/booking/payment-status',
-        params: { transactionId, ...confirmParams },
+        params: { transactionId, ...(verified ? { verified: '1' } : {}), ...confirmParams },
       });
     } catch (err: any) {
       Alert.alert('Booking failed', err.response?.data?.message ?? 'Unable to complete booking. Please try again.');
@@ -462,7 +511,7 @@ export default function Checkout() {
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          Payment is processed securely via PhonePe. Deposit will be refunded upon return.
+          Payment is processed securely via Razorpay. Deposit will be refunded upon return.
         </Text>
       </ScrollView>
 

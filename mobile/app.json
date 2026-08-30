@@ -14,7 +14,12 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.whatuwantrentals.rentals",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "tez",
+          "phonepe",
+          "paytmmp"
+        ]
       }
     },
     "android": {
