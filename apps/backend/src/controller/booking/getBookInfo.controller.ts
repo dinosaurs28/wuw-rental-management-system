@@ -15,7 +15,7 @@ import {
   type BranchScheduleConfig,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { createRazorpayOrder } from "../../services/payment/razorpay.service.js";
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -25,6 +25,15 @@ import { chargeConfigService } from "../../services/charges/charge-config.servic
 import Decimal from "decimal.js";
 
 const pricingEngine = new PricingEngineService();
+
+/** Order details the client needs to open Razorpay Checkout. */
+type RazorpayCheckoutPayload = {
+  orderId: string;
+  keyId: string;
+  amount: number;
+  amountInRupees: number;
+  currency: string;
+};
 
 function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
   const idx = groupKey.indexOf("__");
@@ -485,24 +494,23 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       : 0;
 
     let transactionId: string;
-    let paymentURL: string;
+    let razorpay: RazorpayCheckoutPayload | null = null;
     let encryptedFinalPrice: string | null = null;
     if (parsed.data.payment_type === "ONLINE") {
-      // Mobile deep-link takes priority so PhonePe redirects back to the app directly.
-      // Falls back to the web frontend URL for web-initiated bookings.
-      const customerRedirectUrl = process.env.MOBILE_REDIRECT_URL
-        ?? `${process.env.REDIRECT_URL_PAY}/booking/status`;
+      // Razorpay Checkout opens in-app/in-page, so there is no redirect URL to
+      // build — the client only needs the order id and the public key id.
       try {
-        const paymentDetails = await initiatePhonePePayment(
-          chargeAmount,
-          customerRedirectUrl,
-          customerpubId,
-        );
-        if (!paymentDetails || !paymentDetails.merchantTransactionId) {
-          throw new Error("Invalid payment details received");
-        }
-        transactionId = paymentDetails.merchantTransactionId;
-        paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
+        const order = await createRazorpayOrder(chargeAmount, {
+          customerPublicId: customerpubId,
+        });
+        transactionId = order.orderId;
+        razorpay = {
+          orderId: order.orderId,
+          keyId: order.keyId,
+          amount: order.amount,
+          amountInRupees: order.amountInRupees,
+          currency: order.currency,
+        };
       } catch (error: any) {
         console.error("Error initiating payment:", error);
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -512,7 +520,6 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       }
     } else {
       transactionId = createID();
-      paymentURL = "";
       encryptedFinalPrice = await jwt.sign(
         { finalPrice: chargeAmount },
         process.env.JWT_SECERT!,
@@ -768,9 +775,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           appliedCouponCode: items[0]?.appliedCouponCode ?? null,
           advanceAmount: isAdvancePayment ? grandAdvanceAmount : grandFinalTotal,
           remainingBalance,
-          paymentURL,
           encryptedFinalPrice,
           transactionId,
+          razorpay,
         },
       },
     });

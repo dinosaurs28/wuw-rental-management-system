@@ -43,7 +43,10 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
+import { useAuthStore } from "@/store/auth.store";
 import { bookingService } from "@/services/booking.service";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import type { RazorpayOrder } from "@/lib/razorpay";
 import { useSearchStore } from "@/store/search.store";
 import { format } from "date-fns";
 import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
@@ -52,7 +55,7 @@ import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 interface BookingResponse {
   holdId: string;
   transactionId?: string;
-  paymentURL?: string;
+  razorpay?: RazorpayOrder | null;
   encryptedFinalPrice?: string;
   grandBaseTotal: number;
   grandDiscountTotal: number;
@@ -73,6 +76,9 @@ interface BookingResponse {
 export const BookingConfirmationPage = () => {
   const navigate = useNavigate();
   const allowNavigationRef = useRef(false);
+  const { openCheckout, isOpening } = useRazorpayCheckout();
+  const user = useAuthStore((state) => state.user);
+  const [isPaying, setIsPaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   // const [ , setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +181,7 @@ export const BookingConfirmationPage = () => {
         setBookingData({
           holdId: response.holdId,
           transactionId: response.data.totals.transactionId ?? undefined,
-          paymentURL: response.data.totals.paymentURL as string,
+          razorpay: response.data.totals.razorpay,
           encryptedFinalPrice: response.data.totals
             .encryptedFinalPrice as string,
           grandBaseTotal: response.data.totals.grandBaseTotal,
@@ -283,11 +289,50 @@ export const BookingConfirmationPage = () => {
     navigate("/booking/review-confirm");
   };
 
-  // Handle Online Payment
+  // Navigate to the status screen with an outcome the modal already resolved,
+  // so it renders straight away instead of re-polling the gateway.
+  const goToStatus = (
+    initialStatus?: "success" | "failed",
+    initialMessage?: string,
+  ) => {
+    allowNavigationRef.current = true;
+    navigate(`/booking/status/${bookingData?.transactionId}`, {
+      state: { initialStatus, initialMessage },
+    });
+  };
+
+  // Handle Online Payment — opens Razorpay Checkout in-page
   const handleOnlinePayment = () => {
-    if (bookingData?.paymentURL) {
-      window.location.href = bookingData.paymentURL;
+    if (!bookingData?.razorpay || !bookingData.transactionId) {
+      toast.error("Payment details are unavailable. Please start again.");
+      return;
     }
+    setIsPaying(true);
+    void openCheckout({
+      razorpay: bookingData.razorpay,
+      transactionId: bookingData.transactionId,
+      description: "Vehicle booking",
+      prefill: { name: user?.name, email: user?.email },
+      onSuccess: () => {
+        setIsPaying(false);
+        goToStatus("success");
+      },
+      onPending: () => {
+        setIsPaying(false);
+        // Deliberately no resolved status: the gateway has not settled yet, so
+        // let the status page run its own retry loop as it always has.
+        goToStatus();
+      },
+      onFailure: (message) => {
+        setIsPaying(false);
+        toast.error(message);
+        goToStatus("failed", message);
+      },
+      onDismiss: () => {
+        setIsPaying(false);
+        toast.info("Payment cancelled. Your booking hold is still active.");
+      },
+    });
   };
 
   // Handle Cash Payment Confirmation
@@ -684,14 +729,18 @@ export const BookingConfirmationPage = () => {
                     Secure Online Payment
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
-                    You will be redirected to our secure payment gateway
+                    Complete your payment in our secure payment window — you
+                    will stay on this page
                   </p>
                   <Button
                     onClick={handleOnlinePayment}
+                    disabled={isPaying || isOpening}
                     className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
                   >
                     <CreditCard className="mr-2 size-5" />
-                    Pay {formatPrice(bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal)} Now
+                    {isPaying || isOpening
+                      ? "Opening secure payment…"
+                      : `Pay ${formatPrice(bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal)} Now`}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <Shield className="size-3" />

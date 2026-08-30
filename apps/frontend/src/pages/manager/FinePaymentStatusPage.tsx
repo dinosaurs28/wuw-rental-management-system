@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
 
@@ -11,13 +11,26 @@ const MAX_RETRY_COUNT = 10;
 const RETRY_DELAY_MS = 3000;
 const COUNTDOWN_SECONDS = 10;
 
+type ResolvedStatus = "success" | "failed" | "pending";
+
+interface FinePaymentStatusLocationState {
+  initialStatus?: ResolvedStatus;
+  initialMessage?: string;
+}
+
 const FinePaymentStatusPage = () => {
   const navigate = useNavigate();
   const { transactionId } = useParams<{ transactionId: string }>();
+  // Checkout resolves the outcome in-page and passes it here. Arriving without
+  // state (a stale link) still falls back to polling the gateway.
+  const { initialStatus, initialMessage } =
+    (useLocation().state as FinePaymentStatusLocationState | null) ?? {};
   const [status, setStatus] = useState<
     "loading" | "success" | "failed" | "pending"
-  >("loading");
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  >(initialStatus ?? "loading");
+  const [errorMessage, setErrorMessage] = useState<string>(
+    initialMessage ?? "",
+  );
   const [retryCount, setRetryCount] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const retryCountRef = useRef(0);
@@ -91,13 +104,23 @@ const FinePaymentStatusPage = () => {
       return;
     }
 
+    // Outcome already known from Checkout — render it without re-polling.
+    if (initialStatus) {
+      if (initialStatus === "success") {
+        toast.success("Payment successful! Damage Report Settled.");
+      }
+      startCountdown();
+      return;
+    }
+
     // Wait 2 seconds before first check
     const timer = setTimeout(() => {
       checkPaymentStatus();
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [transactionId, navigate, checkPaymentStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionId, navigate, checkPaymentStatus, initialStatus]);
 
   // Countdown UI component
   const CountdownMessage = () => (

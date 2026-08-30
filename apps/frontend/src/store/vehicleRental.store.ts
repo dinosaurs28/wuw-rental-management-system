@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getCurrentTime } from "@/utils/formatters";
+import type { RazorpayOrder } from "@/lib/razorpay";
 
 interface VehicleRentalState {
   // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
@@ -45,7 +46,7 @@ interface VehicleRentalState {
   holdId: string | null;
   holdExpiresAt: string | null;
   transactionId: string | null;
-  paymentURL: string | null;
+  razorpay: RazorpayOrder | null;
   encryptedFinalPrice: string | null;
   grandBaseTotal: number;
   grandDiscountTotal: number;
@@ -91,7 +92,7 @@ interface VehicleRentalState {
     holdId: string;
     holdExpiresAt: string;
     transactionId: string;
-    paymentURL: string | null;
+    razorpay: RazorpayOrder | null;
     encryptedFinalPrice: string | null;
     grandBaseTotal: number;
     grandDiscountTotal: number;
@@ -211,7 +212,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       holdId: null,
       holdExpiresAt: null,
       transactionId: null,
-      paymentURL: null,
+      razorpay: null,
       encryptedFinalPrice: null,
       grandBaseTotal: 0,
       grandDiscountTotal: 0,
@@ -370,7 +371,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           holdId: response.holdId,
           holdExpiresAt: response.holdExpiresAt,
           transactionId: response.transactionId,
-          paymentURL: response.paymentURL,
+          razorpay: response.razorpay,
           encryptedFinalPrice: response.encryptedFinalPrice,
           grandBaseTotal: response.grandBaseTotal,
           grandDiscountTotal: response.grandDiscountTotal,
@@ -432,7 +433,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           holdId: null,
           holdExpiresAt: null,
           transactionId: null,
-          paymentURL: null,
+          razorpay: null,
           encryptedFinalPrice: null,
           grandBaseTotal: 0,
           grandDiscountTotal: 0,
@@ -451,7 +452,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           holdId: null,
           holdExpiresAt: null,
           transactionId: null,
-          paymentURL: null,
+          razorpay: null,
           encryptedFinalPrice: null,
           grandBaseTotal: 0,
           grandDiscountTotal: 0,

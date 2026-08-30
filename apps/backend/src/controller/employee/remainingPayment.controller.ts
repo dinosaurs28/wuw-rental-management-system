@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, DepositMethod, BookingStatus } from "@repo/database/client";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
-import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
+import {
+  createRazorpayOrder,
+  fetchOrderStatus,
+} from "../../services/payment/razorpay.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import { createID } from "../../utils/nanoID.js";
 
@@ -85,33 +87,30 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // ONLINE_RAZORPAY: initiate PhonePe payment
-    const frontendUrl = process.env.REDIRECT_URL_PAY;
-    const redirectBase = `${frontendUrl}/employee/payment/remaining-status`;
-
-    const paymentDetails = await initiatePhonePePayment(
-      Number(booking.remainingBalance),
-      redirectBase,
-    );
-
-    if (!paymentDetails || !paymentDetails.merchantTransactionId) {
-      throw new Error("Failed to initiate payment gateway");
-    }
-
-    const gatewayTransactionId = paymentDetails.merchantTransactionId;
+    // ONLINE_RAZORPAY: create a Razorpay order for the customer to pay against
+    const order = await createRazorpayOrder(Number(booking.remainingBalance), {
+      receipt: booking.publicId,
+      notes: { purpose: "REMAINING_PAYMENT", booking_id: booking.publicId },
+    });
 
     // Temporarily store the gateway transaction ID on the booking so we can verify later
     await prisma.booking.update({
       where: { id: booking.id },
-      data: { remainingPaymentId: gatewayTransactionId },
+      data: { remainingPaymentId: order.orderId },
     });
 
     return res.status(StatusCode.OK).json({
       success: true,
-      message: "Payment initiated. Share the payment URL with the customer.",
+      message: "Payment initiated. Ask the customer to complete the checkout.",
       data: {
-        transactionId: gatewayTransactionId,
-        paymentURL: paymentDetails.instrumentResponse.redirectInfo.url,
+        transactionId: order.orderId,
+        razorpay: {
+          orderId: order.orderId,
+          keyId: order.keyId,
+          amount: order.amount,
+          amountInRupees: order.amountInRupees,
+          currency: order.currency,
+        },
         amount: booking.remainingBalance,
       },
     });
@@ -129,8 +128,8 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
 /**
  * GET /employee/payment/remaining-status/:transactionId
  *
- * Called after PhonePe redirects back. Looks up booking by remainingPaymentId,
- * checks payment status, records if successful.
+ * Called after the customer completes Razorpay Checkout. Looks up booking by
+ * remainingPaymentId, checks payment status, records if successful.
  */
 export const CheckRemainingPaymentByTransaction = async (req: Request, res: Response) => {
   const { transactionId } = req.params;
@@ -164,12 +163,19 @@ export const CheckRemainingPaymentByTransaction = async (req: Request, res: Resp
       });
     }
 
-    const paymentStatus = await paymentStatusCheck(transactionId);
+    const paymentStatus = await fetchOrderStatus(transactionId);
+
+    // Gateway unreachable — unknown, not failed. Keep the pending id and retry.
     if (!paymentStatus) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Error checking payment status from gateway." });
+      return res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Could not reach the payment gateway. Please check again shortly.",
+        bookingPublicId,
+        context,
+      });
     }
 
-    if (paymentStatus.code === "PAYMENT_SUCCESS") {
+    if (paymentStatus.state === "SUCCESS") {
       const paidDuring: "PICKUP" | "RETURN" = context === "pickup" ? "PICKUP" : "RETURN";
 
       await advanceDepositService.recordRemainingPayment(
@@ -187,7 +193,7 @@ export const CheckRemainingPaymentByTransaction = async (req: Request, res: Resp
       });
     }
 
-    if (paymentStatus.code === "PAYMENT_PENDING") {
+    if (paymentStatus.state === "PENDING") {
       return res.status(StatusCode.OK).json({
         status: "PENDING",
         message: "Payment is still pending.",
@@ -271,15 +277,18 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
       return res.status(StatusCode.OK).json({ status: "SUCCESS" });
     }
 
-    // Online: check PhonePe status
-    const paymentStatus = await paymentStatusCheck(booking.remainingPaymentId);
+    // Online: check the Razorpay order status
+    const paymentStatus = await fetchOrderStatus(booking.remainingPaymentId);
+
+    // Gateway unreachable — unknown, not failed. Keep the pending id and retry.
     if (!paymentStatus) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Error checking payment status from gateway.",
+      return res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Could not reach the payment gateway. Please check again shortly.",
       });
     }
 
-    if (paymentStatus.code === "PAYMENT_SUCCESS") {
+    if (paymentStatus.state === "SUCCESS") {
       await advanceDepositService.recordRemainingPayment(
         bookingId as string,
         DepositMethod.ONLINE_RAZORPAY,
@@ -297,7 +306,7 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
       });
     }
 
-    if (paymentStatus.code === "PAYMENT_PENDING") {
+    if (paymentStatus.state === "PENDING") {
       return res.status(StatusCode.OK).json({
         status: "PENDING",
         message: "Payment is still pending. Ask customer to complete payment.",

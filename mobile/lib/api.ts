@@ -104,6 +104,50 @@ export const authApi = {
     api.post('/api/auth/email/reset-password', { email, otp, password }),
 };
 
+// ─── razorpay ─────────────────────────────────────────────────────────────
+
+// Order descriptor returned by every initiation endpoint (customer checkout,
+// employee create-booking, employee remaining-payment). It is NULL/absent on
+// the cash branches, so always guard on its presence rather than on the
+// payment method the screen sent.
+export interface RazorpayOrder {
+  orderId: string;
+  keyId: string;
+  /** Smallest currency unit (paise). */
+  amount: number;
+  amountInRupees?: number;
+  currency: string;
+}
+
+export interface RazorpayVerifyPayload {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+// The backend mounts the SAME verify handler three times, each behind a
+// different role gate, because no combined gate exists: authCheckJwt is
+// CUSTOMER-only and 403s any other role. So the path is chosen by the role of
+// the session making the call, not by which screen is calling.
+//   /api/payment/verify         customer   (authCheckJwt)
+//   /api/payment/staff/verify   STAFF      (EmployeeCheck)
+//   /api/payment/manager/verify MANAGER    (ManagerCheck) — no mobile surface
+// 'STAFF' is the only role this app branches on (app/_layout.tsx, app/index.tsx
+// route the employee stack off it), so anything else — including the '' the
+// auth store falls back to when /me omits a role — takes the customer path,
+// which is what every non-staff session should use anyway.
+export function paymentVerifyPath(): string {
+  const role = useAuthStore.getState().user?.role;
+  return role === 'STAFF' ? '/api/payment/staff/verify' : '/api/payment/verify';
+}
+
+// Called with the Checkout handler payload the moment RazorpayCheckout resolves.
+// 400 => bad signature. Idempotent server-side (the webhook may also fire), and
+// the status poll stays the fallback for when this never lands (app
+// backgrounded, late webhook, etc.).
+export const verifyRazorpaySignature = (payload: RazorpayVerifyPayload) =>
+  api.post(paymentVerifyPath(), payload);
+
 // ─── user ─────────────────────────────────────────────────────────────────
 
 export const userApi = {
@@ -145,6 +189,8 @@ export const userApi = {
   // Customer-side payment status polling (thin wrapper over the public endpoint).
   verifyPayment: (transactionId: string) =>
     api.get(`/api/payment/status/${transactionId}`),
+  // Razorpay signature verification — see verifyRazorpaySignature below.
+  verifyRazorpaySignature,
 };
 
 // ─── employee ─────────────────────────────────────────────────────────────

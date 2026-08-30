@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, Role, PaymentPurpose, PaymentMethod } from "@repo/database/client";
+import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, Role } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
-import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
-import { createID } from "../../utils/nanoID.js";
+import {
+  createRazorpayOrder,
+  fetchOrderStatus,
+} from "../../services/payment/razorpay.service.js";
+import { confirmExtensionPayment } from "../../services/payment/bookingConfirmation.service.js";
 import {
   customerEvaluateExtensionSchema,
   customerCommitExtensionSchema,
@@ -405,13 +407,12 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
 
 /**
  * POST /api/user/extensions/:extensionPublicId/initiate-payment
- * Initiates a PhonePe payment for a pending customer extension.
- * Returns the PhonePe redirect URL for the customer to complete payment.
+ * Creates a Razorpay order for a pending customer extension.
+ * Returns the order details the client needs to open Razorpay Checkout.
  */
 export const InitiateExtensionPayment = async (req: Request, res: Response): Promise<void> => {
   try {
     const { extensionPublicId } = req.params;
-    const { redirectBaseUrl } = req.body;
 
     // Resolve User.publicId → CustomerProfile.id
     const userForPayment = await prisma.user.findUnique({
@@ -453,29 +454,33 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
 
     const additionalAmount = parseFloat(extensionRecord.additionalAmount.toString());
 
-    // Pass the redirect base directly — initiatePhonePePayment already appends /{transactionId}
-    const phonePeRedirectBase =
-      redirectBaseUrl ||
-      process.env.EXTENSION_REDIRECT_URL ||
-      process.env.REDIRECT_URL_PAY;
+    const order = await createRazorpayOrder(additionalAmount, {
+      receipt: extensionRecord.publicId,
+      customerPublicId: req.public_Id,
+      notes: {
+        purpose: "EXTENSION",
+        extension_id: extensionRecord.publicId,
+        booking_id: extensionRecord.booking.publicId,
+      },
+    });
 
-    const paymentData = await initiatePhonePePayment(
-      additionalAmount,
-      phonePeRedirectBase,
-      req.public_Id,
-    );
-
-    // Store PhonePe transaction ID on the extension for webhook lookup
+    // Store the Razorpay order id on the extension for webhook/verify lookup
     await prisma.bookingExtension.update({
       where: { id: extensionRecord.id },
-      data: { phonePeTransactionId: paymentData.merchantTransactionId },
+      data: { gatewayTransactionId: order.orderId },
     });
 
     res.status(StatusCode.OK).json({
       message: "Payment initiated",
       data: {
-        redirectUrl: paymentData.instrumentResponse?.redirectInfo?.url,
-        transactionId: paymentData.merchantTransactionId,
+        transactionId: order.orderId,
+        razorpay: {
+          orderId: order.orderId,
+          keyId: order.keyId,
+          amount: order.amount,
+          amountInRupees: order.amountInRupees,
+          currency: order.currency,
+        },
         amount: additionalAmount,
       },
     });
@@ -487,20 +492,21 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
 
 /**
  * POST /api/user/extensions/verify-payment/:merchantTransactionId
- * Called after PhonePe redirect to verify payment and confirm the extension.
- * Acts as a fallback for when the webhook doesn't fire (e.g. dev/ngrok).
+ * Called after Razorpay Checkout closes to verify payment and confirm the
+ * extension. Acts as a fallback for when the webhook doesn't fire (e.g. dev/ngrok).
  */
 export const VerifyExtensionPayment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { merchantTransactionId } = req.params;
+    // Route param keeps its legacy name; the value is now a Razorpay order id.
+    const orderId = req.params.merchantTransactionId;
 
-    if (!merchantTransactionId) {
+    if (!orderId) {
       res.status(StatusCode.BAD_REQUEST).json({ message: "Transaction ID is required" });
       return;
     }
 
     const extensionRecord = await prisma.bookingExtension.findUnique({
-      where: { phonePeTransactionId: merchantTransactionId },
+      where: { gatewayTransactionId: orderId },
       include: {
         booking: {
           select: {
@@ -540,66 +546,70 @@ export const VerifyExtensionPayment = async (req: Request, res: Response): Promi
       return;
     }
 
-    // Call PhonePe status API
-    const phonePeStatus = await paymentStatusCheck(merchantTransactionId);
-    if (!phonePeStatus || phonePeStatus.code !== "PAYMENT_SUCCESS") {
+    // Ask Razorpay for the settled state of the order.
+    // A null result means the gateway was unreachable — unknown, so report
+    // PENDING and let the client (or the webhook) retry.
+    const gatewayStatus = await fetchOrderStatus(orderId);
+
+    // A definite failure is terminal — report it as such. Collapsing it into
+    // PENDING (as the pre-Razorpay code did) left the customer on a "still
+    // processing" spinner forever with no way to retry.
+    if (gatewayStatus?.state === "FAILED") {
       res.status(StatusCode.OK).json({
-        status: "PENDING",
-        message: "Payment not yet confirmed by PhonePe",
-        data: { phonepeCode: phonePeStatus?.code ?? "UNKNOWN" },
+        status: "FAILED",
+        message: "The payment did not go through. Please try again.",
+        data: { gatewayState: "FAILED" },
       });
       return;
     }
 
-    // Confirm the extension (same logic as webhook)
-    await prisma.$transaction(async (tx) => {
-      const ptxn = await tx.paymentTransaction.create({
-        data: {
-          publicId: createID(),
-          idempotencyKey: `ext:phonepe:${merchantTransactionId}`,
-          bookingId: extensionRecord.booking.id,
-          branchId: extensionRecord.booking.branchId,
-          purpose: PaymentPurpose.EXTENSION,
-          method: PaymentMethod.ONLINE,
-          status: "CONFIRMED",
-          totalAmount: extensionRecord.additionalAmount,
-          cashAmount: 0,
-          onlineAmount: extensionRecord.additionalAmount,
-          onlineTransactionRef: merchantTransactionId,
-          onlineGateway: "PHONEPE",
-          confirmedById: extensionRecord.booking.createdById,
-          confirmedAt: new Date(),
-        },
+    // Null means the gateway was unreachable, PENDING means genuinely in
+    // flight. Both are unknown-not-failed: report PENDING and let the client
+    // (or the webhook) retry.
+    if (!gatewayStatus || gatewayStatus.state !== "SUCCESS") {
+      res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Payment not yet confirmed by Razorpay",
+        data: { gatewayState: gatewayStatus?.state ?? "UNKNOWN" },
       });
+      return;
+    }
 
-      await tx.booking.update({
-        where: { id: extensionRecord.booking.id },
-        data: {
-          endAt: extensionRecord.requestedEndAt,
-          activeExtensionId: null,
-          extensionCount: { increment: 1 },
-          lastExtendedAt: new Date(),
-          totalFinal: extensionRecord.newTotalFinal,
-          ...(extensionRecord.booking.extensionCount === 0 && {
-            originalEndAt: extensionRecord.oldEndAt,
-          }),
-        },
-      });
-
-      await tx.bookingExtension.update({
-        where: { id: extensionRecord.id },
-        data: {
-          extensionStatus: ExtensionStatus.CONFIRMED,
-          actualNewEndAt: extensionRecord.requestedEndAt,
-          paymentTransactionId: ptxn.id,
-        },
-      });
+    // Confirm through the shared service the webhook and /api/payment/verify
+    // also use, so all three paths apply the same guards — a REJECTED or
+    // CANCELLED extension, or a cancelled parent booking, is refused rather
+    // than confirmed. Inlining this again would let one path silently reverse
+    // a manager's decision while the others correctly refuse.
+    const { alreadyConfirmed, skipped } = await confirmExtensionPayment({
+      extensionId: extensionRecord.id,
+      transactionId: orderId,
+      gatewayPaymentId: gatewayStatus.paymentId,
+      actorName: "Razorpay Checkout",
+      actor: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"] as string | undefined,
+      },
     });
+
+    // Money was captured but the extension cannot be honoured. Terminal, and
+    // the customer is owed a refund — report FAILED rather than leaving them
+    // on a spinner. The service logs REFUND REQUIRED with the payment id.
+    if (skipped) {
+      res.status(StatusCode.OK).json({
+        status: "FAILED",
+        message:
+          skipped === "CANCELLED"
+            ? "The booking for this extension was cancelled before the payment completed. Any amount debited will be refunded."
+            : "This extension is no longer active. Any amount debited will be refunded.",
+        data: { reason: skipped },
+      });
+      return;
+    }
 
     res.status(StatusCode.OK).json({
       status: "CONFIRMED",
-      message: "Extension confirmed successfully",
-      data: { newEndAt: extensionRecord.requestedEndAt },
+      message: alreadyConfirmed ? "Extension already confirmed" : "Extension confirmed successfully",
+      data: { newEndAt: extensionRecord.actualNewEndAt ?? extensionRecord.requestedEndAt },
     });
   } catch (error: any) {
     if (error?.code === "P2002" && error?.meta?.target?.includes("idempotencyKey")) {

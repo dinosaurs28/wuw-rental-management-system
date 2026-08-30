@@ -1,5 +1,6 @@
 import apiClient from "@/lib/axios";
 import { format } from "date-fns";
+import type { RazorpayOrder } from "@/lib/razorpay";
 
 // Existing Customer Interfaces...
 // Types for booking summary request
@@ -41,7 +42,7 @@ export interface BookingTotals {
   isAdvancePayment?: boolean;
   advanceAmount?: number;
   remainingBalance?: number;
-  paymentURL: string | null;
+  razorpay: RazorpayOrder | null;
   encryptedFinalPrice: string | null;
   transactionId: string | null;
 }
@@ -67,7 +68,7 @@ export interface CreateEmployeeBookingResponse {
   data: {
     bookingId: string;
     publicId?: string; // Mapped for frontend consistency
-    paymentURL: string | null;
+    razorpay: RazorpayOrder | null;
     status: string;
     startDate: string;
     endDate: string;
@@ -193,7 +194,7 @@ export const bookingService = {
   /**
    * Create a booking summary and initiate payment
    * POST /public/vehicles/booking
-   * Returns payment details (paymentURL for online, encryptedFinalPrice for cash)
+   * Returns payment details (a razorpay order for online, encryptedFinalPrice for cash)
    */
   createBookingSummary: async (
     data: CreateBookingSummaryRequest,
@@ -431,7 +432,7 @@ export const bookingService = {
       success: boolean;
       message: string;
       data?: {
-        paymentURL?: string;
+        razorpay?: RazorpayOrder;
         transactionId?: string;
         amountCollected?: string;
         method?: string;
@@ -440,7 +441,7 @@ export const bookingService = {
     }>(`/employee/${context}/${bookingId}/initiate-remaining-payment`, { method, paidDuring });
     return {
       ...response.data,
-      paymentURL: response.data.data?.paymentURL,
+      razorpay: response.data.data?.razorpay,
       transactionId: response.data.data?.transactionId,
     };
   },

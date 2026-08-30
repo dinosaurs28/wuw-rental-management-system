@@ -18,8 +18,10 @@ import { damageChargeService } from "../../services/damage/damage-charge.service
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 import { closeDamageReportSchema } from "@repo/schemas";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
-import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
+import {
+  createRazorpayOrder,
+  fetchOrderStatus,
+} from "../../services/payment/razorpay.service.js";
 
 export const GetDamageReports = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
@@ -459,7 +461,13 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         .json({ message: "Manager not found" });
 
     // 4. Prepare Payment Data (Outside Transaction)
-    let paymentUrl: string | null = null;
+    let razorpay: {
+      orderId: string;
+      keyId: string;
+      amount: number;
+      amountInRupees: number;
+      currency: string;
+    } | null = null;
     let onlineTransactionId: string | null = null;
     let dueAmount = 0;
 
@@ -472,19 +480,24 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       }
 
       if (paymentMethod === "ONLINE_RAZORPAY") {
-        const customRedirectUrl = `${process.env.FRONTEND_REDIRECT_URL}/manager/payment/fine-status`;
-
         try {
-          // Initiate Payment First (Network IO)
-          const responseIdx = await initiatePhonePePayment(
-            dueAmount,
-            customRedirectUrl,
-          );
-          if (!responseIdx || !responseIdx.merchantTransactionId) {
-            throw new Error("Invalid payment response from gateway");
-          }
-          onlineTransactionId = responseIdx.merchantTransactionId;
-          paymentUrl = responseIdx.instrumentResponse?.redirectInfo?.url;
+          // Create the order first (Network IO) — the client opens Razorpay
+          // Checkout against it, so there is no redirect URL to build.
+          const order = await createRazorpayOrder(dueAmount, {
+            receipt: damageReport.publicId,
+            notes: {
+              purpose: "DAMAGE_FEE",
+              damage_report_id: damageReport.publicId,
+            },
+          });
+          onlineTransactionId = order.orderId;
+          razorpay = {
+            orderId: order.orderId,
+            keyId: order.keyId,
+            amount: order.amount,
+            amountInRupees: order.amountInRupees,
+            currency: order.currency,
+          };
         } catch (error: any) {
           console.error("Error initiating damage fine payment:", error);
           return res.status(StatusCode.BAD_REQUEST).json({
@@ -752,7 +765,8 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
     } else {
       return res.status(StatusCode.OK).json({
         message: "Payment Required to Settle Booking",
-        paymentUrl: paymentUrl,
+        transactionId: onlineTransactionId,
+        razorpay,
         settled: false,
       });
     }
@@ -797,18 +811,22 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
     }
 
     // 2. Check Status from Provider
-    const statusResponse = await checkPhonePeStatus(transactionId);
-
-    // Example PhonePe Success: { success: true, code: "PAYMENT_SUCCESS", ... }
-    const isSuccess =
-      statusResponse?.success === true &&
-      statusResponse?.code === "PAYMENT_SUCCESS";
+    const statusResponse = await fetchOrderStatus(transactionId);
+    const isSuccess = statusResponse?.state === "SUCCESS";
 
     if (payment.status === "SUCCESS") {
       return res.status(StatusCode.OK).json({
         status: "SUCCESS",
         message: "Payment already verified",
         settled: true,
+      });
+    }
+
+    // Gateway unreachable — unknown, not failed. Ask the caller to retry.
+    if (!statusResponse) {
+      return res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Could not reach the payment gateway. Please check again shortly.",
       });
     }
 
@@ -820,9 +838,7 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
           where: { id: payment.id },
           data: {
             status: PaymentStatus.SUCCESS,
-            razorpayPaymentId:
-              statusResponse.data?.paymentInstrument?.cardTransactionId ||
-              "ONLINE_SUCCESS", // Store provider ref
+            razorpayPaymentId: statusResponse.paymentId ?? "ONLINE_SUCCESS", // Store provider ref
           },
         });
 
@@ -880,8 +896,13 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
         status: "SUCCESS",
         message: "Payment verified and booking settled",
       });
+    } else if (statusResponse.state === "PENDING") {
+      return res.status(StatusCode.OK).json({
+        status: "PENDING",
+        message: "Payment is still pending",
+        details: statusResponse,
+      });
     } else {
-      // Payment Failed or Pending
       return res.status(StatusCode.OK).json({
         status: "FAILURE",
         message: "Payment not successful",
