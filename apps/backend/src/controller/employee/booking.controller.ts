@@ -20,7 +20,7 @@ import { auditService, AuditCategory } from "../../services/audit/audit.service.
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { createRazorpayOrder } from "../../services/payment/razorpay.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -438,21 +438,27 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     // ── Payment initiation ────────────────────────────────────────────────────
 
     let transactionId: string | null = null;
-    let paymentURL: string | null = null;
+    let razorpay: {
+      orderId: string;
+      keyId: string;
+      amount: number;
+      amountInRupees: number;
+      currency: string;
+    } | null = null;
 
     if (payment_type === "ONLINE") {
-      const frontendUrl = process.env.REDIRECT_URL_PAY;
-      const employeeRedirectBase = `${frontendUrl}/employee/booking/status`;
+      // Razorpay Checkout is opened by the client with this order id — no
+      // hosted page to redirect to, so no redirect URL is built here.
       try {
-        const paymentDetails = await initiatePhonePePayment(
-          grandFinalTotal,
-          employeeRedirectBase,
-        );
-        if (!paymentDetails || !paymentDetails.merchantTransactionId) {
-          throw new Error("Invalid payment details received from gateway");
-        }
-        transactionId = paymentDetails.merchantTransactionId;
-        paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
+        const order = await createRazorpayOrder(grandFinalTotal);
+        transactionId = order.orderId;
+        razorpay = {
+          orderId: order.orderId,
+          keyId: order.keyId,
+          amount: order.amount,
+          amountInRupees: order.amountInRupees,
+          currency: order.currency,
+        };
       } catch (error: any) {
         console.error("Error initiating employee booking payment:", error);
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -602,11 +608,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       message: "Booking Created Successfully",
       data: {
         bookingId:     booking.publicId,
-        paymentURL,
         status:        booking.status,
         startDate:     booking.startAt,
         endDate:       booking.endAt,
         transactionId: booking.transactionId,
+        razorpay,
         totals:        snapshot?.totals,
         items:         snapshot?.items,
         expiresAt:     new Date(Date.now() + holdExpiry * 1000).toISOString(),

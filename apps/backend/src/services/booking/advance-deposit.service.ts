@@ -320,7 +320,7 @@ export class AdvanceDepositService {
     if (booking.safetyDepositRefunded) throw new Error("Safety deposit already refunded");
 
     // In a real scenario, initiate actual refund if online:
-    // if (method === DepositMethod.ONLINE_RAZORPAY) await phonePeService.initiateRefund(...)
+    // if (method === DepositMethod.ONLINE_RAZORPAY) await razorpay.payments.refund(...)
 
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
