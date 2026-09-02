@@ -37,6 +37,27 @@ const CONNECTIVITY_PROBES = [
 
 SplashScreen.preventAutoHideAsync();
 
+// Route groups a guest genuinely cannot use — every screen under them acts on a
+// specific customer's or employee's own records. Everything else (the fleet,
+// vehicle detail, search, saved, legal, contact) is public and must stay
+// reachable without an account: App Store guideline 5.1.1(v).
+//
+// This is deliberately an explicit deny-list keyed on the first segment, so a
+// screen added later defaults to PUBLIC rather than silently walling itself off.
+// The account-based tabs — (tabs)/trips and (tabs)/profile — are absent on
+// purpose: they render <SignInRequired> in place, which explains what an account
+// unlocks instead of throwing the user out of the tab they tapped.
+const GUEST_BLOCKED_SEGMENTS = [
+  '(employee)',     // employeeApi.* throughout — staff session
+  'employee',       // ditto
+  'booking',        // userApi.kyc/profile/cancelHold, POST .../booking
+  'trip',           // userApi.kyc/cancelHold/invoiceDownload
+  'profile',        // userApi.profile/updateProfile
+  'delete-account', // userApi.deleteAccount
+  'cancellations',  // userApi.cancellationHistory — one customer's fees
+  'document-viewer',// renders a KYC document handed to it by an account screen
+];
+
 function RootLayoutNav() {
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
@@ -46,11 +67,15 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (!isLoaded || segments.length < 1) return;
-    const inAuthGroup = segments[0] === '(auth)';
     const inEmployeeGroup = segments[0] === '(employee)' || segments[0] === 'employee';
 
     if (!token) {
-      if (!inAuthGroup) router.replace('/(auth)/welcome');
+      // Guests browse freely; only the account-based stacks bounce them, and
+      // only as a backstop — the screens themselves prompt at the point of
+      // action, which is where a sign-in makes sense to the user.
+      if (GUEST_BLOCKED_SEGMENTS.includes(segments[0])) {
+        router.replace('/(auth)/sign-in');
+      }
       return;
     }
 

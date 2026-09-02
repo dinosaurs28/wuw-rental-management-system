@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import Toast from '../../components/ui/Toast';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -35,10 +35,24 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+/**
+ * A guest sent here mid-flow carries where they were headed. Only an internal
+ * app path may be resumed — never a scheme, host or anything we'd hand to the
+ * router unchecked.
+ */
+function safeReturnTo(value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  if (value.includes('://') || /[\s\\]/.test(value)) return null;
+  return value;
+}
+
 export default function SignUp() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const signIn = useAuthStore((s) => s.signIn);
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const target = safeReturnTo(returnTo);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
 
@@ -60,14 +74,22 @@ export default function SignUp() {
         if (payload?.accessToken) {
           const { accessToken, ...user } = payload;
           await signIn(accessToken, user as User);
-          router.replace('/(tabs)');
+          // Resume whatever the guest was doing, falling back to the fleet.
+          router.replace((target ?? '/(tabs)') as any);
           return;
         }
       } catch {
         // auto sign-in failed (e.g. unverified / transient) — fall back to manual sign-in below
       }
       setToast({ title: 'Account created!', message: 'Sign in to get started.', type: 'success' });
-      setTimeout(() => router.replace('/(auth)/sign-in'), 1800);
+      setTimeout(
+        () =>
+          router.replace({
+            pathname: '/(auth)/sign-in',
+            params: target ? { returnTo: target } : {},
+          }),
+        1800,
+      );
     } catch (err: any) {
       setToast({
         title: 'Sign up failed',
@@ -102,7 +124,12 @@ export default function SignUp() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
+        {/* Never a dead end — a guest with nothing behind them goes to the fleet. */}
+        <TouchableOpacity
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+          style={styles.back}
+          hitSlop={8}
+        >
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
 
@@ -171,7 +198,12 @@ export default function SignUp() {
 
         <TouchableOpacity
           style={styles.switchRow}
-          onPress={() => router.replace('/(auth)/sign-in')}
+          onPress={() =>
+            router.replace({
+              pathname: '/(auth)/sign-in',
+              params: target ? { returnTo: target } : {},
+            })
+          }
         >
           <Text style={styles.switchText}>
             Already have an account?{' '}
