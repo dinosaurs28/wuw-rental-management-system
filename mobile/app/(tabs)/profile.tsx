@@ -22,6 +22,7 @@ import { userApi } from '../../lib/api';
 import { LEGAL_URLS } from '../../constants/links';
 import WhatsAppSupportButton from '../../components/ui/WhatsAppSupportButton';
 import { useAuthStore } from '../../store/auth';
+import { useIsGuest } from '../../lib/auth-gate';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
 import type { KycDocument, KycType, KycSide } from '../../types/api';
@@ -51,6 +52,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const signOut = useAuthStore((s) => s.signOut);
   const user = useAuthStore((s) => s.user);
+  const isGuest = useIsGuest();
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -59,14 +61,14 @@ export default function Profile() {
     queryKey: ['profile'],
     queryFn: () => userApi.profile(),
     select: (res) => res.data as import('../../types/api').UserProfile,
-    enabled: !!user,
+    enabled: !isGuest && !!user,
   });
 
   const { data: kyc = [], isLoading: kycLoading } = useQuery({
     queryKey: ['kyc'],
     queryFn: () => userApi.kyc(),
     select: (res) => (res.data.data ?? []) as KycDocument[],
-    enabled: !!user,
+    enabled: !isGuest && !!user,
   });
 
   const deleteMutation = useMutation({
@@ -166,6 +168,39 @@ export default function Profile() {
         contentContainerStyle={[styles.inner, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Guest header. The account sections below are hidden, but everything
+            public on this screen (support, legal, app info) stays reachable —
+            burying those behind a login is the 5.1.1(v) problem itself. */}
+        {isGuest && (
+          <View style={styles.guestCard}>
+            <View style={styles.guestIconWrap}>
+              <Ionicons name="person-circle-outline" size={34} color={Colors.orange} />
+            </View>
+            <Text style={styles.guestTitle}>You&apos;re browsing as a guest</Text>
+            <Text style={styles.guestSub}>
+              Sign in to book a car, manage your trips and upload your documents.
+            </Text>
+            <TouchableOpacity
+              style={styles.guestPrimaryBtn}
+              onPress={() => router.push({ pathname: '/(auth)/sign-in', params: { returnTo: '/(tabs)/profile' } })}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guestPrimaryText}>Sign in</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.guestSecondaryBtn}
+              onPress={() => router.push({ pathname: '/(auth)/sign-up', params: { returnTo: '/(tabs)/profile' } })}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guestSecondaryText}>Create an account</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Account-only sections: identity, saved details, bookings history and
+            KYC. Hidden for guests rather than shown-then-erroring. */}
+        {!isGuest && (
+        <>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatarWrap}>
@@ -291,6 +326,8 @@ export default function Profile() {
             </View>
           ))}
         </View>
+        </>
+        )}
 
         {/* Support */}
         <Text style={styles.sectionTitle}>Support</Text>
@@ -311,6 +348,8 @@ export default function Profile() {
           <InfoRow icon="information-circle-outline" label="Version" value="1.0.0" last />
         </View>
 
+        {!isGuest && (
+        <>
         {/* Sign out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.8}>
           <Ionicons name="log-out-outline" size={18} color="#dc2626" />
@@ -326,6 +365,8 @@ export default function Profile() {
         >
           <Text style={styles.deleteAccountText}>Delete account</Text>
         </TouchableOpacity>
+        </>
+        )}
       </ScrollView>
     </View>
   );
@@ -382,6 +423,62 @@ function InfoRow({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   inner: { paddingHorizontal: 20 },
+
+  /* Guest header */
+  guestCard: {
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    marginTop: 16,
+  },
+  guestIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 999,
+    backgroundColor: Colors.orangeSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  guestTitle: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 20,
+    color: Colors.ink,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+  },
+  guestSub: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.ink3,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 6,
+    marginBottom: 18,
+  },
+  guestPrimaryBtn: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    backgroundColor: Colors.orange,
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  guestPrimaryText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  guestSecondaryBtn: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    backgroundColor: Colors.bg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingVertical: 14,
+    marginTop: 10,
+  },
+  guestSecondaryText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
 
   /* Header */
   header: { alignItems: 'center', paddingVertical: 24 },

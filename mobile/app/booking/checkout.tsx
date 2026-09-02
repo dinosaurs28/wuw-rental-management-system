@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi, userApi, type RazorpayOrder } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
+import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import StudioImage from '../../components/cars/StudioImage';
 import { LEGAL_URLS } from '../../constants/links';
 import type { VehicleDetail, KycDocument, UserProfile } from '../../types/api';
@@ -64,6 +65,10 @@ export default function Checkout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { vehicleId, start, end } = useLocalSearchParams<{ vehicleId: string; start?: string; end?: string }>();
+  // Booking is account-based (the API requires a token, KYC and a complete
+  // profile). Normally requireAuth on the vehicle CTA stops a guest before
+  // they get here; this guards a deep link or a restored navigation state.
+  const isGuest = useIsGuest();
 
   const fmt = (d: Date) =>
     d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -124,6 +129,7 @@ export default function Checkout() {
     queryKey: ['kyc'],
     queryFn: () => userApi.kyc(),
     select: (res) => (res.data.data ?? []) as KycDocument[],
+    enabled: !isGuest,
   });
 
   // Only used to prefill the Razorpay sheet — shares the ['profile'] cache with
@@ -132,6 +138,7 @@ export default function Checkout() {
     queryKey: ['profile'],
     queryFn: () => userApi.profile(),
     select: (res) => res.data as UserProfile,
+    enabled: !isGuest,
   });
   const authUser = useAuthStore((s) => s.user);
 
@@ -292,6 +299,19 @@ export default function Checkout() {
       setLoading(false);
     }
   };
+
+  // No token — never render a half-initialised checkout. Signing in brings the
+  // user back to the car they were booking.
+  if (isGuest) {
+    return (
+      <SignInRequired
+        title="Sign in to book"
+        description="Booking a vehicle needs an account so we can verify your documents and hold the car for you."
+        icon="car-outline"
+        returnTo={vehicleId ? `/vehicle/${vehicleId}` : undefined}
+      />
+    );
+  }
 
   if (vehicleLoading || kycLoading) {
     return (

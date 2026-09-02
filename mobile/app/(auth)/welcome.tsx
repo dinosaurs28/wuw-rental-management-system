@@ -195,6 +195,18 @@ export default function Welcome() {
           </View>
         </TouchableOpacity>
 
+        {/* Browse without an account */}
+        <TouchableOpacity
+          style={styles.browse}
+          onPress={() => router.replace('/(tabs)')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.browseText}>BROWSE CARS</Text>
+          <View style={styles.browseCircle}>
+            <Ionicons name="chevron-forward" size={14} color={PAPER} />
+          </View>
+        </TouchableOpacity>
+
         {/* Already a member */}
         <TouchableOpacity
           onPress={() => router.push('/(auth)/sign-in')}
@@ -322,6 +334,36 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 2,
     borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Browse (guest) — same pedal geometry, unfilled so the primary CTA still reads first */
+  browse: {
+    borderWidth: 2,
+    borderColor: PAPER,
+    borderRadius: 12,
+    backgroundColor: 'rgba(244,241,234,0.06)',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  browseText: {
+    fontFamily: MONO,
+    fontSize: 14,
+    color: PAPER,
+    letterSpacing: 2,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  browseCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: PAPER,
     alignItems: 'center',
     justifyContent: 'center',
   },

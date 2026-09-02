@@ -14,6 +14,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { userApi } from '../../lib/api';
+import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import type { BookingTrip, BookingStatus } from '../../types/api';
@@ -101,6 +102,7 @@ function TripCard({ trip }: { trip: BookingTrip }) {
 
 export default function Trips() {
   const insets = useSafeAreaInsets();
+  const isGuest = useIsGuest();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
   const {
@@ -122,13 +124,16 @@ export default function Trips() {
       lastPage.meta && lastPage.meta.page < lastPage.meta.totalPages
         ? lastPage.meta.page + 1
         : undefined,
+    // /bookings needs a token — never fire it for a guest, it would 401.
+    enabled: !isGuest,
   });
 
   // Refetch when the tab/screen regains focus (status changes after pickup/return/payment).
   useFocusEffect(
     useCallback(() => {
+      if (isGuest) return;
       refetch();
-    }, [refetch]),
+    }, [isGuest, refetch]),
   );
 
   const allBookings: BookingTrip[] = (data?.pages ?? []).flatMap((p) => p.data ?? []);
@@ -144,10 +149,24 @@ export default function Trips() {
   // to scroll (so onEndReached can take over) or every page is loaded — otherwise a
   // short/empty first page would show a false "no rentals" state and never paginate.
   useEffect(() => {
-    if (!isLoading && hasNextPage && !isFetchingNextPage && bookings.length < 8) {
+    if (!isGuest && !isLoading && hasNextPage && !isFetchingNextPage && bookings.length < 8) {
       fetchNextPage();
     }
-  }, [bookings.length, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
+  }, [isGuest, bookings.length, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
+
+  // Trips are inherently account-based: there is nothing public to show here.
+  if (isGuest) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <SignInRequired
+          title="Your trips"
+          description="Sign in to see your bookings. Once you book a car, every rental — upcoming, active and past — shows up here."
+          icon="map-outline"
+          returnTo="/(tabs)/trips"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>

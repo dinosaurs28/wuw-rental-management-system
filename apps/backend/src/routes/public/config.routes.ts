@@ -2,7 +2,11 @@
  * Public Config Routes
  *
  * Mounted at: /api/config
- * Provides feature flag status to authenticated frontend clients.
+ * Provides feature flag status. These routes are intentionally UNGATED — the
+ * mobile app reads them while browsing as a guest, before any account exists.
+ * Do not add auth middleware here without checking the guest paths in
+ * mobile/app/_layout.tsx first; gating public content is what got the iOS app
+ * rejected under App Store guideline 5.1.1(v).
  */
 
 import { Router } from "express";

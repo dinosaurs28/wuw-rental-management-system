@@ -1,6 +1,16 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
 
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    /** Set by the request interceptor: did this request go out with a Bearer token? */
+    wuwAuthenticated?: boolean;
+  }
+  interface AxiosRequestConfig {
+    wuwAuthenticated?: boolean;
+  }
+}
+
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000') as string;
 
 // Photo uploads run far longer than a JSON round-trip on mobile data, so they
@@ -18,13 +28,20 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Record whether this request carried a session, so the 401 handler below can
+  // tell an expired session apart from a guest touching something protected.
+  config.wuwAuthenticated = !!token;
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    // Only a request that actually sent a token can have had its session
+    // expire. Guests browse public endpoints without one, and a stray 401 from
+    // such a request must not clear state — that would bounce them out of a
+    // perfectly public screen.
+    if (err.response?.status === 401 && err.config?.wuwAuthenticated) {
       useAuthStore.getState().signOut();
     }
     return Promise.reject(err);
