@@ -39,6 +39,11 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal",
         "releaseStatus": "draft"
+      },
+      "ios": {
+        "ascApiKeyPath": "./asc-api-key.p8",
+        "ascApiKeyId": "BW2Z74GLSR",
+        "ascApiKeyIssuerId": "c73ae056-e9a5-40df-b91b-64f527d83e08"
       }
     }
   }
