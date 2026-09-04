@@ -203,7 +203,6 @@ export default function EmployeeVehicleGroupDetail() {
           bookingId: data.bookingId,
           transactionId: data.transactionId ?? '',
           expiresAt: data.expiresAt ?? '',
-          paymentURL: data.paymentURL ?? '',
           rehold_id: String(key),
           rehold_isGroup: '1',
           rehold_customer: String(customerPublicId),

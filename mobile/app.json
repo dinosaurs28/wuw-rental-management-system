@@ -14,7 +14,12 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.whatuwantrentals.rentals",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "tez",
+          "phonepe",
+          "paytmmp"
+        ]
       }
     },
     "android": {
@@ -47,7 +52,12 @@
         }
       ],
       "expo-secure-store",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-font",
         {
@@ -57,15 +67,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "WUW needs access to your photos so you can upload your driving licence and other KYC documents.",
-          "cameraPermission": "WUW needs camera access so you can photograph your driving licence and vehicle condition.",
+          "photosPermission": "WUW Rentals needs access to your photos so you can upload your driving licence and other KYC documents.",
+          "cameraPermission": "WUW Rentals uses the camera so you can photograph your driving licence and other KYC documents, scan booking QR codes, and record vehicle condition photos.",
           "microphonePermission": false
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "WUW needs camera access to scan booking QR codes and capture vehicle condition photos.",
+          "cameraPermission": "WUW Rentals uses the camera so you can photograph your driving licence and other KYC documents, scan booking QR codes, and record vehicle condition photos.",
           "microphonePermission": false,
           "recordAudioAndroidPermission": false
         }

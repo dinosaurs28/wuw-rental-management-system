@@ -1,4 +1,5 @@
 import axios from "../lib/axios";
+import type { RazorpayOrder } from "../lib/razorpay";
 
 export type DamageChargeType = "PENALTY" | "COMPENSATION";
 
@@ -30,7 +31,6 @@ export interface CloseDamagePayload {
   disposition: "AVAILABLE" | "MAINTENANCE" | "DAMAGED";
   finalCost: number;
   paymentMethod?: "CASH" | "ONLINE_RAZORPAY" | "SPLIT";
-  redirectUrl?: string;
   cashAmount?: number;
   onlineAmount?: number;
   onlineTransactionRef?: string;
@@ -40,7 +40,8 @@ export interface CloseDamageResponse {
   message: string;
   refunded: boolean;
   settled: boolean;
-  paymentUrl?: string;
+  razorpay?: RazorpayOrder;
+  transactionId?: string;
 }
 
 export const getDamageReport = async (

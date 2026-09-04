@@ -34,12 +34,16 @@ import {
   closeDamageReport,
   type DamageReport,
 } from "@/services/damage.service";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import apiClient from "@/lib/axios";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
 export const DamageReviewPage = () => {
   const { damageReportId } = useParams<{ damageReportId: string }>();
   const navigate = useNavigate();
+
+  const { openCheckout } = useRazorpayCheckout();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,6 +86,60 @@ export const DamageReviewPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Ask the manager's browser to collect the fine through Razorpay Checkout,
+   * then hand the resolved outcome to the fine-status screen.
+   */
+  const collectFine = async (
+    razorpay: NonNullable<Awaited<ReturnType<typeof closeDamageReport>>["razorpay"]>,
+    transactionId: string,
+  ) => {
+    const goToStatus = (
+      initialStatus?: "success" | "failed",
+      initialMessage?: string,
+    ) =>
+      navigate(`/manager/payment/fine-status/${transactionId}`, {
+        state: { initialStatus, initialMessage },
+      });
+
+    await openCheckout({
+      razorpay,
+      transactionId,
+      description: "Damage settlement",
+      role: "manager",
+      // Fines park their order id on Payment.razorpayOrderId, which the shared
+      // verify handler does not resolve, and this endpoint also performs the
+      // damage-report finalization verify would skip. So it is the only
+      // confirmation for this flow — hence verify: false.
+      verify: false,
+      // Manager-scoped status route, with uppercase statuses — normalise them
+      // to the gateway's capitalization.
+      pollStatus: async (id) => {
+        const { data } = await apiClient.get<{ status: string; message?: string }>(
+          `/branchManager/payment/status/${id}`,
+        );
+        const status =
+          data.status === "SUCCESS"
+            ? ("Success" as const)
+            : data.status === "PENDING"
+              ? ("Pending" as const)
+              : ("Failed" as const);
+        return { status, message: data.message };
+      },
+      onSuccess: () => goToStatus("success"),
+      // No resolved status: let the status page run its own retry loop.
+      onPending: () => goToStatus(),
+      onFailure: (message) => {
+        toast.error(message);
+        goToStatus("failed", message);
+      },
+      onDismiss: () => {
+        toast.info("Payment cancelled. The damage report is still open.");
+        setIsConfirmOpen(false);
+      },
+    });
   };
 
   const handleConfirmClose = async () => {
@@ -127,11 +185,10 @@ export const DamageReviewPage = () => {
         onlineTransactionRef: (paymentMethod === "ONLINE_RAZORPAY" || (paymentMethod === "SPLIT" && onlineAmount > 0))
           ? onlineTransactionRef
           : undefined,
-        redirectUrl: `${window.location.origin}/manager/payment/fine-status`,
       });
 
-      if (response.paymentUrl) {
-        window.location.href = response.paymentUrl;
+      if (response.razorpay && response.transactionId) {
+        await collectFine(response.razorpay, response.transactionId);
       } else {
         toast.success("Damage Report Closed Successfully");
         navigate("/manager/dashboard");

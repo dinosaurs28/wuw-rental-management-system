@@ -33,9 +33,12 @@ export default function BookingPaymentStatus() {
   const params = useLocalSearchParams<{
     transactionId?: string;
     holdId?: string;
+    /** '1' when checkout already got a 200 from POST /api/payment/verify. */
+    verified?: string;
   }>();
   const transactionId = params.transactionId ?? '';
   const holdId = params.holdId ?? '';
+  const preVerified = params.verified === '1';
 
   const [phase, setPhase] = useState<Phase>('polling');
   const [errorMessage, setErrorMessage] = useState('');
@@ -111,7 +114,10 @@ export default function BookingPaymentStatus() {
     }
 
     setPhase('polling');
-    timerRef.current = setTimeout(checkStatus, POLL_INTERVAL_MS);
+    // The signature was already verified server-side, so the first check should
+    // land immediately instead of waiting out a poll interval. Polling still
+    // runs as the fallback if the record has not settled yet.
+    timerRef.current = setTimeout(checkStatus, preVerified ? 0 : POLL_INTERVAL_MS);
 
     return () => {
       cancelledRef.current = true;
@@ -120,7 +126,7 @@ export default function BookingPaymentStatus() {
         timerRef.current = null;
       }
     };
-  }, [transactionId, checkStatus]);
+  }, [transactionId, checkStatus, preVerified]);
 
   const handleRetry = () => {
     cancelledRef.current = false;
@@ -148,7 +154,7 @@ export default function BookingPaymentStatus() {
               <View style={[styles.iconWrap, styles.iconWrapPolling]}>
                 <ActivityIndicator size="large" color={Colors.orange} />
               </View>
-              <Text style={styles.title}>Verifying with PhonePe</Text>
+              <Text style={styles.title}>Verifying with Razorpay</Text>
               <Text style={styles.body}>
                 Please don't close the app while we confirm your payment.
               </Text>

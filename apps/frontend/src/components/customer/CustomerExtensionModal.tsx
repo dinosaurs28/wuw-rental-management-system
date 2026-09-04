@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { format, addDays } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info, ExternalLink } from "lucide-react";
+import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +23,10 @@ import {
   extensionService,
   type ExtensionEvaluation,
 } from "@/services/extension.service";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { useAuthStore } from "@/store/auth.store";
 
-type Step = "date" | "result" | "pay" | "redirecting";
+type Step = "date" | "result" | "pay" | "paying" | "failed";
 
 interface CustomerExtensionModalProps {
   open: boolean;
@@ -47,7 +49,12 @@ export function CustomerExtensionModal({
   bookingPublicId,
   currentEndAt,
   onClose,
+  onSuccess,
 }: CustomerExtensionModalProps) {
+  const { openCheckout } = useRazorpayCheckout();
+  const user = useAuthStore((state) => state.user);
+  // Set once the extension is paid for, so closing does not cancel it.
+  const paidRef = useRef(false);
   const [step, setStep] = useState<Step>("date");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [calOpen, setCalOpen] = useState(false);
@@ -55,6 +62,7 @@ export function CustomerExtensionModal({
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isInitiating, setIsInitiating] = useState(false);
   const [evalError, setEvalError] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const minDate = addDays(new Date(currentEndAt), 1);
 
@@ -69,13 +77,15 @@ export function CustomerExtensionModal({
   async function handleClose() {
     // If we evaluated but never paid, cancel the pending extension so the
     // booking is unlocked and the customer can try again later.
-    if (evaluation) {
+    if (evaluation && !paidRef.current) {
       await cancelPendingExtension(evaluation.extensionPublicId);
     }
     setStep("date");
     setSelectedDate(undefined);
     setEvaluation(null);
     setEvalError(null);
+    setPayError(null);
+    paidRef.current = false;
     onClose();
   }
 
@@ -106,27 +116,81 @@ export function CustomerExtensionModal({
     }
   }
 
+  /**
+   * Fallback poll for the extension. `/payment/verify` resolves extensions by
+   * order id and confirms them itself, so this only runs when the handler never
+   * fired or verification failed — the webhook may still have landed.
+   *
+   * FAILED is terminal and comes only from a settled gateway failure; an
+   * unreachable gateway reports PENDING, so an unknown result keeps polling
+   * rather than telling the customer their payment failed.
+   */
+  async function confirmExtension(transactionId: string) {
+    const res = await extensionService.verifyExtensionPayment(transactionId);
+    const status =
+      res.status === "CONFIRMED"
+        ? ("Success" as const)
+        : res.status === "FAILED"
+          ? ("Failed" as const)
+          : ("Pending" as const);
+    return { status, message: res.message };
+  }
+
   async function handleInitiatePayment() {
     if (!evaluation) return;
     setIsInitiating(true);
     try {
       const res = await extensionService.customerInitiatePayment(
         evaluation.extensionPublicId,
-        `${window.location.origin}/my-bookings`,
       );
-      if (res.data?.redirectUrl) {
-        setStep("redirecting");
-        // Small delay so user sees the "redirecting" state
-        setTimeout(() => {
-          window.location.href = res.data.redirectUrl;
-        }, 800);
-      } else {
-        toast.error("Could not initiate payment — no redirect URL received");
+      const { razorpay, transactionId } = res.data ?? {};
+      if (!razorpay || !transactionId) {
+        toast.error("Could not initiate payment — no payment order received");
         setIsInitiating(false);
+        return;
       }
+
+      setStep("paying");
+      await openCheckout({
+        razorpay,
+        transactionId,
+        description: "Booking extension",
+        prefill: { name: user?.name, email: user?.email },
+        pollStatus: () => confirmExtension(transactionId),
+        onSuccess: () => {
+          paidRef.current = true;
+          setIsInitiating(false);
+          toast.success("Booking extended successfully!");
+          onSuccess?.();
+          void handleClose();
+        },
+        onPending: (message) => {
+          paidRef.current = true;
+          setIsInitiating(false);
+          toast.info(
+            message ?? "Payment received — your extension is being confirmed.",
+          );
+          onSuccess?.();
+          void handleClose();
+        },
+        onFailure: (message) => {
+          setIsInitiating(false);
+          // Shown as its own step rather than a toast: a refusal can carry a
+          // refund notice, which the customer should be able to read and keep
+          // on screen instead of watching it disappear.
+          setPayError(message);
+          setStep("failed");
+        },
+        onDismiss: () => {
+          setIsInitiating(false);
+          setStep("result");
+          toast.info("Payment cancelled. Your extension was not confirmed.");
+        },
+      });
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? "Failed to initiate payment");
       setIsInitiating(false);
+      setStep("result");
     }
   }
 
@@ -315,7 +379,7 @@ export function CustomerExtensionModal({
                     {isInitiating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <>Pay {formatCurrency(additionalAmount)} <ExternalLink className="ml-2 h-4 w-4" /></>
+                      <>Pay {formatCurrency(additionalAmount)} <CreditCard className="ml-2 h-4 w-4" /></>
                     )}
                   </Button>
                 </div>
@@ -324,13 +388,31 @@ export function CustomerExtensionModal({
           </div>
         )}
 
-        {/* ── Redirecting to PhonePe ── */}
-        {step === "redirecting" && (
+        {/* ── Payment failed ── */}
+        {step === "failed" && (
+          <div className="space-y-5 py-4">
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+              <div className="flex items-center gap-2 text-red-800 font-semibold mb-1 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                Payment not completed
+              </div>
+              <p className="text-xs text-red-700">
+                {payError ?? "Your extension could not be confirmed."}
+              </p>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleClose}>
+              Close
+            </Button>
+          </div>
+        )}
+
+        {/* ── Payment in progress ── */}
+        {step === "paying" && (
           <div className="py-12 text-center space-y-4">
             <Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto" />
-            <p className="font-semibold text-gray-900">Redirecting to PhonePe…</p>
+            <p className="font-semibold text-gray-900">Awaiting payment…</p>
             <p className="text-sm text-muted-foreground">
-              Please complete your payment on the PhonePe page.
+              Please complete your payment in the secure payment window.
             </p>
           </div>
         )}

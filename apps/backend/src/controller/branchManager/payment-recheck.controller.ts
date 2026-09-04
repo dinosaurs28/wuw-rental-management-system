@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
+import {
+  fetchOrderStatus,
+  isRazorpayOrderId,
+} from "../../services/payment/razorpay.service.js";
 import {
   prisma,
   BookingStatus,
@@ -42,7 +45,7 @@ export const ListPendingPaymentBookings = async (req: Request, res: Response) =>
           branchId,
           status: BookingStatus.HOLD,
           paymentStatus: PaymentStatus.CREATED,
-          transactionId: { startsWith: "MT" },
+          transactionId: { startsWith: "order_" },
         },
       }),
       prisma.booking.findMany({
@@ -50,7 +53,7 @@ export const ListPendingPaymentBookings = async (req: Request, res: Response) =>
           branchId,
           status: BookingStatus.HOLD,
           paymentStatus: PaymentStatus.CREATED,
-          transactionId: { startsWith: "MT" },
+          transactionId: { startsWith: "order_" },
         },
         select: {
           publicId: true,
@@ -161,7 +164,7 @@ export const GetRecheckInfo = async (req: Request, res: Response) => {
     const recheckable =
       isRecheckable(booking.status) &&
       booking.paymentStatus === PaymentStatus.CREATED &&
-      booking.transactionId?.startsWith("MT");
+      isRazorpayOrderId(booking.transactionId);
 
     return res.status(StatusCode.OK).json({
       success: true,
@@ -194,9 +197,9 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
       });
     }
 
-    if (!booking.transactionId?.startsWith("MT")) {
+    if (!isRazorpayOrderId(booking.transactionId)) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Only online PhonePe transactions can be rechecked via gateway",
+        message: "Only online Razorpay transactions can be rechecked via gateway",
       });
     }
 
@@ -207,7 +210,9 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
       });
     }
 
-    const paymentStatus = await paymentStatusCheck(booking.transactionId);
+    // Narrowed by the isRazorpayOrderId guard above.
+    const gatewayOrderId = booking.transactionId!;
+    const paymentStatus = await fetchOrderStatus(gatewayOrderId);
 
     if (!paymentStatus) {
       return res.status(StatusCode.OK).json({
@@ -216,8 +221,8 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
       });
     }
 
-    const isSuccess = paymentStatus.code === "PAYMENT_SUCCESS";
-    const isPending = paymentStatus.code === "PAYMENT_PENDING";
+    const isSuccess = paymentStatus.state === "SUCCESS";
+    const isPending = paymentStatus.state === "PENDING";
 
     if (isSuccess) {
       const manager = await prisma.user.findFirst({
@@ -295,7 +300,7 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
             cashAmount: 0,
             onlineAmount: paymentAmount,
             onlineTransactionRef: booking.transactionId,
-            onlineGateway: "PHONEPE",
+            onlineGateway: "RAZORPAY",
             confirmedById: manager?.id ?? null,
             confirmedAt: new Date(),
           },
@@ -306,7 +311,7 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
           entityType: StaffEntityType.PAYMENT,
           entityRef: booking.publicId,
           description: `Gateway recheck confirmed payment for booking ${booking.publicId}`,
-          metadata: { transactionId: booking.transactionId, gatewayCode: paymentStatus.code },
+          metadata: { transactionId: booking.transactionId, gatewayState: paymentStatus.state },
         }, tx);
       }, { timeout: 15000 });
 
@@ -345,14 +350,14 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
       return res.status(StatusCode.OK).json({
         gatewayResult: "PENDING",
         message: "Payment is still pending on the gateway. You may manually confirm if the customer has bank proof.",
-        gatewayCode: paymentStatus.code,
+        gatewayState: paymentStatus.state,
       });
     }
 
     return res.status(StatusCode.OK).json({
       gatewayResult: "FAILED",
-      message: `Gateway returned: ${paymentStatus.code}. Payment has not been received.`,
-      gatewayCode: paymentStatus.code,
+      message: `Gateway returned: ${paymentStatus.state}. Payment has not been received.`,
+      gatewayState: paymentStatus.state,
     });
   } catch (error) {
     console.error("[RecheckPaymentWithGateway] error:", error);

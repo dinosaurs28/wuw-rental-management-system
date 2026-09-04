@@ -18,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
+import { useRequireAuth } from '../../lib/auth-gate';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
 import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
@@ -83,6 +84,8 @@ export default function VehicleDetail() {
   const [timePicker, setTimePicker] = useState<null | 'start' | 'end'>(null);
   const toggle = useSavedStore(s => s.toggle);
   const savedList = useSavedStore(s => s.saved);
+  // Browsing this page is public; only the booking action needs an account.
+  const requireAuth = useRequireAuth();
 
   const isGroupKey = !!id && id.includes('__');
   const nights = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
@@ -380,7 +383,10 @@ export default function VehicleDetail() {
         </View>
         <TouchableOpacity
           style={[styles.ctaBtn, !isAvail && styles.ctaBtnDisabled]}
-          onPress={() =>
+          onPress={() => {
+            // Guests browse freely — the sign-in ask happens here, at the
+            // moment they commit to booking, and returns them to this car.
+            if (!requireAuth({ returnTo: `/vehicle/${id}` })) return;
             router.push({
               pathname: '/booking/checkout',
               params: {
@@ -388,8 +394,8 @@ export default function VehicleDetail() {
                 start: startDate.toISOString(),
                 end: endDate.toISOString(),
               },
-            })
-          }
+            });
+          }}
           disabled={!isAvail}
           activeOpacity={0.85}
         >
