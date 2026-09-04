@@ -124,8 +124,21 @@ jobs:
             cd /var/www/vrms
 
             echo "==> Pulling latest code..."
-            git checkout -- . 2>/dev/null || true
-            git pull origin staging
+            git fetch origin staging
+
+            # Tag whatever is currently checked out before discarding it, so a
+            # hotfix made directly on the server is recoverable rather than lost.
+            git tag -f "pre-deploy-$(date +%Y%m%d-%H%M%S)" HEAD >/dev/null 2>&1 || true
+
+            # Hard reset instead of pull. A pull fails outright when the server
+            # checkout has diverged ("Need to specify how to reconcile divergent
+            # branches"), which silently blocked every deploy from 2026-08-14
+            # onward. The server is a deploy target, not a place to develop, so
+            # origin/staging is always the intended state.
+            #
+            # No `git clean` here on purpose: .env files on the server are
+            # untracked, and cleaning would delete them.
+            git reset --hard origin/staging
 
             echo "==> Installing dependencies..."
             pnpm install --frozen-lockfile
