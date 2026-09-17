@@ -43,7 +43,7 @@ function parseGroupKey(groupKey: string): { make: string; model: string; categor
   return { make, model, categoryId, branchId };
 }
 
-export { parseGroupKey };
+export { parseGroupKey, normalizeStr };
 
 export const searchVehicles = async (req: Request, res: Response) => {
   try {
@@ -274,8 +274,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
     } catch { /* non-fatal */ }
 
-    const groupVehicles = await prisma.vehicle.findMany({
-      where: { make, model, categoryId, branchId, deletedAt: null, insuranceExpiry: { gt: new Date() } },
+    const branchVehicles = await prisma.vehicle.findMany({
+      where: { categoryId, branchId, deletedAt: null, insuranceExpiry: { gt: new Date() } },
       select: {
         id: true,
         publicId: true,
@@ -298,6 +298,12 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       },
       orderBy: { odo: "asc" },
     });
+
+    const targetMake = normalizeStr(make);
+    const targetModel = normalizeStr(model);
+    const groupVehicles = branchVehicles.filter(
+      (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
+    );
 
     if (groupVehicles.length === 0) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
