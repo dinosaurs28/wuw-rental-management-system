@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, ImagePlus, Check, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface VehicleImageUploadProps {
