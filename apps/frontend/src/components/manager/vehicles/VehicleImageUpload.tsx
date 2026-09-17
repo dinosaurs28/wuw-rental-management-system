@@ -76,34 +76,35 @@ export const VehicleImageUpload = ({
 
       {/* Grid of uploaded images */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
           {images.map((item, index) => {
             const url = getPreviewUrl(item);
             const isMain = index === 0;
             return (
               <div
                 key={index}
-                className={`group relative aspect-[4/3] bg-neutral-100 rounded-lg overflow-hidden border transition-all ${
+                className={`group relative aspect-[4/3] bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all ${
                   isMain
-                    ? "border-orange-500 ring-2 ring-orange-500/20 shadow-sm"
+                    ? "border-orange-400 shadow-md"
                     : "border-neutral-200 hover:border-neutral-300 shadow-sm"
                 }`}
               >
+                {/* Image */}
                 <img
                   src={url}
                   alt={`Vehicle ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
 
-                {/* Main Thumbnail Badge */}
+                {/* ── TOP-LEFT: MAIN badge (always visible when main) */}
                 {isMain && (
-                  <div className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
-                    <Check className="w-3 h-3 stroke-[3]" />
+                  <div className="absolute top-1.5 left-1.5 z-20 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-md pointer-events-none">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
                     MAIN
                   </div>
                 )}
 
-                {/* Top-right Delete Button (clearly visible and styled) */}
+                {/* ── TOP-RIGHT: Delete button (always visible) */}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -111,23 +112,23 @@ export const VehicleImageUpload = ({
                     removeImage(index);
                   }}
                   title="Remove image"
-                  className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center shadow transition-all duration-150 backdrop-blur-sm group-hover:scale-105"
+                  className="absolute top-1.5 right-1.5 z-20 w-6 h-6 rounded-full bg-black/55 hover:bg-red-600 text-white flex items-center justify-center shadow transition-colors duration-150 backdrop-blur-[2px]"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
                 </button>
 
-                {/* Bottom Bar: Mark as Thumbnail action for non-main images */}
+                {/* ── CENTER OVERLAY: "Set Main" — only for non-main, only on hover */}
                 {!isMain && (
-                  <div className="absolute bottom-0 inset-x-0 p-1.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+                  <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-black/30">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setThumbnail(item);
                       }}
-                      className="w-full py-1 px-2 text-[11px] font-medium bg-white/95 hover:bg-orange-500 hover:text-white text-neutral-900 rounded shadow-sm transition-all duration-150 flex items-center justify-center gap-1 active:scale-95"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-white/95 hover:bg-orange-500 hover:text-white text-neutral-800 rounded-full shadow-lg transition-all duration-150 active:scale-95"
                     >
-                      <Star className="w-3 h-3 text-orange-500 fill-orange-500 group-hover:text-white group-hover:fill-white transition-colors" />
+                      <Star className="w-3 h-3 text-orange-500 fill-orange-400" />
                       Set Main
                     </button>
                   </div>
