@@ -194,6 +194,22 @@ export default function Profile() {
             >
               <Text style={styles.guestSecondaryText}>Create an account</Text>
             </TouchableOpacity>
+            {/* Fleet executives sign in with staff credentials against a
+                different endpoint. This is the only account surface a freshly
+                installed app opens on, so the staff portal has to be reachable
+                from here too. */}
+            <TouchableOpacity
+              style={styles.guestStaffRow}
+              onPress={() => router.push('/(auth)/employee-sign-in')}
+              activeOpacity={0.7}
+              hitSlop={8}
+            >
+              <Ionicons name="shield-checkmark-outline" size={15} color={Colors.ink3} />
+              <Text style={styles.guestStaffText}>
+                Employee?{' '}
+                <Text style={styles.guestStaffLink}>Employee login</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -479,6 +495,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   guestSecondaryText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
+  guestStaffRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 16,
+  },
+  guestStaffText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
+  guestStaffLink: { fontFamily: Fonts.bodySemiBold, color: Colors.ink },
 
   /* Header */
   header: { alignItems: 'center', paddingVertical: 24 },

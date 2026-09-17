@@ -73,7 +73,18 @@ export default function SignIn() {
       // Resume whatever the guest was doing, falling back to the fleet.
       router.replace((target ?? '/(tabs)') as any);
     } catch (err: any) {
-      const msg = err.response?.data?.message
+      const serverMsg = err.response?.data?.message as string | undefined;
+      // Staff accounts are rejected here by design — /api/auth/email/signin is
+      // customer-only. Say so and point at the staff portal instead of leaving
+      // a fleet executive staring at a generic failure.
+      if (typeof serverMsg === 'string' && serverMsg.toLowerCase().includes('only customer login')) {
+        setToast({
+          title: 'That’s a staff account',
+          message: 'Employees sign in through the Staff portal — use “Employee login” below.',
+        });
+        return;
+      }
+      const msg = serverMsg
         ?? (err.code === 'ECONNREFUSED' || err.message?.includes('Network')
           ? 'Cannot reach server. Check your connection.'
           : 'Something went wrong. Please try again.');
@@ -172,6 +183,22 @@ export default function SignIn() {
             <Text style={styles.switchLink}>Create one</Text>
           </Text>
         </TouchableOpacity>
+
+        {/* Staff (fleet executives) have their own credentials and their own
+            endpoint. Without this link the employee screen is unreachable on a
+            fresh install — welcome.tsx, the only other route to it, is reached
+            solely by signing out. */}
+        <TouchableOpacity
+          style={styles.staffRow}
+          onPress={() => router.push('/(auth)/employee-sign-in')}
+          hitSlop={8}
+        >
+          <Ionicons name="shield-checkmark-outline" size={15} color={Colors.ink3} />
+          <Text style={styles.staffText}>
+            Employee?{' '}
+            <Text style={styles.staffLink}>Employee login</Text>
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
     </View>
@@ -219,5 +246,21 @@ const styles = StyleSheet.create({
   switchLink: {
     fontFamily: Fonts.bodySemiBold,
     color: Colors.orange,
+  },
+  staffRow: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  staffText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.ink3,
+  },
+  staffLink: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.ink,
   },
 });
