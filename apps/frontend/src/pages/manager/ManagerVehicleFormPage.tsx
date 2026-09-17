@@ -267,6 +267,16 @@ export const ManagerVehicleFormPage = () => {
         if (deletedImageIds.length > 0) {
           formData.append("deleteImageIds", JSON.stringify(deletedImageIds));
         }
+
+        // If the first image (main thumbnail) is an existing image, send its publicId
+        if (data.images.length > 0 && typeof data.images[0] === "string") {
+          const mainImg = originalImages.find(
+            (img) => img.file?.url === data.images[0],
+          );
+          if (mainImg) {
+            formData.append("thumbnailImageId", mainImg.publicId);
+          }
+        }
       }
 
       if (isEditMode && vehicleId) {

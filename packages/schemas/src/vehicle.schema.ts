@@ -57,7 +57,8 @@ export const createVehicleSchema = z.object({
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
   status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]).optional(),
-  deleteImageIds: z.string().optional(),
+  deleteImageIds: z.union([z.string(), z.array(z.string())]).optional(),
+  thumbnailImageId: z.string().optional(),
 });
 
 export const pickUpVehicleSchema = z.object({

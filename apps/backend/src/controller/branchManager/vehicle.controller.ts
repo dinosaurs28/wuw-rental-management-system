@@ -262,10 +262,9 @@ export const EditVehicle = async (req: Request, res: Response) => {
           idsToDelete = data.deleteImageIds;
         } else if (typeof data.deleteImageIds === "string") {
           try {
-            idsToDelete = JSON.parse(data.deleteImageIds);
+            const parsed = JSON.parse(data.deleteImageIds);
+            idsToDelete = Array.isArray(parsed) ? parsed : [parsed];
           } catch (e) {
-            // If not JSON, maybe it's a single ID string? Accessing it as array might fall
-            // But if user sends multiple deleteImageIds inputs (formData), it becomes array?
             idsToDelete = [data.deleteImageIds];
           }
         }
@@ -279,11 +278,21 @@ export const EditVehicle = async (req: Request, res: Response) => {
           });
 
           if (imagesToDelete.length > 0) {
-            // Optional: Delete from storage (R2/local) if feasible here,
-            // but usually handled by a cleanup job or just deleted from DB.
+            const targetIds = imagesToDelete.map((img) => img.id);
+
+            // Ensure isThumbnail is explicitly set to false on deleted images
+            await prisma.vehicleImage.updateMany({
+              where: {
+                id: { in: targetIds },
+              },
+              data: {
+                isThumbnail: false,
+              },
+            });
+
             await prisma.vehicleImage.deleteMany({
               where: {
-                id: { in: imagesToDelete.map((img) => img.id) },
+                id: { in: targetIds },
               },
             });
           }
@@ -293,8 +302,21 @@ export const EditVehicle = async (req: Request, res: Response) => {
       }
     }
 
+    // Handle Thumbnail Update
+    if (data.thumbnailImageId) {
+      await prisma.vehicleImage.updateMany({
+        where: { vehicleId: vehicle.id },
+        data: { isThumbnail: false },
+      });
+      await prisma.vehicleImage.updateMany({
+        where: { vehicleId: vehicle.id, publicId: data.thumbnailImageId },
+        data: { isThumbnail: true },
+      });
+    }
+
     const updateData: any = { ...data };
     delete updateData.deleteImageIds;
+    delete updateData.thumbnailImageId;
     delete updateData.categoryId; // Remove raw categoryId from data object
     delete updateData.policyNumber;
     delete updateData.provider;

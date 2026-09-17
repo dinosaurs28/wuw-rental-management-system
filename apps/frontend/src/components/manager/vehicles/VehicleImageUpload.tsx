@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, ImagePlus, Check } from "lucide-react";
+import { X, ImagePlus, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -77,13 +77,18 @@ export const VehicleImageUpload = ({
 
       {/* Grid of uploaded images */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
           {images.map((item, index) => {
             const url = getPreviewUrl(item);
+            const isMain = index === 0;
             return (
               <div
                 key={index}
-                className="group relative aspect-video bg-neutral-100 rounded-lg overflow-hidden border"
+                className={`group relative aspect-[4/3] bg-neutral-100 rounded-lg overflow-hidden border transition-all ${
+                  isMain
+                    ? "border-orange-500 ring-2 ring-orange-500/20 shadow-sm"
+                    : "border-neutral-200 hover:border-neutral-300 shadow-sm"
+                }`}
               >
                 <img
                   src={url}
@@ -91,35 +96,41 @@ export const VehicleImageUpload = ({
                   className="w-full h-full object-cover"
                 />
 
-                {/* Actions Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-red-600"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  {index !== 0 && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-8 text-xs bg-white/90 hover:bg-white"
-                      onClick={() => setThumbnail(item)}
-                    >
-                      Set Main
-                    </Button>
-                  )}
-                </div>
-
-                {/* Thumbnail Badge */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
-                    <Check className="w-3 h-3" />
+                {/* Main Thumbnail Badge */}
+                {isMain && (
+                  <div className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
+                    <Check className="w-3 h-3 stroke-[3]" />
                     MAIN
+                  </div>
+                )}
+
+                {/* Top-right Delete Button (clearly visible and styled) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                  }}
+                  title="Remove image"
+                  className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center shadow transition-all duration-150 backdrop-blur-sm group-hover:scale-105"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Bottom Bar: Mark as Thumbnail action for non-main images */}
+                {!isMain && (
+                  <div className="absolute bottom-0 inset-x-0 p-1.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setThumbnail(item);
+                      }}
+                      className="w-full py-1 px-2 text-[11px] font-medium bg-white/95 hover:bg-orange-500 hover:text-white text-neutral-900 rounded shadow-sm transition-all duration-150 flex items-center justify-center gap-1 active:scale-95"
+                    >
+                      <Star className="w-3 h-3 text-orange-500 fill-orange-500 group-hover:text-white group-hover:fill-white transition-colors" />
+                      Set Main
+                    </button>
                   </div>
                 )}
               </div>
