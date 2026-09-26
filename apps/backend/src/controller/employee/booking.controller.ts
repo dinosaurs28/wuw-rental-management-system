@@ -12,7 +12,7 @@ import {
   buildScheduleErrorMessage,
   type BranchScheduleConfig,
 } from "../../utils/booking/branchScheduleValidator.js";
-import { parseGroupKey } from "./vehicle.controller.js";
+import { parseGroupKey, normalizeStr } from "./vehicle.controller.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -210,11 +210,17 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       }
 
       // Find an available vehicle from the group for the requested dates
-      const candidates = await prisma.vehicle.findMany({
-        where: { make, model, categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
-        select: { id: true, publicId: true },
+      const branchVehicles = await prisma.vehicle.findMany({
+        where: { categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
+        select: { id: true, publicId: true, make: true, model: true },
         orderBy: { odo: "asc" },
       });
+
+      const targetMake = normalizeStr(make);
+      const targetModel = normalizeStr(model);
+      const candidates = branchVehicles.filter(
+        (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
+      );
 
       if (candidates.length === 0) {
         return res.status(StatusCode.CONFLICT).json({ message: "No vehicles available in this group" });
