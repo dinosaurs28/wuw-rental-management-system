@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { format, addDays } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard } from "lucide-react";
+import { Calendar, Clock, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import {
   extensionService,
@@ -35,6 +36,46 @@ interface CustomerExtensionModalProps {
   currentEndAt: string;
   onClose: () => void;
   onSuccess?: () => void;
+}
+
+// Bookings run on IST, so the picked day + time is read as IST whatever the
+// browser's timezone.
+const IST_OFFSET_MS = 330 * 60_000;
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Calendar day (local midnight, for the date picker) and "HH:mm" of an instant, in IST. */
+function istParts(iso: string) {
+  const d = new Date(new Date(iso).getTime() + IST_OFFSET_MS);
+  return {
+    day: new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+    time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,
+  };
+}
+
+/** A picked calendar day + "HH:mm" (IST) → ISO instant. */
+function istToIso(day: Date, time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return new Date(
+    Date.UTC(day.getFullYear(), day.getMonth(), day.getDate(), h, m) - IST_OFFSET_MS,
+  ).toISOString();
+}
+
+/** Rounds "HH:mm" up to the 15-minute steps TimeSelect offers (capped at 23:45). */
+function roundUpToQuarter(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const total = Math.min(Math.ceil((h * 60 + m) / 15) * 15, 23 * 60 + 45);
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+}
+
+/** "5 hours", "1 day", "2 days 3 hours". */
+function formatExtraTime(fromIso: string, toIso: string) {
+  const hours = Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 3_600_000);
+  const days = Math.floor(hours / 24);
+  const rest = hours % 24;
+  const parts = [];
+  if (days) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+  if (rest || !days) parts.push(`${rest} hour${rest !== 1 ? "s" : ""}`);
+  return parts.join(" ");
 }
 
 function formatCurrency(amount: string | number) {
@@ -57,7 +98,11 @@ export function CustomerExtensionModal({
   // Set once the extension is paid for, so closing does not cancel it.
   const paidRef = useRef(false);
   const [step, setStep] = useState<Step>("date");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const currentEnd = istParts(currentEndAt);
+  // Defaults to the same time one day later; any time after the current
+  // return can be picked, including later the same day.
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => addDays(currentEnd.day, 1));
+  const [selectedTime, setSelectedTime] = useState(() => roundUpToQuarter(currentEnd.time));
   const [calOpen, setCalOpen] = useState(false);
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -66,7 +111,8 @@ export function CustomerExtensionModal({
   const [initError, setInitError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
-  const minDate = addDays(new Date(currentEndAt), 1);
+  const newEndAt = selectedDate ? istToIso(selectedDate, selectedTime) : null;
+  const isAfterCurrentEnd = !!newEndAt && new Date(newEndAt) > new Date(currentEndAt);
 
   async function cancelPendingExtension(pubId: string) {
     try {
@@ -83,7 +129,8 @@ export function CustomerExtensionModal({
       await cancelPendingExtension(evaluation.extensionPublicId);
     }
     setStep("date");
-    setSelectedDate(undefined);
+    setSelectedDate(addDays(currentEnd.day, 1));
+    setSelectedTime(roundUpToQuarter(currentEnd.time));
     setEvaluation(null);
     setEvalError(null);
     setInitError(null);
@@ -93,20 +140,10 @@ export function CustomerExtensionModal({
   }
 
   async function handleEvaluate() {
-    if (!selectedDate) return;
+    if (!newEndAt || !isAfterCurrentEnd) return;
     setIsEvaluating(true);
     setEvalError(null);
     try {
-      // Use noon IST for the new end time
-      const newEndAt = new Date(
-        Date.UTC(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-          6, 30, 0, // 12:00 IST = 06:30 UTC
-        ),
-      ).toISOString();
-
       const res = await extensionService.customerEvaluate(bookingPublicId, newEndAt);
       setEvaluation(res.data);
       setInitError(null);
@@ -238,38 +275,47 @@ export function CustomerExtensionModal({
             <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-sm text-gray-600">
               <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
               <span>
-                Current end:{" "}
+                Current return:{" "}
                 <span className="font-semibold text-gray-800">
-                  {format(new Date(currentEndAt), "dd MMM yyyy")}
+                  {format(new Date(currentEndAt), "dd MMM yyyy, h:mm a")}
                 </span>
               </span>
             </div>
 
             <div className="space-y-1.5">
-              <Label>New return date</Label>
-              <Popover open={calOpen} onOpenChange={setCalOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground",
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "dd MMM yyyy") : "Select a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarPicker
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(d) => { setSelectedDate(d); setCalOpen(false); }}
-                    disabled={(d) => d < minDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label>New return date &amp; time</Label>
+              <div className="flex gap-2">
+                <Popover open={calOpen} onOpenChange={setCalOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "flex-1 justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground",
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "dd MMM yyyy") : "Select a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarPicker
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(d) => { setSelectedDate(d); setCalOpen(false); }}
+                      disabled={(d) => d < currentEnd.day}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <div className="flex items-center gap-1.5 rounded-md border border-input px-3">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <TimeSelect value={selectedTime} onChange={setSelectedTime} />
+                </div>
+              </div>
+              {newEndAt && !isAfterCurrentEnd && (
+                <p className="text-xs text-red-600">Pick a time after the current return time.</p>
+              )}
             </div>
 
             {evalError && (
@@ -286,7 +332,7 @@ export function CustomerExtensionModal({
               <Button
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                 onClick={handleEvaluate}
-                disabled={!selectedDate || isEvaluating}
+                disabled={!isAfterCurrentEnd || isEvaluating}
               >
                 {isEvaluating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -323,7 +369,7 @@ export function CustomerExtensionModal({
                   Full extension not available. We can extend until{" "}
                   <span className="font-semibold">
                     {resultView.partialNewEndAt
-                      ? format(new Date(resultView.partialNewEndAt), "dd MMM yyyy")
+                      ? format(new Date(resultView.partialNewEndAt), "dd MMM yyyy, h:mm a")
                       : "a limited date"}
                   </span>
                   .
@@ -353,12 +399,15 @@ export function CustomerExtensionModal({
               <>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Duration</span>
+                    <span className="text-gray-500">New return</span>
                     <span className="font-medium">
-                      {evaluation.pricing.originalDays} → {evaluation.pricing.newDays} days
-                      <span className="text-orange-500 ml-1">
-                        (+{evaluation.pricing.newDays - evaluation.pricing.originalDays})
-                      </span>
+                      {format(new Date(evaluation.requestedEndAt), "dd MMM yyyy, h:mm a")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Extra time</span>
+                    <span className="font-medium text-orange-500">
+                      +{formatExtraTime(currentEndAt, evaluation.requestedEndAt)}
                     </span>
                   </div>
                   <div className="flex justify-between">
