@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Dimensions,
   ScrollView,
   Share,
@@ -9,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
+import { initialRange, normalizeRange, rangeLengthLabel, refreshRange, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
 import type { VehicleDetail } from '../../types/api';
 
 const { width, height } = Dimensions.get('window');
@@ -34,40 +36,9 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// "12 Jul | 12:00"
+// "12 Jul | 6:05 PM"
 function fmtStamp(d: Date) {
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} | ${hh}:${mm}`;
-}
-
-function defaultStart() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(10, 0, 0, 0);
-  return d;
-}
-function defaultEnd() {
-  const d = new Date();
-  d.setDate(d.getDate() + 2);
-  d.setHours(10, 0, 0, 0);
-  return d;
-}
-function parseParamDate(iso: string | undefined, fallback: () => Date): Date {
-  if (!iso) return fallback();
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? fallback() : d;
-}
-
-// Combine a date with a "HH:mm" time string into a new Date.
-function withTime(date: Date, hhmm: string) {
-  const [h, m] = hhmm.split(':').map(Number);
-  const d = new Date(date);
-  d.setHours(h ?? 10, m ?? 0, 0, 0);
-  return d;
-}
-function timeOf(d: Date) {
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} | ${timeLabel(timeOf(d))}`;
 }
 
 // Sixt-style vehicle page: hero image, green-check inclusions, big uppercase
@@ -79,8 +50,29 @@ export default function VehicleDetail() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const [showPicker, setShowPicker] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(() => parseParamDate(startParam, defaultStart));
-  const [endDate, setEndDate] = useState<Date>(() => parseParamDate(endParam, defaultEnd));
+  // Search params win; otherwise pickup today at the next 5-minute mark and
+  // return 24 hours later. normalizeRange keeps the return after the pickup.
+  const [range, setRange] = useState(() => initialRange(startParam, endParam));
+  const { start: startDate, end: endDate } = range;
+
+  // Coming back from checkout (or the background) can leave the pickup in the
+  // past. While focused — on focus, on return to the foreground and every
+  // 15s — move a past pickup to the next 5-minute mark (and the return after
+  // it). A pickup still in the future is left untouched.
+  useFocusEffect(
+    useCallback(() => {
+      const refresh = () => setRange((r) => refreshRange(r));
+      refresh();
+      const timer = setInterval(refresh, 15_000);
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state === 'active') refresh();
+      });
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, []),
+  );
   const [timePicker, setTimePicker] = useState<null | 'start' | 'end'>(null);
   const toggle = useSavedStore(s => s.toggle);
   const savedList = useSavedStore(s => s.saved);
@@ -88,7 +80,7 @@ export default function VehicleDetail() {
   const requireAuth = useRequireAuth();
 
   const isGroupKey = !!id && id.includes('__');
-  const nights = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
+  const rangeLength = rangeLengthLabel(startDate, endDate) ?? '';
 
   const { data: vehicle, isLoading, isFetching } = useQuery({
     queryKey: ['vehicle', id, startDate.toISOString(), endDate.toISOString()],
@@ -301,7 +293,7 @@ export default function VehicleDetail() {
             <Text style={styles.periodText}>
               {realPeriodLabel
                 ? `${realPeriodLabel}${realDuration ? ` · ${realDuration}` : ''}`
-                : `${nights} night${nights !== 1 ? 's' : ''}`}
+                : rangeLength}
             </Text>
           </View>
           <View style={[styles.availBadge, { backgroundColor: avColor + '1f', borderColor: avColor + '40' }]}>
@@ -316,7 +308,7 @@ export default function VehicleDetail() {
           <>
             <Text style={styles.sectionTitle}>Pricing breakdown</Text>
             <View style={styles.darkCard}>
-              <PriceLine label={`Base rate (${realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
+              <PriceLine label={`Base rate (${realDuration ?? rangeLength})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
               <PriceLine label="Deposit (refundable)" value={`₹${pd.deposit.toLocaleString('en-IN')}`} />
               <PriceLine label={`Tax (GST ${pd.taxRate}%)`} value={`₹${pd.taxAmount.toLocaleString('en-IN')}`} />
               {pd.discountAmount > 0 && (
@@ -370,7 +362,7 @@ export default function VehicleDetail() {
           {pd ? (
             <>
               <Text style={styles.ctaPrice}>₹{(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}</Text>
-              <Text style={styles.ctaNote}>total · {realDuration ?? `${nights} night${nights !== 1 ? 's' : ''}`}</Text>
+              <Text style={styles.ctaNote}>total · {realDuration ?? rangeLength}</Text>
             </>
           ) : unitPrice != null ? (
             <>
@@ -387,12 +379,15 @@ export default function VehicleDetail() {
             // Guests browse freely — the sign-in ask happens here, at the
             // moment they commit to booking, and returns them to this car.
             if (!requireAuth({ returnTo: `/vehicle/${id}` })) return;
+            // The page may have sat open past its pickup time — bump it first.
+            const next = normalizeRange(startDate, endDate);
+            setRange(next);
             router.push({
               pathname: '/booking/checkout',
               params: {
                 vehicleId: vehicle.publicId,
-                start: startDate.toISOString(),
-                end: endDate.toISOString(),
+                start: next.start.toISOString(),
+                end: next.end.toISOString(),
               },
             });
           }}
@@ -409,21 +404,20 @@ export default function VehicleDetail() {
         visible={showPicker}
         startDate={startDate}
         endDate={endDate}
-        onConfirm={(s, e) => {
-          setStartDate(withTime(s, timeOf(startDate)));
-          setEndDate(withTime(e, timeOf(endDate)));
-        }}
+        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setShowPicker(false)}
       />
 
-      {/* Time picker */}
+      {/* Time picker — today lists only future times; a same-day return only
+          times after the pickup */}
       <TimeFieldPicker
         visible={timePicker !== null}
         value={timePicker === 'end' ? timeOf(endDate) : timeOf(startDate)}
+        slots={timePicker === 'end' ? timeSlotsFor(endDate, { after: startDate }) : timeSlotsFor(startDate)}
         title={timePicker === 'end' ? 'Return time' : 'Pickup time'}
         onSelect={(t) => {
-          if (timePicker === 'end') setEndDate((d) => withTime(d, t));
-          else setStartDate((d) => withTime(d, t));
+          if (timePicker === 'end') setRange((r) => normalizeRange(r.start, withTime(r.end, t)));
+          else setRange((r) => normalizeRange(withTime(r.start, t), r.end));
         }}
         onClose={() => setTimePicker(null)}
       />

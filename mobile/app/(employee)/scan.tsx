@@ -10,6 +10,7 @@ import {
   Vibration,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -25,6 +26,7 @@ const BORDER = 3;
 export default function ScanBooking() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState<Mode>('camera');
   const [scanning, setScanning] = useState(true);
@@ -130,12 +132,16 @@ export default function ScanBooking() {
 
     return (
       <View style={styles.cameraWrap}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          facing="back"
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={scanning ? onBarcodeScanned : undefined}
-        />
+        {/* Only while this tab is on screen: Android runs one camera at a time, so a
+            background preview would be killed by the photo camera (and drain battery). */}
+        {isFocused && (
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={scanning ? onBarcodeScanned : undefined}
+          />
+        )}
 
         {/* Overlay rendered as sibling via absolute positioning */}
         <View style={styles.overlay} pointerEvents="none">

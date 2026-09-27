@@ -21,17 +21,16 @@ import { normalizeGroups } from '../lib/vehicles';
 import OfferCard from '../components/cars/OfferCard';
 import FilterSheet, { type FilterValue } from '../components/cars/FilterSheet';
 import SearchCard, { type SearchQuery } from '../components/cars/SearchCard';
+import { timeLabel, timeOf } from '../lib/dates';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// "12 Jul | 12:00"
+// "12 Jul | 6:05 PM"
 function fmtStamp(iso?: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} | ${hh}:${mm}`;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} | ${timeLabel(timeOf(d))}`;
 }
 
 // Sixt-style offers list: close button, itinerary summary with edit pencil,

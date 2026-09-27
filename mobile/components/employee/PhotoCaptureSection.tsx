@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../lib/image';
+import CameraCapture, { type CapturedSize } from './CameraCapture';
 
 export interface CapturedPhoto {
   fileId: string;
@@ -31,9 +30,21 @@ interface Props {
   allowGeneric?: boolean;
   value: CapturedPhoto[];
   onChange: (photos: CapturedPhoto[]) => void;
-  // Returns the uploaded { fileId, url } for the picked image.
+  // Returns the uploaded { fileId, url } for the captured image.
   upload: (formData: FormData) => Promise<{ fileId: string; url: string }>;
   genericLabel?: string;
+  // Number of shots taken but not yet in `value` (still uploading, or failed
+  // and awaiting retry). Lets the screen hold its submit until they land.
+  onPendingChange?: (count: number) => void;
+}
+
+// A shot that has been taken but isn't in `value` yet.
+interface PendingShot {
+  key: string;
+  uri: string;
+  width: number;
+  label?: string;
+  failed: boolean;
 }
 
 export default function PhotoCaptureSection({
@@ -43,58 +54,115 @@ export default function PhotoCaptureSection({
   onChange,
   upload,
   genericLabel = 'Add photo',
+  onPendingChange,
 }: Props) {
-  const [busy, setBusy] = useState<string | null>(null);
+  // Camera-only on purpose: no gallery, and no confirm step after the shot.
+  // A labeled slot opens a single shot; the generic tile stays open for many.
+  const [camera, setCamera] = useState<{ label?: string; multiple: boolean } | null>(null);
+  const [pending, setPending] = useState<PendingShot[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const seq = useRef(0);
+  const mounted = useRef(true);
+  // Uploads finish in the background and can overlap, so always build the next
+  // list from the latest value rather than the one captured by the closure.
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
-  const pick = async (source: 'camera' | 'library'): Promise<ImagePicker.ImagePickerAsset | null> => {
-    if (source === 'camera') {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Camera access needed', 'Enable camera access to take photos.');
-        return null;
-      }
-      // quality 1: prepareImageForUpload re-encodes anyway, so compressing
-      // here only adds a second decode/encode pass.
-      const r = await ImagePicker.launchCameraAsync({ quality: 1 });
-      return r.canceled ? null : r.assets[0] ?? null;
-    }
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 1 });
-    return r.canceled ? null : r.assets[0] ?? null;
+  useEffect(() => () => { mounted.current = false; }, []);
+
+  useEffect(() => {
+    onPendingChange?.(pending.length);
+  }, [pending.length]);
+
+  const failedCount = pending.filter((p) => p.failed).length;
+  const uploadingCount = pending.length - failedCount;
+
+  useEffect(() => {
+    if (failedCount === 0) setUploadError(null);
+  }, [failedCount]);
+
+  const commit = (next: CapturedPhoto[]) => {
+    valueRef.current = next;
+    onChange(next);
   };
 
-  const capture = (slotKey: string, label?: string) => {
-    Alert.alert('Add photo', undefined, [
-      { text: 'Take photo', onPress: () => run(slotKey, 'camera', label) },
-      { text: 'Choose from gallery', onPress: () => run(slotKey, 'library', label) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  const run = async (slotKey: string, source: 'camera' | 'library', label?: string) => {
-    const asset = await pick(source);
-    if (!asset) return;
-    setBusy(slotKey);
+  const startUpload = async (shot: PendingShot) => {
     try {
       // Raw camera output is 3–8 MB and is rejected by the reverse proxy
       // before it reaches the API — always downscale first.
-      const file = await prepareImageForUpload(asset, `photo_${Date.now()}`);
-      const form = toUploadForm(file);
-      const { fileId, url } = await upload(form);
+      const file = await prepareImageForUpload(
+        { uri: shot.uri, width: shot.width, mimeType: 'image/jpeg' },
+        `photo_${shot.key}`,
+      );
+      const { fileId, url } = await upload(toUploadForm(file));
+      if (!mounted.current) return;
       // Replace any existing photo for a labeled slot; append for generic.
-      const next = label
-        ? [...value.filter((p) => p.label !== label), { fileId, url, label }]
-        : [...value, { fileId, url }];
-      onChange(next);
+      const current = valueRef.current;
+      commit(
+        shot.label
+          ? [...current.filter((p) => p.label !== shot.label), { fileId, url, label: shot.label }]
+          : [...current, { fileId, url }],
+      );
+      setPending((list) => list.filter((p) => p.key !== shot.key));
     } catch (err: any) {
-      Alert.alert('Upload failed', uploadErrorMessage(err));
-    } finally {
-      setBusy(null);
+      if (!mounted.current) return;
+      setPending((list) => list.map((p) => (p.key === shot.key ? { ...p, failed: true } : p)));
+      setUploadError(uploadErrorMessage(err));
     }
   };
 
-  const remove = (fileId: string) => onChange(value.filter((p) => p.fileId !== fileId));
+  const onShot = (uri: string, size: CapturedSize) => {
+    seq.current += 1;
+    const shot: PendingShot = {
+      key: `${Date.now()}_${seq.current}`,
+      uri,
+      width: size.width,
+      label: camera?.label,
+      failed: false,
+    };
+    setPending((list) => [...list, shot]);
+    startUpload(shot);
+  };
+
+  const retry = (shot: PendingShot) => {
+    const again = { ...shot, failed: false };
+    setPending((list) => list.map((p) => (p.key === shot.key ? again : p)));
+    startUpload(again);
+  };
+
+  const discard = (key: string) => setPending((list) => list.filter((p) => p.key !== key));
+
+  const remove = (fileId: string) => commit(valueRef.current.filter((p) => p.fileId !== fileId));
 
   const genericPhotos = value.filter((p) => !p.label);
+  const genericPending = pending.filter((p) => !p.label);
+
+  const renderPending = (shot: PendingShot) => (
+    <View key={shot.key} style={styles.thumbWrap}>
+      <Image source={{ uri: shot.uri }} style={styles.thumb} resizeMethod="resize" />
+      {shot.failed ? (
+        <TouchableOpacity
+          style={[styles.shotOverlay, styles.shotOverlayFailed]}
+          onPress={() => retry(shot)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Retry upload"
+        >
+          <Ionicons name="refresh" size={18} color={Colors.white} />
+          <Text style={styles.shotOverlayText}>Retry</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.shotOverlay}>
+          <ActivityIndicator size="small" color={Colors.white} />
+        </View>
+      )}
+      {shot.failed && (
+        <TouchableOpacity style={styles.removeBtn} onPress={() => discard(shot.key)} hitSlop={6}>
+          <Ionicons name="close" size={13} color={Colors.white} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
     <View style={styles.wrap}>
@@ -103,7 +171,7 @@ export default function PhotoCaptureSection({
         <View style={styles.slotGrid}>
           {fields.map((f) => {
             const shot = value.find((p) => p.label === f.name);
-            const key = `label:${f.name}`;
+            const inFlight = pending.find((p) => p.label === f.name);
             return (
               <View key={f.name} style={styles.slot}>
                 <View style={styles.slotHeader}>
@@ -112,18 +180,20 @@ export default function PhotoCaptureSection({
                 </View>
                 {shot ? (
                   <View style={styles.thumbWrap}>
-                    <Image source={{ uri: shot.url }} style={styles.thumb} />
+                    <Image source={{ uri: shot.url }} style={styles.thumb} resizeMethod="resize" />
                     <TouchableOpacity style={styles.removeBtn} onPress={() => remove(shot.fileId)} hitSlop={6}>
                       <Ionicons name="close" size={13} color={Colors.white} />
                     </TouchableOpacity>
                   </View>
+                ) : inFlight ? (
+                  renderPending(inFlight)
                 ) : (
-                  <TouchableOpacity style={styles.addTile} onPress={() => capture(key, f.name)} disabled={busy === key} activeOpacity={0.8}>
-                    {busy === key ? (
-                      <ActivityIndicator size="small" color={Colors.orange} />
-                    ) : (
-                      <Ionicons name="camera-outline" size={22} color={Colors.ink3} />
-                    )}
+                  <TouchableOpacity
+                    style={styles.addTile}
+                    onPress={() => setCamera({ label: f.name, multiple: false })}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="camera-outline" size={22} color={Colors.ink3} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -137,24 +207,43 @@ export default function PhotoCaptureSection({
         <View style={styles.genericGrid}>
           {genericPhotos.map((p) => (
             <View key={p.fileId} style={styles.thumbWrap}>
-              <Image source={{ uri: p.url }} style={styles.thumb} />
+              <Image source={{ uri: p.url }} style={styles.thumb} resizeMethod="resize" />
               <TouchableOpacity style={styles.removeBtn} onPress={() => remove(p.fileId)} hitSlop={6}>
                 <Ionicons name="close" size={13} color={Colors.white} />
               </TouchableOpacity>
             </View>
           ))}
-          <TouchableOpacity style={styles.addTile} onPress={() => capture('generic')} disabled={busy === 'generic'} activeOpacity={0.8}>
-            {busy === 'generic' ? (
-              <ActivityIndicator size="small" color={Colors.orange} />
-            ) : (
-              <>
-                <Ionicons name="add" size={22} color={Colors.ink3} />
-                <Text style={styles.addTileText}>{genericLabel}</Text>
-              </>
-            )}
+          {genericPending.map(renderPending)}
+          <TouchableOpacity
+            style={styles.addTile}
+            onPress={() => setCamera({ multiple: true })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera-outline" size={22} color={Colors.ink3} />
+            <Text style={styles.addTileText}>{genericLabel}</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {failedCount > 0 ? (
+        <Text style={styles.statusError}>
+          {failedCount === 1 ? "1 photo didn't upload" : `${failedCount} photos didn't upload`}
+          {` — tap Retry, or remove ${failedCount === 1 ? 'it' : 'them'}.`}
+          {uploadError ? ` ${uploadError}` : ''}
+        </Text>
+      ) : uploadingCount > 0 ? (
+        <Text style={styles.status}>
+          Uploading {uploadingCount} photo{uploadingCount > 1 ? 's' : ''}…
+        </Text>
+      ) : null}
+
+      <CameraCapture
+        visible={!!camera}
+        multiple={camera?.multiple}
+        title={camera?.label ?? (fields && fields.length > 0 ? 'More photos' : 'Photos')}
+        onCapture={onShot}
+        onClose={() => setCamera(null)}
+      />
     </View>
   );
 }
@@ -181,6 +270,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  shotOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  shotOverlayFailed: { backgroundColor: 'rgba(220,53,69,0.72)' },
+  shotOverlayText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white },
   addTile: {
     width: TILE,
     height: TILE,
@@ -194,4 +292,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   addTileText: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.ink3 },
+  status: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  statusError: { fontFamily: Fonts.body, fontSize: 12, color: '#dc3545', lineHeight: 17 },
 });

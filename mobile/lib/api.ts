@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
+import type { DropDamageInput } from '../types/return';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -251,6 +252,9 @@ export const employeeApi = {
     payRemainingAtPickup?: boolean;
     // gated by booking.frozenChargeConfig.safetyDepositEnabled
     safetyDepositRequest?: { requestedAmount: number; reason: string };
+    // Staff confirm they hold the customer's original driving licence; the
+    // backend rejects the handover (LICENSE_NOT_COLLECTED) unless true.
+    licenseCollected: boolean;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
@@ -265,6 +269,8 @@ export const employeeApi = {
   completeReturn: (bookingId: string, body?: {
     returnImageIds?: string[];
     requireManagerConfirmation?: boolean;
+    // required true when the original licence was collected at pickup
+    licenseReturned?: boolean;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
   getBookingKyc: (bookingId: string) =>
     api.get(`/api/employee/kyc/${bookingId}`),
@@ -274,11 +280,12 @@ export const employeeApi = {
   // ── remaining / advance balance collection (pickup + return) ──────────────
   initiateRemainingPaymentPickup: (
     bookingId: string,
-    body: { method: 'CASH' | 'ONLINE_RAZORPAY'; paidDuring: 'PICKUP' },
+    // UPI = counter UPI QR; `utr` (12 digits) required, settles like CASH.
+    body: { method: 'CASH' | 'ONLINE_RAZORPAY' | 'UPI'; paidDuring: 'PICKUP'; utr?: string },
   ) => api.post(`/api/employee/pickup/${bookingId}/initiate-remaining-payment`, body),
   initiateRemainingPaymentReturn: (
     bookingId: string,
-    body: { method: 'CASH' | 'ONLINE_RAZORPAY'; paidDuring: 'RETURN' },
+    body: { method: 'CASH' | 'ONLINE_RAZORPAY' | 'UPI'; paidDuring: 'RETURN'; utr?: string },
   ) => api.post(`/api/employee/return/${bookingId}/initiate-remaining-payment`, body),
   remainingPaymentStatus: (transactionId: string) =>
     api.get(`/api/employee/payment/remaining-status/${transactionId}`),
@@ -291,16 +298,27 @@ export const employeeApi = {
     body: {
       endOdometer: number;
       returnFuelLevel?: string;
-      extraKmCharge?: number;
+      // extra-km charge is computed by the server from the plan's km allowance
       fuelCharge?: number;
       fastagAmount?: number;
       fastagNotes?: string;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
+      // required true when the original licence was collected at pickup
+      licenseReturned?: boolean;
+      // re-applied on every compute — resend it on recomputes
+      discount?: { amount: number; reason: string };
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
   getReturnSession: (bookingId: string) =>
     api.get(`/api/employee/bookings/${bookingId}/return/session`),
+  // damages recorded at drop (billed on the return session when charged)
+  listDropDamages: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/return/damages`),
+  addDropDamage: (bookingId: string, body: DropDamageInput) =>
+    api.post(`/api/employee/bookings/${bookingId}/return/damages`, body),
+  deleteDropDamage: (bookingId: string, damagePublicId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/return/damages/${damagePublicId}`),
   recordSessionPayment: (
     sessionPublicId: string,
     body: {
@@ -375,7 +393,9 @@ export const employeeApi = {
     customer_kyc_id: string;
     start: string;
     end: string;
-    payment_type: 'CASH' | 'ONLINE';
+    payment_type: 'CASH' | 'ONLINE' | 'UPI';
+    /** Required for UPI — then confirmed via bookingPaymentStatus like CASH. */
+    utr?: string;
   }) => api.post('/api/employee/booking/create', body),
   cancelBookingHold: (holdId: string) =>
     api.delete(`/api/employee/booking/hold/${holdId}`),
@@ -392,16 +412,6 @@ export const employeeApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: UPLOAD_TIMEOUT_MS,
     }),
-  reportDamage: (body: {
-    bookingId: string;
-    odo: number;
-    fuelLevel: number; // 0..100 percent
-    severity: string; // 'Minor' | 'Moderate' | 'Severe'
-    chargeType: 'PENALTY' | 'COMPENSATION';
-    damageImageIds: string[];
-    returnImageIds: string[];
-    notes?: Record<string, unknown>;
-  }) => api.post('/api/employee/damage/report', body),
 
   // ── vehicle swap at pickup (#51) ──────────────────────────────────────────
   // bookingId = booking publicId. AvailableVehicle.id is the NUMERIC vehicle id.
@@ -436,11 +446,17 @@ export const employeeApi = {
     resolutionType: 'SAME_VEHICLE' | 'SWAP_CURRENT_TO_OTHER' | 'SWAP_FUTURE_BOOKING' | 'PARTIAL_EXTENSION';
     idempotencyKey: string;
     notes?: string;
+    /** Collect now instead of deferring the charge to a pickup payment session. */
+    collectNow?: boolean;
   }) => api.post('/api/employee/extensions/commit', body),
+  // ONLINE = UPI (UTR): onlineTransactionRef is the 12-digit UTR.
   collectExtension: (
     extensionPublicId: string,
     body: { method: 'CASH' | 'ONLINE'; onlineTransactionRef?: string },
   ) => api.post(`/api/employee/extensions/${extensionPublicId}/collect`, body),
+  // Releases an unpaid (not CONFIRMED) extension and restores the old return time.
+  cancelExtension: (extensionPublicId: string, reason?: string) =>
+    api.post(`/api/employee/extensions/${extensionPublicId}/cancel`, reason ? { reason } : {}),
 
   // ── counter payment panel (financial state + ledger + record) ─────────────
   financialState: (bookingPublicId: string) =>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,15 @@ import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import DateRangePicker from '../../../components/ui/DateRangePicker';
+import {
+  initialRange,
+  normalizeRange,
+  timeOf,
+  timeSlotsFor,
+  withSelectedSlot,
+  withTime,
+  type TimeSlot,
+} from '../../../lib/dates';
 
 interface VehicleCard {
   groupKey: string;
@@ -32,36 +41,39 @@ interface VehicleCard {
   pricingDetails?: { price: number; finalPrice: number; type: string };
 }
 
-const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? '00' : '30';
-  return `${String(h).padStart(2, '0')}:${m}`;
-});
-
-function toLocalISO(date: Date, time: string) {
+// Offset-less "YYYY-MM-DDTHH:mm" — the backend reads it as IST.
+function toLocalISO(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}T${time}`;
+  return `${y}-${m}-${d}T${timeOf(date)}`;
 }
 
 function fmtDate(d: Date) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function TimeRow({ value, onChange }: { value: string; onChange: (t: string) => void }) {
+function TimeRow({ value, slots, onChange }: { value: string; slots: TimeSlot[]; onChange: (t: string) => void }) {
+  const scrollRef = useRef<ScrollView>(null);
+  // An off-grid current value (e.g. 6:05 PM) stays listed and selected.
+  const data = withSelectedSlot(slots, value);
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeRow}>
-      {TIME_SLOTS.map((t) => (
+    <ScrollView ref={scrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeRow}>
+      {data.map((t) => (
         <TouchableOpacity
-          key={t}
-          style={[styles.timePill, value === t && styles.timePillActive]}
-          onPress={() => onChange(t)}
+          key={t.value}
+          style={[styles.timePill, value === t.value && styles.timePillActive]}
+          onPress={() => onChange(t.value)}
+          // Bring the selected time into view whenever the row lays out.
+          onLayout={(e) => {
+            if (t.value === value) scrollRef.current?.scrollTo({ x: Math.max(0, e.nativeEvent.layout.x - 8), animated: false });
+          }}
           activeOpacity={0.8}
         >
-          <Text style={[styles.timePillText, value === t && styles.timePillTextActive]}>{t}</Text>
+          <Text style={[styles.timePillText, value === t.value && styles.timePillTextActive]}>{t.label}</Text>
         </TouchableOpacity>
       ))}
+      {data.length === 0 ? <Text style={styles.timeEmpty}>No times left on this day. Pick another date.</Text> : null}
     </ScrollView>
   );
 }
@@ -73,10 +85,10 @@ export default function WalkinVehiclesScreen() {
   const setVehicle = useEmployeeBookingStore((s) => s.setVehicle);
   const setDates = useEmployeeBookingStore((s) => s.setDates);
 
-  const [startDate, setStartDate] = useState(() => new Date(Date.now() + 86400_000));
-  const [endDate, setEndDate] = useState(() => new Date(Date.now() + 2 * 86400_000));
-  const [pickupTime, setPickupTime] = useState('10:00');
-  const [returnTime, setReturnTime] = useState('10:00');
+  // Pickup today at the next 5-minute mark, return 24 hours later; every
+  // change goes through normalizeRange so the return stays after the pickup.
+  const [range, setRange] = useState(() => initialRange());
+  const { start: startDate, end: endDate } = range;
   const [showDates, setShowDates] = useState(false);
 
   const [category, setCategory] = useState<string>('all');
@@ -84,8 +96,8 @@ export default function WalkinVehiclesScreen() {
   const [sort, setSort] = useState<'default' | 'price_low_to_high' | 'price_high_to_low'>('default');
   const [selecting, setSelecting] = useState<string | null>(null);
 
-  const startISO = useMemo(() => toLocalISO(startDate, pickupTime), [startDate, pickupTime]);
-  const endISO = useMemo(() => toLocalISO(endDate, returnTime), [endDate, returnTime]);
+  const startISO = useMemo(() => toLocalISO(startDate), [startDate]);
+  const endISO = useMemo(() => toLocalISO(endDate), [endDate]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['employee', 'vehicle-categories'],
@@ -115,11 +127,16 @@ export default function WalkinVehiclesScreen() {
   });
 
   const selectGroup = async (card: VehicleCard) => {
+    // The screen may have sat open past the pickup time — bump it first.
+    const next = normalizeRange(startDate, endDate);
+    const start = toLocalISO(next.start);
+    const end = toLocalISO(next.end);
+    if (start !== startISO || end !== endISO) setRange(next);
     setSelecting(card.groupKey);
     try {
-      const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start: startISO, end: endISO });
+      const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start, end });
       const d = res.data?.data;
-      setDates(startISO, endISO);
+      setDates(start, end);
       setVehicle({
         groupKey: card.groupKey,
         make: d?.make ?? card.make,
@@ -185,11 +202,19 @@ export default function WalkinVehiclesScreen() {
 
         <View style={styles.timeBlock}>
           <Text style={styles.timeLabel}>Pickup time</Text>
-          <TimeRow value={pickupTime} onChange={setPickupTime} />
+          <TimeRow
+            value={timeOf(startDate)}
+            slots={timeSlotsFor(startDate)}
+            onChange={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
+          />
         </View>
         <View style={styles.timeBlock}>
           <Text style={styles.timeLabel}>Return time</Text>
-          <TimeRow value={returnTime} onChange={setReturnTime} />
+          <TimeRow
+            value={timeOf(endDate)}
+            slots={timeSlotsFor(endDate, { after: startDate })}
+            onChange={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
+          />
         </View>
       </View>
 
@@ -309,7 +334,7 @@ export default function WalkinVehiclesScreen() {
         visible={showDates}
         startDate={startDate}
         endDate={endDate}
-        onConfirm={(s, e) => { setStartDate(s); setEndDate(e); }}
+        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setShowDates(false)}
       />
     </View>
@@ -345,6 +370,7 @@ const styles = StyleSheet.create({
   timePillActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   timePillText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
   timePillTextActive: { color: Colors.white },
+  timeEmpty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, paddingVertical: 7 },
 
   catRow: { gap: 8, paddingRight: 8 },
   catPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline },
