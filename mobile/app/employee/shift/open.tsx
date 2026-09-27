@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +18,10 @@ export default function OpenShift() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  // Set by the dashboard's New Booking prompt: carry on into the booking.
+  const { next } = useLocalSearchParams<{ next?: string }>();
   const [done, setDone] = useState(false);
+  const [adopted, setAdopted] = useState(false);
   const [openedAt, setOpenedAt] = useState('');
   // Pushed on top of a flow in this stack (walk-in hold, pickup, drop,
   // extension — via promptOpenShift) → go straight back to it once the shift
@@ -26,17 +29,31 @@ export default function OpenShift() {
   const [fromFlow] = useState(() => (navigation.getState()?.index ?? 0) > 0);
 
   const mutation = useMutation({
-    mutationFn: () => employeeApi.openShift(),
-    onSuccess: (res) => {
+    mutationFn: async (): Promise<{ openedAt?: string; adopted: boolean }> => {
+      try {
+        const res = await employeeApi.openShift();
+        return { openedAt: res.data?.data?.openedAt, adopted: false };
+      } catch (err: any) {
+        // 409 = a shift is already open (e.g. started on the web) — adopt it.
+        if (err?.response?.status !== 409) throw err;
+        const active = await employeeApi.getActiveShift().catch(() => null);
+        const shift = active?.data?.data;
+        if (!shift) throw err;
+        return { openedAt: shift.openedAt, adopted: true };
+      }
+    },
+    onSuccess: ({ openedAt: at, adopted: wasOpen }) => {
       qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+      if (next === 'new-booking') {
+        router.replace('/employee/customer/search');
+        return;
+      }
       if (fromFlow && router.canGoBack()) {
         router.back();
         return;
       }
-      const shift = res.data?.data;
-      if (shift) {
-        setOpenedAt(shift.openedAt);
-      }
+      if (at) setOpenedAt(at);
+      setAdopted(wasOpen);
       setDone(true);
     },
   });
@@ -52,9 +69,11 @@ export default function OpenShift() {
           <View style={styles.successIcon}>
             <Ionicons name="checkmark-circle" size={56} color="#10b981" />
           </View>
-          <Text style={styles.successTitle}>Shift Opened</Text>
+          <Text style={styles.successTitle}>{adopted ? 'Shift Already Open' : 'Shift Opened'}</Text>
           <Text style={styles.successSub}>
-            Your cash shift has started. All cash collected this session will be tracked.
+            {adopted
+              ? 'Your cash shift was already open (started on another device). Cash you collect is tracked in it.'
+              : 'Your cash shift has started. All cash collected this session will be tracked.'}
           </Text>
           {openedAt ? (
             <View style={styles.detailPill}>

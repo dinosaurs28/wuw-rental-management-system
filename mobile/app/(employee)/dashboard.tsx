@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -8,12 +9,12 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
-import { promptOpenShift } from '../../lib/counterErrors';
+import { SHIFT_REQUIRED_MESSAGE } from '../../lib/counterErrors';
 import { useAuthStore } from '../../store/auth';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -80,7 +81,6 @@ function formatTime(iso: string) {
 export default function EmployeeDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
@@ -102,23 +102,23 @@ export default function EmployeeDashboard() {
     staleTime: 30_000,
   });
 
-  const openShiftMutation = useMutation({
-    mutationFn: () => employeeApi.openShift(),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
-    },
-  });
-
   const refreshing = statsFetching || shiftFetching;
 
   // Staff can't take a booking without an open cash shift (the server rejects
   // it with SHIFT_REQUIRED). With no shift cached, re-check before blocking in
   // case one was opened elsewhere; if the check itself fails, let the server decide.
+  // Like the web, opening the shift from this prompt continues into the booking.
   const startNewBooking = async () => {
     if (!shiftData) {
       const { data, isError } = await refetchShift();
       if (!isError && !data) {
-        promptOpenShift();
+        Alert.alert('Cash shift not open', SHIFT_REQUIRED_MESSAGE, [
+          { text: 'Not now', style: 'cancel' },
+          {
+            text: 'Open shift',
+            onPress: () => router.push({ pathname: '/employee/shift/open', params: { next: 'new-booking' } }),
+          },
+        ]);
         return;
       }
     }
@@ -263,7 +263,7 @@ export default function EmployeeDashboard() {
         <QuickAction
           label="Pickup Queue"
           icon="arrow-up-circle-outline"
-          onPress={() => router.push('/(employee)/bookings')}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'pickups' } })}
         />
         <QuickAction
           label="Return Queue"

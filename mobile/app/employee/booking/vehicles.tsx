@@ -34,11 +34,30 @@ interface VehicleCard {
   make: string;
   model: string;
   category: string;
+  typeClass?: string;
   branch: string;
   availableCount: number;
   imageUrl: Array<{ file: { url: string } }>;
   pricing: { daily: number };
   pricingDetails?: { price: number; finalPrice: number; type: string };
+}
+
+type TypeClass = 'TWO_WHEELER' | 'FOUR_WHEELER';
+const TYPE_LABEL: Record<TypeClass, string> = { TWO_WHEELER: 'two-wheeler', FOUR_WHEELER: 'four-wheeler' };
+
+interface LimitSlot {
+  vehicleMake: string;
+  vehicleModel: string;
+  endAt: string;
+}
+
+// GET /api/employee/customer/:id/booking-limits — the customer's own active
+// bookings that block new ones for the chosen dates.
+interface BookingLimits {
+  usedTypeClasses?: Partial<Record<TypeClass, LimitSlot>>;
+  // The branch allows one vehicle at a time and the customer already has one.
+  blockedAll?: boolean;
+  anyVehicleConflict?: LimitSlot | null;
 }
 
 // Offset-less "YYYY-MM-DDTHH:mm" — the backend reads it as IST.
@@ -126,7 +145,31 @@ export default function WalkinVehiclesScreen() {
     enabled: !!customer,
   });
 
+  // Same check the web listing runs up front, so staff see the block before
+  // picking a vehicle instead of at booking create.
+  const { data: limits } = useQuery({
+    queryKey: ['employee', 'customer-booking-limits', customer?.publicId, startISO, endISO],
+    queryFn: async () => {
+      const res = await employeeApi.customerBookingLimits(customer!.publicId, { start: startISO, end: endISO });
+      return res.data as BookingLimits;
+    },
+    enabled: !!customer,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const usedTypes = Object.keys(limits?.usedTypeClasses ?? {}) as TypeClass[];
+  const blockedAll = !!limits?.blockedAll;
+  const limitSlots: LimitSlot[] = blockedAll
+    ? (limits?.anyVehicleConflict ? [limits.anyVehicleConflict] : [])
+    : usedTypes.map((t) => limits!.usedTypeClasses![t]!).filter(Boolean);
+  const blockedReason = (card: VehicleCard): string | null => {
+    if (blockedAll) return 'Blocked — customer already has a booking for these dates';
+    const tc = card.typeClass as TypeClass | undefined;
+    return tc && usedTypes.includes(tc) ? `Blocked — customer already has a ${TYPE_LABEL[tc]} booking` : null;
+  };
+
   const selectGroup = async (card: VehicleCard) => {
+    if (blockedReason(card)) return;
     // The screen may have sat open past the pickup time — bump it first.
     const next = normalizeRange(startDate, endDate);
     const start = toLocalISO(next.start);
@@ -218,6 +261,31 @@ export default function WalkinVehiclesScreen() {
         </View>
       </View>
 
+      {/* Booking restriction — same banner as the web listing */}
+      {(blockedAll || usedTypes.length > 0) && (
+        <View style={styles.limitBanner}>
+          <Ionicons name="lock-closed" size={16} color="#b45309" style={{ marginTop: 1 }} />
+          <View style={styles.limitTextWrap}>
+            <Text style={styles.limitTitle}>
+              {blockedAll
+                ? 'Customer already has an active booking for these dates'
+                : `Customer has an active ${usedTypes.map((t) => TYPE_LABEL[t]).join(' and ')} booking`}
+            </Text>
+            <Text style={styles.limitText}>
+              {blockedAll
+                ? 'This branch allows one vehicle at a time, so all vehicles are blocked.'
+                : 'Vehicles of the same type are blocked for these dates.'}
+            </Text>
+            {limitSlots.map((slot, i) => (
+              <Text key={i} style={styles.limitSlot}>
+                {slot.vehicleMake} {slot.vehicleModel} · until{' '}
+                {new Date(slot.endAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Category tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
         <TouchableOpacity
@@ -306,8 +374,14 @@ export default function WalkinVehiclesScreen() {
         renderItem={({ item }) => {
           const price = item.pricingDetails?.finalPrice ?? item.pricing?.daily ?? 0;
           const busy = selecting === item.groupKey;
+          const blocked = blockedReason(item);
           return (
-            <TouchableOpacity style={styles.card} onPress={() => selectGroup(item)} disabled={busy} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={[styles.card, blocked && styles.cardBlocked]}
+              onPress={() => selectGroup(item)}
+              disabled={busy || !!blocked}
+              activeOpacity={0.85}
+            >
               {item.imageUrl?.[0]?.file?.url ? (
                 <Image source={{ uri: item.imageUrl[0].file.url }} style={styles.cardImg} resizeMode="cover" />
               ) : (
@@ -318,12 +392,16 @@ export default function WalkinVehiclesScreen() {
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{item.make} {item.model}</Text>
                 <Text style={styles.cardMeta}>{item.category} · {item.availableCount} available</Text>
-                <Text style={styles.cardPrice}>₹{Number(price).toLocaleString('en-IN')}{item.pricingDetails ? ' total' : '/day'}</Text>
+                {blocked ? (
+                  <Text style={styles.cardBlockedText}>{blocked}</Text>
+                ) : (
+                  <Text style={styles.cardPrice}>₹{Number(price).toLocaleString('en-IN')}{item.pricingDetails ? ' total' : '/day'}</Text>
+                )}
               </View>
               {busy ? (
                 <ActivityIndicator size="small" color={Colors.orange} />
               ) : (
-                <Ionicons name="chevron-forward" size={18} color={Colors.ink4} />
+                <Ionicons name={blocked ? 'lock-closed' : 'chevron-forward'} size={blocked ? 16 : 18} color={Colors.ink4} />
               )}
             </TouchableOpacity>
           );
@@ -372,6 +450,15 @@ const styles = StyleSheet.create({
   timePillTextActive: { color: Colors.white },
   timeEmpty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, paddingVertical: 7 },
 
+  limitBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: '#fffbeb', borderRadius: 14, borderWidth: 1, borderColor: '#fcd34d', padding: 14,
+  },
+  limitTextWrap: { flex: 1, gap: 2 },
+  limitTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#78350f' },
+  limitText: { fontFamily: Fonts.body, fontSize: 12, color: '#92400e', lineHeight: 17 },
+  limitSlot: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#b45309', marginTop: 2 },
+
   catRow: { gap: 8, paddingRight: 8 },
   catPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline },
   catPillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
@@ -395,6 +482,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderRadius: 16, padding: 12,
     borderWidth: 1, borderColor: Colors.hairline,
   },
+  cardBlocked: { opacity: 0.55 },
+  cardBlockedText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#b45309', marginTop: 2 },
   cardImg: { width: 76, height: 56, borderRadius: 10, backgroundColor: Colors.bg },
   cardImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   cardInfo: { flex: 1, gap: 2 },

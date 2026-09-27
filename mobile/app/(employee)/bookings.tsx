@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -104,8 +104,18 @@ function BookingCard({ booking, type }: { booking: BookingItem; type: Tab }) {
 
 export default function BookingsQueue() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<Tab>(tab === 'returns' ? 'returns' : 'pickups');
+
+  // This tab screen stays mounted, so apply the dashboard's Pickup / Return
+  // Queue choice whenever it arrives, then clear it — the next shortcut tap
+  // applies again, and a plain tab-bar visit keeps the last-used tab.
+  useEffect(() => {
+    if (tab !== 'pickups' && tab !== 'returns') return;
+    setActiveTab(tab);
+    router.setParams({ tab: undefined });
+  }, [tab]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);

@@ -167,7 +167,18 @@ export interface ReturnBooking {
   licenseReturnedAt?: string | null;
   kmAllowance?: KmAllowance | null;
   customer: { user: { name: string; phone: string | null } };
-  items: Array<{ vehicle: { publicId: string; make: string; model: string; regNo: string; odo: number | null; hasFastag?: boolean } }>;
+  items: Array<{
+    vehicle: {
+      publicId: string;
+      make: string;
+      model: string;
+      regNo: string;
+      odo: number | null;
+      hasFastag?: boolean;
+      // ₹ per fuel bar (of 10) — prices the fuel deficit at drop
+      fuelBar?: string | number | null;
+    };
+  }>;
 }
 
 // `km` on the return-session compute response.

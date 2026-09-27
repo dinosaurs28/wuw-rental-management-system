@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,20 +13,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import RemainingBalanceCollect from '../../../components/employee/RemainingBalanceCollect';
 import PhotoCaptureSection, { type CapturedPhoto, type CaptureField } from '../../../components/employee/PhotoCaptureSection';
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
-import CounterDiscountSection from '../../../components/employee/CounterDiscountSection';
 import VehicleSwapSection from '../../../components/employee/VehicleSwapSection';
+import UtrInput from '../../../components/employee/UtrInput';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  handleShiftRequired,
+  isValidUtr,
+} from '../../../lib/counterErrors';
+import type { ReturnSession } from '../../../types/api';
+import type { KmAllowance } from '../../../types/return';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+// Pickup and return payment sessions share one serialized shape.
+type PickupSession = ReturnSession;
 
 interface BookingDetail {
   publicId: string;
@@ -38,11 +52,18 @@ interface BookingDetail {
   remainingBalance: number | null;
   remainingPaidAt: string | null;
   startOdometer: number | null;
+  // "1".."10", recorded when the branch fuel module is enabled
+  pickupFuelLevel?: string | null;
   requiresManagerConfirmation?: boolean;
   safetyDeposit?: number | null;
+  // Branch "Unified Payments": pickup money goes through a payment session.
+  usePaymentSessions?: boolean;
+  kmAllowance?: KmAllowance | null;
   frozenChargeConfig?: {
     safetyDepositEnabled?: boolean;
     safetyDepositRequiresApproval?: boolean;
+    fuelModuleEnabled?: boolean;
+    fastagModuleEnabled?: boolean;
   } | null;
   days: number;
   customer: { user: { name: string; phone: string | null } };
@@ -56,9 +77,42 @@ interface BookingDetail {
   }>;
 }
 
+interface KycDoc {
+  publicId: string;
+  type: string;
+  status: string;
+  file: { url: string; mime: string };
+}
+
+// Settlement methods — same set as the web RecordPaymentPanel. UPI is the shop
+// QR recorded by its 12-digit UTR; "Other online" is another gateway's reference.
+type PayMethod = 'CASH' | 'UPI' | 'SPLIT' | 'OTHER';
+const PAY_METHODS: PayMethod[] = ['CASH', 'UPI', 'SPLIT', 'OTHER'];
+const PAY_METHOD_LABELS: Record<PayMethod, string> = {
+  CASH: 'Cash',
+  UPI: 'UPI (UTR)',
+  SPLIT: 'Split',
+  OTHER: 'Other online',
+};
+const GATEWAYS = ['Razorpay', 'Other'] as const;
+
+type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon';
+
+const LEDGER_LABELS: Record<string, string> = {
+  BOOKING_BASE: 'Booking balance',
+  EXTENSION: 'Extension charge',
+  DEPOSIT: 'Safety deposit',
+  DISCOUNT: 'Discount',
+  PAYMENT: 'Payment',
+  REFUND: 'Refund',
+};
+
 // Fuel is recorded on a 1–10 scale (same as the return screen) so the charge
 // engine can compare pickup vs return fuel directly. pickupFuelLevel = "1".."10".
 const FUEL_STEPS = Array.from({ length: 10 }, (_, i) => i + 1);
+
+const num = (x: unknown) => Number(x ?? 0) || 0;
+const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -87,6 +141,56 @@ function InfoRow({ icon, label, value }: { icon: IoniconName; label: string; val
   );
 }
 
+// The pickup bill: session ledger lines and what's left to collect.
+function SessionBill({ session }: { session: PickupSession }) {
+  const net = num(session.netPayable);
+  const entries = (session.entries ?? []).filter((e) => !e.isVoided);
+  const gst = num(session.gstAmount);
+
+  return (
+    <View style={styles.card}>
+      {entries.length === 0 && <Text style={styles.hintInline}>No charges on this pickup.</Text>}
+      {entries.map((e) => {
+        const amt = num(e.amount);
+        const credit = amt < 0 || e.classification === 'DISCOUNT' || e.classification === 'PAYMENT';
+        const isDeposit = e.entryType === 'DEPOSIT';
+        return (
+          <View key={e.publicId} style={styles.billRow}>
+            <View style={styles.billLabelWrap}>
+              <Text style={styles.billLabel} numberOfLines={2}>
+                {isDeposit ? 'Safety deposit (refundable)' : e.description || LEDGER_LABELS[e.entryType] || e.entryType}
+              </Text>
+              {isDeposit && !!e.description && (
+                <Text style={styles.billSub} numberOfLines={1}>{e.description}</Text>
+              )}
+            </View>
+            <Text style={[styles.billValue, credit && styles.billCredit]}>
+              {amt < 0 ? '−' : ''}{inr(amt)}
+            </Text>
+          </View>
+        );
+      })}
+      {gst > 0 && (
+        <View style={styles.billRow}>
+          <Text style={styles.billLabel}>GST</Text>
+          <Text style={styles.billValue}>{inr(gst)}</Text>
+        </View>
+      )}
+
+      <View style={[styles.divider, { marginVertical: 4 }]} />
+
+      <View style={styles.billRow}>
+        <Text style={styles.billNetLabel}>
+          {net > 0 ? 'Amount to collect' : net < 0 ? 'Refund due' : 'Nothing to collect'}
+        </Text>
+        <Text style={[styles.billNetValue, net < 0 && styles.billCredit, net === 0 && { color: Colors.ink3 }]}>
+          {net === 0 ? '₹0' : `${net < 0 ? '−' : ''}${inr(net)}`}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function PickupScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const router = useRouter();
@@ -94,20 +198,76 @@ export default function PickupScreen() {
   const qc = useQueryClient();
 
   const [odo, setOdo] = useState('');
-  const [fuelLevel, setFuelLevel] = useState<number>(5); // 1..10 scale
+  // No default — staff must read the gauge and pick a level (1..10).
+  const [fuelLevel, setFuelLevel] = useState<number | null>(null);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   // Shots still uploading (or failed) — they aren't in `photos` yet.
   const [pendingPhotos, setPendingPhotos] = useState(0);
   const [licenseCollected, setLicenseCollected] = useState(false);
+  const [licenseRejected, setLicenseRejected] = useState(false);
   const [done, setDone] = useState(false);
+  // What was settled on the pickup session, for the success screen.
+  const [paid, setPaid] = useState<{ amount: number; method: string } | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [kycExpanded, setKycExpanded] = useState<Record<string, boolean>>({});
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Legacy flow only (branches without payment sessions)
   const [requireManager, setRequireManager] = useState(false);
   const [requestDeposit, setRequestDeposit] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositReason, setDepositReason] = useState('');
+
+  // Payment-session flow
+  const [session, setSession] = useState<PickupSession | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [initiating, setInitiating] = useState(false);
+  const [sessionAction, setSessionAction] = useState<SessionAction | null>(null);
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [sDepositAmt, setSDepositAmt] = useState('');
+  const [sDepositReason, setSDepositReason] = useState('');
+  const [depositError, setDepositError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [settling, setSettling] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
+  const [utr, setUtr] = useState('');
+  const [utrError, setUtrError] = useState<string | undefined>(undefined);
+  const [splitCash, setSplitCash] = useState('');
+  const [splitUpi, setSplitUpi] = useState('');
+  const [payError, setPayError] = useState<string | null>(null);
+  const [otherRef, setOtherRef] = useState('');
+  const [otherRefError, setOtherRefError] = useState<string | null>(null);
+  const [otherGateway, setOtherGateway] = useState<(typeof GATEWAYS)[number]>('Razorpay');
+
   const scrollRef = useRef<ScrollView>(null);
+  const contentRef = useRef<View>(null);
   const odoRef = useRef<View>(null);
+  const mountedRef = useRef(true);
+  const initiateBusyRef = useRef(false);
+  const settleBusyRef = useRef(false);
+  const restoreTriedRef = useRef(false);
+  const odoPrefillRef = useRef<{ vehicle: string; value: string } | null>(null);
+
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  // Android is edge-to-edge (SDK 54): scroll the focused field (UTR, deposit,
+  // coupon…) above the keyboard.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        const input = TextInput.State.currentlyFocusedInput();
+        if (!input || !contentRef.current) return;
+        input.measureLayout(
+          contentRef.current as any,
+          (_x, y) => { scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true }); },
+          () => {},
+        );
+      }, 100);
+    });
+    return () => sub.remove();
+  }, []);
 
   const { data: booking, isLoading, isError, refetch } = useQuery<BookingDetail>({
     queryKey: ['employee', 'pickup', bookingId],
@@ -132,18 +292,78 @@ export default function PickupScreen() {
     retry: false,
   });
 
+  const { data: kycData, isLoading: kycLoading } = useQuery({
+    queryKey: ['employee', 'kyc', bookingId],
+    queryFn: async () => {
+      const res = await employeeApi.getBookingKyc(bookingId as string);
+      return res.data as { customerName: string; kyc: KycDoc[] };
+    },
+    enabled: !!bookingId,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  // Start from the vehicle's current odometer (as the web does); follow a
+  // vehicle swap unless staff already typed their own reading.
+  useEffect(() => {
+    const v = booking?.items[0]?.vehicle;
+    if (!v || !(num(v.odo) > 0)) return;
+    if (odoPrefillRef.current?.vehicle === v.regNo) return;
+    const value = String(v.odo);
+    const previous = odoPrefillRef.current?.value;
+    setOdo((cur) => (cur === '' || cur === previous ? value : cur));
+    odoPrefillRef.current = { vehicle: v.regNo, value };
+  }, [booking]);
+
+  // Session flow: pick up a pickup session left open (app restart, web).
+  useEffect(() => {
+    if (!bookingId || !booking?.usePaymentSessions || booking.status !== 'CONFIRMED') return;
+    if (restoreTriedRef.current) return;
+    restoreTriedRef.current = true;
+    setRestoring(true);
+    (async () => {
+      try {
+        const res = await employeeApi.getActivePickupSession(bookingId as string);
+        const s = res.data?.data as PickupSession | undefined;
+        if (mountedRef.current && s) setSession(s);
+      } catch {
+        /* 404 — no open session, start fresh */
+      } finally {
+        if (mountedRef.current) setRestoring(false);
+      }
+    })();
+  }, [bookingId, booking?.usePaymentSessions, booking?.status]);
+
+  const handoverBody = () => {
+    const labeled = photos.filter((p) => p.label);
+    const generic = photos.filter((p) => !p.label);
+    const level = fuelLevel ?? 0;
+    return {
+      odo: Number(odo),
+      // fuelLevel is stored on the vehicle as a percent; derive it from the 1..10 scale.
+      fuelLevel: level * 10,
+      // 1..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
+      pickupFuelLevel: String(level),
+      ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
+      ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
+    };
+  };
+
+  const onPickupDone = (settled: { amount: number; method: string } | null) => {
+    qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', bookingId] });
+    if (!mountedRef.current) return;
+    setPaid(settled);
+    setDone(true);
+  };
+
+  // Legacy (no payment sessions): one call hands the vehicle over.
   const mutation = useMutation({
-    mutationFn: () => {
-      const labeled = photos.filter((p) => p.label);
-      const generic = photos.filter((p) => !p.label);
-      return employeeApi.completePickup(bookingId as string, {
-        odo: Number(odo),
-        // fuelLevel is stored on the vehicle as a percent; derive it from the 1..10 scale.
-        fuelLevel: fuelLevel * 10,
-        // 1..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
-        pickupFuelLevel: String(fuelLevel),
-        ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
-        ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
+    mutationFn: () =>
+      employeeApi.completePickup(bookingId as string, {
+        ...handoverBody(),
         // Escalate to manager confirmation instead of completing directly (#50)
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
         // Optional safety-deposit request, only when the branch config enables it (#49)
@@ -154,27 +374,17 @@ export default function PickupScreen() {
         payRemainingAtPickup: true,
         // Required toggle below; the backend also enforces it (LICENSE_NOT_COLLECTED).
         licenseCollected,
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-      qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
-      setDone(true);
-    },
-    onError: () => {
+      }),
+    onSuccess: () => onPickupDone(null),
+    onError: (err: any) => {
       setShowConfirm(false);
+      // An auto-approved safety deposit is counter money — it needs an open shift.
+      if (handleShiftRequired(err)) return;
+      if (err?.response?.data?.code === 'LICENSE_NOT_COLLECTED') setLicenseRejected(true);
+      // 409: the branch switched to payment sessions — reload so the screen follows.
+      if (err?.response?.status === 409) refetch();
+      setErrorMsg(apiErrorMessage(err, 'Something went wrong.'));
     },
-  });
-
-  const { data: kycData, isLoading: kycLoading } = useQuery({
-    queryKey: ['employee', 'kyc', bookingId],
-    queryFn: async () => {
-      const res = await employeeApi.getBookingKyc(bookingId as string);
-      return res.data as { customerName: string; kyc: Array<{ publicId: string; type: string; status: string; file: { url: string; mime: string } }> };
-    },
-    enabled: !!bookingId,
-    staleTime: 30_000,
-    retry: false,
   });
 
   const kycMutation = useMutation({
@@ -188,32 +398,256 @@ export default function PickupScreen() {
     },
   });
 
-  const handleConfirm = () => {
-    if (!odo.trim() || Number(odo) < 0) return;
-    if (dlBlocked) {
-      Alert.alert('Approved DL required', 'This customer needs an APPROVED Driving License before the vehicle can be handed over.');
+  // Session flow step 1: save the handover details and open the bill.
+  const startSession = async () => {
+    if (initiateBusyRef.current) return;
+    initiateBusyRef.current = true;
+    setInitiating(true);
+    setErrorMsg(null);
+    setLicenseRejected(false);
+    try {
+      const res = await employeeApi.initiatePickupSession(bookingId as string, {
+        ...handoverBody(),
+        licenseCollected,
+      });
+      const s = res.data?.data as PickupSession | undefined;
+      if (!mountedRef.current) return;
+      if (s) setSession(s);
+      // startOdometer / pickup fuel are saved now — show the server's values.
+      refetch();
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      if (err?.response?.data?.code === 'LICENSE_NOT_COLLECTED') setLicenseRejected(true);
+      // 409: payment sessions were switched off for the branch — reload into the legacy flow.
+      if (err?.response?.status === 409) refetch();
+      setErrorMsg(apiErrorMessage(err, 'Could not start the payment.'));
+    } finally {
+      initiateBusyRef.current = false;
+      if (mountedRef.current) setInitiating(false);
+    }
+  };
+
+  // The bill changed or the session moved on elsewhere — reload it.
+  const reloadSession = async () => {
+    try {
+      const res = await employeeApi.getActivePickupSession(bookingId as string);
+      const s = res.data?.data as PickupSession | undefined;
+      if (mountedRef.current && s) setSession(s);
+    } catch (err: any) {
+      if (err?.response?.status !== 404) return;
+      // No open session: either it completed (vehicle handed over) or it was dropped.
+      const fresh = await refetch();
+      if (!mountedRef.current) return;
+      if (fresh.data?.status === 'PICKED_UP') onPickupDone(null);
+      else setSession(null);
+    }
+  };
+
+  const clearPayInputs = () => {
+    setSplitCash('');
+    setSplitUpi('');
+    setPayError(null);
+  };
+
+  const runSessionAction = async (
+    kind: SessionAction,
+    call: () => Promise<any>,
+    onOk: () => void,
+    onFail: (message: string) => void,
+    fallback: string,
+  ) => {
+    if (sessionAction) return;
+    setSessionAction(kind);
+    try {
+      const res = await call();
+      const s = res.data?.data as PickupSession | undefined;
+      if (!mountedRef.current) return;
+      if (s) setSession(s);
+      clearPayInputs();
+      onOk();
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      onFail(apiErrorMessage(err, fallback));
+    } finally {
+      if (mountedRef.current) setSessionAction(null);
+    }
+  };
+
+  const openDepositForm = (entry?: { amount: string; description: string }) => {
+    setSDepositAmt(entry ? String(num(entry.amount)) : '');
+    setSDepositReason(entry?.description ?? '');
+    setDepositError(null);
+    setDepositOpen(true);
+  };
+
+  const saveDeposit = () => {
+    const amount = Number(sDepositAmt);
+    if (!(amount > 0)) {
+      setDepositError('Enter the deposit amount.');
       return;
     }
-    if (missingRequiredPhotos.length > 0) {
-      Alert.alert(
-        'Photos required',
-        `Capture the required photo${missingRequiredPhotos.length > 1 ? 's' : ''}: ${missingRequiredPhotos.map((f) => f.name).join(', ')}.`,
+    if (!sDepositReason.trim()) {
+      setDepositError('Enter a reason for the deposit.');
+      return;
+    }
+    void runSessionAction(
+      'deposit',
+      () => employeeApi.addDepositToPickupSession(bookingId as string, { amount, reason: sDepositReason.trim() }),
+      () => { setDepositOpen(false); setDepositError(null); },
+      setDepositError,
+      'Could not update the deposit.',
+    );
+  };
+
+  const removeDeposit = () => {
+    void runSessionAction(
+      'removeDeposit',
+      () => employeeApi.removeDepositFromPickupSession(bookingId as string),
+      () => setDepositError(null),
+      setDepositError,
+      'Could not remove the deposit.',
+    );
+  };
+
+  const applyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    void runSessionAction(
+      'coupon',
+      () => employeeApi.applyDiscountToPickupSession(bookingId as string, { discountCode: code }),
+      () => { setCouponCode(''); setCouponError(null); },
+      setCouponError,
+      'Invalid coupon code.',
+    );
+  };
+
+  const removeCoupon = () => {
+    void runSessionAction(
+      'removeCoupon',
+      () => employeeApi.removeDiscountFromPickupSession(bookingId as string),
+      () => setCouponError(null),
+      setCouponError,
+      'Could not remove the coupon.',
+    );
+  };
+
+  const selectPayMethod = (m: PayMethod) => {
+    setPayMethod(m);
+    setPayError(null);
+    setUtrError(undefined);
+    setOtherRefError(null);
+  };
+
+  // Split: typing one part fills the other so they always add up to the bill.
+  const changeSplit = (part: 'cash' | 'upi', text: string, net: number) => {
+    const clean = text.replace(/[^\d.]/g, '');
+    const rest = Number.isFinite(Number(clean)) ? Math.max(0, net - (Number(clean) || 0)) : 0;
+    const restText = String(Math.round(rest * 100) / 100);
+    if (part === 'cash') {
+      setSplitCash(clean);
+      setSplitUpi(restText);
+    } else {
+      setSplitUpi(clean);
+      setSplitCash(restText);
+    }
+    setPayError(null);
+  };
+
+  // Session flow step 2: record the money; a COMPLETED session means the
+  // server has marked the booking PICKED_UP.
+  const settleSession = async () => {
+    if (!session || settleBusyRef.current || sessionAction) return;
+    const net = num(session.netPayable);
+    const cashPart = num(splitCash);
+    const upiPart = num(splitUpi);
+    if (net > 0) {
+      if (payMethod === 'SPLIT' && Math.abs(cashPart + upiPart - net) >= 0.01) {
+        setPayError(`Cash + UPI must add up to ${inr(net)}.`);
+        return;
+      }
+      if ((payMethod === 'UPI' || (payMethod === 'SPLIT' && upiPart > 0)) && !isValidUtr(utr)) {
+        setUtrError('Enter the 12-digit UTR number.');
+        return;
+      }
+      if (payMethod === 'OTHER' && !otherRef.trim()) {
+        setOtherRefError('Enter the transaction reference.');
+        return;
+      }
+    }
+    settleBusyRef.current = true;
+    setSettling(true);
+    setErrorMsg(null);
+    setPayError(null);
+    setUtrError(undefined);
+    setOtherRefError(null);
+    try {
+      let res;
+      if (net < 0) {
+        res = await employeeApi.recordSessionRefund(session.publicId, {
+          method: 'CASH',
+          amount: Math.abs(net),
+          idempotencyKey: `refund:${session.publicId}`,
+        });
+      } else if (net === 0) {
+        res = await employeeApi.recordSessionPayment(session.publicId, {
+          method: 'CASH',
+          amount: 0,
+          idempotencyKey: `zero-balance:${session.publicId}`,
+          notes: 'No payment required — zero balance',
+        });
+      } else {
+        const idempotencyKey = `settle:${session.publicId}`;
+        res = await employeeApi.recordSessionPayment(
+          session.publicId,
+          payMethod === 'SPLIT'
+            ? {
+              method: 'SPLIT',
+              amount: net,
+              idempotencyKey,
+              notes: `Split: ₹${cashPart.toFixed(2)} cash + ₹${upiPart.toFixed(2)} UPI`,
+              cashAmount: cashPart,
+              onlineAmount: upiPart,
+              ...(upiPart > 0 ? { onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) } : {}),
+            }
+            : payMethod === 'UPI'
+              ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) }
+              : payMethod === 'OTHER'
+                ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: otherGateway, onlineTransactionRef: otherRef.trim() }
+                : { method: 'CASH', amount: net, idempotencyKey },
+        );
+      }
+      const updated = res.data?.data as PickupSession | undefined;
+      if (!mountedRef.current) return;
+      if (updated && updated.status !== 'COMPLETED') {
+        setSession(updated);
+        setErrorMsg('Payment recorded — waiting for the session to complete.');
+        return;
+      }
+      onPickupDone(
+        net > 0
+          ? { amount: net, method: PAY_METHOD_LABELS[payMethod] }
+          : net < 0
+            ? { amount: net, method: 'Cash refund' }
+            : null,
       );
-      return;
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      if (handleShiftRequired(err)) return;
+      const code = counterErrorCode(err);
+      if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
+        const message = apiErrorMessage(err, 'Check the reference number.');
+        if (payMethod === 'OTHER') setOtherRefError(message);
+        else setUtrError(message);
+        return;
+      }
+      // 409 amount mismatch / 400 not awaiting payment: the bill moved on — reload it.
+      if (err?.response?.status === 409 || err?.response?.status === 400) void reloadSession();
+      setErrorMsg(apiErrorMessage(err, 'Could not record the payment.'));
+    } finally {
+      settleBusyRef.current = false;
+      if (mountedRef.current) setSettling(false);
     }
-    if (pendingPhotos > 0) {
-      Alert.alert('Photos uploading', 'Wait for the photos to finish uploading, or remove the ones that failed.');
-      return;
-    }
-    if (depositInvalid) {
-      Alert.alert('Safety deposit', 'Enter a valid deposit amount and a reason, or turn the request off.');
-      return;
-    }
-    if (!licenseCollected) {
-      Alert.alert('Driving licence', "Collect the customer's original driving licence before handing over the vehicle.");
-      return;
-    }
-    setShowConfirm(true);
   };
 
   if (isLoading) {
@@ -243,10 +677,14 @@ export default function PickupScreen() {
 
   const vehicle = booking.items[0]?.vehicle;
   const customer = booking.customer.user;
+  const vehicleName = vehicle ? `${vehicle.make} ${vehicle.model}` : 'the vehicle';
+  const sessionMode = !!booking.usePaymentSessions;
   const missingRequiredPhotos = captureFields.filter(
     (f) => f.required && !photos.some((p) => p.label === f.name),
   );
+  // Session flow carries the balance on its bill, so it's collected there instead.
   const hasRemainingBalance =
+    !sessionMode &&
     booking.isAdvancePayment &&
     booking.remainingBalance &&
     Number(booking.remainingBalance) > 0 &&
@@ -260,16 +698,41 @@ export default function PickupScreen() {
   const depositEnabled = !!booking.frozenChargeConfig?.safetyDepositEnabled;
   const depositInvalid =
     requestDeposit && (!(Number(depositAmount) > 0) || depositReason.trim().length === 0);
-  const licenseRejected = (mutation.error as any)?.response?.data?.code === 'LICENSE_NOT_COLLECTED';
-  const confirmDisabled =
-    mutation.isPending ||
-    !!hasRemainingBalance ||
-    !odo.trim() ||
-    missingRequiredPhotos.length > 0 ||
-    pendingPhotos > 0 ||
-    dlBlocked ||
-    depositInvalid ||
-    !licenseCollected;
+  const odoValid = Number(odo) > 0;
+  const allowance = booking.kmAllowance ?? null;
+  const fuelModuleEnabled = !!booking.frozenChargeConfig?.fuelModuleEnabled;
+  const fastagModuleEnabled = !!booking.frozenChargeConfig?.fastagModuleEnabled;
+  const termsLine = allowance
+    ? `Free km: ${allowance.includedKm.toLocaleString('en-IN')} · Extra km: ${
+      allowance.extraKmEnabled ? `${inr(num(allowance.extraKmRate))}/km` : 'not charged'
+    }`
+    : null;
+
+  // First thing still missing before the handover can go ahead (shown above the button).
+  const handoverBlocker: string | null = hasRemainingBalance
+    ? 'Collect the balance due above to continue.'
+    : kycLoading
+      ? 'Checking the customer\'s documents…'
+      : dlBlocked
+        ? 'Approve the customer\'s driving licence to continue.'
+        : !odoValid
+          ? 'Enter the odometer reading.'
+          : fuelLevel == null
+            ? 'Select the fuel level.'
+            : missingRequiredPhotos.length > 0
+              ? `Take the required photo${missingRequiredPhotos.length > 1 ? 's' : ''}: ${missingRequiredPhotos.map((f) => f.name).join(', ')}.`
+              : pendingPhotos > 0
+                ? 'Wait for the photos to upload (retry or remove failed ones).'
+                : !sessionMode && depositInvalid
+                  ? 'Enter the deposit amount and reason, or turn the request off.'
+                  : !licenseCollected
+                    ? 'Collect the customer\'s original driving licence.'
+                    : sessionMode && restoring
+                      ? 'Checking for an open payment…'
+                      : null;
+
+  const recordedOdo = booking.startOdometer ?? (odoValid ? Number(odo) : null);
+  const recordedFuel = booking.pickupFuelLevel ? Number(booking.pickupFuelLevel) : fuelLevel;
 
   if (done) {
     return (
@@ -284,22 +747,36 @@ export default function PickupScreen() {
           <Text style={styles.successTitle}>{requireManager ? 'Sent for Confirmation' : 'Pickup Complete'}</Text>
           <Text style={styles.successSub}>
             {requireManager
-              ? `Sent to a manager to confirm the handover of ${vehicle ? `${vehicle.make} ${vehicle.model}` : 'the vehicle'} for ${customer.name}. The vehicle has not been handed over yet.`
-              : `${vehicle ? `${vehicle.make} ${vehicle.model}` : 'Vehicle'} has been handed over to ${customer.name}.`}
+              ? `Sent to a manager to confirm the handover of ${vehicleName} for ${customer.name}. The vehicle has not been handed over yet.`
+              : `${vehicle ? vehicleName : 'Vehicle'} has been handed over to ${customer.name}.`}
           </Text>
           <View style={styles.successDetails}>
-            <View style={styles.successRow}>
-              <Ionicons name="speedometer-outline" size={15} color={Colors.ink3} />
-              <Text style={styles.successRowText}>Odometer recorded: {odo} km</Text>
-            </View>
-            <View style={styles.successRow}>
-              <Ionicons name="water-outline" size={15} color={Colors.ink3} />
-              <Text style={styles.successRowText}>Fuel level: {fuelLevel}/10</Text>
-            </View>
+            {recordedOdo != null && (
+              <View style={styles.successRow}>
+                <Ionicons name="speedometer-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.successRowText}>Odometer recorded: {recordedOdo.toLocaleString('en-IN')} km</Text>
+              </View>
+            )}
+            {recordedFuel != null && (
+              <View style={styles.successRow}>
+                <Ionicons name="water-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.successRowText}>Fuel level: {recordedFuel}/10</Text>
+              </View>
+            )}
             <View style={styles.successRow}>
               <Ionicons name="id-card-outline" size={15} color={Colors.ink3} />
               <Text style={styles.successRowText}>Original driving licence collected</Text>
             </View>
+            {sessionMode && (
+              <View style={styles.successRow}>
+                <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.successRowText}>
+                  {paid
+                    ? `${paid.amount < 0 ? 'Refunded' : 'Collected'} ${inr(paid.amount)} · ${paid.method}`
+                    : 'Nothing to collect at pickup'}
+                </Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity
             style={styles.doneBtn}
@@ -312,6 +789,84 @@ export default function PickupScreen() {
       </View>
     );
   }
+
+  // Nothing to hand over: already picked up / cancelled, or a handover is
+  // waiting on a manager (a fresh form would duplicate its photos and deposit).
+  const awaitingManager = booking.status === 'CONFIRMED' && !!booking.requiresManagerConfirmation;
+  if (awaitingManager || booking.status !== 'CONFIRMED') {
+    const pickedUp = booking.status === 'PICKED_UP';
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+          </TouchableOpacity>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Pickup</Text>
+            <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
+          </View>
+        </View>
+        <View style={styles.successBody}>
+          <View style={[styles.successIcon, awaitingManager && styles.waitingIcon]}>
+            <Ionicons
+              name={awaitingManager ? 'time' : pickedUp ? 'checkmark-circle' : 'information-circle'}
+              size={64}
+              color={awaitingManager ? '#d97706' : pickedUp ? '#10b981' : Colors.ink3}
+            />
+          </View>
+          <Text style={styles.successTitle}>
+            {awaitingManager ? 'Waiting for Manager' : pickedUp ? 'Already Picked Up' : 'No Pickup Due'}
+          </Text>
+          <Text style={styles.successSub}>
+            {awaitingManager
+              ? `The handover of ${vehicleName} for ${customer.name} is waiting for a manager to confirm it. The vehicle has not been handed over yet.`
+              : pickedUp
+                ? `${vehicle ? vehicleName : 'The vehicle'} has already been handed over to ${customer.name}.`
+                : `This booking is ${booking.status.replace(/_/g, ' ').toLowerCase()} — there's no pickup to do.`}
+          </Text>
+          {awaitingManager && (
+            <TouchableOpacity style={styles.refreshBtn} onPress={() => refetch()} activeOpacity={0.85}>
+              <Ionicons name="refresh-outline" size={16} color={Colors.ink2} />
+              <Text style={styles.refreshBtnText}>Check again</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.doneBtn}
+            onPress={() => router.replace('/(employee)/bookings')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.doneBtnText}>Back to Queue</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const net = session ? num(session.netPayable) : 0;
+  const depositEntry = session?.entries?.find((e) => e.entryType === 'DEPOSIT' && !e.isVoided);
+  const discountEntry = session?.entries?.find((e) => e.classification === 'DISCOUNT' && !e.isVoided);
+  const sessionBusy = !!sessionAction || settling;
+
+  const handleConfirm = () => {
+    if (handoverBlocker) {
+      Alert.alert('Not ready yet', handoverBlocker);
+      return;
+    }
+    setErrorMsg(null);
+    setLicenseRejected(false);
+    setShowConfirm(true);
+  };
+
+  const openKycDoc = (doc: KycDoc) => {
+    if (doc.file.mime?.startsWith('image/')) {
+      setKycExpanded((v) => ({ ...v, [doc.publicId]: !v[doc.publicId] }));
+      return;
+    }
+    // The in-app document viewer renders images only — PDFs open in the browser sheet.
+    WebBrowser.openBrowserAsync(doc.file.url).catch(() => {
+      Alert.alert('Could not open', 'The document could not be opened on this phone.');
+    });
+  };
 
   return (
     <>
@@ -333,12 +888,13 @@ export default function PickupScreen() {
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Remaining balance collection (unblocks pickup once paid) */}
+        <View ref={contentRef} collapsable={false} style={styles.contentInner}>
+        {/* Remaining balance collection (legacy — unblocks pickup once paid) */}
         {hasRemainingBalance && (
           <RemainingBalanceCollect
             bookingId={booking.publicId}
@@ -373,16 +929,18 @@ export default function PickupScreen() {
           {kycLoading ? (
             <ActivityIndicator size="small" color={Colors.orange} />
           ) : kycData?.kyc?.length ? (
-            kycData.kyc.map((doc) => {
+            kycData.kyc.map((doc, i) => {
               const approved = doc.status === 'APPROVED';
               const rejected = doc.status === 'REJECTED';
+              const isImage = !!doc.file.mime?.startsWith('image/');
               return (
                 <View key={doc.publicId}>
+                  {i > 0 && <View style={styles.divider} />}
                   <View style={styles.kycRow}>
                     <View style={styles.kycRowLeft}>
                       <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
                         <Ionicons
-                          name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : 'card-outline'}
+                          name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : isImage ? 'card-outline' : 'document-text-outline'}
                           size={20}
                           color={approved ? '#10b981' : rejected ? '#e53e3e' : Colors.ink3}
                         />
@@ -390,40 +948,56 @@ export default function PickupScreen() {
                       <View>
                         <Text style={styles.kycType}>{doc.type.replace(/_/g, ' ')}</Text>
                         <Text style={[styles.kycStatus, approved && { color: '#10b981' }, rejected && { color: '#e53e3e' }]}>
-                          {doc.status}
+                          {doc.status}{isImage ? '' : ' · PDF'}
                         </Text>
                       </View>
                     </View>
                     <TouchableOpacity
                       style={styles.kycViewBtn}
-                      onPress={() => setKycExpanded(v => ({ ...v, [doc.publicId]: !v[doc.publicId] }))}
+                      onPress={() => openKycDoc(doc)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.kycViewBtnText}>{kycExpanded[doc.publicId] ? 'Hide' : 'View'}</Text>
+                      <Text style={styles.kycViewBtnText}>
+                        {!isImage ? 'Open' : kycExpanded[doc.publicId] ? 'Hide' : 'View'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
 
-                  {kycExpanded[doc.publicId] && (
-                    <View style={styles.kycImageWrap}>
+                  {isImage && kycExpanded[doc.publicId] && (
+                    <TouchableOpacity
+                      style={styles.kycImageWrap}
+                      onPress={() => router.push({
+                        pathname: '/document-viewer',
+                        params: { url: doc.file.url, title: doc.type.replace(/_/g, ' ') },
+                      } as any)}
+                      activeOpacity={0.9}
+                    >
                       <Image
                         source={{ uri: doc.file.url }}
                         style={styles.kycImage}
                         resizeMode="contain"
                       />
-                    </View>
+                      <View style={styles.kycZoomHint}>
+                        <Ionicons name="expand-outline" size={12} color={Colors.white} />
+                        <Text style={styles.kycZoomHintText}>Tap to zoom</Text>
+                      </View>
+                    </TouchableOpacity>
                   )}
 
-                  {!approved && !rejected && (
+                  {/* Pending or rejected documents can still be approved (e.g. a re-check at the counter). */}
+                  {!approved && (
                     <View style={styles.kycActions}>
-                      <TouchableOpacity
-                        style={[styles.kycActionBtn, styles.kycRejectBtn]}
-                        onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'REJECTED' })}
-                        disabled={kycMutation.isPending}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="close" size={14} color="#e53e3e" />
-                        <Text style={[styles.kycActionText, { color: '#e53e3e' }]}>Reject</Text>
-                      </TouchableOpacity>
+                      {!rejected && (
+                        <TouchableOpacity
+                          style={[styles.kycActionBtn, styles.kycRejectBtn]}
+                          onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'REJECTED' })}
+                          disabled={kycMutation.isPending}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="close" size={14} color="#e53e3e" />
+                          <Text style={[styles.kycActionText, { color: '#e53e3e' }]}>Reject</Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         style={[styles.kycActionBtn, styles.kycApproveBtn]}
                         onPress={() => kycMutation.mutate({ kycId: doc.publicId, status: 'APPROVED' })}
@@ -434,7 +1008,9 @@ export default function PickupScreen() {
                           ? <ActivityIndicator size="small" color="#10b981" />
                           : <>
                               <Ionicons name="checkmark" size={14} color="#10b981" />
-                              <Text style={[styles.kycActionText, { color: '#10b981' }]}>Approve</Text>
+                              <Text style={[styles.kycActionText, { color: '#10b981' }]}>
+                                {rejected ? 'Approve instead' : 'Approve'}
+                              </Text>
                             </>
                         }
                       </TouchableOpacity>
@@ -459,7 +1035,7 @@ export default function PickupScreen() {
         </View>
 
         {/* DL requirement gate (#54) */}
-        {dlBlocked && (
+        {dlBlocked && !kycLoading && (
           <View style={styles.warningCard}>
             <Ionicons name="alert-circle-outline" size={20} color="#d97706" />
             <View style={styles.warningTextWrap}>
@@ -499,15 +1075,19 @@ export default function PickupScreen() {
           )}
         </View>
 
-        {/* Vehicle availability swap (#51) */}
-        <SectionHeader title="Vehicle Availability" />
-        <VehicleSwapSection
-          bookingId={booking.publicId}
-          onSwapped={() => {
-            refetch();
-            qc.invalidateQueries({ queryKey: ['employee', 'available-vehicles', booking.publicId] });
-          }}
-        />
+        {/* Vehicle availability swap (#51) — before the handover details are saved */}
+        {!session && (
+          <>
+            <SectionHeader title="Vehicle Availability" />
+            <VehicleSwapSection
+              bookingId={booking.publicId}
+              onSwapped={() => {
+                refetch();
+                qc.invalidateQueries({ queryKey: ['employee', 'available-vehicles', booking.publicId] });
+              }}
+            />
+          </>
+        )}
 
         {/* Booking Info */}
         <SectionHeader title="Booking" />
@@ -546,7 +1126,9 @@ export default function PickupScreen() {
                   <View style={styles.infoRow}>
                     <View style={styles.infoRowLeft}>
                       <Ionicons name="alert-circle-outline" size={15} color="#f59e0b" />
-                      <Text style={[styles.infoLabel, { color: '#f59e0b' }]}>Balance Due</Text>
+                      <Text style={[styles.infoLabel, { color: '#f59e0b' }]}>
+                        {sessionMode ? 'Balance due at pickup' : 'Balance Due'}
+                      </Text>
                     </View>
                     <Text style={[styles.infoValue, { color: '#f59e0b' }]}>
                       ₹{Number(booking.remainingBalance).toLocaleString('en-IN')}
@@ -558,12 +1140,42 @@ export default function PickupScreen() {
           )}
         </View>
 
-        {/* Discounts (coupon + manual) (#52) */}
-        <SectionHeader title="Discounts" />
-        <CounterDiscountSection
-          bookingId={booking.publicId}
-          onChanged={() => qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking.publicId] })}
-        />
+        {/* Rental terms — the allowance the drop bills extra km against */}
+        {(allowance || fuelModuleEnabled || fastagModuleEnabled) && (
+          <>
+            <SectionHeader title="Rental Terms" />
+            <View style={styles.card}>
+              {allowance && (
+                <>
+                  <InfoRow
+                    icon="gift-outline"
+                    label="Free km"
+                    value={`${allowance.includedKm.toLocaleString('en-IN')} km`}
+                  />
+                  <View style={styles.divider} />
+                  <InfoRow
+                    icon="trending-up-outline"
+                    label="Extra km"
+                    value={allowance.extraKmEnabled ? `${inr(num(allowance.extraKmRate))}/km` : 'Not charged'}
+                  />
+                </>
+              )}
+              {fuelModuleEnabled && (
+                <>
+                  {allowance && <View style={styles.divider} />}
+                  <InfoRow icon="water-outline" label="Fuel tracking" value="Enabled" />
+                </>
+              )}
+              {fastagModuleEnabled && (
+                <>
+                  {(allowance || fuelModuleEnabled) && <View style={styles.divider} />}
+                  <InfoRow icon="card-outline" label="FASTag charges" value="Enabled" />
+                </>
+              )}
+              <Text style={styles.termsNote}>Tell the customer before handing over the keys.</Text>
+            </View>
+          </>
+        )}
 
         {/* Booking extension at counter (#53) */}
         <TouchableOpacity
@@ -583,206 +1195,494 @@ export default function PickupScreen() {
         <SectionHeader title="Payment" />
         <CounterPaymentPanel bookingPublicId={booking.publicId} />
 
-        {/* Vehicle State */}
-        <SectionHeader title="Record Vehicle State" />
-        <View style={styles.card}>
-          {/* Odometer */}
-          <View ref={odoRef} style={styles.fieldGroup}>
-            <View style={styles.fieldLabel}>
-              <Ionicons name="speedometer-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.fieldLabelText}>Odometer Reading (km)</Text>
-            </View>
-            <TextInput
-              style={styles.odoInput}
-              value={odo}
-              onChangeText={setOdo}
-              placeholder={vehicle?.odo ? String(vehicle.odo) : '0'}
-              placeholderTextColor={Colors.ink4}
-              keyboardType="numeric"
-              returnKeyType="done"
-              onFocus={() => {
-                setTimeout(() => {
-                  odoRef.current?.measureLayout(
-                    scrollRef.current as any,
-                    (_x, y) => { scrollRef.current?.scrollTo({ y: y - 20, animated: true }); },
-                    () => {}
-                  );
-                }, 150);
-              }}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Fuel Level (1–10) */}
-          <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
-            <View style={styles.fieldLabel}>
-              <Ionicons name="water-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.fieldLabelText}>Fuel Level ({fuelLevel}/10)</Text>
-            </View>
-            <View style={styles.fuelGrid}>
-              {FUEL_STEPS.map((lvl) => (
-                <TouchableOpacity
-                  key={lvl}
-                  style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
-                  onPress={() => setFuelLevel(lvl)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Pre-delivery photos */}
-        <SectionHeader title="Pre-delivery Photos" />
-        <View style={styles.card}>
-          {captureFields.length === 0 && (
-            <Text style={styles.photoHint}>Capture the vehicle's condition before handover.</Text>
-          )}
-          <PhotoCaptureSection
-            fields={captureFields}
-            allowGeneric
-            value={photos}
-            onChange={setPhotos}
-            upload={async (form) => {
-              const res = await employeeApi.uploadPickupImage(form);
-              return { fileId: res.data.fileId, url: res.data.url };
-            }}
-            genericLabel="Add"
-            onPendingChange={setPendingPhotos}
-          />
-        </View>
-
-        {/* Safety deposit request (#49) — only when the branch enables it */}
-        {depositEnabled && (
+        {session ? (
           <>
-            <SectionHeader title="Safety Deposit" />
+            {/* Saved with the session — the vehicle goes out when it's settled */}
+            <SectionHeader title="Handover Details" />
             <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.toggleRow}
-                onPress={() => setRequestDeposit((v) => !v)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.toggleTextWrap}>
-                  <Text style={styles.toggleTitle}>Request a safety deposit</Text>
-                  <Text style={styles.toggleSub}>Collect a refundable hold against damage/fines.</Text>
-                </View>
-                <View style={[styles.switch, requestDeposit && styles.switchOn]}>
-                  <View style={[styles.knob, requestDeposit && styles.knobOn]} />
-                </View>
-              </TouchableOpacity>
-              {requestDeposit && (
+              {recordedOdo != null && (
+                <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
+              )}
+              {recordedFuel != null && (
                 <>
-                  <View style={styles.divider} />
-                  <View style={styles.fieldGroup}>
-                    <View style={styles.fieldLabel}>
-                      <Ionicons name="cash-outline" size={16} color={Colors.ink3} />
-                      <Text style={styles.fieldLabelText}>Deposit amount (₹)</Text>
-                    </View>
-                    <TextInput
-                      style={styles.odoInput}
-                      value={depositAmount}
-                      onChangeText={(t) => setDepositAmount(t.replace(/[^0-9]/g, ''))}
-                      placeholder="0"
-                      placeholderTextColor={Colors.ink4}
-                      keyboardType="numeric"
-                      returnKeyType="done"
-                    />
-                  </View>
-                  <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
-                    <View style={styles.fieldLabel}>
-                      <Ionicons name="create-outline" size={16} color={Colors.ink3} />
-                      <Text style={styles.fieldLabelText}>Reason</Text>
-                    </View>
-                    <TextInput
-                      style={[styles.odoInput, styles.reasonInput]}
-                      value={depositReason}
-                      onChangeText={setDepositReason}
-                      placeholder="e.g. High-value vehicle"
-                      placeholderTextColor={Colors.ink4}
-                      multiline
-                    />
-                  </View>
-                  {booking.frozenChargeConfig?.safetyDepositRequiresApproval && (
-                    <Text style={styles.depositNote}>This request will need manager approval.</Text>
-                  )}
+                  {recordedOdo != null && <View style={styles.divider} />}
+                  <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
                 </>
               )}
+              {(recordedOdo != null || recordedFuel != null) && <View style={styles.divider} />}
+              <InfoRow icon="id-card-outline" label="Original licence" value="Collected" />
             </View>
+
+            {/* The bill */}
+            <SectionHeader title="Bill" />
+            <SessionBill session={session} />
+
+            {/* Safety deposit — a refundable line on the bill */}
+            {depositOpen ? (
+              <View style={[styles.card, { marginTop: 8 }]}>
+                <Text style={styles.fieldLabelSolo}>Safety deposit amount (₹)</Text>
+                <TextInput
+                  style={styles.odoInput}
+                  value={sDepositAmt}
+                  onChangeText={(t) => { setSDepositAmt(t.replace(/[^0-9]/g, '')); setDepositError(null); }}
+                  placeholder="e.g. 2000"
+                  placeholderTextColor={Colors.ink4}
+                  keyboardType="numeric"
+                />
+                <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Reason</Text>
+                <TextInput
+                  style={[styles.odoInput, styles.reasonInput]}
+                  value={sDepositReason}
+                  onChangeText={(t) => { setSDepositReason(t); setDepositError(null); }}
+                  placeholder="e.g. High-value vehicle"
+                  placeholderTextColor={Colors.ink4}
+                  multiline
+                />
+                {depositError && <Text style={styles.fieldError}>{depositError}</Text>}
+                <View style={[styles.methodRow, { marginTop: 12 }]}>
+                  <TouchableOpacity
+                    style={styles.methodBtn}
+                    onPress={() => { setDepositOpen(false); setDepositError(null); }}
+                    disabled={sessionBusy}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.methodText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.methodBtn, styles.methodBtnActive, sessionBusy && styles.btnDisabled]}
+                    onPress={saveDeposit}
+                    disabled={sessionBusy}
+                    activeOpacity={0.8}
+                  >
+                    {sessionAction === 'deposit' ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                      <Text style={[styles.methodText, styles.methodTextActive]}>
+                        {depositEntry ? 'Update deposit' : 'Add to bill'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : depositEntry ? (
+              <View style={[styles.card, { marginTop: 8 }]}>
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleTextWrap}>
+                    <Text style={styles.toggleTitle}>Safety deposit {inr(num(depositEntry.amount))}</Text>
+                    {!!depositEntry.description && (
+                      <Text style={styles.toggleSub} numberOfLines={2}>{depositEntry.description}</Text>
+                    )}
+                  </View>
+                  <View style={styles.linkRow}>
+                    <TouchableOpacity onPress={() => openDepositForm(depositEntry)} disabled={sessionBusy} hitSlop={8}>
+                      <Text style={styles.link}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={removeDeposit} disabled={sessionBusy} hitSlop={8}>
+                      {sessionAction === 'removeDeposit'
+                        ? <ActivityIndicator size="small" color="#dc3545" />
+                        : <Text style={styles.linkDanger}>Remove</Text>}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {depositError && <Text style={styles.fieldError}>{depositError}</Text>}
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.extendBtn, { marginTop: 8 }, sessionBusy && styles.btnDisabled]}
+                  onPress={() => openDepositForm()}
+                  disabled={sessionBusy}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={18} color={Colors.ink2} />
+                  <Text style={styles.extendBtnText}>Add safety deposit</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+                </TouchableOpacity>
+                {depositError && <Text style={styles.fieldError}>{depositError}</Text>}
+              </>
+            )}
+
+            {/* Coupon — a discount line on the bill */}
+            <View style={[styles.card, { marginTop: 4 }]}>
+              {discountEntry ? (
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleTextWrap}>
+                    <Text style={styles.toggleTitle}>{discountEntry.description || 'Coupon discount'}</Text>
+                    <Text style={[styles.toggleSub, { color: '#10b981' }]}>−{inr(num(discountEntry.amount))} off the bill</Text>
+                  </View>
+                  <TouchableOpacity onPress={removeCoupon} disabled={sessionBusy} hitSlop={8}>
+                    {sessionAction === 'removeCoupon'
+                      ? <ActivityIndicator size="small" color="#dc3545" />
+                      : <Text style={styles.linkDanger}>Remove</Text>}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.fieldLabelSolo}>Coupon code</Text>
+                  <View style={styles.couponRow}>
+                    <TextInput
+                      style={[styles.odoInput, styles.couponInput]}
+                      value={couponCode}
+                      onChangeText={(t) => { setCouponCode(t.toUpperCase()); setCouponError(null); }}
+                      placeholder="Enter coupon code"
+                      placeholderTextColor={Colors.ink4}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={applyCoupon}
+                    />
+                    <TouchableOpacity
+                      style={[styles.couponBtn, (!couponCode.trim() || sessionBusy) && styles.btnDisabled]}
+                      onPress={applyCoupon}
+                      disabled={!couponCode.trim() || sessionBusy}
+                      activeOpacity={0.85}
+                    >
+                      {sessionAction === 'coupon'
+                        ? <ActivityIndicator size="small" color={Colors.white} />
+                        : <Text style={styles.couponBtnText}>Apply</Text>}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+              {couponError && <Text style={styles.fieldError}>{couponError}</Text>}
+            </View>
+
+            {/* How the customer pays */}
+            {net > 0 && (
+              <View style={[styles.card, { marginTop: 4 }]}>
+                <Text style={styles.fieldLabelSolo}>Payment method</Text>
+                <View style={styles.methodGrid}>
+                  {PAY_METHODS.map((m) => (
+                    <TouchableOpacity
+                      key={m}
+                      style={[styles.methodBtn, styles.methodGridBtn, payMethod === m && styles.methodBtnActive]}
+                      onPress={() => selectPayMethod(m)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
+                        {PAY_METHOD_LABELS[m]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {payMethod === 'SPLIT' && (
+                  <View style={styles.splitBox}>
+                    <Text style={styles.hintInline}>Total to split: {inr(net)}</Text>
+                    <View style={styles.splitRow}>
+                      <View style={styles.splitCol}>
+                        <Text style={styles.splitLabel}>Cash (₹)</Text>
+                        <TextInput
+                          style={styles.odoInput}
+                          value={splitCash}
+                          onChangeText={(t) => changeSplit('cash', t, net)}
+                          placeholder="0"
+                          placeholderTextColor={Colors.ink4}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                      <View style={styles.splitCol}>
+                        <Text style={styles.splitLabel}>UPI (₹)</Text>
+                        <TextInput
+                          style={styles.odoInput}
+                          value={splitUpi}
+                          onChangeText={(t) => changeSplit('upi', t, net)}
+                          placeholder="0"
+                          placeholderTextColor={Colors.ink4}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    </View>
+                    {payError && <Text style={styles.fieldError}>{payError}</Text>}
+                  </View>
+                )}
+
+                {(payMethod === 'UPI' || (payMethod === 'SPLIT' && num(splitUpi) > 0)) && (
+                  <UtrInput
+                    value={utr}
+                    onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
+                    error={utrError}
+                  />
+                )}
+
+                {payMethod === 'OTHER' && (
+                  <>
+                    <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Transaction reference</Text>
+                    <TextInput
+                      style={[styles.odoInput, styles.refInput, otherRefError ? styles.inputError : undefined]}
+                      value={otherRef}
+                      onChangeText={(t) => { setOtherRef(t); setOtherRefError(null); }}
+                      placeholder="e.g. pay_xyz789"
+                      placeholderTextColor={Colors.ink4}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {otherRefError && <Text style={styles.fieldError}>{otherRefError}</Text>}
+                    <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Gateway</Text>
+                    <View style={styles.methodRow}>
+                      {GATEWAYS.map((g) => (
+                        <TouchableOpacity
+                          key={g}
+                          style={[styles.methodBtn, otherGateway === g && styles.methodBtnActive]}
+                          onPress={() => setOtherGateway(g)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.methodText, otherGateway === g && styles.methodTextActive]}>{g}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Vehicle State */}
+            <SectionHeader title="Record Vehicle State" />
+            <View style={styles.card}>
+              {/* Odometer */}
+              <View ref={odoRef} style={styles.fieldGroup}>
+                <View style={styles.fieldLabel}>
+                  <Ionicons name="speedometer-outline" size={16} color={Colors.ink3} />
+                  <Text style={styles.fieldLabelText}>Odometer Reading (km)</Text>
+                </View>
+                <TextInput
+                  style={styles.odoInput}
+                  value={odo}
+                  onChangeText={(t) => setOdo(t.replace(/[^0-9]/g, ''))}
+                  placeholder="e.g. 12500"
+                  placeholderTextColor={Colors.ink4}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onFocus={() => {
+                    setTimeout(() => {
+                      odoRef.current?.measureLayout(
+                        contentRef.current as any,
+                        (_x, y) => { scrollRef.current?.scrollTo({ y: y - 20, animated: true }); },
+                        () => {}
+                      );
+                    }, 150);
+                  }}
+                />
+                {odo !== '' && !odoValid && (
+                  <Text style={styles.fieldErrorTight}>Odometer must be more than 0.</Text>
+                )}
+              </View>
+
+              <View style={styles.divider} />
+
+              {/* Fuel Level (1–10) */}
+              <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
+                <View style={styles.fieldLabel}>
+                  <Ionicons name="water-outline" size={16} color={Colors.ink3} />
+                  <Text style={styles.fieldLabelText}>
+                    {fuelModuleEnabled ? 'Pickup Fuel Level' : 'Fuel Level'}
+                    {fuelLevel != null ? ` (${fuelLevel}/10)` : ''}
+                  </Text>
+                  {fuelLevel == null && <Text style={styles.requiredTag}>Required</Text>}
+                </View>
+                <View style={styles.fuelGrid}>
+                  {FUEL_STEPS.map((lvl) => (
+                    <TouchableOpacity
+                      key={lvl}
+                      style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
+                      onPress={() => setFuelLevel(lvl)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* Pre-delivery photos */}
+            <SectionHeader title="Pre-delivery Photos" />
+            <View style={styles.card}>
+              {captureFields.length === 0 && (
+                <Text style={styles.photoHint}>Capture the vehicle's condition before handover.</Text>
+              )}
+              <PhotoCaptureSection
+                fields={captureFields}
+                allowGeneric
+                value={photos}
+                onChange={setPhotos}
+                upload={async (form) => {
+                  const res = await employeeApi.uploadPickupImage(form);
+                  return { fileId: res.data.fileId, url: res.data.url };
+                }}
+                genericLabel="Add"
+                onPendingChange={setPendingPhotos}
+              />
+            </View>
+
+            {/* Safety deposit request (#49) — legacy flow, only when the branch enables it.
+                With payment sessions the deposit is added to the bill on the next step. */}
+            {!sessionMode && depositEnabled && (
+              <>
+                <SectionHeader title="Safety Deposit" />
+                <View style={styles.card}>
+                  <TouchableOpacity
+                    style={styles.toggleRow}
+                    onPress={() => setRequestDeposit((v) => !v)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.toggleTextWrap}>
+                      <Text style={styles.toggleTitle}>Request a safety deposit</Text>
+                      <Text style={styles.toggleSub}>Collect a refundable hold against damage/fines.</Text>
+                    </View>
+                    <View style={[styles.switch, requestDeposit && styles.switchOn]}>
+                      <View style={[styles.knob, requestDeposit && styles.knobOn]} />
+                    </View>
+                  </TouchableOpacity>
+                  {requestDeposit && (
+                    <>
+                      <View style={styles.divider} />
+                      <View style={styles.fieldGroup}>
+                        <View style={styles.fieldLabel}>
+                          <Ionicons name="cash-outline" size={16} color={Colors.ink3} />
+                          <Text style={styles.fieldLabelText}>Deposit amount (₹)</Text>
+                        </View>
+                        <TextInput
+                          style={styles.odoInput}
+                          value={depositAmount}
+                          onChangeText={(t) => setDepositAmount(t.replace(/[^0-9]/g, ''))}
+                          placeholder="0"
+                          placeholderTextColor={Colors.ink4}
+                          keyboardType="numeric"
+                          returnKeyType="done"
+                        />
+                      </View>
+                      <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
+                        <View style={styles.fieldLabel}>
+                          <Ionicons name="create-outline" size={16} color={Colors.ink3} />
+                          <Text style={styles.fieldLabelText}>Reason</Text>
+                        </View>
+                        <TextInput
+                          style={[styles.odoInput, styles.reasonInput]}
+                          value={depositReason}
+                          onChangeText={setDepositReason}
+                          placeholder="e.g. High-value vehicle"
+                          placeholderTextColor={Colors.ink4}
+                          multiline
+                        />
+                      </View>
+                      {booking.frozenChargeConfig?.safetyDepositRequiresApproval && (
+                        <Text style={styles.depositNote}>This request will need manager approval.</Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+
+            {/* Original driving licence — held until the car comes back */}
+            <SectionHeader title="Original Licence" />
+            <View style={[styles.card, licenseRejected && styles.cardError]}>
+              <TouchableOpacity
+                style={styles.toggleRow}
+                onPress={() => { setLicenseCollected((v) => !v); setLicenseRejected(false); }}
+                activeOpacity={0.8}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: licenseCollected }}
+              >
+                <View style={styles.toggleTextWrap}>
+                  <View style={styles.toggleTitleRow}>
+                    <Text style={styles.toggleTitle}>Original driving licence collected</Text>
+                    {!licenseCollected && <Text style={styles.requiredTag}>Required</Text>}
+                  </View>
+                  <Text style={styles.toggleSub}>Keep the customer's physical licence until the car is returned.</Text>
+                </View>
+                <View style={[styles.switch, licenseCollected && styles.switchOn]}>
+                  <View style={[styles.knob, licenseCollected && styles.knobOn]} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Manager confirmation escalation (#50) — legacy flow only */}
+            {!sessionMode && (
+              <>
+                <SectionHeader title="Confirmation" />
+                <View style={styles.card}>
+                  <TouchableOpacity
+                    style={styles.toggleRow}
+                    onPress={() => setRequireManager((v) => !v)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.toggleTextWrap}>
+                      <Text style={styles.toggleTitle}>Require manager confirmation</Text>
+                      <Text style={styles.toggleSub}>Send to a manager to confirm instead of completing now.</Text>
+                    </View>
+                    <View style={[styles.switch, requireManager && styles.switchOn]}>
+                      <View style={[styles.knob, requireManager && styles.knobOn]} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {sessionMode && (
+              <Text style={styles.nextStepNote}>
+                Next: review the bill, add a safety deposit or coupon, and collect the payment.
+              </Text>
+            )}
           </>
         )}
 
-        {/* Original driving licence — held until the car comes back */}
-        <SectionHeader title="Original Licence" />
-        <View style={[styles.card, licenseRejected && styles.cardError]}>
-          <TouchableOpacity
-            style={styles.toggleRow}
-            onPress={() => setLicenseCollected((v) => !v)}
-            activeOpacity={0.8}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: licenseCollected }}
-          >
-            <View style={styles.toggleTextWrap}>
-              <View style={styles.toggleTitleRow}>
-                <Text style={styles.toggleTitle}>Original driving licence collected</Text>
-                {!licenseCollected && <Text style={styles.requiredTag}>Required</Text>}
-              </View>
-              <Text style={styles.toggleSub}>Keep the customer's physical licence until the car is returned.</Text>
-            </View>
-            <View style={[styles.switch, licenseCollected && styles.switchOn]}>
-              <View style={[styles.knob, licenseCollected && styles.knobOn]} />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Manager confirmation escalation (#50) */}
-        <SectionHeader title="Confirmation" />
-        <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.toggleRow}
-            onPress={() => setRequireManager((v) => !v)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.toggleTextWrap}>
-              <Text style={styles.toggleTitle}>Require manager confirmation</Text>
-              <Text style={styles.toggleSub}>Send to a manager to confirm instead of completing now.</Text>
-            </View>
-            <View style={[styles.switch, requireManager && styles.switchOn]}>
-              <View style={[styles.knob, requireManager && styles.knobOn]} />
-            </View>
-          </TouchableOpacity>
-        </View>
-
         {/* Error */}
-        {mutation.isError && (
+        {errorMsg && (
           <View style={styles.errorBox}>
             <Ionicons name="alert-circle-outline" size={16} color="#e53e3e" />
-            <Text style={styles.errorBoxText}>
-              {(mutation.error as any)?.response?.data?.message ?? 'Something went wrong.'}
-            </Text>
+            <Text style={styles.errorBoxText}>{errorMsg}</Text>
           </View>
         )}
+        </View>
       </ScrollView>
 
-      {/* Confirm CTA */}
+      {/* Footer CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={[styles.confirmBtn, confirmDisabled && styles.confirmBtnDisabled]}
-          onPress={handleConfirm}
-          disabled={confirmDisabled}
-          activeOpacity={0.85}
-        >
-          {mutation.isPending ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-              <Text style={styles.confirmBtnText}>Confirm Pickup</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {session ? (
+          <TouchableOpacity
+            style={[styles.confirmBtn, sessionBusy && styles.confirmBtnDisabled]}
+            onPress={settleSession}
+            disabled={sessionBusy}
+            activeOpacity={0.85}
+          >
+            {settling ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                <Text style={styles.confirmBtnText}>
+                  {net > 0 ? `Collect ${inr(net)} & hand over` : net < 0 ? `Refund ${inr(net)} & hand over` : 'Complete Pickup'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <>
+            {handoverBlocker && <Text style={styles.footerHint} numberOfLines={2}>{handoverBlocker}</Text>}
+            <TouchableOpacity
+              style={[styles.confirmBtn, (!!handoverBlocker || mutation.isPending || initiating) && styles.confirmBtnDisabled]}
+              onPress={sessionMode ? startSession : handleConfirm}
+              disabled={!!handoverBlocker || mutation.isPending || initiating}
+              activeOpacity={0.85}
+            >
+              {mutation.isPending || initiating ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : sessionMode ? (
+                <>
+                  <Text style={styles.confirmBtnText}>Continue to Payment</Text>
+                  <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+                </>
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                  <Text style={styles.confirmBtnText}>Confirm Pickup</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
 
@@ -791,7 +1691,7 @@ export default function PickupScreen() {
       icon="car-outline"
       iconColor={Colors.orange}
       title="Confirm Pickup"
-      message={`Odometer: ${odo} km · Fuel: ${fuelLevel}/10\nOriginal driving licence collected\n\nHand over the vehicle to ${booking?.customer?.user?.name ?? 'customer'}?`}
+      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}Original driving licence collected\n\nHand over the vehicle to ${customer.name}?`}
       confirmLabel="Confirm Pickup"
       confirmColor={Colors.orange}
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
@@ -818,7 +1718,8 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
   subtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
 
-  content: { paddingHorizontal: 20, gap: 8 },
+  content: { paddingHorizontal: 20 },
+  contentInner: { gap: 8 },
 
   sectionHeader: {
     fontFamily: Fonts.bodySemiBold,
@@ -889,11 +1790,16 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   infoRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
-  infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+  infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink, flexShrink: 1, textAlign: 'right', marginLeft: 12 },
+
+  termsNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 12 },
 
   fieldGroup: { gap: 10, marginBottom: 12 },
   fieldLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   fieldLabelText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
+  fieldLabelSolo: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3, marginBottom: 8 },
+  fieldError: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e', marginTop: 8 },
+  fieldErrorTight: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e' },
 
   odoInput: {
     backgroundColor: Colors.bg,
@@ -906,23 +1812,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.ink,
   },
-
-  fuelRow: { flexDirection: 'row', gap: 6 },
-  fuelBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: Colors.bg,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-  },
-  fuelBtnActive: {
-    backgroundColor: Colors.orange,
-    borderColor: Colors.orange,
-  },
-  fuelBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
-  fuelBtnTextActive: { color: Colors.white },
+  inputError: { borderColor: '#e53e3e' },
+  refInput: { fontSize: 15 },
 
   fuelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   fuelPill: {
@@ -934,6 +1825,7 @@ const styles = StyleSheet.create({
   fuelPillTextActive: { color: Colors.white },
 
   photoHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginBottom: 12 },
+  hintInline: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
 
   extendBtn: {
     flexDirection: 'row',
@@ -948,6 +1840,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   extendBtnText: { flex: 1, fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
+  btnDisabled: { opacity: 0.5 },
 
   reasonInput: { minHeight: 64, textAlignVertical: 'top', fontFamily: Fonts.body, fontSize: 15 },
   depositNote: { fontFamily: Fonts.body, fontSize: 12, color: '#d97706', marginTop: 10 },
@@ -975,6 +1868,47 @@ const styles = StyleSheet.create({
   knob: { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.white },
   knobOn: { alignSelf: 'flex-end' },
 
+  link: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange },
+  linkDanger: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#dc3545' },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+
+  nextStepNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17, paddingHorizontal: 4, marginTop: 4 },
+
+  // Session bill
+  billRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 },
+  billLabelWrap: { flex: 1 },
+  billLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3, flexShrink: 1 },
+  billSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink4, marginTop: 1 },
+  billValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
+  billCredit: { color: '#10b981' },
+  billNetLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
+  billNetValue: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
+
+  couponRow: { flexDirection: 'row', gap: 8 },
+  couponInput: { flex: 1, fontSize: 15, letterSpacing: 1 },
+  couponBtn: {
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: Colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 76,
+  },
+  couponBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white },
+
+  methodRow: { flexDirection: 'row', gap: 8 },
+  methodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  methodGridBtn: { flexBasis: '47%', flexGrow: 1 },
+  methodBtn: { flex: 1, paddingVertical: 11, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline },
+  methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink3 },
+  methodTextActive: { color: Colors.white },
+
+  splitBox: { marginTop: 12, gap: 8 },
+  splitRow: { flexDirection: 'row', gap: 8 },
+  splitCol: { flex: 1 },
+  splitLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3, marginBottom: 6 },
+
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -984,6 +1918,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#e53e3e30',
+    marginTop: 4,
   },
   errorBoxText: { fontFamily: Fonts.body, fontSize: 13, color: '#e53e3e', flex: 1 },
 
@@ -1025,6 +1960,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   kycImage: { width: '100%', height: 220 },
+  kycZoomHint: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  kycZoomHintText: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.white },
   kycActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   kycActionBtn: {
     flex: 1,
@@ -1065,6 +2013,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.hairline,
   },
+  footerHint: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 12,
+    color: Colors.ink3,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   confirmBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1098,11 +2053,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
+  waitingIcon: { backgroundColor: '#d9770615' },
   successTitle: {
     fontFamily: Fonts.displayBold,
     fontSize: 28,
     color: Colors.ink,
     letterSpacing: -0.8,
+    textAlign: 'center',
   },
   successSub: {
     fontFamily: Fonts.body,
@@ -1122,7 +2079,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   successRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  successRowText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink2 },
+  successRowText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink2, flexShrink: 1 },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    backgroundColor: Colors.surface,
+    paddingVertical: 15,
+    width: '100%',
+    marginTop: 8,
+  },
+  refreshBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink2 },
   doneBtn: {
     backgroundColor: Colors.ink,
     borderRadius: 16,

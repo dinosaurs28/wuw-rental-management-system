@@ -20,6 +20,26 @@ import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
 
+// Date of birth from the three DD / MM / YYYY boxes → "YYYY-MM-DD", or an
+// error. Same rule as the web form and the backend: required, and 18+.
+function parseDob(dd: string, mm: string, yyyy: string): { value: string } | { error: string } {
+  if (!dd && !mm && !yyyy) return { error: "Enter the customer's date of birth." };
+  const d = Number(dd);
+  const m = Number(mm);
+  const y = Number(yyyy);
+  const date = new Date(y, m - 1, d);
+  if (
+    yyyy.length !== 4 || y < 1900 ||
+    date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d
+  ) {
+    return { error: 'Enter a valid date of birth (DD / MM / YYYY).' };
+  }
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 18);
+  if (date > cutoff) return { error: 'The customer must be at least 18 years old.' };
+  return { value: `${yyyy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` };
+}
+
 function Field({
   label, value, onChangeText, ...rest
 }: { label: string; value: string; onChangeText: (t: string) => void } & TextInputProps) {
@@ -54,7 +74,9 @@ export default function CreateCustomerScreen() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [dob, setDob] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobYear, setDobYear] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
@@ -103,6 +125,8 @@ export default function CreateCustomerScreen() {
   const completeProfile = async () => {
     if (name.trim().length < 2) return setError('Enter the customer name.');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('Enter a valid email.');
+    const dob = parseDob(dobDay.trim(), dobMonth.trim(), dobYear.trim());
+    if ('error' in dob) return setError(dob.error);
     if (!addressLine1.trim() || !city.trim() || !stateName.trim() || !zipCode.trim() || !country.trim()) {
       return setError('Fill in the full address.');
     }
@@ -118,7 +142,7 @@ export default function CreateCustomerScreen() {
         state: stateName.trim(),
         country: country.trim(),
         zipCode: zipCode.trim(),
-        ...(dob.trim() ? { dob: dob.trim() } : {}),
+        dob: dob.value,
         ...(altPhone.trim() ? { alternatePhone: altPhone.trim() } : {}),
       });
       resetBooking();
@@ -196,7 +220,39 @@ export default function CreateCustomerScreen() {
               <Text style={styles.cardTitle}>Customer details</Text>
               <Field label="Full name" value={name} onChangeText={setName} placeholder="Customer name" autoCapitalize="words" />
               <Field label="Email" value={email} onChangeText={setEmail} placeholder="name@example.com" keyboardType="email-address" autoCapitalize="none" />
-              <Field label="Date of birth (optional)" value={dob} onChangeText={setDob} placeholder="YYYY-MM-DD" />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Date of birth</Text>
+                <View style={styles.dobRow}>
+                  <TextInput
+                    style={[styles.input, styles.dobPart]}
+                    value={dobDay}
+                    onChangeText={(t) => setDobDay(t.replace(/\D/g, ''))}
+                    placeholder="DD"
+                    placeholderTextColor={Colors.ink4}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.dobPart]}
+                    value={dobMonth}
+                    onChangeText={(t) => setDobMonth(t.replace(/\D/g, ''))}
+                    placeholder="MM"
+                    placeholderTextColor={Colors.ink4}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.dobYear]}
+                    value={dobYear}
+                    onChangeText={(t) => setDobYear(t.replace(/\D/g, ''))}
+                    placeholder="YYYY"
+                    placeholderTextColor={Colors.ink4}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+                <Text style={styles.fieldHint}>Customer must be 18 or older.</Text>
+              </View>
               <Field label="Alternate phone (optional)" value={altPhone} onChangeText={setAltPhone} placeholder="Optional" keyboardType="phone-pad" />
             </View>
             <View style={styles.card}>
@@ -253,6 +309,10 @@ const styles = StyleSheet.create({
 
   field: { gap: 6 },
   fieldLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  fieldHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  dobRow: { flexDirection: 'row', gap: 8 },
+  dobPart: { flex: 1, textAlign: 'center' },
+  dobYear: { flex: 1.6, textAlign: 'center' },
   input: {
     backgroundColor: Colors.bg,
     borderRadius: 12,

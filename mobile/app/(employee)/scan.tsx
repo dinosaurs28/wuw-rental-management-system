@@ -19,6 +19,17 @@ import { employeeApi } from '../../lib/api';
 
 type Mode = 'camera' | 'manual';
 
+// Web booking QRs (BookingQRModal) encode "pickup:<id>" / "return:<id>"; the
+// customer app shows the plain id. The live status decides the route either way.
+const QR_INTENT_PREFIX = /^(pickup|return):/i;
+
+interface ScannedBooking {
+  publicId: string;
+  status: string;
+  customerName?: string | null;
+  vehicleName?: string | null;
+}
+
 const VIEWFINDER = 260;
 const CORNER = 28;
 const BORDER = 3;
@@ -61,33 +72,60 @@ export default function ScanBooking() {
     }, []),
   );
 
-  const navigate = (bookingId: string, status: string) => {
-    if (status === 'CONFIRMED') {
-      router.push(`/employee/pickup/${bookingId}`);
-    } else if (status === 'PICKED_UP') {
-      router.push(`/employee/return/${bookingId}`);
-    } else {
-      setError(`Status is ${status} — no action available.`);
-      setTimeout(() => { scannerActive.current = true; setScanning(true); }, 2500);
+  // Show why nothing opened, then let the camera scan again.
+  const fail = (message: string) => {
+    setError(message);
+    setTimeout(() => { scannerActive.current = true; setScanning(true); }, 2500);
+  };
+
+  // Same per-status handling as the web operations dashboard scanner.
+  const navigate = (booking: ScannedBooking) => {
+    const customer = booking.customerName || 'this customer';
+    const label = booking.vehicleName ? `${booking.vehicleName} · ${customer}` : customer;
+    switch (booking.status) {
+      case 'CONFIRMED':
+        router.push(`/employee/pickup/${booking.publicId}`);
+        break;
+      case 'PICKED_UP':
+        router.push(`/employee/return/${booking.publicId}`);
+        break;
+      case 'HOLD':
+        fail(`Booking for ${label} is pending payment confirmation. Ask the customer to complete payment.`);
+        break;
+      case 'RETURNED':
+      case 'COMPLETED':
+        fail(`Booking for ${label} has already been completed.`);
+        break;
+      case 'CANCELLED':
+        fail(`Booking for ${label} has been cancelled.`);
+        break;
+      default:
+        fail(`Booking status "${booking.status}" cannot be processed at this station.`);
     }
   };
 
-  const lookup = async (id: string) => {
-    if (loading) return;
+  const lookup = async (raw: string) => {
+    const id = raw.trim().replace(QR_INTENT_PREFIX, '').trim();
+    if (loading || !id) return;
     setLoading(true);
     setError('');
     try {
-      const res = await employeeApi.scanBooking(id.trim());
-      const booking = res.data?.data;
+      const res = await employeeApi.scanBooking(id);
+      const booking = res.data?.data as ScannedBooking | undefined;
       if (!booking) {
-        setError('Booking not found.');
-        setTimeout(() => { scannerActive.current = true; setScanning(true); }, 2500);
+        fail(mode === 'manual' ? 'Booking not found — check the ID.' : 'Invalid QR code — booking not found.');
         return;
       }
-      navigate(booking.publicId, booking.status);
+      navigate(booking);
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Booking not found.');
-      setTimeout(() => { scannerActive.current = true; setScanning(true); }, 2500);
+      const status = err?.response?.status;
+      if (status === 404) {
+        fail(mode === 'manual' ? 'Booking not found — check the ID.' : 'Invalid QR code — booking not found.');
+      } else if (status === 401 || status === 403) {
+        fail('You are not authorised to access this booking.');
+      } else {
+        fail('Failed to verify booking. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -404,11 +442,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     backgroundColor: 'rgba(229,62,62,0.85)',
-    borderRadius: 999,
+    borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 9,
   },
-  errorPillText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#fff' },
+  errorPillText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#fff', flexShrink: 1 },
 
   permLoader: { flex: 1 },
   permBox: {

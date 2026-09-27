@@ -46,6 +46,7 @@ interface AppliedDiscount {
 }
 
 const LICENSE_NOT_RETURNED_MESSAGE = "Return the customer's original driving licence before closing the drop.";
+const DAMAGE_DECISION_MESSAGE = 'Choose "No damage", or save the damage you found, before completing the drop.';
 const VEHICLE_SWAPPED_KM_NOTE = "Vehicle was swapped during the rental — extra km isn't calculated automatically.";
 
 const num = (x: unknown) => Number(x ?? 0) || 0;
@@ -58,9 +59,30 @@ function formatDate(iso: string) {
   });
 }
 
-const FUEL_LEVEL_LABELS: Record<string, string> = {
-  EMPTY: 'Empty', QUARTER: '¼ Tank', HALF: '½ Tank', THREE_QUARTER: '¾ Tank', FULL: 'Full',
+// Fuel is recorded in bars, "1".."10" (pickup and return).
+const FUEL_LEVELS = Array.from({ length: 10 }, (_, i) => String(i + 1));
+const fuelBars = (level: string | null | undefined): number | null =>
+  level && /^([1-9]|10)$/.test(level) ? Number(level) : null;
+const fuelLabel = (level: string) => (fuelBars(level) != null ? `${level}/10` : level);
+
+// Settlement methods — same set as the web RecordPaymentPanel. UPI is the shop
+// QR recorded by its 12-digit UTR; "Other online" is another gateway's reference.
+type PayMethod = 'CASH' | 'UPI' | 'SPLIT' | 'OTHER';
+const PAY_METHODS: PayMethod[] = ['CASH', 'UPI', 'SPLIT', 'OTHER'];
+const PAY_METHOD_LABELS: Record<PayMethod, string> = {
+  CASH: 'Cash',
+  UPI: 'UPI (UTR)',
+  SPLIT: 'Split',
+  OTHER: 'Other online',
 };
+const GATEWAYS = ['Razorpay', 'Other'] as const;
+
+interface OtherChargeLine {
+  id: string;
+  label: string;
+  amount: string;
+}
+const newOtherLine = (): OtherChargeLine => ({ id: String(Date.now() + Math.random()), label: '', amount: '' });
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={styles.sectionHeader}>{title}</Text>;
@@ -117,8 +139,9 @@ export default function ReturnScreen() {
   const [fastagAmt, setFastagAmt] = useState('');
   const [fastagNote, setFastagNote] = useState('');
   const [chargeOther, setChargeOther] = useState(false);
-  const [otherLabel, setOtherLabel] = useState('');
-  const [otherAmt, setOtherAmt] = useState('');
+  const [otherLines, setOtherLines] = useState<OtherChargeLine[]>(() => [newOtherLine()]);
+  // Explicit damage check, required before settling / completing (like the web).
+  const [damageDecision, setDamageDecision] = useState<'NO_DAMAGE' | 'DAMAGE_FOUND' | null>(null);
 
   // discount (after compute)
   const [discount, setDiscount] = useState<AppliedDiscount | null>(null);
@@ -142,9 +165,15 @@ export default function ReturnScreen() {
   const [recomputeTick, setRecomputeTick] = useState(0);
   const [deletingDamageId, setDeletingDamageId] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
-  const [payMethod, setPayMethod] = useState<'CASH' | 'UPI'>('CASH');
+  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
   const [utr, setUtr] = useState('');
   const [utrError, setUtrError] = useState<string | undefined>(undefined);
+  const [splitCash, setSplitCash] = useState('');
+  const [splitUpi, setSplitUpi] = useState('');
+  const [otherRef, setOtherRef] = useState('');
+  const [otherGateway, setOtherGateway] = useState<(typeof GATEWAYS)[number]>('Razorpay');
+  const [otherRefError, setOtherRefError] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -297,7 +326,40 @@ export default function ReturnScreen() {
   }, [endOdo, startOdo, allowance]);
 
   const fuelModuleEnabled = !!booking?.frozenChargeConfig?.fuelModuleEnabled;
-  const fastagEnabled = !!booking?.frozenChargeConfig?.fastagModuleEnabled || !!vehicle?.hasFastag;
+  // FASTag tolls only when the branch module is on AND the vehicle has a tag.
+  const fastagEnabled = !!booking?.frozenChargeConfig?.fastagModuleEnabled && !!vehicle?.hasFastag;
+
+  // Fuel: return level defaults to the pickup level; a lower level is a deficit,
+  // priced at the vehicle's ₹-per-bar rate (still editable) — same as the web.
+  const pickupBars = fuelBars(booking?.pickupFuelLevel);
+  const fuelBarRate = num(vehicle?.fuelBar);
+  const returnBars = fuelBars(fuelLevel);
+  const fuelDeficitBars = pickupBars != null && returnBars != null ? pickupBars - returnBars : 0;
+
+  useEffect(() => {
+    if (booking?.pickupFuelLevel && fuelBars(booking.pickupFuelLevel) != null) {
+      setFuelLevel((cur) => cur || booking.pickupFuelLevel!);
+    }
+  }, [booking?.pickupFuelLevel]);
+
+  const selectFuelLevel = (level: string) => {
+    setFuelLevel(level);
+    const deficit = pickupBars != null ? pickupBars - Number(level) : 0;
+    if (deficit > 0 && fuelBarRate > 0) {
+      setChargeFuel(true);
+      setFuelAmt(String(Math.ceil(deficit * fuelBarRate)));
+    } else {
+      setChargeFuel(false);
+      setFuelAmt('');
+    }
+  };
+
+  // Damage recorded at drop means damage was found (e.g. after a reload).
+  useEffect(() => {
+    if (damages.length > 0) setDamageDecision('DAMAGE_FOUND');
+  }, [damages.length]);
+  const damageStepDone =
+    damageDecision === 'NO_DAMAGE' || (damageDecision === 'DAMAGE_FOUND' && damages.length > 0);
 
   // Leaves the computed view for the charges form (a restored session's
   // inputs aren't on this screen, so it can't be recomputed in place).
@@ -323,8 +385,12 @@ export default function ReturnScreen() {
       setErrorMsg('Enter a valid odometer reading.');
       return false;
     }
-    if (fuelModuleEnabled && !/^([1-9]|10)$/.test(fuelLevel)) {
+    if (fuelModuleEnabled && fuelBars(fuelLevel) == null) {
       setErrorMsg('Select the return fuel level.');
+      return false;
+    }
+    if (returnPhotos.length === 0) {
+      setErrorMsg('Take at least one return photo.');
       return false;
     }
     if (licenseRequired && !licenseReturned) {
@@ -340,14 +406,17 @@ export default function ReturnScreen() {
         endOdometer: endOdoNum,
         returnImageIds: returnPhotos.map((p) => p.fileId),
       };
-      if (fuelModuleEnabled && fuelLevel) body.returnFuelLevel = fuelLevel;
+      if (fuelBars(fuelLevel) != null) body.returnFuelLevel = fuelLevel;
       if (chargeFuel && num(fuelAmt) > 0) body.fuelCharge = num(fuelAmt);
       if (chargeFastag && num(fastagAmt) > 0) {
         body.fastagAmount = num(fastagAmt);
         if (fastagNote.trim()) body.fastagNotes = fastagNote.trim();
       }
-      if (chargeOther && otherLabel.trim() && num(otherAmt) > 0) {
-        body.otherCharges = [{ label: otherLabel.trim(), amount: num(otherAmt) }];
+      if (chargeOther) {
+        const lines = otherLines
+          .filter((l) => l.label.trim() && num(l.amount) > 0)
+          .map((l) => ({ label: l.label.trim(), amount: num(l.amount) }));
+        if (lines.length > 0) body.otherCharges = lines;
       }
       if (licenseReturned) body.licenseReturned = true;
       if (nextDiscount) body.discount = nextDiscount;
@@ -500,15 +569,33 @@ export default function ReturnScreen() {
 
   const settleSession = async () => {
     if (!session || settleBusyRef.current) return;
-    const net = num(session.netPayable);
-    if (net > 0 && payMethod === 'UPI' && !isValidUtr(utr)) {
-      setUtrError('Enter the 12-digit UTR number.');
+    if (!damageStepDone) {
+      setErrorMsg(DAMAGE_DECISION_MESSAGE);
       return;
+    }
+    const net = num(session.netPayable);
+    const cashPart = num(splitCash);
+    const upiPart = num(splitUpi);
+    if (net > 0) {
+      if (payMethod === 'SPLIT' && Math.abs(cashPart + upiPart - net) >= 0.01) {
+        setPayError(`Cash + UPI must add up to ${inr(net)}.`);
+        return;
+      }
+      if ((payMethod === 'UPI' || (payMethod === 'SPLIT' && upiPart > 0)) && !isValidUtr(utr)) {
+        setUtrError('Enter the 12-digit UTR number.');
+        return;
+      }
+      if (payMethod === 'OTHER' && !otherRef.trim()) {
+        setOtherRefError('Enter the transaction reference.');
+        return;
+      }
     }
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
+    setPayError(null);
     setUtrError(undefined);
+    setOtherRefError(null);
     try {
       if (net < 0) {
         await employeeApi.recordSessionRefund(session.publicId, {
@@ -523,12 +610,25 @@ export default function ReturnScreen() {
           idempotencyKey: `zero-balance:${session.publicId}`,
         });
       } else {
-        await employeeApi.recordSessionPayment(session.publicId, {
-          method: payMethod === 'UPI' ? 'ONLINE' : 'CASH',
-          amount: net,
-          idempotencyKey: `settle:${session.publicId}`,
-          ...(payMethod === 'UPI' ? { onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) } : {}),
-        });
+        const idempotencyKey = `settle:${session.publicId}`;
+        await employeeApi.recordSessionPayment(
+          session.publicId,
+          payMethod === 'SPLIT'
+            ? {
+              method: 'SPLIT',
+              amount: net,
+              idempotencyKey,
+              notes: `Split: ₹${cashPart.toFixed(2)} cash + ₹${upiPart.toFixed(2)} UPI`,
+              cashAmount: cashPart,
+              onlineAmount: upiPart,
+              ...(upiPart > 0 ? { onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) } : {}),
+            }
+            : payMethod === 'UPI'
+              ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) }
+              : payMethod === 'OTHER'
+                ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: otherGateway, onlineTransactionRef: otherRef.trim() }
+                : { method: 'CASH', amount: net, idempotencyKey },
+        );
       }
       onSettled();
     } catch (err: any) {
@@ -536,14 +636,15 @@ export default function ReturnScreen() {
       if (handleShiftRequired(err)) return;
       const code = counterErrorCode(err);
       if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
-        setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
+        const message = apiErrorMessage(err, 'Check the reference number.');
+        if (payMethod === 'OTHER') setOtherRefError(message);
+        else setUtrError(message);
         return;
       }
       // 409 (DROP_BILL_STALE): the bill changed since the last compute (a damage
       // was added or removed, an extension moved the end time, or the amount
       // drifted) — recompute so staff collect the new amount on the next tap.
       if (err?.response?.status === 409) {
-        // DROP_BILL_STALE also covers an extension moving the booking's end time.
         refetch();
         refetchDamages();
         if (!computedHereRef.current) {
@@ -559,8 +660,38 @@ export default function ReturnScreen() {
     }
   };
 
+  const selectPayMethod = (m: PayMethod) => {
+    setPayMethod(m);
+    setPayError(null);
+    setUtrError(undefined);
+    setOtherRefError(null);
+  };
+
+  // Split: typing one part fills the other so they always add up to the bill.
+  const changeSplit = (part: 'cash' | 'upi', text: string, net: number) => {
+    const clean = text.replace(/[^\d.]/g, '');
+    const rest = Number.isFinite(Number(clean)) ? Math.max(0, net - (Number(clean) || 0)) : 0;
+    const restText = String(Math.round(rest * 100) / 100);
+    if (part === 'cash') {
+      setSplitCash(clean);
+      setSplitUpi(restText);
+    } else {
+      setSplitUpi(clean);
+      setSplitCash(restText);
+    }
+    setPayError(null);
+  };
+
   const requestLegacyComplete = () => {
     if (photosPending > 0) return;
+    if (returnPhotos.length === 0) {
+      setErrorMsg('Take at least one return photo.');
+      return;
+    }
+    if (!damageStepDone) {
+      setErrorMsg(DAMAGE_DECISION_MESSAGE);
+      return;
+    }
     if (licenseRequired && !licenseReturned) {
       setErrorMsg(LICENSE_NOT_RETURNED_MESSAGE);
       return;
@@ -781,7 +912,7 @@ export default function ReturnScreen() {
                 )}
                 {startOdo != null && booking.pickupFuelLevel && <View style={styles.divider} />}
                 {booking.pickupFuelLevel && (
-                  <InfoRow icon="water-outline" label="Fuel level" value={FUEL_LEVEL_LABELS[booking.pickupFuelLevel] ?? booking.pickupFuelLevel} />
+                  <InfoRow icon="water-outline" label="Fuel level" value={fuelLabel(booking.pickupFuelLevel)} />
                 )}
               </View>
             </>
@@ -807,6 +938,29 @@ export default function ReturnScreen() {
                     </View>
                   ))}
                 </ScrollView>
+              </View>
+            </>
+          )}
+
+          {/* Return condition photos — required before compute / complete (like the web) */}
+          {!hasRemainingBalance && !session && (
+            <>
+              <SectionHeader title="Return Condition Photos" />
+              <View style={styles.card}>
+                <Text style={styles.hintInline}>
+                  Photograph the vehicle's condition at return — at least one photo is required (4–6 recommended).
+                </Text>
+                <View style={{ height: 12 }} />
+                <PhotoCaptureSection
+                  value={returnPhotos}
+                  onChange={setReturnPhotos}
+                  upload={async (form) => {
+                    const res = await employeeApi.uploadReturnImage(form);
+                    return { fileId: res.data.fileId, url: res.data.url };
+                  }}
+                  genericLabel="Add"
+                  onPendingChange={setPhotosPending}
+                />
               </View>
             </>
           )}
@@ -869,43 +1023,58 @@ export default function ReturnScreen() {
                   </View>
                 )}
 
-                {/* Fuel level (fuel module) */}
-                {fuelModuleEnabled && (
-                  <>
-                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Return fuel level</Text>
-                    <View style={styles.fuelGrid}>
-                      {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((lvl) => (
-                        <TouchableOpacity
-                          key={lvl}
-                          style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
-                          onPress={() => setFuelLevel(lvl)}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
+                {/* Return fuel level — defaults to the pickup level */}
+                <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Return fuel level (bars)</Text>
+                <View style={styles.fuelGrid}>
+                  {FUEL_LEVELS.map((lvl) => (
+                    <TouchableOpacity
+                      key={lvl}
+                      style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
+                      onPress={() => selectFuelLevel(lvl)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {booking.pickupFuelLevel && (
+                  <Text style={styles.hint}>
+                    Pickup level {fuelLabel(booking.pickupFuelLevel)}
+                    {fuelDeficitBars > 0 ? ` · ${fuelDeficitBars} bar${fuelDeficitBars > 1 ? 's' : ''} short` : ''}
+                  </Text>
                 )}
               </View>
 
               <SectionHeader title="Additional Charges" />
               <View style={styles.card}>
-                {fuelModuleEnabled && (
-                  <>
-                    <ChargeToggle label="Fuel deficit charge" enabled={chargeFuel} onToggle={setChargeFuel}>
-                      <TextInput
-                        style={styles.input}
-                        value={fuelAmt}
-                        onChangeText={setFuelAmt}
-                        placeholder="Amount ₹"
-                        placeholderTextColor={Colors.ink4}
-                        keyboardType="numeric"
-                      />
-                    </ChargeToggle>
-                    <View style={styles.divider} />
-                  </>
+                <ChargeToggle
+                  label="Fuel deficit charge"
+                  enabled={chargeFuel}
+                  onToggle={(v) => {
+                    setChargeFuel(v);
+                    if (v && !fuelAmt && fuelDeficitBars > 0 && fuelBarRate > 0) {
+                      setFuelAmt(String(Math.ceil(fuelDeficitBars * fuelBarRate)));
+                    }
+                  }}
+                >
+                  <TextInput
+                    style={styles.input}
+                    value={fuelAmt}
+                    onChangeText={setFuelAmt}
+                    placeholder="Amount ₹"
+                    placeholderTextColor={Colors.ink4}
+                    keyboardType="numeric"
+                  />
+                  {fuelDeficitBars > 0 && fuelBarRate > 0 && (
+                    <Text style={styles.hintTight}>
+                      {fuelDeficitBars} bar{fuelDeficitBars > 1 ? 's' : ''} × {inr(fuelBarRate)} = {inr(Math.ceil(fuelDeficitBars * fuelBarRate))} (editable)
+                    </Text>
+                  )}
+                </ChargeToggle>
+                {fuelDeficitBars > 0 && !chargeFuel && (
+                  <Text style={styles.hint}>Return fuel is lower than pickup — turn this on to charge.</Text>
                 )}
+                <View style={styles.divider} />
 
                 {fastagEnabled && (
                   <>
@@ -930,22 +1099,38 @@ export default function ReturnScreen() {
                   </>
                 )}
 
-                <ChargeToggle label="Other charge" enabled={chargeOther} onToggle={setChargeOther}>
-                  <TextInput
-                    style={styles.input}
-                    value={otherLabel}
-                    onChangeText={setOtherLabel}
-                    placeholder="Description"
-                    placeholderTextColor={Colors.ink4}
-                  />
-                  <TextInput
-                    style={[styles.input, { marginTop: 8 }]}
-                    value={otherAmt}
-                    onChangeText={setOtherAmt}
-                    placeholder="Amount ₹"
-                    placeholderTextColor={Colors.ink4}
-                    keyboardType="numeric"
-                  />
+                <ChargeToggle label="Other charges" enabled={chargeOther} onToggle={setChargeOther}>
+                  {otherLines.map((line) => (
+                    <View key={line.id} style={styles.otherLine}>
+                      <TextInput
+                        style={[styles.input, styles.otherLabelInput]}
+                        value={line.label}
+                        onChangeText={(t) => setOtherLines((prev) => prev.map((l) => (l.id === line.id ? { ...l, label: t } : l)))}
+                        placeholder="Description (e.g. Late return fine)"
+                        placeholderTextColor={Colors.ink4}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.otherAmtInput]}
+                        value={line.amount}
+                        onChangeText={(t) => setOtherLines((prev) => prev.map((l) => (l.id === line.id ? { ...l, amount: t.replace(/[^\d.]/g, '') } : l)))}
+                        placeholder="₹"
+                        placeholderTextColor={Colors.ink4}
+                        keyboardType="decimal-pad"
+                      />
+                      {otherLines.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => setOtherLines((prev) => prev.filter((l) => l.id !== line.id))}
+                          hitSlop={8}
+                          style={styles.otherRemove}
+                        >
+                          <Ionicons name="close" size={18} color={Colors.ink3} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                  <TouchableOpacity onPress={() => setOtherLines((prev) => [...prev, newOtherLine()])} hitSlop={8}>
+                    <Text style={styles.link}>+ Add another charge</Text>
+                  </TouchableOpacity>
                 </ChargeToggle>
 
                 {discount && (
@@ -972,102 +1157,130 @@ export default function ReturnScreen() {
             </>
           )}
 
-          {/* Return condition photos (before settlement) */}
-          {!hasRemainingBalance && !session && (
-            <>
-              <SectionHeader title="Return Condition Photos" />
-              <View style={styles.card}>
-                <Text style={styles.hint}>Capture the vehicle's condition at return (optional).</Text>
-                <View style={{ height: 12 }} />
-                <PhotoCaptureSection
-                  value={returnPhotos}
-                  onChange={setReturnPhotos}
-                  upload={async (form) => {
-                    const res = await employeeApi.uploadReturnImage(form);
-                    return { fileId: res.data.fileId, url: res.data.url };
-                  }}
-                  genericLabel="Add"
-                  onPendingChange={setPhotosPending}
-                />
-              </View>
-            </>
-          )}
-
           {/* Damage found at drop — billed on the return session, or by the manager on review (legacy) */}
           {showDamages && (
             <>
-              <SectionHeader title="Damage" />
+              <SectionHeader title="Vehicle Condition" />
               <View style={styles.card}>
-                {damagesError ? (
+                {damageDecision === null ? (
+                  <>
+                    <Text style={styles.toggleLabel}>Does the vehicle have any new damage?</Text>
+                    <View style={[styles.methodRow, { marginTop: 12 }]}>
+                      <TouchableOpacity
+                        style={styles.decisionBtn}
+                        onPress={() => setDamageDecision('NO_DAMAGE')}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="checkmark-circle-outline" size={18} color="#10b981" />
+                        <Text style={styles.decisionText}>No damage</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.decisionBtn}
+                        onPress={() => setDamageDecision('DAMAGE_FOUND')}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="warning-outline" size={18} color="#dc3545" />
+                        <Text style={styles.decisionText}>Damage found</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : damageDecision === 'NO_DAMAGE' ? (
                   <View style={styles.toggleRow}>
-                    <Text style={[styles.hintInline, { flex: 1 }]}>Could not load damages.</Text>
-                    <TouchableOpacity onPress={() => refetchDamages()} hitSlop={8}>
-                      <Text style={styles.link}>Retry</Text>
-                    </TouchableOpacity>
+                    <View style={styles.noDamageRow}>
+                      <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                      <Text style={styles.noDamageText}>No new damage found.</Text>
+                    </View>
+                    {!settling && (
+                      <TouchableOpacity onPress={() => setDamageDecision(null)} hitSlop={8}>
+                        <Text style={styles.link}>Change</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                ) : damages.length === 0 ? (
-                  <Text style={styles.hintInline}>
-                    {damagesLoaded ? 'No damage recorded at this drop.' : 'Loading damages…'}
-                  </Text>
                 ) : (
-                  damages.map((d, i) => (
-                    <View key={d.publicId}>
-                      {i > 0 && <View style={styles.divider} />}
-                      <View style={styles.damageRow}>
-                        {d.photos[0] ? (
-                          <Image source={{ uri: d.photos[0].url }} style={styles.damageThumb} resizeMode="cover" />
-                        ) : (
-                          <View style={[styles.damageThumb, styles.damageThumbEmpty]}>
-                            <Ionicons name="image-outline" size={18} color={Colors.ink4} />
-                          </View>
-                        )}
-                        <View style={styles.damageInfo}>
-                          <Text style={styles.damageArea} numberOfLines={1}>{d.area}</Text>
-                          <Text style={styles.damageMeta} numberOfLines={1}>
-                            {d.severity}{d.photos.length > 1 ? ` · ${d.photos.length} photos` : ''}
-                          </Text>
-                          {booking.items.length > 1 && d.vehicle && (
-                            <Text style={styles.damageMeta} numberOfLines={1}>
-                              {d.vehicle.make} {d.vehicle.model} · {d.vehicle.regNo}
-                            </Text>
-                          )}
-                        </View>
-                        <Text style={[styles.damageAmt, !d.billedAtDrop && styles.damageAmtMuted]}>
-                          {d.billedAtDrop
-                            ? `${inr(num(d.amount))} · on this bill`
-                            : d.chargeCustomer
-                              ? `${inr(num(d.amount))} · manager will charge`
-                              : 'Company expense'}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => confirmDeleteDamage(d)}
-                          disabled={!!deletingDamageId || settling}
-                          hitSlop={8}
-                          style={styles.damageDelete}
-                        >
-                          {deletingDamageId === d.publicId ? (
-                            <ActivityIndicator size="small" color={Colors.ink3} />
-                          ) : (
-                            <Ionicons name="close" size={18} color={Colors.ink3} />
-                          )}
+                  <>
+                    <View style={[styles.toggleRow, { marginBottom: 12 }]}>
+                      <Text style={styles.damageHeading}>Damage found</Text>
+                      {damagesLoaded && damages.length === 0 && !settling && (
+                        <TouchableOpacity onPress={() => setDamageDecision(null)} hitSlop={8}>
+                          <Text style={styles.link}>Change</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    {damagesError ? (
+                      <View style={styles.toggleRow}>
+                        <Text style={[styles.hintInline, { flex: 1 }]}>Could not load damages.</Text>
+                        <TouchableOpacity onPress={() => refetchDamages()} hitSlop={8}>
+                          <Text style={styles.link}>Retry</Text>
                         </TouchableOpacity>
                       </View>
-                    </View>
-                  ))
-                )}
+                    ) : damages.length === 0 ? (
+                      <Text style={styles.hintInline}>
+                        {damagesLoaded ? 'No damage saved yet.' : 'Loading damages…'}
+                      </Text>
+                    ) : (
+                      damages.map((d, i) => (
+                        <View key={d.publicId}>
+                          {i > 0 && <View style={styles.divider} />}
+                          <View style={styles.damageRow}>
+                            {d.photos[0] ? (
+                              <Image source={{ uri: d.photos[0].url }} style={styles.damageThumb} resizeMode="cover" />
+                            ) : (
+                              <View style={[styles.damageThumb, styles.damageThumbEmpty]}>
+                                <Ionicons name="image-outline" size={18} color={Colors.ink4} />
+                              </View>
+                            )}
+                            <View style={styles.damageInfo}>
+                              <Text style={styles.damageArea} numberOfLines={1}>{d.area}</Text>
+                              <Text style={styles.damageMeta} numberOfLines={1}>
+                                {d.severity}{d.photos.length > 1 ? ` · ${d.photos.length} photos` : ''}
+                              </Text>
+                              {booking.items.length > 1 && d.vehicle && (
+                                <Text style={styles.damageMeta} numberOfLines={1}>
+                                  {d.vehicle.make} {d.vehicle.model} · {d.vehicle.regNo}
+                                </Text>
+                              )}
+                            </View>
+                            <Text style={[styles.damageAmt, !d.billedAtDrop && styles.damageAmtMuted]}>
+                              {d.billedAtDrop
+                                ? `${inr(num(d.amount))} · on this bill`
+                                : d.chargeCustomer
+                                  ? `${inr(num(d.amount))} · manager will charge`
+                                  : 'Company expense'}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => confirmDeleteDamage(d)}
+                              disabled={!!deletingDamageId || settling}
+                              hitSlop={8}
+                              style={styles.damageDelete}
+                            >
+                              {deletingDamageId === d.publicId ? (
+                                <ActivityIndicator size="small" color={Colors.ink3} />
+                              ) : (
+                                <Ionicons name="close" size={18} color={Colors.ink3} />
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
 
-                <TouchableOpacity
-                  style={[styles.addDamageBtn, settling && styles.btnDisabled]}
-                  onPress={() => router.push({
-                    pathname: '/employee/damage/[bookingId]',
-                    params: { bookingId: booking.publicId },
-                  })}
-                  disabled={settling}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="add-circle-outline" size={18} color="#dc3545" />
-                  <Text style={styles.addDamageText}>Add damage</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.addDamageBtn, settling && styles.btnDisabled]}
+                      onPress={() => router.push({
+                        pathname: '/employee/damage/[bookingId]',
+                        params: { bookingId: booking.publicId },
+                      })}
+                      disabled={settling}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="add-circle-outline" size={18} color="#dc3545" />
+                      <Text style={styles.addDamageText}>Add damage</Text>
+                    </TouchableOpacity>
+                    {damagesLoaded && damages.length === 0 && (
+                      <Text style={styles.hintWarn}>Save at least one damage (or choose "No damage") to continue.</Text>
+                    )}
+                  </>
+                )}
               </View>
             </>
           )}
@@ -1215,26 +1428,87 @@ export default function ReturnScreen() {
               {!sessionDone && net > 0 && (
                 <View style={[styles.card, { marginTop: 8 }]}>
                   <Text style={styles.fieldLabel}>Payment method</Text>
-                  <View style={styles.methodRow}>
-                    {(['CASH', 'UPI'] as const).map((m) => (
+                  <View style={styles.methodGrid}>
+                    {PAY_METHODS.map((m) => (
                       <TouchableOpacity
                         key={m}
-                        style={[styles.methodBtn, payMethod === m && styles.methodBtnActive]}
-                        onPress={() => { setPayMethod(m); setUtrError(undefined); }}
+                        style={[styles.methodBtn, styles.methodGridBtn, payMethod === m && styles.methodBtnActive]}
+                        onPress={() => selectPayMethod(m)}
                         activeOpacity={0.8}
                       >
                         <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
-                          {m === 'CASH' ? 'Cash' : 'UPI (UTR)'}
+                          {PAY_METHOD_LABELS[m]}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                  {payMethod === 'UPI' && (
+
+                  {payMethod === 'SPLIT' && (
+                    <View style={styles.splitBox}>
+                      <Text style={styles.hintInline}>Total to split: {inr(net)}</Text>
+                      <View style={styles.splitRow}>
+                        <View style={styles.splitCol}>
+                          <Text style={styles.splitLabel}>Cash (₹)</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={splitCash}
+                            onChangeText={(t) => changeSplit('cash', t, net)}
+                            placeholder="0"
+                            placeholderTextColor={Colors.ink4}
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                        <View style={styles.splitCol}>
+                          <Text style={styles.splitLabel}>UPI (₹)</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={splitUpi}
+                            onChangeText={(t) => changeSplit('upi', t, net)}
+                            placeholder="0"
+                            placeholderTextColor={Colors.ink4}
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                      </View>
+                      {payError && <Text style={styles.fieldError}>{payError}</Text>}
+                    </View>
+                  )}
+
+                  {(payMethod === 'UPI' || (payMethod === 'SPLIT' && num(splitUpi) > 0)) && (
                     <UtrInput
                       value={utr}
                       onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
                       error={utrError}
                     />
+                  )}
+
+                  {payMethod === 'OTHER' && (
+                    <>
+                      <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Transaction reference</Text>
+                      <TextInput
+                        style={[styles.input, otherRefError ? styles.inputError : undefined]}
+                        value={otherRef}
+                        onChangeText={(t) => { setOtherRef(t); setOtherRefError(null); }}
+                        placeholder="e.g. pay_xyz789"
+                        placeholderTextColor={Colors.ink4}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      {otherRefError && <Text style={styles.fieldError}>{otherRefError}</Text>}
+                      <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Gateway</Text>
+                      <View style={styles.methodRow}>
+                        {GATEWAYS.map((g) => (
+                          <TouchableOpacity
+                            key={g}
+                            style={[styles.methodBtn, otherGateway === g && styles.methodBtnActive]}
+                            onPress={() => setOtherGateway(g)}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={[styles.methodText, otherGateway === g && styles.methodTextActive]}>{g}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </>
                   )}
                 </View>
               )}
@@ -1288,6 +1562,16 @@ export default function ReturnScreen() {
               <Ionicons name="cloud-upload-outline" size={16} color={Colors.ink3} />
               <Text style={styles.footerNoteText}>Finish uploading photos above (retry or remove failed ones)</Text>
             </View>
+          ) : returnPhotos.length === 0 && !session ? (
+            <View style={styles.footerNote}>
+              <Ionicons name="camera-outline" size={16} color={Colors.ink3} />
+              <Text style={styles.footerNoteText}>Take at least one return photo to continue.</Text>
+            </View>
+          ) : !booking.usePaymentSessions && !damageStepDone ? (
+            <View style={styles.footerNote}>
+              <Ionicons name="car-outline" size={16} color={Colors.ink3} />
+              <Text style={styles.footerNoteText}>Record the vehicle condition above to continue.</Text>
+            </View>
           ) : !booking.usePaymentSessions ? (
             <TouchableOpacity
               style={[styles.confirmBtn, (settling || !!deletingDamageId) && styles.confirmBtnDisabled]}
@@ -1330,6 +1614,11 @@ export default function ReturnScreen() {
                 </>
               )}
             </View>
+          ) : !damageStepDone && !sessionDone ? (
+            <View style={styles.footerNote}>
+              <Ionicons name="car-outline" size={16} color={Colors.ink3} />
+              <Text style={styles.footerNoteText}>Record the vehicle condition above to continue.</Text>
+            </View>
           ) : (
             <TouchableOpacity
               style={[styles.confirmBtn, settling && styles.confirmBtnDisabled]}
@@ -1355,7 +1644,9 @@ export default function ReturnScreen() {
         icon="arrow-down-circle-outline"
         iconColor="#3b82f6"
         title="Complete Return"
-        message={`Confirm that ${customer.name} has returned the vehicle?`}
+        message={damages.length > 0
+          ? `Confirm that ${customer.name} has returned the vehicle? The recorded damage goes to the branch manager, who charges it and sets the vehicle's status.`
+          : `Confirm that ${customer.name} has returned the vehicle with no new damage?`}
         confirmLabel="Complete Return"
         confirmColor="#3b82f6"
         onConfirm={() => { setShowConfirm(false); completeLegacy(); }}
@@ -1417,6 +1708,8 @@ const styles = StyleSheet.create({
   },
   hint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 8 },
   hintInline: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
+  hintTight: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  hintWarn: { fontFamily: Fonts.body, fontSize: 12, color: '#d97706', marginTop: 10 },
 
   kmPreview: { backgroundColor: Colors.bg, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 10, gap: 4 },
   kmPreviewText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink2, lineHeight: 17 },
@@ -1485,6 +1778,27 @@ const styles = StyleSheet.create({
   addDamageText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#dc3545' },
 
   methodRow: { flexDirection: 'row', gap: 8 },
+  methodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  methodGridBtn: { flexBasis: '48%', flexGrow: 1 },
+  splitBox: { backgroundColor: Colors.bg, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline, padding: 12, marginTop: 12, gap: 10 },
+  splitRow: { flexDirection: 'row', gap: 10 },
+  splitCol: { flex: 1, gap: 6 },
+  splitLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
+  inputError: { borderColor: '#e53e3e' },
+
+  decisionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 12, backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline,
+  },
+  decisionText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
+  noDamageRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 12 },
+  noDamageText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: '#047857' },
+  damageHeading: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#c2410c' },
+
+  otherLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  otherLabelInput: { flex: 1 },
+  otherAmtInput: { width: 96 },
+  otherRemove: { width: 24, alignItems: 'center' },
   methodBtn: { flex: 1, paddingVertical: 11, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline },
   methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink3 },

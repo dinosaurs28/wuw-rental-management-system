@@ -35,6 +35,10 @@ const TYPES: { type: KycType; label: string }[] = [
   { type: 'STUDENT_ID', label: 'Student' },
 ];
 const SIDES: KycSide[] = ['FRONT', 'BACK'];
+// A booking needs BOTH sides of one of these (same rule as the web); a
+// student ID can be uploaded but doesn't count.
+const BOOKABLE_TYPES: KycType[] = ['DL', 'AADHAAR', 'PAN'];
+const TYPE_LABEL: Record<string, string> = { DL: 'Licence', AADHAAR: 'Aadhaar', PAN: 'PAN' };
 const STATUS_COLOR: Record<string, string> = { PENDING: '#d97706', APPROVED: '#059669', REJECTED: '#dc2626' };
 
 export default function WalkinKycScreen() {
@@ -60,6 +64,23 @@ export default function WalkinKycScreen() {
     enabled: !!customer,
     staleTime: 15_000,
   });
+
+  // The FRONT of each bookable type that also has its BACK uploaded.
+  const completeFronts = new Map<KycType, string>();
+  for (const type of BOOKABLE_TYPES) {
+    const front = docs.find((d) => d.type === type && d.side === 'FRONT');
+    const back = docs.find((d) => d.type === type && d.side === 'BACK');
+    if (front && back) completeFronts.set(type, front.publicId);
+  }
+  // Staff pick a document; the booking is tied to its type's FRONT.
+  const selectedType = docs.find((d) => d.publicId === customerKycId)?.type;
+  const bookingKycId = selectedType ? completeFronts.get(selectedType) : undefined;
+
+  const continueToSummary = () => {
+    if (!bookingKycId) return;
+    setCustomerKycId(bookingKycId);
+    router.push('/employee/booking/summary');
+  };
 
   const pickAndUpload = async (source: 'camera' | 'gallery') => {
     if (!customer) return;
@@ -207,16 +228,37 @@ export default function WalkinKycScreen() {
 
         {/* Uploaded docs */}
         <Text style={styles.sectionLabel}>Uploaded — tap to attach to booking</Text>
+        {docs.length > 0 && (
+          <View style={styles.sidesRow}>
+            {BOOKABLE_TYPES.map((type) => {
+              const has = (side: KycSide) => docs.some((d) => d.type === type && d.side === side);
+              const done = completeFronts.has(type);
+              return (
+                <View key={type} style={[styles.sidesChip, done && styles.sidesChipDone]}>
+                  <Ionicons
+                    name={done ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={14}
+                    color={done ? '#059669' : Colors.ink4}
+                  />
+                  <Text style={[styles.sidesText, done && styles.sidesTextDone]}>
+                    {TYPE_LABEL[type]}: front {has('FRONT') ? '✓' : '—'} · back {has('BACK') ? '✓' : '—'}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
         {isLoading ? (
           <ActivityIndicator style={{ marginTop: 20 }} color={Colors.orange} />
         ) : docs.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="document-outline" size={22} color={Colors.ink4} />
-            <Text style={styles.emptyCardText}>No documents yet. Add at least one to continue.</Text>
+            <Text style={styles.emptyCardText}>No documents yet. Add the front and back of a licence, Aadhaar or PAN.</Text>
           </View>
         ) : (
           docs.map((doc) => {
-            const selected = customerKycId === doc.publicId;
+            // Selecting either side selects the document as a whole.
+            const selected = !!selectedType && doc.type === selectedType;
             return (
               <TouchableOpacity
                 key={doc.publicId}
@@ -250,10 +292,19 @@ export default function WalkinKycScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        {!bookingKycId && (
+          <Text style={styles.footerHint}>
+            {selectedType && BOOKABLE_TYPES.includes(selectedType)
+              ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to continue.`
+              : completeFronts.size > 0
+                ? 'Select a document with both sides uploaded.'
+                : 'Upload the front and back of a driving licence, Aadhaar or PAN.'}
+          </Text>
+        )}
         <TouchableOpacity
-          style={[styles.cta, !customerKycId && styles.disabled]}
-          onPress={() => router.push('/employee/booking/summary')}
-          disabled={!customerKycId}
+          style={[styles.cta, !bookingKycId && styles.disabled]}
+          onPress={continueToSummary}
+          disabled={!bookingKycId}
           activeOpacity={0.85}
         >
           <Text style={styles.ctaText}>Continue to summary</Text>
@@ -310,7 +361,18 @@ const styles = StyleSheet.create({
   docStatus: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
   deleteBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#fef2f2', alignItems: 'center', justifyContent: 'center' },
 
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
+  footerHint: { fontFamily: Fonts.body, fontSize: 12, color: '#b45309', textAlign: 'center' },
+
+  sidesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  sidesChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
+  },
+  sidesChipDone: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
+  sidesText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
+  sidesTextDone: { color: '#047857' },
   cta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: Colors.orange, borderRadius: 16, paddingVertical: 17,

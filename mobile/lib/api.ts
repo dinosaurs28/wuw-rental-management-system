@@ -274,6 +274,11 @@ export const employeeApi = {
     api.get('/api/employee/customer/search', { params: { q: query } }),
   getCustomer: (publicId: string) =>
     api.get(`/api/employee/customer/${publicId}`),
+  // Active bookings that block this customer for [start, end]:
+  // { usedTypeClasses: { TWO_WHEELER?|FOUR_WHEELER?: { vehicleMake, vehicleModel, endAt, ... } },
+  //   blockedAll?, anyVehicleConflict? } (blockedAll = branch allows one vehicle at a time).
+  customerBookingLimits: (customerPublicId: string, params: { start: string; end: string }) =>
+    api.get(`/api/employee/customer/${customerPublicId}/booking-limits`, { params }),
   getPickupDetails: (bookingId: string) =>
     api.get(`/api/employee/pickup/${bookingId}`),
   uploadPickupImage: (formData: FormData) =>
@@ -365,12 +370,15 @@ export const employeeApi = {
   recordSessionPayment: (
     sessionPublicId: string,
     body: {
-      method: 'CASH' | 'ONLINE';
+      method: 'CASH' | 'ONLINE' | 'SPLIT';
       amount: number;
       idempotencyKey: string;
       notes?: string;
       onlineTransactionRef?: string;
       onlineGateway?: string;
+      // SPLIT only: the cash and online parts (must add up to amount)
+      cashAmount?: number;
+      onlineAmount?: number;
     },
   ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
   recordSessionRefund: (
@@ -487,6 +495,12 @@ export const employeeApi = {
   commitExtension: (body: {
     extensionPublicId: string;
     resolutionType: 'SAME_VEHICLE' | 'SWAP_CURRENT_TO_OTHER' | 'SWAP_FUTURE_BOOKING' | 'PARTIAL_EXTENSION';
+    /** SWAP_CURRENT_TO_OTHER: the vehicle picked from availableVehicles. */
+    selectedVehiclePublicId?: string;
+    /** SWAP_FUTURE_BOOKING: the evaluation's affectedBookings, as proposed. */
+    affectedBookingSwaps?: { bookingPublicId: string; newVehiclePublicId: string }[];
+    /** PARTIAL_EXTENSION: the option's partialNewEndAt. */
+    partialNewEndAt?: string;
     idempotencyKey: string;
     notes?: string;
     /** Collect now instead of deferring the charge to a pickup payment session. */
@@ -575,10 +589,14 @@ export const employeeApi = {
       extensionPublicId?: string;
       discountCode?: string;
       odo?: number;
+      // percent, 0..100
       fuelLevel?: number;
-      pickupFuelLevel?: 'EMPTY' | 'QUARTER' | 'HALF' | 'THREE_QUARTER' | 'FULL';
+      // "1".."10" bars; used when the branch fuel module is enabled
+      pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
+      // must be true — backend rejects with LICENSE_NOT_COLLECTED otherwise
+      licenseCollected: boolean;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
   getActivePickupSession: (bookingId: string) =>

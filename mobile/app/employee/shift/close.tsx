@@ -21,10 +21,16 @@ interface ActiveShift {
   publicId: string;
   status: string;
   openedAt: string;
-  expectedTotal?: number | string;
+  expectedTotal?: number | string; // confirmed cash in drawer (Decimal string)
+  pendingTotal?: number | string;  // collected, awaiting manager confirmation
 }
 
-const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;
+// Cash is reconciled to the paisa, so amounts show two decimals.
+const inr = (v: number) =>
+  `₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const paise = (v: number) => Math.round(v * 100);
+// The server (closeCashShiftSchema) wants at least this much when cash differs.
+const MIN_EXPLANATION = 10;
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', {
@@ -59,7 +65,8 @@ export default function CloseShift() {
       if (!shift) throw new Error('No active shift');
       return employeeApi.closeShift(shift.publicId, {
         actualTotal: parseFloat(actualTotal),
-        discrepancyExplanation: explanation.trim() || undefined,
+        // Only sent on a mismatch — the server rejects a short note even when cash matches.
+        discrepancyExplanation: hasDiscrepancy ? explanation.trim() : undefined,
       });
     },
     onSuccess: (res) => {
@@ -76,10 +83,12 @@ export default function CloseShift() {
 
   const isValid = actualTotal.trim() !== '' && !isNaN(parseFloat(actualTotal)) && parseFloat(actualTotal) >= 0;
   const expected = shift?.expectedTotal != null ? Number(shift.expectedTotal) : null;
-  // Backend requires a discrepancyExplanation whenever counted cash != expected.
-  const hasDiscrepancy = isValid && expected != null && parseFloat(actualTotal) !== expected;
-  const explanationRequired = hasDiscrepancy && explanation.trim() === '';
-  const canSubmit = isValid && !!shift && !mutation.isPending && !explanationRequired;
+  const pending = shift?.pendingTotal != null ? Number(shift.pendingTotal) : 0;
+  // Backend requires a discrepancyExplanation (min 10 chars) whenever counted
+  // cash != expected, compared exactly — so compare in paise.
+  const hasDiscrepancy = isValid && expected != null && paise(parseFloat(actualTotal)) !== paise(expected);
+  const explanationShort = hasDiscrepancy && explanation.trim().length < MIN_EXPLANATION;
+  const canSubmit = isValid && !!shift && !mutation.isPending && !explanationShort;
 
   if (done) {
     return (
@@ -163,7 +172,15 @@ export default function CloseShift() {
             {expected != null && (
               <View style={styles.shiftInfoRow}>
                 <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
-                <Text style={styles.shiftInfoText}>Expected cash: {inr(expected)}</Text>
+                <Text style={styles.shiftInfoText}>Confirmed cash: {inr(expected)}</Text>
+              </View>
+            )}
+            {pending > 0 && (
+              <View style={styles.shiftInfoRow}>
+                <Ionicons name="hourglass-outline" size={15} color="#b45309" />
+                <Text style={[styles.shiftInfoText, styles.pendingText]}>
+                  Pending (awaiting manager): {inr(pending)}
+                </Text>
               </View>
             )}
           </View>
@@ -173,7 +190,9 @@ export default function CloseShift() {
         <View style={styles.fieldBlock}>
           <Text style={styles.fieldLabel}>Actual Cash in Hand (₹)</Text>
           {expected != null && (
-            <Text style={styles.expectedHint}>System expects {inr(expected)} in the drawer</Text>
+            <Text style={styles.expectedHint}>
+              System expects {inr(expected)} (confirmed cash). Enter the total physical cash you are handing over.
+            </Text>
           )}
           <View style={[styles.amountWrap, !isValid && actualTotal ? styles.amountWrapError : null]}>
             <Text style={styles.rupeeSymbol}>₹</Text>
@@ -182,32 +201,41 @@ export default function CloseShift() {
               placeholder="0.00"
               placeholderTextColor={Colors.ink4}
               value={actualTotal}
-              onChangeText={(t) => setActualTotal(t.replace(/[^0-9.]/g, ''))}
+              onChangeText={(t) => {
+                // Digits with at most one decimal point and two decimals (paise).
+                const [whole, ...rest] = t.replace(/[^0-9.]/g, '').split('.');
+                setActualTotal(rest.length ? `${whole}.${rest.join('').slice(0, 2)}` : whole);
+              }}
               keyboardType="decimal-pad"
               returnKeyType="done"
             />
           </View>
         </View>
 
-        {/* Notes */}
-        <View style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>
-            {hasDiscrepancy ? 'Notes / Explanation (required — cash differs from expected)' : 'Notes / Explanation (optional)'}
-          </Text>
-          <TextInput
-            style={[styles.notesInput, explanationRequired && styles.notesInputError]}
-            placeholder="Explain any discrepancy..."
-            placeholderTextColor={Colors.ink4}
-            value={explanation}
-            onChangeText={setExplanation}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-          {explanationRequired && (
-            <Text style={styles.fieldHint}>An explanation is required when the counted cash doesn’t match the expected total.</Text>
-          )}
-        </View>
+        {/* Discrepancy explanation — only when the count differs (as on the web) */}
+        {hasDiscrepancy && (
+          <View style={styles.fieldBlock}>
+            <Text style={styles.fieldLabel}>
+              Discrepancy explanation (required — {inr(Math.abs(parseFloat(actualTotal) - (expected ?? 0)))}{' '}
+              {parseFloat(actualTotal) > (expected ?? 0) ? 'over' : 'short'})
+            </Text>
+            <TextInput
+              style={[styles.notesInput, explanationShort && explanation.length > 0 && styles.notesInputError]}
+              placeholder={`Explain the discrepancy (min ${MIN_EXPLANATION} characters)…`}
+              placeholderTextColor={Colors.ink4}
+              value={explanation}
+              onChangeText={setExplanation}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            {explanationShort && (
+              <Text style={styles.fieldHint}>
+                At least {MIN_EXPLANATION} characters ({MIN_EXPLANATION - explanation.trim().length} more) — the counted cash doesn’t match the expected total.
+              </Text>
+            )}
+          </View>
+        )}
 
         {mutation.isError && (
           <View style={styles.errorBox}>
@@ -280,6 +308,7 @@ const styles = StyleSheet.create({
   },
   shiftInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   shiftInfoText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink2 },
+  pendingText: { color: '#b45309' },
 
   noShiftBox: {
     flexDirection: 'row',

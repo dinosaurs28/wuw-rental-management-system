@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
@@ -70,6 +71,7 @@ function fmtDateTime(iso: string) {
 
 export default function WalkinSummaryScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { customer, vehicle, start, end, customerKycId, reset } = useEmployeeBookingStore();
 
@@ -80,10 +82,74 @@ export default function WalkinSummaryScreen() {
   const [statusText, setStatusText] = useState('');
   const [bookingRef, setBookingRef] = useState('');
   const holdRef = useRef<{ holdId: string; transactionId: string } | null>(null);
+  // Mirrors holdRef for rendering and the leave guard below.
+  const [hasHold, setHasHold] = useState(false);
+  const setHold = (hold: { holdId: string; transactionId: string } | null) => {
+    holdRef.current = hold;
+    setHasHold(!!hold);
+  };
+  // Set right before this screen navigates away on purpose (hold already
+  // released, or it expired), so the leave guard lets that through.
+  const allowLeaveRef = useRef(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
   const scrollRef = useRef<ScrollView>(null);
+
+  // A live hold keeps the vehicle reserved for this customer: going back
+  // (header, Android back, swipe) asks before releasing it, like the web.
+  // While a payment is being confirmed the screen stays put.
+  usePreventRemove(phase === 'PAYING' || (phase === 'REVIEW' && hasHold), ({ data }) => {
+    if (allowLeaveRef.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    const hold = holdRef.current;
+    if (phase === 'PAYING' || !hold) return;
+    Alert.alert(
+      'Leave this booking?',
+      `The vehicle is on hold for ${customer?.name ?? 'this customer'}. Going back releases the hold.`,
+      [
+        { text: 'Stay', style: 'cancel' },
+        {
+          text: 'Release hold',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await employeeApi.cancelBookingHold(hold.holdId);
+            } catch (err: any) {
+              Alert.alert('Could not release the hold', apiErrorMessage(err, 'Please try again.'));
+              return;
+            }
+            setHold(null);
+            setSecondsLeft(null);
+            allowLeaveRef.current = true;
+            navigation.dispatch(data.action);
+          },
+        },
+      ],
+    );
+  });
+
+  // Hold ran out while staff were still on the review: the vehicle is no
+  // longer reserved, so start again from vehicle selection.
+  useEffect(() => {
+    if (phase !== 'REVIEW' || !hasHold || secondsLeft !== 0) return;
+    setHold(null);
+    setSecondsLeft(null);
+    Alert.alert(
+      'Hold expired',
+      'The vehicle hold expired before payment was completed. Select the vehicle again to continue.',
+      [{
+        text: 'OK',
+        onPress: () => {
+          allowLeaveRef.current = true;
+          router.dismissTo('/employee/booking/vehicles');
+        },
+      }],
+      { cancelable: false },
+    );
+  }, [phase, hasHold, secondsLeft]);
 
   // The UTR field sits at the bottom of the review — bring it into view.
   useEffect(() => {
@@ -168,7 +234,7 @@ export default function WalkinSummaryScreen() {
     if (holdRef.current) {
       setStatusText('Releasing previous hold…');
       try { await employeeApi.cancelBookingHold(holdRef.current.holdId); } catch { /* ignore */ }
-      holdRef.current = null;
+      setHold(null);
       setSecondsLeft(null);
     }
     setStatusText('Creating booking…');
@@ -189,7 +255,7 @@ export default function WalkinSummaryScreen() {
       // ref), so the presence of the order — not payMethod — decides whether
       // Checkout opens.
       const rzp: RazorpayOrder | null = data.razorpay ?? null;
-      holdRef.current = { holdId, transactionId };
+      setHold({ holdId, transactionId });
       if (typeof data.expiresIn === 'number') setSecondsLeft(data.expiresIn);
       setBookingRef(holdId);
 
@@ -263,7 +329,7 @@ export default function WalkinSummaryScreen() {
           // server-side). Drop it so staff fix the UTR and create the booking afresh.
           try { await employeeApi.cancelBookingHold(holdId); } catch { /* already released */ }
           if (!mountedRef.current) return;
-          holdRef.current = null;
+          setHold(null);
           setSecondsLeft(null);
           setUtrError(result.utrError);
           return;
@@ -291,7 +357,11 @@ export default function WalkinSummaryScreen() {
 
   const cancel = async () => {
     const hold = holdRef.current;
-    const finish = () => { reset(); router.replace('/(employee)/dashboard'); };
+    const finish = () => {
+      allowLeaveRef.current = true;
+      reset();
+      router.replace('/(employee)/dashboard');
+    };
     if (!hold) { finish(); return; }
     Alert.alert('Cancel booking', 'Discard this booking hold?', [
       { text: 'Keep', style: 'cancel' },
@@ -300,6 +370,7 @@ export default function WalkinSummaryScreen() {
         style: 'destructive',
         onPress: async () => {
           try { await employeeApi.cancelBookingHold(hold.holdId); } catch { /* ignore */ }
+          setHold(null);
           finish();
         },
       },
