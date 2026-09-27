@@ -211,6 +211,49 @@ export const userApi = {
   verifyRazorpaySignature,
 };
 
+// ─── customer trip extension ────────────────────────────────────────────────
+// Money fields are decimal STRINGS. newEndAt must be ISO-8601 UTC (toISOString()).
+
+export type CustomerExtensionResolution = 'SAME_VEHICLE' | 'PARTIAL_EXTENSION' | 'NO_RESOLUTION';
+
+export interface CustomerExtensionQuote {
+  extensionPublicId: string;
+  bookingPublicId: string;
+  oldEndAt: string;
+  /** Already narrowed to the partial end when only a partial extension fits. */
+  requestedEndAt: string;
+  pricing: {
+    originalDays: number;
+    newDays: number;
+    originalTotalFinal: string;
+    additionalAmount: string;
+    newTotalFinal: string;
+  };
+  resolutionOptions: { type: CustomerExtensionResolution; description: string; partialNewEndAt?: string }[];
+}
+
+export const extensionApi = {
+  // { data: { eligible, hoursUntilEnd?, reason } }
+  eligibility: (bookingPublicId: string) =>
+    api.get(`/api/user/bookings/${bookingPublicId}/extension-eligibility`),
+  // { data: CustomerExtensionQuote }. NO_RESOLUTION quotes are already released
+  // server-side. 409 { code: 'EXTENSION_PENDING', pendingExtensionPublicId,
+  // pendingExtensionStatus } while another extension is open.
+  evaluate: (bookingPublicId: string, body: { newEndAt: string; notes?: string }) =>
+    api.post(`/api/user/bookings/${bookingPublicId}/extensions/evaluate`, body),
+  // { data: { transactionId, razorpay: RazorpayOrder, amount } }, or when nothing
+  // is due { data: { transactionId: null, razorpay: null, extensionStatus: 'CONFIRMED', newEndAt } }.
+  // 409 when the vehicle is no longer free.
+  initiatePayment: (extensionPublicId: string) =>
+    api.post(`/api/user/extensions/${extensionPublicId}/initiate-payment`),
+  // Fallback after Checkout: { status: 'CONFIRMED' | 'PENDING' | 'FAILED', message, data?: { newEndAt } }.
+  verifyPayment: (orderId: string) =>
+    api.post(`/api/user/extensions/verify-payment/${orderId}`),
+  // Releases an unpaid quote — otherwise the booking stays locked by it.
+  cancel: (extensionPublicId: string) =>
+    api.post(`/api/user/extensions/${extensionPublicId}/cancel`, {}),
+};
+
 // ─── employee ─────────────────────────────────────────────────────────────
 
 export const employeeApi = {

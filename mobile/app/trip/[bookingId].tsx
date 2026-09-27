@@ -1,19 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
-import { userApi } from '../../lib/api';
+import { extensionApi, userApi } from '../../lib/api';
 import { startsInLabel } from '../../lib/dates';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
 import VerifyLicenseCard, { type DLStatus } from '../../components/ui/VerifyLicenseCard';
-import type { BookingVehicle } from '../../types/api';
+import type { BookingTrip, BookingVehicle } from '../../types/api';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,6 +42,25 @@ function dlStatusFrom(rows: any[]): DLStatus {
   if (dls.some((d) => d.status === 'PENDING')) return 'pending';
   if (dls.some((d) => d.status === 'REJECTED')) return 'rejected';
   return 'none';
+}
+
+// The list endpoint is the only customer booking read; page through it for
+// this booking (newest first, so an active trip is found on the first page).
+async function findTrip(bookingId: string): Promise<BookingTrip | null> {
+  for (let page = 1; page <= 5; page++) {
+    const res = await userApi.bookings(page, 50);
+    const body = res.data as { data?: BookingTrip[]; meta?: { page: number; totalPages: number } };
+    const hit = (body.data ?? []).find((b) => b.bookingId === bookingId);
+    if (hit) return hit;
+    if (!body.meta || body.meta.page >= body.meta.totalPages) break;
+  }
+  return null;
+}
+
+function fmtWhen(iso: string) {
+  return new Date(iso).toLocaleString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
 }
 
 function fmt(iso: string) {
@@ -83,20 +102,42 @@ export default function TripDetail() {
     vehiclesJson: string;
   }>();
 
-  const {
-    bookingId,
-    id,
-    status,
-    make,
-    model,
-    thumbnail,
-    startAt,
-    endAt,
-    days,
-    total,
-    paymentStatus,
-    vehiclesJson,
-  } = params;
+  const { bookingId, id, make, model, thumbnail, startAt, vehiclesJson } = params;
+
+  // The params are a snapshot from the trips list. Re-read the booking whenever
+  // the screen regains focus, so a new return time (extension) or status shows.
+  const { data: live, refetch: refetchTrip } = useQuery({
+    queryKey: ['trip', bookingId],
+    queryFn: () => findTrip(bookingId),
+    enabled: false,
+  });
+  const status: string = live?.status ?? params.status;
+  const endAt: string = live?.endAt ?? params.endAt;
+  const total: string = live ? String(live.total) : params.total;
+  const paymentStatus: string = live?.paymentStatus ?? params.paymentStatus;
+
+  const canExtendStatus = status === 'CONFIRMED' || status === 'PICKED_UP';
+  // { eligible, reason }: eligible = not ended and no other extension open.
+  const { data: eligibility, refetch: refetchEligibility } = useQuery({
+    queryKey: ['extension-eligibility', bookingId],
+    queryFn: async () => {
+      const res = await extensionApi.eligibility(bookingId);
+      return (res.data?.data ?? null) as { eligible: boolean; reason: string | null } | null;
+    },
+    enabled: canExtendStatus && !!bookingId,
+  });
+  // An extension left open (e.g. the app was closed mid-quote) blocks new ones;
+  // the extend screen can release it, so keep the way in visible.
+  const extensionBlocked = !!eligibility?.reason && /pending extension/i.test(eligibility.reason);
+  const showExtend = canExtendStatus && (eligibility?.eligible === true || extensionBlocked);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!bookingId) return;
+      refetchTrip();
+      if (canExtendStatus) refetchEligibility();
+    }, [bookingId, canExtendStatus, refetchTrip, refetchEligibility]),
+  );
 
   // Full vehicle list (#39) — render every vehicle, not just the first.
   const vehicles = useMemo<BookingVehicle[]>(() => {
@@ -106,8 +147,8 @@ export default function TripDetail() {
     } catch {
       /* fall through to the single-vehicle fallback */
     }
-    return make ? [{ publicId: bookingId, make, model, thumbnail: thumbnail || null, finalTotal: Number(total) || 0 }] : [];
-  }, [vehiclesJson, make, model, thumbnail, total, bookingId]);
+    return make ? [{ publicId: bookingId, make, model, thumbnail: thumbnail || null, finalTotal: Number(params.total) || 0 }] : [];
+  }, [vehiclesJson, make, model, thumbnail, params.total, bookingId]);
 
   const [invoiceBusy, setInvoiceBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -255,6 +296,29 @@ export default function TripDetail() {
         <View style={styles.section}>
           <ItineraryTimeline reservationNumber={bookingId} start={startAt} end={endAt} />
         </View>
+
+        {/* Extend the trip — CONFIRMED / PICKED_UP, while the server says it's possible */}
+        {showExtend && (
+          <TouchableOpacity
+            style={styles.extendBtn}
+            onPress={() => router.push({
+              pathname: '/trip/extend',
+              params: { bookingId, endAt, make: vehicles[0]?.make ?? make ?? '', model: vehicles[0]?.model ?? model ?? '' },
+            })}
+            activeOpacity={0.85}
+          >
+            <View style={styles.extendIcon}>
+              <Ionicons name="calendar-outline" size={18} color={Colors.orange} />
+            </View>
+            <View style={styles.extendTextWrap}>
+              <Text style={styles.extendTitle}>Extend trip</Text>
+              <Text style={styles.extendSub}>
+                {extensionBlocked ? 'An extension request is still open' : `Returns ${fmtWhen(endAt)}`}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+          </TouchableOpacity>
+        )}
 
         {/* Payment */}
         <View style={styles.section}>
@@ -468,6 +532,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   invoiceBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+
+  extendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  extendIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#ff6a1f10',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  extendTextWrap: { flex: 1, gap: 2 },
+  extendTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+  extendSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
 
   cancelBtn: {
     flexDirection: 'row',
