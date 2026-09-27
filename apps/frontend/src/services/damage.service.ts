@@ -7,6 +7,18 @@ export interface DamageReport {
   damageReportId: string;
   status: string;
   chargeType: DamageChargeType;
+  /**
+   * Billed to the customer in the RETURN session at drop — the manager only
+   * sets the vehicle disposition; closing must not charge again.
+   */
+  chargedAtDrop?: boolean;
+  /** Recorded by staff while closing the drop (notes.source === "DROP"). */
+  raisedAtDrop?: boolean;
+  /**
+   * true → normal review/payment. false → the manager only sets the disposition
+   * (charged at drop, or a company expense).
+   */
+  managerCharges?: boolean;
   booking: {
     bookingId: string;
     deposit: number;
@@ -23,6 +35,7 @@ export interface DamageReport {
     deposit: number;
     additionalCharges: number;
     estimatedCost: number;
+    finalCost?: number | null;
     gstRate: number;
   };
 }
@@ -38,8 +51,11 @@ export interface CloseDamagePayload {
 
 export interface CloseDamageResponse {
   message: string;
-  refunded: boolean;
+  refunded?: boolean;
   settled: boolean;
+  /** Drop damage closes only set the disposition. */
+  chargedAtDrop?: boolean;
+  vehicleStatus?: string | null;
   razorpay?: RazorpayOrder;
   transactionId?: string;
 }

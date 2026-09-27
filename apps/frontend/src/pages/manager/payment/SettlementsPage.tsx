@@ -26,6 +26,12 @@ import {
   type PaymentMethod,
   type OnlineGateway,
 } from "@/services/payment.service";
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  isValidUtr,
+} from "@/lib/counterErrors";
 
 const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
 
@@ -40,7 +46,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
   const [txnRef, setTxnRef] = useState("");
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [loading, setLoading] = useState(false);
+  // Shown at the reference field (client check or INVALID_UTR / DUPLICATE_UTR)
+  const [refError, setRefError] = useState<string | null>(null);
   const idempotencyKey = useRef(crypto.randomUUID());
+  const isUpi = gateway === "UPI";
 
   useEffect(() => {
     paymentService.getSettlementSummary(bookingPublicId)
@@ -55,7 +64,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
 
   const handleSubmit = async () => {
     if (totalNum <= 0) { toast.error("Please enter a valid amount."); return; }
-    if ((method === "ONLINE" || method === "SPLIT") && !txnRef.trim()) { toast.error("Transaction reference is required for online payments."); return; }
+    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !isValidUtr(txnRef) : !txnRef.trim())) {
+      setRefError(isUpi ? "Enter the 12-digit UTR number." : "Transaction reference is required for online payments.");
+      return;
+    }
     if (method === "SPLIT" && (cashNum <= 0 || onlineNum <= 0)) { toast.error("Both cash and online portions must be greater than 0."); return; }
     setLoading(true);
     try {
@@ -63,14 +75,19 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
         purpose: "REMAINING_BALANCE", method, totalAmount: totalNum,
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef: method !== "CASH" ? txnRef : undefined,
+        onlineTransactionRef: method !== "CASH" ? (isUpi ? cleanUtr(txnRef) : txnRef.trim()) : undefined,
         onlineGateway: method !== "CASH" ? gateway : undefined,
         idempotencyKey: idempotencyKey.current,
       });
       toast.success("Settlement payment recorded.");
       onDone();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to record settlement.");
+    } catch (err) {
+      const code = counterErrorCode(err);
+      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
+        setRefError(apiErrorMessage(err, "Check the reference and try again."));
+      } else {
+        toast.error(apiErrorMessage(err, "Failed to record settlement."));
+      }
     } finally { setLoading(false); }
   };
 
@@ -165,16 +182,25 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
               {(method === "ONLINE" || method === "SPLIT") && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-neutral-600">Transaction Ref <span className="text-red-500">*</span></Label>
-                    <Input placeholder="e.g. pay_xyz789" className="h-11" value={txnRef} onChange={(e) => setTxnRef(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label className="text-xs text-neutral-600">Gateway</Label>
-                    <Select value={gateway} onValueChange={(v) => setGateway(v as OnlineGateway)}>
+                    <Select value={gateway} onValueChange={(v) => { setGateway(v as OnlineGateway); setRefError(null); }}>
                       <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                       <SelectContent>{gateways.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-neutral-600">{isUpi ? "UTR number" : "Transaction Ref"} <span className="text-red-500">*</span></Label>
+                    <Input
+                      placeholder={isUpi ? "12-digit UTR" : "e.g. pay_xyz789"}
+                      inputMode={isUpi ? "numeric" : undefined}
+                      autoComplete="off"
+                      aria-invalid={!!refError}
+                      className={isUpi ? "h-11 font-mono tracking-wide" : "h-11"}
+                      value={txnRef}
+                      onChange={(e) => { setTxnRef(e.target.value); setRefError(null); }}
+                    />
+                  </div>
+                  {refError && <p className="col-span-2 -mt-1 text-xs text-red-600">{refError}</p>}
                 </div>
               )}
 

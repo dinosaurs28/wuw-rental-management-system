@@ -1,10 +1,12 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeft, Car, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -20,6 +22,16 @@ import { bookingService } from "@/services/booking.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { useActiveShift } from "@/components/employee/counter/useActiveShift";
+import { usePaymentStore } from "@/store/payment.store";
+import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  isValidUtr,
+} from "@/lib/counterErrors";
 
 export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
@@ -38,8 +50,24 @@ export const EmployeeBookingSummaryPage = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+  // Set when create returned SHIFT_REQUIRED — no hold exists yet, so the same
+  // payload is retried as soon as the staff member's shift is open.
+  const [shiftBlocked, setShiftBlocked] = useState(false);
+  // Set when the server rejected the UPI UTR (at create, or at confirmation
+  // after the hold was released) — staff enter a new UTR and create again.
+  const [utrRetry, setUtrRetry] = useState<{
+    message: string;
+    rejectedUtr: string;
+  } | null>(null);
+  const [retryUtr, setRetryUtr] = useState("");
+  const [isConfirming, setIsConfirming] = useState(false);
+  const { activeShift } = useActiveShift();
+  const { setUtr } = useEmployeeBookingStore();
   const { openCheckout, isOpening } = useRazorpayCheckout();
-  const bookingPayload = location.state?.bookingPayload;
+  // Held in state so a UTR retry can re-create with the corrected payload.
+  const [bookingPayload, setBookingPayload] = useState(
+    location.state?.bookingPayload,
+  );
 
   // Block browser back button while booking hold is active
   useEffect(() => {
@@ -55,59 +83,114 @@ export const EmployeeBookingSummaryPage = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [bookingData]);
 
+  const showUtrRetry = useCallback((error: unknown, rejectedUtr: string) => {
+    setUtrRetry({
+      message: apiErrorMessage(error, "Check the UTR number and try again."),
+      rejectedUtr,
+    });
+    setRetryUtr(rejectedUtr);
+  }, []);
+
+  const createBooking = useCallback(async (payload = bookingPayload) => {
+    setLoading(true);
+    try {
+      const response =
+        await bookingService.createEmployeeBooking(payload);
+
+      setBookingData(response);
+      if (response.data?.expiresAt) {
+        setHoldExpiresAt(response.data.expiresAt);
+      }
+    } catch (error: any) {
+      console.error("Booking creation failed", error);
+
+      if (counterErrorCode(error) === "SHIFT_REQUIRED") {
+        // The server just said there's no open shift — drop any stale one so
+        // the retry below only fires once a shift is actually opened.
+        usePaymentStore.getState().setActiveShift(null);
+        setShiftBlocked(true);
+        return;
+      }
+
+      const code = counterErrorCode(error);
+      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
+        // No hold was created — stay here so staff can fix the UTR.
+        showUtrRetry(error, payload?.utr ?? "");
+        return;
+      }
+
+      if (error?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
+        const conflicts = error.response.data.conflicts ?? [];
+        const first = conflicts[0];
+        const label =
+          first?.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
+        const vehicleName = first
+          ? `${first.existingVehicleMake} ${first.existingVehicleModel}`
+          : "";
+        toast.error(
+          `Customer already has an active ${label} booking${vehicleName ? ` (${vehicleName})` : ""} overlapping these dates. Use the override option if authorised.`,
+          { duration: 8000 },
+        );
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to create booking",
+        );
+      }
+
+      navigate(-1);
+    } finally {
+      setLoading(false);
+    }
+  }, [bookingPayload, navigate, showUtrRetry]);
+
   useEffect(() => {
-    const createBooking = async () => {
-      if (initialized.current) return;
-      initialized.current = true;
+    if (initialized.current) return;
+    initialized.current = true;
 
-      if (bookingData) {
-        setLoading(false);
-        return;
-      }
+    if (bookingData) {
+      setLoading(false);
+      return;
+    }
 
-      if (!bookingPayload) {
-        toast.error("No booking data found.");
-        navigate("/employee/vehicles");
-        return;
-      }
+    if (!bookingPayload) {
+      toast.error("No booking data found.");
+      navigate("/employee/vehicles");
+      return;
+    }
 
-      try {
-        const response =
-          await bookingService.createEmployeeBooking(bookingPayload);
+    void createBooking();
+  }, [bookingData, bookingPayload, navigate, createBooking]);
 
-        setBookingData(response);
-        if (response.data?.expiresAt) {
-          setHoldExpiresAt(response.data.expiresAt);
-        }
-      } catch (error: any) {
-        console.error("Booking creation failed", error);
+  // Shift opened (from the notice or the navbar banner) — create the booking.
+  useEffect(() => {
+    if (!shiftBlocked || !activeShift) return;
+    setShiftBlocked(false);
+    void createBooking();
+  }, [shiftBlocked, activeShift, createBooking]);
 
-        if (error?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
-          const conflicts = error.response.data.conflicts ?? [];
-          const first = conflicts[0];
-          const label =
-            first?.typeClass === "TWO_WHEELER" ? "two-wheeler" : "four-wheeler";
-          const vehicleName = first
-            ? `${first.existingVehicleMake} ${first.existingVehicleModel}`
-            : "";
-          toast.error(
-            `Customer already has an active ${label} booking${vehicleName ? ` (${vehicleName})` : ""} overlapping these dates. Use the override option if authorised.`,
-            { duration: 8000 },
-          );
-        } else {
-          toast.error(
-            error.response?.data?.message || "Failed to create booking",
-          );
-        }
+  const handleRetryWithUtr = () => {
+    const utr = cleanUtr(retryUtr);
+    const payload = { ...bookingPayload, utr };
+    setUtr(utr); // keep the pricing card in sync if staff go back
+    setBookingPayload(payload);
+    setUtrRetry(null);
+    void createBooking(payload);
+  };
 
-        navigate(-1);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    createBooking();
-  }, [bookingData, bookingPayload, navigate]);
+  if (shiftBlocked) {
+    return (
+      <div className="min-h-screen bg-zinc-50 pb-20">
+        <DashboardNavbar />
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">
+          <ShiftRequiredNotice />
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="size-4 mr-2" />
+            Back
+          </Button>
+        </main>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -125,6 +208,61 @@ export const EmployeeBookingSummaryPage = () => {
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
             <Skeleton className="h-12 w-full mb-3" />
             <Skeleton className="h-10 w-full" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (utrRetry) {
+    const unchanged = cleanUtr(retryUtr) === utrRetry.rejectedUtr;
+    const retryError = unchanged
+      ? utrRetry.message
+      : retryUtr && !isValidUtr(retryUtr)
+        ? "Enter the 12-digit UTR number."
+        : null;
+    return (
+      <div className="min-h-screen bg-zinc-50 pb-20">
+        <DashboardNavbar />
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+          <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4 max-w-md">
+            <div>
+              <h3 className="font-semibold">UPI (UTR) payment</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enter the UTR from the customer's UPI app to create the booking again.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="retry-utr">
+                UTR number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="retry-utr"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={20}
+                placeholder="12-digit UTR"
+                value={retryUtr}
+                onChange={(e) => setRetryUtr(e.target.value)}
+                aria-invalid={!!retryError}
+                className="h-11 font-mono tracking-wide"
+              />
+              {retryError && <p className="text-xs text-red-600">{retryError}</p>}
+            </div>
+            <Button
+              className="w-full h-11 font-semibold"
+              disabled={unchanged || !isValidUtr(retryUtr)}
+              onClick={handleRetryWithUtr}
+            >
+              Create Booking Again
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/employee/dashboard")}
+            >
+              Return to Dashboard
+            </Button>
           </div>
         </main>
       </div>
@@ -171,6 +309,10 @@ export const EmployeeBookingSummaryPage = () => {
 
   const items = bookingData?.data?.items || [];
   const vehicle = items.length > 0 ? items[0] : null;
+  // UPI (UTR) completes like cash: no gateway, the server confirms it directly.
+  const isUpiPayment =
+    bookingPayload?.payment_type === "UPI" ||
+    (typeof transactionId === "string" && transactionId.startsWith("UPI_"));
 
   if (!vehicle) {
     return <div className="p-4">No vehicle data found.</div>;
@@ -193,6 +335,36 @@ export const EmployeeBookingSummaryPage = () => {
     navigate(`/employee/booking/status/${transactionId}`, {
       state: { initialStatus, initialMessage },
     });
+  };
+
+  // UPI is confirmed here rather than on the status page because the server
+  // re-checks the UTR: if another payment claimed it meanwhile, the hold is
+  // released (409 DUPLICATE_UTR) and staff enter a new UTR instead.
+  const handleConfirmUpi = async () => {
+    setIsConfirming(true);
+    try {
+      const response = await bookingService.verifyEmployeePayment(transactionId);
+      if (response.status === "Success") {
+        goToStatus("success");
+      } else if (response.status === "Pending") {
+        goToStatus();
+      } else {
+        // e.g. the hold expired before confirmation
+        goToStatus("failed", response.message || "Payment failed. Please try again.");
+      }
+    } catch (error) {
+      if (counterErrorCode(error) === "DUPLICATE_UTR") {
+        setBookingData(null);
+        setHoldExpiresAt(null);
+        showUtrRetry(error, bookingPayload?.utr ?? "");
+      } else if ((error as { response?: unknown })?.response) {
+        goToStatus("failed", apiErrorMessage(error, "Payment verification failed"));
+      } else {
+        toast.error("Couldn't reach the server. Please try again.");
+      }
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   // Opens Razorpay Checkout in-page for this booking.
@@ -372,17 +544,27 @@ export const EmployeeBookingSummaryPage = () => {
           ) : (
             <div className="space-y-3">
               <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
-                Cash Payment — Confirm Collection
+                {isUpiPayment
+                  ? "UPI (UTR) Payment — Confirm Collection"
+                  : "Cash Payment — Confirm Collection"}
+                {isUpiPayment && bookingPayload?.utr && (
+                  <p className="text-xs font-normal text-green-700 mt-1">
+                    UTR <span className="font-mono">{bookingPayload.utr}</span>
+                  </p>
+                )}
               </div>
               <Button
                 className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"
+                disabled={isConfirming}
                 onClick={() =>
-                  navigate(
-                    `/employee/booking/status/${bookingData.data.transactionId}`,
-                  )
+                  isUpiPayment
+                    ? void handleConfirmUpi()
+                    : navigate(
+                        `/employee/booking/status/${bookingData.data.transactionId}`,
+                      )
                 }
               >
-                Complete Booking
+                {isConfirming ? "Confirming…" : "Complete Booking"}
               </Button>
             </div>
           )}

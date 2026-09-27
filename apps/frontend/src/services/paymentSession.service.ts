@@ -42,6 +42,25 @@ export interface ReturnChargeEntry {
   notes: string | null;
 }
 
+/** Server-computed extra-km figures for a RETURN session (client can't set the charge). */
+export interface ReturnKmSummary {
+  startOdometer: number | null;
+  endOdometer: number;
+  kmDriven: number;
+  includedKm: number;
+  extraKm: number;
+  extraKmRate: string;
+  extraKmCharge: string;
+  extraKmEnabled: boolean;
+  /** Set when extra km isn't billed automatically (the vehicle was swapped mid-rental). */
+  autoKmSkipped?: "VEHICLE_SWAPPED" | null;
+}
+
+export interface ReturnDiscount {
+  amount: string;
+  reason: string;
+}
+
 export interface ReturnSessionResponse {
   session: PaymentSession;
   chargeBreakdown: {
@@ -50,6 +69,10 @@ export interface ReturnSessionResponse {
     finalTotal: string;
     charges: ReturnChargeEntry[];
   };
+  /** Present on compute responses. */
+  km?: ReturnKmSummary;
+  /** Drop discount applied by the last compute (null = none). */
+  discount?: ReturnDiscount | null;
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────
@@ -90,6 +113,8 @@ export const paymentSessionService = {
       pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
+      /** Staff confirm they hold the customer's original driving licence. */
+      licenseCollected?: boolean;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(
@@ -182,12 +207,15 @@ export const paymentSessionService = {
     payload: {
       endOdometer: number;
       returnFuelLevel?: string;
-      extraKmCharge?: number;
       fuelCharge?: number;
       fastagAmount?: number;
       fastagNotes?: string;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
+      /** Required (true) when the licence was collected at pickup and not yet returned. */
+      licenseReturned?: boolean;
+      /** Re-applied on every compute — resend it or it is dropped. */
+      discount?: { amount: number; reason: string };
     },
   ): Promise<ReturnSessionResponse> {
     const { data } = await apiClient.post(

@@ -30,6 +30,7 @@ import { CompleteProfileDialog } from "@/components/booking/CompleteProfileDialo
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
+import { cleanUtr } from "@/lib/counterErrors";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
 import { employeeService } from "@/services/employee.service";
@@ -49,6 +50,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     endTime,
     setGroupKey,
     paymentType,
+    utr,
     customerKycId,
     setCustomerKycId,
   } = useEmployeeBookingStore();
@@ -209,6 +211,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       start: startDateTime || format(new Date(startDate!), "yyyy-MM-dd"),
       end: endDateTime || format(new Date(endDate!), "yyyy-MM-dd"),
       payment_type: paymentType || "CASH",
+      ...(paymentType === "UPI" ? { utr: cleanUtr(utr) } : {}),
     };
 
     navigate("/employee/booking/summary", { state: { bookingPayload: payload } });

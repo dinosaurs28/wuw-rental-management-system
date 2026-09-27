@@ -156,6 +156,15 @@ export interface EmployeeBooking {
   effectiveFreeKmLimit?: number | null;
   extraKmRate?: number | null;
   pickupFuelLevel?: string | null;
+  licenseCollectedAt?: string | null;
+  licenseReturnedAt?: string | null;
+  /** Plan-based free km for the booked period (same helper the server bills extra km with). */
+  kmAllowance?: {
+    includedKm: number;
+    extraKmRate: string;
+    extraKmEnabled: boolean;
+    autoKmSkipped?: "VEHICLE_SWAPPED" | null;
+  } | null;
   usePaymentSessions?: boolean;
   branch?: {
     chargeConfig?: { usePaymentSessions: boolean } | null;
@@ -325,7 +334,13 @@ export const bookingService = {
   // Approve Pickup
   approvePickup: async (
     bookingId: string,
-    data: { odo: number; fuelLevel: number; pickupImageIds?: string[] },
+    data: {
+      odo: number;
+      fuelLevel: number;
+      pickupImageIds?: string[];
+      /** Must be true — staff hold the customer's original driving licence. */
+      licenseCollected: boolean;
+    },
   ) => {
     const response = await apiClient.post(
       `/employee/pickup/${bookingId}`,
@@ -365,7 +380,11 @@ export const bookingService = {
   // Complete Return (No Damage)
   completeReturn: async (
     bookingId: string,
-    data: { returnImageIds: string[]; requireManagerConfirmation?: boolean },
+    data: {
+      returnImageIds: string[];
+      requireManagerConfirmation?: boolean;
+      licenseReturned?: boolean;
+    },
   ) => {
     const response = await apiClient.post(
       `/employee/return/${bookingId}/complete`,
@@ -514,7 +533,9 @@ export const bookingService = {
     customer_kyc_id: string;
     start: string;
     end: string;
-    payment_type: "CASH" | "ONLINE";
+    payment_type: "CASH" | "ONLINE" | "UPI";
+    /** 12-digit UPI UTR — required when payment_type is "UPI". */
+    utr?: string;
   }): Promise<CreateEmployeeBookingResponse> => {
     const response = await apiClient.post<CreateEmployeeBookingResponse>(
       "/employee/booking/create",

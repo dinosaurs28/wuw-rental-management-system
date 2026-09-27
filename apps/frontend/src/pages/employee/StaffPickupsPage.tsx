@@ -177,6 +177,54 @@ function YesNoToggle({
   );
 }
 
+// --- ORIGINAL LICENCE CHECK ---
+const LICENSE_NOT_COLLECTED_MESSAGE =
+  "Collect the customer's original driving licence before handing over the vehicle.";
+
+interface LicenseCollectedCheckProps {
+  id?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  error?: string | null;
+  disabled?: boolean;
+}
+
+function LicenseCollectedCheck({
+  id = "licenseCollected",
+  checked,
+  onChange,
+  error,
+  disabled = false,
+}: LicenseCollectedCheckProps) {
+  return (
+    <div className="space-y-1.5">
+      <div
+        className={cn(
+          "flex items-start gap-3 rounded-lg border p-3",
+          error ? "border-red-200 bg-red-50/60" : "border-amber-200 bg-amber-50/60",
+        )}
+      >
+        <Checkbox
+          id={id}
+          checked={checked}
+          onCheckedChange={(v) => onChange(!!v)}
+          disabled={disabled}
+          className="mt-0.5"
+        />
+        <div className="space-y-0.5">
+          <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
+            Original driving licence collected <span className="text-red-500">*</span>
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Keep the customer's physical licence until the car is returned.
+          </p>
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -223,6 +271,10 @@ export default function StaffPickupsPage() {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+
+  // --- ORIGINAL LICENCE ---
+  const [licenseCollected, setLicenseCollected] = useState(false);
+  const [licenseError, setLicenseError] = useState<string | null>(null);
 
   // --- CONFIRM DIALOG ---
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -345,6 +397,7 @@ export default function StaffPickupsPage() {
       fuelLevel: number;
       pickupImageIds?: string[];
       requireManagerConfirmation?: boolean;
+      licenseCollected: boolean;
     }) => bookingService.approvePickup(bookingId!, data),
     onSuccess: (response: any) => {
       toast.success(response?.message || "Vehicle Handover Confirmed!");
@@ -353,6 +406,9 @@ export default function StaffPickupsPage() {
       navigate("/employee/dashboard");
     },
     onError: (error: any) => {
+      if (error.response?.data?.code === "LICENSE_NOT_COLLECTED") {
+        setLicenseError(error.response.data.message || LICENSE_NOT_COLLECTED_MESSAGE);
+      }
       toast.error(error.response?.data?.message || "Failed to confirm handover");
       setIsConfirmOpen(false);
     },
@@ -399,7 +455,11 @@ export default function StaffPickupsPage() {
     },
     onError: (error: any) => {
       const status = error?.response?.status;
-      if (status === 409) {
+      if (error?.response?.data?.code === "LICENSE_NOT_COLLECTED") {
+        const message = error.response.data.message || LICENSE_NOT_COLLECTED_MESSAGE;
+        setLicenseError(message);
+        toast.error(message);
+      } else if (status === 409) {
         setIsConfirmOpen(true);
       } else {
         toast.error(error?.response?.data?.message || "Failed to initiate payment session");
@@ -513,6 +573,11 @@ export default function StaffPickupsPage() {
     }
   };
 
+  const handleLicenseCollectedChange = (checked: boolean) => {
+    setLicenseCollected(checked);
+    setLicenseError(null);
+  };
+
   const handleDeleteImage = (fileId: string) => {
     setDeletingImageId(fileId);
     deleteImageMutation.mutate(fileId);
@@ -575,6 +640,7 @@ export default function StaffPickupsPage() {
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
+      licenseCollected,
     };
 
     if (captureConfig) {
@@ -590,6 +656,11 @@ export default function StaffPickupsPage() {
 
   const onConfirmHandover = (data: HandoverFormValues) => {
     // const chargeConfig = booking?.frozenChargeConfig;
+
+    if (!licenseCollected) {
+      setLicenseError(LICENSE_NOT_COLLECTED_MESSAGE);
+      return;
+    }
 
     // Validate required capture photos
     if (captureConfig) {
@@ -619,6 +690,7 @@ export default function StaffPickupsPage() {
           : undefined,
         // extensionPublicId: pendingExtensionPublicId ?? undefined, // extension disabled
         discountCode: pendingDiscountCode ?? undefined,
+        licenseCollected: payload.licenseCollected,
       });
     } else {
       setIsConfirmOpen(true);
@@ -626,6 +698,10 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandoverLegacy = (data: HandoverFormValues) => {
+    if (!licenseCollected) {
+      setLicenseError(LICENSE_NOT_COLLECTED_MESSAGE);
+      return;
+    }
     const payload = buildHandoverPayload(data);
     handoverMutation.mutate(payload as any);
   };
@@ -1177,6 +1253,7 @@ export default function StaffPickupsPage() {
                             <input
                               type="file"
                               accept="image/*"
+                              capture="environment"
                               className="hidden"
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
@@ -1210,6 +1287,7 @@ export default function StaffPickupsPage() {
                     isUploading={isUploading}
                     disabled={isPickedUp}
                     error={uploadError}
+                    capture="environment"
                   />
                 )}
                 {uploadedImages.length > 0 && (
@@ -1492,10 +1570,21 @@ export default function StaffPickupsPage() {
                       GST and discounts will be computed on the next step
                     </p>
 
+                    <LicenseCollectedCheck
+                      checked={licenseCollected}
+                      onChange={handleLicenseCollectedChange}
+                      error={licenseError}
+                      disabled={initiatePickupSessionMutation.isPending}
+                    />
+
                     <Button
                       type="button"
                       className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-12 text-sm font-semibold rounded-xl"
-                      disabled={!isHandoverReady || initiatePickupSessionMutation.isPending}
+                      disabled={
+                        !isHandoverReady ||
+                        !licenseCollected ||
+                        initiatePickupSessionMutation.isPending
+                      }
                       onClick={handleSubmit(onConfirmHandover)}
                     >
                       {initiatePickupSessionMutation.isPending ? (
@@ -1535,11 +1624,19 @@ export default function StaffPickupsPage() {
         )}
 
         {!isPickedUp && !useSessionFlow && (
-          <div className="pt-2">
+          <div className="pt-2 space-y-4">
+            {isHandoverReady && (
+              <LicenseCollectedCheck
+                checked={licenseCollected}
+                onChange={handleLicenseCollectedChange}
+                error={licenseError}
+                disabled={handoverMutation.isPending}
+              />
+            )}
             <Button
               type="button"
               className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-14 text-base font-semibold rounded-xl shadow-md"
-              disabled={!isHandoverReady || handoverMutation.isPending}
+              disabled={!isHandoverReady || !licenseCollected || handoverMutation.isPending}
               onClick={handleSubmit(onConfirmHandoverLegacy)}
             >
               {handoverMutation.isPending ? (
@@ -1552,7 +1649,7 @@ export default function StaffPickupsPage() {
               )}
             </Button>
             {!isHandoverReady && (
-              <p className="text-xs text-center text-muted-foreground mt-2">
+              <p className="text-xs text-center text-muted-foreground">
                 Complete all steps above to enable handover
               </p>
             )}
@@ -1702,6 +1799,14 @@ export default function StaffPickupsPage() {
               </div>
             ) : null}
 
+            <LicenseCollectedCheck
+              id="licenseCollectedConfirm"
+              checked={licenseCollected}
+              onChange={handleLicenseCollectedChange}
+              error={licenseError}
+              disabled={handoverMutation.isPending}
+            />
+
             <p className="text-xs text-muted-foreground text-center">
               This action cannot be undone. The booking will be marked as
               PICKED UP.
@@ -1719,7 +1824,7 @@ export default function StaffPickupsPage() {
             <Button
               className="bg-[#FF5F00] hover:bg-[#e65600]"
               onClick={handleSubmit(onConfirmHandoverLegacy)}
-              disabled={handoverMutation.isPending}
+              disabled={!licenseCollected || handoverMutation.isPending}
             >
               {handoverMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

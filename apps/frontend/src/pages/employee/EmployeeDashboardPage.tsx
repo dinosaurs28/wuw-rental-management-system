@@ -18,6 +18,12 @@ import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { BookingTable } from "@/components/employee/BookingTable";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import { DashboardStats } from "@/components/employee/DashboardStats";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import {
+  refreshActiveShift,
+  useActiveShift,
+} from "@/components/employee/counter/useActiveShift";
+import { usePaymentStore } from "@/store/payment.store";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -39,6 +45,8 @@ export default function EmployeeDashboardPage() {
   const [bookings, setBookings] = useState<EmployeeBooking[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [showShiftNotice, setShowShiftNotice] = useState(false);
+  const { needsShift } = useActiveShift();
 
   // Dashboard Stats Query
   const { data: stats, isLoading: isStatsLoading } = useQuery({
@@ -87,6 +95,19 @@ export default function EmployeeDashboardPage() {
       fetchData();
     }
   }, [date, filter, isAuthenticated]);
+
+  // Walk-in bookings need an open cash shift — explain and offer to open one.
+  const handleNewBooking = async () => {
+    if (needsShift) {
+      // Re-check first: the shift may have been opened on another device.
+      await refreshActiveShift();
+      if (!usePaymentStore.getState().activeShift) {
+        setShowShiftNotice(true);
+        return;
+      }
+    }
+    navigate("/employee/new-booking");
+  };
 
   const handleAction = async (bookingId: string) => {
     try {
@@ -217,7 +238,7 @@ export default function EmployeeDashboardPage() {
               </Button>
 
               <Button
-                onClick={() => navigate("/employee/new-booking")}
+                onClick={handleNewBooking}
                 className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white shadow-sm"
               >
                 <Plus className="mr-2 h-4 w-4" /> New Booking
@@ -225,6 +246,12 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
         </motion.div>
+
+        {showShiftNotice && needsShift && (
+          <ShiftRequiredNotice
+            onShiftOpened={() => navigate("/employee/new-booking")}
+          />
+        )}
 
         {/* Stats Section */}
         <motion.div

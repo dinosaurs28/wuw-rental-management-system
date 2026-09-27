@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, MapPin, Check, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,9 +11,16 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
-import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
+import { isValidUtr } from "@/lib/counterErrors";
+import {
+  useEmployeeBookingStore,
+  type EmployeePaymentType,
+} from "@/store/employeeBooking.store";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import type { VehicleDetails } from "@/services/vehicle.service";
 
 interface EmployeeVehiclePricingCardProps {
@@ -48,7 +55,13 @@ export const EmployeeVehiclePricingCard = ({
     setEndTime,
     paymentType,
     setPaymentType,
+    utr,
+    setUtr,
   } = useEmployeeBookingStore();
+  const { needsShift } = useActiveShift();
+  const [utrTouched, setUtrTouched] = useState(false);
+  const isUpi = paymentType === "UPI";
+  const utrValid = isValidUtr(utr);
 
   const startDate = storeStartDate ? new Date(storeStartDate) : null;
   const endDate = storeEndDate ? new Date(storeEndDate) : null;
@@ -118,7 +131,15 @@ export const EmployeeVehiclePricingCard = ({
   };
 
   const canBook =
-    isAvailable && startDate && endDate && isDateRangeValid && !isRefetching && !disabled && hasCompleteKyc;
+    isAvailable &&
+    startDate &&
+    endDate &&
+    isDateRangeValid &&
+    !isRefetching &&
+    !disabled &&
+    hasCompleteKyc &&
+    !needsShift &&
+    (!isUpi || utrValid);
 
   return (
     <Card className="overflow-hidden border border-zinc-200 shadow-lg">
@@ -340,8 +361,8 @@ export const EmployeeVehiclePricingCard = ({
           </label>
           <RadioGroup
             value={paymentType}
-            onValueChange={(val) => setPaymentType(val as "CASH" | "ONLINE")}
-            className="grid grid-cols-2 gap-4"
+            onValueChange={(val) => setPaymentType(val as EmployeePaymentType)}
+            className="grid grid-cols-3 gap-3"
           >
             <div>
               <RadioGroupItem value="CASH" id="cash" className="peer sr-only" />
@@ -367,11 +388,49 @@ export const EmployeeVehiclePricingCard = ({
                 <span className="text-sm font-semibold">Online</span>
               </Label>
             </div>
+            <div>
+              <RadioGroupItem value="UPI" id="upi" className="peer sr-only" />
+              <Label
+                htmlFor="upi"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-zinc-50 hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 peer-data-[state=checked]:text-orange-600 cursor-pointer"
+              >
+                <span className="text-xl mb-1">📱</span>
+                <span className="text-sm font-semibold whitespace-nowrap">UPI (UTR)</span>
+              </Label>
+            </div>
           </RadioGroup>
+
+          {isUpi && (
+            <div className="mt-4 space-y-1.5">
+              <Label htmlFor="walkin-utr" className="text-sm">
+                UTR number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="walkin-utr"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={20}
+                placeholder="12-digit UTR"
+                value={utr}
+                onChange={(e) => setUtr(e.target.value)}
+                onBlur={() => setUtrTouched(true)}
+                aria-invalid={utrTouched && !utrValid}
+                className="h-11 font-mono tracking-wide"
+              />
+              {utrTouched && !utrValid ? (
+                <p className="text-xs text-red-600">Enter the 12-digit UTR number.</p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Customer pays the shop's UPI QR — enter the UTR from their UPI app.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* CTA */}
-        <div className="p-6">
+        <div className="p-6 space-y-3">
+          {needsShift && <ShiftRequiredNotice />}
           <Button
             onClick={onBookVehicle}
             disabled={!canBook}
@@ -386,6 +445,10 @@ export const EmployeeVehiclePricingCard = ({
               "Currently Unavailable"
             ) : !hasCompleteKyc ? (
               "Select KYC Document"
+            ) : needsShift ? (
+              "Open Cash Shift to Book"
+            ) : isUpi && !utrValid ? (
+              "Enter UTR Number"
             ) : (
               "Proceed to Booking"
             )}

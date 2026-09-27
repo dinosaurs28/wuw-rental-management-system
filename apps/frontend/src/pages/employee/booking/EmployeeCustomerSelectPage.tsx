@@ -17,9 +17,12 @@ import {
 } from "@/components/ui/dialog";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
+import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { bookingService } from "@/services/booking.service";
 import { customerSession, type CustomerSession } from "@/utils/customerSession";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 
 interface SearchResult {
   publicId: string;
@@ -35,6 +38,9 @@ interface SearchResult {
 export default function EmployeeCustomerSelectPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useEmployeeAuthStore();
+  const { setUtr } = useEmployeeBookingStore();
+  // Walk-in bookings need an open cash shift; block starting one without it.
+  const { needsShift } = useActiveShift();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -60,6 +66,7 @@ export default function EmployeeCustomerSelectPage() {
 
   const handleClearSession = () => {
     customerSession.clear();
+    setUtr("");
     setShowSessionWarning(false);
     setHasActiveSession(false);
     toast.info("Previous customer session cleared");
@@ -98,6 +105,7 @@ export default function EmployeeCustomerSelectPage() {
     };
 
     customerSession.set(session);
+    setUtr("");
     setHasActiveSession(true);
     toast.success(`Selected customer: ${customer.name}`);
     navigate("/employee/vehicles");
@@ -143,6 +151,8 @@ export default function EmployeeCustomerSelectPage() {
       </div>
 
       <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {needsShift && <ShiftRequiredNotice />}
+
         {/* Search & Actions */}
         <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-4 space-y-4">
@@ -173,6 +183,7 @@ export default function EmployeeCustomerSelectPage() {
               <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={needsShift}
                 onClick={() => navigate("/employee/customer/create")}
               >
                 <Plus className="mr-2 h-4 w-4" /> Create New Customer
@@ -223,7 +234,10 @@ export default function EmployeeCustomerSelectPage() {
                         </div>
                       </div>
                     </div>
-                    <Button onClick={() => handleSelectCustomer(customer)}>
+                    <Button
+                      disabled={needsShift}
+                      onClick={() => handleSelectCustomer(customer)}
+                    >
                       Select User
                     </Button>
                   </div>
@@ -243,6 +257,7 @@ export default function EmployeeCustomerSelectPage() {
               <p className="text-muted-foreground">No customers found.</p>
               <Button
                 variant="link"
+                disabled={needsShift}
                 onClick={() => navigate("/employee/customer/create")}
               >
                 Create new customer instead?
@@ -273,6 +288,7 @@ export default function EmployeeCustomerSelectPage() {
             </Button>
             <Button
               variant="default"
+              disabled={needsShift}
               onClick={() => navigate("/employee/vehicles")}
             >
               Continue Session

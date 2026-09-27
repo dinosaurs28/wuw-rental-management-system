@@ -28,6 +28,7 @@ import { DamageEvidence } from "@/components/manager/damage/DamageEvidence";
 import { DamageSummary } from "@/components/manager/damage/DamageSummary";
 import { FinancialCalculation, type DamagePaymentMethod } from "@/components/manager/damage/FinancialCalculation";
 import { VehicleDisposition } from "@/components/manager/damage/VehicleDisposition";
+import { DropChargeNotice } from "@/components/manager/damage/DropChargeNotice";
 
 import {
   getDamageReport,
@@ -36,8 +37,24 @@ import {
 } from "@/services/damage.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import apiClient from "@/lib/axios";
+import { apiErrorMessage } from "@/lib/counterErrors";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+
+/**
+ * Damage recorded at drop is either billed on the drop (chargedAtDrop) or kept
+ * as a company expense — the manager then only sets the vehicle disposition and
+ * no payment is collected here. Everything else (incl. a drop damage the customer
+ * pays in a branch without payment sessions) goes through the normal review.
+ */
+type SettlementMode = "CHARGED_AT_DROP" | "COMPANY_EXPENSE" | "REVIEW";
+
+const settlementModeOf = (report: DamageReport): SettlementMode => {
+  // Never offer a second charge for a report already billed at drop.
+  const managerCharges = report.managerCharges ?? !report.chargedAtDrop;
+  if (managerCharges) return "REVIEW";
+  return report.chargedAtDrop ? "CHARGED_AT_DROP" : "COMPANY_EXPENSE";
+};
 
 export const DamageReviewPage = () => {
   const { damageReportId } = useParams<{ damageReportId: string }>();
@@ -73,7 +90,7 @@ export const DamageReviewPage = () => {
       setIsLoading(true);
       const data = await getDamageReport(id);
       setReport(data);
-      setFinalCost(data.financialHint.estimatedCost || 0);
+      setFinalCost(data.financialHint.finalCost ?? data.financialHint.estimatedCost ?? 0);
     } catch (error: any) {
       console.error("Failed to load report", error);
       const msg = error.response?.data?.message || "Failed to load damage report";
@@ -144,6 +161,25 @@ export const DamageReviewPage = () => {
 
   const handleConfirmClose = async () => {
     if (!report) return;
+
+    if (settlementModeOf(report) !== "REVIEW") {
+      try {
+        setIsSubmitting(true);
+        // Nothing is collected: the backend only saves the disposition for drop damage.
+        const response = await closeDamageReport(report.damageReportId, {
+          disposition,
+          finalCost: report.financialHint.estimatedCost,
+        });
+        toast.success(response.message || "Vehicle status saved");
+        navigate("/manager/dashboard");
+      } catch (error) {
+        toast.error(apiErrorMessage(error, "Failed to close report"));
+        setIsConfirmOpen(false);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     const gstRate = report.financialHint.gstRate ?? 18;
     const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
@@ -220,6 +256,10 @@ export const DamageReviewPage = () => {
   const additionalCharges = report.financialHint.additionalCharges ?? 0;
   const net = additionalCharges + totalDamage - report.booking.deposit;
   const isRefund = net <= 0;
+  const settlementMode = settlementModeOf(report);
+  const dispositionOnly = settlementMode !== "REVIEW";
+  // The cost staff entered at drop (estimatedCost = finalCost = amount for drop damage).
+  const dropAmount = report.financialHint.estimatedCost;
 
   return (
     <ManagerLayout>
@@ -292,11 +332,19 @@ export const DamageReviewPage = () => {
                   <h3 className="text-xl font-bold text-green-800">Damage Report Closed</h3>
                   <p className="text-green-700">This report has been approved and settled.</p>
                 </div>
-                <div className="text-left bg-white p-4 rounded-md border border-green-100 flex justify-center">
+                <div className="text-left bg-white p-4 rounded-md border border-green-100 flex justify-center gap-8">
                   <div className="text-center">
                     <label className="text-xs text-gray-500 block mb-1">Disposition</label>
                     <Badge variant="outline">{report.vehicle.currentStatus}</Badge>
                   </div>
+                  {dispositionOnly && (
+                    <div className="text-center">
+                      <label className="text-xs text-gray-500 block mb-1">
+                        {settlementMode === "CHARGED_AT_DROP" ? "Charged at drop" : "Company expense"}
+                      </label>
+                      <span className="font-semibold text-gray-900">{formatCurrency(dropAmount)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -310,22 +358,29 @@ export const DamageReviewPage = () => {
                   />
                 </CardWrapper>
 
-                <FinancialCalculation
-                  deposit={report.booking.deposit}
-                  additionalCharges={additionalCharges}
-                  finalCost={finalCost}
-                  setFinalCost={setFinalCost}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  cashAmount={cashAmount}
-                  setCashAmount={setCashAmount}
-                  onlineAmount={onlineAmount}
-                  setOnlineAmount={setOnlineAmount}
-                  onlineTransactionRef={onlineTransactionRef}
-                  setOnlineTransactionRef={setOnlineTransactionRef}
-                  chargeType={report.chargeType}
-                  gstRate={gstRate}
-                />
+                {dispositionOnly ? (
+                  <DropChargeNotice
+                    kind={settlementMode === "CHARGED_AT_DROP" ? "charged" : "expense"}
+                    amount={dropAmount}
+                  />
+                ) : (
+                  <FinancialCalculation
+                    deposit={report.booking.deposit}
+                    additionalCharges={additionalCharges}
+                    finalCost={finalCost}
+                    setFinalCost={setFinalCost}
+                    paymentMethod={paymentMethod}
+                    setPaymentMethod={setPaymentMethod}
+                    cashAmount={cashAmount}
+                    setCashAmount={setCashAmount}
+                    onlineAmount={onlineAmount}
+                    setOnlineAmount={setOnlineAmount}
+                    onlineTransactionRef={onlineTransactionRef}
+                    setOnlineTransactionRef={setOnlineTransactionRef}
+                    chargeType={report.chargeType}
+                    gstRate={gstRate}
+                  />
+                )}
 
                 <VehicleDisposition
                   disposition={disposition}
@@ -348,9 +403,11 @@ export const DamageReviewPage = () => {
                 <DialogTrigger asChild>
                   <Button
                     size="lg"
-                    className={cn("min-w-[200px]", isRefund ? "bg-green-600 hover:bg-green-700" : "bg-primary")}
+                    className={cn("min-w-[200px]", !dispositionOnly && isRefund ? "bg-green-600 hover:bg-green-700" : "bg-primary")}
                   >
-                    {isRefund ? "Confirm Refund & Close" : "Confirm Payment & Close"}
+                    {dispositionOnly
+                      ? "Save Vehicle Status & Close"
+                      : isRefund ? "Confirm Refund & Close" : "Confirm Payment & Close"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -364,54 +421,73 @@ export const DamageReviewPage = () => {
                     </DialogDescription>
                   </DialogHeader>
 
-                  <div className="space-y-3 py-4 text-sm bg-gray-50 p-4 rounded-md">
-                    {additionalCharges > 0 && (
-                      <div className="flex justify-between text-orange-700">
-                        <span>Additional Return Charges:</span>
-                        <span className="font-semibold">+ {formatCurrency(additionalCharges)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Base Damage Cost:</span>
-                      <span className="font-semibold">+ {formatCurrency(finalCost)}</span>
-                    </div>
-                    {report.chargeType === "PENALTY" && taxAmount > 0 && (
-                      <div className="flex justify-between text-orange-700">
-                        <span>GST ({gstRate}%):</span>
-                        <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-blue-700">
-                      <span>Safety Deposit:</span>
-                      <span className="font-semibold">− {formatCurrency(report.booking.deposit)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold border-t pt-2">
-                      <span>Net:</span>
-                      <span className={isRefund ? "text-green-700" : "text-red-700"}>
-                        {isRefund ? `Refund ${formatCurrency(Math.abs(net))}` : `Collect ${formatCurrency(net)}`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Settlement Type:</span>
-                      <span className={isRefund ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                        {isRefund ? "REFUND" : "COLLECTION DUE"}
-                      </span>
-                    </div>
-                    {!isRefund && paymentMethod && (
+                  {dispositionOnly ? (
+                    <div className="space-y-3 py-4 text-sm bg-gray-50 p-4 rounded-md">
                       <div className="flex justify-between">
-                        <span>Payment Method:</span>
+                        <span>{settlementMode === "CHARGED_AT_DROP" ? "Charged at drop:" : "Company expense:"}</span>
+                        <span className="font-semibold">{formatCurrency(dropAmount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Collect now:</span>
                         <span className="font-semibold">
-                          {paymentMethod === "SPLIT"
-                            ? `Split (₹${cashAmount} cash + ₹${onlineAmount} online)`
-                            : paymentMethod.replace("_", " ")}
+                          {settlementMode === "CHARGED_AT_DROP" ? "Nothing — already charged at drop" : "Nothing — not billed"}
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between pt-2 border-t mt-2">
-                      <span>Vehicle Status:</span>
-                      <Badge variant="outline">{disposition}</Badge>
+                      <div className="flex justify-between pt-2 border-t mt-2">
+                        <span>Vehicle Status:</span>
+                        <Badge variant="outline">{disposition}</Badge>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-3 py-4 text-sm bg-gray-50 p-4 rounded-md">
+                      {additionalCharges > 0 && (
+                        <div className="flex justify-between text-orange-700">
+                          <span>Additional Return Charges:</span>
+                          <span className="font-semibold">+ {formatCurrency(additionalCharges)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Base Damage Cost:</span>
+                        <span className="font-semibold">+ {formatCurrency(finalCost)}</span>
+                      </div>
+                      {report.chargeType === "PENALTY" && taxAmount > 0 && (
+                        <div className="flex justify-between text-orange-700">
+                          <span>GST ({gstRate}%):</span>
+                          <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-blue-700">
+                        <span>Safety Deposit:</span>
+                        <span className="font-semibold">− {formatCurrency(report.booking.deposit)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold border-t pt-2">
+                        <span>Net:</span>
+                        <span className={isRefund ? "text-green-700" : "text-red-700"}>
+                          {isRefund ? `Refund ${formatCurrency(Math.abs(net))}` : `Collect ${formatCurrency(net)}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Settlement Type:</span>
+                        <span className={isRefund ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                          {isRefund ? "REFUND" : "COLLECTION DUE"}
+                        </span>
+                      </div>
+                      {!isRefund && paymentMethod && (
+                        <div className="flex justify-between">
+                          <span>Payment Method:</span>
+                          <span className="font-semibold">
+                            {paymentMethod === "SPLIT"
+                              ? `Split (₹${cashAmount} cash + ₹${onlineAmount} online)`
+                              : paymentMethod.replace("_", " ")}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-2 border-t mt-2">
+                        <span>Vehicle Status:</span>
+                        <Badge variant="outline">{disposition}</Badge>
+                      </div>
+                    </div>
+                  )}
 
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
@@ -420,10 +496,10 @@ export const DamageReviewPage = () => {
                     <Button
                       onClick={handleConfirmClose}
                       disabled={isSubmitting}
-                      className={cn(isRefund ? "bg-green-600 hover:bg-green-700" : "")}
+                      className={cn(!dispositionOnly && isRefund ? "bg-green-600 hover:bg-green-700" : "")}
                     >
                       {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {isRefund ? "Process Refund" : "Collect & Close"}
+                      {dispositionOnly ? "Save & Close" : isRefund ? "Process Refund" : "Collect & Close"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

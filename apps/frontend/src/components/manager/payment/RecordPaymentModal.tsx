@@ -20,6 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  isValidUtr,
+} from "@/lib/counterErrors";
 
 interface RecordPaymentModalProps {
   open: boolean;
@@ -65,7 +72,12 @@ export function RecordPaymentModal({
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  // Shown at the reference field (client check or INVALID_UTR / DUPLICATE_UTR)
+  const [refError, setRefError] = useState<string | null>(null);
+  // Staff only — the staff endpoint needs an open cash shift
+  const [shiftRequired, setShiftRequired] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
+  const isUpi = gateway === "UPI";
 
   const totalNum = parseFloat(amount) || 0;
   const cashNum = parseFloat(cashAmount) || 0;
@@ -80,6 +92,8 @@ export function RecordPaymentModal({
     setTxnRef("");
     setGateway("UPI");
     setNotes("");
+    setRefError(null);
+    setShiftRequired(false);
     // Re-roll idempotency key for next session
     idempotencyKey.current = crypto.randomUUID();
     onClose();
@@ -99,8 +113,12 @@ export function RecordPaymentModal({
       toast.error("Please enter a valid amount.");
       return;
     }
-    if ((method === "ONLINE" || method === "SPLIT") && !txnRef.trim()) {
-      toast.error("Transaction reference is required for online payments.");
+    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !isValidUtr(txnRef) : !txnRef.trim())) {
+      setRefError(
+        isUpi
+          ? "Enter the 12-digit UTR number."
+          : "Transaction reference is required for online payments.",
+      );
       return;
     }
     if (method === "SPLIT" && (cashNum <= 0 || onlineNum <= 0)) {
@@ -117,7 +135,8 @@ export function RecordPaymentModal({
         totalAmount: totalNum,
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef: method !== "CASH" ? txnRef : undefined,
+        onlineTransactionRef:
+          method !== "CASH" ? (isUpi ? cleanUtr(txnRef) : txnRef.trim()) : undefined,
         onlineGateway: method !== "CASH" ? gateway : undefined,
         notes: notes || undefined,
         idempotencyKey: idempotencyKey.current,
@@ -133,8 +152,15 @@ export function RecordPaymentModal({
 
       onSuccess();
       resetAndClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to record payment.");
+    } catch (err) {
+      const code = counterErrorCode(err);
+      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
+        setRefError(apiErrorMessage(err, "Check the reference and try again."));
+      } else if (code === "SHIFT_REQUIRED") {
+        setShiftRequired(true);
+      } else {
+        toast.error(apiErrorMessage(err, "Failed to record payment."));
+      }
     } finally {
       setLoading(false);
     }
@@ -325,22 +351,13 @@ export function RecordPaymentModal({
               {(method === "ONLINE" || method === "SPLIT") && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="txnRef">
-                      Transaction Reference <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="txnRef"
-                      placeholder="e.g. pay_xyz789"
-                      className="h-12"
-                      value={txnRef}
-                      onChange={(e) => setTxnRef(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label>Gateway</Label>
                     <Select
                       value={gateway}
-                      onValueChange={(v) => setGateway(v as OnlineGateway)}
+                      onValueChange={(v) => {
+                        setGateway(v as OnlineGateway);
+                        setRefError(null);
+                      }}
                     >
                       <SelectTrigger className="h-12">
                         <SelectValue />
@@ -353,6 +370,26 @@ export function RecordPaymentModal({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="txnRef">
+                      {isUpi ? "UTR number" : "Transaction Reference"}{" "}
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="txnRef"
+                      placeholder={isUpi ? "12-digit UTR" : "e.g. pay_xyz789"}
+                      inputMode={isUpi ? "numeric" : undefined}
+                      autoComplete="off"
+                      aria-invalid={!!refError}
+                      className={isUpi ? "h-12 font-mono tracking-wide" : "h-12"}
+                      value={txnRef}
+                      onChange={(e) => {
+                        setTxnRef(e.target.value);
+                        setRefError(null);
+                      }}
+                    />
+                    {refError && <p className="text-xs text-red-600">{refError}</p>}
                   </div>
                 </>
               )}
@@ -372,6 +409,10 @@ export function RecordPaymentModal({
                 </div>
               )}
 
+              {shiftRequired && (
+                <ShiftRequiredNotice onShiftOpened={() => setShiftRequired(false)} />
+              )}
+
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -384,7 +425,7 @@ export function RecordPaymentModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || shiftRequired}
                 >
                   {loading
                     ? "Recording…"

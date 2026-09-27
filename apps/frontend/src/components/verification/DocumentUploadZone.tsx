@@ -12,6 +12,8 @@ interface DocumentUploadZoneProps {
   error?: string | null;
   side?: KycSide;
   alreadyUploaded?: boolean;
+  /** Opt-in: on phones, open the camera directly instead of the file picker. */
+  capture?: "environment" | "user";
 }
 
 const ACCEPTED_TYPES = {
@@ -28,6 +30,7 @@ export const DocumentUploadZone = ({
   error,
   side,
   alreadyUploaded = false,
+  capture,
 }: DocumentUploadZoneProps) => {
   const sideLabel = side === "FRONT" ? "Front Side" : side === "BACK" ? "Back Side" : null;
   const onDrop = useCallback(
@@ -108,7 +111,7 @@ export const DocumentUploadZone = ({
       >
         {/* Subtle animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-        <input {...getInputProps()} />
+        <input {...getInputProps({ capture })} />
 
         {isUploading ? (
           <div className="flex flex-col items-center gap-4 relative z-10">

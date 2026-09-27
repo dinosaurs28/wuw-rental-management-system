@@ -25,6 +25,7 @@ import {
 } from "@/services/extension.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { useAuthStore } from "@/store/auth.store";
+import { apiErrorMessage } from "@/lib/counterErrors";
 
 type Step = "date" | "result" | "pay" | "paying" | "failed";
 
@@ -62,6 +63,7 @@ export function CustomerExtensionModal({
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isInitiating, setIsInitiating] = useState(false);
   const [evalError, setEvalError] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
   const minDate = addDays(new Date(currentEndAt), 1);
@@ -84,6 +86,7 @@ export function CustomerExtensionModal({
     setSelectedDate(undefined);
     setEvaluation(null);
     setEvalError(null);
+    setInitError(null);
     setPayError(null);
     paidRef.current = false;
     onClose();
@@ -106,11 +109,11 @@ export function CustomerExtensionModal({
 
       const res = await extensionService.customerEvaluate(bookingPublicId, newEndAt);
       setEvaluation(res.data);
+      setInitError(null);
       setStep("result");
-    } catch (err: any) {
-      setEvalError(
-        err?.response?.data?.message ?? "Failed to check availability. Please try again.",
-      );
+    } catch (err) {
+      // Includes 409 EXTENSION_PENDING (another extension is still open).
+      setEvalError(apiErrorMessage(err, "Failed to check availability. Please try again."));
     } finally {
       setIsEvaluating(false);
     }
@@ -139,10 +142,20 @@ export function CustomerExtensionModal({
   async function handleInitiatePayment() {
     if (!evaluation) return;
     setIsInitiating(true);
+    setInitError(null);
     try {
       const res = await extensionService.customerInitiatePayment(
         evaluation.extensionPublicId,
       );
+      // Nothing to pay — the backend confirmed the extension outright.
+      if (res.data?.extensionStatus === "CONFIRMED") {
+        paidRef.current = true;
+        setIsInitiating(false);
+        toast.success("Booking extended successfully!");
+        onSuccess?.();
+        void handleClose();
+        return;
+      }
       const { razorpay, transactionId } = res.data ?? {};
       if (!razorpay || !transactionId) {
         toast.error("Could not initiate payment — no payment order received");
@@ -187,8 +200,9 @@ export function CustomerExtensionModal({
           toast.info("Payment cancelled. Your extension was not confirmed.");
         },
       });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? "Failed to initiate payment");
+    } catch (err) {
+      // e.g. 409 — the vehicle is no longer free for the new dates. Kept on screen.
+      setInitError(apiErrorMessage(err, "Failed to initiate payment"));
       setIsInitiating(false);
       setStep("result");
     }
@@ -359,6 +373,13 @@ export function CustomerExtensionModal({
                   </div>
                 </div>
 
+                {initError && (
+                  <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {initError}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -366,6 +387,7 @@ export function CustomerExtensionModal({
                     onClick={async () => {
                       if (evaluation) await cancelPendingExtension(evaluation.extensionPublicId);
                       setEvaluation(null);
+                      setInitError(null);
                       setStep("date");
                     }}
                   >
@@ -378,8 +400,10 @@ export function CustomerExtensionModal({
                   >
                     {isInitiating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
+                    ) : parseFloat(additionalAmount) > 0 ? (
                       <>Pay {formatCurrency(additionalAmount)} <CreditCard className="ml-2 h-4 w-4" /></>
+                    ) : (
+                      <>Confirm Extension <Check className="ml-2 h-4 w-4" /></>
                     )}
                   </Button>
                 </div>
