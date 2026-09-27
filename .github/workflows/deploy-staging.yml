@@ -23,18 +23,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # dorny/paths-filter compares HEAD against the previous push
-      # so it only triggers the right deploy job
+      # Compare against the previous push to this branch so only the right
+      # deploy job runs. Without `base`, paths-filter diffs against the
+      # default branch (main): whenever main already matches staging — e.g.
+      # a feature merged to main and then staging fast-forwarded — it sees
+      # no changes and silently skips both deploys.
+      # A change to this workflow redeploys both apps.
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.ref }}
           filters: |
             frontend:
               - 'apps/frontend/**'
               - 'packages/**'
+              - '.github/workflows/deploy-staging.yml'
             backend:
               - 'apps/backend/**'
               - 'packages/**'
+              - '.github/workflows/deploy-staging.yml'
 
   # ──────────────────────────────────────────────
   # 2. Deploy Frontend → Cloudflare Pages
