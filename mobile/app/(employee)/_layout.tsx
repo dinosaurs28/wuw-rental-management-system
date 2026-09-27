@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
@@ -24,7 +25,13 @@ function TabIcon({ focused, icon, activeIcon }: { focused: boolean; icon: Ionico
   );
 }
 
+// Height of the tab row itself, above the system navigation.
+const TAB_ROW_HEIGHT = Platform.OS === 'ios' ? 50 : 56;
+
 export default function EmployeeTabLayout() {
+  // A fixed height overrides the bar's own safe-area sizing, so the bottom
+  // inset (Android 3-button navigation, iPhone home indicator) is added back.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -34,7 +41,8 @@ export default function EmployeeTabLayout() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.hairline,
-          height: Platform.OS === 'ios' ? 84 : 64,
+          height: TAB_ROW_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
           elevation: 0,
           shadowOpacity: 0,
         },

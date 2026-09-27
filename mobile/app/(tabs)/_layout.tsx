@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 
@@ -12,8 +13,16 @@ const TABS: { name: string; label: string; icon: IoniconName }[] = [
   { name: 'profile', label: 'Profile', icon: 'person-outline' },
 ];
 
+// Height of the tab row itself (icon + label), above the system navigation.
+const TAB_ROW_HEIGHT = Platform.OS === 'ios' ? 54 : 60;
+
 // Sixt-style dark tab bar: labelled tabs, orange active tint.
 export default function TabLayout() {
+  // A fixed height overrides the bar's own safe-area sizing, so the bottom
+  // inset is added back explicitly. Android draws edge-to-edge, and a
+  // 3-button navigation bar is ~48dp tall — without this the tabs sat under
+  // the system buttons.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -24,7 +33,8 @@ export default function TabLayout() {
           backgroundColor: '#15161a',
           borderTopWidth: 1,
           borderTopColor: 'rgba(255,255,255,0.08)',
-          height: Platform.OS === 'ios' ? 88 : 68,
+          height: TAB_ROW_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
           elevation: 0,
           shadowOpacity: 0,
         },
