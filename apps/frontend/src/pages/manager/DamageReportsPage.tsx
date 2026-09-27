@@ -26,6 +26,7 @@ import {
   type DamageReport,
 } from "@/services/managerDashboard.service";
 import { useDebounce } from "@/hooks/useDebounce";
+import { formatCurrency } from "@/lib/utils";
 
 const severityConfig = {
   CRITICAL: { label: "Critical", dot: "#dc2626", bg: "#fef2f2", border: "#fecaca", text: "#dc2626" },
@@ -42,6 +43,28 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 const PAGE_SIZE = 15;
+
+/**
+ * Drop damage the manager doesn't charge: either billed on the drop or a
+ * company expense — the review only sets the vehicle status.
+ */
+const DropSettlementTag = ({ report }: { report: DamageReport }) => {
+  if (report.chargedAtDrop) {
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap text-[#e85d04] bg-[#fff7ed] border-[#fed7aa]">
+        Charged at drop{report.estimatedCost != null && ` ${formatCurrency(report.estimatedCost)}`}
+      </span>
+    );
+  }
+  if (report.managerCharges === false) {
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap text-[#2563eb] bg-[#eff6ff] border-[#bfdbfe]">
+        Company expense
+      </span>
+    );
+  }
+  return null;
+};
 
 export const DamageReportsPage = () => {
   const navigate = useNavigate();
@@ -242,7 +265,10 @@ export const DamageReportsPage = () => {
                                 {sev.label}
                               </span>
                             </div>
-                            <p className="text-sm font-semibold text-[#1a1917] truncate">{report.vehicleName}</p>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className="text-sm font-semibold text-[#1a1917] truncate">{report.vehicleName}</p>
+                              <DropSettlementTag report={report} />
+                            </div>
                             <p className="text-[10px] text-[#9ca3af]">
                               {new Date(report.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                             </p>
@@ -274,7 +300,10 @@ export const DamageReportsPage = () => {
                           </div>
 
                           {/* Vehicle */}
-                          <span className="text-sm font-semibold text-[#1a1917] truncate">{report.vehicleName}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-semibold text-[#1a1917] truncate">{report.vehicleName}</span>
+                            <DropSettlementTag report={report} />
+                          </div>
 
                           {/* Severity */}
                           <div

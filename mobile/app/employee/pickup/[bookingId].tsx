@@ -96,6 +96,9 @@ export default function PickupScreen() {
   const [odo, setOdo] = useState('');
   const [fuelLevel, setFuelLevel] = useState<number>(5); // 1..10 scale
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
+  // Shots still uploading (or failed) — they aren't in `photos` yet.
+  const [pendingPhotos, setPendingPhotos] = useState(0);
+  const [licenseCollected, setLicenseCollected] = useState(false);
   const [done, setDone] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [kycExpanded, setKycExpanded] = useState<Record<string, boolean>>({});
@@ -149,6 +152,8 @@ export default function PickupScreen() {
           : {}),
         // Re-arms the backend's 402 remaining-balance guard as defense-in-depth behind the UI gate.
         payRemainingAtPickup: true,
+        // Required toggle below; the backend also enforces it (LICENSE_NOT_COLLECTED).
+        licenseCollected,
       });
     },
     onSuccess: () => {
@@ -196,8 +201,16 @@ export default function PickupScreen() {
       );
       return;
     }
+    if (pendingPhotos > 0) {
+      Alert.alert('Photos uploading', 'Wait for the photos to finish uploading, or remove the ones that failed.');
+      return;
+    }
     if (depositInvalid) {
       Alert.alert('Safety deposit', 'Enter a valid deposit amount and a reason, or turn the request off.');
+      return;
+    }
+    if (!licenseCollected) {
+      Alert.alert('Driving licence', "Collect the customer's original driving licence before handing over the vehicle.");
       return;
     }
     setShowConfirm(true);
@@ -247,6 +260,16 @@ export default function PickupScreen() {
   const depositEnabled = !!booking.frozenChargeConfig?.safetyDepositEnabled;
   const depositInvalid =
     requestDeposit && (!(Number(depositAmount) > 0) || depositReason.trim().length === 0);
+  const licenseRejected = (mutation.error as any)?.response?.data?.code === 'LICENSE_NOT_COLLECTED';
+  const confirmDisabled =
+    mutation.isPending ||
+    !!hasRemainingBalance ||
+    !odo.trim() ||
+    missingRequiredPhotos.length > 0 ||
+    pendingPhotos > 0 ||
+    dlBlocked ||
+    depositInvalid ||
+    !licenseCollected;
 
   if (done) {
     return (
@@ -272,6 +295,10 @@ export default function PickupScreen() {
             <View style={styles.successRow}>
               <Ionicons name="water-outline" size={15} color={Colors.ink3} />
               <Text style={styles.successRowText}>Fuel level: {fuelLevel}/10</Text>
+            </View>
+            <View style={styles.successRow}>
+              <Ionicons name="id-card-outline" size={15} color={Colors.ink3} />
+              <Text style={styles.successRowText}>Original driving licence collected</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -624,6 +651,7 @@ export default function PickupScreen() {
               return { fileId: res.data.fileId, url: res.data.url };
             }}
             genericLabel="Add"
+            onPendingChange={setPendingPhotos}
           />
         </View>
 
@@ -686,6 +714,29 @@ export default function PickupScreen() {
           </>
         )}
 
+        {/* Original driving licence — held until the car comes back */}
+        <SectionHeader title="Original Licence" />
+        <View style={[styles.card, licenseRejected && styles.cardError]}>
+          <TouchableOpacity
+            style={styles.toggleRow}
+            onPress={() => setLicenseCollected((v) => !v)}
+            activeOpacity={0.8}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: licenseCollected }}
+          >
+            <View style={styles.toggleTextWrap}>
+              <View style={styles.toggleTitleRow}>
+                <Text style={styles.toggleTitle}>Original driving licence collected</Text>
+                {!licenseCollected && <Text style={styles.requiredTag}>Required</Text>}
+              </View>
+              <Text style={styles.toggleSub}>Keep the customer's physical licence until the car is returned.</Text>
+            </View>
+            <View style={[styles.switch, licenseCollected && styles.switchOn]}>
+              <View style={[styles.knob, licenseCollected && styles.knobOn]} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Manager confirmation escalation (#50) */}
         <SectionHeader title="Confirmation" />
         <View style={styles.card}>
@@ -718,9 +769,9 @@ export default function PickupScreen() {
       {/* Confirm CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={[styles.confirmBtn, (mutation.isPending || !!hasRemainingBalance || !odo.trim() || missingRequiredPhotos.length > 0 || dlBlocked || depositInvalid) && styles.confirmBtnDisabled]}
+          style={[styles.confirmBtn, confirmDisabled && styles.confirmBtnDisabled]}
           onPress={handleConfirm}
-          disabled={mutation.isPending || !!hasRemainingBalance || !odo.trim() || missingRequiredPhotos.length > 0 || dlBlocked || depositInvalid}
+          disabled={confirmDisabled}
           activeOpacity={0.85}
         >
           {mutation.isPending ? (
@@ -740,7 +791,7 @@ export default function PickupScreen() {
       icon="car-outline"
       iconColor={Colors.orange}
       title="Confirm Pickup"
-      message={`Odometer: ${odo} km · Fuel: ${fuelLevel}/10\n\nHand over the vehicle to ${booking?.customer?.user?.name ?? 'customer'}?`}
+      message={`Odometer: ${odo} km · Fuel: ${fuelLevel}/10\nOriginal driving licence collected\n\nHand over the vehicle to ${booking?.customer?.user?.name ?? 'customer'}?`}
       confirmLabel="Confirm Pickup"
       confirmColor={Colors.orange}
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
@@ -903,6 +954,18 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   toggleTextWrap: { flex: 1 },
   toggleTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+  toggleTitleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  requiredTag: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    color: '#e53e3e',
+    backgroundColor: '#e53e3e10',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  cardError: { borderColor: '#e53e3e60' },
   toggleSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2, lineHeight: 16 },
   switch: {
     width: 46, height: 28, borderRadius: 14, backgroundColor: Colors.hairline,

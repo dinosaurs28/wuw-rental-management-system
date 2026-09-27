@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,20 +15,29 @@ import { employeeApi } from '../../../lib/api';
 
 export default function OpenShift() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const [done, setDone] = useState(false);
   const [openedAt, setOpenedAt] = useState('');
+  // Pushed on top of a flow in this stack (walk-in hold, pickup, drop,
+  // extension — via promptOpenShift) → go straight back to it once the shift
+  // is open. From the dashboard / profile tabs it is the stack's first screen.
+  const [fromFlow] = useState(() => (navigation.getState()?.index ?? 0) > 0);
 
   const mutation = useMutation({
     mutationFn: () => employeeApi.openShift(),
     onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+      if (fromFlow && router.canGoBack()) {
+        router.back();
+        return;
+      }
       const shift = res.data?.data;
       if (shift) {
         setOpenedAt(shift.openedAt);
       }
       setDone(true);
-      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
     },
   });
 

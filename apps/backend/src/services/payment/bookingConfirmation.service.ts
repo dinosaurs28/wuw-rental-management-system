@@ -13,13 +13,16 @@ import {
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
+import { claimUtr, CounterGuardError, normalizeUtr } from "./counter-guard.service.js";
 
 interface ConfirmBookingPaymentParams {
   /** Internal Booking.id (not publicId). */
   bookingId: number;
-  /** Razorpay order id (`order_xxx`) or the `CASH_xxx` reference. */
+  /** Razorpay order id (`order_xxx`) or the `CASH_xxx` / `UPI_xxx` reference. */
   transactionId: string;
   isCash: boolean;
+  /** Counter UPI payment — the UTR is read from `pricingSnapshot.upi.utr`. */
+  isUpi?: boolean;
   /** Razorpay `pay_xxx` id, when known. Stored on PaymentTransaction.notes. */
   gatewayPaymentId?: string | null;
   actor: { ip?: string; userAgent?: string };
@@ -55,11 +58,14 @@ async function clearHolds(
  * the Razorpay webhook — all three may race, so it is idempotent: the early
  * return on PaymentStatus.SUCCESS and the unique `initial:<txn>` idempotency
  * key together guarantee a single set of financial rows.
+ *
+ * `skipped: "DUPLICATE_UTR"` means a counter UPI booking's UTR was claimed by
+ * another payment after the booking was created; the caller cancels the hold.
  */
 export async function confirmBookingPayment(
   params: ConfirmBookingPaymentParams,
-): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" }> {
-  const { bookingId, transactionId, isCash, gatewayPaymentId, actor } = params;
+): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" | "DUPLICATE_UTR" }> {
+  const { bookingId, transactionId, isCash, isUpi = false, gatewayPaymentId, actor } = params;
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -85,13 +91,25 @@ export async function confirmBookingPayment(
   // A capture can still land after the hold expired and the booking was
   // cancelled — by then the vehicles may already belong to someone else.
   // Confirming would double-book them, so refuse and surface it for a refund.
-  if (booking.status === BookingStatus.CANCELLED) {
+  // A counter UPI hold that lapsed (HOLD_EXPIRED) is refused the same way —
+  // staff re-create the booking and the UTR is still free to use.
+  if (
+    booking.status === BookingStatus.CANCELLED ||
+    (isUpi && booking.status === BookingStatus.HOLD_EXPIRED)
+  ) {
     console.error(
-      `[confirmBookingPayment] REFUND REQUIRED booking=${booking.publicId} txn=${transactionId} ` +
-        `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured against a CANCELLED booking, not confirming`,
+      isUpi
+        ? `[confirmBookingPayment] UPI booking=${booking.publicId} is ${booking.status} — not confirming; staff re-create it with the same UTR`
+        : `[confirmBookingPayment] REFUND REQUIRED booking=${booking.publicId} txn=${transactionId} ` +
+            `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured against a ${booking.status} booking, not confirming`,
     );
     return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
+
+  // The UTR typed at booking time rides on the pricing snapshot until now.
+  const upiUtr = isUpi
+    ? normalizeUtr((booking.pricingSnapshot as { upi?: { utr?: string } } | null)?.upi?.utr)
+    : null;
 
   // Fetch actor info before the transaction to avoid adding latency inside it
   const paymentActor = await prisma.user.findUnique({
@@ -99,7 +117,11 @@ export async function confirmBookingPayment(
     select: { name: true, role: true, branchId: true },
   });
 
-  const method = isCash ? DepositMethod.CASH : DepositMethod.ONLINE_RAZORPAY;
+  const method = isCash
+    ? DepositMethod.CASH
+    : isUpi
+      ? DepositMethod.UPI
+      : DepositMethod.ONLINE_RAZORPAY;
 
   try {
     console.log(
@@ -107,6 +129,10 @@ export async function confirmBookingPayment(
     );
     await prisma.$transaction(
       async (tx) => {
+        // Claim inside the transaction: the UTR may have been used for another
+        // payment while this booking sat on HOLD.
+        if (upiUtr) await claimUtr(upiUtr, tx);
+
         const bookingUpdateData: any = {
           status: BookingStatus.CONFIRMED,
           paymentStatus: PaymentStatus.SUCCESS,
@@ -182,10 +208,11 @@ export async function confirmBookingPayment(
 
         // Cash collected by an employee always requires manager approval (COLLECTED)
         // before it is counted as received — regardless of cashConfirmationEnabled.
-        // Online payments confirm immediately.
+        // Online payments (Razorpay and counter UPI) confirm immediately.
         let activeShiftId: number | null = null;
+        const collectedAtCounter = isCash || isUpi;
 
-        if (isCash) {
+        if (collectedAtCounter) {
           const activeShift = await (tx as any).cashShift.findFirst({
             where: { employeeId: booking.createdById, status: "OPEN" },
             select: { id: true },
@@ -210,11 +237,12 @@ export async function confirmBookingPayment(
             onlineAmount:        isCash ? 0 : paymentAmount,
             // The order id is what every other lookup keys on, so it stays the
             // ref; the pay_xxx id is kept alongside it for reconciliation.
-            onlineTransactionRef: isCash ? null : transactionId,
-            onlineGateway:       isCash ? null : "RAZORPAY",
+            // Counter UPI payments are keyed on the customer's UTR instead.
+            onlineTransactionRef: isCash ? null : (upiUtr ?? transactionId),
+            onlineGateway:       isCash ? null : isUpi ? "UPI" : "RAZORPAY",
             notes:               !isCash && gatewayPaymentId ? `razorpay_payment_id=${gatewayPaymentId}` : null,
-            collectedById:       isCash ? booking.createdById : null,
-            collectedAt:         isCash ? now : null,
+            collectedById:       collectedAtCounter ? booking.createdById : null,
+            collectedAt:         collectedAtCounter ? now : null,
             confirmedById:       txnStatus === "CONFIRMED" ? booking.createdById : null,
             confirmedAt:         txnStatus === "CONFIRMED" ? now : null,
             cashShiftId:         activeShiftId,
@@ -230,6 +258,19 @@ export async function confirmBookingPayment(
         `[confirmBookingPayment] idempotencyKey conflict — already processed booking=${booking.publicId}`,
       );
       return { alreadyConfirmed: true };
+    }
+    // A concurrent confirm of this same booking also trips the UTR check once
+    // its row commits — only a UTR used elsewhere is a real duplicate.
+    if (error instanceof CounterGuardError && error.code === "DUPLICATE_UTR") {
+      const latest = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        select: { paymentStatus: true },
+      });
+      if (latest?.paymentStatus === PaymentStatus.SUCCESS) return { alreadyConfirmed: true };
+      console.error(
+        `[confirmBookingPayment] UTR ${upiUtr} already used elsewhere — not confirming booking=${booking.publicId}`,
+      );
+      return { alreadyConfirmed: false, skipped: "DUPLICATE_UTR" };
     }
     throw error;
   }
@@ -252,7 +293,7 @@ export async function confirmBookingPayment(
     actorBranchId: paymentActor?.branchId ?? undefined,
     action: booking.isAdvancePayment ? "BOOKING_CONFIRMED_ADVANCE" : "BOOKING_CONFIRMED",
     category: AuditCategory.PAYMENT,
-    description: `Booking ${booking.publicId} confirmed via ${isCash ? "cash" : "online"} payment`,
+    description: `Booking ${booking.publicId} confirmed via ${isCash ? "cash" : isUpi ? "UPI (UTR)" : "online"} payment`,
     entity: "Booking",
     entityId: booking.publicId,
     ipAddress: actor.ip,
@@ -373,7 +414,7 @@ export async function confirmExtensionPayment(
           activeExtensionId: null,
           extensionCount: { increment: 1 },
           lastExtendedAt: new Date(),
-          totalFinal: extensionRecord.newTotalFinal,
+          totalFinal: { increment: extensionRecord.additionalAmount },
           ...(extensionRecord.booking.extensionCount === 0 && {
             originalEndAt: extensionRecord.oldEndAt,
           }),

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
+import { promptOpenShift } from '../../lib/counterErrors';
 import { useAuthStore } from '../../store/auth';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -109,6 +110,20 @@ export default function EmployeeDashboard() {
   });
 
   const refreshing = statsFetching || shiftFetching;
+
+  // Staff can't take a booking without an open cash shift (the server rejects
+  // it with SHIFT_REQUIRED). With no shift cached, re-check before blocking in
+  // case one was opened elsewhere; if the check itself fails, let the server decide.
+  const startNewBooking = async () => {
+    if (!shiftData) {
+      const { data, isError } = await refetchShift();
+      if (!isError && !data) {
+        promptOpenShift();
+        return;
+      }
+    }
+    router.push('/employee/customer/search');
+  };
 
   const onRefresh = () => {
     refetchStats();
@@ -242,7 +257,7 @@ export default function EmployeeDashboard() {
         <QuickAction
           label="New Booking"
           icon="add-circle-outline"
-          onPress={() => router.push('/employee/customer/search')}
+          onPress={startNewBooking}
           accent
         />
         <QuickAction

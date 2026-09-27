@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   FlatList,
   Modal,
@@ -9,31 +10,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-
-// 30-minute slots, "HH:mm" 24h values with 12h display labels.
-export const TIME_SLOTS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? 0 : 30;
-  const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  const label = `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
-  return { value, label };
-});
-
-export function timeLabel(value: string) {
-  return TIME_SLOTS.find((s) => s.value === value)?.label ?? value;
-}
+import { GRID_SLOTS, withSelectedSlot, type TimeSlot } from '../../lib/dates';
 
 interface Props {
   visible: boolean;
   value: string; // "HH:mm"
+  // Allowed times from timeSlotsFor() (past times already dropped for today);
+  // defaults to the full 30-minute grid.
+  slots?: TimeSlot[];
   title?: string;
   onSelect: (value: string) => void;
   onClose: () => void;
 }
 
-export default function TimeFieldPicker({ visible, value, title, onSelect, onClose }: Props) {
+export default function TimeFieldPicker({ visible, value, slots = GRID_SLOTS, title, onSelect, onClose }: Props) {
+  // An off-grid current value (e.g. 6:05 PM) stays listed and selected; the
+  // list opens scrolled to it, or to the next later time.
+  const data = useMemo(() => withSelectedSlot(slots, value), [slots, value]);
+  const at = data.findIndex((s) => s.value >= value);
+  const scrollIndex = at >= 0 ? at : data.length - 1;
+
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -44,12 +40,13 @@ export default function TimeFieldPicker({ visible, value, title, onSelect, onClo
           <View style={styles.handle} />
           <Text style={styles.title}>{title ?? 'Select time'}</Text>
           <FlatList
-            data={TIME_SLOTS}
+            data={data}
             keyExtractor={(s) => s.value}
             style={styles.list}
             showsVerticalScrollIndicator={false}
-            initialScrollIndex={Math.max(0, TIME_SLOTS.findIndex((s) => s.value === value))}
+            initialScrollIndex={data.length ? scrollIndex : undefined}
             getItemLayout={(_, index) => ({ length: 48, offset: 48 * index, index })}
+            ListEmptyComponent={<Text style={styles.empty}>No times left on this day. Pick another date.</Text>}
             renderItem={({ item }) => {
               const active = item.value === value;
               return (
@@ -93,4 +90,5 @@ const styles = StyleSheet.create({
   rowActive: { backgroundColor: Colors.orangeSoft },
   rowText: { fontFamily: Fonts.bodyMedium, fontSize: 15, color: Colors.ink2 },
   rowTextActive: { fontFamily: Fonts.bodySemiBold, color: Colors.ink },
+  empty: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3, paddingHorizontal: 4, paddingVertical: 16 },
 });

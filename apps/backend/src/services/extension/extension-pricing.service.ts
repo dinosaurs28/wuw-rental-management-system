@@ -2,7 +2,6 @@ import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
 import { PricingEngineService, type PricingResult } from "../pricing/pricing-engine.service.js";
-import { financialStateService } from "../payment/index.js";
 
 export interface ExtensionPricingResult {
   newDays: number;
@@ -16,62 +15,83 @@ export interface ExtensionPricingResult {
 
 const pricingEngine = new PricingEngineService();
 
+const sumOf = (results: PricingResult[], pick: (r: PricingResult) => Decimal) =>
+  results.reduce((total, r) => total.add(pick(r)), new Decimal(0));
+
 class ExtensionPricingService {
   /**
-   * Recalculate the full booking price for a new end date.
-   * Returns the pricing delta (additionalAmount) the customer must pay.
+   * Recalculate the booking price for a new end date.
+   *
+   * additionalAmount = engine price over [startAt, newEndAt] minus engine price
+   * over the current [startAt, endAt], summed across every vehicle on the
+   * booking. newTotalFinal = booking.totalFinal + additionalAmount.
+   *
+   * The engine's finalTotal excludes the refundable deposit, while
+   * booking.totalFinal includes it (plus manual discounts and earlier
+   * extensions), so only the delta is priced and the frozen totals are carried
+   * forward. The charge also doesn't depend on what has been paid so far: an
+   * advance booking's unpaid remaining balance is collected on its own and must
+   * not be billed again as extension.
    */
   async recalculate(bookingId: number, newEndAt: Date): Promise<ExtensionPricingResult> {
     // Load booking with items and customer
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
-        items: { select: { vehicleId: true } },
+        items: { select: { vehicleId: true, vehicle: { select: { categoryId: true } } } },
         customer: { select: { id: true } },
       },
     });
 
     if (!booking) throw new Error("Booking not found");
+    if (booking.items.length === 0) throw new Error("Booking has no vehicle items");
 
-    const firstItem = booking.items[0];
-    if (!firstItem) throw new Error("Booking has no vehicle items");
-
-    const vehicleId = firstItem.vehicleId;
     const customerId = booking.customer.id;
 
     const startAt = DateTime.fromJSDate(booking.startAt);
+    const currentEndAt = DateTime.fromJSDate(booking.endAt);
     const endAt = DateTime.fromJSDate(newEndAt);
 
-    // Recalculate with existing coupon code (will be revalidated inside the engine)
-    const pricingResult = await pricingEngine.calculateBookingPrice(
-      vehicleId,
-      startAt,
-      endAt,
-      booking.branchId,
-      customerId,
-      booking.couponCode ?? undefined,
-    );
+    // Price every vehicle with the existing coupon code (revalidated inside the
+    // engine — identically for both windows, so the delta stays consistent)
+    const priceAllItems = (to: DateTime) =>
+      Promise.all(
+        booking.items.map((item) =>
+          pricingEngine.calculateBookingPrice(
+            item.vehicleId,
+            startAt,
+            to,
+            booking.branchId,
+            customerId,
+            booking.couponCode ?? undefined,
+            undefined,
+            undefined,
+            item.vehicle.categoryId,
+          ),
+        ),
+      );
+
+    const [newPrices, currentPrices] = await Promise.all([
+      priceAllItems(endAt),
+      priceAllItems(currentEndAt),
+    ]);
 
     // Compute days for the new full duration
     const newDays = Math.max(1, Math.ceil(endAt.diff(startAt, "days").days));
 
-    // Additional amount = what the customer still owes on top of what has been collected
-    // Include COLLECTED (pending confirmation) payments — cash was physically received
-    const financialState = await financialStateService.getState(bookingId);
-    const alreadyPaid = financialState.totalCollectedConfirmed.add(financialState.totalCollectedPending);
     const additionalAmount = Decimal.max(
       new Decimal(0),
-      pricingResult.finalTotal.sub(alreadyPaid),
-    );
+      sumOf(newPrices, (r) => r.finalTotal).sub(sumOf(currentPrices, (r) => r.finalTotal)),
+    ).toDecimalPlaces(2);
 
     return {
       newDays,
-      newTotalBase: pricingResult.basePrice,
-      newTotalDiscount: pricingResult.discountAmount,
-      newTotalTax: pricingResult.taxAmount,
-      newTotalFinal: pricingResult.finalTotal,
+      newTotalBase: sumOf(newPrices, (r) => r.basePrice),
+      newTotalDiscount: sumOf(newPrices, (r) => r.discountAmount),
+      newTotalTax: sumOf(newPrices, (r) => r.taxAmount),
+      newTotalFinal: new Decimal(booking.totalFinal.toString()).add(additionalAmount),
       additionalAmount,
-      pricingResult,
+      pricingResult: newPrices[0]!,
     };
   }
 }

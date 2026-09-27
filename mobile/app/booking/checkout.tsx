@@ -12,18 +12,32 @@ import {
   View,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import RazorpayCheckout from 'react-native-razorpay';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
-import { vehiclesApi, userApi, type RazorpayOrder } from '../../lib/api';
+import { vehiclesApi, userApi, paymentApi, type RazorpayOrder } from '../../lib/api';
+import {
+  CHECKING_PAYMENT_TEXT,
+  QR_CANCEL_POLL_DELAYS,
+  openRazorpayCheckout,
+  isCheckoutCancelled,
+  type CheckoutMode,
+} from '../../lib/razorpay';
+import { durationLabel } from '../../lib/pricing';
+import { rangeLengthLabel, startOfDay } from '../../lib/dates';
 import { useAuthStore } from '../../store/auth';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import StudioImage from '../../components/cars/StudioImage';
+import RazorpayPayOptions from '../../components/payments/RazorpayPayOptions';
+import Button from '../../components/ui/Button';
 import { LEGAL_URLS } from '../../constants/links';
 import type { VehicleDetail, KycDocument, UserProfile } from '../../types/api';
+
+// The backend still accepts a pickup a little earlier today, so only a pickup
+// well in the past (or on an earlier day) sends the customer back to re-pick.
+const PICKUP_GRACE_MS = 15 * 60 * 1000;
 
 function DateInput({ label, value }: { label: string; value: string }) {
   return (
@@ -76,6 +90,11 @@ export default function Checkout() {
   const [startDate] = useState(() => (start ? new Date(start) : new Date(Date.now() + 86400 * 1000)));
   const [endDate] = useState(() => (end ? new Date(end) : new Date(Date.now() + 2 * 86400 * 1000)));
   const [loading, setLoading] = useState(false);
+  const [payMode, setPayMode] = useState<CheckoutMode>('default');
+  const [startPassed, setStartPassed] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  // The pay footer grows with the QR option / no-UPI note; keep content clear of it.
+  const [ctaHeight, setCtaHeight] = useState(0);
   // #36 — which uploaded KYC doc to submit (defaults to the first)
   const [selectedKycId, setSelectedKycId] = useState<string | null>(null);
 
@@ -168,8 +187,15 @@ export default function Checkout() {
     }
   };
 
-  const handleBook = async () => {
+  const handleBook = async (mode: CheckoutMode) => {
     if (!vehicle) return;
+    // Checkout left open too long: the pickup time is now in the past. The
+    // vehicle page re-normalises the times, so send the customer back there.
+    const now = new Date();
+    if (startDate.getTime() < now.getTime() - PICKUP_GRACE_MS || startDate < startOfDay(now)) {
+      setStartPassed(true);
+      return;
+    }
     if (!kyc || kyc.length === 0) {
       Alert.alert(
         'KYC required',
@@ -191,6 +217,8 @@ export default function Checkout() {
     // pay-now amount shown in the CTA (even when pricingDetails is null).
     const pdNow = vehicle.pricingDetails;
     const daysNow = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
+    const durationNow =
+      durationLabel(pdNow?.pricingBreakdown?.duration) ?? rangeLengthLabel(startDate, endDate) ?? '';
     const dailyNow = pdNow?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
     const subtotalNow = pdNow ? pdNow.basePrice : dailyNow * daysNow;
     const depositNow = pdNow?.deposit ?? 0;
@@ -204,6 +232,7 @@ export default function Checkout() {
     // #36 — submit the customer-chosen KYC doc (default: first).
     const chosenKyc = kyc.find((k) => k.publicId === selectedKycId) ?? kyc[0]!;
 
+    setPayMode(mode);
     setLoading(true);
     try {
       const res = await vehiclesApi.createBooking({
@@ -248,26 +277,49 @@ export default function Checkout() {
 
       let payment;
       try {
-        payment = await RazorpayCheckout.open({
-          key: rzp.keyId,
-          order_id: rzp.orderId,
-          amount: rzp.amount,
-          currency: rzp.currency || 'INR',
-          name: 'WUW Rentals',
-          description: `${vehicle.make} ${vehicle.model} · ${daysNow} day${daysNow !== 1 ? 's' : ''}`,
-          prefill: {
-            name: profile?.name ?? authUser?.name ?? '',
-            email: profile?.email ?? authUser?.email ?? '',
-            contact: profile?.phone ?? '',
+        payment = await openRazorpayCheckout(
+          {
+            key: rzp.keyId,
+            order_id: rzp.orderId,
+            amount: rzp.amount,
+            currency: rzp.currency,
+            description: durationNow ? `${vehicle.make} ${vehicle.model} · ${durationNow}` : `${vehicle.make} ${vehicle.model}`,
+            prefill: {
+              name: profile?.name ?? authUser?.name ?? '',
+              email: profile?.email ?? authUser?.email ?? '',
+              contact: profile?.phone ?? '',
+            },
           },
-          theme: { color: Colors.orange },
-        });
+          { mode },
+        );
       } catch (rzpErr: any) {
         // Razorpay rejects for both user cancellation and real failures.
+        const cancelled = isCheckoutCancelled(rzpErr);
+        // A QR cancel is often this phone's sheet being closed after the QR was
+        // paid from another phone — check before releasing the hold.
+        if (cancelled && mode === 'qr') {
+          setCheckingPayment(true);
+          let paid = false;
+          for (const delay of QR_CANCEL_POLL_DELAYS) {
+            if (!mountedRef.current) return;
+            try {
+              const status = (await paymentApi.status(transactionId)).data?.status;
+              if (status === 'Success') { paid = true; break; }
+              if (status === 'Failed') break;
+            } catch { /* transient — keep checking */ }
+            await new Promise((r) => setTimeout(r, delay));
+          }
+          if (!mountedRef.current) return;
+          setCheckingPayment(false);
+          if (paid) {
+            router.replace({ pathname: '/booking/payment-status', params: { transactionId, ...confirmParams } });
+            return;
+          }
+        }
         await releaseHold();
         if (!mountedRef.current) return;
         const description: string = rzpErr?.description ?? '';
-        if (/cancel/i.test(description)) {
+        if (cancelled) {
           Alert.alert('Payment cancelled', 'You closed the payment page, so the booking hold was released.');
         } else {
           Alert.alert('Payment failed', description || 'The payment could not be completed. Please try again.');
@@ -331,6 +383,8 @@ export default function Checkout() {
 
   const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
   const pd = vehicle.pricingDetails;
+  const durationText =
+    durationLabel(pd?.pricingBreakdown?.duration) ?? rangeLengthLabel(startDate, endDate) ?? `${days} day${days !== 1 ? 's' : ''}`;
   const daily = pd?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
   const subtotal = pd ? pd.basePrice : daily * days;
   const deposit = pd?.deposit ?? 0;
@@ -356,7 +410,10 @@ export default function Checkout() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(120, ctaHeight + 24) }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Car summary */}
         <View style={styles.section}>
           <View style={styles.carRow}>
@@ -463,7 +520,7 @@ export default function Checkout() {
         <Text style={styles.sectionTitle}>Price breakdown</Text>
         <View style={styles.priceCard}>
           <LineItem
-            label={pd ? `Base rate (${days} day${days !== 1 ? 's' : ''})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
+            label={pd ? `Base rate (${durationText})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
             value={`₹${(pd?.basePrice ?? daily * days).toLocaleString('en-IN')}`}
           />
           {(pd?.discountAmount ?? 0) > 0 && (
@@ -536,27 +593,37 @@ export default function Checkout() {
       </ScrollView>
 
       {/* CTA */}
-      <View style={[styles.cta, { paddingBottom: insets.bottom + 16 }]}>
-        <View>
+      <View
+        style={[styles.cta, { paddingBottom: insets.bottom + 16 }]}
+        onLayout={(e) => setCtaHeight(e.nativeEvent.layout.height)}
+      >
+        <View style={styles.ctaSummary}>
           <Text style={styles.ctaTotal}>₹{payNow.toLocaleString('en-IN')}</Text>
           <Text style={styles.ctaTotalNote}>
-            {flow === 'ADVANCE' && canAdvance ? `pay now · ₹${remainingAtPickup.toLocaleString('en-IN')} later` : `total · ${days}d`}
+            {flow === 'ADVANCE' && canAdvance ? `pay now · ₹${remainingAtPickup.toLocaleString('en-IN')} later` : `total · ${durationText}`}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.ctaBtn, (loading || !terms) && styles.ctaBtnLoading]}
-          onPress={handleBook}
-          disabled={loading || !terms}
-          activeOpacity={0.85}
-        >
-          {loading ? (
-            <View style={styles.ctaBtnInner}>
-              <ActivityIndicator color={Colors.white} size="small" />
+        {startPassed ? (
+          <>
+            <View style={styles.passedNote}>
+              <Ionicons name="time-outline" size={16} color={Colors.availNone} />
+              <Text style={styles.passedText}>Your pickup time has passed. Choose a new time.</Text>
             </View>
-          ) : (
-            <Text style={styles.ctaBtnText}>Confirm & pay →</Text>
-          )}
-        </TouchableOpacity>
+            <Button
+              title="Choose a new time"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`))}
+            />
+          </>
+        ) : (
+          <RazorpayPayOptions
+            payLabel="Confirm & pay"
+            onPay={handleBook}
+            disabled={loading || !terms}
+            busyMode={loading ? payMode : null}
+            busyLabel={checkingPayment ? CHECKING_PAYMENT_TEXT : undefined}
+            noUpiNote="No UPI app on this phone — scan the QR with a UPI app on another phone."
+          />
+        )}
       </View>
     </View>
   );
@@ -742,29 +809,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.hairline,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 14,
+    gap: 12,
   },
+  ctaSummary: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   ctaTotal: { fontFamily: Fonts.displayBold, fontSize: 22, color: Colors.ink, letterSpacing: -0.5 },
-  ctaTotalNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
-  ctaBtn: {
-    backgroundColor: Colors.orange,
-    borderRadius: 999,
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-    minWidth: 160,
+  ctaTotalNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  passedNote: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.availNoneSoft,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  ctaBtnLoading: { opacity: 0.6 },
-  ctaBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ctaBtnVerifying: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.white, opacity: 0.9 },
-  ctaBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white, letterSpacing: 0.2 },
+  passedText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.availNone },
 });

@@ -12,6 +12,7 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../se
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
+import { assertOpenShift, CounterGuardError } from "../../services/payment/counter-guard.service.js";
 import { z } from "zod";
 const chargePickupDataSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
@@ -82,6 +83,19 @@ export const PickupController = async (req: Request, res: Response) => {
       });
     }
 
+    // The branch holds the customer's physical licence for the whole rental.
+    // Staff phones still on an app build from before the licence tick don't
+    // send the field at all; they are let through (nothing is recorded) so
+    // pickups keep working until every phone is updated. An explicit `false`
+    // is always refused.
+    const licenseTicked = parsedVehicleDetails.licenseCollected === true;
+    if (parsedVehicleDetails.licenseCollected === false) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Collect the customer's original driving licence before handing over the vehicle.",
+        code: "LICENSE_NOT_COLLECTED",
+      });
+    }
+
     const vehicleIds = booking.items.map((item) => item.vehicleId);
 
     const actingUserPublicId = req.public_Id;
@@ -110,12 +124,30 @@ export const PickupController = async (req: Request, res: Response) => {
       }
     }
 
+    // An auto-approved safety deposit is money taken at the counter now
+    const depositRequest = chargePickupData.success
+      ? chargePickupData.data.safetyDepositRequest
+      : undefined;
+    if (
+      frozenConfig.safetyDepositEnabled &&
+      depositRequest &&
+      depositRequest.requestedAmount > 0 &&
+      !frozenConfig.safetyDepositRequiresApproval
+    ) {
+      await assertOpenShift(actingUser);
+    }
+
+    const licenseCollected = licenseTicked
+      ? { licenseCollectedAt: new Date(), licenseCollectedById: actingUser.id }
+      : {};
+
     await prisma.$transaction(async (tx) => {
       if (parsedVehicleDetails.requireManagerConfirmation) {
         await tx.booking.update({
           where: { id: booking.id },
           data: {
             requiresManagerConfirmation: true,
+            ...licenseCollected,
           },
         });
 
@@ -131,6 +163,7 @@ export const PickupController = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.PICKED_UP,
+            ...licenseCollected,
           },
         });
 
@@ -210,10 +243,18 @@ export const PickupController = async (req: Request, res: Response) => {
         chargePickupData.success &&
         chargePickupData.data.pickupFuelLevel
       ) {
-        await tx.fuelRecord.create({
-          data: {
+        // Upsert: an abandoned web pickup session may already have saved the
+        // pickup fuel reading for this booking.
+        await tx.fuelRecord.upsert({
+          where: { bookingId: booking.id },
+          create: {
             publicId: createID(),
             bookingId: booking.id,
+            pickupFuelLevel: chargePickupData.data.pickupFuelLevel,
+            capturedByPickupId: actingUser.id,
+            pickupAt: new Date(),
+          },
+          update: {
             pickupFuelLevel: chargePickupData.data.pickupFuelLevel,
             capturedByPickupId: actingUser.id,
             pickupAt: new Date(),
@@ -289,6 +330,9 @@ export const PickupController = async (req: Request, res: Response) => {
       message: parsedVehicleDetails.requireManagerConfirmation ? "Pickup sent to manager for confirmation." : "Vehicle Pickup Successful. Status updated to OUT_FOR_RENTAL.",
     });
   } catch (error) {
+    if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
     console.error("Pickup Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Server Error during Pickup",

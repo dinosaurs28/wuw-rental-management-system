@@ -39,6 +39,18 @@ export interface VehiclePricing {
 }
 
 /**
+ * Optional rates (hourly / 12-hour / monthly): unset and 0 both mean "not
+ * offered". A Prisma Decimal(0) — or its "0" string from the Redis cache — is
+ * truthy, so without this a ₹0 slab would be billed. Mirrors
+ * batchListingPrice's toPositiveOrNull so listing and booking prices agree.
+ */
+function optionalRate(val: { toString(): string } | null | undefined): Decimal | null {
+  if (val == null) return null;
+  const rate = new Decimal(val.toString());
+  return rate.gt(0) ? rate : null;
+}
+
+/**
  * Pricing calculation result — expanded with discount breakdown layers.
  */
 export interface PricingResult {
@@ -300,10 +312,10 @@ export class PricingEngineService {
 
     if (customPricing && customPricing.enabled) {
       return {
-        hourlyRate: customPricing.hourlyRate ? new Decimal(customPricing.hourlyRate.toString()) : null,
-        price12Hour: customPricing.price12Hour ? new Decimal(customPricing.price12Hour.toString()) : null,
+        hourlyRate: optionalRate(customPricing.hourlyRate),
+        price12Hour: optionalRate(customPricing.price12Hour),
         price24Hour: new Decimal(customPricing.price24Hour.toString()),
-        priceMonthly: customPricing.priceMonthly ? new Decimal(customPricing.priceMonthly.toString()) : null,
+        priceMonthly: optionalRate(customPricing.priceMonthly),
         freeKm12Hour: customPricing.freeKm12Hour,
         freeKm24Hour: customPricing.freeKm24Hour,
         freeKmMonthly: customPricing.freeKmMonthly,
@@ -343,10 +355,10 @@ export class PricingEngineService {
     }
 
     return {
-      hourlyRate: branchDefaults.hourlyRate ? new Decimal(branchDefaults.hourlyRate.toString()) : null,
-      price12Hour: branchDefaults.price12Hour ? new Decimal(branchDefaults.price12Hour.toString()) : null,
+      hourlyRate: optionalRate(branchDefaults.hourlyRate),
+      price12Hour: optionalRate(branchDefaults.price12Hour),
       price24Hour: new Decimal(branchDefaults.price24Hour.toString()),
-      priceMonthly: branchDefaults.priceMonthly ? new Decimal(branchDefaults.priceMonthly.toString()) : null,
+      priceMonthly: optionalRate(branchDefaults.priceMonthly),
       freeKm12Hour: branchDefaults.freeKm12Hour,
       freeKm24Hour: branchDefaults.freeKm24Hour,
       freeKmMonthly: branchDefaults.freeKmMonthly,
@@ -402,9 +414,15 @@ export class PricingEngineService {
         break;
 
       case RentalPeriodType.HALF_DAY:
-        if (!pricing.price12Hour) throw new Error("12-hour rental not available for this vehicle");
-        basePrice = pricing.price12Hour;
-        freeKmLimit = pricing.freeKm12Hour;
+        // Same-day / short rentals: without a 12-hour rate, bill the 24-hour rate
+        // (the listing shows the same fallback).
+        if (pricing.price12Hour) {
+          basePrice = pricing.price12Hour;
+          freeKmLimit = pricing.freeKm12Hour;
+        } else {
+          basePrice = pricing.price24Hour;
+          freeKmLimit = pricing.freeKm24Hour;
+        }
         break;
 
       case RentalPeriodType.FULL_DAY:

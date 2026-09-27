@@ -2,21 +2,56 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import RazorpayCheckout from 'react-native-razorpay';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi, verifyRazorpaySignature, type RazorpayOrder } from '../../../lib/api';
+import {
+  CHECKING_PAYMENT_TEXT,
+  QR_CANCEL_POLL_DELAYS,
+  openRazorpayCheckout,
+  isCheckoutCancelled,
+  type CheckoutMode,
+} from '../../../lib/razorpay';
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  handleShiftRequired,
+  isValidUtr,
+} from '../../../lib/counterErrors';
+import { durationLabel } from '../../../lib/pricing';
+import { rangeLengthLabel } from '../../../lib/dates';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
+import UtrInput from '../../../components/employee/UtrInput';
+import RazorpayPayOptions from '../../../components/payments/RazorpayPayOptions';
 
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
+
+type PayMethod = 'CASH' | 'ONLINE' | 'UPI';
+
+const PAY_METHODS: { key: PayMethod; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { key: 'CASH', label: 'Cash', icon: 'wallet-outline' },
+  { key: 'ONLINE', label: 'Online', icon: 'card-outline' },
+  { key: 'UPI', label: 'UPI (UTR)', icon: 'keypad-outline' },
+];
+
+// `handled`: an alert (e.g. Open shift) was already shown.
+type PollResult = { ok: boolean; message?: string; utrError?: string; handled?: boolean };
+
+const isUtrError = (err: any) => {
+  const code = counterErrorCode(err);
+  return code === 'INVALID_UTR' || code === 'DUPLICATE_UTR';
+};
 
 function Line({ label, value, bold, credit }: { label: string; value: string; bold?: boolean; credit?: boolean }) {
   return (
@@ -38,7 +73,9 @@ export default function WalkinSummaryScreen() {
   const insets = useSafeAreaInsets();
   const { customer, vehicle, start, end, customerKycId, reset } = useEmployeeBookingStore();
 
-  const [payMethod, setPayMethod] = useState<'CASH' | 'ONLINE'>('CASH');
+  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
+  const [utr, setUtr] = useState('');
+  const [utrError, setUtrError] = useState<string | undefined>();
   const [phase, setPhase] = useState<'REVIEW' | 'PAYING' | 'DONE'>('REVIEW');
   const [statusText, setStatusText] = useState('');
   const [bookingRef, setBookingRef] = useState('');
@@ -46,6 +83,14 @@ export default function WalkinSummaryScreen() {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // The UTR field sits at the bottom of the review — bring it into view.
+  useEffect(() => {
+    if (payMethod !== 'UPI') return;
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    return () => clearTimeout(t);
+  }, [payMethod]);
 
   // Hold countdown
   useEffect(() => {
@@ -76,7 +121,12 @@ export default function WalkinSummaryScreen() {
   }
 
   const pd = vehicle.pricingDetails;
+  // Whole days only feed the no-pricing fallback; labels use the real length.
   const days = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000));
+  const durationText =
+    durationLabel(pd?.pricingBreakdown?.duration) ??
+    rangeLengthLabel(new Date(start), new Date(end)) ??
+    `${days} day${days !== 1 ? 's' : ''}`;
   const deposit = pd?.deposit ?? vehicle.deposit ?? 0;
   const base = pd ? pd.basePrice : (vehicle.dailyPrice ?? 0) * days;
   const discount = pd?.discountAmount ?? 0;
@@ -84,23 +134,35 @@ export default function WalkinSummaryScreen() {
   const finalTotal = pd ? pd.finalTotal : base + tax;
   const grandTotal = finalTotal + deposit;
 
-  const poll = async (transactionId: string) => {
-    for (let i = 0; i < POLL_DELAYS.length; i++) {
-      if (!mountedRef.current) return false;
+  const poll = async (transactionId: string, delays: number[] = POLL_DELAYS): Promise<PollResult> => {
+    for (let i = 0; i < delays.length; i++) {
+      if (!mountedRef.current) return { ok: false };
       try {
         const res = await employeeApi.bookingPaymentStatus(transactionId);
         const status = res.data?.status;
-        if (status === 'Success') return true;
-        if (status === 'Failed') return false;
-      } catch {
-        /* transient */
+        if (status === 'Success') return { ok: true };
+        if (status === 'Failed') return { ok: false, message: res.data?.message };
+      } catch (err: any) {
+        // A UPI booking's UTR is re-checked when it is confirmed; a duplicate
+        // (409) cancels the hold server-side, so stop and ask for a new UTR.
+        if (isUtrError(err)) return { ok: false, utrError: apiErrorMessage(err, 'Check the UTR number.') };
+        if (handleShiftRequired(err)) return { ok: false, handled: true };
+        if (err?.response?.data?.status === 'Failed') {
+          return { ok: false, message: apiErrorMessage(err, 'Could not confirm the booking.') };
+        }
+        /* otherwise transient */
       }
-      await new Promise((r) => setTimeout(r, POLL_DELAYS[i]));
+      await new Promise((r) => setTimeout(r, delays[i]));
     }
-    return false;
+    return { ok: false };
   };
 
-  const confirm = async () => {
+  const confirm = async (mode: CheckoutMode = 'default') => {
+    if (payMethod === 'UPI' && !isValidUtr(utr)) {
+      setUtrError("Enter the 12-digit UTR from the customer's UPI app.");
+      return;
+    }
+    setUtrError(undefined);
     setPhase('PAYING');
     // Retrying after a failed attempt: release the previous hold so we don't orphan it.
     if (holdRef.current) {
@@ -118,44 +180,60 @@ export default function WalkinSummaryScreen() {
         start,
         end,
         payment_type: payMethod,
+        ...(payMethod === 'UPI' ? { utr: cleanUtr(utr) } : {}),
       });
       const data = res.data?.data ?? {};
       const holdId: string = data.bookingId;
       const transactionId: string = data.transactionId;
-      // Null on the CASH branch (where transactionId is a CASH_xxx ref), so the
-      // presence of the order — not payMethod — decides whether Checkout opens.
+      // Null on the CASH / UPI branches (where transactionId is a CASH_ / UPI_
+      // ref), so the presence of the order — not payMethod — decides whether
+      // Checkout opens.
       const rzp: RazorpayOrder | null = data.razorpay ?? null;
       holdRef.current = { holdId, transactionId };
       if (typeof data.expiresIn === 'number') setSecondsLeft(data.expiresIn);
       setBookingRef(holdId);
 
       if (rzp?.orderId && rzp?.keyId) {
-        setStatusText('Waiting for payment…');
+        setStatusText(mode === 'qr' ? 'Waiting for the customer to scan…' : 'Waiting for payment…');
         let payment;
         try {
-          payment = await RazorpayCheckout.open({
-            key: rzp.keyId,
-            order_id: rzp.orderId,
-            amount: rzp.amount,
-            currency: rzp.currency || 'INR',
-            name: 'WUW Rentals',
-            description: `${vehicle.make} ${vehicle.model} · ${days} day${days !== 1 ? 's' : ''}`,
-            prefill: {
-              name: customer.name,
-              contact: customer.phone ?? '',
+          payment = await openRazorpayCheckout(
+            {
+              key: rzp.keyId,
+              order_id: rzp.orderId,
+              amount: rzp.amount,
+              currency: rzp.currency,
+              description: `${vehicle.make} ${vehicle.model} · ${durationText}`,
+              prefill: {
+                name: customer.name,
+                contact: customer.phone ?? '',
+              },
             },
-            theme: { color: Colors.orange },
-          });
+            { mode },
+          );
         } catch (rzpErr: any) {
           // Cancelled or failed. Keep the hold so the counter can retry or
-          // switch to cash before it expires — `cancel` releases it explicitly.
+          // switch to cash / UPI before it expires — `cancel` releases it explicitly.
           if (!mountedRef.current) return;
+          const cancelled = isCheckoutCancelled(rzpErr);
+          // A QR cancel is often this phone's sheet being closed after the
+          // customer paid on their own phone — check before offering Retry,
+          // which would create a second booking.
+          if (cancelled && mode === 'qr') {
+            setStatusText(CHECKING_PAYMENT_TEXT);
+            const paid = await poll(transactionId, QR_CANCEL_POLL_DELAYS);
+            if (!mountedRef.current) return;
+            if (paid.ok) {
+              setPhase('DONE');
+              return;
+            }
+          }
           setPhase('REVIEW');
           const description: string = rzpErr?.description ?? '';
           Alert.alert(
-            /cancel/i.test(description) ? 'Payment cancelled' : 'Payment failed',
-            /cancel/i.test(description)
-              ? 'The payment sheet was closed. Retry, switch to cash, or cancel the hold.'
+            cancelled ? 'Payment cancelled' : 'Payment failed',
+            cancelled
+              ? 'The payment sheet was closed. Retry, switch to cash or UPI, or cancel the hold.'
               : description || 'The payment could not be completed. Retry or collect cash.',
           );
           return;
@@ -171,26 +249,43 @@ export default function WalkinSummaryScreen() {
           });
         } catch { /* fall through — the poll below is the fallback */ }
       } else {
-        setStatusText('Confirming cash payment…');
+        setStatusText(payMethod === 'UPI' ? 'Confirming UPI payment…' : 'Confirming cash payment…');
       }
 
-      const ok = await poll(transactionId);
+      const result = await poll(transactionId);
       if (!mountedRef.current) return;
-      if (ok) {
+      if (result.ok) {
         setPhase('DONE');
       } else {
         setPhase('REVIEW');
+        if (result.utrError) {
+          // The UTR can never back this hold (a duplicate already cancelled it
+          // server-side). Drop it so staff fix the UTR and create the booking afresh.
+          try { await employeeApi.cancelBookingHold(holdId); } catch { /* already released */ }
+          if (!mountedRef.current) return;
+          holdRef.current = null;
+          setSecondsLeft(null);
+          setUtrError(result.utrError);
+          return;
+        }
+        if (result.handled) return;
         Alert.alert(
           'Payment not completed',
-          payMethod === 'ONLINE'
-            ? 'The online payment was not confirmed. Retry, switch to cash, or cancel the hold.'
-            : 'Could not confirm the booking. Please retry.',
+          result.message ??
+            (payMethod === 'ONLINE'
+              ? 'The online payment was not confirmed. Retry, switch to cash or UPI, or cancel the hold.'
+              : 'Could not confirm the booking. Please retry.'),
         );
       }
     } catch (err: any) {
       if (!mountedRef.current) return;
       setPhase('REVIEW');
-      Alert.alert('Booking failed', err?.response?.data?.message ?? 'Could not create the booking.');
+      if (handleShiftRequired(err)) return;
+      if (isUtrError(err)) {
+        setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
+        return;
+      }
+      Alert.alert('Booking failed', apiErrorMessage(err, 'Could not create the booking.'));
     }
   };
 
@@ -239,8 +334,15 @@ export default function WalkinSummaryScreen() {
   const mm = secondsLeft != null ? String(Math.floor(secondsLeft / 60)).padStart(2, '0') : null;
   const ss = secondsLeft != null ? String(secondsLeft % 60).padStart(2, '0') : null;
 
+  const ctaLabel = holdRef.current
+    ? 'Retry payment'
+    : payMethod === 'UPI' ? 'Confirm UPI payment' : 'Confirm & collect cash';
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => (paying ? null : router.back())} style={styles.back} hitSlop={8} disabled={paying}>
           <Ionicons name="arrow-back" size={22} color={paying ? Colors.ink4 : Colors.ink} />
@@ -248,7 +350,13 @@ export default function WalkinSummaryScreen() {
         <Text style={styles.title}>Review &amp; Confirm</Text>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {holdRef.current && secondsLeft != null && secondsLeft > 0 && (
           <View style={styles.holdBanner}>
             <Ionicons name="time-outline" size={16} color="#d97706" />
@@ -274,13 +382,13 @@ export default function WalkinSummaryScreen() {
           <View style={styles.divider} />
           <Line label="Pickup" value={fmtDateTime(start)} />
           <Line label="Return" value={fmtDateTime(end)} />
-          <Line label="Duration" value={`${days} day${days !== 1 ? 's' : ''}`} />
+          <Line label="Duration" value={durationText} />
         </View>
 
         {/* Price breakdown */}
         <Text style={styles.sectionLabel}>Price breakdown</Text>
         <View style={styles.card}>
-          <Line label={`Base (${days} day${days !== 1 ? 's' : ''})`} value={`₹${base.toLocaleString('en-IN')}`} />
+          <Line label={`Base (${durationText})`} value={`₹${base.toLocaleString('en-IN')}`} />
           {discount > 0 && <Line label="Discount" value={`−₹${discount.toLocaleString('en-IN')}`} credit />}
           <Line label={`GST${pd ? ` (${pd.taxRate}%)` : ''}`} value={`₹${tax.toLocaleString('en-IN')}`} />
           <Line label="Deposit (refundable)" value={`₹${deposit.toLocaleString('en-IN')}`} />
@@ -291,25 +399,32 @@ export default function WalkinSummaryScreen() {
         {/* Payment method */}
         <Text style={styles.sectionLabel}>Payment method</Text>
         <View style={styles.methodRow}>
-          {(['CASH', 'ONLINE'] as const).map((m) => (
+          {PAY_METHODS.map((m) => (
             <TouchableOpacity
-              key={m}
-              style={[styles.methodBtn, payMethod === m && styles.methodBtnActive]}
-              onPress={() => !paying && setPayMethod(m)}
+              key={m.key}
+              style={[styles.methodBtn, payMethod === m.key && styles.methodBtnActive]}
+              onPress={() => !paying && setPayMethod(m.key)}
               activeOpacity={0.8}
               disabled={paying}
             >
-              <Ionicons
-                name={m === 'CASH' ? 'wallet-outline' : 'qr-code-outline'}
-                size={18}
-                color={payMethod === m ? Colors.white : Colors.ink2}
-              />
-              <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
-                {m === 'CASH' ? 'Cash' : 'Online'}
-              </Text>
+              <Ionicons name={m.icon} size={18} color={payMethod === m.key ? Colors.white : Colors.ink2} />
+              <Text style={[styles.methodText, payMethod === m.key && styles.methodTextActive]}>{m.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        {payMethod === 'UPI' && (
+          <View style={styles.card}>
+            <Text style={styles.upiHint}>
+              Ask the customer to pay ₹{grandTotal.toLocaleString('en-IN')} to the shop's UPI QR, then enter the UTR from their UPI app.
+            </Text>
+            <UtrInput
+              value={utr}
+              onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
+              error={utrError}
+            />
+          </View>
+        )}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -320,19 +435,26 @@ export default function WalkinSummaryScreen() {
           </View>
         ) : (
           <>
-            <TouchableOpacity style={styles.cta} onPress={confirm} activeOpacity={0.85}>
-              <Text style={styles.ctaText}>
-                {holdRef.current ? 'Retry payment' : `Confirm & ${payMethod === 'CASH' ? 'collect cash' : 'pay online'}`}
-              </Text>
-              <Text style={styles.ctaTotal}>₹{grandTotal.toLocaleString('en-IN')}</Text>
-            </TouchableOpacity>
+            {payMethod === 'ONLINE' ? (
+              <RazorpayPayOptions
+                payLabel={holdRef.current ? 'Retry payment' : 'Confirm & pay online'}
+                trailing={`₹${grandTotal.toLocaleString('en-IN')}`}
+                onPay={confirm}
+                buttonStyle={styles.rzpBtn}
+              />
+            ) : (
+              <TouchableOpacity style={styles.cta} onPress={() => confirm()} activeOpacity={0.85}>
+                <Text style={styles.ctaText}>{ctaLabel}</Text>
+                <Text style={styles.ctaTotal}>₹{grandTotal.toLocaleString('en-IN')}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.cancelBtn} onPress={cancel} activeOpacity={0.8}>
               <Text style={styles.cancelText}>{holdRef.current ? 'Cancel booking' : 'Discard'}</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -342,7 +464,8 @@ const styles = StyleSheet.create({
   back: { width: 36, height: 36, justifyContent: 'center' },
   title: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
 
-  content: { paddingHorizontal: 20, gap: 10 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingBottom: 24, gap: 10 },
 
   holdBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -370,14 +493,15 @@ const styles = StyleSheet.create({
 
   methodRow: { flexDirection: 'row', gap: 10 },
   methodBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
   },
   methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
   methodTextActive: { color: Colors.white },
+  upiHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 19 },
 
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
+  footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
   cta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: Colors.orange, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 20,
@@ -385,6 +509,7 @@ const styles = StyleSheet.create({
   },
   ctaText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
   ctaTotal: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.white },
+  rzpBtn: { borderRadius: 16, paddingVertical: 16, paddingHorizontal: 20 },
   cancelBtn: { alignItems: 'center', paddingVertical: 10 },
   cancelText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink3 },
   payingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
+  AppState,
   FlatList,
   Modal,
   StyleSheet,
@@ -9,9 +10,11 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
 import DateRangePicker from '../ui/DateRangePicker';
 import TimeFieldPicker from '../ui/TimeFieldPicker';
+import { initialRange, normalizeRange, refreshRange, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
 
 export interface SearchQuery {
   branchId: string;
@@ -36,16 +39,12 @@ interface Props {
   onSubmit: (q: SearchQuery) => void;
 }
 
-function combine(date: Date, hhmm: string): Date {
-  const [h, m] = hhmm.split(':').map(Number);
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
-}
 function fmtD(d: Date) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
 // Sixt-style dark search box: pickup branch row, one combined
-// "12 Jul | 12:00 – 15 Jul | 12:00" row, and a large orange CTA.
+// "12 Jul | 6:05 PM – 13 Jul | 6:05 PM" row, and a large orange CTA.
 export default function SearchCard({
   branches,
   branch,
@@ -55,10 +54,29 @@ export default function SearchCard({
   ctaLabel = 'Show offers',
   onSubmit,
 }: Props) {
-  const [start, setStart] = useState<Date>(() => (initialStart ? new Date(initialStart) : new Date(Date.now() + 86_400_000)));
-  const [end, setEnd] = useState<Date>(() => (initialEnd ? new Date(initialEnd) : new Date(Date.now() + 2 * 86_400_000)));
-  const [pickupTime, setPickupTime] = useState('10:00');
-  const [returnTime, setReturnTime] = useState('10:00');
+  // Full pickup/return datetimes. Every change goes through normalizeRange so
+  // the return always stays after the pickup (same day allowed).
+  const [range, setRange] = useState(() => initialRange(initialStart, initialEnd));
+  const { start, end } = range;
+
+  // The home tab stays mounted, so the shown pickup can slip into the past.
+  // While this screen is focused — on focus, on return to the foreground and
+  // every 15s — move a past pickup to the next 5-minute mark (and the return
+  // after it). A pickup that is still in the future is left untouched.
+  useFocusEffect(
+    useCallback(() => {
+      const refresh = () => setRange((r) => refreshRange(r));
+      refresh();
+      const timer = setInterval(refresh, 15_000);
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state === 'active') refresh();
+      });
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, []),
+  );
 
   const [branchOpen, setBranchOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -70,11 +88,14 @@ export default function SearchCard({
       setBranchOpen(true);
       return;
     }
+    // The card may have sat open past its pickup time — bump it first.
+    const next = normalizeRange(start, end);
+    setRange(next);
     onSubmit({
       branchId: branch.publicId,
       branchName: branch.name,
-      start: combine(start, pickupTime).toISOString(),
-      end: combine(end, returnTime).toISOString(),
+      start: next.start.toISOString(),
+      end: next.end.toISOString(),
     });
   };
 
@@ -124,7 +145,7 @@ export default function SearchCard({
       </TouchableOpacity>
       <View style={styles.underline} />
 
-      {/* Dates & times — "12 Jul | 12:00 – 15 Jul | 12:00" */}
+      {/* Dates & times — "12 Jul | 6:05 PM – 13 Jul | 6:05 PM" */}
       <View style={styles.row}>
         <Ionicons name="calendar-outline" size={19} color={Colors.white} />
         <View style={styles.dateSeg}>
@@ -133,7 +154,7 @@ export default function SearchCard({
           </TouchableOpacity>
           <Text style={styles.sep}>|</Text>
           <TouchableOpacity onPress={() => setPickupOpen(true)} hitSlop={6}>
-            <Text style={styles.rowValue}>{pickupTime}</Text>
+            <Text style={styles.rowValue}>{timeLabel(timeOf(start))}</Text>
           </TouchableOpacity>
           <Text style={styles.dash}>–</Text>
           <TouchableOpacity onPress={() => setDateOpen(true)} hitSlop={6}>
@@ -141,7 +162,7 @@ export default function SearchCard({
           </TouchableOpacity>
           <Text style={styles.sep}>|</Text>
           <TouchableOpacity onPress={() => setReturnOpen(true)} hitSlop={6}>
-            <Text style={styles.rowValue}>{returnTime}</Text>
+            <Text style={styles.rowValue}>{timeLabel(timeOf(end))}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -157,11 +178,25 @@ export default function SearchCard({
         visible={dateOpen}
         startDate={start}
         endDate={end}
-        onConfirm={(s, e) => { setStart(s); setEnd(e); }}
+        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setDateOpen(false)}
       />
-      <TimeFieldPicker visible={pickupOpen} value={pickupTime} title="Pickup time" onSelect={setPickupTime} onClose={() => setPickupOpen(false)} />
-      <TimeFieldPicker visible={returnOpen} value={returnTime} title="Return time" onSelect={setReturnTime} onClose={() => setReturnOpen(false)} />
+      <TimeFieldPicker
+        visible={pickupOpen}
+        value={timeOf(start)}
+        slots={timeSlotsFor(start)}
+        title="Pickup time"
+        onSelect={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
+        onClose={() => setPickupOpen(false)}
+      />
+      <TimeFieldPicker
+        visible={returnOpen}
+        value={timeOf(end)}
+        slots={timeSlotsFor(end, { after: start })}
+        title="Return time"
+        onSelect={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
+        onClose={() => setReturnOpen(false)}
+      />
     </View>
   );
 }

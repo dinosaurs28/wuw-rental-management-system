@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
-import { CalendarIcon, Car } from "lucide-react";
+import { format, parseISO, startOfDay } from "date-fns";
+import { Banknote, CalendarIcon, Car, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -32,6 +33,10 @@ import {
   type ExtensionResolutionType,
   type CommitExtensionResult,
 } from "@/services/extension.service";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { refreshActiveShift, useActiveShift } from "@/components/employee/counter/useActiveShift";
+import { apiErrorMessage, cleanUtr, counterErrorCode, isValidUtr } from "@/lib/counterErrors";
+import { cn } from "@/lib/utils";
 
 export interface ExtendBookingModalSuccessResult {
   /** True when the branch uses deferred payment sessions — charge was NOT collected here. */
@@ -48,7 +53,8 @@ interface ExtendBookingModalProps {
   onClose: () => void;
   onSuccess: (result?: ExtendBookingModalSuccessResult) => void;
   /**
-   * "standalone" (default): shows Step 3 payment collection in the modal.
+   * "standalone" (default): commits with collectNow and shows Step 3 payment
+   *   collection in the modal (also used for rentals already out, from the drop page).
    * "pickup-session": skips Step 3 — extension charge is deferred to the active
    *   pickup payment session. onSuccess is called with { usePaymentSession: true }.
    */
@@ -56,6 +62,7 @@ interface ExtendBookingModalProps {
 }
 
 type Step = 1 | 2 | 3;
+type CollectMethod = "CASH" | "UPI";
 
 const resolutionLabels: Record<ExtensionResolutionType, string> = {
   SAME_VEHICLE: "Same vehicle (no conflict)",
@@ -90,15 +97,38 @@ export function ExtendBookingModal({
   // Step 2 state
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
   const [selectedResolution, setSelectedResolution] = useState<ExtensionResolutionType | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [selectedVehiclePublicId, setSelectedVehiclePublicId] = useState("");
   const [committing, setCommitting] = useState(false);
+  const [commitError, setCommitError] = useState<unknown>(null);
 
   // Step 3 state
   const [committedExtension, setCommittedExtension] = useState<CommitExtensionResult | null>(null);
   const [collecting, setCollecting] = useState(false);
   const [collected, setCollected] = useState(false);
+  const [collectMethod, setCollectMethod] = useState<CollectMethod>("CASH");
+  const [utr, setUtr] = useState("");
+  const [utrTouched, setUtrTouched] = useState(false);
+  const [collectError, setCollectError] = useState<unknown>(null);
 
   const idempotencyKey = useRef(crypto.randomUUID());
+
+  // Managers aren't shift-gated; staff need an open cash shift to commit-and-collect.
+  // A SHIFT_REQUIRED error stops blocking as soon as a shift is open (here or via
+  // the shift banner); the store is re-read on that error so a stale shift can't hide it.
+  const { activeShift, needsShift } = useActiveShift();
+  const blockedByShift = (err: unknown) => counterErrorCode(err) === "SHIFT_REQUIRED" && !activeShift;
+  const collectErrorCode = counterErrorCode(collectError);
+  const shiftRequired = role === "employee" && (needsShift || blockedByShift(collectError));
+  // A pickup-session commit defers the money, so only a collect-now commit is gated.
+  const commitShiftRequired =
+    role === "employee" && mode === "standalone" && (needsShift || blockedByShift(commitError));
+  const utrValid = isValidUtr(utr);
+  const utrServerError =
+    collectErrorCode === "INVALID_UTR" || collectErrorCode === "DUPLICATE_UTR"
+      ? apiErrorMessage(collectError, "Check the UTR number and try again.")
+      : null;
+  const utrError =
+    utrServerError ?? (utrTouched && !utrValid ? "Enter the 12-digit UTR number." : null);
 
   const reset = useCallback(() => {
     setStep(1);
@@ -108,11 +138,16 @@ export function ExtendBookingModal({
     setNotes("");
     setEvaluation(null);
     setSelectedResolution(null);
-    setSelectedVehicleId("");
+    setSelectedVehiclePublicId("");
     setCommitting(false);
+    setCommitError(null);
     setCommittedExtension(null);
     setCollecting(false);
     setCollected(false);
+    setCollectMethod("CASH");
+    setUtr("");
+    setUtrTouched(false);
+    setCollectError(null);
     idempotencyKey.current = crypto.randomUUID();
   }, []);
 
@@ -143,7 +178,7 @@ export function ExtendBookingModal({
     isoDate.setHours(parseInt(newHour), parseInt(newMinute), 0, 0);
     const currentEnd = new Date(currentEndAt);
     if (isoDate <= currentEnd) {
-      toast.error("New end date must be after the current end date.");
+      toast.error("New end time must be after the current end time.");
       return;
     }
 
@@ -157,11 +192,11 @@ export function ExtendBookingModal({
       // pre-select first available vehicle if SWAP_CURRENT
       const swapOpt = res.data.resolutionOptions.find((o) => o.type === "SWAP_CURRENT_TO_OTHER");
       if (recommended === "SWAP_CURRENT_TO_OTHER" && swapOpt?.availableVehicles?.[0]) {
-        setSelectedVehicleId(swapOpt.availableVehicles[0].publicId);
+        setSelectedVehiclePublicId(swapOpt.availableVehicles[0].publicId);
       }
       setStep(2);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to evaluate extension.");
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Failed to evaluate extension."));
     } finally {
       setEvaluating(false);
     }
@@ -178,7 +213,7 @@ export function ExtendBookingModal({
       toast.error("No extension is possible for the requested dates.");
       return;
     }
-    if (selectedResolution === "SWAP_CURRENT_TO_OTHER" && !selectedVehicleId) {
+    if (selectedResolution === "SWAP_CURRENT_TO_OTHER" && !selectedVehiclePublicId) {
       toast.error("Please select an alternative vehicle.");
       return;
     }
@@ -187,11 +222,13 @@ export function ExtendBookingModal({
     const fn = role === "manager" ? extensionService.managerCommit : extensionService.employeeCommit;
 
     setCommitting(true);
+    setCommitError(null);
     try {
       const res = await fn({
         extensionPublicId: evaluation!.extensionPublicId,
         resolutionType: selectedResolution,
-        selectedVehicleId: selectedResolution === "SWAP_CURRENT_TO_OTHER" ? selectedVehicleId : undefined,
+        selectedVehiclePublicId:
+          selectedResolution === "SWAP_CURRENT_TO_OTHER" ? selectedVehiclePublicId : undefined,
         affectedBookingSwaps:
           selectedResolution === "SWAP_FUTURE_BOOKING" && opt?.affectedBookings
             ? opt.affectedBookings.map((ab) => ({
@@ -201,11 +238,13 @@ export function ExtendBookingModal({
             : undefined,
         partialNewEndAt: selectedResolution === "PARTIAL_EXTENSION" ? opt?.partialNewEndAt : undefined,
         idempotencyKey: idempotencyKey.current,
+        // Standalone collects in Step 3 — never defer the charge to a pickup session.
+        collectNow: mode === "standalone" ? true : undefined,
       });
 
       // In pickup-session mode, if the backend confirms deferred payment,
       // skip Step 3 — the charge will be bundled into the pickup session.
-      if (mode === "pickup-session" && (res.data as any).usePaymentSession) {
+      if (mode === "pickup-session" && (res.data as CommitExtensionResult).usePaymentSession) {
         toast.success(`Extension committed — ₹${res.data.additionalAmount} added to pickup payment.`);
         onSuccess({
           usePaymentSession: true,
@@ -217,10 +256,13 @@ export function ExtendBookingModal({
         return;
       }
 
-      setCommittedExtension(res.data as CommitExtensionResult) ;
+      setCommittedExtension(res.data as CommitExtensionResult);
       setStep(3);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to commit extension.");
+    } catch (err) {
+      setCommitError(err);
+      // No open shift is shown inline in Step 2.
+      if (counterErrorCode(err) === "SHIFT_REQUIRED") void refreshActiveShift();
+      else toast.error(apiErrorMessage(err, "Failed to commit extension."));
     } finally {
       setCommitting(false);
     }
@@ -230,11 +272,19 @@ export function ExtendBookingModal({
 
   const handleCollect = async () => {
     if (!committedExtension) return;
+    if (collectMethod === "UPI" && !utrValid) {
+      setUtrTouched(true);
+      return;
+    }
     setCollecting(true);
+    setCollectError(null);
     try {
-      const result = await extensionService.employeeCollect(committedExtension.publicId, {
-        method: "CASH",
-      });
+      const result = await extensionService.employeeCollect(
+        committedExtension.publicId,
+        collectMethod === "UPI"
+          ? { method: "ONLINE", onlineTransactionRef: cleanUtr(utr) }
+          : { method: "CASH" },
+      );
       setCollected(true);
       if (result.data.payment === "confirmed") {
         toast.success("Extension confirmed and booking updated.");
@@ -244,8 +294,12 @@ export function ExtendBookingModal({
       onSuccess();
       reset();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to collect payment.");
+    } catch (err) {
+      setCollectError(err);
+      // Shift and UTR problems are shown inline in Step 3.
+      const code = counterErrorCode(err);
+      if (code === "SHIFT_REQUIRED") void refreshActiveShift();
+      else if (!code) toast.error(apiErrorMessage(err, "Failed to collect payment."));
     } finally {
       setCollecting(false);
     }
@@ -308,7 +362,7 @@ export function ExtendBookingModal({
                       mode="single"
                       selected={newDate}
                       onSelect={setNewDate}
-                      disabled={(d) => d <= new Date(currentEndAt)}
+                      disabled={(d) => d < startOfDay(new Date(currentEndAt))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -419,7 +473,7 @@ export function ExtendBookingModal({
                         disabled={isDisabled}
                         onClick={() => {
                           setSelectedResolution(opt.type as ExtensionResolutionType);
-                          setSelectedVehicleId("");
+                          setSelectedVehiclePublicId("");
                         }}
                         className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${
                           isDisabled
@@ -464,7 +518,7 @@ export function ExtendBookingModal({
                       {/* Vehicle selector for SWAP_CURRENT */}
                       {isSelected && opt.type === "SWAP_CURRENT_TO_OTHER" && opt.availableVehicles && (
                         <div className="mt-2 ml-7">
-                          <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                          <Select value={selectedVehiclePublicId} onValueChange={setSelectedVehiclePublicId}>
                             <SelectTrigger className="h-10 text-sm">
                               <SelectValue placeholder="Select alternative vehicle…" />
                             </SelectTrigger>
@@ -486,6 +540,8 @@ export function ExtendBookingModal({
                 })}
               </div>
 
+              {commitShiftRequired && <ShiftRequiredNotice onShiftOpened={() => setCommitError(null)} />}
+
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
                   ← Back
@@ -493,7 +549,12 @@ export function ExtendBookingModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleProceed}
-                  disabled={committing || !selectedResolution || selectedResolution === "NO_RESOLUTION"}
+                  disabled={
+                    committing ||
+                    commitShiftRequired ||
+                    !selectedResolution ||
+                    selectedResolution === "NO_RESOLUTION"
+                  }
                 >
                   {committing ? "Processing…" : mode === "pickup-session" ? "Confirm →" : "Confirm & Pay →"}
                 </Button>
@@ -523,6 +584,68 @@ export function ExtendBookingModal({
                 </p>
               </div>
 
+              {/* Collection method */}
+              <div className="space-y-2">
+                <Label className="text-sm text-neutral-600">Collected by</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: "CASH", label: "Cash", icon: <Banknote className="h-4 w-4" /> },
+                    { value: "UPI", label: "UPI (UTR)", icon: <QrCode className="h-4 w-4" /> },
+                  ] as const).map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => {
+                        setCollectMethod(m.value);
+                        setCollectError(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all",
+                        collectMethod === m.value
+                          ? "border-orange-500 bg-orange-50 text-orange-700"
+                          : "border-neutral-200 text-neutral-600 hover:border-neutral-300",
+                      )}
+                    >
+                      {m.icon}
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {collectMethod === "UPI" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="extUtr">
+                    UTR number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="extUtr"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={20}
+                    placeholder="12-digit UTR"
+                    value={utr}
+                    onChange={(e) => {
+                      setUtr(e.target.value);
+                      // A server UTR error refers to the old value.
+                      if (utrServerError) setCollectError(null);
+                    }}
+                    onBlur={() => setUtrTouched(true)}
+                    aria-invalid={!!utrError}
+                    className="h-10 font-mono tracking-wide"
+                  />
+                  {utrError ? (
+                    <p className="text-xs text-red-600">{utrError}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      From the customer's UPI app after paying the shop's QR.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {shiftRequired && <ShiftRequiredNotice onShiftOpened={() => setCollectError(null)} />}
+
               <div className="flex gap-2 pt-1">
                 <Button variant="outline" className="flex-1" onClick={handleClose} disabled={collecting}>
                   Cancel
@@ -530,7 +653,7 @@ export function ExtendBookingModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleCollect}
-                  disabled={collecting}
+                  disabled={collecting || shiftRequired || (collectMethod === "UPI" && !utrValid)}
                 >
                   {collecting ? "Processing…" : "Mark as Collected"}
                 </Button>

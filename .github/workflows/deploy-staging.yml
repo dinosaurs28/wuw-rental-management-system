@@ -143,6 +143,23 @@ jobs:
             echo "==> Installing dependencies..."
             pnpm install --frozen-lockfile
 
+            # The regenerated Prisma client selects every column in the schema,
+            # so columns a release adds must exist before it is built and started.
+            # Only migrations written to be re-runnable (IF NOT EXISTS guards)
+            # are listed; they are no-ops once applied. Runs before the build so
+            # a failure stops the deploy with the old build still in place.
+            echo "==> Applying idempotent database migrations..."
+            DB_ENV_FILE=/var/www/vrms/packages/db/.env
+            [ -f "$DB_ENV_FILE" ] || DB_ENV_FILE=/var/www/vrms/apps/backend/.env
+            for migration in \
+              20260927090000_licence_drop_damage_utr
+            do
+              (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
+                pnpm exec prisma db execute \
+                  --schema prisma/schema.prisma \
+                  --file "prisma/migrations/$migration/migration.sql")
+            done
+
             echo "==> Building shared packages..."
             pnpm --filter @repo/schemas build
             pnpm --filter @repo/database db:generate

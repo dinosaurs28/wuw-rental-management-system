@@ -20,6 +20,11 @@ import {
   ComputeReturnSession,
   GetReturnSession,
 } from "../../controller/employee/returnSession.controller.js";
+import {
+  CreateDropDamage,
+  GetDropDamages,
+  DeleteDropDamage,
+} from "../../controller/employee/dropDamage.controller.js";
 
 const router: Router = Router();
 
@@ -42,5 +47,8 @@ router.delete("/bookings/:bookingId/pickup-session/remove-deposit", EmployeeChec
 // ── Return session ────────────────────────────────────────────────────────────
 router.post("/bookings/:bookingId/return/session/compute", EmployeeCheck, ComputeReturnSession);
 router.get("/bookings/:bookingId/return/session", EmployeeCheck, GetReturnSession);
+router.post("/bookings/:bookingId/return/damages", EmployeeCheck, CreateDropDamage);
+router.get("/bookings/:bookingId/return/damages", EmployeeCheck, GetDropDamages);
+router.delete("/bookings/:bookingId/return/damages/:damagePublicId", EmployeeCheck, DeleteDropDamage);
 
 export default router;

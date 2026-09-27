@@ -35,6 +35,10 @@ type RazorpayCheckoutPayload = {
   currency: string;
 };
 
+function normalizeStr(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
   const idx = groupKey.indexOf("__");
   if (idx === -1) return null;
@@ -68,8 +72,8 @@ async function resolveVehicleFromGroup(
 
   const { make, model, categoryId, branchId } = parsed;
 
-  const candidates = await tx.vehicle.findMany({
-    where: { make, model, categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
+  const branchVehicles = await tx.vehicle.findMany({
+    where: { categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
     include: {
       category: true,
       branch: { include: { pricingSetting: true } },
@@ -77,8 +81,13 @@ async function resolveVehicleFromGroup(
       customPricing: true,
     },
     orderBy: { odo: "asc" },
-    take: 10,
   });
+
+  const targetMake = normalizeStr(make);
+  const targetModel = normalizeStr(model);
+  const candidates = branchVehicles
+    .filter((v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel)
+    .slice(0, 10);
 
   if (candidates.length === 0) {
     throw Object.assign(new Error("No vehicles available for this group"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
@@ -431,19 +440,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       for (const gk of resolvedGroupKeys) {
         const gkParsed = parseGroupKey(gk)!;
         console.log(`[booking] resolving group key: ${gk} → make:${gkParsed.make} model:${gkParsed.model} categoryId:${gkParsed.categoryId} branchId:${gkParsed.branchId}`);
-        const repVehicle = await prisma.vehicle.findFirst({
+        const targetMake = normalizeStr(gkParsed.make);
+        const targetModel = normalizeStr(gkParsed.model);
+        const candidates = await prisma.vehicle.findMany({
           where: {
-            make: gkParsed.make,
-            model: gkParsed.model,
             categoryId: gkParsed.categoryId,
             branchId: gkParsed.branchId,
             status: "AVAILABLE",
             deletedAt: null,
             insuranceExpiry: { gt: new Date() },
           },
-          select: { id: true, branchId: true, advancePayAmount: true },
+          select: { id: true, make: true, model: true, branchId: true, advancePayAmount: true },
           orderBy: { odo: "asc" },
         });
+        const repVehicle = candidates.find(
+          (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
+        );
         if (!repVehicle) {
           return res.status(StatusCode.CONFLICT).json({ message: `No vehicles available for group ${gk}` });
         }

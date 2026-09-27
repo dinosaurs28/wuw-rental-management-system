@@ -134,3 +134,94 @@ export const TWO_WHEELER_DAMAGE_ZONES = [
   'Exhaust',
   'Other',
 ] as const;
+
+// ── Drop (return) — booking details, km, discount, damages ─────────────────
+
+// Plan-based free-km allowance for the booked period (server-computed).
+export interface KmAllowance {
+  includedKm: number;
+  extraKmRate: string;
+  extraKmEnabled: boolean;
+  // set when extra km can't be auto-calculated (vehicle swapped mid-rental)
+  autoKmSkipped?: 'VEHICLE_SWAPPED' | null;
+}
+
+// GET /api/employee/return/:bookingId
+export interface ReturnBooking {
+  publicId: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+  totalFinal: string | number;
+  isAdvancePayment: boolean;
+  remainingBalance: string | number | null;
+  remainingPaidAt: string | null;
+  days: number | null;
+  startOdometer: number | null;
+  pickupFuelLevel: string | null;
+  safetyDeposit: string | number | null;
+  usePaymentSessions: boolean;
+  frozenChargeConfig: { fuelModuleEnabled?: boolean; fastagModuleEnabled?: boolean } | null;
+  // Original driving licence held at the counter since pickup.
+  licenseCollectedAt?: string | null;
+  licenseReturnedAt?: string | null;
+  kmAllowance?: KmAllowance | null;
+  customer: { user: { name: string; phone: string | null } };
+  items: Array<{ vehicle: { publicId: string; make: string; model: string; regNo: string; odo: number | null; hasFastag?: boolean } }>;
+}
+
+// `km` on the return-session compute response.
+// autoKmSkipped: extra km wasn't auto-calculated (e.g. the vehicle was swapped
+// mid-rental, so the odometers aren't comparable).
+export interface ReturnKmSummary {
+  startOdometer: number | null;
+  endOdometer: number;
+  kmDriven: number;
+  includedKm: number;
+  extraKm: number;
+  extraKmRate: string;
+  extraKmCharge: string;
+  extraKmEnabled: boolean;
+  autoKmSkipped?: 'VEHICLE_SWAPPED' | null;
+}
+
+export interface DropDiscount {
+  amount: string;
+  reason: string;
+}
+
+export type DropDamageSeverity = 'Minor' | 'Moderate' | 'Severe';
+
+export interface DropDamageVehicle {
+  publicId: string;
+  make: string;
+  model: string;
+  regNo: string;
+}
+
+// Damage recorded at drop; billed on the return session when chargeCustomer.
+export interface DropDamage {
+  publicId: string;
+  area: string;
+  severity: DropDamageSeverity;
+  description: string;
+  amount: string;
+  chargeCustomer: boolean;
+  // true = on the return-session bill; false = the manager charges it on review
+  // (legacy branches) or it's a company expense.
+  billedAtDrop: boolean;
+  vehicle: DropDamageVehicle | null;
+  photos: { publicId: string; url: string }[];
+  createdAt: string;
+}
+
+export interface DropDamageInput {
+  area: string;
+  severity: DropDamageSeverity;
+  description: string;
+  amount: number;
+  chargeCustomer: boolean;
+  damageImageIds: string[];
+  // required when the booking has more than one vehicle (VEHICLE_REQUIRED)
+  vehiclePublicId?: string;
+}

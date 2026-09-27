@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/popover";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
+import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 // Reusing auth service for OTP
 
 // Actually we need to use `InitiateWalkin` (OTP) and `CompleteWalkinProfile`.
@@ -178,6 +179,7 @@ export default function EmployeeCreateCustomerPage() {
         kycStatus: false, // New customer, no KYC yet
       };
       customerSession.set(session);
+      useEmployeeBookingStore.getState().setUtr("");
 
       toast.success("Customer profile created!");
       navigate("/employee/vehicles");

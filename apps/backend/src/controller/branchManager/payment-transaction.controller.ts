@@ -6,6 +6,7 @@ import {
   paymentTransactionService,
   financialStateService,
 } from "../../services/payment/index.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -43,7 +44,15 @@ export const RecordPayment = async (req: Request, res: Response): Promise<void> 
       },
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("RecordPayment Error:", error);
+    if (error.message?.includes("reference is required")) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+      return;
+    }
     if (error.message?.includes("limit") || error.message?.includes("exceed")) {
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;

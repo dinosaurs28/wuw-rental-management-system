@@ -90,10 +90,12 @@ export interface DisplacedBooking {
 export interface CommitExtensionPayload {
   extensionPublicId: string;
   resolutionType: ExtensionResolutionType;
-  selectedVehicleId?: string;
+  selectedVehiclePublicId?: string;
   affectedBookingSwaps?: { bookingPublicId: string; newVehiclePublicId: string }[];
   partialNewEndAt?: string;
   idempotencyKey: string;
+  /** Collect the charge right away (collect endpoint) instead of deferring it to a pickup session. */
+  collectNow?: boolean;
 }
 
 export interface CommitExtensionResult {
@@ -104,6 +106,8 @@ export interface CommitExtensionResult {
   remainAmount: {
     extension: string;
   };
+  /** True when the charge was deferred to the booking's pickup payment session. */
+  usePaymentSession?: boolean;
 }
 
 export interface CollectExtensionResult {
@@ -234,26 +238,23 @@ export const extensionService = {
       )
       .then((r) => r.data),
 
+  /**
+   * Opens a Razorpay order for the extension. A ₹0 extension needs no payment:
+   * it comes back with no order, `extensionStatus: "CONFIRMED"` and `newEndAt`.
+   * 409 when the vehicle is no longer free for the new dates.
+   */
   customerInitiatePayment: (extensionPublicId: string) =>
     apiClient
       .post<{
-        data: { razorpay: RazorpayOrder; transactionId: string; amount: number };
+        data: {
+          razorpay: RazorpayOrder | null;
+          transactionId: string | null;
+          amount: number;
+          extensionStatus?: "CONFIRMED";
+          newEndAt?: string;
+        };
         message: string;
       }>(`/user/extensions/${extensionPublicId}/initiate-payment`)
-      .then((r) => r.data),
-
-  customerCommit: (payload: {
-    extensionPublicId: string;
-    paymentMethod: "ONLINE";
-    onlineTransactionRef: string;
-    onlineGateway?: string;
-    idempotencyKey: string;
-  }) =>
-    apiClient
-      .post<{ data: BookingExtension; message: string }>(
-        `/user/extensions/commit`,
-        payload
-      )
       .then((r) => r.data),
 
   verifyExtensionPayment: (merchantTransactionId: string) =>

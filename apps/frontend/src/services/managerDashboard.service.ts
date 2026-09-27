@@ -69,6 +69,13 @@ export interface DamageReport {
   status: "PENDING" | "IN_PROGRESS" | "APPROVED" | "REJECTED";
   createdAt: string;
   vehicleImage?: string | null;
+  /** Billed to the customer at drop — the manager only sets the vehicle status. */
+  chargedAtDrop?: boolean;
+  /** Recorded by staff at drop. */
+  raisedAtDrop?: boolean;
+  /** false → disposition only (charged at drop or company expense). */
+  managerCharges?: boolean;
+  estimatedCost?: number;
 }
 
 export interface StaffActivity {
@@ -241,6 +248,10 @@ export const managerDashboardService = {
       status: r.status,
       createdAt: r.createdAt,
       vehicleImage: r.vehicle?.image,
+      chargedAtDrop: !!r.chargedAtDrop,
+      raisedAtDrop: !!r.raisedAtDrop,
+      managerCharges: r.managerCharges ?? !r.chargedAtDrop,
+      estimatedCost: r.estimatedCost != null ? Number(r.estimatedCost) : undefined,
     }));
   },
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { isSameDay, nextFiveMinuteMark, normalizeRange, rangeLengthLabel, timeOf, withTime } from '../../lib/dates';
 
 const { width: SW } = Dimensions.get('window');
 const H_PAD = 16;
@@ -27,6 +28,7 @@ function fmtShort(d: Date) { return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]
 
 interface Props {
   visible: boolean;
+  // Current pickup / return; their times are kept when the days change.
   startDate: Date;
   endDate: Date;
   onConfirm: (start: Date, end: Date) => void;
@@ -34,7 +36,8 @@ interface Props {
 }
 
 export default function DateRangePicker({ visible, startDate, endDate, onConfirm, onClose }: Props) {
-  const today = sod(new Date());
+  // Earliest pickable day: today, or tomorrow once today has no pickup times left.
+  const minDay = sod(nextFiveMinuteMark());
 
   const [displayMonth, setDisplayMonth] = useState(
     () => new Date(startDate.getFullYear(), startDate.getMonth(), 1),
@@ -42,6 +45,15 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
   const [tempStart, setTempStart] = useState(() => sod(startDate));
   const [tempEnd, setTempEnd] = useState(() => sod(endDate));
   const [picking, setPicking] = useState<'start' | 'end'>('start');
+
+  // Start from the caller's current range each time the sheet opens.
+  useEffect(() => {
+    if (!visible) return;
+    setTempStart(sod(startDate));
+    setTempEnd(sod(endDate));
+    setPicking('start');
+    setDisplayMonth(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+  }, [visible]);
 
   const cells = useMemo<(number | null)[]>(() => {
     const y = displayMonth.getFullYear();
@@ -56,25 +68,24 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
 
   const handleDay = (day: number) => {
     const d = sod(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day));
-    if (d < today) return;
-    if (picking === 'start') {
+    if (d < minDay) return;
+    if (picking === 'start' || d < tempStart) {
       setTempStart(d);
-      setTempEnd(new Date(d.getTime() + 86_400_000));
+      setTempEnd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
       setPicking('end');
     } else {
-      if (d <= tempStart) {
-        setTempStart(d);
-        setTempEnd(new Date(d.getTime() + 86_400_000));
-      } else {
-        setTempEnd(d);
-      }
+      // Tapping the pickup date again makes it a same-day return.
+      setTempEnd(d);
     }
   };
 
   const prevMonth = () => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1));
   const nextMonth = () => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
-  const nights = Math.round((tempEnd.getTime() - tempStart.getTime()) / 86_400_000);
   const sameStartEnd = sameDay(tempStart, tempEnd);
+  // Length with the caller's times, exactly as it will be once confirmed.
+  const preview = normalizeRange(withTime(tempStart, timeOf(startDate)), withTime(tempEnd, timeOf(endDate)));
+  const sameDayReturn = isSameDay(preview.start, preview.end);
+  const lengthText = rangeLengthLabel(preview.start, preview.end);
 
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
@@ -115,12 +126,12 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.nightsLabel}>
+          <Text style={styles.rangeLabel}>
             {picking === 'start'
               ? 'Select pickup date'
-              : nights > 0
-              ? `${nights} night${nights !== 1 ? 's' : ''} · tap return date`
-              : 'Select return date'}
+              : sameDayReturn
+              ? 'Same-day return · tap a later date to extend'
+              : `${lengthText} · tap the pickup date again for same day`}
           </Text>
 
           {/* Month nav */}
@@ -147,7 +158,7 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
               if (!day) return <View key={`e-${i}`} style={styles.cell} />;
 
               const d = sod(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day));
-              const isPast = d < today;
+              const isPast = d < minDay;
               const isStart = sameDay(d, tempStart);
               const isEnd = sameDay(d, tempEnd);
               const inRange = !sameStartEnd && d > tempStart && d < tempEnd;
@@ -206,7 +217,9 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
               onPress={() => { onConfirm(tempStart, tempEnd); onClose(); }}
               activeOpacity={0.85}
             >
-              <Text style={styles.confirmText}>Confirm {nights} night{nights !== 1 ? 's' : ''}</Text>
+              <Text style={styles.confirmText}>
+                {sameDayReturn ? 'Confirm same-day return' : `Confirm ${lengthText}`}
+              </Text>
               <Ionicons name="checkmark" size={16} color={Colors.white} />
             </TouchableOpacity>
           </View>
@@ -246,7 +259,7 @@ const styles = StyleSheet.create({
   pillDate: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.ink },
   pillDateActive: { color: Colors.white },
 
-  nightsLabel: {
+  rangeLabel: {
     fontFamily: Fonts.bodyMedium, fontSize: 12,
     color: Colors.orange, textAlign: 'center', marginBottom: 14,
   },

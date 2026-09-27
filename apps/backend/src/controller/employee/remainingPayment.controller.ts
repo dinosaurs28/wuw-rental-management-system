@@ -6,6 +6,11 @@ import {
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
+import {
+  assertOpenShift,
+  validateNewUtr,
+  CounterGuardError,
+} from "../../services/payment/counter-guard.service.js";
 import { createID } from "../../utils/nanoID.js";
 
 const advanceDepositService = new AdvanceDepositService();
@@ -14,14 +19,17 @@ const advanceDepositService = new AdvanceDepositService();
  * POST /employee/pickup/:bookingId/initiate-remaining-payment
  * POST /employee/return/:bookingId/initiate-remaining-payment
  *
- * body: { method: "CASH" | "UPI" | "ONLINE_RAZORPAY", paidDuring: "PICKUP" | "RETURN" }
+ * body: { method: "CASH" | "UPI" | "ONLINE_RAZORPAY", paidDuring: "PICKUP" | "RETURN", utr?: string }
+ *
+ * UPI = the customer paid the branch's UPI QR; `utr` (12 digits) is required
+ * and the payment settles immediately, like CASH.
  */
 export const InitiateRemainingPayment = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  const { method, paidDuring } = req.body;
+  const { method, paidDuring, utr } = req.body;
   const branchId = req.branch_Id;
 
-  if (!["CASH", "ONLINE_RAZORPAY"].includes(method)) {
+  if (!["CASH", "UPI", "ONLINE_RAZORPAY"].includes(method)) {
     return res.status(StatusCode.BAD_REQUEST).json({
       message: "Invalid payment method. Use CASH, UPI, or ONLINE_RAZORPAY.",
     });
@@ -65,15 +73,26 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
 
     // CASH or UPI: record directly, no payment gateway needed
     if (method === "CASH" || method === "UPI") {
-      const depositMethod =
-        method === "CASH" ? DepositMethod.CASH : DepositMethod.UPI;
-      const transactionId = `CASH_REM_${createID()}`;
+      const actor = await prisma.user.findUnique({
+        where: { publicId: req.public_Id },
+        select: { id: true, role: true },
+      });
+      if (!actor) {
+        return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+      }
+      await assertOpenShift(actor);
+
+      const isUpi = method === "UPI";
+      const cleanUtr = isUpi ? await validateNewUtr(utr) : null;
+      const depositMethod = isUpi ? DepositMethod.UPI : DepositMethod.CASH;
+      const transactionId = isUpi ? `UPI_REM_${createID()}` : `CASH_REM_${createID()}`;
 
       await advanceDepositService.recordRemainingPayment(
         bookingId as string,
         depositMethod,
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
+        cleanUtr ? { utr: cleanUtr, collectedById: actor.id } : undefined,
       );
 
       return res.status(StatusCode.OK).json({
@@ -115,9 +134,18 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
     console.error("InitiateRemainingPayment error:", error);
     if (error.message?.includes("already collected")) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+    }
+    // Double-submitted UPI: the per-booking idempotency key already exists
+    if (error?.code === "P2002") {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Remaining payment has already been collected.",
+      });
     }
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Server Error",
@@ -272,8 +300,11 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
       });
     }
 
-    // CASH prefix: already recorded (shouldn't reach here, but handle gracefully)
-    if (booking.remainingPaymentId.startsWith("CASH_REM_")) {
+    // Counter (cash / UPI) prefix: already recorded (shouldn't reach here, but handle gracefully)
+    if (
+      booking.remainingPaymentId.startsWith("CASH_REM_") ||
+      booking.remainingPaymentId.startsWith("UPI_REM_")
+    ) {
       return res.status(StatusCode.OK).json({ status: "SUCCESS" });
     }
 

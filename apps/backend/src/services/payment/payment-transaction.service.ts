@@ -10,6 +10,9 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { fraudDetectionService } from "./fraud-detection.service.js";
+import { assertOpenShift, claimUtr, normalizeUtr } from "./counter-guard.service.js";
+import { redis } from "../../lib/redisconfig.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -82,6 +85,25 @@ class PaymentTransactionService {
       throw new Error("Split payments are not enabled for this branch.");
     }
 
+    // Counter money needs the staff member's open cash shift
+    await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
+
+    // Online part: a UPI transfer (gateway unset or "UPI") is recorded by its
+    // 12-digit UTR; other gateways keep their own reference. Either way one
+    // reference can back only one live payment (claimed in the insert below).
+    let onlineRef: string | null = null;
+    let onlineGateway: string | null = input.onlineGateway?.trim() || null;
+    if (onlineAmount.gt(ZERO) || input.method === "ONLINE") {
+      const isUpi = !onlineGateway || onlineGateway.toUpperCase() === "UPI";
+      if (isUpi) {
+        onlineRef = normalizeUtr(input.onlineTransactionRef);
+        onlineGateway = "UPI";
+      } else {
+        onlineRef = input.onlineTransactionRef?.trim() || null;
+        if (!onlineRef) throw new Error("Transaction reference is required for online payments.");
+      }
+    }
+
     // Fraud checks
     await fraudDetectionService.checkExcessPayment(bookingId, totalAmount);
     if (cashAmount.gt(ZERO)) {
@@ -114,27 +136,30 @@ class PaymentTransactionService {
       cashShiftId = activeShift?.id ?? null;
     }
 
-    const txn = await prisma.paymentTransaction.create({
-      data: {
-        publicId: createID(),
-        idempotencyKey: input.idempotencyKey,
-        bookingId,
-        branchId,
-        purpose: input.purpose,
-        method: input.method,
-        status,
-        totalAmount,
-        cashAmount,
-        onlineAmount,
-        onlineTransactionRef: input.onlineTransactionRef ?? null,
-        onlineGateway: input.onlineGateway ?? null,
-        collectedById: input.method !== "ONLINE" ? actor.actorId : null,
-        collectedAt: input.method !== "ONLINE" ? now : null,
-        confirmedById: status === "CONFIRMED" ? actor.actorId : null,
-        confirmedAt: status === "CONFIRMED" ? now : null,
-        cashShiftId,
-        notes: input.notes ?? null,
-      },
+    const txn = await prisma.$transaction(async (tx) => {
+      if (onlineRef) await claimUtr(onlineRef, tx);
+      return tx.paymentTransaction.create({
+        data: {
+          publicId: createID(),
+          idempotencyKey: input.idempotencyKey,
+          bookingId,
+          branchId,
+          purpose: input.purpose,
+          method: input.method,
+          status,
+          totalAmount,
+          cashAmount,
+          onlineAmount,
+          onlineTransactionRef: onlineRef,
+          onlineGateway: onlineRef ? onlineGateway : null,
+          collectedById: input.method !== "ONLINE" ? actor.actorId : null,
+          collectedAt: input.method !== "ONLINE" ? now : null,
+          confirmedById: status === "CONFIRMED" ? actor.actorId : null,
+          confirmedAt: status === "CONFIRMED" ? now : null,
+          cashShiftId,
+          notes: input.notes ?? null,
+        },
+      });
     });
 
     // If immediately confirmed and has cash, update shift expectedTotal
@@ -227,7 +252,7 @@ class PaymentTransactionService {
               endAt: effectiveEndAt,
               extensionCount: { increment: 1 },
               lastExtendedAt: new Date(),
-              totalFinal: linkedExtension.newTotalFinal,
+              totalFinal: { increment: linkedExtension.additionalAmount },
               activeExtensionId: null,
               ...(isFirstExtension ? { originalEndAt: linkedExtension.oldEndAt } : {}),
             },
@@ -309,6 +334,44 @@ class PaymentTransactionService {
         rejectionReason,
       },
     });
+
+    // A rejected extension payment means the extension was never paid for:
+    // reject it and release the vehicle hold that commit placed.
+    if (txn.purpose === PaymentPurpose.EXTENSION) {
+      const linkedExtension = await prisma.bookingExtension.findFirst({
+        where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+        select: {
+          id: true,
+          bookingId: true,
+          oldEndAt: true,
+          booking: { select: { activeExtensionId: true, items: { select: { vehicleId: true } } } },
+        },
+      });
+
+      if (linkedExtension) {
+        await prisma.$transaction(async (tx) => {
+          await tx.bookingExtension.update({
+            where: { id: linkedExtension.id },
+            data: { extensionStatus: ExtensionStatus.REJECTED, rejectionReason },
+          });
+          if (linkedExtension.booking.activeExtensionId === linkedExtension.id) {
+            await tx.booking.update({
+              where: { id: linkedExtension.bookingId },
+              data: { activeExtensionId: null, endAt: linkedExtension.oldEndAt },
+            });
+          }
+        });
+
+        try {
+          await invalidateVehicleAvailability(
+            redis,
+            linkedExtension.booking.items.map((i) => i.vehicleId),
+          );
+        } catch {
+          // non-fatal
+        }
+      }
+    }
 
     await auditService.log({
       actorId: actor.actorId,

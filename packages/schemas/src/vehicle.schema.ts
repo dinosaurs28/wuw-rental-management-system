@@ -21,8 +21,8 @@ export const bookingSummarySchema = z
   );
 
 export const createVehicleSchema = z.object({
-  make: z.string().min(1, "Make is required"),
-  model: z.string().min(1, "Model is required"),
+  make: z.string().min(1, "Make is required").transform((s) => s.trim().replace(/\s+/g, " ")),
+  model: z.string().min(1, "Model is required").transform((s) => s.trim().replace(/\s+/g, " ")),
   year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1).optional(),
   regNo: z.string().min(1, "Registration Number is required"),
   odo: z.coerce.number().min(0),
@@ -57,7 +57,8 @@ export const createVehicleSchema = z.object({
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
   status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]).optional(),
-  deleteImageIds: z.string().optional(),
+  deleteImageIds: z.union([z.string(), z.array(z.string())]).optional(),
+  thumbnailImageId: z.string().optional(),
 });
 
 export const pickUpVehicleSchema = z.object({
@@ -69,6 +70,9 @@ export const pickUpVehicleSchema = z.object({
     .optional(),
   requireManagerConfirmation: z.boolean().optional(),
   payRemainingAtPickup: z.boolean().optional(),
+  // true = original licence collected. `false` is refused (LICENSE_NOT_COLLECTED);
+  // omitted only by app builds from before the tick, which are let through.
+  licenseCollected: z.boolean().optional(),
 });
 
 export const managerConfirmPickupSchema = z.object({

@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, Role } from "@repo/database/client";
-import { extensionService } from "../../services/extension/index.js";
+import {
+  extensionService,
+  extensionAvailabilityService,
+  ExtensionPendingError,
+} from "../../services/extension/index.js";
 import {
   createRazorpayOrder,
   fetchOrderStatus,
@@ -9,7 +13,6 @@ import {
 import { confirmExtensionPayment } from "../../services/payment/bookingConfirmation.service.js";
 import {
   customerEvaluateExtensionSchema,
-  customerCommitExtensionSchema,
   cancelExtensionSchema,
 } from "@repo/schemas";
 
@@ -96,6 +99,46 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
 
     const evaluation = await extensionService.evaluate(bookingPublicId!, newEndAt, trigger, actor, notes);
 
+    // Customers can't swap vehicles or pick a resolution: they get their own
+    // vehicle for the full request, else the partial extension (the quote is
+    // narrowed so the price and the end they pay for match), else nothing.
+    const sameVehicle = evaluation.resolutionOptions.find((o) => o.type === "SAME_VEHICLE");
+    const partial = evaluation.resolutionOptions.find(
+      (o) => o.type === "PARTIAL_EXTENSION" && o.partialNewEndAt,
+    );
+
+    let requestedEndAt = evaluation.requestedEndAt;
+    let pricing = {
+      newDays: evaluation.pricing.newDays,
+      additionalAmount: evaluation.pricing.additionalAmount,
+      newTotalFinal: evaluation.pricing.newTotalFinal,
+    };
+    let options: Array<{ type: string; description: string; partialNewEndAt?: string }>;
+
+    if (sameVehicle) {
+      options = [sameVehicle];
+    } else if (partial) {
+      const narrowed = await extensionService.narrowQuote(
+        evaluation.extensionPublicId,
+        new Date(partial.partialNewEndAt!),
+      );
+      requestedEndAt = partial.partialNewEndAt!;
+      pricing = {
+        newDays: narrowed.newDays,
+        additionalAmount: narrowed.additionalAmount.toFixed(2),
+        newTotalFinal: narrowed.newTotalFinal.toFixed(2),
+      };
+      options = [partial];
+    } else {
+      // Nothing a customer can buy — release the quote so the booking stays extendable
+      await extensionService.cancel(
+        evaluation.extensionPublicId,
+        actor,
+        "No extension available to the customer for the requested dates",
+      );
+      options = [{ type: "NO_RESOLUTION", description: "No extension is possible for the requested dates." }];
+    }
+
     // Return customer-safe subset (no internal IDs)
     res.status(StatusCode.OK).json({
       message: "Extension evaluated successfully",
@@ -103,23 +146,27 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         extensionPublicId: evaluation.extensionPublicId,
         bookingPublicId: evaluation.bookingPublicId,
         oldEndAt: evaluation.oldEndAt,
-        requestedEndAt: evaluation.requestedEndAt,
+        requestedEndAt,
         pricing: {
           originalDays: evaluation.pricing.originalDays,
-          newDays: evaluation.pricing.newDays,
+          newDays: pricing.newDays,
           originalTotalFinal: evaluation.pricing.originalTotalFinal,
-          additionalAmount: evaluation.pricing.additionalAmount,
-          newTotalFinal: evaluation.pricing.newTotalFinal,
+          additionalAmount: pricing.additionalAmount,
+          newTotalFinal: pricing.newTotalFinal,
         },
-        resolutionOptions: evaluation.resolutionOptions.map((o) => ({
+        resolutionOptions: options.map((o) => ({
           type: o.type,
           description: o.description,
           partialNewEndAt: o.partialNewEndAt,
         })),
-        recommendedOption: evaluation.recommendedResolution,
+        recommendedOption: options[0]!.type,
       },
     });
   } catch (error: any) {
+    if (error instanceof ExtensionPendingError) {
+      res.status(StatusCode.CONFLICT).json(error.toJSON());
+      return;
+    }
     console.error("Customer EvaluateExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -130,110 +177,6 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       error.message?.includes("after the current end date")
     ) {
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-      return;
-    }
-    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
-  }
-};
-
-/**
- * POST /api/user/extensions/commit
- * Customer commits an extension — online payment only.
- */
-export const CommitExtension = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const validation = customerCommitExtensionSchema.safeParse(req.body);
-    if (!validation.success) {
-      res.status(StatusCode.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: validation.error.format(),
-      });
-      return;
-    }
-
-    const { extensionPublicId, onlineTransactionRef, onlineGateway, idempotencyKey } =
-      validation.data;
-
-    // Resolve User.publicId → CustomerProfile.id
-    const userForCommit = await prisma.user.findUnique({
-      where: { publicId: req.public_Id },
-      select: { id: true, name: true, role: true, customerProfile: { select: { id: true } } },
-    });
-
-    if (!userForCommit?.customerProfile) {
-      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
-      return;
-    }
-
-    // Load extension to verify it belongs to this customer's booking
-    const extensionRecord = await prisma.bookingExtension.findUnique({
-      where: { publicId: extensionPublicId },
-      include: {
-        booking: {
-          select: {
-            publicId: true,
-            totalFinal: true,
-            customerId: true,
-            branch: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    if (
-      !extensionRecord ||
-      extensionRecord.booking.customerId !== userForCommit.customerProfile.id
-    ) {
-      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
-      return;
-    }
-
-    const customer = userForCommit;
-
-    const actor = {
-      actorId: customer.id,
-      actorPublicId: req.public_Id,
-      actorName: customer.name,
-      actorRole: customer.role,
-      actorBranchId: extensionRecord.branchId,
-      branchName: extensionRecord.booking.branch.name,
-    };
-
-    // Commit: hold vehicle slot
-    const { extension } = await extensionService.commit(
-      { extensionPublicId, resolutionType: "SAME_VEHICLE", idempotencyKey },
-      actor,
-    );
-
-    // Collect: process online payment immediately
-    const collectResult = await extensionService.collect(
-      extensionPublicId,
-      "ONLINE",
-      actor,
-      onlineTransactionRef,
-    );
-
-    res.status(StatusCode.OK).json({
-      message: "Extension confirmed successfully",
-      data: {
-        publicId: extension.publicId,
-        extensionStatus: collectResult.payment === "confirmed" ? "CONFIRMED" : "PAYMENT_COLLECTED",
-        actualNewEndAt: extension.actualNewEndAt,
-        additionalAmount: extension.additionalAmount,
-      },
-    });
-  } catch (error: any) {
-    console.error("Customer CommitExtension Error:", error);
-    if (error.message?.includes("not found")) {
-      res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-      return;
-    }
-    if (
-      error.message?.includes("availability changed") ||
-      error.message?.includes("being processed") ||
-      error.message?.includes("cannot be committed")
-    ) {
-      res.status(StatusCode.CONFLICT).json({ message: error.message });
       return;
     }
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -417,7 +360,7 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
     // Resolve User.publicId → CustomerProfile.id
     const userForPayment = await prisma.user.findUnique({
       where: { publicId: req.public_Id },
-      select: { customerProfile: { select: { id: true } } },
+      select: { id: true, name: true, role: true, customerProfile: { select: { id: true } } },
     });
 
     if (!userForPayment?.customerProfile) {
@@ -430,8 +373,13 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
       include: {
         booking: {
           select: {
+            id: true,
             publicId: true,
             customerId: true,
+            status: true,
+            endAt: true,
+            branch: { select: { name: true } },
+            items: { select: { vehicleId: true }, take: 1 },
           },
         },
       },
@@ -452,7 +400,59 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
       return;
     }
 
+    const booking = extensionRecord.booking;
+    if (
+      booking.status !== BookingStatus.CONFIRMED &&
+      booking.status !== BookingStatus.PICKED_UP
+    ) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        message: `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`,
+      });
+      return;
+    }
+
+    // Customers pay without a staff commit, so nothing holds the slot: make
+    // sure their vehicle is still free up to the quoted end before charging.
+    const vehicleId = booking.items[0]?.vehicleId;
+    const availability = vehicleId
+      ? await extensionAvailabilityService.checkVehicleAvailability(
+          vehicleId,
+          booking.endAt,
+          extensionRecord.requestedEndAt,
+          booking.id,
+        )
+      : null;
+    if (!availability?.available) {
+      res.status(StatusCode.CONFLICT).json({
+        message: "Your vehicle is no longer free for the new return time. Please check the extension again.",
+      });
+      return;
+    }
+
     const additionalAmount = parseFloat(extensionRecord.additionalAmount.toString());
+
+    // Nothing to pay — confirm right away instead of opening a ₹0 checkout
+    if (additionalAmount <= 0) {
+      await extensionService.collect(extensionRecord.publicId, "ONLINE", {
+        actorId: userForPayment.id,
+        actorPublicId: req.public_Id,
+        actorName: userForPayment.name,
+        actorRole: userForPayment.role,
+        actorBranchId: extensionRecord.branchId,
+        branchName: booking.branch.name,
+      });
+      res.status(StatusCode.OK).json({
+        message: "Extension confirmed — nothing to pay",
+        data: {
+          transactionId: null,
+          razorpay: null,
+          amount: 0,
+          extensionStatus: ExtensionStatus.CONFIRMED,
+          newEndAt: extensionRecord.requestedEndAt,
+        },
+      });
+      return;
+    }
 
     const order = await createRazorpayOrder(additionalAmount, {
       receipt: extensionRecord.publicId,
@@ -460,7 +460,7 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
       notes: {
         purpose: "EXTENSION",
         extension_id: extensionRecord.publicId,
-        booking_id: extensionRecord.booking.publicId,
+        booking_id: booking.publicId,
       },
     });
 
@@ -486,6 +486,10 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
     });
   } catch (error: any) {
     console.error("InitiateExtensionPayment Error:", error);
+    if (error.message?.includes("already in")) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+      return;
+    }
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

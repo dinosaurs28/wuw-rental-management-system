@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { PaymentSession } from "@/services/paymentSession.service";
 import { paymentSessionService } from "@/services/paymentSession.service";
@@ -14,25 +14,51 @@ import {
 } from "@/components/ui/select";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  apiErrorMessage,
+  cleanUtr,
+  counterErrorCode,
+  isValidUtr,
+} from "@/lib/counterErrors";
+import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { useActiveShift } from "@/components/employee/counter/useActiveShift";
+import { usePaymentStore } from "@/store/payment.store";
 
-type Method = "CASH" | "ONLINE" | "SPLIT";
-type Gateway = "UPI" | "Razorpay" | "Other";
+// UPI = customer paid the shop's UPI QR, recorded by its 12-digit UTR.
+// OTHER = a reference from another gateway. Both are sent as method ONLINE.
+type Method = "CASH" | "UPI" | "SPLIT" | "OTHER";
+type Gateway = "Razorpay" | "Other";
 
-const GATEWAYS: Gateway[] = ["UPI", "Razorpay", "Other"];
+const METHODS: Method[] = ["CASH", "UPI", "SPLIT", "OTHER"];
+const METHOD_LABELS: Record<Method, string> = {
+  CASH: "Cash",
+  UPI: "UPI (UTR)",
+  SPLIT: "Split",
+  OTHER: "Other online",
+};
+const GATEWAYS: Gateway[] = ["Razorpay", "Other"];
 
 interface RecordPaymentPanelProps {
   session: PaymentSession;
   onSuccess: (updatedSession: PaymentSession) => void;
+  /**
+   * Called with any failed record/refund call (e.g. a stale drop bill) so the
+   * parent can react. The panel still shows the server's message itself.
+   */
+  onError?: (error: unknown) => void;
   className?: string;
 }
 
-export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaymentPanelProps) {
+export function RecordPaymentPanel({ session, onSuccess, onError, className }: RecordPaymentPanelProps) {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [method, setMethod] = useState<Method>("CASH");
+  const [utr, setUtr] = useState("");
+  const [utrTouched, setUtrTouched] = useState(false);
   const [txnRef, setTxnRef] = useState("");
-  const [gateway, setGateway] = useState<Gateway>("UPI");
+  const [gateway, setGateway] = useState<Gateway>("Razorpay");
   const [splitCash, setSplitCash] = useState("");
   const [splitOnline, setSplitOnline] = useState("");
+  const { activeShift, needsShift } = useActiveShift();
 
   const netPayable = parseFloat(session.netPayable);
   const isZeroBalance = netPayable === 0;
@@ -44,7 +70,8 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
   const splitOnlineNum = parseFloat(splitOnline) || 0;
   const splitTotal = splitCashNum + splitOnlineNum;
   const splitValid = method !== "SPLIT" || Math.abs(splitTotal - amount) < 0.01;
-  const splitNeedsRef = method === "SPLIT" && splitOnlineNum > 0 && !txnRef.trim();
+  const needsUtr = method === "UPI" || (method === "SPLIT" && splitOnlineNum > 0);
+  const utrValid = isValidUtr(utr);
 
   const zeroMutation = useMutation({
     mutationFn: () =>
@@ -55,6 +82,7 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
         notes: "No payment required — zero balance",
       }),
     onSuccess,
+    onError,
   });
 
   const payMutation = useMutation({
@@ -64,44 +92,135 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
           method: "SPLIT",
           amount,
           idempotencyKey,
-          notes: `Split: ₹${splitCashNum.toFixed(2)} cash + ₹${splitOnlineNum.toFixed(2)} online`,
+          notes: `Split: ₹${splitCashNum.toFixed(2)} cash + ₹${splitOnlineNum.toFixed(2)} UPI`,
           cashAmount: splitCashNum,
           onlineAmount: splitOnlineNum,
-          onlineTransactionRef: txnRef || undefined,
-          onlineGateway: splitOnlineNum > 0 ? gateway : undefined,
+          onlineTransactionRef: splitOnlineNum > 0 ? cleanUtr(utr) : undefined,
+          onlineGateway: splitOnlineNum > 0 ? "UPI" : undefined,
+        });
+      }
+      if (method === "UPI") {
+        return paymentSessionService.recordPayment(session.publicId, {
+          method: "ONLINE",
+          amount,
+          idempotencyKey,
+          notes: `UPI payment of ₹${amount.toFixed(2)}`,
+          onlineTransactionRef: cleanUtr(utr),
+          onlineGateway: "UPI",
+        });
+      }
+      if (method === "OTHER") {
+        return paymentSessionService.recordPayment(session.publicId, {
+          method: "ONLINE",
+          amount,
+          idempotencyKey,
+          notes: `Online payment of ₹${amount.toFixed(2)}`,
+          onlineTransactionRef: txnRef.trim(),
+          onlineGateway: gateway,
         });
       }
       return paymentSessionService.recordPayment(session.publicId, {
-        method,
+        method: "CASH",
         amount,
         idempotencyKey,
-        notes: `${method === "CASH" ? "Cash" : "Online"} payment of ₹${amount.toFixed(2)}`,
-        onlineTransactionRef: method === "ONLINE" ? txnRef : undefined,
-        onlineGateway: method === "ONLINE" ? gateway : undefined,
+        notes: `Cash payment of ₹${amount.toFixed(2)}`,
       });
     },
     onSuccess,
+    onError: (err) => {
+      // The server just said there's no open shift — drop any stale one so the
+      // notice stays until a shift is actually opened (see effect below).
+      if (counterErrorCode(err) === "SHIFT_REQUIRED") {
+        usePaymentStore.getState().setActiveShift(null);
+      }
+      onError?.(err);
+    },
   });
 
+  const refundMethod = method === "UPI" || method === "OTHER" ? "ONLINE" : "CASH";
   const refundMutation = useMutation({
     mutationFn: () =>
       paymentSessionService.recordRefund(session.publicId, {
-        method: method === "SPLIT" ? "CASH" : method,
+        method: refundMethod,
         amount,
         idempotencyKey,
-        notes: `${method === "CASH" ? "Cash" : "Online"} refund of ₹${amount.toFixed(2)}`,
+        notes: `${refundMethod === "CASH" ? "Cash" : "Online"} refund of ₹${amount.toFixed(2)}`,
       }),
     onSuccess,
+    onError,
   });
+
+  // A shift opened anywhere (this notice or the navbar banner) clears a
+  // SHIFT_REQUIRED failure so staff can collect straight away.
+  const { error: payError, reset: resetPay } = payMutation;
+  useEffect(() => {
+    if (activeShift && counterErrorCode(payError) === "SHIFT_REQUIRED") resetPay();
+  }, [activeShift, payError, resetPay]);
+
+  // A recomputed bill (new session / amount) makes earlier failures stale.
+  const { reset: resetRefund } = refundMutation;
+  const { reset: resetZero } = zeroMutation;
+  useEffect(() => {
+    resetPay();
+    resetRefund();
+    resetZero();
+  }, [session.publicId, session.netPayable, resetPay, resetRefund, resetZero]);
 
   const isLoading = payMutation.isPending || refundMutation.isPending;
   const error = payMutation.error || refundMutation.error;
+  const errorCode = counterErrorCode(error);
+  // Cash, split and UPI (UTR) need an open shift; refunds and other online
+  // gateways don't (server returns SHIFT_REQUIRED only for the gated methods).
+  const shiftGated = !isRefund && method !== "OTHER";
+  const shiftRequired =
+    shiftGated && (needsShift || counterErrorCode(payError) === "SHIFT_REQUIRED");
+  const utrServerError =
+    errorCode === "INVALID_UTR" || errorCode === "DUPLICATE_UTR"
+      ? apiErrorMessage(error, "Check the UTR number and try again.")
+      : null;
+  const utrError =
+    utrServerError ?? (utrTouched && !utrValid ? "Enter the 12-digit UTR number." : null);
   const canSubmit = (() => {
+    if (shiftRequired) return false;
     if (method === "CASH") return true;
-    if (method === "ONLINE") return txnRef.trim().length > 0;
+    if (method === "UPI") return utrValid;
+    if (method === "OTHER") return txnRef.trim().length > 0;
     // SPLIT
-    return splitValid && !splitNeedsRef;
+    return splitValid && (!needsUtr || utrValid);
   })();
+
+  const handleUtrChange = (value: string) => {
+    setUtr(value);
+    // A server UTR error refers to the old value — clear it once staff edit.
+    if (utrServerError) resetPay();
+  };
+
+  const utrField = (
+    <div className="space-y-1.5">
+      <Label htmlFor="rpp-utr" className={method === "SPLIT" ? "text-xs" : "text-sm"}>
+        UTR number <span className="text-red-500">*</span>
+      </Label>
+      <Input
+        id="rpp-utr"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={20}
+        placeholder="12-digit UTR"
+        value={utr}
+        onChange={(e) => handleUtrChange(e.target.value)}
+        onBlur={() => setUtrTouched(true)}
+        aria-invalid={!!utrError}
+        className="h-10 font-mono tracking-wide"
+      />
+      {utrError ? (
+        <p className="text-xs text-red-600">{utrError}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          From the customer's UPI app after paying the shop's QR.
+        </p>
+      )}
+    </div>
+  );
 
   if (session.status === "COMPLETED") {
     return (
@@ -123,6 +242,11 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span className="font-medium">No payment required — charges are fully covered.</span>
           </div>
+          {!!zeroMutation.error && (
+            <p className="text-sm text-destructive">
+              {apiErrorMessage(zeroMutation.error, "Something went wrong. Try again.")}
+            </p>
+          )}
           <Button
             className="w-full"
             disabled={zeroMutation.isPending}
@@ -160,8 +284,8 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
 
         {/* Method toggle — only for payments, not refunds */}
         {!isRefund && (
-          <div className="grid grid-cols-3 gap-2">
-            {(["CASH", "ONLINE", "SPLIT"] as Method[]).map((m) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {METHODS.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -173,14 +297,17 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
                     : "border-neutral-200 hover:border-neutral-300 text-neutral-700",
                 )}
               >
-                {m === "CASH" ? "Cash" : m === "ONLINE" ? "Online" : "Split"}
+                {METHOD_LABELS[m]}
               </button>
             ))}
           </div>
         )}
 
-        {/* Online fields */}
-        {!isRefund && method === "ONLINE" && (
+        {/* UPI (UTR) fields */}
+        {!isRefund && method === "UPI" && utrField}
+
+        {/* Other online gateway fields */}
+        {!isRefund && method === "OTHER" && (
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="rpp-txnRef" className="text-sm">
@@ -188,7 +315,7 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
               </Label>
               <Input
                 id="rpp-txnRef"
-                placeholder="e.g. pay_xyz789 / UPI ref"
+                placeholder="e.g. pay_xyz789"
                 value={txnRef}
                 onChange={(e) => setTxnRef(e.target.value)}
                 className="h-10"
@@ -234,7 +361,7 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Online Amount (₹)</Label>
+                <Label className="text-xs">UPI Amount (₹)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -251,21 +378,9 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
               </div>
             </div>
             {!splitValid && splitCash && splitOnline && (
-              <p className="text-xs text-red-600">Cash + Online must equal ₹{amount.toFixed(2)}</p>
+              <p className="text-xs text-red-600">Cash + UPI must equal ₹{amount.toFixed(2)}</p>
             )}
-            {splitOnlineNum > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">
-                  UPI / Transaction ID <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g. UPI ref / txn ID"
-                  value={txnRef}
-                  onChange={(e) => setTxnRef(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            )}
+            {splitOnlineNum > 0 && utrField}
           </div>
         )}
 
@@ -275,26 +390,32 @@ export function RecordPaymentPanel({ session, onSuccess, className }: RecordPaym
           </p>
         )}
 
-        {error && (
-          <p className="text-sm text-destructive">
-            {(error as any)?.response?.data?.message ?? "Something went wrong. Try again."}
-          </p>
+        {shiftRequired ? (
+          <ShiftRequiredNotice onShiftOpened={resetPay} />
+        ) : (
+          !!error && !utrServerError && errorCode !== "SHIFT_REQUIRED" && (
+            <p className="text-sm text-destructive">
+              {apiErrorMessage(error, "Something went wrong. Try again.")}
+            </p>
+          )
         )}
 
         <Button
           className="w-full"
-          disabled={isLoading || !canSubmit}
+          disabled={isLoading || (!isRefund && !canSubmit)}
           onClick={() => isRefund ? refundMutation.mutate() : payMutation.mutate()}
         >
           {isLoading
             ? "Processing…"
             : isRefund
-              ? `Refund ₹${amount.toFixed(2)} (${method === "ONLINE" ? "Online" : "Cash"})`
+              ? `Refund ₹${amount.toFixed(2)} (${refundMethod === "ONLINE" ? "Online" : "Cash"})`
               : method === "CASH"
                 ? `Mark ₹${amount.toFixed(2)} as collected (Cash)`
-                : method === "ONLINE"
-                  ? `Record Online Payment ₹${amount.toFixed(2)}`
-                  : `Record Split Payment ₹${amount.toFixed(2)}`}
+                : method === "UPI"
+                  ? `Record UPI Payment ₹${amount.toFixed(2)}`
+                  : method === "OTHER"
+                    ? `Record Online Payment ₹${amount.toFixed(2)}`
+                    : `Record Split Payment ₹${amount.toFixed(2)}`}
         </Button>
       </div>
     </div>

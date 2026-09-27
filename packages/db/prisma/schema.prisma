@@ -860,6 +860,13 @@ model Booking {
   // Manager Confirmation Flag
   requiresManagerConfirmation Boolean @default(false)
 
+  // Original (physical) driving licence — held by the branch for the rental.
+  // Collected at pickup, handed back at drop. Ids are User ids (no relation).
+  licenseCollectedAt   DateTime?
+  licenseCollectedById Int?
+  licenseReturnedAt    DateTime?
+  licenseReturnedById  Int?
+
   // Discount Tracking
   couponCode            String?
   discountRuleId        Int?
@@ -981,6 +988,9 @@ model DamageReport {
   chargeType    DamageChargeType          @default(PENALTY)
   status        DamageReportStatus        @default(PENDING)
   disposition   VehicleReturnDisposition?
+  // true when staff entered the cost at drop and it was billed on the RETURN
+  // session ledger — the manager review must not charge it a second time.
+  chargedAtDrop Boolean                   @default(false)
   booking       Booking                   @relation(fields: [bookingId], references: [id])
   vehicle       Vehicle                   @relation(fields: [vehicleId], references: [id])
   approvedBy    User?                     @relation(fields: [approvedById], references: [id], onDelete: SetNull)
@@ -1671,6 +1681,7 @@ model PaymentTransaction {
   @@index([cashShiftId])
   @@index([purpose])
   @@index([status, createdAt])
+  @@index([onlineTransactionRef])
 }
 
 // Refund request lifecycle. Cash refunds require manager approval before payout.

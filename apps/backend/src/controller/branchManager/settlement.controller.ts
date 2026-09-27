@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { listPendingSettlementsSchema, recordPaymentSchema } from "@repo/schemas";
 import { settlementEngineService, paymentTransactionService } from "../../services/payment/index.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -86,7 +87,15 @@ export const RecordSettlementPayment = async (req: Request, res: Response): Prom
       data: { publicId: txn.publicId, status: txn.status, totalAmount: txn.totalAmount },
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("RecordSettlementPayment Error:", error);
+    if (error.message?.includes("reference is required")) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+      return;
+    }
     if (error.message?.includes("exceed") || error.message?.includes("limit")) {
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;

@@ -7,6 +7,7 @@ import {
 } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 import { queueInvoiceGeneration } from "../utils/invoice-generation.queue.js";
+import { DROP_DAMAGE_REF, DROP_DISCOUNT_REF } from "./damage/drop-damage.service.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ const TAXABLE_CHARGE_TYPES = new Set<string>([]);
 const SKIP_LEDGER_TYPES = new Set([
   "BOOKING_BASE", // already in booking subtotal
   "EXTENSION",    // extension handled separately
-  "DISCOUNT",     // displayed as discount, not a charge
+  "DISCOUNT",     // displayed as discount, not a charge (drop discount handled below)
   "REFUND",       // not a charge
   "PAYMENT",      // cash/online payment records
   "DEPOSIT",      // safety deposit credits
@@ -93,20 +94,28 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
       return true;
     });
 
-    console.log(
-      `[finalizeInvoice] Session flow — booking ${bookingId}: ` +
-        `session ${returnSession.publicId} has ${chargeEntries.length} charge entries ` +
-        `(${returnSession.entries.length} total entries)`,
+    // Discount given at drop — a negative line so invoice total = amount actually settled
+    const dropDiscountEntries = returnSession.entries.filter(
+      (e: any) => !e.isVoided && e.referenceType === DROP_DISCOUNT_REF,
     );
 
-    if (chargeEntries.length > 0) {
-      return chargeEntries.map((entry: any) => {
-        // DAMAGE entries in a return session are free-form "other charges" added by
-        // the employee — NOT actual vehicle damage (which is handled separately by
-        // the branch manager directly on InvoiceItem). Map them to ADDITIONAL_CHARGES.
+    console.log(
+      `[finalizeInvoice] Session flow — booking ${bookingId}: ` +
+        `session ${returnSession.publicId} has ${chargeEntries.length} charge entries, ` +
+        `${dropDiscountEntries.length} drop discount(s) (${returnSession.entries.length} total entries)`,
+    );
+
+    if (chargeEntries.length > 0 || dropDiscountEntries.length > 0) {
+      const chargeItems: ChargeItem[] = chargeEntries.map((entry: any) => {
+        // DAMAGE entries in a return session are either free-form "other charges"
+        // (ADDITIONAL_CHARGES) or damage the customer paid for at drop — billed
+        // without GST, so it lands in the non-taxable Damage Compensation section.
+        // Damage settled by the branch manager is added to InvoiceItem separately.
         const chargeType =
           entry.entryType === "DAMAGE"
-            ? "ADDITIONAL_CHARGES"
+            ? entry.referenceType === DROP_DAMAGE_REF
+              ? "DAMAGE_COMPENSATION"
+              : "ADDITIONAL_CHARGES"
             : ledgerTypeToChargeType(String(entry.entryType));
 
         const isTaxable = chargeType === "DAMAGE_PENALTY";
@@ -118,6 +127,15 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
           chargeType,
         };
       });
+
+      const discountItems: ChargeItem[] = dropDiscountEntries.map((entry: any) => ({
+        label: String(entry.description),
+        amount: new Decimal(entry.amount.toString()).toFixed(2), // negative
+        isTaxable: false,
+        chargeType: "DROP_DISCOUNT", // rendered as the return-charge sections' discount on the PDF
+      }));
+
+      return [...chargeItems, ...discountItems];
     }
 
     // Session exists but had no billable entries (e.g. deposit-only return)
@@ -165,7 +183,8 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
  *
  * - Detects session vs legacy return flow automatically.
  * - Rebuilds InvoiceItem rows from the authoritative source.
- * - Recomputes invoice.total = booking.totalFinal + return charges (+ GST where applicable).
+ * - Recomputes invoice.total = booking.totalFinal + return charges (+ GST where applicable)
+ *   − any discount given at drop.
  * - Nulls invoicePdfFileId to discard any stale cached PDF.
  * - Queues a new PDF generation job.
  */

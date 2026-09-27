@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, ImagePlus, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, ImagePlus, Check, Star } from "lucide-react";
 import { toast } from "sonner";
 
 interface VehicleImageUploadProps {
@@ -77,49 +76,61 @@ export const VehicleImageUpload = ({
 
       {/* Grid of uploaded images */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
           {images.map((item, index) => {
             const url = getPreviewUrl(item);
+            const isMain = index === 0;
             return (
               <div
                 key={index}
-                className="group relative aspect-video bg-neutral-100 rounded-lg overflow-hidden border"
+                className={`group relative aspect-[4/3] bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all ${
+                  isMain
+                    ? "border-orange-400 shadow-md"
+                    : "border-neutral-200 hover:border-neutral-300 shadow-sm"
+                }`}
               >
+                {/* Image */}
                 <img
                   src={url}
                   alt={`Vehicle ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
 
-                {/* Actions Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-red-600"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  {index !== 0 && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-8 text-xs bg-white/90 hover:bg-white"
-                      onClick={() => setThumbnail(item)}
-                    >
-                      Set Main
-                    </Button>
-                  )}
-                </div>
-
-                {/* Thumbnail Badge */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
-                    <Check className="w-3 h-3" />
+                {/* ── TOP-LEFT: MAIN badge (always visible when main) */}
+                {isMain && (
+                  <div className="absolute top-1.5 left-1.5 z-20 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-md pointer-events-none">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
                     MAIN
+                  </div>
+                )}
+
+                {/* ── TOP-RIGHT: Delete button (always visible) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                  }}
+                  title="Remove image"
+                  className="absolute top-1.5 right-1.5 z-20 w-6 h-6 rounded-full bg-black/55 hover:bg-red-600 text-white flex items-center justify-center shadow transition-colors duration-150 backdrop-blur-[2px]"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+
+                {/* ── CENTER OVERLAY: "Set Main" — only for non-main, only on hover */}
+                {!isMain && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-black/30">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setThumbnail(item);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-white/95 hover:bg-orange-500 hover:text-white text-neutral-800 rounded-full shadow-lg transition-all duration-150 active:scale-95"
+                    >
+                      <Star className="w-3 h-3 text-orange-500 fill-orange-400" />
+                      Set Main
+                    </button>
                   </div>
                 )}
               </div>

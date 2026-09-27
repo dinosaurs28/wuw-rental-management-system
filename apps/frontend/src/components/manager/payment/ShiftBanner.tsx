@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { employeePaymentService } from "@/services/payment.service";
 import { usePaymentStore } from "@/store/payment.store";
+import { useActiveShift } from "@/components/employee/counter/useActiveShift";
+import { apiErrorMessage } from "@/lib/counterErrors";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,14 +27,17 @@ function formatTime(iso: string) {
 
 // ── Open Shift Modal ──────────────────────────────────────────────────────────
 
-function OpenShiftModal({
+export function OpenShiftModal({
   open,
   onClose,
+  onOpened,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Called once the shift is open (including one found already open). */
+  onOpened?: () => void;
 }) {
-  const { setActiveShift } = usePaymentStore();
+  const { setActiveShift, setActiveShiftLoaded } = usePaymentStore();
   const [loading, setLoading] = useState(false);
 
   const handleOpen = async () => {
@@ -40,10 +45,25 @@ function OpenShiftModal({
     try {
       const res = await employeePaymentService.openShift();
       setActiveShift(res.data);
+      setActiveShiftLoaded(true);
       toast.success("Cash shift started.");
       onClose();
-    } catch {
-      toast.error("Failed to open shift. Please try again.");
+      onOpened?.();
+    } catch (err) {
+      // 409 = a shift is already open (another tab or the mobile app) — adopt it.
+      const existing =
+        (err as { response?: { status?: number } })?.response?.status === 409
+          ? await employeePaymentService.getActiveShift().catch(() => null)
+          : null;
+      if (existing) {
+        setActiveShift(existing);
+        setActiveShiftLoaded(true);
+        toast.success("Your cash shift is already open.");
+        onClose();
+        onOpened?.();
+      } else {
+        toast.error(apiErrorMessage(err, "Failed to open shift. Please try again."));
+      }
     } finally {
       setLoading(false);
     }
@@ -210,22 +230,11 @@ function CloseShiftModal({
 // ── Shift Banner ──────────────────────────────────────────────────────────────
 
 export function ShiftBanner() {
-  const { activeShift, activeShiftLoaded, setActiveShift, setActiveShiftLoaded } =
-    usePaymentStore();
+  const { activeShift, activeShiftLoaded } = useActiveShift();
+  const { setActiveShift } = usePaymentStore();
   const [openShiftModal, setOpenShiftModal] = useState(false);
   const [closeShiftModal, setCloseShiftModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    if (activeShiftLoaded) return;
-    employeePaymentService
-      .getActiveShift()
-      .then((shift) => {
-        setActiveShift(shift);
-        setActiveShiftLoaded(true);
-      })
-      .catch(() => setActiveShiftLoaded(true));
-  }, [activeShiftLoaded, setActiveShift, setActiveShiftLoaded]);
 
   const handleOpenCloseModal = async () => {
     setRefreshing(true);

@@ -1,6 +1,7 @@
 // Shared rental-pricing display helpers.
 // Mirrors the web VehicleCard typeMaps exactly so mobile labels match the site.
 import type { RentalDuration } from '../types/api';
+import { rentalLengthLabel } from './dates';
 
 // Short PER-PERIOD unit suffix shown next to a per-period rate (e.g. "₹1,200 / day").
 // Pair ONLY with a per-period rate (ListPricing.price / pricingBreakdown.applicablePrice),
@@ -40,10 +41,10 @@ export function periodLabel(periodType?: string | null): string | null {
   }
 }
 
-// Concise real-duration string from the engine's RentalDuration object.
+// Concise real-duration string from the engine's RentalDuration object:
+// "3 hours" under a day, otherwise "1 day" / "2 days". The engine's `hours`
+// is already rounded up, and ceil(hours / 24) equals its `days`.
 export function durationLabel(d?: RentalDuration | null): string | null {
   if (!d) return null;
-  if (d.days >= 1) return `${d.days} day${d.days !== 1 ? 's' : ''}`;
-  if (d.hours >= 1) return `${d.hours} hr${d.hours !== 1 ? 's' : ''}`;
-  return null;
+  return rentalLengthLabel(d.hours);
 }

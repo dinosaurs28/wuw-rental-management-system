@@ -9,6 +9,8 @@ interface Pricing {
   finalTotal: number;
 }
 
+export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI";
+
 interface EmployeeBookingState {
   selectedVehicleId: string | null;
   selectedGroupKey: string | null;
@@ -16,7 +18,9 @@ interface EmployeeBookingState {
   endDate: Date | null;
   startTime: string;
   endTime: string;
-  paymentType: "CASH" | "ONLINE";
+  paymentType: EmployeePaymentType;
+  /** UPI (UTR) walk-ins: the 12-digit UTR the customer paid with. */
+  utr: string;
   pricing: Pricing | null;
   customerKycId: string | null;
 
@@ -26,7 +30,8 @@ interface EmployeeBookingState {
   setDates: (start: Date, end: Date) => void;
   setStartTime: (time: string) => void;
   setEndTime: (time: string) => void;
-  setPaymentType: (type: "CASH" | "ONLINE") => void;
+  setPaymentType: (type: EmployeePaymentType) => void;
+  setUtr: (utr: string) => void;
   setPricing: (pricing: Pricing) => void;
   setCustomerKycId: (id: string | null) => void;
   reset: () => void;
@@ -42,6 +47,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       startTime: getCurrentTime(),
       endTime: getCurrentTime(),
       paymentType: "CASH",
+      utr: "",
       pricing: null,
       customerKycId: null,
 
@@ -51,6 +57,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       setStartTime: (time) => set({ startTime: time }),
       setEndTime: (time) => set({ endTime: time }),
       setPaymentType: (type) => set({ paymentType: type }),
+      setUtr: (utr) => set({ utr }),
       setPricing: (pricing) => set({ pricing }),
       setCustomerKycId: (id) => set({ customerKycId: id }),
       reset: () =>
@@ -62,6 +69,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
           startTime: "10:00",
           endTime: "10:00",
           paymentType: "CASH",
+          utr: "",
           pricing: null,
           customerKycId: null,
         }),
@@ -69,8 +77,9 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
     {
       name: "employee-booking-storage",
       partialize: (state) => {
+        // UTR stays in memory only so it can't carry over to another customer's booking
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { startTime, endTime, ...rest } = state;
+        const { startTime, endTime, utr, ...rest } = state;
         return rest;
       },
       storage: createJSONStorage(() => ({

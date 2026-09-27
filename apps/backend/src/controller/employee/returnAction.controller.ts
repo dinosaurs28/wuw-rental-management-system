@@ -17,6 +17,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
+import { vehicleStatusAfterDrop } from "../../services/damage/drop-damage.service.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -81,7 +82,7 @@ export const UploadReturnImage = async (req: Request, res: Response) => {
 
 export const CompleteReturn = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  const { returnImageIds, requireManagerConfirmation } = req.body;
+  const { returnImageIds, requireManagerConfirmation, licenseReturned } = req.body;
   const branchId = req.branch_Id;
 
   try {
@@ -97,9 +98,12 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         isAdvancePayment: true,
         remainingBalance: true,
         remainingPaidAt: true,
+        licenseCollectedAt: true,
+        licenseReturnedAt: true,
         items: {
           select: { vehicleId: true },
         },
+        branch: { select: { chargeConfig: { select: { usePaymentSessions: true } } } },
       },
     });
 
@@ -115,11 +119,35 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       });
     }
 
+    // Branches on payment sessions settle every drop (extra km, damage, discount) on
+    // the drop bill — a plain complete here would skip that billing.
+    const chargedAtDropCount = await prisma.damageReport.count({
+      where: { bookingId: booking.id, chargedAtDrop: true },
+    });
+    if ((booking.branch?.chargeConfig?.usePaymentSessions ?? false) || chargedAtDropCount > 0) {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "USE_DROP_BILL",
+        message: "This return is settled on the drop bill. Use the drop bill to complete this return.",
+      });
+    }
+
     // Advance payment gate: remaining balance MUST be collected before return
     if (booking.isAdvancePayment && !booking.remainingPaidAt) {
       return res.status(StatusCode.PAYMENT_REQUIRED).json({
         message: `Remaining balance of ₹${booking.remainingBalance} must be collected before completing the return.`,
         remainingBalance: booking.remainingBalance,
+      });
+    }
+
+    // The original driving licence held since pickup must go back before the drop closes.
+    // Bookings picked up before licences were collected (licenseCollectedAt = null) are exempt,
+    // and so are staff phones on an app build that predates the tick (they omit the field);
+    // an explicit `false` is always refused.
+    const licenseDue = booking.licenseCollectedAt != null && booking.licenseReturnedAt == null;
+    if (licenseDue && licenseReturned === false) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Return the customer's original driving licence before closing the drop.",
+        code: "LICENSE_NOT_RETURNED",
       });
     }
 
@@ -136,8 +164,16 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     }
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
+    const returnedStatuses = new Set<VehicleStatus>();
 
     await prisma.$transaction(async (tx) => {
+      if (licenseDue && licenseReturned === true) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { licenseReturnedAt: new Date(), licenseReturnedById: actingUser.id },
+        });
+      }
+
       if (requireManagerConfirmation) {
         await tx.booking.update({
           where: { id: booking.id },
@@ -153,14 +189,16 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           },
         });
 
-        await tx.vehicle.updateMany({
-          where: {
-            id: { in: vehicleIds },
-          },
-          data: {
-            status: VehicleStatus.AVAILABLE,
-          },
-        });
+        // Damage recorded at drop holds that vehicle for the manager's disposition
+        // (MANAGER_REPORTED); every other vehicle is back in the fleet.
+        for (const vehicleId of vehicleIds) {
+          const status = (await vehicleStatusAfterDrop(booking.id, vehicleId, tx as any)) ?? VehicleStatus.AVAILABLE;
+          returnedStatuses.add(status);
+          await tx.vehicle.update({
+            where: { id: vehicleId },
+            data: { status },
+          });
+        }
       }
 
       if (
@@ -226,7 +264,9 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: requireManagerConfirmation 
         ? "Return sent to manager for confirmation." 
-        : "Return Processed Successfully. Vehicle is now AVAILABLE.",
+        : returnedStatuses.has(VehicleStatus.MANAGER_REPORTED)
+          ? "Return Processed Successfully. Vehicle is held for the manager's damage review."
+          : `Return Processed Successfully. Vehicle is now ${[...returnedStatuses].join(", ") || VehicleStatus.AVAILABLE}.`,
     });
   } catch (error) {
     console.error("Return Action Error:", error);
