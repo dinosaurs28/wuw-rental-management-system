@@ -51,6 +51,8 @@ const initiatePickupSessionSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
+  // Must be true — the branch keeps the customer's physical licence for the rental
+  licenseCollected: z.boolean().optional(),
 });
 
 // ── POST /employee/bookings/:bookingId/pickup-session/initiate ─────────────────
@@ -77,6 +79,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       pickupFuelLevel,
       pickupImageIds,
       captureImages,
+      licenseCollected,
     } = validation.data;
 
     // Resolve actor
@@ -126,6 +129,16 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       });
     }
 
+    if (licenseCollected !== true) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Collect the customer's original driving licence before handing over the vehicle.",
+        code: "LICENSE_NOT_COLLECTED",
+      });
+    }
+
+    // Written only while unset, so a re-initiated session keeps the first collection time
+    const licenseCollectedData = { licenseCollectedAt: new Date(), licenseCollectedById: actor.id };
+
     // Create or return existing PICKUP session
     const session = await paymentSessionService.createSession(
       booking.id,
@@ -140,6 +153,12 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
 
     if (session.entries && session.entries.length > 0) {
       // Already populated — return existing session
+      if (!booking.licenseCollectedAt) {
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: licenseCollectedData,
+        });
+      }
       await paymentSessionService.updateStatus(
         session.id,
         PaymentSessionStatus.AWAITING_PAYMENT,
@@ -306,6 +325,13 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       // ── Handover metadata ────────────────────────────────────────────────
       // Save odo/fuel/photos now; vehicle status is updated by runPostCompletionHooks
       // when payment is recorded.
+
+      if (!booking.licenseCollectedAt) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: licenseCollectedData,
+        });
+      }
 
       if (odo !== undefined) {
         await tx.booking.update({

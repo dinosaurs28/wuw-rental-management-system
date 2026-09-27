@@ -12,6 +12,7 @@ import {
   failBookingPayment,
 } from "../../services/payment/bookingConfirmation.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
 
 export const checkPayment = async (req: Request, res: Response) => {
   try {
@@ -52,8 +53,9 @@ export const checkPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // Determine if this is a Cash transaction
+    // Counter payments (cash, or UPI with a UTR) settle without a gateway call
     const isCash = transactionId.startsWith("CASH_");
+    const isUpi = transactionId.startsWith("UPI_");
 
     let gatewayStatus: GatewayPaymentStatus | null = null;
     if (isRazorpayOrderId(transactionId)) {
@@ -74,13 +76,14 @@ export const checkPayment = async (req: Request, res: Response) => {
     const isOnlineSuccess = gatewayStatus?.state === "SUCCESS";
     const isOnlinePending = gatewayStatus?.state === "PENDING";
 
-    console.log(`[checkPayment] isCash=${isCash} isOnlineSuccess=${isOnlineSuccess} isOnlinePending=${isOnlinePending} state=${gatewayStatus?.state}`);
+    console.log(`[checkPayment] isCash=${isCash} isUpi=${isUpi} isOnlineSuccess=${isOnlineSuccess} isOnlinePending=${isOnlinePending} state=${gatewayStatus?.state}`);
 
-    if (isOnlineSuccess || isCash) {
+    if (isOnlineSuccess || isCash || isUpi) {
       const { alreadyConfirmed, skipped } = await confirmBookingPayment({
         bookingId: booking.id,
         transactionId,
         isCash,
+        isUpi,
         gatewayPaymentId: gatewayStatus?.paymentId ?? null,
         actor: {
           ip: req.ip,
@@ -91,11 +94,37 @@ export const checkPayment = async (req: Request, res: Response) => {
       // Paid, but the hold had already expired and the booking was cancelled.
       // Reporting Success would promise a car that may now belong to someone else.
       if (skipped === "CANCELLED") {
+        // Counter UPI: the money is already in the branch account and the UTR
+        // was never claimed, so staff simply book again with it.
+        if (isUpi) {
+          console.warn(`[checkPayment] UPI booking=${booking.publicId} is ${booking.status} — staff to re-create with the same UTR`);
+          return res.status(StatusCode.OK).json({
+            status: "Failed",
+            message: "This booking's hold expired before it was confirmed. The UPI payment was received at the counter — create the booking again with the same UTR.",
+            redirectURL: "FRONTEND_FAILED_URL",
+          });
+        }
         console.error(`[checkPayment] booking=${booking.publicId} was CANCELLED before payment landed — refund required`);
         return res.status(StatusCode.OK).json({
           status: "Failed",
           message: "This booking expired before the payment completed. Any amount debited will be refunded.",
           redirectURL: "FRONTEND_FAILED_URL",
+        });
+      }
+
+      // The UTR now backs another payment, so this hold can never be confirmed —
+      // release the vehicles and let staff re-create it with the right UTR.
+      if (skipped === "DUPLICATE_UTR") {
+        await failBookingPayment(booking.id);
+        try {
+          await invalidateVehicleAvailability(redis, booking.items.map((item) => item.vehicle.id));
+        } catch (redisErr) {
+          console.warn("[payment] Cache invalidation failed (non-fatal):", redisErr);
+        }
+        return res.status(StatusCode.CONFLICT).json({
+          status: "Failed",
+          code: "DUPLICATE_UTR",
+          message: "This UTR has already been used for another payment. Create the booking again with the correct UTR.",
         });
       }
 
@@ -131,6 +160,9 @@ export const checkPayment = async (req: Request, res: Response) => {
       redirectURL: "FRONTEND_FAILED_URL",
     });
   } catch (error) {
+    if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
     console.error("[checkPayment] UNHANDLED ERROR:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal error while checking payment",

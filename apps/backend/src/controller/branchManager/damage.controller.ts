@@ -22,6 +22,13 @@ import {
   createRazorpayOrder,
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import {
+  billedOnCompletedDrop,
+  dropDamageBilling,
+  reviewIsDispositionOnly,
+  vehicleStatusAfterDrop,
+} from "../../services/damage/drop-damage.service.js";
 
 export const GetDamageReports = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
@@ -178,7 +185,11 @@ export const GetDamageReportList = async (req: Request, res: Response) => {
         id: true,
         publicId: true, // Added to fix lint error
         status: true,
+        chargedAtDrop: true,
+        estimatedCost: true,
+        notes: true,
         createdAt: true,
+        booking: { select: { status: true } },
         vehicle: {
           select: {
             regNo: true,
@@ -207,17 +218,29 @@ export const GetDamageReportList = async (req: Request, res: Response) => {
       where: whereCondition,
     });
 
+    // Charged drop damages a completed drop bill actually carried
+    const billedOnDrop = await billedOnCompletedDrop(
+      reports.filter((r) => r.chargedAtDrop).map((r) => r.publicId),
+    );
+
     const responseData = {
-      reports: reports.map((r) => ({
-        ...r,
-        publicId: r.publicId || undefined, // Prisma returns null if optional, but here we mapped ID. Wait, I should check if publicId is in select.
-        // Looking at select in lines 164-183: id, status, createdAt, vehicle.
-        // It does NOT select publicId. I must add it to select first.
-        vehicle: {
-          ...r.vehicle,
-          image: r.vehicle.images[0]?.file.url || null,
-        },
-      })),
+      reports: reports.map(({ notes, estimatedCost, booking, ...r }) => {
+        const dropBilling = dropDamageBilling({ notes, chargedAtDrop: r.chargedAtDrop });
+        return {
+          ...r,
+          publicId: r.publicId || undefined, // Prisma returns null if optional, but here we mapped ID. Wait, I should check if publicId is in select.
+          // Looking at select in lines 164-183: id, status, createdAt, vehicle.
+          // It does NOT select publicId. I must add it to select first.
+          estimatedCost: Number(estimatedCost),
+          raisedAtDrop: dropBilling !== null,
+          // false = settled at drop or a company expense — the review only sets the disposition
+          managerCharges: !reviewIsDispositionOnly(dropBilling, booking.status, billedOnDrop.has(r.publicId)),
+          vehicle: {
+            ...r.vehicle,
+            image: r.vehicle.images[0]?.file.url || null,
+          },
+        };
+      }),
       pagination: {
         total: totalCount,
         page: page,
@@ -260,13 +283,16 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         publicId: true,
         status: true,
         chargeType: true,
+        chargedAtDrop: true,
         estimatedCost: true,
+        finalCost: true,
         notes: true,
         createdAt: true,
         booking: {
           select: {
             id: true,
             publicId: true,
+            status: true,
             totalDeposit: true,
             safetyDeposit: true,
             branchId: true,
@@ -330,11 +356,20 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
     const additionalCharges = returnSession ? Math.max(0, Number(returnSession.totalCharges)) : 0;
     const safetyDeposit = Number(report.booking.safetyDeposit ?? 0);
 
+    const dropBilling = dropDamageBilling(report);
+    const billedOnDrop =
+      dropBilling === "DROP" && (await billedOnCompletedDrop([report.publicId])).has(report.publicId);
+
     // Transform response to match strict format
     const responseData = {
       damageReportId: report.publicId,
       status: report.status,
       chargeType: report.chargeType ?? "PENALTY",
+      // Recorded at drop: chargedAtDrop = already billed on the drop bill. managerCharges = false
+      // when the review only sets the disposition (charged at drop, or a company expense).
+      chargedAtDrop: report.chargedAtDrop,
+      raisedAtDrop: dropBilling !== null,
+      managerCharges: !reviewIsDispositionOnly(dropBilling, report.booking.status, billedOnDrop),
       booking: {
         bookingId: report.booking.publicId,
         deposit: safetyDeposit,
@@ -351,6 +386,7 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         deposit: safetyDeposit,
         additionalCharges,
         estimatedCost: Number(report.estimatedCost),
+        finalCost: report.finalCost != null ? Number(report.finalCost) : null,
         gstRate: cgstRate + sgstRate,
       },
     };
@@ -417,6 +453,107 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
     if (damageReport.status !== ("PENDING" as DamageReportStatus)) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: `Cannot close report. Current status: ${damageReport.status}`,
+      });
+    }
+
+    // Damage recorded at drop and already settled there — a company expense never
+    // billed to the customer, or a charged damage a completed drop bill actually
+    // carried. The manager only sets the disposition — no payment, invoice charge,
+    // booking total change or session abandon here. Any other drop damage (branch
+    // without payment sessions, or a charged one the drop never billed) goes
+    // through the normal charge flow below once the drop is complete.
+    const dropBilling = dropDamageBilling(damageReport);
+    const billedOnDrop =
+      dropBilling === "DROP" &&
+      (await billedOnCompletedDrop([damageReport.publicId])).has(damageReport.publicId);
+
+    if (dropBilling && dropBilling !== "COMPANY" && !billedOnDrop && booking.status !== BookingStatus.RETURNED) {
+      return res.status(StatusCode.CONFLICT).json({
+        code: "DROP_NOT_COMPLETED",
+        message: "Complete the vehicle drop before closing this damage report.",
+      });
+    }
+
+    if (dropBilling === "COMPANY" || billedOnDrop) {
+      const managerUser = await prisma.user.findUnique({
+        where: { publicId: managerId },
+        select: { id: true, name: true, role: true },
+      });
+      if (!managerUser)
+        return res
+          .status(StatusCode.UNAUTHORIZED)
+          .json({ message: "Manager not found" });
+
+      const vehicleStatus = await prisma.$transaction(async (tx) => {
+        await tx.damageReport.update({
+          where: { id: damageReport.id },
+          data: {
+            disposition: disposition as VehicleReturnDisposition,
+            approvedById: managerUser.id,
+            status: "APPROVED" as DamageReportStatus,
+            // Company expense: nothing is charged to the customer (estimatedCost keeps the cost)
+            ...(!damageReport.chargedAtDrop && { finalCost: 0 }),
+          },
+        });
+
+        // While the drop is still open the car stays on the rental; completing the
+        // drop (RETURN session or legacy return) applies the disposition then.
+        if (booking.status !== BookingStatus.RETURNED) return null;
+
+        const nextStatus = await vehicleStatusAfterDrop(booking.id, damageReport.vehicleId, tx as any);
+        if (nextStatus) {
+          await tx.vehicle.update({
+            where: { id: damageReport.vehicleId },
+            data: { status: nextStatus },
+          });
+        }
+        return nextStatus;
+      }, { timeout: 30000 });
+
+      if (vehicleStatus) {
+        try {
+          await invalidateVehicleAvailability(redis, [damageReport.vehicleId]);
+        } catch (redisErr) {
+          console.warn("[damage-close] Cache invalidation failed (non-fatal):", redisErr);
+        }
+      }
+
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.COMPLETED,
+        entityType: StaffEntityType.DAMAGE_REPORT,
+        entityRef: damageReport.publicId,
+        description: `Drop damage report ${damageReport.publicId} closed (${disposition})`,
+        metadata: { disposition, chargedAtDrop: damageReport.chargedAtDrop },
+      });
+
+      await auditService.log({
+        actorId: managerUser.id,
+        actorName: managerUser.name,
+        actorRole: managerUser.role,
+        actorBranchId: branchId,
+        action: "DAMAGE_DISPOSITION_SET",
+        category: AuditCategory.VEHICLE,
+        description: `Disposition ${disposition} set for vehicle ${damageReport.vehicle.regNo} (booking ${booking.publicId}); damage ${damageReport.chargedAtDrop ? "already charged at drop" : "is a company expense"}`,
+        entity: "DamageReport",
+        entityId: damageReport.publicId,
+        entityLabel: damageReport.vehicle.regNo,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: {
+          disposition,
+          chargedAtDrop: damageReport.chargedAtDrop,
+          amount: Number(damageReport.estimatedCost),
+          vehicleStatus,
+        },
+      });
+
+      return res.status(StatusCode.OK).json({
+        message: damageReport.chargedAtDrop
+          ? "Already charged at drop — vehicle disposition saved."
+          : "Company expense — nothing charged to the customer. Vehicle disposition saved.",
+        settled: true,
+        chargedAtDrop: damageReport.chargedAtDrop,
+        vehicleStatus,
       });
     }
 
@@ -522,6 +659,8 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           chargeType: activeChargeType,
           approvedById: managerUser.id,
           status: "APPROVED" as DamageReportStatus,
+          // Marked for the drop bill but never billed there — it's charged here instead
+          ...(dropBilling === "DROP" && { chargedAtDrop: false }),
         },
       });
 
@@ -722,6 +861,12 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           nextVehicleStatus = VehicleStatus.MAINTENANCE;
         if (disposition === "DAMAGED")
           nextVehicleStatus = VehicleStatus.INACTIVE;
+
+        // A drop damage keeps the car held while other drop damages await review
+        if (dropBilling) {
+          nextVehicleStatus =
+            (await vehicleStatusAfterDrop(booking.id, damageReport.vehicleId, tx as any)) ?? nextVehicleStatus;
+        }
 
         await tx.vehicle.update({
           where: { id: damageReport.vehicleId },
@@ -954,6 +1099,17 @@ export const UpdateDamageChargeType = async (req: Request, res: Response) => {
     if (report.status !== "PENDING") {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: `Cannot update charge type. Current status: ${report.status}`,
+      });
+    }
+
+    const dropBilling = dropDamageBilling(report);
+    const billedOnDrop =
+      dropBilling === "DROP" && (await billedOnCompletedDrop([report.publicId])).has(report.publicId);
+    if (reviewIsDispositionOnly(dropBilling, report.booking.status, billedOnDrop)) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: dropBilling === "DROP"
+          ? "Already charged at drop — the charge type can't be changed."
+          : "Recorded at drop as a company expense — the charge type can't be changed.",
       });
     }
 

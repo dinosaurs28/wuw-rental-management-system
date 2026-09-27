@@ -11,6 +11,7 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../se
 import { financialStateService, branchPaymentConfigService, refundService } from "../../services/payment/index.js";
 import type { PaymentMethod } from "@repo/database/client";
 import { runNoShowAutoCancel } from "../../jobs/noShowAutoCancel.worker.js";
+import { vehicleStatusAfterDrop } from "../../services/damage/drop-damage.service.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -658,6 +659,7 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
     }
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
+    const returnedStatuses = new Set<VehicleStatus>();
 
     const actingUser = await prisma.user.findUnique({
       where: { publicId: userId },
@@ -678,12 +680,16 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.vehicle.updateMany({
-        where: { id: { in: vehicleIds } },
-        data: {
-          status: VehicleStatus.AVAILABLE,
-        },
-      });
+      // Damage recorded at drop holds that vehicle for the manager's disposition
+      // (MANAGER_REPORTED); every other vehicle is back in the fleet.
+      for (const vehicleId of vehicleIds) {
+        const status = (await vehicleStatusAfterDrop(booking.id, vehicleId, tx as any)) ?? VehicleStatus.AVAILABLE;
+        returnedStatuses.add(status);
+        await tx.vehicle.update({
+          where: { id: vehicleId },
+          data: { status },
+        });
+      }
 
       await staffActivityService.logFromRequest(req, {
         actionType: StaffActionType.CONFIRMED,
@@ -702,7 +708,9 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       success: true,
-      message: "Return confirmed successfully. Vehicle is now AVAILABLE.",
+      message: returnedStatuses.has(VehicleStatus.MANAGER_REPORTED)
+        ? "Return confirmed successfully. Vehicle is held for the damage review."
+        : `Return confirmed successfully. Vehicle is now ${[...returnedStatuses].join(", ") || VehicleStatus.AVAILABLE}.`,
     });
   } catch (error: any) {
     console.error("Manager Confirm Return Error:", error);

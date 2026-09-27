@@ -10,7 +10,20 @@ export const evaluateExtensionSchema = z.object({
 
 // ── Employee / Manager: Commit Extension ─────────────────────────────────────
 
-export const commitExtensionSchema = z.object({
+// Older web builds sent the swap target as `selectedVehicleId`; accept it as
+// an alias so those clients don't fail the SWAP_CURRENT_TO_OTHER refine.
+const aliasSelectedVehicle = (raw: unknown) => {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const { selectedVehicleId, ...rest } = raw as Record<string, unknown>;
+    if (rest.selectedVehiclePublicId === undefined && selectedVehicleId !== undefined) {
+      return { ...rest, selectedVehiclePublicId: selectedVehicleId };
+    }
+    return rest;
+  }
+  return raw;
+};
+
+export const commitExtensionSchema = z.preprocess(aliasSelectedVehicle, z.object({
   extensionPublicId: z.string().min(1),
   resolutionType: z.enum([
     "SAME_VEHICLE",
@@ -33,6 +46,9 @@ export const commitExtensionSchema = z.object({
     .optional(),
   idempotencyKey: z.string().min(1).max(64),
   notes: z.string().max(500).optional(),
+  // Staff collect the extension charge right away (collect endpoint) instead of
+  // deferring it to the pickup payment session. Always the case once PICKED_UP.
+  collectNow: z.boolean().optional(),
 })
   .refine(
     (d) => {
@@ -55,22 +71,13 @@ export const commitExtensionSchema = z.object({
       return true;
     },
     { message: "partialNewEndAt is required when resolutionType is PARTIAL_EXTENSION", path: ["partialNewEndAt"] },
-  );
+  ));
 
 // ── Customer: Evaluate Extension ─────────────────────────────────────────────
 
 export const customerEvaluateExtensionSchema = z.object({
   newEndAt: z.string().datetime({ message: "newEndAt must be an ISO 8601 datetime string" }),
   notes: z.string().max(500).optional(),
-});
-
-// ── Customer: Commit Extension (online only) ──────────────────────────────────
-
-export const customerCommitExtensionSchema = z.object({
-  extensionPublicId: z.string().min(1),
-  onlineTransactionRef: z.string().min(1),
-  onlineGateway: z.string().optional(),
-  idempotencyKey: z.string().min(1).max(64),
 });
 
 // ── Cancel Extension ──────────────────────────────────────────────────────────

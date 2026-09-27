@@ -3,21 +3,25 @@ import { z } from "zod";
 import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus } from "@repo/database/client";
-import { extensionService } from "../../services/extension/index.js";
+import { extensionService, ExtensionPendingError } from "../../services/extension/index.js";
 import {
   evaluateExtensionSchema,
   commitExtensionSchema,
   cancelExtensionSchema,
   listExtensionsSchema,
 } from "@repo/schemas";
+import {
+  assertOpenShift,
+  validateNewUtr,
+  CounterGuardError,
+} from "../../services/payment/counter-guard.service.js";
 
+// ONLINE = UPI at the counter: onlineTransactionRef is the customer's 12-digit
+// UTR (validated by validateNewUtr, which returns INVALID_UTR when missing).
 const collectExtensionSchema = z.object({
   method: z.enum(["CASH", "ONLINE"]),
-  onlineTransactionRef: z.string().min(1).optional(),
-}).refine(
-  (d) => d.method !== "ONLINE" || !!d.onlineTransactionRef?.trim(),
-  { message: "onlineTransactionRef is required for ONLINE payment", path: ["onlineTransactionRef"] },
-);
+  onlineTransactionRef: z.string().optional(),
+});
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -76,6 +80,11 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       data: evaluation,
     });
   } catch (error: any) {
+    // A committed or paid extension blocks new quotes — the app offers to cancel it
+    if (error instanceof ExtensionPendingError) {
+      res.status(StatusCode.CONFLICT).json(error.toJSON());
+      return;
+    }
     console.error("EvaluateExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -108,17 +117,37 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const actor = await buildActorContext(req);
-    const { extension, remainAmount } = await extensionService.commit(validation.data, actor);
+    const { collectNow, ...commitInput } = validation.data;
 
-    // Check if this branch uses deferred payment sessions so the frontend
-    // knows to add the extension charge to the active pickup session instead
-    // of collecting payment immediately via Step 3 of the extension modal.
+    const pending = await prisma.bookingExtension.findUnique({
+      where: { publicId: commitInput.extensionPublicId },
+      select: { branchId: true, additionalAmount: true, booking: { select: { status: true } } },
+    });
+    if (!pending || pending.branchId !== req.branch_Id) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+
+    // Branches on payment sessions add the charge to the pickup session
+    // instead of collecting it via the collect endpoint — unless the client
+    // collects now, or the car is already out (there is no pickup session left).
     const branchConfig = await prisma.branchChargeConfig.findUnique({
       where: { branchId: req.branch_Id },
       select: { usePaymentSessions: true },
     });
-    const usePaymentSession = branchConfig?.usePaymentSessions ?? false;
+    const usePaymentSession =
+      (branchConfig?.usePaymentSessions ?? false) &&
+      collectNow !== true &&
+      pending.booking.status !== BookingStatus.PICKED_UP;
+
+    const actor = await buildActorContext(req);
+
+    // Payment follows immediately, so check the shift before the vehicle hold is written
+    if (!usePaymentSession && new Decimal(pending.additionalAmount.toString()).gt(0)) {
+      await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
+    }
+
+    const { extension, remainAmount } = await extensionService.commit(commitInput, actor);
 
     res.status(StatusCode.OK).json({
       message: usePaymentSession
@@ -134,9 +163,17 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       },
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("CommitExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+      return;
+    }
+    if (error.message?.includes("Partial end")) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;
     }
     if (
@@ -162,18 +199,49 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
       res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
       return;
     }
+    const { method } = validation.data;
+
+    const pending = await prisma.bookingExtension.findUnique({
+      where: { publicId: req.params.extensionPublicId! },
+      select: { branchId: true, additionalAmount: true, resolutionType: true },
+    });
+    if (!pending || pending.branchId !== req.branch_Id) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
+      return;
+    }
+    // Commit re-checks availability and holds the slot — never take money for a bare quote
+    if (pending.resolutionType === null) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: "Commit the extension before collecting payment." });
+      return;
+    }
+
     const actor = await buildActorContext(req);
+
+    // Counter money (cash or UPI) needs an open shift; a ₹0 extension takes none
+    let utr: string | undefined;
+    if (new Decimal(pending.additionalAmount.toString()).gt(0)) {
+      await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
+      if (method === "ONLINE") {
+        utr = await validateNewUtr(validation.data.onlineTransactionRef);
+      }
+    }
+
     const result = await extensionService.collect(
       req.params.extensionPublicId!,
-      validation.data.method,
+      method,
       actor,
-      validation.data.onlineTransactionRef,
+      utr,
+      { onlineGateway: method === "ONLINE" ? "UPI" : undefined },
     );
     res.status(StatusCode.OK).json({
       message: result.payment === "confirmed" ? "Extension confirmed" : "Extension payment collected — awaiting manager confirmation",
       data: result,
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("CollectExtensionPayment Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -181,6 +249,11 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
     }
     if (error.message?.includes("already in")) {
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+      return;
+    }
+    // Double-submitted collect: the per-extension idempotency key already exists
+    if (error?.code === "P2002") {
+      res.status(StatusCode.CONFLICT).json({ message: "Payment for this extension is already being recorded." });
       return;
     }
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -233,6 +306,15 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
         message: "Validation failed",
         errors: validation.error.format(),
       });
+      return;
+    }
+
+    const pending = await prisma.bookingExtension.findUnique({
+      where: { publicId: extensionPublicId! },
+      select: { branchId: true },
+    });
+    if (!pending || pending.branchId !== req.branch_Id) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Extension not found or access denied" });
       return;
     }
 

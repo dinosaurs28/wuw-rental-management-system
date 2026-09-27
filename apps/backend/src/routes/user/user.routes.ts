@@ -17,7 +17,6 @@ import { cancelHold } from "../../controller/booking/cancelHold.controller.js";
 import { deleteAccount } from "../../controller/user/account-deletion.controller.js";
 import {
   EvaluateExtension as CustomerEvaluateExtension,
-  CommitExtension as CustomerCommitExtension,
   CancelExtension as CustomerCancelExtension,
   GetExtensionEligibility,
   InitiateExtensionPayment,
@@ -49,7 +48,6 @@ router.post("/discount/validate", authCheckJwt, ValidateCustomerCoupon);
 // Customer extension routes
 router.get("/bookings/:bookingPublicId/extension-eligibility", authCheckJwt, GetExtensionEligibility);
 router.post("/bookings/:bookingPublicId/extensions/evaluate", authCheckJwt, CustomerEvaluateExtension);
-router.post("/extensions/commit", authCheckJwt, CustomerCommitExtension);
 router.post("/extensions/:extensionPublicId/cancel", authCheckJwt, CustomerCancelExtension);
 router.post("/extensions/:extensionPublicId/initiate-payment", authCheckJwt, InitiateExtensionPayment);
 router.post("/extensions/verify-payment/:merchantTransactionId", authCheckJwt, VerifyExtensionPayment);

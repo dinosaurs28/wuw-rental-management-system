@@ -70,6 +70,9 @@ export const pickUpVehicleSchema = z.object({
     .optional(),
   requireManagerConfirmation: z.boolean().optional(),
   payRemainingAtPickup: z.boolean().optional(),
+  // true = original licence collected. `false` is refused (LICENSE_NOT_COLLECTED);
+  // omitted only by app builds from before the tick, which are let through.
+  licenseCollected: z.boolean().optional(),
 });
 
 export const managerConfirmPickupSchema = z.object({

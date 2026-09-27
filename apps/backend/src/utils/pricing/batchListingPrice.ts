@@ -46,6 +46,8 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): number {
   }
 
   switch (duration.periodType) {
+    // Under 12 hours without an hourly rate: the 12-hour slab, else the 24-hour rate
+    case RentalPeriodType.HOURLY:
     case RentalPeriodType.HALF_DAY:
       return pricing.price12Hour ?? pricing.price24Hour;
     case RentalPeriodType.FULL_DAY:

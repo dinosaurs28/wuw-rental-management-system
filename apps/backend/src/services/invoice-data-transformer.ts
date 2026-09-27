@@ -221,9 +221,18 @@ export async function transformBookingToInvoiceData(
   const penaltyItems: InvoiceSectionItem[] = [];
   const compensationItems: InvoiceSectionItem[] = [];
   const additionalItems: InvoiceSectionItem[] = [];
+  let dropDiscount = 0;
 
   for (const invItem of booking.invoice.items) {
     const amount = Number(invItem.amount);
+
+    // Discount given at drop (stored as a negative item so invoice.total nets it)
+    // is shown as the return-charge sections' discount, not as a charge line.
+    if (invItem.chargeType === "DROP_DISCOUNT") {
+      dropDiscount += Math.abs(amount);
+      continue;
+    }
+
     const sectionType = classifyChargeType(invItem.chargeType ?? undefined);
 
     const sectionItem: InvoiceSectionItem = {
@@ -256,6 +265,14 @@ export async function transformBookingToInvoiceData(
   // ── SECTION 3: Additional Charges + Damage Compensation (non-taxable page) ───
   const nonTaxableSections: InvoiceSection[] = [];
 
+  // The drop discount is capped at the drop charges (all non-taxable): it comes off
+  // the additional return charges first, then off damage compensation.
+  const additionalSubtotal = additionalItems.reduce((s, i) => s + i.amount, 0);
+  const additionalDiscount = compensationItems.length > 0
+    ? Math.min(dropDiscount, Math.max(0, additionalSubtotal))
+    : dropDiscount;
+  const compensationDiscount = dropDiscount - additionalDiscount;
+
   if (additionalItems.length > 0) {
     nonTaxableSections.push(
       buildSection(
@@ -264,6 +281,7 @@ export async function transformBookingToInvoiceData(
         additionalItems,
         cgstRate,
         sgstRate,
+        additionalDiscount,
       ),
     );
   }
@@ -276,6 +294,7 @@ export async function transformBookingToInvoiceData(
         compensationItems,
         cgstRate,
         sgstRate,
+        compensationDiscount,
       ),
     );
   }

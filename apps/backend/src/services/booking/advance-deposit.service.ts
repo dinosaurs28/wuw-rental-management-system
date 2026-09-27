@@ -1,6 +1,7 @@
-import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus, Role } from "@repo/database/client";
+import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus, Role, PaymentPurpose, PaymentMethod } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
+import { claimUtr } from "../payment/counter-guard.service.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Helper type for billing breakdown
@@ -62,12 +63,16 @@ export class AdvanceDepositService {
   /**
    * Record the remaining balance payment (collected at pickup or return).
    * Marks the invoice as PAID and creates the second payment record.
+   *
+   * `upi` = paid to the branch's UPI QR at the counter: also books a CONFIRMED
+   * REMAINING_BALANCE PaymentTransaction keyed on the (already validated) UTR.
    */
   async recordRemainingPayment(
     bookingPublicId: string,
     method: DepositMethod,
     transactionId: string,
     paidDuring: "PICKUP" | "RETURN",
+    upi?: { utr: string; collectedById: number },
   ): Promise<Booking> {
     const booking = await prisma.booking.findUnique({
       where: { publicId: bookingPublicId },
@@ -110,6 +115,41 @@ export class AdvanceDepositService {
             method: method,
             status: PaymentStatus.SUCCESS,
             amount: booking.remainingBalance,
+          },
+        });
+      }
+
+      if (upi) {
+        // Claim inside the transaction so two submissions can't share a UTR
+        await claimUtr(upi.utr, tx);
+
+        const activeShift = await tx.cashShift.findFirst({
+          where: { employeeId: upi.collectedById, status: "OPEN" },
+          select: { id: true },
+        });
+        const now = new Date();
+
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            // One counter UPI remaining payment per booking — a double submit hits this key
+            idempotencyKey: `remaining:upi:${booking.publicId}`,
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            purpose: PaymentPurpose.REMAINING_BALANCE,
+            method: PaymentMethod.ONLINE,
+            status: "CONFIRMED",
+            totalAmount: booking.remainingBalance,
+            cashAmount: 0,
+            onlineAmount: booking.remainingBalance,
+            onlineTransactionRef: upi.utr,
+            onlineGateway: "UPI",
+            collectedById: upi.collectedById,
+            collectedAt: now,
+            confirmedById: upi.collectedById,
+            confirmedAt: now,
+            cashShiftId: activeShift?.id ?? null,
+            notes: `Remaining balance collected at ${paidDuring.toLowerCase()} (${transactionId})`,
           },
         });
       }

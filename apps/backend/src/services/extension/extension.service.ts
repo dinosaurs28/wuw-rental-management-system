@@ -21,6 +21,7 @@ import { extensionVehicleAllocatorService } from "./extension-vehicle-allocator.
 import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { claimUtr } from "../payment/counter-guard.service.js";
 
 export interface ActorContext {
   actorId: number;
@@ -75,6 +76,11 @@ export interface CommitExtensionResult {
   };
 }
 
+export interface CollectExtensionOptions {
+  /** "UPI" for a counter UPI payment — `onlineTransactionRef` is then a validated UTR. */
+  onlineGateway?: string;
+}
+
 export interface CollectExtensionResult {
   remainAmount: {
     extension: string;
@@ -89,11 +95,41 @@ export interface PaginatedExtensions {
   pageSize: number;
 }
 
-const TERMINAL_STATUSES: BookingStatus[] = [
-  BookingStatus.RETURNED,
-  BookingStatus.CANCELLED,
-  BookingStatus.HOLD_EXPIRED,
+// Extensions apply before pickup (CONFIRMED) and while the car is out (PICKED_UP)
+const EXTENDABLE_STATUSES: BookingStatus[] = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.PICKED_UP,
 ];
+
+/**
+ * Evaluate refused because the booking already has a committed (vehicle held)
+ * or paid-but-unconfirmed extension. Controllers answer 409 EXTENSION_PENDING
+ * with the extension's id so staff can cancel a stale one and try again.
+ */
+export class ExtensionPendingError extends Error {
+  readonly code = "EXTENSION_PENDING" as const;
+
+  constructor(
+    public readonly pendingExtensionPublicId: string,
+    public readonly pendingExtensionStatus: ExtensionStatus,
+  ) {
+    super(
+      pendingExtensionStatus === ExtensionStatus.PAYMENT_COLLECTED
+        ? "A pending extension already exists for this booking — its payment is awaiting manager confirmation."
+        : "A pending extension already exists for this booking. Complete or cancel it before creating a new one.",
+    );
+    this.name = "ExtensionPendingError";
+  }
+
+  toJSON() {
+    return {
+      message: this.message,
+      code: this.code,
+      pendingExtensionPublicId: this.pendingExtensionPublicId,
+      pendingExtensionStatus: this.pendingExtensionStatus,
+    };
+  }
+}
 
 class ExtensionService {
   /**
@@ -121,7 +157,7 @@ class ExtensionService {
 
     if (!booking) throw new Error("Booking not found");
 
-    if (TERMINAL_STATUSES.includes(booking.status)) {
+    if (!EXTENDABLE_STATUSES.includes(booking.status)) {
       throw new Error(
         `Cannot extend a booking in status ${booking.status}. Extension is only allowed for CONFIRMED or PICKED_UP bookings.`,
       );
@@ -133,9 +169,45 @@ class ExtensionService {
 
     // Prevent concurrent extensions
     if (booking.activeExtensionId !== null) {
-      throw new Error(
-        "A pending extension already exists for this booking. Complete or cancel it before creating a new one.",
-      );
+      const active = await prisma.bookingExtension.findUnique({
+        where: { id: booking.activeExtensionId },
+        select: {
+          id: true,
+          publicId: true,
+          extensionStatus: true,
+          resolutionType: true,
+          gatewayTransactionId: true,
+          paymentTransactionId: true,
+        },
+      });
+      const isOpen =
+        active?.extensionStatus === ExtensionStatus.PENDING_PAYMENT ||
+        active?.extensionStatus === ExtensionStatus.PAYMENT_COLLECTED;
+      // A quote that was never committed holds no vehicle slot and no money —
+      // a new quote replaces it instead of blocking the booking.
+      const isUncommittedQuote =
+        active?.extensionStatus === ExtensionStatus.PENDING_PAYMENT &&
+        active.resolutionType === null &&
+        active.gatewayTransactionId === null &&
+        active.paymentTransactionId === null;
+      if (active && isOpen && !isUncommittedQuote) {
+        throw new ExtensionPendingError(active.publicId, active.extensionStatus);
+      }
+      if (active && isUncommittedQuote) {
+        await prisma.$transaction([
+          prisma.bookingExtension.update({
+            where: { id: active.id },
+            data: {
+              extensionStatus: ExtensionStatus.CANCELLED,
+              rejectionReason: "Superseded by a new extension quote",
+            },
+          }),
+          prisma.booking.update({
+            where: { id: booking.id },
+            data: { activeExtensionId: null },
+          }),
+        ]);
+      }
     }
 
     const firstItem = booking.items[0];
@@ -299,6 +371,39 @@ class ExtensionService {
     }
 
     const booking = extension.booking;
+    if (!EXTENDABLE_STATUSES.includes(booking.status)) {
+      throw new Error(
+        `Booking is ${booking.status} — the extension cannot be committed`,
+      );
+    }
+
+    // Already committed (double submit): the hold and price are in place.
+    // Re-running would re-price against the moved endAt and zero the charge.
+    if (extension.resolutionType !== null) {
+      if (extension.resolutionType !== input.resolutionType) {
+        throw new Error(
+          `Extension was already committed as ${extension.resolutionType} and cannot be committed again`,
+        );
+      }
+      return {
+        extension,
+        remainAmount: {
+          extension: new Decimal(extension.additionalAmount.toString()).toFixed(2),
+        },
+      };
+    }
+
+    // A partial extension must land strictly after the current end and no
+    // later than what was quoted. Checked before any hold is written.
+    if (input.resolutionType === "PARTIAL_EXTENSION" && input.partialNewEndAt) {
+      const partialEnd = new Date(input.partialNewEndAt);
+      if (partialEnd <= extension.oldEndAt || partialEnd > extension.requestedEndAt) {
+        throw new Error(
+          "Partial end must be after the current return time and no later than the requested one — the extension cannot be committed",
+        );
+      }
+    }
+
     const firstItem = booking.items[0];
     if (!firstItem) throw new Error("Booking has no vehicle items");
 
@@ -329,7 +434,10 @@ class ExtensionService {
           ? new Date(input.partialNewEndAt)
           : extension.requestedEndAt;
 
-      if (input.resolutionType === "SAME_VEHICLE") {
+      if (
+        input.resolutionType === "SAME_VEHICLE" ||
+        input.resolutionType === "PARTIAL_EXTENSION"
+      ) {
         const freshCheck = await extensionAvailabilityService.checkVehicleAvailability(
           currentVehicleId,
           booking.endAt,
@@ -407,11 +515,14 @@ class ExtensionService {
         data: { endAt: effectiveNewEndAt },
       });
 
-      // Persist extension resolution details
+      // Persist extension resolution details. requestedEndAt becomes the end
+      // actually held (the partial end for PARTIAL_EXTENSION) — every finalizer
+      // extends the booking to requestedEndAt.
       const updatedExtension = await prisma.bookingExtension.update({
         where: { id: extension.id },
         data: {
           extensionStatus: ExtensionStatus.PENDING_PAYMENT,
+          requestedEndAt: effectiveNewEndAt,
           resolutionType: input.resolutionType as ExtensionResolutionType,
           vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
           vehicleSwapId: vehicleSwapId,
@@ -432,7 +543,11 @@ class ExtensionService {
           entity: "BookingExtension",
           entityId: updatedExtension.publicId,
           description: `Extension committed for booking ${booking.publicId}. ₹${finalAdditionalAmount.toFixed(2)} due. Vehicle held until ${effectiveNewEndAt.toISOString()}.`,
-          after: { amount: finalAdditionalAmount.toFixed(2), newEndAt: effectiveNewEndAt },
+          after: {
+            amount: finalAdditionalAmount.toFixed(2),
+            newEndAt: effectiveNewEndAt,
+            quotedEndAt: extension.requestedEndAt,
+          },
         }),
         staffActivityService.log({
           actorPublicId: actor.actorPublicId,
@@ -474,6 +589,46 @@ class ExtensionService {
   }
 
   /**
+   * Re-price an uncommitted quote to an earlier end — a customer's partial
+   * extension, since customers can't pick a resolution. The amount charged and
+   * the end every finalizer writes (requestedEndAt) then match what's free.
+   */
+  async narrowQuote(extensionPublicId: string, newEndAt: Date): Promise<ExtensionPricingResult> {
+    const extension = await prisma.bookingExtension.findUnique({
+      where: { publicId: extensionPublicId },
+      select: {
+        id: true,
+        bookingId: true,
+        oldEndAt: true,
+        requestedEndAt: true,
+        extensionStatus: true,
+        resolutionType: true,
+      },
+    });
+    if (
+      !extension ||
+      extension.extensionStatus !== ExtensionStatus.PENDING_PAYMENT ||
+      extension.resolutionType !== null
+    ) {
+      throw new Error("Extension not found or no longer an open quote");
+    }
+    if (newEndAt <= extension.oldEndAt || newEndAt > extension.requestedEndAt) {
+      throw new Error("Partial end must be after the current return time and no later than the requested one");
+    }
+
+    const pricing = await extensionPricingService.recalculate(extension.bookingId, newEndAt);
+    await prisma.bookingExtension.update({
+      where: { id: extension.id },
+      data: {
+        requestedEndAt: newEndAt,
+        additionalAmount: pricing.additionalAmount,
+        newTotalFinal: pricing.newTotalFinal,
+      },
+    });
+    return pricing;
+  }
+
+  /**
    * Called by paymentTransactionService.confirmCash() when the linked
    * PaymentTransaction is confirmed — finalizes the booking date update.
    */
@@ -494,7 +649,7 @@ class ExtensionService {
           endAt: effectiveEndAt,
           extensionCount: { increment: 1 },
           lastExtendedAt: new Date(),
-          totalFinal: extension.newTotalFinal,
+          totalFinal: { increment: extension.additionalAmount },
           activeExtensionId: null,
           originalEndAt:
             extension.booking.extensionCount === 0 ? extension.oldEndAt : undefined,
@@ -530,12 +685,35 @@ class ExtensionService {
   async cancel(extensionPublicId: string, actor: ActorContext, reason?: string): Promise<void> {
     const extension = await prisma.bookingExtension.findUnique({
       where: { publicId: extensionPublicId },
-      select: { id: true, bookingId: true, extensionStatus: true, oldEndAt: true, booking: { select: { items: { select: { vehicleId: true } } } } },
+      select: {
+        id: true,
+        bookingId: true,
+        extensionStatus: true,
+        oldEndAt: true,
+        paymentTransaction: { select: { status: true } },
+        booking: { select: { activeExtensionId: true, items: { select: { vehicleId: true } } } },
+      },
     });
 
     if (!extension) throw new Error("Extension not found");
     if (extension.extensionStatus === ExtensionStatus.CONFIRMED) {
       throw new Error("Cannot cancel a confirmed extension");
+    }
+    // Already closed — nothing is held. Reverting endAt here could undo a
+    // later extension, so this is a no-op.
+    if (
+      extension.extensionStatus === ExtensionStatus.CANCELLED ||
+      extension.extensionStatus === ExtensionStatus.REJECTED
+    ) {
+      return;
+    }
+    // Cash already collected for it: cancelling would orphan that money.
+    // The manager rejects the payment first, which releases the extension.
+    const paymentStatus = extension.paymentTransaction?.status;
+    if (paymentStatus === "COLLECTED" || paymentStatus === "CONFIRMED") {
+      throw new Error(
+        "Cannot cancel an extension whose payment has been collected — a manager must reject the payment first",
+      );
     }
 
     await prisma.$transaction(async (tx) => {
@@ -546,14 +724,17 @@ class ExtensionService {
           rejectionReason: reason,
         },
       });
-      // Revert vehicle hold: restore the original endAt
-      await tx.booking.update({
-        where: { id: extension.bookingId },
-        data: {
-          activeExtensionId: null,
-          endAt: extension.oldEndAt,
-        },
-      });
+      // Revert vehicle hold: restore the original endAt — only when the hold
+      // is this extension's (it is the booking's active extension)
+      if (extension.booking.activeExtensionId === extension.id) {
+        await tx.booking.update({
+          where: { id: extension.bookingId },
+          data: {
+            activeExtensionId: null,
+            endAt: extension.oldEndAt,
+          },
+        });
+      }
     });
 
     // Invalidate vehicle availability cache so the reverted slot shows as available again
@@ -597,12 +778,15 @@ class ExtensionService {
    * Collect payment for a PENDING_PAYMENT extension.
    * CASH → PaymentTransaction COLLECTED (awaits manager confirmation).
    * ONLINE → PaymentTransaction CONFIRMED + extension immediately finalized.
+   * Nothing due (₹0) → extension finalized without a PaymentTransaction.
+   * Counter payments (CASH, UPI) are linked to the collector's open cash shift.
    */
   async collect(
     extensionPublicId: string,
     method: "CASH" | "ONLINE",
     actor: ActorContext,
     onlineTransactionRef?: string,
+    options: CollectExtensionOptions = {},
   ): Promise<CollectExtensionResult> {
     const extension = await prisma.bookingExtension.findUnique({
       where: { publicId: extensionPublicId },
@@ -615,10 +799,83 @@ class ExtensionService {
     }
 
     const booking = extension.booking;
-    const isOnline = method === "ONLINE";
+    if (!EXTENDABLE_STATUSES.includes(booking.status)) {
+      throw new Error(`Booking is already in ${booking.status} status — extension payment cannot be collected`);
+    }
+
     const additionalAmount = new Decimal(extension.additionalAmount.toString());
+    const isUpi = method === "ONLINE" && options.onlineGateway === "UPI";
+
+    // ₹0 due — a zero PaymentTransaction would only pollute reports
+    if (additionalAmount.lte(0)) {
+      const confirmed = await prisma.$transaction(async (tx) => {
+        // Conditional flip so a double submit confirms (and counts) only once
+        const { count } = await tx.bookingExtension.updateMany({
+          where: { id: extension.id, extensionStatus: ExtensionStatus.PENDING_PAYMENT },
+          data: {
+            extensionStatus: ExtensionStatus.CONFIRMED,
+            actualNewEndAt: extension.requestedEndAt,
+          },
+        });
+        if (count === 0) return false;
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            endAt: extension.requestedEndAt,
+            activeExtensionId: null,
+            extensionCount: { increment: 1 },
+            lastExtendedAt: new Date(),
+            totalFinal: { increment: extension.additionalAmount },
+            ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
+          },
+        });
+        return true;
+      });
+
+      if (!confirmed) {
+        const latest = await prisma.bookingExtension.findUnique({
+          where: { id: extension.id },
+          select: { extensionStatus: true },
+        });
+        if (latest?.extensionStatus === ExtensionStatus.CONFIRMED) {
+          return { remainAmount: { extension: "0.00" }, payment: "confirmed" };
+        }
+        throw new Error(`Extension is already in ${latest?.extensionStatus ?? "an unknown"} status`);
+      }
+
+      await auditService.log({
+        actorId: actor.actorId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        actorBranchId: actor.actorBranchId,
+        action: "Extension confirmed (nothing to collect)",
+        category: AuditCategory.BOOKING,
+        severity: AuditSeverity.INFO,
+        entity: "BookingExtension",
+        entityId: extension.publicId,
+        description: `Extension ${extension.publicId} confirmed with no additional charge`,
+      });
+
+      return { remainAmount: { extension: "0.00" }, payment: "confirmed" };
+    }
+
+    const isOnline = method === "ONLINE";
 
     await prisma.$transaction(async (tx) => {
+      // The UTR was validated by the caller; re-check here so two collections
+      // can't claim the same transfer.
+      if (isUpi && onlineTransactionRef) {
+        await claimUtr(onlineTransactionRef, tx);
+      }
+
+      // Money taken at the counter lands in the collector's open cash shift
+      const activeShift = !isOnline || isUpi
+        ? await tx.cashShift.findFirst({
+            where: { employeeId: actor.actorId, status: "OPEN" },
+            select: { id: true },
+          })
+        : null;
+
       // Create PaymentTransaction — COLLECTED for cash (manager confirms later), CONFIRMED for online
       const txn = await (tx as any).paymentTransaction.create({
         data: {
@@ -633,21 +890,27 @@ class ExtensionService {
           cashAmount: isOnline ? "0.00" : additionalAmount.toFixed(2),
           onlineAmount: isOnline ? additionalAmount.toFixed(2) : "0.00",
           onlineTransactionRef: onlineTransactionRef ?? null,
+          onlineGateway: isOnline ? (options.onlineGateway ?? null) : null,
           collectedById: actor.actorId,
           collectedAt: new Date(),
+          cashShiftId: activeShift?.id ?? null,
           ...(isOnline && { confirmedById: actor.actorId, confirmedAt: new Date() }),
         },
       });
 
-      // Update extension: link to PaymentTransaction + set status
-      await (tx as any).bookingExtension.update({
-        where: { id: extension.id },
+      // Update extension: link to PaymentTransaction + set status. Conditional,
+      // so an extension cancelled meanwhile rolls the payment back.
+      const { count } = await tx.bookingExtension.updateMany({
+        where: { id: extension.id, extensionStatus: ExtensionStatus.PENDING_PAYMENT },
         data: {
           extensionStatus: isOnline ? ExtensionStatus.CONFIRMED : ExtensionStatus.PAYMENT_COLLECTED,
           paymentTransactionId: txn.id,
           ...(isOnline && { actualNewEndAt: extension.requestedEndAt }),
         },
       });
+      if (count === 0) {
+        throw new Error("Extension is already in a closed status — payment not recorded");
+      }
 
       // For online payment: immediately finalize booking
       if (isOnline) {
@@ -658,7 +921,7 @@ class ExtensionService {
             activeExtensionId: null,
             extensionCount: { increment: 1 },
             lastExtendedAt: new Date(),
-            totalFinal: extension.newTotalFinal,
+            totalFinal: { increment: extension.additionalAmount },
             ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
           },
         });
@@ -676,7 +939,7 @@ class ExtensionService {
         severity: AuditSeverity.INFO,
         entity: "BookingExtension",
         entityId: extension.publicId,
-        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${method}`,
+        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${isUpi ? "UPI (UTR)" : method}`,
       }),
       staffActivityService.log({
         actorPublicId: actor.actorPublicId,
@@ -687,7 +950,7 @@ class ExtensionService {
         actionType: StaffActionType.COLLECTED,
         entityType: StaffEntityType.BOOKING_EXTENSION,
         entityRef: extension.publicId,
-        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${method}`,
+        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI (UTR)" : method}`,
       }),
     ]);
 

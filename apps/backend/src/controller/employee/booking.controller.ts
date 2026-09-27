@@ -19,8 +19,18 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../se
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import {
+  resolveKmAllowance,
+  wasVehicleSwappedAfterPickup,
+  type KmAllowance,
+} from "../../services/charges/km-allowance.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { createRazorpayOrder } from "../../services/payment/razorpay.service.js";
+import {
+  assertOpenShift,
+  validateNewUtr,
+  CounterGuardError,
+} from "../../services/payment/counter-guard.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -141,6 +151,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       start,
       end,
       payment_type,
+      utr,
     } = req.body;
 
     const hasVehicles = Array.isArray(vehicles) && vehicles.length > 0;
@@ -152,7 +163,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       !customer_kyc_id ||
       !start ||
       !end ||
-      !["CASH", "ONLINE"].includes(payment_type)
+      !["CASH", "ONLINE", "UPI"].includes(payment_type)
     ) {
       return res
         .status(StatusCode.BAD_REQUEST)
@@ -166,6 +177,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     if (!staff) {
       return res.status(StatusCode.FORBIDDEN).json({ message: "Invalid staff user" });
     }
+
+    // Every counter booking lands in the staff member's cash shift.
+    await assertOpenShift(staff);
+
+    // UPI (UTR): checked now so a bad or reused UTR fails before the hold is
+    // created; re-checked when the payment-status poll confirms the booking.
+    const upiUtr = payment_type === "UPI" ? await validateNewUtr(utr) : null;
 
     const customer = await prisma.user.findUnique({
       where: { publicId: customer_public_id },
@@ -472,6 +490,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           message: error.message || "Failed to initiate payment gateway",
         });
       }
+    } else if (payment_type === "UPI") {
+      transactionId = `UPI_${createID()}`;
     } else {
       transactionId = `CASH_${createID()}`;
     }
@@ -525,7 +545,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           depositMethod:
             payment_type === "CASH"
               ? DepositMethod.CASH
-              : DepositMethod.ONLINE_RAZORPAY,
+              : payment_type === "UPI"
+                ? DepositMethod.UPI
+                : DepositMethod.ONLINE_RAZORPAY,
           totalBase:    grandBaseTotal,
           totalDiscount: grandDiscountTotal,
           totalDeposit:  grandDeposit,
@@ -545,6 +567,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
               taxRate: totalTaxRate,
               grandFinalTotal,
             },
+            // Read back by confirmBookingPayment to record the UPI transaction
+            ...(upiUtr && { upi: { utr: upiUtr } }),
           },
           createdById: staff.id,
         },
@@ -626,6 +650,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
     if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
       return res.status(StatusCode.CONFLICT).json({
         code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
@@ -645,15 +672,18 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 export const GetBookingDetails = async (req: Request, res: Response) => {
   try {
     const { bookingId } = req.params;
-    const booking = await prisma.booking.findUnique({
-      where: { publicId: bookingId },
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: req.branch_Id },
       select: {
+        id: true,
         publicId: true,
         startAt: true,
         endAt: true,
         status: true,
         totalFinal: true,
         requiresManagerConfirmation: true,
+        licenseCollectedAt: true,
+        licenseReturnedAt: true,
         isAdvancePayment: true,
         advanceAmount: true,
         advancePaidAt: true,
@@ -709,41 +739,21 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     }
 
-    // Compute effective km limit — use stored value if available, otherwise fall
-    // back to vehicle pricing (same logic as return-charge.service)
-    let effectiveFreeKmLimit: number | null = booking.freeKmLimit ?? null;
-    let extraKmRate: number | null = null;
-
-    if (effectiveFreeKmLimit === null) {
-      const vehicleId = booking.items[0]?.vehicleId;
-      if (vehicleId) {
-        const customPricing = await prisma.vehicleCustomPricing.findUnique({
-          where: { vehicleId },
-          select: { freeKm24Hour: true, extraKmRate: true },
-        });
-        if (customPricing) {
-          effectiveFreeKmLimit = customPricing.freeKm24Hour * Math.max(1, booking.days ?? 1);
-          extraKmRate = Number(customPricing.extraKmRate);
-        } else {
-          const vehicle = await prisma.vehicle.findUnique({
-            where: { id: vehicleId },
-            select: { categoryId: true },
-          });
-          if (vehicle) {
-            const branchPricing = await prisma.branchPricingDefaults.findUnique({
-              where: { branchId_categoryId: { branchId: booking.branchId, categoryId: vehicle.categoryId } },
-              select: { freeKm24Hour: true, extraKmRate: true },
-            });
-            if (branchPricing) {
-              effectiveFreeKmLimit = branchPricing.freeKm24Hour * Math.max(1, booking.days ?? 1);
-              extraKmRate = Number(branchPricing.extraKmRate);
-            }
-          }
-        }
-      }
+    // Km allowance — the same plan-based free km + rate the drop bills with.
+    // If pricing can't be resolved, report no allowance rather than a guessed one.
+    let kmAllowance: KmAllowance | null = null;
+    try {
+      kmAllowance = await resolveKmAllowance(booking.id);
+    } catch (allowanceErr) {
+      console.warn(`[booking-details] Km allowance unavailable for ${booking.publicId}:`, allowanceErr);
     }
+    // After a mid-rental swap the drop doesn't charge extra km automatically — the preview mustn't either
+    const vehicleSwapped =
+      booking.status === BookingStatus.PICKED_UP && (await wasVehicleSwappedAfterPickup(booking.id));
+    const effectiveFreeKmLimit: number | null = kmAllowance?.includedKm ?? booking.freeKmLimit ?? null;
+    const extraKmRate: number | null = kmAllowance ? kmAllowance.extraKmRate.toNumber() : null;
 
-    const { branch, fuelRecord, branchId, items, ...bookingData } = booking;
+    const { id: _id, branch, fuelRecord, branchId, items, ...bookingData } = booking;
     return res.status(StatusCode.OK).json({
       message: "Booking details fetched successfully",
       data: {
@@ -752,6 +762,14 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         pickupFuelLevel: fuelRecord?.pickupFuelLevel ?? null,
         effectiveFreeKmLimit,
         extraKmRate,
+        kmAllowance: kmAllowance
+          ? {
+              includedKm: kmAllowance.includedKm,
+              extraKmRate: kmAllowance.extraKmRate.toFixed(2),
+              extraKmEnabled: kmAllowance.extraKmEnabled,
+              autoKmSkipped: vehicleSwapped ? "VEHICLE_SWAPPED" : null,
+            }
+          : null,
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
       },
     });

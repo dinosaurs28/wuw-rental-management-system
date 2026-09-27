@@ -35,6 +35,19 @@ import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
+import {
+  CounterGuardError,
+  assertOpenShift,
+  assertUtrUnused,
+  claimUtr,
+  validateNewUtr,
+} from "../../services/payment/counter-guard.service.js";
+import {
+  DROP_BILL_STALE,
+  isDropBillInSync,
+  lockBookingForDrop,
+  vehicleStatusAfterDrop,
+} from "../../services/damage/drop-damage.service.js";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +56,12 @@ const addDepositSchema = z.object({
   reason: z.string().min(1).max(500),
   idempotencyKey: z.string().min(1),
 });
+
+/** A counter online payment with no gateway (or "UPI") is a UPI transfer backed by a 12-digit UTR. */
+function isUpiGateway(gateway?: string | null): boolean {
+  const g = gateway?.trim();
+  return !g || g.toUpperCase() === "UPI";
+}
 
 const recordPaymentSchema = z.object({
   method: z.enum(["CASH", "ONLINE", "SPLIT"]),
@@ -54,6 +73,8 @@ const recordPaymentSchema = z.object({
   cashAmount: z.coerce.number().min(0).optional(),
   onlineAmount: z.coerce.number().min(0).optional(),
 }).superRefine((d, ctx) => {
+  // UPI refs are checked as UTRs in the handler (INVALID_UTR); other gateways just need a ref
+  if (isUpiGateway(d.onlineGateway)) return;
   if (d.method === "ONLINE" && !d.onlineTransactionRef?.trim()) {
     ctx.addIssue({ code: "custom", message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] });
   }
@@ -78,6 +99,57 @@ async function resolveActor(req: Request) {
   });
   if (!user) throw new Error("Actor not found");
   return user;
+}
+
+/** A settlement precondition that no longer holds under the booking lock — sent as-is. */
+class SettlementConflict extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly body: Record<string, unknown>,
+  ) {
+    super(String(body.message));
+    this.name = "SettlementConflict";
+  }
+}
+
+/**
+ * First step of every transaction that settles a session: locks the booking row
+ * (serialising with drop computes and drop damage changes), then re-checks under
+ * the lock that the session still awaits payment, the amount still matches the
+ * ledger and — for a RETURN session — the drop bill is still current.
+ */
+async function lockSessionForSettlement(
+  tx: any,
+  session: { id: number; bookingId: number; sessionType: string },
+  expectedNetPayable: number,
+  allowedStatuses: string[],
+) {
+  await lockBookingForDrop(tx, session.bookingId);
+
+  const current = await tx.paymentSession.findUniqueOrThrow({
+    where: { id: session.id },
+    select: { status: true },
+  });
+  if (!allowedStatuses.includes(current.status)) {
+    throw new SettlementConflict(StatusCode.BAD_REQUEST, {
+      message: `Session is not awaiting payment (current status: ${current.status})`,
+    });
+  }
+
+  const check = await ledgerService.validateSessionAmount(session.id, expectedNetPayable, tx);
+  if (!check.valid) {
+    throw new SettlementConflict(StatusCode.CONFLICT, {
+      message: `Amount mismatch. Session netPayable is ₹${check.recomputed.toFixed(2)}. Re-fetch session and retry.`,
+      sessionNetPayable: check.recomputed.toFixed(2),
+    });
+  }
+
+  if (
+    session.sessionType === PaymentSessionType.RETURN &&
+    !(await isDropBillInSync(session.bookingId, session.id, tx))
+  ) {
+    throw new SettlementConflict(StatusCode.CONFLICT, DROP_BILL_STALE);
+  }
 }
 
 async function resolveSession(sessionPublicId: string, branchId: number) {
@@ -250,12 +322,40 @@ export const RecordPayment = async (req: Request, res: Response) => {
       });
     }
 
+    // The drop bill must still match the booking (damages, rental period) — re-checked under the lock below
+    if (
+      session.sessionType === PaymentSessionType.RETURN &&
+      !(await isDropBillInSync(session.bookingId, session.id))
+    ) {
+      return res.status(StatusCode.CONFLICT).json(DROP_BILL_STALE);
+    }
+
+    // Counter money: cash and UPI (UTR) need the staff member's open shift, and a UTR
+    // can back only one payment. Zero-balance completions take no money and aren't gated.
+    const hasOnlinePart = method === "ONLINE" || (method === "SPLIT" && (splitOnline ?? 0) > 0);
+    const isUpi = hasOnlinePart && isUpiGateway(onlineGateway);
+    let onlineRef: string | null = onlineTransactionRef?.trim() || null;
+    let gateway: string | null = onlineGateway?.trim() || null;
+    if (amount > 0) {
+      if (method !== "ONLINE" || isUpi) {
+        await assertOpenShift(actor);
+      }
+      if (isUpi) {
+        onlineRef = await validateNewUtr(onlineTransactionRef);
+        gateway = "UPI";
+      } else if (hasOnlinePart) {
+        await assertUtrUnused(onlineRef!);
+      }
+    }
+
     let returnedVehicleIds: number[] = [];
 
     if (amount === 0) {
       // Zero-balance session: complete immediately without creating a PaymentTransaction.
       // A ₹0 record would pollute financial reports with meaningless rows.
       await prisma.$transaction(async (tx) => {
+        await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
         await (tx as any).booking.update({
           where: { id: session.bookingId },
@@ -265,6 +365,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }, { timeout: 15000 });
     } else if (method === "CASH") {
       await prisma.$transaction(async (tx) => {
+        await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+
         // Add PAYMENT ledger entry (negative = money in)
         await ledgerService.addEntry(
           session.id,
@@ -315,24 +417,19 @@ export const RecordPayment = async (req: Request, res: Response) => {
         // Run post-completion hooks (returns vehicle IDs for RETURN sessions)
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
-
-      // Invalidate vehicle availability cache for returned vehicles
-      if (returnedVehicleIds.length > 0) {
-        try {
-          await invalidateVehicleAvailability(redis, returnedVehicleIds);
-        } catch (redisErr) {
-          console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
-        }
-      }
     } else if (method === "ONLINE") {
       await prisma.$transaction(async (tx) => {
+        await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+        // Race-safe: two staff recording the same UTR serialise here and the second gets DUPLICATE_UTR
+        if (onlineRef) await claimUtr(onlineRef, tx);
+
         await ledgerService.addEntry(
           session.id,
           session.bookingId,
           LedgerEntryType.PAYMENT,
           LedgerEntryClassification.PAYMENT,
           -Math.abs(amount),
-          notes ?? `Online payment of ₹${amount}${onlineTransactionRef ? ` (ref: ${onlineTransactionRef})` : ""}`,
+          notes ?? `Online payment of ₹${amount}${onlineRef ? ` (ref: ${onlineRef})` : ""}`,
           actor.id,
           String(actor.role),
           { idempotencyKey, referenceType: "ONLINE_PAYMENT" },
@@ -351,8 +448,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
             totalAmount: amount.toFixed(2),
             cashAmount: "0.00",
             onlineAmount: amount.toFixed(2),
-            onlineTransactionRef: onlineTransactionRef ?? null,
-            onlineGateway: onlineGateway ?? null,
+            onlineTransactionRef: onlineRef,
+            onlineGateway: gateway,
             collectedById: actor.id,
             collectedAt: new Date(),
             confirmedById: actor.id,
@@ -374,13 +471,16 @@ export const RecordPayment = async (req: Request, res: Response) => {
       const online = Math.abs(splitOnline ?? 0);
 
       await prisma.$transaction(async (tx) => {
+        await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+        if (hasOnlinePart && onlineRef) await claimUtr(onlineRef, tx);
+
         await ledgerService.addEntry(
           session.id,
           session.bookingId,
           LedgerEntryType.PAYMENT,
           LedgerEntryClassification.PAYMENT,
           -Math.abs(amount),
-          notes ?? `Split payment: ₹${cash} cash + ₹${online} online${onlineTransactionRef ? ` (ref: ${onlineTransactionRef})` : ""}`,
+          notes ?? `Split payment: ₹${cash} cash + ₹${online} online${onlineRef ? ` (ref: ${onlineRef})` : ""}`,
           actor.id,
           String(actor.role),
           { idempotencyKey, referenceType: "SPLIT_PAYMENT" },
@@ -404,8 +504,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
             totalAmount: amount.toFixed(2),
             cashAmount: cash.toFixed(2),
             onlineAmount: online.toFixed(2),
-            onlineTransactionRef: onlineTransactionRef ?? null,
-            onlineGateway: onlineGateway ?? null,
+            onlineTransactionRef: onlineRef,
+            onlineGateway: gateway,
             collectedById: actor.id,
             collectedAt: new Date(),
             cashShiftId: activeShift?.id ?? null,
@@ -421,13 +521,14 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
+    }
 
-      if (returnedVehicleIds.length > 0) {
-        try {
-          await invalidateVehicleAvailability(redis, returnedVehicleIds);
-        } catch (redisErr) {
-          console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
-        }
+    // Invalidate vehicle availability cache for returned vehicles (every completion path)
+    if (returnedVehicleIds.length > 0) {
+      try {
+        await invalidateVehicleAvailability(redis, returnedVehicleIds);
+      } catch (redisErr) {
+        console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
       }
     }
 
@@ -466,6 +567,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
       data: serializeSession(updatedSession!),
     });
   } catch (err: any) {
+    if (err instanceof CounterGuardError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    if (err instanceof SettlementConflict) {
+      return res.status(err.status).json(err.body);
+    }
     console.error("RecordPayment Error:", err);
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
   }
@@ -496,9 +603,19 @@ export const RecordRefund = async (req: Request, res: Response) => {
       });
     }
 
+    // The drop bill must still match the booking (damages, rental period) — re-checked under the lock below
+    if (
+      session.sessionType === PaymentSessionType.RETURN &&
+      !(await isDropBillInSync(session.bookingId, session.id))
+    ) {
+      return res.status(StatusCode.CONFLICT).json(DROP_BILL_STALE);
+    }
+
     let returnedVehicleIds: number[] = [];
 
     await prisma.$transaction(async (tx) => {
+      await lockSessionForSettlement(tx, session, -Math.abs(amount), ["AWAITING_PAYMENT"]);
+
       await ledgerService.addEntry(
         session.id,
         session.bookingId,
@@ -592,6 +709,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
       data: serializeSession(updatedSession!),
     });
   } catch (err: any) {
+    if (err instanceof SettlementConflict) {
+      return res.status(err.status).json(err.body);
+    }
     console.error("RecordRefund Error:", err);
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
   }
@@ -685,7 +805,7 @@ async function runPostCompletionHooks(
               activeExtensionId: null,
               extensionCount: { increment: 1 },
               lastExtendedAt: new Date(),
-              totalFinal: sessionExt.newTotalFinal,
+              totalFinal: { increment: sessionExt.additionalAmount },
               ...(sessionExt.booking.extensionCount === 0 && !sessionExt.booking.originalEndAt
                 ? { originalEndAt: sessionExt.oldEndAt }
                 : {}),
@@ -782,10 +902,15 @@ async function runPostCompletionHooks(
       data: { status: BookingStatus.RETURNED },
     });
 
-    await tx.vehicle.updateMany({
-      where: { id: { in: vehicleIds } },
-      data: { status: VehicleStatus.AVAILABLE },
-    });
+    // Damage recorded at drop holds that vehicle for the manager's disposition
+    // (MANAGER_REPORTED); every other vehicle is back in the fleet.
+    for (const vehicleId of vehicleIds) {
+      const vehicleStatus = (await vehicleStatusAfterDrop(bookingId, vehicleId, tx)) ?? VehicleStatus.AVAILABLE;
+      await tx.vehicle.update({
+        where: { id: vehicleId },
+        data: { status: vehicleStatus },
+      });
+    }
 
     // Bust the cached PDF synchronously inside the transaction so any
     // download request that arrives before finalizeInvoice completes
