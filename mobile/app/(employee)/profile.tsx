@@ -48,7 +48,8 @@ export default function EmployeeProfile() {
   const handleSignOut = async () => {
     setShowSignOut(false);
     await signOut();
-    router.replace('/(auth)/welcome');
+    // Signed-out users browse as guests, same as a fresh launch.
+    router.replace('/');
   };
 
   return (

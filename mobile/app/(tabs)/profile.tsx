@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -56,6 +56,14 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+
+  // Signing in or out swaps this screen between the account view and the much
+  // shorter guest view. The tab stays mounted, so without this the list keeps
+  // the old scroll offset (e.g. down at "Sign out") and shows blank space.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [isGuest]);
 
   const { data: profile } = useQuery({
     queryKey: ['profile'],
@@ -141,7 +149,8 @@ export default function Profile() {
         style: 'destructive',
         onPress: async () => {
           await signOut();
-          router.replace('/(auth)/welcome');
+          // Signed-out users browse as guests, same as a fresh launch.
+          router.replace('/');
         },
       },
     ]);
@@ -164,6 +173,7 @@ export default function Profile() {
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.root}
         contentContainerStyle={[styles.inner, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}

@@ -81,9 +81,10 @@ export default function DeleteAccount() {
       );
 
       // The account is gone — drop the local session and return to the entry
-      // screen. signOut() clears the SecureStore token.
+      // route, which lands a signed-out user on the fleet as a guest.
+      // signOut() clears the SecureStore token.
       await signOut();
-      router.replace('/welcome');
+      router.replace('/');
     } catch (err: any) {
       const status = err.response?.status;
       const message =

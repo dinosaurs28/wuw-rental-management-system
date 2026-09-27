@@ -185,9 +185,8 @@ export default function SignIn() {
         </TouchableOpacity>
 
         {/* Staff (fleet executives) have their own credentials and their own
-            endpoint. Without this link the employee screen is unreachable on a
-            fresh install — welcome.tsx, the only other route to it, is reached
-            solely by signing out. */}
+            endpoint. This link and the guest Profile tab are the only ways to
+            reach the employee sign-in screen. */}
         <TouchableOpacity
           style={styles.staffRow}
           onPress={() => router.push('/(auth)/employee-sign-in')}
