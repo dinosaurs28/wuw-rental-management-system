@@ -147,12 +147,17 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       actor.id,
     );
 
-    // If session already had entries (idempotent re-initiation), return it as-is
-    const remainingBalance = overrideRemainingBalance
-      ?? new Decimal(booking.remainingBalance?.toString() ?? "0").toNumber();
+    // Remaining balance already settled separately (e.g. collected on the
+    // phone) — the session must not charge it again, override or not.
+    const remainingBalance = booking.remainingPaidAt
+      ? 0
+      : overrideRemainingBalance
+        ?? new Decimal(booking.remainingBalance?.toString() ?? "0").toNumber();
 
-    if (session.entries && session.entries.length > 0) {
-      // Already populated — return existing session
+    // Idempotent re-initiation: a session past OPEN was already set up — even
+    // one with no entries (nothing due) — so return it as-is instead of
+    // re-writing handover data (fuel record, photos, deposit request).
+    if (session.status !== PaymentSessionStatus.OPEN || (session.entries?.length ?? 0) > 0) {
       if (!booking.licenseCollectedAt) {
         await prisma.booking.update({
           where: { id: booking.id },
@@ -164,6 +169,15 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         PaymentSessionStatus.AWAITING_PAYMENT,
         {},
       );
+      // Balance paid after this session was created: drop its stale line
+      if (booking.remainingPaidAt) {
+        const staleLines = (session.entries ?? []).filter(
+          (e: any) => e.referenceType === "BOOKING_REMAINING" && !e.isVoided,
+        );
+        for (const line of staleLines) {
+          await ledgerService.voidEntry(line.publicId, actor.id, "Remaining balance paid separately");
+        }
+      }
       const updatedSession = await paymentSessionService.getSession(session.publicId);
       return res.status(StatusCode.OK).json({
         message: "Pickup session already initiated",

@@ -740,12 +740,16 @@ async function runPostCompletionHooks(
     });
     const vehicleIds = booking.items.map((i: any) => i.vehicleId);
 
+    // Keep when/where the balance was actually paid if it was settled earlier
+    // (e.g. initiate-remaining-payment before the handover)
     await tx.booking.update({
       where: { id: bookingId },
       data: {
         status: BookingStatus.PICKED_UP,
-        remainingPaidAt: new Date(),
-        remainingPaidDuring: "PICKUP",
+        ...(booking.remainingPaidAt == null && {
+          remainingPaidAt: new Date(),
+          remainingPaidDuring: "PICKUP",
+        }),
       },
     });
 

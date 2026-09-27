@@ -2,6 +2,7 @@ import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, Pay
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
+import { paymentSessionService } from "../payment/paymentSession.service.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Helper type for billing breakdown
@@ -117,6 +118,32 @@ export class AdvanceDepositService {
             amount: booking.remainingBalance,
           },
         });
+      }
+
+      // A pickup/return session opened before this payment still carries the
+      // remaining balance as a ledger line — void it so it isn't charged twice.
+      const staleLines = await tx.ledgerEntry.findMany({
+        where: {
+          bookingId: booking.id,
+          referenceType: "BOOKING_REMAINING",
+          isVoided: false,
+          session: { status: { in: ["OPEN", "COMPUTING", "AWAITING_PAYMENT"] } },
+        },
+        select: { id: true, sessionId: true },
+      });
+      for (const line of staleLines) {
+        await tx.ledgerEntry.update({
+          where: { id: line.id },
+          data: {
+            isVoided: true,
+            voidedAt: new Date(),
+            voidedById: upi?.collectedById ?? null,
+            voidReason: `Remaining balance paid separately (${transactionId})`,
+          },
+        });
+      }
+      for (const sessionId of new Set(staleLines.map((l) => l.sessionId))) {
+        await paymentSessionService.recomputeTotals(sessionId, tx);
       }
 
       if (upi) {
