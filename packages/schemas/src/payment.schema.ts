@@ -118,9 +118,28 @@ export const completeRefundSchema = z.object({
 
 // ─── Cash Shift ────────────────────────────────────────────────────────────
 
+/**
+ * Opening float counted into the drawer. Optional (and null) so builds that
+ * POST no body still open a shift — the server records 0 then.
+ */
+export const openCashShiftSchema = z.object({
+  openingCash: z
+    .number({ invalid_type_error: "Opening cash must be a number" })
+    .min(0, "Opening cash cannot be negative")
+    .max(1_000_000, "Opening cash cannot exceed ₹10,00,000")
+    .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6, "Opening cash can have at most 2 decimal places")
+    .nullish(),
+});
+
 export const closeCashShiftSchema = z.object({
-  actualTotal: z.number().min(0),
-  discrepancyExplanation: z.string().min(10).max(1000).optional(),
+  actualTotal: z
+    .number({ required_error: "Enter the cash counted in the drawer", invalid_type_error: "Counted cash must be a number" })
+    .min(0, "Counted cash cannot be negative"),
+  discrepancyExplanation: z
+    .string()
+    .min(10, "Explain the difference in at least 10 characters")
+    .max(1000, "Keep the explanation under 1000 characters")
+    .optional(),
 });
 
 export const reconcileCashShiftSchema = z.object({
@@ -141,10 +160,28 @@ export const listPendingSettlementsSchema = z.object({
   minAmount: z.coerce.number().min(0).optional(),
 });
 
+/** An IST calendar date (YYYY-MM-DD). Shifts belong to the IST date they opened on. */
+const istDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use an IST date in YYYY-MM-DD format");
+
+const queryFlagSchema = z
+  .enum(["true", "false", "1", "0"])
+  .transform((v) => v === "true" || v === "1");
+
+/**
+ * status: ENDED = CLOSED + DISCREPANCY_FLAGGED (every shift that is no longer open).
+ * date = one IST day; from/to = an inclusive IST range (date wins when both are sent).
+ * openNow=true lists only shifts open right now and ignores the date filters.
+ */
 export const listCashShiftsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  status: z.enum(["OPEN", "CLOSED", "DISCREPANCY_FLAGGED"]).optional(),
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
+  status: z.enum(["OPEN", "CLOSED", "DISCREPANCY_FLAGGED", "ENDED"]).optional(),
+  date: istDateSchema.optional(),
+  from: istDateSchema.optional(),
+  to: istDateSchema.optional(),
+  openNow: queryFlagSchema.optional(),
+  employeePublicId: z.string().min(1).max(64).optional(),
 });
+
+/** Fleet Executive's own shift history — same filters minus the executive picker. */
+export const listMyCashShiftsSchema = listCashShiftsSchema.omit({ employeePublicId: true });

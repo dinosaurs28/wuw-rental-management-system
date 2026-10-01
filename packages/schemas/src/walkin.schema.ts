@@ -1,4 +1,12 @@
 import z from "zod";
+import { aadhaarNumberSchema, drivingLicenceNumberSchema } from "./identity.js";
+
+/** Email for staff walk-in forms: optional, but must be valid when filled in. */
+export const optionalEmailSchema = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || z.string().email().safeParse(v).success, "Invalid email address")
+  .optional();
 
 export const initiateWalkinSchema = z.object({
   phone: z
@@ -19,7 +27,12 @@ export const verifyWalkinOtpSchema = z.object({
 export const completeWalkinProfileSchema = z.object({
   customer_public_id: z.string().min(1, "Customer Public ID is required"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  // Optional for walk-ins (#1): blank keeps the stored email (or placeholder).
+  email: optionalEmailSchema,
+  // Required for a complete profile (#1). The server still accepts a body
+  // without them (old mobile builds); the profile then stays incomplete.
+  drivingLicenceNumber: drivingLicenceNumberSchema,
+  aadhaarNumber: aadhaarNumberSchema,
   alternatePhone: z.string().optional(),
   dob: z
     .string()

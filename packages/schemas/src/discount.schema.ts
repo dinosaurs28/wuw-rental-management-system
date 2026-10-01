@@ -32,49 +32,125 @@ const createDiscountRuleBase = z.object({
   perDayLimit: z.number().int().positive().optional(),
   stackable: z.boolean().default(false),
   priority: z.number().int().min(0).default(0),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  // Validity is a range of IST calendar days: the server stores 00:00 IST of the
+  // start day to 23:59:59.999 IST of the end day. Send e.g. "2026-10-31T00:00:00+05:30"
+  // (a "Z" instant is read as the IST day it falls on). Same-day coupons are allowed.
+  startDate: z.string().datetime({ offset: true }),
+  endDate: z.string().datetime({ offset: true }),
 });
 
-export const createDiscountRuleSchema = createDiscountRuleBase
-  .refine((d) => new Date(d.endDate) > new Date(d.startDate), {
-    message: "endDate must be after startDate",
-    path: ["endDate"],
-  })
-  .refine(
-    (d) => {
-      if (d.discountType === "PERCENTAGE" && d.value > 100) return false;
-      return true;
-    },
-    { message: "PERCENTAGE discount value cannot exceed 100", path: ["value"] },
-  );
+/** IST calendar day (YYYY-MM-DD) an ISO instant falls on. */
+const istDay = (iso: string): string =>
+  new Date(new Date(iso).getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
 
-// Derived from base (not the refined schema) so .partial()/.omit() work on ZodObject
-export const updateDiscountRuleSchema = createDiscountRuleBase.partial().omit({ code: true });
+type DiscountRuleShape = {
+  [K in keyof z.infer<typeof createDiscountRuleBase>]?: z.infer<typeof createDiscountRuleBase>[K] | null;
+};
+
+/**
+ * Cross-field rules shared by create and update. On update only the fields sent
+ * are checked here; the service re-checks the merged row against what is stored.
+ */
+export function discountRuleIssues(d: DiscountRuleShape): { path: string; message: string }[] {
+  const issues: { path: string; message: string }[] = [];
+  if (d.startDate && d.endDate && istDay(d.endDate) < istDay(d.startDate)) {
+    issues.push({ path: "endDate", message: "Valid To can't be before Valid From" });
+  }
+  if (d.discountType === "PERCENTAGE" && d.value != null && d.value > 100) {
+    issues.push({ path: "value", message: "PERCENTAGE discount value cannot exceed 100" });
+  }
+  if (d.scope === "BRANCH" && d.applicableBranchIds != null && d.applicableBranchIds.length === 0) {
+    issues.push({ path: "applicableBranchIds", message: "Pick at least one branch for a branch coupon" });
+  }
+  if (d.scope === "USER" && d.targetCustomerIds != null && d.targetCustomerIds.length === 0) {
+    issues.push({ path: "targetCustomerIds", message: "Pick at least one customer for a customer coupon" });
+  }
+  if (d.minBookingAmount != null && d.maxBookingAmount != null && d.maxBookingAmount < d.minBookingAmount) {
+    issues.push({ path: "maxBookingAmount", message: "Maximum booking amount can't be below the minimum" });
+  }
+  if (d.minRentalDays != null && d.maxRentalDays != null && d.maxRentalDays < d.minRentalDays) {
+    issues.push({ path: "maxRentalDays", message: "Maximum rental days can't be below the minimum" });
+  }
+  if (d.minBookingCount != null && d.maxBookingCount != null && d.maxBookingCount < d.minBookingCount) {
+    issues.push({ path: "maxBookingCount", message: "Maximum booking count can't be below the minimum" });
+  }
+  return issues;
+}
+
+const addDiscountRuleIssues = (d: DiscountRuleShape, ctx: z.RefinementCtx) => {
+  for (const issue of discountRuleIssues(d)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [issue.path], message: issue.message });
+  }
+};
+
+// A BRANCH coupon needs its branches (an empty list used to apply everywhere)
+// and a USER coupon its customers.
+export const createDiscountRuleSchema = createDiscountRuleBase
+  .superRefine((d, ctx) => addDiscountRuleIssues(d, ctx));
+
+// Derived from base (not the refined schema) so .partial()/.omit() work on ZodObject.
+// isActive lets an admin reactivate a deactivated rule. The optional limits
+// accept null on update so an admin can clear one (the service stores null).
+export const updateDiscountRuleSchema = createDiscountRuleBase
+  .partial()
+  .omit({ code: true })
+  .extend({
+    isActive: z.boolean().optional(),
+    description: z.string().max(500).nullable().optional(),
+    maxDiscountCap: z.number().positive().nullable().optional(),
+    minBookingCount: z.number().int().min(0).nullable().optional(),
+    maxBookingCount: z.number().int().min(0).nullable().optional(),
+    minBookingAmount: z.number().min(0).nullable().optional(),
+    maxBookingAmount: z.number().min(0).nullable().optional(),
+    minRentalDays: z.number().int().min(1).nullable().optional(),
+    maxRentalDays: z.number().int().min(1).nullable().optional(),
+    minAdvanceAfterDiscount: z.number().min(0).nullable().optional(),
+    totalUsageLimit: z.number().int().positive().nullable().optional(),
+    perUserLimit: z.number().int().positive().nullable().optional(),
+    perBranchLimit: z.number().int().positive().nullable().optional(),
+    perDayLimit: z.number().int().positive().nullable().optional(),
+  })
+  .superRefine((d, ctx) => addDiscountRuleIssues(d, ctx));
 
 // ─── Duration Discount Slabs ─────────────────────────────────────────────────
 
+// A slab matches a rental of at least minDays FULL 24-hour periods (minDays × 24 h)
+// up to maxDays (null = no upper limit); only the highest matching slab applies.
+// A FLAT value is ₹ off per vehicle.
 const createDurationSlabBase = z.object({
   minDays: z.number().int().min(1),
-  maxDays: z.number().int().min(1).optional(),
+  maxDays: z.number().int().min(1).nullable().optional(),
   discountType: z.enum(["PERCENTAGE", "FLAT"]),
   value: z.number().positive(),
-  label: z.string().max(50).optional(),
+  label: z.string().max(50).nullable().optional(),
 });
 
-export const createDurationSlabSchema = createDurationSlabBase
-  .refine((d) => !d.maxDays || d.maxDays >= d.minDays, {
-    message: "maxDays must be >= minDays",
-    path: ["maxDays"],
-  })
-  .refine(
-    (d) => {
-      if (d.discountType === "PERCENTAGE" && d.value > 100) return false;
-      return true;
-    },
-    { message: "PERCENTAGE value cannot exceed 100", path: ["value"] },
-  );
+type DurationSlabShape = {
+  minDays: number;
+  maxDays?: number | null;
+  discountType: "PERCENTAGE" | "FLAT";
+  value: number;
+};
 
+/** Cross-field slab rules — also run by the server on the merged row of an update. */
+export function durationSlabIssues(d: DurationSlabShape): { path: string; message: string }[] {
+  const issues: { path: string; message: string }[] = [];
+  if (d.maxDays != null && d.maxDays < d.minDays) {
+    issues.push({ path: "maxDays", message: "maxDays must be >= minDays" });
+  }
+  if (d.discountType === "PERCENTAGE" && d.value > 100) {
+    issues.push({ path: "value", message: "PERCENTAGE value cannot exceed 100" });
+  }
+  return issues;
+}
+
+export const createDurationSlabSchema = createDurationSlabBase.superRefine((d, ctx) => {
+  for (const issue of durationSlabIssues(d)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [issue.path], message: issue.message });
+  }
+});
+
+// Partial input shape; send maxDays: null to make a slab open-ended
 export const updateDurationSlabSchema = createDurationSlabBase.partial();
 
 // ─── Branch Discount Config ───────────────────────────────────────────────────
@@ -142,7 +218,8 @@ export const updateManagerCouponSchema = z.object({
 
 export const applyCouponSchema = z.object({
   couponCode: z.string().min(1).max(32),
-  paymentPlan: z.enum(["FULL", "ADVANCE"]).default("FULL"),
+  // Optional — the server uses the booking's own plan (isAdvancePayment)
+  paymentPlan: z.enum(["FULL", "ADVANCE"]).optional(),
 });
 
 // ─── Apply Manual Discount ────────────────────────────────────────────────────
