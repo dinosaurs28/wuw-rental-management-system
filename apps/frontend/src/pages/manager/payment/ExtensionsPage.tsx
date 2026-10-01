@@ -26,6 +26,7 @@ import {
   type ExtensionStatus,
 } from "@/services/extension.service";
 import { format } from "date-fns";
+import { gstSplitText } from "@/lib/gst";
 
 const resolutionLabels: Record<string, string> = {
   SAME_VEHICLE: "Same vehicle",
@@ -46,7 +47,10 @@ function formatDateTime(iso: string) {
 function fmtMoney(val: string) {
   return (
     "₹ " +
-    parseFloat(val).toLocaleString("en-IN", { minimumFractionDigits: 0 })
+    parseFloat(val).toLocaleString("en-IN", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
   );
 }
 
@@ -226,6 +230,16 @@ export function ExtensionsPage() {
                       </td>
                       <td className="px-4 py-3 font-mono font-semibold text-gray-900">
                         {fmtMoney(ext.additionalAmount)}
+                        {ext.taxAmount != null && ext.taxableAmount != null && (
+                          <span
+                            className="block text-[11px] font-normal text-gray-500"
+                            title={gstSplitText(ext.cgstAmount, ext.sgstAmount)}
+                          >
+                            {fmtMoney(ext.taxableAmount)} + GST{" "}
+                            {ext.taxRate ? `${Number(ext.taxRate)}% ` : ""}
+                            {fmtMoney(ext.taxAmount)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">
                         {ext.resolutionType
@@ -277,8 +291,13 @@ export function ExtensionsPage() {
                           ext.resolutionType
                         : "—"}
                     </span>
-                    <span className="font-mono font-semibold text-gray-800">
+                    <span className="font-mono font-semibold text-gray-800 text-right">
                       +{fmtMoney(ext.additionalAmount)}
+                      {ext.taxAmount != null && (
+                        <span className="block text-[11px] font-normal text-gray-500">
+                          incl. GST {fmtMoney(ext.taxAmount)}
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400">

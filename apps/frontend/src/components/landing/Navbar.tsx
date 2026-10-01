@@ -3,6 +3,7 @@ import { Menu, X, User as UserIcon, LogOut, LayoutDashboard } from "lucide-react
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export const Navbar = () => {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
+              <NotificationBell role="CUSTOMER" tone="dark" />
               <button
                 onClick={() => navigate("/dashboard")}
                 className="relative group px-4 py-2 flex items-center gap-2 text-sm font-bold text-gray-200 hover:text-white transition-colors uppercase tracking-wider"
@@ -81,6 +83,13 @@ export const Navbar = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile notifications (signed-in customers) */}
+        {isAuthenticated && (
+          <div className="md:hidden ml-auto mr-1">
+            <NotificationBell role="CUSTOMER" tone="dark" />
+          </div>
+        )}
 
         {/* Mobile Menu Toggle */}
         <button

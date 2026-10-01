@@ -14,6 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
+import { formatInrExact, gstSplitText } from "@/lib/gst";
+import { round2 } from "@repo/schemas";
+import { durationDiscountTitle } from "@/lib/paymentPlan";
 import { isValidUtr } from "@/lib/counterErrors";
 import {
   useEmployeeBookingStore,
@@ -22,6 +25,11 @@ import {
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import type { VehicleDetails } from "@/services/vehicle.service";
+import type { BranchScheduleConfig } from "@/services/branch.service";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import { bookingPickerLimits } from "@/utils/bookingPickers";
+import { formatRentalLength } from "@/utils/formatters";
 
 interface EmployeeVehiclePricingCardProps {
   vehicle: VehicleDetails;
@@ -29,6 +37,10 @@ interface EmployeeVehiclePricingCardProps {
   isRefetching?: boolean;
   disabled?: boolean;
   hasCompleteKyc?: boolean;
+  /** Customer QR code photo captured (#4). Omitted = not gated. */
+  hasQrPhoto?: boolean;
+  /** Branch office hours — limits the pickers and shows the hours line. */
+  schedule?: BranchScheduleConfig;
 }
 
 const periodTypeLabels: Record<string, string> = {
@@ -36,6 +48,7 @@ const periodTypeLabels: Record<string, string> = {
   HALF_DAY: "Half Day",
   FULL_DAY: "Full Day",
   MULTI_DAY: "Multi Day",
+  MONTHLY: "Monthly",
 };
 
 export const EmployeeVehiclePricingCard = ({
@@ -44,6 +57,8 @@ export const EmployeeVehiclePricingCard = ({
   isRefetching = false,
   disabled = false,
   hasCompleteKyc = false,
+  hasQrPhoto = true,
+  schedule,
 }: EmployeeVehiclePricingCardProps) => {
   const {
     startDate: storeStartDate,
@@ -57,7 +72,9 @@ export const EmployeeVehiclePricingCard = ({
     setPaymentType,
     utr,
     setUtr,
+    plan,
   } = useEmployeeBookingStore();
+  const isMonthly = plan === "MONTHLY";
   const { needsShift } = useActiveShift();
   const [utrTouched, setUtrTouched] = useState(false);
   const isUpi = paymentType === "UPI";
@@ -76,29 +93,32 @@ export const EmployeeVehiclePricingCard = ({
   const isAvailable = vehicle.availability;
   const pd = vehicle.pricingDetails;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Paise are shown when present: GST is rounded to the paisa, not the rupee.
+  const formatCurrency = (amount: number) => formatInrExact(amount);
 
-  const disabledDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return { before: today };
-  }, []);
+  // Office hours (#2) + 15-day window (#15) / monthly plan length (30–180 days).
+  // Same calendar day as pickup stays selectable for the return.
+  const startDayKey = startDate?.getTime();
+  const endDayKey = endDate?.getTime();
+  const limits = useMemo(
+    () =>
+      bookingPickerLimits({
+        schedule,
+        pickupDate: startDate,
+        pickupTime: startTime || "10:00",
+        returnDate: endDate,
+        returnTime: endTime || "10:00",
+        monthly: isMonthly,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, startDayKey, startTime, endDayKey, endTime, isMonthly],
+  );
 
-  const returnDisabledDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (!startDate) return { before: today };
-    // Use start-of-day so same calendar day as pickup is selectable
-    const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    return { before: startDay.getTime() < today.getTime() ? today : startDay };
-  }, [startDate]);
+  // What the price covers ("5 hours", "1 month + 5 days"); the period type is the fallback
+  const billedLabel =
+    pd?.pricingBreakdown.billedAs ??
+    periodTypeLabels[pd?.pricingBreakdown.periodType ?? ""] ??
+    pd?.pricingBreakdown.periodType;
 
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return true;
@@ -135,9 +155,11 @@ export const EmployeeVehiclePricingCard = ({
     startDate &&
     endDate &&
     isDateRangeValid &&
+    !limits.windowError &&
     !isRefetching &&
     !disabled &&
     hasCompleteKyc &&
+    hasQrPhoto &&
     !needsShift &&
     (!isUpi || utrValid);
 
@@ -149,9 +171,12 @@ export const EmployeeVehiclePricingCard = ({
           <div className="flex items-baseline justify-between">
             <div>
               <span className="text-3xl font-bold text-zinc-900">
-                {formatCurrency(vehicle.pricing.daily)}
+                {vehicle.pricing.daily > 0 ? formatCurrency(vehicle.pricing.daily) : "—"}
               </span>
-              <span className="text-sm text-zinc-500 ml-1">/day</span>
+              {/* The header is the base for the picked period (12 hours, 1 month…), not a per-day rate */}
+              <span className="text-sm text-zinc-500 ml-1">
+                {vehicle.pricing.daily > 0 ? (pd?.pricingBreakdown.billedAs ? `/ ${pd.pricingBreakdown.billedAs}` : "/day") : ""}
+              </span>
             </div>
             <div
               className={cn(
@@ -202,7 +227,7 @@ export const EmployeeVehiclePricingCard = ({
                     mode="single"
                     selected={startDate || undefined}
                     onSelect={handleStartDateSelect}
-                    disabled={disabledDays}
+                    disabled={limits.isPickupDayDisabled}
                     initialFocus
                   />
                 </PopoverContent>
@@ -215,8 +240,14 @@ export const EmployeeVehiclePricingCard = ({
                 Pickup Time
               </label>
               <div className="h-11 w-full border border-input rounded-md px-3 flex items-center bg-background focus-within:ring-1 focus-within:ring-ring">
-                <TimeSelect value={startTime || "10:00"} onChange={setStartTime} className="w-full" />
+                <TimeSelect
+                  value={startTime || "10:00"}
+                  onChange={setStartTime}
+                  isDisabled={limits.isPickupSlotDisabled}
+                  className="w-full"
+                />
               </div>
+              <BranchHoursBadge schedule={schedule} date={startDate} kind="pickup" className="mt-0" />
             </div>
 
             {/* Return Date */}
@@ -244,7 +275,7 @@ export const EmployeeVehiclePricingCard = ({
                     mode="single"
                     selected={endDate || undefined}
                     onSelect={handleEndDateSelect}
-                    disabled={returnDisabledDays}
+                    disabled={limits.isReturnDayDisabled}
                     initialFocus
                   />
                 </PopoverContent>
@@ -257,10 +288,42 @@ export const EmployeeVehiclePricingCard = ({
                 Return Time
               </label>
               <div className="h-11 w-full border border-input rounded-md px-3 flex items-center bg-background focus-within:ring-1 focus-within:ring-ring">
-                <TimeSelect value={endTime || "10:00"} onChange={setEndTime} className="w-full" />
+                <TimeSelect
+                  value={endTime || "10:00"}
+                  onChange={setEndTime}
+                  isDisabled={limits.isReturnSlotDisabled}
+                  className="w-full"
+                />
               </div>
+              <BranchHoursBadge schedule={schedule} date={endDate} kind="return" className="mt-0" />
             </div>
           </div>
+
+          {isMonthly ? (
+            <p className="text-xs font-medium text-zinc-600">
+              <span className="px-2 py-0.5 mr-1.5 rounded-full bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wide">
+                Monthly rental
+              </span>
+              30 to 180 days
+            </p>
+          ) : (
+            /* Quick durations (#5) */
+            <DurationPresetChips
+              pickupDate={startDate}
+              pickupTime={startTime || "10:00"}
+              returnDate={endDate}
+              returnTime={endTime || "10:00"}
+              schedule={schedule}
+              onApply={(date, time) => {
+                if (startDate) setDates(startDate, date);
+                setEndTime(time);
+              }}
+            />
+          )}
+
+          {limits.windowError && (
+            <p className="text-sm font-semibold text-red-500">{limits.windowError}</p>
+          )}
         </div>
 
         {/* Pricing Breakdown */}
@@ -275,17 +338,16 @@ export const EmployeeVehiclePricingCard = ({
             <>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-200 rounded-full uppercase tracking-wide">
-                  {periodTypeLabels[pd.pricingBreakdown.periodType] ||
-                    pd.pricingBreakdown.periodType}
+                  {pd.pricingBreakdown.billedAs ? `Billed as ${billedLabel}` : billedLabel}
                 </span>
-                <span className="text-xs text-zinc-400">
-                  {pd.pricingBreakdown.duration.days > 0 &&
-                    `${pd.pricingBreakdown.duration.days}d `}
-                  {pd.pricingBreakdown.duration.hours > 0 &&
-                    `${pd.pricingBreakdown.duration.hours}h `}
-                  {pd.pricingBreakdown.duration.minutes > 0 &&
-                    `${pd.pricingBreakdown.duration.minutes}m`}
-                </span>
+                {startDate && endDate && (
+                  <span className="text-xs text-zinc-400">
+                    {formatRentalLength(
+                      `${format(startDate, "yyyy-MM-dd")}T${startTime || "10:00"}`,
+                      `${format(endDate, "yyyy-MM-dd")}T${endTime || "10:00"}`,
+                    )}
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-between text-sm">
@@ -299,7 +361,11 @@ export const EmployeeVehiclePricingCard = ({
                 <div className="flex justify-between text-sm">
                   <span className="text-emerald-600 flex items-center gap-1">
                     <Check className="size-4" />
-                    Discount ({pd.discountPercent}%)
+                    {durationDiscountTitle(
+                      pd.durationDiscountLabel,
+                      pd.durationDiscountPercent ?? round2(pd.discountPercent),
+                      pd.durationDiscountType,
+                    )}
                   </span>
                   <span className="text-emerald-600 font-medium">
                     -{formatCurrency(pd.discountAmount)}
@@ -307,12 +373,28 @@ export const EmployeeVehiclePricingCard = ({
                 </div>
               )}
 
-              {pd.taxAmount > 0 && (
+              {pd.discountAmount > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-zinc-600">GST ({pd.taxRate}%)</span>
+                  <span className="text-zinc-600">Taxable value</span>
                   <span className="text-zinc-900 font-medium">
-                    +{formatCurrency(pd.taxAmount)}
+                    {formatCurrency(round2(pd.basePrice - pd.discountAmount))}
                   </span>
+                </div>
+              )}
+
+              {pd.taxAmount > 0 && (
+                <div className="space-y-0.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-600">GST ({pd.taxRate}%)</span>
+                    <span className="text-zinc-900 font-medium">
+                      +{formatCurrency(pd.taxAmount)}
+                    </span>
+                  </div>
+                  {(pd.cgstAmount > 0 || pd.sgstAmount > 0) && (
+                    <p className="text-xs text-zinc-400 text-right">
+                      {gstSplitText(pd.cgstAmount, pd.sgstAmount, pd.cgstRate, pd.sgstRate)}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -445,6 +527,8 @@ export const EmployeeVehiclePricingCard = ({
               "Currently Unavailable"
             ) : !hasCompleteKyc ? (
               "Select KYC Document"
+            ) : !hasQrPhoto ? (
+              "Capture QR Code Photo"
             ) : needsShift ? (
               "Open Cash Shift to Book"
             ) : isUpi && !utrValid ? (

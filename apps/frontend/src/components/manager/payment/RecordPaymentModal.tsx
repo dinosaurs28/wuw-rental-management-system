@@ -46,6 +46,16 @@ const purposeLabels: Record<PaymentPurpose, string> = {
   EXTENSION: "Extension Fee",
 };
 
+// Extension charges are taken through the extension flow, which confirms the
+// extension and books its GST split; a payment recorded here would not be
+// linked to any extension (and EXTENSION_FEE is not a server purpose).
+const RECORDABLE_PURPOSES: PaymentPurpose[] = [
+  "FULL_PAYMENT",
+  "ADVANCE",
+  "REMAINING_BALANCE",
+  "DAMAGE_FEE",
+];
+
 const methodLabels: Record<PaymentMethod, string> = {
   CASH: "Cash",
   ONLINE: "Online",
@@ -196,7 +206,7 @@ export function RecordPaymentModal({
               <div className="space-y-2">
                 <Label>Payment Purpose</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(purposeLabels) as PaymentPurpose[]).map((p) => (
+                  {RECORDABLE_PURPOSES.map((p) => (
                     <button
                       key={p}
                       type="button"

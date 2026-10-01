@@ -41,23 +41,56 @@ import {
 
 // ── Slab Modal ────────────────────────────────────────────────────────────────
 
-function SlabModal({ slab, onClose, onSaved }: { slab?: DurationSlab; onClose: () => void; onSaved: () => void }) {
+/** "3–6 days" / "30+ days" */
+const slabRange = (minDays: number, maxDays: number | null) =>
+  `${minDays}${maxDays != null ? `–${maxDays}` : "+"} days`;
+
+function SlabModal({
+  slab,
+  otherSlabs,
+  onClose,
+  onSaved,
+}: {
+  slab?: DurationSlab;
+  /** The branch's other slabs — a slab's day range may not overlap any of them. */
+  otherSlabs: DurationSlab[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const isEdit = !!slab;
   const [minDays, setMinDays] = useState(String(slab?.minDays ?? ""));
   const [maxDays, setMaxDays] = useState(slab?.maxDays != null ? String(slab.maxDays) : "");
   const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FLAT">(slab?.discountType ?? "PERCENTAGE");
-  const [discountValue, setDiscountValue] = useState(slab ? String(parseFloat(slab.discountValue)) : "");
+  const [discountValue, setDiscountValue] = useState(slab ? String(Number(slab.value)) : "");
   const [label, setLabel] = useState(slab?.label ?? "");
   const queryClient = useQueryClient();
+
+  const minN = Number(minDays);
+  const maxN = maxDays.trim() === "" ? null : Number(maxDays);
+  const valueN = Number(discountValue);
+
+  // Same rules as the server (which re-checks): whole days, max ≥ min, ≤ 100%, no overlap
+  const issues: string[] = [];
+  if (minDays.trim() !== "" && (!Number.isInteger(minN) || minN < 1)) issues.push("Min days must be a whole number of at least 1.");
+  if (maxN !== null && (!Number.isInteger(maxN) || maxN < 1)) issues.push("Max days must be a whole number of at least 1.");
+  else if (maxN !== null && Number.isInteger(minN) && maxN < minN) issues.push("Max days can't be below min days.");
+  if (discountType === "PERCENTAGE" && valueN > 100) issues.push("A percentage discount can't be more than 100%.");
+  if (Number.isInteger(minN) && minN >= 1 && (maxN === null || maxN >= minN)) {
+    const clash = otherSlabs.find(
+      (s) => s.minDays <= (maxN ?? Infinity) && (s.maxDays == null || s.maxDays >= minN),
+    );
+    if (clash) issues.push(`Overlaps the ${slabRange(clash.minDays, clash.maxDays)} slab.`);
+  }
 
   const saveMutation = useMutation({
     mutationFn: () => {
       const payload = {
-        minDays: parseInt(minDays),
-        ...(maxDays ? { maxDays: parseInt(maxDays) } : {}),
+        minDays: minN,
+        // null = open-ended (also clears Max days on an existing slab)
+        maxDays: maxN,
         discountType,
-        discountValue: parseFloat(discountValue),
-        ...(label ? { label } : {}),
+        value: valueN,
+        label: label.trim() || null,
       };
       return isEdit
         ? managerDiscountService.updateSlab(slab!.id, payload)
@@ -81,7 +114,7 @@ function SlabModal({ slab, onClose, onSaved }: { slab?: DurationSlab; onClose: (
     onError: (err: any) => { toast.error(err?.response?.data?.message || "Failed to delete slab."); },
   });
 
-  const isValid = parseInt(minDays) > 0 && parseFloat(discountValue) > 0;
+  const isValid = Number.isInteger(minN) && minN > 0 && valueN > 0 && issues.length === 0;
   const isLoading = saveMutation.isPending || deleteMutation.isPending;
 
   return (
@@ -117,18 +150,32 @@ function SlabModal({ slab, onClose, onSaved }: { slab?: DurationSlab; onClose: (
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-neutral-600">Value</Label>
+              <Label className="text-xs text-neutral-600">
+                Value {discountType === "FLAT" && <span className="text-neutral-400 font-normal">(per vehicle)</span>}
+              </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">{discountType === "PERCENTAGE" ? "%" : "₹"}</span>
-                <Input type="number" min="0" step="0.01" className="pl-7 h-10" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} />
+                <Input type="number" min="0" max={discountType === "PERCENTAGE" ? 100 : undefined} step="0.01" className="pl-7 h-10" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} />
               </div>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-neutral-600">Label <span className="text-neutral-400 font-normal">(optional)</span></Label>
-            <Input className="h-10" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Short stay discount" />
+            <Label className="text-xs text-neutral-600">Label <span className="text-neutral-400 font-normal">(optional, shown to customers)</span></Label>
+            <Input className="h-10" maxLength={50} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Weekly" />
           </div>
+
+          <p className="text-xs text-neutral-500 leading-relaxed">
+            A slab applies when the rental is at least <strong>Min Days</strong> full 24-hour periods —
+            7+ days means at least 168 hours (167 h 59 m still counts as 6 days). Only the highest
+            matching slab applies.{discountType === "FLAT" && " A flat amount is taken off each vehicle."}
+          </p>
+
+          {issues.length > 0 && (
+            <ul className="space-y-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {issues.map((msg) => <li key={msg}>{msg}</li>)}
+            </ul>
+          )}
         </div>
 
         <DialogFooter className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/40 gap-2 flex-col sm:flex-row">
@@ -153,10 +200,34 @@ function SlabModal({ slab, onClose, onSaved }: { slab?: DurationSlab; onClose: (
 
 function ConfigSection({ config }: { config: DiscountConfig }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<DiscountConfig>({ ...config });
+  // Numeric fields are edited as text: GET sends Decimals as strings, and a
+  // blank combined cap means "no cap" (null), not 0.
+  const [form, setForm] = useState({
+    durationDiscountEnabled: config.durationDiscountEnabled,
+    stackWithCoupon: config.stackWithCoupon,
+    maxCombinedDiscountPercent:
+      config.maxCombinedDiscountPercent == null ? "" : String(Number(config.maxCombinedDiscountPercent)),
+    managerApprovalThreshold: String(Number(config.managerApprovalThreshold ?? 0)),
+    maxManualDiscountsPerEmployeePerDay: String(config.maxManualDiscountsPerEmployeePerDay ?? ""),
+  });
+
+  const capN = form.maxCombinedDiscountPercent.trim() === "" ? null : Number(form.maxCombinedDiscountPercent);
+  const thresholdN = Number(form.managerApprovalThreshold);
+  const perDayN = Number(form.maxManualDiscountsPerEmployeePerDay);
+  const issues: string[] = [];
+  if (capN !== null && (!Number.isFinite(capN) || capN < 0 || capN > 100)) issues.push("Max combined discount must be between 0 and 100%, or blank for no cap.");
+  if (form.managerApprovalThreshold.trim() === "" || !Number.isFinite(thresholdN) || thresholdN < 0) issues.push("Manager approval threshold must be ₹0 or more.");
+  if (!Number.isInteger(perDayN) || perDayN < 1 || perDayN > 50) issues.push("Max manual discounts per employee per day must be a whole number from 1 to 50.");
 
   const mutation = useMutation({
-    mutationFn: () => managerDiscountService.updateConfig(form),
+    mutationFn: () =>
+      managerDiscountService.updateConfig({
+        durationDiscountEnabled: form.durationDiscountEnabled,
+        stackWithCoupon: form.stackWithCoupon,
+        maxCombinedDiscountPercent: capN,
+        managerApprovalThreshold: thresholdN,
+        maxManualDiscountsPerEmployeePerDay: perDayN,
+      }),
     onSuccess: () => {
       toast.success("Configuration saved.");
       queryClient.invalidateQueries({ queryKey: ["discount-config"] });
@@ -193,15 +264,18 @@ function ConfigSection({ config }: { config: DiscountConfig }) {
           <div className="flex items-start gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
             <Checkbox
               id="stack-coupons"
-              checked={form.stackWithCoupons}
-              onCheckedChange={(v) => setForm((f) => ({ ...f, stackWithCoupons: !!v }))}
+              checked={form.stackWithCoupon}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, stackWithCoupon: !!v }))}
               className="mt-0.5"
             />
             <div>
               <label htmlFor="stack-coupons" className="text-sm font-medium text-neutral-800 cursor-pointer">
                 Stack duration with coupons
               </label>
-              <p className="text-xs text-neutral-500 mt-0.5">Allow both duration and coupon discounts on the same booking</p>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Allow both duration and coupon discounts on the same booking. When off, the bigger
+                saving applies (coupons marked stackable by admin still stack).
+              </p>
             </div>
           </div>
         </div>
@@ -210,27 +284,36 @@ function ConfigSection({ config }: { config: DiscountConfig }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <Label className="text-xs text-neutral-600">Max combined discount (%)</Label>
-            <Input type="number" min="0" max="100" className="h-10" value={form.maxCombinedDiscountPercent}
-              onChange={(e) => setForm((f) => ({ ...f, maxCombinedDiscountPercent: parseFloat(e.target.value) || 0 }))} />
+            <Input type="number" min="0" max="100" className="h-10" placeholder="No cap" value={form.maxCombinedDiscountPercent}
+              onChange={(e) => setForm((f) => ({ ...f, maxCombinedDiscountPercent: e.target.value }))} />
+            <p className="text-xs text-neutral-400">
+              {capN === 0 ? "0% cancels every discount at this branch." : "Blank = no cap. Manual discounts are trimmed first, then coupons, then slabs."}
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-neutral-600">Manager approval threshold</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
               <Input type="number" min="0" className="pl-7 h-10" value={form.managerApprovalThreshold}
-                onChange={(e) => setForm((f) => ({ ...f, managerApprovalThreshold: parseFloat(e.target.value) || 0 }))} />
+                onChange={(e) => setForm((f) => ({ ...f, managerApprovalThreshold: e.target.value }))} />
             </div>
             <p className="text-xs text-neutral-400">Manual discounts above this require approval</p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-neutral-600">Max manual discounts / employee / day</Label>
-            <Input type="number" min="0" className="h-10" value={form.maxManualDiscountsPerDay}
-              onChange={(e) => setForm((f) => ({ ...f, maxManualDiscountsPerDay: parseInt(e.target.value) || 0 }))} />
+            <Input type="number" min="1" max="50" className="h-10" value={form.maxManualDiscountsPerEmployeePerDay}
+              onChange={(e) => setForm((f) => ({ ...f, maxManualDiscountsPerEmployeePerDay: e.target.value }))} />
           </div>
         </div>
 
+        {issues.length > 0 && (
+          <ul className="space-y-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {issues.map((msg) => <li key={msg}>{msg}</li>)}
+          </ul>
+        )}
+
         <div className="flex justify-end pt-1">
-          <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 h-10 px-5" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 h-10 px-5" onClick={() => mutation.mutate()} disabled={mutation.isPending || issues.length > 0}>
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Config
           </Button>
@@ -295,6 +378,17 @@ export function DiscountConfigTab() {
           </div>
         )}
 
+        {/* Slabs are ignored while duration discounts are off */}
+        {config && !config.durationDiscountEnabled && slabs.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2.5 text-sm text-amber-800">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+            <span>
+              Duration discounts are turned off, so the slabs below don't apply to any booking. Tick
+              "Duration discounts enabled" and save to use them.
+            </span>
+          </div>
+        )}
+
         {/* Duration Slabs */}
         <div id="duration-discount-slabs" className="bg-white rounded-xl border border-neutral-200 overflow-hidden scroll-mt-6">
           <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/60 flex items-center justify-between">
@@ -337,15 +431,15 @@ export function DiscountConfigTab() {
                   {slabs.map((s) => (
                     <tr key={s.id} className="hover:bg-neutral-50/60 transition-colors">
                       <td className="px-5 py-3.5 font-semibold text-neutral-900 text-sm">
-                        {s.minDays}{s.maxDays != null ? `–${s.maxDays}` : "+"} days
+                        {slabRange(s.minDays, s.maxDays)}
                       </td>
                       <td className="px-5 py-3.5 font-bold text-neutral-900 text-sm">
                         {s.discountType === "PERCENTAGE"
-                          ? `${parseFloat(s.discountValue)}%`
-                          : `₹ ${parseFloat(s.discountValue).toLocaleString("en-IN")}`}
+                          ? `${Number(s.value)}%`
+                          : `₹ ${Number(s.value).toLocaleString("en-IN")}`}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-neutral-500">
-                        {s.discountType === "PERCENTAGE" ? "Percentage" : "Flat Amount"}
+                        {s.discountType === "PERCENTAGE" ? "Percentage" : "Flat, per vehicle"}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-neutral-500">{s.label ?? <span className="text-neutral-300">—</span>}</td>
                       <td className="px-5 py-3.5">
@@ -363,7 +457,12 @@ export function DiscountConfigTab() {
       </div>
 
       {slabModal && (
-        <SlabModal slab={slabModal === true ? undefined : slabModal} onClose={() => setSlabModal(null)} onSaved={() => setSlabModal(null)} />
+        <SlabModal
+          slab={slabModal === true ? undefined : slabModal}
+          otherSlabs={slabs.filter((s) => slabModal === true || s.id !== slabModal.id)}
+          onClose={() => setSlabModal(null)}
+          onSaved={() => setSlabModal(null)}
+        />
       )}
     </>
   );

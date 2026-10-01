@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { FileText, Trash2, Eye, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { ZoomableImage } from "@/components/ui/ZoomableImage";
+import { ZoomBadge } from "@/components/ui/PhotoLightbox";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +22,8 @@ interface PickupImageCardProps {
   image: UploadedImage;
   onDelete: (fileId: string) => void;
   isDeleting: boolean;
+  /** When provided, viewing opens the parent's multi-photo lightbox instead of the built-in dialog. */
+  onOpen?: () => void;
 }
 
 // Helper to check if file is an image
@@ -31,10 +35,12 @@ export const PickupImageCard = ({
   image,
   onDelete,
   isDeleting,
+  onOpen,
 }: PickupImageCardProps) => {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const isImage = isImageFile(image.url);
   const fileName = image.url.split("/").pop()?.split("?")[0] || "Image";
+  const openViewer = () => (onOpen ? onOpen() : setIsViewOpen(true));
 
   return (
     <>
@@ -48,12 +54,20 @@ export const PickupImageCard = ({
         {/* Thumbnail / Preview */}
         <div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
           {isImage ? (
-            <img
-              src={image.url}
-              alt="Pickup vehicle"
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              onClick={openViewer}
+              aria-label="Zoom image"
+              className="relative w-full h-full cursor-zoom-in"
+            >
+              <img
+                src={image.url}
+                alt="Pickup vehicle"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <ZoomBadge />
+            </button>
           ) : (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <FileText className="w-12 h-12" />
@@ -83,7 +97,7 @@ export const PickupImageCard = ({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsViewOpen(true)}
+                onClick={openViewer}
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 title="View image"
               >
@@ -123,13 +137,9 @@ export const PickupImageCard = ({
               <span className="sr-only">Close</span>
             </DialogClose>
           </DialogHeader>
-          <div className="relative w-full max-h-[70vh] overflow-auto bg-muted">
+          <div className="relative w-full max-h-[75vh] overflow-auto bg-muted p-3">
             {isImage ? (
-              <img
-                src={image.url}
-                alt="Pickup vehicle"
-                className="w-full h-auto object-contain"
-              />
+              <ZoomableImage src={image.url} alt="Pickup vehicle" />
             ) : (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <FileText className="w-16 h-16 text-muted-foreground" />

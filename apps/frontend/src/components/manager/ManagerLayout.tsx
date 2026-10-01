@@ -20,9 +20,15 @@ import {
   LogOut,
   User,
   Truck,
+  CalendarRange,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
+import {
+  MANAGER_CONFIRMATIONS_CHANGED_EVENT,
+  getPendingConfirmationsCount,
+} from "@/services/managerDashboard.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import apiClient from "@/lib/axios";
 import {
@@ -43,6 +49,7 @@ import {
 import { useBranchManagerAuthStore } from "@/store/branchManagerAuth.store";
 import { usePaymentStore } from "@/store/payment.store";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface ManagerLayoutProps {
   children: ReactNode;
@@ -58,6 +65,7 @@ const financialsItems = [
 ];
 
 const operationsItems = [
+  { label: "Confirmations", path: "/manager/confirmations", icon: ClipboardCheck },
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
   { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
   { label: "Cancellations", path: "/manager/no-show", icon: UserX },
@@ -66,6 +74,7 @@ const operationsItems = [
 
 const topLevelItems = [
   { label: "Dashboard", path: "/manager/dashboard", icon: LayoutDashboard },
+  { label: "Period", path: "/manager/period", icon: CalendarRange },
   { label: "Fleet", path: "/manager/fleet", icon: Truck },
   { label: "Vehicles", path: "/manager/vehicles", icon: Car },
   { label: "Employees", path: "/manager/employees", icon: Users },
@@ -137,6 +146,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
   const { user, logout } = useBranchManagerAuthStore();
   const { pendingCashCount, pendingRefundCount, setPendingCashCount } = usePaymentStore();
   const [insuranceAlertCount, setInsuranceAlertCount] = useState(0);
+  const [confirmationsCount, setConfirmationsCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -151,6 +161,16 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
       .then((res) => setInsuranceAlertCount(res.data?.data?.total ?? 0))
       .catch(() => {});
   }, []);
+
+  // Pickups / returns / safety deposits waiting on the BM (Operations → Confirmations)
+  useEffect(() => {
+    const refresh = () => {
+      getPendingConfirmationsCount().then(setConfirmationsCount).catch(() => {});
+    };
+    refresh();
+    window.addEventListener(MANAGER_CONFIRMATIONS_CHANGED_EVENT, refresh);
+    return () => window.removeEventListener(MANAGER_CONFIRMATIONS_CHANGED_EVENT, refresh);
+  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
   const isAnyFinancialsActive = financialsItems.some((i) => isActive(i.path));
@@ -207,6 +227,8 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
               <NavDropdown
                 label="Operations"
                 items={operationsItems}
+                badge={confirmationsCount}
+                badgeVariant="orange"
                 isAnyActive={isAnyOpsActive}
               />
 
@@ -240,6 +262,9 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
 
           {/* Right: User + Mobile trigger */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Notifications - all screen sizes */}
+            <NotificationBell role="MANAGER" />
+
             {/* User Profile - Desktop */}
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-neutral-200">
               <div className="text-right">
@@ -323,8 +348,11 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                     ))}
 
                     <div className="pt-3">
-                      <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
                         Operations
+                        {confirmationsCount > 0 && (
+                          <NavBadge count={confirmationsCount} variant="orange" />
+                        )}
                       </p>
                       {operationsItems.map((item) => (
                         <Link

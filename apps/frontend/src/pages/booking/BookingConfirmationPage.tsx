@@ -47,8 +47,11 @@ import { useAuthStore } from "@/store/auth.store";
 import { bookingService } from "@/services/booking.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import type { RazorpayOrder } from "@/lib/razorpay";
-import { useSearchStore } from "@/store/search.store";
+import { gstLabel } from "@/lib/gst";
+import { durationDiscountTitle } from "@/lib/paymentPlan";
+import { round2 } from "@repo/schemas";
 import { format } from "date-fns";
+import { formatRentalLength } from "@/utils/formatters";
 import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 // Response types from API
@@ -63,14 +66,28 @@ interface BookingResponse {
   grandCGSTTotal?: number;
   grandSGSTTotal?: number;
   taxRate?: number;
+  cgstRate?: number;
+  sgstRate?: number;
   grandDeposit: number;
   grandFinalTotal: number;
   isAdvancePayment?: boolean;
   advanceAmount?: number;
   remainingBalance?: number;
+  /** Razorpay order amount (advance or full) — absent from older servers. */
+  payNowAmount?: number;
+  dueAtPickup?: number;
+  // Discount layers (pre-GST) — absent from older servers
+  grandDurationDiscountTotal?: number;
+  grandCouponDiscountTotal?: number;
+  durationDiscountLabel?: string | null;
+  appliedCouponCode?: string | null;
+  /** Set when the server charged a different plan than the one picked. */
+  paymentFlowAdjustMessage?: string | null;
   startDate: string;
   endDate: string;
   rentalDays?: number;
+  /** What the base price covers, e.g. "12 hours" (#5). */
+  billedAs?: string;
 }
 
 export const BookingConfirmationPage = () => {
@@ -115,7 +132,6 @@ export const BookingConfirmationPage = () => {
     endDate,
     startTime,
     endTime,
-    rentalDays,
     selectedKycFilePublicId,
     paymentType,
     paymentFlow,
@@ -141,26 +157,23 @@ export const BookingConfirmationPage = () => {
       }
 
       try {
-        const { pickupDate, returnDate, pickupTime, returnTime } = useSearchStore.getState();
-
         const buildLocalISOString = (date: Date, time: string) => {
           const [hours, minutes] = time.split(":").map(Number);
           return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0).toISOString();
         };
 
-        const startDateTime = pickupDate
-          ? buildLocalISOString(pickupDate, pickupTime || startTime)
-          : (() => {
-              const [y, m, d] = startDate.split("-").map(Number);
-              return buildLocalISOString(new Date(y, m - 1, d), startTime);
-            })();
+        // The checkout store holds what the customer picked on the vehicle page
+        // (and what review & confirm priced and checked) — the search store
+        // only knows the listing's dates.
+        const startDateTime = (() => {
+          const [y, m, d] = startDate.split("-").map(Number);
+          return buildLocalISOString(new Date(y, m - 1, d), startTime);
+        })();
 
-        const endDateTime = returnDate
-          ? buildLocalISOString(returnDate, returnTime || endTime)
-          : (() => {
-              const [y, m, d] = endDate.split("-").map(Number);
-              return buildLocalISOString(new Date(y, m - 1, d), endTime);
-            })();
+        const endDateTime = (() => {
+          const [y, m, d] = endDate.split("-").map(Number);
+          return buildLocalISOString(new Date(y, m - 1, d), endTime);
+        })();
 
         const response = await bookingService.createBookingSummary({
           ...(selectedGroupKey
@@ -190,16 +203,44 @@ export const BookingConfirmationPage = () => {
           grandCGSTTotal: response.data.totals.grandCGSTTotal,
           grandSGSTTotal: response.data.totals.grandSGSTTotal,
           taxRate: response.data.totals.taxRate,
+          cgstRate: response.data.totals.cgstRate,
+          sgstRate: response.data.totals.sgstRate,
           grandDeposit: response.data.totals.grandDeposit,
           grandFinalTotal: response.data.totals.grandFinalTotal,
           isAdvancePayment: response.isAdvancePayment,
           advanceAmount: response.data.totals.advanceAmount,
           remainingBalance: response.data.totals.remainingBalance,
+          payNowAmount: response.data.totals.payNowAmount,
+          dueAtPickup: response.data.totals.dueAtPickup,
+          grandDurationDiscountTotal: response.data.totals.grandDurationDiscountTotal,
+          grandCouponDiscountTotal: response.data.totals.grandCouponDiscountTotal,
+          durationDiscountLabel: response.data.totals.durationDiscountLabel,
+          appliedCouponCode: response.data.totals.appliedCouponCode,
+          paymentFlowAdjustMessage: response.paymentFlowAdjusted
+            ? response.paymentFlowAdjustMessage ?? "Your payment plan was changed to what this booking allows."
+            : null,
           startDate: response.data.startDate,
           endDate: response.data.endDate,
           rentalDays: response.data.items[0]?.days,
+          billedAs: response.data.items[0]?.pricingBreakdown?.billedAs,
         });
+        // Keep the plan actually charged (the server may have converted it)
+        if (response.payment_flow && response.payment_flow !== paymentFlow) {
+          useVehicleRentalStore.getState().setPaymentFlow(response.payment_flow);
+        }
       } catch (err: any) {
+        // The coupon stopped being valid (expired, limit reached, plan…): the
+        // server refused before any payment order — drop it and go back to review
+        if (err?.response?.data?.couponRejected) {
+          useVehicleRentalStore.getState().clearCoupon();
+          toast.error(
+            err.response.data.message || "Your coupon can no longer be used. It has been removed.",
+            { duration: 8000 },
+          );
+          navigate("/booking/review-confirm", { replace: true });
+          return;
+        }
+
         // Booking type-class limit exceeded — show modal instead of error screen
         if (err?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
           setLimitConflicts(err.response.data.conflicts ?? []);
@@ -211,11 +252,57 @@ export const BookingConfirmationPage = () => {
         const message =
           err?.response?.data?.message ||
           "Failed to create booking. Please try again.";
+        const errorCode = err?.response?.data?.code;
+
+        // Profile incomplete (e.g. DL / Aadhaar number missing) is not a
+        // sign-in problem — send the customer to their profile, then back here.
+        if (errorCode === "PROFILE_INCOMPLETE") {
+          toast.error(message);
+          useAuthStore.getState().setBookingIntent();
+          navigate("/profile/personal-information", { replace: true });
+          return;
+        }
+
+        // The selected KYC file isn't one of this customer's documents — pick again.
+        if (errorCode === "KYC_DOCUMENT_INVALID" || errorCode === "KYC_NOT_OWNED") {
+          toast.error(message);
+          useVehicleRentalStore.getState().setSelectedKyc(null);
+          navigate("/booking/review-confirm", { replace: true });
+          return;
+        }
+
+        // Return falls outside office hours (#2): the server offers the next
+        // in-hours return. Back to the vehicle page with it filled in, so the
+        // customer sees the new price and confirms.
+        const adjustedReturn = err?.response?.data?.verdict?.adjustedReturn;
+        if (errorCode === "BRANCH_SCHEDULE_RETURN_ADJUSTED" && adjustedReturn) {
+          const adjusted = new Date(adjustedReturn);
+          if (!isNaN(adjusted.getTime())) {
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const end = `${adjusted.getFullYear()}-${pad(adjusted.getMonth() + 1)}-${pad(adjusted.getDate())}T${pad(adjusted.getHours())}:${pad(adjusted.getMinutes())}`;
+            const params = new URLSearchParams({ start: `${startDate}T${startTime}`, end });
+            toast.info(message, { duration: 8000 });
+            navigate(
+              selectedGroupKey
+                ? `/vehicle/group/${encodeURIComponent(selectedGroupKey)}?${params}`
+                : `/vehicle/${selectedVehicleId}?${params}`,
+              { replace: true },
+            );
+            return;
+          }
+        }
+
+        // BRANCH_SCHEDULE_VIOLATION / BOOKING_MAX_PERIOD_EXCEEDED carry a
+        // customer-readable message — shown below like any other refusal.
         setError(message);
         toast.error(message);
 
-        // Handle auth errors
-        if (err?.response?.status === 401 || err?.response?.status === 403) {
+        // Handle auth errors (the KYC gate also answers 403 — not an auth issue)
+        if (
+          err?.response?.status === 401 ||
+          (err?.response?.status === 403 &&
+            err?.response?.data?.isAuthenticated === false)
+        ) {
           navigate("/auth/sign-in");
         }
       } finally {
@@ -585,10 +672,16 @@ export const BookingConfirmationPage = () => {
 
               <div className="flex items-center justify-between py-2 border-b border-zinc-100">
                 <span className="text-sm text-muted-foreground">
-                  Rental Days
+                  Duration
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {bookingData?.rentalDays ?? rentalDays} {(bookingData?.rentalDays ?? rentalDays) === 1 ? "day" : "days"}
+                  {formatRentalLength(
+                    bookingData?.startDate ?? (startDate && startTime ? `${startDate}T${startTime}` : null),
+                    bookingData?.endDate ?? (endDate && endTime ? `${endDate}T${endTime}` : null),
+                  )}
+                  {bookingData?.billedAs && (
+                    <span className="text-muted-foreground font-normal"> · billed as {bookingData.billedAs}</span>
+                  )}
                 </span>
               </div>
 
@@ -638,11 +731,48 @@ export const BookingConfirmationPage = () => {
                 </span>
               </div>
 
+              {bookingData.grandDiscountTotal > 0 &&
+                (bookingData.grandDurationDiscountTotal !== undefined &&
+                bookingData.grandCouponDiscountTotal !== undefined ? (
+                  // Duration slab and coupon as separate lines (pre-GST layers)
+                  <>
+                    {bookingData.grandDurationDiscountTotal > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-600">
+                          {durationDiscountTitle(bookingData.durationDiscountLabel)}
+                        </span>
+                        <span className="font-medium text-green-600">
+                          -{formatPrice(bookingData.grandDurationDiscountTotal)}
+                        </span>
+                      </div>
+                    )}
+                    {bookingData.grandCouponDiscountTotal > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-600">
+                          {bookingData.appliedCouponCode ? `Coupon ${bookingData.appliedCouponCode}` : "Coupon"}
+                        </span>
+                        <span className="font-medium text-green-600">
+                          -{formatPrice(bookingData.grandCouponDiscountTotal)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-600">Discount</span>
+                    <span className="font-medium text-green-600">
+                      -{formatPrice(bookingData.grandDiscountTotal)}
+                    </span>
+                  </div>
+                ))}
+
               {bookingData.grandDiscountTotal > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-green-600">Discount</span>
-                  <span className="font-medium text-green-600">
-                    -{formatPrice(bookingData.grandDiscountTotal)}
+                  <span className="text-muted-foreground">Taxable value</span>
+                  <span className="font-medium text-foreground">
+                    {formatPrice(
+                      round2(bookingData.grandBaseTotal - bookingData.grandDiscountTotal),
+                    )}
                   </span>
                 </div>
               )}
@@ -651,7 +781,7 @@ export const BookingConfirmationPage = () => {
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Tax ({bookingData.taxRate}%)
+                      {gstLabel("GST", bookingData.taxRate)}
                     </span>
                     <span className="font-medium text-foreground">
                       {formatPrice(bookingData.grandTaxTotal)}
@@ -659,13 +789,13 @@ export const BookingConfirmationPage = () => {
                   </div>
                   {bookingData.grandCGSTTotal !== undefined && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground pl-2">
-                      <span>CGST ({(bookingData.taxRate || 18) / 2}%)</span>
+                      <span>{gstLabel("CGST", bookingData.cgstRate)}</span>
                       <span>{formatPrice(bookingData.grandCGSTTotal)}</span>
                     </div>
                   )}
                   {bookingData.grandSGSTTotal !== undefined && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground pl-2">
-                      <span>SGST ({(bookingData.taxRate || 18) / 2}%)</span>
+                      <span>{gstLabel("SGST", bookingData.sgstRate)}</span>
                       <span>{formatPrice(bookingData.grandSGSTTotal)}</span>
                     </div>
                   )}
@@ -702,15 +832,23 @@ export const BookingConfirmationPage = () => {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-orange-600">Pay Now (Advance)</span>
                     <span className="font-bold text-orange-700">
-                      {formatPrice(bookingData.advanceAmount)}
+                      {formatPrice(bookingData.payNowAmount ?? bookingData.advanceAmount)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Remaining (at pickup)</span>
+                    <span className="text-muted-foreground">Due at pickup</span>
                     <span className="font-medium text-foreground">
-                      {formatPrice(bookingData.remainingBalance)}
+                      {formatPrice(bookingData.dueAtPickup ?? bookingData.remainingBalance)}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* The server charged a different plan than the one picked (#6) */}
+              {bookingData.paymentFlowAdjustMessage && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+                  <span>{bookingData.paymentFlowAdjustMessage}</span>
                 </div>
               )}
             </CardContent>
@@ -740,7 +878,7 @@ export const BookingConfirmationPage = () => {
                     <CreditCard className="mr-2 size-5" />
                     {isPaying || isOpening
                       ? "Opening secure payment…"
-                      : `Pay ${formatPrice(bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal)} Now`}
+                      : `Pay ${formatPrice(bookingData.payNowAmount ?? (bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal))} Now`}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <Shield className="size-3" />

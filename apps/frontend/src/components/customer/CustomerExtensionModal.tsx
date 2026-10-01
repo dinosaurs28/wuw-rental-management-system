@@ -1,5 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format, addDays } from "date-fns";
+import { validateExtensionWindow } from "@repo/schemas";
 import { toast } from "sonner";
 import { Calendar, Clock, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard } from "lucide-react";
 import {
@@ -27,8 +29,17 @@ import {
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { useAuthStore } from "@/store/auth.store";
 import { apiErrorMessage } from "@/lib/counterErrors";
+import { formatExtensionHours, formatInrExact } from "@/lib/gst";
+import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import {
+  buildScheduleUserMessage,
+  isClosedCalendarDay,
+  isReturnSlotAllowed,
+  validateReturnTime,
+} from "@/utils/branchScheduleValidator";
 
-type Step = "date" | "result" | "pay" | "paying" | "failed";
+type Step ="date" | "result" | "pay" | "paying" | "failed";
 
 interface CustomerExtensionModalProps {
   open: boolean;
@@ -78,12 +89,9 @@ function formatExtraTime(fromIso: string, toIso: string) {
   return parts.join(" ");
 }
 
+// Paise are shown when present: the charge includes GST rounded to the paisa.
 function formatCurrency(amount: string | number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number(amount));
+  return formatInrExact(amount);
 }
 
 export function CustomerExtensionModal({
@@ -114,6 +122,73 @@ export function CustomerExtensionModal({
   const newEndAt = selectedDate ? istToIso(selectedDate, selectedTime) : null;
   const isAfterCurrentEnd = !!newEndAt && new Date(newEndAt) > new Date(currentEndAt);
 
+  // 15-day cap (#15) and office hours (#2) — same query as the booking card's Extend button
+  const { data: eligibility } = useQuery({
+    queryKey: ["extension-eligibility", bookingPublicId],
+    queryFn: () => extensionService.customerCheckEligibility(bookingPublicId),
+    enabled: open,
+    staleTime: 60_000,
+  });
+  const officeHours = eligibility?.officeHours;
+  const maxEndAt = eligibility?.maxEndAt ?? null;
+  const maxEndDay = maxEndAt ? istParts(maxEndAt).day : null;
+  const capReached = eligibility?.eligible === false && !!eligibility.atCap;
+
+  // Keep the default (current end + 1 day) inside the cap and off closed days
+  // once the limits are known
+  useEffect(() => {
+    if (!selectedDate) return;
+    let day = selectedDate;
+    if (maxEndDay && day > maxEndDay && maxEndDay >= currentEnd.day) day = maxEndDay;
+    for (let i = 0; i < 7 && isClosedCalendarDay(officeHours, day); i++) {
+      const next = addDays(day, 1);
+      if (maxEndDay && next > maxEndDay) break;
+      day = next;
+    }
+    if (day.getTime() !== selectedDate.getTime()) setSelectedDate(day);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxEndAt, officeHours]);
+
+  // Message for a new end past the cap (server wording)
+  const windowMessage = (() => {
+    if (!newEndAt || !maxEndAt) return null;
+    if (eligibility?.bookingStartAt) {
+      const res = validateExtensionWindow({
+        bookingStartAt: eligibility.bookingStartAt,
+        newEndAt,
+        monthly: !!eligibility.isMonthly,
+      });
+      return res.ok ? null : res.message;
+    }
+    return new Date(newEndAt) > new Date(maxEndAt)
+      ? `This booking can be extended up to ${format(new Date(maxEndAt), "dd MMM yyyy, h:mm a")}.`
+      : null;
+  })();
+
+  // The new return must be inside office hours (grace included)
+  const hoursVerdict = newEndAt && officeHours ? validateReturnTime(officeHours, new Date(newEndAt)) : null;
+  const hoursMessage =
+    hoursVerdict?.status === "RETURN_OUTSIDE_HOURS" ? buildScheduleUserMessage(hoursVerdict) : null;
+
+  const isReturnSlotDisabled = selectedDate
+    ? (hour: number, minute: number) => {
+        if (!isReturnSlotAllowed(officeHours, selectedDate, hour * 60 + minute)) return true;
+        return !!maxEndAt && istToIso(selectedDate, `${pad(hour)}:${pad(minute)}`) > maxEndAt;
+      }
+    : undefined;
+
+  // "+12 hours" / "+1 day" from the current return, when allowed
+  const quickOptions = [12, 24].map((hours) => {
+    const iso = new Date(new Date(currentEndAt).getTime() + hours * 3_600_000).toISOString();
+    const parts = istParts(iso);
+    const time = roundUpToQuarter(parts.time);
+    const target = istToIso(parts.day, time);
+    const verdict = officeHours ? validateReturnTime(officeHours, new Date(target)) : null;
+    const blocked =
+      (!!maxEndAt && target > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
+    return { hours, day: parts.day, time, target, blocked };
+  });
+
   async function cancelPendingExtension(pubId: string) {
     try {
       await extensionService.customerCancelExtension(pubId);
@@ -140,7 +215,7 @@ export function CustomerExtensionModal({
   }
 
   async function handleEvaluate() {
-    if (!newEndAt || !isAfterCurrentEnd) return;
+    if (!newEndAt || !isAfterCurrentEnd || windowMessage || hoursMessage || capReached) return;
     setIsEvaluating(true);
     setEvalError(null);
     try {
@@ -303,20 +378,75 @@ export function CustomerExtensionModal({
                       mode="single"
                       selected={selectedDate}
                       onSelect={(d) => { setSelectedDate(d); setCalOpen(false); }}
-                      disabled={(d) => d < currentEnd.day}
+                      disabled={(d) =>
+                        d < currentEnd.day ||
+                        (!!maxEndDay && d > maxEndDay) ||
+                        isClosedCalendarDay(officeHours, d)
+                      }
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
                 <div className="flex items-center gap-1.5 rounded-md border border-input px-3">
                   <Clock className="h-4 w-4 text-gray-400" />
-                  <TimeSelect value={selectedTime} onChange={setSelectedTime} />
+                  <TimeSelect value={selectedTime} onChange={setSelectedTime} isDisabled={isReturnSlotDisabled} />
                 </div>
               </div>
+              <BranchHoursBadge schedule={officeHours} date={selectedDate ?? null} kind="return" />
+
+              {/* Quick picks from the current return */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {quickOptions.map((opt) => (
+                  <button
+                    key={opt.hours}
+                    type="button"
+                    disabled={opt.blocked}
+                    onClick={() => {
+                      setSelectedDate(opt.day);
+                      setSelectedTime(opt.time);
+                    }}
+                    className={cn(
+                      "h-8 px-3 rounded-full border text-xs font-semibold transition-colors",
+                      newEndAt === opt.target
+                        ? "bg-orange-500 border-orange-500 text-white"
+                        : "bg-white border-gray-200 text-gray-700 hover:border-gray-400",
+                      "disabled:opacity-45 disabled:cursor-not-allowed",
+                    )}
+                  >
+                    +{opt.hours === 12 ? "12 hours" : "1 day"}
+                  </button>
+                ))}
+              </div>
+
               {newEndAt && !isAfterCurrentEnd && (
                 <p className="text-xs text-red-600">Pick a time after the current return time.</p>
               )}
+              {isAfterCurrentEnd && windowMessage && (
+                <p className="text-xs text-red-600">{windowMessage}</p>
+              )}
+              {isAfterCurrentEnd && !windowMessage && hoursMessage && (
+                <p className="text-xs text-red-600">{hoursMessage}</p>
+              )}
+              {isAfterCurrentEnd && hoursVerdict?.status === "RETURN_GRACE" && (
+                <p className="text-xs text-amber-700">
+                  Branch closes at {hoursVerdict.closingTime}; returns are accepted until{" "}
+                  {hoursVerdict.gracePeriodEnd}.
+                </p>
+              )}
+              {maxEndAt && !windowMessage && (
+                <p className="text-xs text-gray-500">
+                  Can be extended up to {format(new Date(maxEndAt), "dd MMM yyyy, h:mm a")}
+                  {eligibility?.maxBookingDays ? ` (${eligibility.maxBookingDays}-day limit)` : ""}.
+                </p>
+              )}
             </div>
+
+            {capReached && eligibility?.reason && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+                <Info className="h-4 w-4 shrink-0" />
+                {eligibility.reason}
+              </div>
+            )}
 
             {evalError && (
               <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
@@ -332,7 +462,9 @@ export function CustomerExtensionModal({
               <Button
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                 onClick={handleEvaluate}
-                disabled={!isAfterCurrentEnd || isEvaluating}
+                disabled={
+                  !isAfterCurrentEnd || isEvaluating || !!windowMessage || !!hoursMessage || capReached
+                }
               >
                 {isEvaluating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -407,19 +539,21 @@ export function CustomerExtensionModal({
                   <div className="flex justify-between">
                     <span className="text-gray-500">Extra time</span>
                     <span className="font-medium text-orange-500">
-                      +{formatExtraTime(currentEndAt, evaluation.requestedEndAt)}
+                      {formatExtensionHours(evaluation.pricing.extensionHours) ??
+                        `+${formatExtraTime(currentEndAt, evaluation.requestedEndAt)}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Original total</span>
                     <span className="font-medium">{formatCurrency(evaluation.pricing.originalTotalFinal)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-gray-200 pt-2 mt-1">
-                    <span className="font-semibold text-gray-700">Additional charge</span>
-                    <span className="font-bold text-orange-600 text-base">
-                      {formatCurrency(additionalAmount)}
-                    </span>
-                  </div>
+                  <ExtensionChargeBreakdown
+                    split={evaluation.pricing}
+                    total={additionalAmount}
+                    totalLabel="Total payable"
+                    className="border-t border-gray-200 pt-2 mt-1"
+                    totalClassName="font-bold text-base"
+                  />
                 </div>
 
                 {initError && (

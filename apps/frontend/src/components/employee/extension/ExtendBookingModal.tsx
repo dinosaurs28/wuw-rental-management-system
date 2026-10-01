@@ -1,7 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { format, parseISO, startOfDay } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { format, parseISO } from "date-fns";
+import { validateExtensionWindow } from "@repo/schemas";
 import { Banknote, CalendarIcon, Car, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,21 @@ import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequired
 import { refreshActiveShift, useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { apiErrorMessage, cleanUtr, counterErrorCode, isValidUtr } from "@/lib/counterErrors";
 import { cn } from "@/lib/utils";
+import {
+  formatExtensionHours,
+  formatInrExact,
+  formatRentalHours,
+  gstSplitText,
+} from "@/lib/gst";
+import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import {
+  buildScheduleUserMessage,
+  isClosedCalendarDay,
+  isReturnSlotAllowed,
+  validateReturnTime,
+} from "@/utils/branchScheduleValidator";
+import { istCalendarParts, istInstant } from "@/utils/bookingPickers";
 
 export interface ExtendBookingModalSuccessResult {
   /** True when the branch uses deferred payment sessions — charge was NOT collected here. */
@@ -75,6 +92,8 @@ const resolutionLabels: Record<ExtensionResolutionType, string> = {
 function fmt(iso: string) {
   return format(parseISO(iso), "dd MMM yyyy, hh:mm a");
 }
+
+const EXT_MINUTES = ["00", "15", "30", "45"];
 
 export function ExtendBookingModal({
   open,
@@ -130,6 +149,74 @@ export function ExtendBookingModal({
   const utrError =
     utrServerError ?? (utrTouched && !utrValid ? "Enter the 12-digit UTR number." : null);
 
+  // 15-day cap (#15) and office hours (#2) for the new end
+  const { data: eligibility } = useQuery({
+    queryKey: ["staff-extension-eligibility", role, bookingPublicId],
+    queryFn: () =>
+      role === "manager"
+        ? extensionService.managerCheckEligibility(bookingPublicId)
+        : extensionService.employeeCheckEligibility(bookingPublicId),
+    enabled: open && !!bookingPublicId,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const officeHours = eligibility?.officeHours;
+  const maxEndAt = eligibility?.maxEndAt ? new Date(eligibility.maxEndAt) : null;
+  const maxEndDay = maxEndAt ? istCalendarParts(maxEndAt).day : null;
+  const capReached = eligibility?.eligible === false;
+  const currentEndDay = istCalendarParts(new Date(currentEndAt)).day;
+
+  const newEndAt = newDate ? istInstant(newDate, `${newHour}:${newMinute}`) : null;
+  const windowMessage = (() => {
+    if (!newEndAt || !eligibility?.bookingStartAt) return null;
+    const res = validateExtensionWindow({
+      bookingStartAt: eligibility.bookingStartAt,
+      newEndAt,
+      monthly: !!eligibility.isMonthly,
+    });
+    return res.ok ? null : res.message;
+  })();
+  const hoursVerdict = newEndAt && officeHours ? validateReturnTime(officeHours, newEndAt) : null;
+  const hoursMessage =
+    hoursVerdict?.status === "RETURN_OUTSIDE_HOURS" ? buildScheduleUserMessage(hoursVerdict) : null;
+
+  // Return slots the branch accepts on the picked day, up to the cap
+  const slotDisabled = (h: number, m: number) => {
+    if (!newDate) return false;
+    if (!isReturnSlotAllowed(officeHours, newDate, h * 60 + m)) return true;
+    return !!maxEndAt && istInstant(newDate, `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`) > maxEndAt;
+  };
+  const hourDisabled = (h: number) => EXT_MINUTES.every((m) => slotDisabled(h, Number(m)));
+
+  // A new day can have different hours — move the time into them
+  useEffect(() => {
+    if (!newDate || !slotDisabled(Number(newHour), Number(newMinute))) return;
+    for (let h = 0; h < 24; h++) {
+      const m = EXT_MINUTES.find((mm) => !slotDisabled(h, Number(mm)));
+      if (m !== undefined) {
+        setNewHour(String(h).padStart(2, "0"));
+        setNewMinute(m);
+        return;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newDate?.getTime(), officeHours, eligibility?.maxEndAt]);
+
+  // "+12 hours" / "+1 day" from the current end, when the branch accepts that return
+  const quickOptions = [12, 24].map((hours) => {
+    const target = new Date(new Date(currentEndAt).getTime() + hours * 3_600_000);
+    const parts = istCalendarParts(target);
+    const [h, m] = parts.time.split(":").map(Number);
+    // Round up to the 15-minute steps the selects offer
+    const total = Math.min(Math.ceil((h * 60 + m) / 15) * 15, 23 * 60 + 45);
+    const hour = String(Math.floor(total / 60)).padStart(2, "0");
+    const minute = String(total % 60).padStart(2, "0");
+    const at = istInstant(parts.day, `${hour}:${minute}`);
+    const verdict = officeHours ? validateReturnTime(officeHours, at) : null;
+    const blocked = (!!maxEndAt && at > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
+    return { hours, day: parts.day, hour, minute, at, blocked };
+  });
+
   const reset = useCallback(() => {
     setStep(1);
     setNewDate(undefined);
@@ -174,11 +261,20 @@ export function ExtendBookingModal({
       toast.error("Please select a new end date.");
       return;
     }
-    const isoDate = new Date(newDate);
-    isoDate.setHours(parseInt(newHour), parseInt(newMinute), 0, 0);
+    // The picked day + time is IST wall clock, whatever the browser's timezone
+    const isoDate = istInstant(newDate, `${newHour}:${newMinute}`);
     const currentEnd = new Date(currentEndAt);
     if (isoDate <= currentEnd) {
       toast.error("New end time must be after the current end time.");
+      return;
+    }
+    // Same checks as the server (15-day limit, office hours) — clearer up front
+    if (capReached) {
+      toast.error(eligibility?.reason ?? "This booking can't be extended any further.");
+      return;
+    }
+    if (windowMessage || hoursMessage) {
+      toast.error((windowMessage ?? hoursMessage)!);
       return;
     }
 
@@ -362,24 +458,39 @@ export function ExtendBookingModal({
                       mode="single"
                       selected={newDate}
                       onSelect={setNewDate}
-                      disabled={(d) => d < startOfDay(new Date(currentEndAt))}
+                      disabled={(d) =>
+                        d < currentEndDay ||
+                        (!!maxEndDay && d > maxEndDay) ||
+                        isClosedCalendarDay(officeHours, d)
+                      }
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
+                <BranchHoursBadge schedule={officeHours} date={newDate ?? null} kind="return" />
               </div>
 
-              {/* Time pickers */}
+              {/* Time pickers (only times the branch accepts returns) */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="newHour">Hour</Label>
-                  <Select value={newHour} onValueChange={setNewHour}>
+                  <Select
+                    value={newHour}
+                    onValueChange={(h) => {
+                      setNewHour(h);
+                      // Keep the minute when it's allowed in the new hour
+                      if (slotDisabled(Number(h), Number(newMinute))) {
+                        const m = EXT_MINUTES.find((mm) => !slotDisabled(Number(h), Number(mm)));
+                        if (m) setNewMinute(m);
+                      }
+                    }}
+                  >
                     <SelectTrigger id="newHour" className="h-12">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
-                        <SelectItem key={h} value={h}>{h}:00</SelectItem>
+                        <SelectItem key={h} value={h} disabled={hourDisabled(Number(h))}>{h}:00</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -391,13 +502,64 @@ export function ExtendBookingModal({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {["00", "15", "30", "45"].map((m) => (
-                        <SelectItem key={m} value={m}>:{m}</SelectItem>
+                      {EXT_MINUTES.map((m) => (
+                        <SelectItem key={m} value={m} disabled={slotDisabled(Number(newHour), Number(m))}>
+                          :{m}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {/* Quick picks from the current end */}
+              <div className="flex flex-wrap gap-2">
+                {quickOptions.map((opt) => (
+                  <button
+                    key={opt.hours}
+                    type="button"
+                    disabled={opt.blocked}
+                    onClick={() => {
+                      setNewDate(opt.day);
+                      setNewHour(opt.hour);
+                      setNewMinute(opt.minute);
+                    }}
+                    className={cn(
+                      "h-8 px-3 rounded-full border text-xs font-semibold transition-colors",
+                      newEndAt && newEndAt.getTime() === opt.at.getTime()
+                        ? "bg-orange-500 border-orange-500 text-white"
+                        : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400",
+                      "disabled:opacity-45 disabled:cursor-not-allowed",
+                    )}
+                  >
+                    +{opt.hours === 12 ? "12 hours" : "1 day"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Cap / office-hours feedback (the server refuses the same cases) */}
+              {capReached && eligibility?.reason ? (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  {eligibility.reason}
+                </p>
+              ) : (
+                <>
+                  {windowMessage && <p className="text-xs text-red-600">{windowMessage}</p>}
+                  {!windowMessage && hoursMessage && <p className="text-xs text-red-600">{hoursMessage}</p>}
+                  {hoursVerdict?.status === "RETURN_GRACE" && (
+                    <p className="text-xs text-amber-700">
+                      Branch closes at {hoursVerdict.closingTime}; returns are accepted until{" "}
+                      {hoursVerdict.gracePeriodEnd}.
+                    </p>
+                  )}
+                  {maxEndAt && !windowMessage && (
+                    <p className="text-xs text-neutral-500">
+                      Can be extended up to {fmt(maxEndAt.toISOString())}
+                      {eligibility?.maxBookingDays ? ` (${eligibility.maxBookingDays}-day limit)` : ""}.
+                    </p>
+                  )}
+                </>
+              )}
 
               {/* Notes */}
               <div className="space-y-2">
@@ -419,7 +581,7 @@ export function ExtendBookingModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleEvaluate}
-                  disabled={evaluating || !newDate}
+                  disabled={evaluating || !newDate || capReached || !!windowMessage || !!hoursMessage}
                 >
                   {evaluating ? "Checking…" : "Check Availability →"}
                 </Button>
@@ -438,26 +600,44 @@ export function ExtendBookingModal({
             >
               {/* Pricing summary */}
               <div className="bg-neutral-50 rounded-lg px-4 py-3.5 text-sm space-y-2">
-                <div className="flex justify-between text-neutral-600">
-                  <span>Duration</span>
-                  <span>
-                    {evaluation.pricing.originalDays} day{evaluation.pricing.originalDays !== 1 ? "s" : ""}{" "}
-                    → {evaluation.pricing.newDays} day{evaluation.pricing.newDays !== 1 ? "s" : ""}
-                    <span className="text-orange-600 ml-1">
-                      (+{evaluation.pricing.newDays - evaluation.pricing.originalDays})
+                {formatExtensionHours(evaluation.pricing.extensionHours) ? (
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Extra time</span>
+                    <span>
+                      {formatRentalHours(evaluation.pricing.originalHours) && (
+                        <span className="text-neutral-500 mr-1">
+                          {formatRentalHours(evaluation.pricing.originalHours)} →
+                        </span>
+                      )}
+                      <span className="font-medium text-orange-600">
+                        {formatExtensionHours(evaluation.pricing.extensionHours)}
+                      </span>
                     </span>
-                  </span>
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Duration</span>
+                    <span>
+                      {evaluation.pricing.originalDays} day{evaluation.pricing.originalDays !== 1 ? "s" : ""}{" "}
+                      → {evaluation.pricing.newDays} day{evaluation.pricing.newDays !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-neutral-600">
                   <span>New end date</span>
                   <span className="font-medium">{fmt(evaluation.requestedEndAt)}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-neutral-900 pt-1 border-t border-neutral-200">
-                  <span>Additional due</span>
-                  <span className="text-orange-600">
-                    ₹{parseFloat(evaluation.pricing.additionalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                <ExtensionChargeBreakdown
+                  split={evaluation.pricing}
+                  total={evaluation.pricing.additionalAmount}
+                  totalLabel="Additional due"
+                  className="pt-2 border-t border-neutral-200"
+                />
+                {selectedResolution === "PARTIAL_EXTENSION" && (
+                  <p className="text-xs text-neutral-500">
+                    A partial extension is re-priced for the shorter period when you confirm.
+                  </p>
+                )}
               </div>
 
               {/* Resolution options */}
@@ -498,7 +678,8 @@ export function ExtendBookingModal({
                                 Additional:{" "}
                                 <span className="font-semibold">
                                   ₹{parseFloat(opt.additionalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                </span>
+                                </span>{" "}
+                                (incl. GST)
                               </p>
                             )}
                             {opt.type === "PARTIAL_EXTENSION" && opt.partialNewEndAt && (
@@ -579,6 +760,15 @@ export function ExtendBookingModal({
                     ₹{parseFloat(committedExtension.remainAmount.extension).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+                {committedExtension.taxableAmount != null && committedExtension.taxAmount != null && (
+                  <p className="text-xs text-neutral-500">
+                    {formatInrExact(committedExtension.taxableAmount)} extension charge +{" "}
+                    {formatInrExact(committedExtension.taxAmount)} GST
+                    {committedExtension.taxRate ? ` (${Number(committedExtension.taxRate)}%)` : ""}
+                    {" · "}
+                    {gstSplitText(committedExtension.cgstAmount, committedExtension.sgstAmount)}
+                  </p>
+                )}
                 <p className="text-xs text-neutral-400">
                   Vehicle is on hold until payment is collected or this window is closed.
                 </p>

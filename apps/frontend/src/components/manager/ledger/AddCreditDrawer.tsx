@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChargeSectionList } from "./ChargeSectionList";
 import { CreditBookingCard } from "./CreditBookingCard";
 import { ledgerService, type ChargeSection } from "@/services/ledger.service";
+import { round2 } from "@repo/schemas";
 
 interface Props {
   open: boolean;
@@ -182,12 +183,25 @@ export function AddCreditDrawer({ open, onClose, customerPublicId, onSuccess }: 
                         -{formatAmount(chargesQuery.data.bookingSummary.totalDiscount)}
                       </p>
                     </div>
+                    {/* Base / discount / GST describe the original booking; the total also carries
+                        confirmed extensions and the refundable deposit. */}
                     <div>
-                      <p className="text-zinc-500 text-xs">Tax</p>
-                      <p className="font-medium">{formatAmount(chargesQuery.data.bookingSummary.totalTax)}</p>
+                      <p className="text-zinc-500 text-xs">Taxable value</p>
+                      <p className="font-medium">
+                        {formatAmount(
+                          round2(
+                            Number(chargesQuery.data.bookingSummary.totalBase) -
+                              Number(chargesQuery.data.bookingSummary.totalDiscount),
+                          ),
+                        )}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-zinc-500 text-xs">Total</p>
+                      <p className="text-zinc-500 text-xs">GST (rental)</p>
+                      <p className="font-medium">{formatAmount(chargesQuery.data.bookingSummary.totalTax)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-zinc-500 text-xs">Total (incl. extensions & deposit)</p>
                       <p className="font-semibold text-orange-600">
                         {formatAmount(chargesQuery.data.bookingSummary.totalFinal)}
                       </p>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { isAxiosError } from "axios";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Plus, Calendar as CalendarIcon, QrCode, RefreshCw } from "lucide-react";
@@ -12,10 +13,12 @@ import {
 } from "@/services/booking.service";
 import { employeeService } from "@/services/employee.service";
 import { useQuery } from "@tanstack/react-query";
+import type { BookingListCounts, BookingListType } from "@/types/overdueReturns";
 
 
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { BookingTable } from "@/components/employee/BookingTable";
+import { OverdueReturnsTable } from "@/components/employee/OverdueReturnsTable";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import { DashboardStats } from "@/components/employee/DashboardStats";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
@@ -34,27 +37,83 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+type QueueFilter = "PICKUP" | "RETURN" | "OVERDUE";
+
+// `?tab=` keeps the open list across reloads and back-navigation from a return.
+const TAB_PARAM: Record<QueueFilter, string> = {
+  PICKUP: "pickups",
+  RETURN: "returns",
+  OVERDUE: "overdue",
+};
+
+const filterFromParam = (value: string | null): QueueFilter =>
+  value === "returns" ? "RETURN" : value === "overdue" ? "OVERDUE" : "PICKUP";
+
+/** Overdue rows fetched in one go — the list is sorted most overdue first. */
+const OVERDUE_LIMIT = 200;
+
 export default function EmployeeDashboardPage() {
   // Navigation fixed to point to /staff/pickups/:bookingId
   const navigate = useNavigate();
   const { isAuthenticated } = useEmployeeAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // State
   const [date, setDate] = useState<Date>(new Date());
-  const [filter, setFilter] = useState<"PICKUP" | "RETURN">("PICKUP");
+  const filter = filterFromParam(searchParams.get("tab"));
+  const bookingType: BookingListType =
+    searchParams.get("type")?.toUpperCase() === "MONTHLY" ? "MONTHLY" : "DAILY";
   const [bookings, setBookings] = useState<EmployeeBooking[]>([]);
+  const [counts, setCounts] = useState<BookingListCounts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [showShiftNotice, setShowShiftNotice] = useState(false);
   const { needsShift } = useActiveShift();
+  // Drops responses that arrive after a newer tab/date was picked.
+  const requestSeq = useRef(0);
+  // Pickup/return queue + date the current counts belong to.
+  const countsKey = useRef<string | null>(null);
+
+  const updateParams = (patch: Record<string, string>) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [key, value] of Object.entries(patch)) next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+  const setFilter = (next: QueueFilter) => updateParams({ tab: TAB_PARAM[next] });
+  const setBookingType = (next: BookingListType) =>
+    updateParams({ type: next.toLowerCase() });
 
   // Dashboard Stats Query
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: ["employee-dashboard-stats"],
     queryFn: () => employeeService.getDashboardStats(),
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // The overdue tile must track the overdue list, which ages by the minute.
+    refetchInterval: 60_000,
+    refetchOnMount: "always",
   });
+
+  // Overdue / no-show returns — not tied to the selected date. Polled so new
+  // overdue rentals appear and returned/extended ones drop off.
+  const overdueQuery = useQuery({
+    queryKey: ["employee-overdue-returns"],
+    queryFn: () => employeeService.getOverdueReturns({ limit: OVERDUE_LIMIT }),
+    enabled: isAuthenticated,
+    refetchInterval: 60_000,
+    refetchOnMount: "always",
+  });
+  const overdueCount =
+    overdueQuery.data?.overdueCount ?? stats?.overdueReturns ?? null;
 
   // Auth Check
   useEffect(() => {
@@ -64,29 +123,36 @@ export default function EmployeeDashboardPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch Data
+  // Fetch the pickup / return queue for the open Daily or Monthly tab.
+  // (The Overdue tab is served by overdueQuery.)
   const fetchData = async () => {
+    if (filter === "OVERDUE") return;
+    const seq = ++requestSeq.current;
+    const key = `${filter}|${format(date, "yyyy-MM-dd")}`;
+    // Counts from another queue or date would mislabel the tabs while loading.
+    if (countsKey.current !== key) setCounts(null);
     setIsLoading(true);
     try {
-      let data: EmployeeBooking[] = [];
-      if (filter === "PICKUP") {
-        data = await bookingService.getEmployeeBookings(date);
-        if (!data || data.length === 0) {
-          toast.info("No Upcoming Bookings Found");
-        }
-      } else {
-        data = await bookingService.getEmployeeReturns(date);
-        if (!data || data.length === 0) {
-          toast.info("No Returns Scheduled for this Date");
-        }
-      }
-      setBookings(data || []);
+      const result =
+        filter === "PICKUP"
+          ? await bookingService.getEmployeePickupQueue(date, bookingType)
+          : await bookingService.getEmployeeReturnQueue(date, bookingType);
+      if (seq !== requestSeq.current) return;
+      setBookings(result.data);
+      setCounts(result.counts);
+      countsKey.current = key;
     } catch (error) {
+      if (seq !== requestSeq.current) return;
       console.error(error);
-      toast.error("Failed to fetch bookings");
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || "Failed to fetch bookings");
       setBookings([]);
+      setCounts(null);
+      countsKey.current = null;
     } finally {
-      setIsLoading(false);
+      if (seq === requestSeq.current) setIsLoading(false);
     }
   };
 
@@ -94,7 +160,13 @@ export default function EmployeeDashboardPage() {
     if (isAuthenticated) {
       fetchData();
     }
-  }, [date, filter, isAuthenticated]);
+  }, [date, filter, bookingType, isAuthenticated]);
+
+  const handleRefresh = () => {
+    fetchData();
+    overdueQuery.refetch();
+    refetchStats();
+  };
 
   // Walk-in bookings need an open cash shift — explain and offer to open one.
   const handleNewBooking = async () => {
@@ -111,6 +183,7 @@ export default function EmployeeDashboardPage() {
 
   const handleAction = async (bookingId: string) => {
     try {
+      // RETURN and OVERDUE rows both open the drop flow.
       if (filter === "PICKUP") {
         navigate(`/staff/pickups/${bookingId}`);
       } else {
@@ -259,7 +332,12 @@ export default function EmployeeDashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <DashboardStats stats={stats} isLoading={isStatsLoading} />
+          <DashboardStats
+            stats={stats}
+            isLoading={isStatsLoading}
+            onOverdueClick={() => setFilter("OVERDUE")}
+            overdueActive={filter === "OVERDUE"}
+          />
         </motion.div>
 
         {/* Main Table Section */}
@@ -269,50 +347,146 @@ export default function EmployeeDashboardPage() {
           transition={{ delay: 0.2 }}
           className="space-y-6"
         >
-          <div className="flex items-center gap-2">
-            <div className="flex bg-muted/30 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
-              <button
-                onClick={() => setFilter("PICKUP")}
-                className={cn(
-                  "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                  filter === "PICKUP"
-                    ? "bg-white text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Pickups
-              </button>
-              <button
-                onClick={() => setFilter("RETURN")}
-                className={cn(
-                  "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                  filter === "RETURN"
-                    ? "bg-white text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Returns
-              </button>
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex bg-muted/30 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
+                  <button
+                    onClick={() => setFilter("PICKUP")}
+                    className={cn(
+                      "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                      filter === "PICKUP"
+                        ? "bg-white text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Pickups
+                  </button>
+                  <button
+                    onClick={() => setFilter("RETURN")}
+                    className={cn(
+                      "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                      filter === "RETURN"
+                        ? "bg-white text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Returns
+                  </button>
+                  <button
+                    onClick={() => setFilter("OVERDUE")}
+                    className={cn(
+                      "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap inline-flex items-center justify-center gap-1.5",
+                      filter === "OVERDUE"
+                        ? "bg-white text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Overdue
+                    {overdueCount !== null && (
+                      <span
+                        className={cn(
+                          "min-w-[20px] rounded-full px-1.5 text-[11px] font-bold leading-5",
+                          overdueCount > 0
+                            ? "bg-red-600 text-white"
+                            : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {overdueCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={filter === "OVERDUE" ? overdueQuery.isFetching : isLoading}
+                  className="h-9 w-9 p-0 shrink-0"
+                  title="Refresh"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-4 w-4",
+                      (filter === "OVERDUE" ? overdueQuery.isFetching : isLoading) &&
+                        "animate-spin",
+                    )}
+                  />
+                </Button>
+              </div>
+
+              {filter !== "OVERDUE" && (
+                <div className="flex bg-muted/30 p-1 rounded-lg w-full sm:w-fit sm:ml-auto">
+                  {(["DAILY", "MONTHLY"] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setBookingType(type)}
+                      className={cn(
+                        "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap inline-flex items-center justify-center gap-1.5",
+                        bookingType === type
+                          ? "bg-white text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {type === "DAILY" ? "Daily" : "Monthly"}
+                      {counts && (
+                        <span
+                          className={cn(
+                            "min-w-[20px] rounded-full px-1.5 text-[11px] font-bold leading-5",
+                            bookingType === type
+                              ? "bg-orange-600 text-white"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {type === "DAILY" ? counts.daily : counts.monthly}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchData}
-              disabled={isLoading}
-              className="h-9 w-9 p-0 shrink-0"
-              title="Refresh"
-            >
-              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-            </Button>
+
+            <p className="text-xs text-muted-foreground">
+              {filter === "OVERDUE"
+                ? "Rentals still out after their expected return time, most overdue first. Updates every minute."
+                : bookingType === "MONTHLY"
+                  ? filter === "PICKUP"
+                    ? "Every monthly rental waiting for pickup, whatever the date."
+                    : "Every monthly rental out on the road, whatever the date."
+                  : filter === "PICKUP"
+                    ? `Daily rentals picking up on ${format(date, "MMM dd, yyyy")}.`
+                    : `Daily rentals due back on ${format(date, "MMM dd, yyyy")}.`}
+            </p>
           </div>
 
           <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
-            <BookingTable
-              bookings={bookings}
-              filterType={filter}
-              onAction={handleAction}
-              isLoading={isLoading}
-            />
+            {filter === "OVERDUE" ? (
+              <>
+                <OverdueReturnsTable
+                  rows={overdueQuery.data?.data ?? []}
+                  fetchedAt={overdueQuery.data?.fetchedAt ?? Date.now()}
+                  onAction={handleAction}
+                  isLoading={overdueQuery.isLoading}
+                  isError={overdueQuery.isError && !overdueQuery.data}
+                />
+                {overdueQuery.data &&
+                  overdueQuery.data.pagination.total > overdueQuery.data.data.length && (
+                    <p className="px-4 py-3 text-xs text-muted-foreground border-t">
+                      Showing the {overdueQuery.data.data.length} most overdue of{" "}
+                      {overdueQuery.data.pagination.total}.
+                    </p>
+                  )}
+              </>
+            ) : (
+              <BookingTable
+                bookings={bookings}
+                filterType={filter}
+                onAction={handleAction}
+                isLoading={isLoading}
+                bookingType={bookingType}
+              />
+            )}
           </div>
         </motion.div>
       </main>

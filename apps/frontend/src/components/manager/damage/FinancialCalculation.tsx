@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { CreditCard, Banknote, SplitSquareHorizontal } from "lucide-react";
 import type { DamageChargeType } from "@/services/damage.service";
+import {
+  GST_RULE_MISSING_MESSAGE,
+  formatInrExact,
+  gstSplitText,
+  previewPenaltyGst,
+} from "@/lib/gst";
+import { round2 } from "@repo/schemas";
 
 export type DamagePaymentMethod = "CASH" | "ONLINE_RAZORPAY" | "SPLIT";
 
@@ -23,7 +30,11 @@ interface FinancialCalculationProps {
   onlineTransactionRef: string;
   setOnlineTransactionRef: (v: string) => void;
   chargeType: DamageChargeType;
-  gstRate: number;
+  /** CGST + SGST % from the server; null when the branch has no GST rule. */
+  gstRate: number | null;
+  cgstRate?: number | null;
+  sgstRate?: number | null;
+  gstRuleMissing?: boolean;
 }
 
 export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
@@ -41,12 +52,18 @@ export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
   setOnlineTransactionRef,
   chargeType,
   gstRate,
+  cgstRate,
+  sgstRate,
+  gstRuleMissing = false,
 }) => {
   const isPenalty = chargeType === "PENALTY";
-  const taxAmount = isPenalty ? finalCost * (gstRate / 100) : 0;
-  const totalDamage = finalCost + taxAmount;
+  // A penalty with no GST rule can't be closed (409 GST_RULE_MISSING) — no guessed rate.
+  const penaltyGstMissing = isPenalty && (gstRuleMissing || cgstRate == null || sgstRate == null);
+  const penaltyGst = previewPenaltyGst(chargeType, finalCost, cgstRate, sgstRate);
+  const taxAmount = penaltyGst.gst;
+  const totalDamage = round2(finalCost + taxAmount);
   // net = additionalCharges + damageCharge - safetyDeposit
-  const net = additionalCharges + totalDamage - deposit;
+  const net = round2(additionalCharges + totalDamage - deposit);
   const isRefund = net <= 0;
   const absNet = Math.abs(net);
 
@@ -103,7 +120,7 @@ export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
           </div>
           {isPenalty ? (
             <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">
-              Taxable ({gstRate}% GST)
+              {penaltyGstMissing ? "Taxable (GST not configured)" : `Taxable (${gstRate}% GST)`}
             </Badge>
           ) : (
             <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">
@@ -149,19 +166,29 @@ export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
             </div>
           </div>
 
-          {/* GST line */}
-          {isPenalty && finalCost > 0 && (
-            <div className="flex justify-between items-center text-sm text-orange-700 bg-orange-50 rounded px-2 py-1.5">
-              <span>GST ({gstRate}%)</span>
-              <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
+          {/* GST line — CGST + SGST at the branch rates, rounded per tax (penalty only) */}
+          {isPenalty && finalCost > 0 && !penaltyGstMissing && (
+            <div className="text-sm text-orange-700 bg-orange-50 rounded px-2 py-1.5 space-y-0.5">
+              <div className="flex justify-between items-center">
+                <span>GST ({gstRate}%)</span>
+                <span className="font-semibold">+ {formatInrExact(taxAmount)}</span>
+              </div>
+              <p className="text-[11px] text-orange-600 text-right">
+                {gstSplitText(penaltyGst.cgst, penaltyGst.sgst, cgstRate, sgstRate)}
+              </p>
             </div>
+          )}
+          {penaltyGstMissing && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1.5">
+              {GST_RULE_MISSING_MESSAGE} A penalty can't be closed until it is set.
+            </p>
           )}
 
           {/* Net balance */}
           <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
             <span className="font-semibold text-gray-900 text-sm">Net Balance</span>
             <div className={`text-lg font-bold ${isRefund ? "text-green-600" : "text-red-600"}`}>
-              {isRefund ? "Refund" : "Pay"} {formatCurrency(absNet)}
+              {isRefund ? "Refund" : "Pay"} {formatInrExact(absNet)}
             </div>
           </div>
 

@@ -41,14 +41,23 @@ export interface CreateDropDamagePayload {
  * the request. Counter codes (SHIFT_REQUIRED, UTR) live in lib/counterErrors.
  */
 const DROP_ERROR_CODES = [
-  "LICENSE_NOT_RETURNED",
   "DISCOUNT_EXCEEDS_CHARGES",
   "VEHICLE_REQUIRED",
   // compute: an extension is still awaiting payment / the free-km plan can't be resolved
   "EXTENSION_PENDING",
   "KM_ALLOWANCE_UNAVAILABLE",
+  // compute / legacy complete: end odometer below the pickup (or swap) reading
+  "END_ODOMETER_TOO_LOW",
+  // compute: late and chargeable, but the vehicle has no extra-hour rate (set pricing or waive)
+  "LATE_RATE_UNAVAILABLE",
+  // a taxable drop line exists and the branch has no GST rule
+  "GST_RULE_MISSING",
   // record-payment: damages or the booked period changed since the last compute
   "DROP_BILL_STALE",
+  // compute / legacy complete: the drop was already sent for the manager's confirmation
+  "RETURN_AWAITING_MANAGER",
+  // legacy complete: the branch now settles drops on the drop bill
+  "USE_DROP_BILL",
 ] as const;
 
 export type DropErrorCode = (typeof DROP_ERROR_CODES)[number];

@@ -2,6 +2,17 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getCurrentTime } from "@/utils/formatters";
 import type { RazorpayOrder } from "@/lib/razorpay";
+import { clampPaymentFlow, type PaymentOptions } from "@/lib/paymentPlan";
+import type { CouponPricing, CouponValidationResult } from "@/services/discount.service";
+
+/** GST split of the priced rental exactly as the server sent it (rates may be null). */
+export interface ApiGstSplit {
+  taxRate: number;
+  cgstAmount: number;
+  sgstAmount: number;
+  cgstRate: number | null;
+  sgstRate: number | null;
+}
 
 interface VehicleRentalState {
   // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
@@ -33,14 +44,26 @@ interface VehicleRentalState {
   apiDurationDiscountPercent: number;
   apiTaxAmount: number;
   apiFinalTotal: number;
+  /** Server GST split for the priced rental (display only); null until priced. */
+  apiGst: ApiGstSplit | null;
+  /** Duration-slab name (e.g. "Weekly") and type; null when no slab / stale payload. */
+  apiDurationDiscountLabel: string | null;
+  apiDurationDiscountType: "PERCENTAGE" | "FLAT" | null;
 
   // Booking state
   selectedKycFilePublicId: string | null;
   paymentType: "CASH" | "ONLINE" | null;
   paymentFlow: "FULL" | "ADVANCE";
   advancePayAmount: number;
+  /** Plans the branch/amounts allow for the selected vehicle (server); null until loaded. */
+  paymentOptions: PaymentOptions | null;
   couponCode: string | null;
+  /** Coupon layer only (pre-GST). */
   couponDiscountAmount: number;
+  /** Server-priced breakdown with the coupon applied; null without a coupon. */
+  couponPricing: CouponPricing | null;
+  /** paymentOptions recomputed with the post-coupon total; null without a coupon. */
+  couponPaymentOptions: PaymentOptions | null;
 
   // Booking response (after API call)
   holdId: string | null;
@@ -82,12 +105,21 @@ interface VehicleRentalState {
     durationDiscountPercent: number;
     taxAmount: number;
     finalTotal: number;
+    gst?: ApiGstSplit | null;
+    durationDiscountLabel?: string | null;
+    durationDiscountType?: "PERCENTAGE" | "FLAT" | null;
   }) => void;
   setSelectedKyc: (filePublicId: string | null) => void;
   setPaymentType: (type: "CASH" | "ONLINE" | null) => void;
   setPaymentFlow: (flow: "FULL" | "ADVANCE") => void;
   setAdvancePayAmount: (amount: number) => void;
+  /** Stores the server's plan options and moves paymentFlow into the allowed plans. */
+  setPaymentOptions: (options: PaymentOptions | null) => void;
   setCouponCode: (code: string | null, amount?: number) => void;
+  /** A coupon the server accepted, with its breakdown and post-coupon plan options. */
+  applyCoupon: (code: string, result: CouponValidationResult) => void;
+  /** Drops the coupon and its breakdown (plan options fall back to the vehicle's). */
+  clearCoupon: () => void;
   setBookingResponse: (response: {
     holdId: string;
     holdExpiresAt: string;
@@ -176,6 +208,15 @@ const toLocalDateString = (date: Date | null): string | null => {
   return `${year}-${month}-${day}`;
 };
 
+// A coupon is priced for one vehicle and one set of dates — changing either
+// drops it, and the customer re-applies it on the review page.
+const NO_COUPON = {
+  couponCode: null,
+  couponDiscountAmount: 0,
+  couponPricing: null,
+  couponPaymentOptions: null,
+};
+
 export const useVehicleRentalStore = create<VehicleRentalState>()(
   //@ts-ignore
   persist(
@@ -203,12 +244,16 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       apiDurationDiscountPercent: 0,
       apiTaxAmount: 0,
       apiFinalTotal: 0,
+      apiGst: null,
+      apiDurationDiscountLabel: null,
+      apiDurationDiscountType: null,
       selectedKycFilePublicId: null,
       paymentType: null,
-      paymentFlow: "ADVANCE",
+      // FULL until the server's paymentOptions say otherwise (ADVANCE_ONLY branches clamp it)
+      paymentFlow: "FULL",
       advancePayAmount: 0,
-      couponCode: null,
-      couponDiscountAmount: 0,
+      paymentOptions: null,
+      ...NO_COUPON,
       holdId: null,
       holdExpiresAt: null,
       transactionId: null,
@@ -220,8 +265,18 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       grandFinalTotal: 0,
 
       // Actions
-      setVehicleId: (vehicleId) => set({ selectedVehicleId: vehicleId, selectedGroupKey: null }),
-      setGroupKey: (groupKey) => set({ selectedGroupKey: groupKey, selectedVehicleId: null }),
+      setVehicleId: (vehicleId) =>
+        set((s) => ({
+          selectedVehicleId: vehicleId,
+          selectedGroupKey: null,
+          ...(s.selectedVehicleId !== vehicleId ? NO_COUPON : {}),
+        })),
+      setGroupKey: (groupKey) =>
+        set((s) => ({
+          selectedGroupKey: groupKey,
+          selectedVehicleId: null,
+          ...(s.selectedGroupKey !== groupKey ? NO_COUPON : {}),
+        })),
 
       setVehicleDetails: (details) =>
         set({
@@ -260,6 +315,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           dateSelectionTimestamp: Date.now(),
           rentalDays,
           totalPrice: rentalDays * state.pricePerDay,
+          ...(state.startDate !== startDateStr ? NO_COUPON : {}),
         });
       },
 
@@ -283,6 +339,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           dateSelectionTimestamp: Date.now(),
           rentalDays,
           totalPrice: rentalDays * state.pricePerDay,
+          ...(state.endDate !== endDateStr ? NO_COUPON : {}),
         });
       },
 
@@ -298,6 +355,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           startTime: time,
           rentalDays,
           totalPrice: rentalDays * state.pricePerDay,
+          ...(state.startTime !== time ? NO_COUPON : {}),
         });
       },
 
@@ -313,6 +371,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           endTime: time,
           rentalDays,
           totalPrice: rentalDays * state.pricePerDay,
+          ...(state.endTime !== time ? NO_COUPON : {}),
         });
       },
 
@@ -332,6 +391,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           dateSelectionTimestamp: Date.now(),
           rentalDays,
           totalPrice: rentalDays * state.pricePerDay,
+          ...(state.startDate !== startDateStr || state.endDate !== endDateStr ? NO_COUPON : {}),
         });
       },
 
@@ -353,6 +413,9 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           apiDurationDiscountPercent: details.durationDiscountPercent,
           apiTaxAmount: details.taxAmount,
           apiFinalTotal: details.finalTotal,
+          apiGst: details.gst ?? null,
+          apiDurationDiscountLabel: details.durationDiscountLabel ?? null,
+          apiDurationDiscountType: details.durationDiscountType ?? null,
         }),
 
       setSelectedKyc: (filePublicId) =>
@@ -364,7 +427,32 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
       setAdvancePayAmount: (amount) => set({ advancePayAmount: Math.max(0, amount) }),
 
-      setCouponCode: (code, amount = 0) => set({ couponCode: code, couponDiscountAmount: amount }),
+      setPaymentOptions: (options) =>
+        set((s) => ({
+          paymentOptions: options,
+          paymentFlow: clampPaymentFlow(s.paymentFlow, s.couponPaymentOptions ?? options),
+        })),
+
+      setCouponCode: (code, amount = 0) =>
+        set(code ? { couponCode: code, couponDiscountAmount: amount } : NO_COUPON),
+
+      applyCoupon: (code, result) =>
+        set((s) => {
+          const couponPaymentOptions = result.paymentOptions ?? null;
+          return {
+            couponCode: code,
+            couponDiscountAmount: Number(result.pricing?.couponDiscountAmount ?? result.discountAmount) || 0,
+            couponPricing: result.pricing ?? null,
+            couponPaymentOptions,
+            paymentFlow: clampPaymentFlow(s.paymentFlow, couponPaymentOptions ?? s.paymentOptions),
+          };
+        }),
+
+      clearCoupon: () =>
+        set((s) => ({
+          ...NO_COUPON,
+          paymentFlow: clampPaymentFlow(s.paymentFlow, s.paymentOptions),
+        })),
 
       setBookingResponse: (response) =>
         set({
@@ -424,12 +512,15 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           apiDurationDiscountPercent: 0,
           apiTaxAmount: 0,
           apiFinalTotal: 0,
+          apiGst: null,
+          apiDurationDiscountLabel: null,
+          apiDurationDiscountType: null,
           selectedKycFilePublicId: null,
           paymentType: null,
-          paymentFlow: "ADVANCE",
+          paymentFlow: "FULL",
           advancePayAmount: 0,
-          couponCode: null,
-          couponDiscountAmount: 0,
+          paymentOptions: null,
+          ...NO_COUPON,
           holdId: null,
           holdExpiresAt: null,
           transactionId: null,
@@ -442,13 +533,13 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         }),
 
       clearBookingState: () =>
-        set({
+        set((s) => ({
           selectedKycFilePublicId: null,
           paymentType: null,
-          paymentFlow: "ADVANCE",
+          // Back to the plan the branch preselects for this vehicle
+          paymentFlow: s.paymentOptions?.defaultFlow ?? "FULL",
           advancePayAmount: 0,
-          couponCode: null,
-          couponDiscountAmount: 0,
+          ...NO_COUPON,
           holdId: null,
           holdExpiresAt: null,
           transactionId: null,
@@ -458,7 +549,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           grandDiscountTotal: 0,
           grandDeposit: 0,
           grandFinalTotal: 0,
-        }),
+        })),
 
       isDateRangeValid: () => {
         const { startDate, endDate } = get();

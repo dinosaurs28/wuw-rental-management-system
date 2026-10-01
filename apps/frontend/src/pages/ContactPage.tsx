@@ -1,6 +1,51 @@
+import { useQueries } from "@tanstack/react-query";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { MapPin, Phone, Clock, MessageCircle } from "lucide-react";
+import { useBranches } from "@/hooks/useBranches";
+import { fetchBranchSchedule } from "@/services/branch.service";
+import { BranchWeeklyHours } from "@/components/branch/BranchWeeklyHours";
+
+/** Each branch's weekly office hours, as saved by the branch (#2). */
+const BranchHoursList = () => {
+  const { data: branches = [], isLoading: branchesLoading, isError: branchesError } = useBranches();
+  const schedules = useQueries({
+    queries: branches.map((b) => ({
+      // Same key as useBranchSchedule, so the booking pickers share the cache
+      queryKey: ["branch-schedule", b.publicId],
+      queryFn: () => fetchBranchSchedule(b.publicId),
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    })),
+  });
+
+  if (branchesLoading) return <p className="text-sm text-zinc-400">Loading hours…</p>;
+  if (branchesError || branches.length === 0) {
+    return <p className="text-sm text-zinc-500">Please call us for our opening hours.</p>;
+  }
+
+  return (
+    <div className="space-y-4 min-w-[240px]">
+      {branches.map((branch, i) => {
+        const q = schedules[i];
+        return (
+          <div key={branch.publicId} className="space-y-1.5">
+            {branches.length > 1 && (
+              <p className="text-sm font-bold text-zinc-900">{branch.name}</p>
+            )}
+            {q?.isLoading ? (
+              <p className="text-sm text-zinc-400">Loading hours…</p>
+            ) : q?.data ? (
+              <BranchWeeklyHours schedule={q.data} />
+            ) : (
+              <p className="text-sm text-zinc-500">Please call the branch for opening hours.</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export const ContactPage = () => {
   return (
@@ -109,12 +154,7 @@ export const ContactPage = () => {
                     <p className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase mb-2">
                       Business Hours
                     </p>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between gap-8 text-zinc-900 font-semibold">
-                        <span>All Days of the Week</span>
-                        <span>8:00 AM – 11:00 PM</span>
-                      </div>
-                    </div>
+                    <BranchHoursList />
                   </div>
                 </div>
               </div>

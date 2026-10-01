@@ -215,6 +215,25 @@ export const SalesReport = () => {
       ),
     },
     {
+      accessorKey: "financial.totalTax",
+      header: "GST",
+      cell: ({ row }) => {
+        const f = row.original.financial;
+        const ext = f.extension;
+        return (
+          <div className="font-mono text-sm">
+            {formatCurrency(f.gstAmount ?? f.totalTax, 2)}
+            {ext && ext.count > 0 && (
+              <div className="text-xs text-gray-500 font-sans">
+                incl. {ext.count} extension{ext.count === 1 ? "" : "s"}{" "}
+                {formatCurrency(ext.gstAmount, 2)}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "financial.totalAmount",
       header: "Amount",
       cell: ({ row }) => (

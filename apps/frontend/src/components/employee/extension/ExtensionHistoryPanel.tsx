@@ -3,6 +3,7 @@ import { Loader2, History } from "lucide-react";
 import { format } from "date-fns";
 import { extensionService, type BookingExtension } from "@/services/extension.service";
 import { ExtensionStatusBadge } from "@/components/manager/payment/PaymentStateBadge";
+import { formatInrExact } from "@/lib/gst";
 
 const resolutionLabels: Record<string, string> = {
   SAME_VEHICLE: "Same vehicle",
@@ -16,12 +17,9 @@ function formatDate(iso: string) {
   return format(new Date(iso), "dd MMM");
 }
 
+// Paise are shown when present: extension charges include GST rounded to the paisa.
 function formatCurrency(amount: string) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(parseFloat(amount));
+  return formatInrExact(amount);
 }
 
 interface ExtensionHistoryPanelProps {
@@ -112,6 +110,11 @@ export function ExtensionHistoryPanel({
                 </td>
                 <td className="px-4 py-3 font-mono font-semibold text-gray-900">
                   {formatCurrency(ext.additionalAmount)}
+                  {ext.taxAmount != null && (
+                    <span className="block text-[11px] font-normal text-gray-500">
+                      incl. GST {formatCurrency(ext.taxAmount)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-gray-600">
                   {ext.resolutionType
@@ -148,8 +151,13 @@ export function ExtensionHistoryPanel({
                   ? resolutionLabels[ext.resolutionType] ?? ext.resolutionType
                   : "—"}
               </span>
-              <span className="font-mono font-semibold text-gray-700">
+              <span className="font-mono font-semibold text-gray-700 text-right">
                 +{formatCurrency(ext.additionalAmount)}
+                {ext.taxAmount != null && (
+                  <span className="block text-[11px] font-normal text-gray-500">
+                    incl. GST {formatCurrency(ext.taxAmount)}
+                  </span>
+                )}
               </span>
             </div>
           </div>

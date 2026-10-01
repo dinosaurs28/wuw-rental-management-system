@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
+import { displayEmail } from "@repo/schemas";
 import {
   paymentService,
   type RecheckBookingInfo,
@@ -428,7 +429,9 @@ function BookingDetailPanel({
           </div>
           <div>
             <p className="text-xs text-neutral-400 uppercase tracking-wide mb-1">Email</p>
-            <p className="text-sm text-neutral-700 truncate">{booking.customer.user.email}</p>
+            <p className="text-sm text-neutral-700 truncate">
+              {displayEmail(booking.customer.user.email) ?? "—"}
+            </p>
           </div>
         </div>
       </div>

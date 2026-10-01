@@ -659,6 +659,18 @@ export const adminService = {
         return response.data;
     },
 
+    // Replace a vehicle's trip-type tags (#16)
+    updateVehicleUseCases: async (
+        publicId: string,
+        useCases: string[],
+    ): Promise<{ publicId: string; useCases: string[] }> => {
+        const response = await apiClient.patch(
+            `/admin/dashboard/vehicles/${publicId}/use-cases`,
+            { useCases },
+        );
+        return response.data.data;
+    },
+
     // ── WhatsApp Support Config ───────────────────────────────────────────────
 
     getWhatsAppConfig: async (): Promise<WhatsAppSupportConfig | null> => {

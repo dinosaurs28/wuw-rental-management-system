@@ -19,12 +19,17 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Phone, Car } from "lucide-react";
+import { DlStatusBadge } from "@/components/booking/DlStatus";
+import { SwapVehicleLink } from "@/components/manager/vehicle-swap/SwapVehicleLink";
+import { canSwapVehicle, employeeSwapPath } from "@/components/manager/vehicle-swap/swapFormat";
 
 interface BookingTableProps {
   bookings: EmployeeBooking[];
   filterType: "PICKUP" | "RETURN";
   onAction: (bookingId: string) => void;
   isLoading?: boolean;
+  /** Daily / Monthly tab being shown (Monthly lists are not tied to a date). */
+  bookingType?: "DAILY" | "MONTHLY";
 }
 
 export function BookingTable({
@@ -32,6 +37,7 @@ export function BookingTable({
   filterType,
   onAction,
   isLoading,
+  bookingType,
 }: BookingTableProps) {
   const getActionLabel = () =>
     filterType === "PICKUP" ? "Approve Pickup" : "Approve Handover";
@@ -71,12 +77,28 @@ export function BookingTable({
     return (
       <div className="text-center py-16 bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2">
         <Car className="h-10 w-10 text-muted-foreground/50" />
-        <p className="text-muted-foreground text-lg font-medium">
-          No {filterType.toLowerCase()}s scheduled for this date.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Try selecting a different date or filter.
-        </p>
+        {bookingType === "MONTHLY" ? (
+          <>
+            <p className="text-muted-foreground text-lg font-medium">
+              {filterType === "PICKUP"
+                ? "No monthly rentals waiting for pickup."
+                : "No monthly rentals out on the road."}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The Monthly tab shows every monthly rental, whatever the date.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground text-lg font-medium">
+              No {bookingType === "DAILY" ? "daily " : ""}
+              {filterType.toLowerCase()}s scheduled for this date.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Try selecting a different date or filter.
+            </p>
+          </>
+        )}
       </div>
     );
   }
@@ -97,14 +119,24 @@ export function BookingTable({
                 <CardDescription className="text-xs font-medium text-foreground mt-1">
                   {format(new Date(booking.startAt), "EEE, MMM dd")} -{" "}
                   {format(new Date(booking.endAt), "EEE, MMM dd")}
+                  {booking.bookingType === "MONTHLY" && booking.days
+                    ? ` · ${booking.days} days`
+                    : ""}
                 </CardDescription>
               </div>
-              <Badge
-                variant={getStatusVariant(booking.status)}
-                className="uppercase text-[10px] tracking-wider"
-              >
-                {getStatusLabel(booking.status)}
-              </Badge>
+              <div className="flex flex-col items-end gap-1">
+                <Badge
+                  variant={getStatusVariant(booking.status)}
+                  className="uppercase text-[10px] tracking-wider"
+                >
+                  {getStatusLabel(booking.status)}
+                </Badge>
+                {booking.bookingType === "MONTHLY" && <MonthlyPill />}
+                {/* Licence taken at pickup (#3) — what to hand back at the drop */}
+                {filterType === "RETURN" && (
+                  <DlStatusBadge status={booking.dlStatus} note={booking.dlDepositNote} />
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-4 grid gap-4">
@@ -155,6 +187,10 @@ export function BookingTable({
             >
               {getActionLabel()}
             </Button>
+            {/* Swap the car mid-rental (#13) — opens the swap dialog on the return page */}
+            {filterType === "RETURN" && canSwapVehicle(booking) && (
+              <SwapVehicleLink to={employeeSwapPath(booking.publicId)} label="Swap vehicle" className="w-full" />
+            )}
           </CardContent>
         </Card>
       ))}
@@ -251,14 +287,33 @@ export function BookingTable({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge
-                  variant={getStatusVariant(booking.status)}
-                  className="font-medium"
-                >
-                  {getStatusLabel(booking.status)}
-                </Badge>
+                <div className="flex flex-col items-start gap-1">
+                  <Badge
+                    variant={getStatusVariant(booking.status)}
+                    className="font-medium"
+                  >
+                    {getStatusLabel(booking.status)}
+                  </Badge>
+                  {booking.bookingType === "MONTHLY" && (
+                    <span className="inline-flex items-center gap-1">
+                      <MonthlyPill />
+                      {booking.days ? (
+                        <span className="text-[10px] text-muted-foreground">
+                          {booking.days} days
+                        </span>
+                      ) : null}
+                    </span>
+                  )}
+                  {/* Licence taken at pickup (#3) — what to hand back at the drop */}
+                  {filterType === "RETURN" && (
+                    <DlStatusBadge status={booking.dlStatus} note={booking.dlDepositNote} />
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-right">
+                {filterType === "RETURN" && canSwapVehicle(booking) && (
+                  <SwapVehicleLink to={employeeSwapPath(booking.publicId)} className="h-8 mr-2" />
+                )}
                 <Button
                   size="sm"
                   onClick={() => onAction(booking.publicId)}
@@ -288,6 +343,17 @@ export function BookingTable({
 }
 
 // Helper Components
+
+function MonthlyPill() {
+  return (
+    <Badge
+      variant="outline"
+      className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]"
+    >
+      Monthly
+    </Badge>
+  );
+}
 
 function AvatarFallback({ name }: { name: string }) {
   // Generate clearer initials

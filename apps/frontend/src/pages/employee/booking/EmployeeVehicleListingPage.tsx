@@ -1,9 +1,16 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Lock, ShieldOff } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, Lock, CalendarRange } from "lucide-react";
+import { format, addDays } from "date-fns";
 import { getCurrentTime } from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+import {
+  MONTHLY_MIN_DAYS,
+  MONTHLY_MAX_DAYS,
+  MAX_BOOKING_DAYS,
+  snapPickupPastClosedToday,
+} from "@/utils/bookingPickers";
 
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
@@ -27,8 +34,6 @@ const ITEMS_PER_PAGE = 9;
 export default function EmployeeVehicleListingPage() {
   const navigate = useNavigate();
   const { isAuthenticated, user: employeeUser } = useEmployeeAuthStore();
-  const canBypassSchedule = employeeUser?.role === "ADMIN" || employeeUser?.role === "MANAGER";
-  const [bypassSchedule, setBypassSchedule] = useState(false);
 
   const {
     setDates,
@@ -38,7 +43,10 @@ export default function EmployeeVehicleListingPage() {
     endDate: storeEnd,
     startTime: storeStartTime,
     endTime: storeEndTime,
+    plan,
+    setPlan,
   } = useEmployeeBookingStore();
+  const isMonthly = plan === "MONTHLY";
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -164,11 +172,12 @@ export default function EmployeeVehicleListingPage() {
     setSelectedReturnDate(tomorrow);
     setPickupTime(getCurrentTime());
     setReturnTime(getCurrentTime());
+    setPlan("STANDARD");
     setCategory("all");
     setSortBy("default");
     setSearchQuery("");
     setCurrentPage(1);
-  }, []);
+  }, [setPlan]);
 
   // startDateTime / endDateTime / isDateRangeValid declared above useEmployeeVehicles
 
@@ -199,13 +208,50 @@ export default function EmployeeVehicleListingPage() {
     return labels;
   }, [restrictedTypeClasses]);
 
+  // Office hours always apply to Fleet walk-ins (there is no bypass)
   const { schedule } = useBranchSchedule(employeeUser?.branchPublicId ?? undefined);
   const { verdict: scheduleVerdict, adjustedEndDateTime } =
-    useBookingScheduleVerdict(
-      bypassSchedule ? undefined : schedule,
-      startDateTime,
-      endDateTime,
-    );
+    useBookingScheduleVerdict(schedule, startDateTime, endDateTime, { monthly: isMonthly });
+
+  // No pickup slot left today (closed, or e.g. 21:50 with a 22:00 close): start
+  // the range at the next opening (only when the hours load — never fights a pick)
+  useEffect(() => {
+    const snap = snapPickupPastClosedToday({
+      schedule,
+      pickupDate: selectedPickupDate,
+      returnDate: selectedReturnDate,
+      returnTime,
+    });
+    if (!snap) return;
+    setSelectedPickupDate(snap.pickupDate);
+    setPickupTime(snap.pickupTime);
+    // Monthly plan: keep at least 30 days (the return moves with the pickup)
+    const monthlyMin = addDays(snap.pickupDate, MONTHLY_MIN_DAYS);
+    const r = snap.returnDate;
+    if (isMonthly && new Date(r.getFullYear(), r.getMonth(), r.getDate()) <= monthlyMin) {
+      setSelectedReturnDate(monthlyMin);
+      setReturnTime(snap.pickupTime);
+      return;
+    }
+    setSelectedReturnDate(snap.returnDate);
+    setReturnTime(snap.returnTime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule]);
+
+  // Monthly rental (#15/#17): 30–180 days. Switching plans moves the return to
+  // a length the plan allows (pickup + 30 days / pickup + 1 day), same time.
+  const handlePlanChange = (next: "STANDARD" | "MONTHLY") => {
+    if (next === plan) return;
+    setPlan(next);
+    if (!selectedPickupDate) return;
+    if (next === "MONTHLY") {
+      setSelectedReturnDate(addDays(selectedPickupDate, MONTHLY_MIN_DAYS));
+      setReturnTime(pickupTime);
+    } else if (selectedReturnDate && selectedReturnDate > addDays(selectedPickupDate, MAX_BOOKING_DAYS)) {
+      setSelectedReturnDate(addDays(selectedPickupDate, 1));
+      setReturnTime(pickupTime);
+    }
+  };
 
   // Write-back: persist bumped return to local state + store
   useEffect(() => {
@@ -243,6 +289,37 @@ export default function EmployeeVehicleListingPage() {
       </div>
 
       <main className="container max-w-7xl mx-auto px-4">
+        {/* Rental plan: standard (up to 15 days) or monthly (30–180 days) */}
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div role="radiogroup" aria-label="Rental plan" className="inline-flex rounded-full border border-zinc-200 bg-white p-1">
+            {([
+              { value: "STANDARD", label: `Standard (up to ${MAX_BOOKING_DAYS} days)` },
+              { value: "MONTHLY", label: "Monthly rental" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={plan === opt.value}
+                onClick={() => handlePlanChange(opt.value)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  plan === opt.value ? "bg-zinc-900 text-white" : "text-zinc-600 hover:text-zinc-900",
+                )}
+              >
+                {opt.value === "MONTHLY" && <CalendarRange className="size-4" />}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {isMonthly && (
+            <p className="text-xs text-zinc-500">
+              {MONTHLY_MIN_DAYS} to {MONTHLY_MAX_DAYS} days, pickup within the next {MAX_BOOKING_DAYS} days.
+              Priced on the monthly rate.
+            </p>
+          )}
+        </div>
+
         <div className="mb-6">
           <VehicleFilters
             branches={[]}
@@ -260,7 +337,12 @@ export default function EmployeeVehicleListingPage() {
             onBranchChange={() => {}}
             onPickupDateChange={(date) => {
               setSelectedPickupDate(date ?? null);
-              if (date && selectedReturnDate) {
+              if (date && isMonthly) {
+                // Monthly: keep at least 30 days between pickup and return
+                if (!selectedReturnDate || selectedReturnDate < addDays(date, MONTHLY_MIN_DAYS)) {
+                  setSelectedReturnDate(addDays(date, MONTHLY_MIN_DAYS));
+                }
+              } else if (date && selectedReturnDate) {
                 // Only push return to next day if it's strictly before the new pickup day
                 const pickupDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                 const returnDay = new Date(selectedReturnDate.getFullYear(), selectedReturnDate.getMonth(), selectedReturnDate.getDate());
@@ -281,36 +363,14 @@ export default function EmployeeVehicleListingPage() {
             onSearchChange={setSearchQuery}
             onReset={handleReset}
             showBranchSelector={false}
-            schedule={bypassSchedule ? undefined : schedule}
-            scheduleVerdict={bypassSchedule ? null : scheduleVerdict}
+            schedule={schedule}
+            scheduleVerdict={scheduleVerdict}
+            monthly={isMonthly}
           />
         </div>
 
-        {/* Schedule bypass toggle for ADMIN / MANAGER */}
-        {canBypassSchedule && (
-          <div className="mb-4 flex items-center gap-3 px-1">
-            <button
-              type="button"
-              onClick={() => setBypassSchedule((v) => !v)}
-              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-all ${
-                bypassSchedule
-                  ? "bg-amber-100 border-amber-400 text-amber-800"
-                  : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
-              }`}
-            >
-              <ShieldOff className="size-4 shrink-0" />
-              {bypassSchedule ? "Schedule bypass ON" : "Bypass schedule check"}
-            </button>
-            {bypassSchedule && (
-              <span className="text-xs text-amber-600 font-medium">
-                Branch operating hour restrictions are disabled for this booking
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Schedule warning banner */}
-        {!bypassSchedule && scheduleVerdict && scheduleVerdict.status !== "OK" && (
+        {scheduleVerdict && scheduleVerdict.status !== "OK" && (
           <div className="mb-6">
             <ScheduleWarningBanner verdict={scheduleVerdict} />
           </div>

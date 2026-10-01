@@ -27,8 +27,15 @@ import { EmployeeVehiclePricingCard } from "@/components/vehicles/EmployeeVehicl
 import { KycDocumentList } from "@/components/booking/KycDocumentList";
 import { UploadKycDialog } from "@/components/booking/UploadKycDialog";
 import { CompleteProfileDialog } from "@/components/booking/CompleteProfileDialog";
+import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
+import { CustomerIdentityLine } from "@/components/employee/CustomerIdentityLine";
 
 import { useVehicleDetails } from "@/hooks/useVehicleDetails";
+import { useCustomerQrPhoto } from "@/hooks/useQrPhoto";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
+import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { cleanUtr } from "@/lib/counterErrors";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
@@ -52,6 +59,9 @@ export const EmployeeVehicleDetailsPage = () => {
     utr,
     customerKycId,
     setCustomerKycId,
+    setDates,
+    setEndTime,
+    plan,
   } = useEmployeeBookingStore();
 
   // Local State for KYC
@@ -68,20 +78,49 @@ export const EmployeeVehicleDetailsPage = () => {
   // Force re-render/refetch after profile update
   const [_, setSessionKey] = useState(0);
 
-  // Build datetime strings - prefer URL params, fall back to store
+  // Build datetime strings — the store first (the listing keeps it in sync and
+  // the pricing card edits it, so date/time changes here take effect), the URL
+  // params only when the store is empty (e.g. an opened link)
   const urlStart = searchParams.get("start");
   const urlEnd = searchParams.get("end");
 
   const startDateTime =
-    urlStart ||
     (startDate
       ? `${format(new Date(startDate), "yyyy-MM-dd")}T${startTime || getCurrentTime()}`
-      : null);
+      : null) || urlStart;
   const endDateTime =
-    urlEnd ||
     (endDate
       ? `${format(new Date(endDate), "yyyy-MM-dd")}T${endTime || getCurrentTime()}`
-      : null);
+      : null) || urlEnd;
+
+  // Office hours always apply to walk-ins (#2)
+  const employeeUser = useEmployeeAuthStore((state) => state.user);
+  const { schedule } = useBranchSchedule(employeeUser?.branchPublicId ?? undefined);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } = useBookingScheduleVerdict(
+    schedule,
+    startDateTime ?? undefined,
+    endDateTime ?? undefined,
+    { monthly: plan === "MONTHLY" },
+  );
+
+  // Write-back: a return outside office hours moves to the next in-hours return
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED" || !startDate) return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setDates(new Date(startDate), new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    setEndTime(
+      `${String(adjusted.getHours()).padStart(2, "0")}:${String(adjusted.getMinutes()).padStart(2, "0")}`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustedEndDateTime, scheduleVerdict?.status]);
+
+  // Pickup outside hours (or a return that can't be moved inside the limit) blocks booking
+  const scheduleBlocks =
+    !!scheduleVerdict &&
+    (scheduleVerdict.status.startsWith("PICKUP_") ||
+      scheduleVerdict.status === "NO_OPEN_DAY_IN_WINDOW" ||
+      scheduleVerdict.status === "RETURN_OUTSIDE_HOURS");
 
   // Queries
   const {
@@ -92,6 +131,10 @@ export const EmployeeVehicleDetailsPage = () => {
   } = useVehicleDetails(id || "", startDateTime, endDateTime);
 
   const vehicle = vehicleResponse?.data;
+
+  // Customer QR code photo (#4): required before the walk-in booking is created.
+  const { data: qrPhotoData } = useCustomerQrPhoto(customerSession?.publicId);
+  const qrPhotoId = qrPhotoData?.qrPhoto?.publicId ?? null;
 
   // Redirect if no customer session
   useEffect(() => {
@@ -163,10 +206,11 @@ export const EmployeeVehicleDetailsPage = () => {
   };
 
   const handleDeleteKyc = async (doc: KycDocument) => {
+    if (!customerSession) return;
     if (!confirm("Are you sure you want to delete this document?")) return;
 
     try {
-      await kycService.deleteWalkinKyc(doc.publicId);
+      await kycService.deleteWalkinKyc(doc.publicId, customerSession.publicId);
       toast.success("Document deleted successfully");
 
       // Refetch list
@@ -217,14 +261,25 @@ export const EmployeeVehicleDetailsPage = () => {
       return;
     }
 
+    if (!qrPhotoId) {
+      toast.error("Capture the customer's QR code photo before booking");
+      document
+        .getElementById("qr-photo-section")
+        ?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
     const payload = {
       vehicles: [vehicle.publicId],
       customer_public_id: customerSession.publicId,
       customer_kyc_id: customerKycId,
+      qr_photo_id: qrPhotoId,
       start: startDateTime || format(new Date(startDate!), "yyyy-MM-dd"),
       end: endDateTime || format(new Date(endDate!), "yyyy-MM-dd"),
       payment_type: paymentType || "CASH",
       ...(paymentType === "UPI" ? { utr: cleanUtr(utr) } : {}),
+      // Monthly rental (30–180 days) is an explicit counter plan
+      plan,
     };
 
     navigate("/employee/booking/summary", {
@@ -476,19 +531,36 @@ export const EmployeeVehicleDetailsPage = () => {
                 />
               )}
             </div>
+
+            {/* Customer QR code photo (required) */}
+            <CustomerQrPhotoCard
+              id="qr-photo-section"
+              target={{
+                kind: "customer",
+                customerPublicId: customerSession.publicId,
+              }}
+              required
+              allowDelete
+            />
           </div>
 
           {/* Right Column: Pricing & Booking */}
           <div className="lg:col-span-1">
             <div className="lg:sticky lg:top-24 space-y-6">
+              {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+                <ScheduleWarningBanner verdict={scheduleVerdict} />
+              )}
               <EmployeeVehiclePricingCard
                 vehicle={vehicle}
                 onBookVehicle={handleBookVehicle}
                 isRefetching={isVehicleRefetching}
                 disabled={
                   isVehicleLoading ||
-                  (customerSession ? !customerSession.profileCompleted : true)
+                  (customerSession ? !customerSession.profileCompleted : true) ||
+                  scheduleBlocks
                 }
+                hasQrPhoto={!!qrPhotoId}
+                schedule={schedule}
               />
 
               {/* Additional Info Cards could go here */}
@@ -502,6 +574,10 @@ export const EmployeeVehicleDetailsPage = () => {
                     Phone: {customerSession.phone} <br />
                     Public ID: {customerSession.publicId.slice(0, 8)}...
                   </p>
+                  <CustomerIdentityLine
+                    publicId={customerSession.publicId}
+                    className="text-blue-700 mt-1"
+                  />
                 </div>
               </div>
             </div>

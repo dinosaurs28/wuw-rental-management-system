@@ -13,10 +13,14 @@ import {
   Building2,
   Eye,
   PowerOff,
+  Power,
   Pencil,
   ChevronDown,
   ChevronUp,
+  User,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { adminService } from "@/services/admin.service";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -57,12 +61,61 @@ import {
   adminDiscountService,
   type AdminDiscountRule,
   type AdminManagerCoupon,
+  type CouponPaymentPlan,
+  type DiscountScope,
 } from "@/services/discount.service";
 
 const fmtAmt = (v: string | number) =>
   `₹ ${parseFloat(String(v)).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
 
-const fmtDate = (d: string) => format(new Date(d), "dd MMM yyyy");
+/** IST calendar day (YYYY-MM-DD) of an instant — coupon validity is stored as IST days. */
+const istDay = (iso: string) =>
+  new Date(new Date(iso).getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+
+const fmtDate = (d: string) => format(new Date(`${istDay(d)}T00:00:00`), "dd MMM yyyy");
+
+/** Valid From/To are whole IST days: 00:00 IST on the first → 23:59:59.999 IST on the last. */
+const istDayStart = (day: string) => `${day}T00:00:00+05:30`;
+const istDayEnd = (day: string) => `${day}T23:59:59.999+05:30`;
+
+type PlanChoice = "ANY" | "FULL" | "ADVANCE";
+
+/** How the rule's plan fields read in the form (allowPartialPayment=false ⇒ full payment only). */
+const planChoiceOf = (rule?: AdminDiscountRule): PlanChoice => {
+  if (!rule) return "ANY";
+  const plans = rule.applicablePaymentPlans ?? [];
+  const full = plans.length === 0 || plans.includes("BOTH") || plans.includes("FULL");
+  const advance =
+    (plans.length === 0 || plans.includes("BOTH") || plans.includes("ADVANCE")) &&
+    rule.allowPartialPayment !== false;
+  if (full && advance) return "ANY";
+  return advance ? "ADVANCE" : "FULL";
+};
+
+const PLAN_FIELDS: Record<PlanChoice, { applicablePaymentPlans: CouponPaymentPlan[]; allowPartialPayment: boolean }> = {
+  ANY: { applicablePaymentPlans: [], allowPartialPayment: true },
+  FULL: { applicablePaymentPlans: ["FULL"], allowPartialPayment: false },
+  ADVANCE: { applicablePaymentPlans: ["ADVANCE"], allowPartialPayment: true },
+};
+
+/** "" → null; otherwise the parsed number (NaN when not a number). */
+const numOrNull = (v: string, int = false): number | null =>
+  v.trim() === "" ? null : int ? Number.parseInt(v, 10) : Number.parseFloat(v);
+
+/** First useful text from an admin API error (zod 400s carry field errors, not a message). */
+function apiErrorText(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: { message?: string; errors?: unknown } } })?.response?.data;
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    return data.errors.map((e: { message: string }) => e.message).join("; ");
+  }
+  if (data?.errors && typeof data.errors === "object") {
+    const first = Object.values(data.errors as Record<string, { _errors?: string[] }>)
+      .flatMap((e) => e?._errors ?? [])
+      .find(Boolean);
+    if (first) return first;
+  }
+  return data?.message || fallback;
+}
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
@@ -78,7 +131,14 @@ function StatusBadge({ active }: { active: boolean }) {
   );
 }
 
-function ScopeBadge({ scope }: { scope: "GLOBAL" | "BRANCH" }) {
+function ScopeBadge({ scope }: { scope: DiscountScope }) {
+  if (scope === "USER") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+        <User className="w-3 h-3" /> Customer
+      </span>
+    );
+  }
   return scope === "GLOBAL" ? (
     <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5">
       <Globe className="w-3 h-3" /> Global
@@ -87,6 +147,39 @@ function ScopeBadge({ scope }: { scope: "GLOBAL" | "BRANCH" }) {
     <span className="inline-flex items-center gap-1 text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded px-1.5 py-0.5">
       <Building2 className="w-3 h-3" /> Branch
     </span>
+  );
+}
+
+// ── Checkbox multi-select ─────────────────────────────────────────────────────
+
+function PickList({
+  options,
+  selected,
+  onChange,
+  emptyText,
+}: {
+  options: { id: number; name: string }[];
+  selected: number[];
+  onChange: (ids: number[]) => void;
+  emptyText: string;
+}) {
+  if (options.length === 0) {
+    return <p className="text-xs text-neutral-400 px-1 py-2">{emptyText}</p>;
+  }
+  const toggle = (id: number, on: boolean) =>
+    onChange(on ? (selected.includes(id) ? selected : [...selected, id]) : selected.filter((x) => x !== id));
+  return (
+    <div className="max-h-40 overflow-y-auto rounded-md border divide-y divide-neutral-100">
+      {options.map((o) => (
+        <label
+          key={o.id}
+          className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-neutral-50"
+        >
+          <Checkbox checked={selected.includes(o.id)} onCheckedChange={(v) => toggle(o.id, !!v)} />
+          <span className="text-neutral-800">{o.name}</span>
+        </label>
+      ))}
+    </div>
   );
 }
 
@@ -111,61 +204,156 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
   const [maxCap, setMaxCap] = useState(
     initial?.maxDiscountCap ? parseFloat(initial.maxDiscountCap).toString() : "",
   );
-  const [scope, setScope] = useState<"GLOBAL" | "BRANCH">(initial?.scope ?? "GLOBAL");
-  const [startDate, setStartDate] = useState(
-    initial ? initial.startDate.slice(0, 10) : "",
-  );
-  const [endDate, setEndDate] = useState(
-    initial ? initial.endDate.slice(0, 10) : "",
-  );
+  const [scope, setScope] = useState<DiscountScope>(initial?.scope ?? "GLOBAL");
+  const [branchIds, setBranchIds] = useState<number[]>(initial?.applicableBranchIds ?? []);
+  const [startDate, setStartDate] = useState(initial ? istDay(initial.startDate) : "");
+  const [endDate, setEndDate] = useState(initial ? istDay(initial.endDate) : "");
   const [totalLimit, setTotalLimit] = useState(
     initial?.totalUsageLimit?.toString() ?? "",
   );
   const [perUser, setPerUser] = useState(initial?.perUserLimit?.toString() ?? "");
+  const [perBranch, setPerBranch] = useState(initial?.perBranchLimit?.toString() ?? "");
+  const [perDay, setPerDay] = useState(initial?.perDayLimit?.toString() ?? "");
   const [minAmount, setMinAmount] = useState(
     initial?.minBookingAmount ? parseFloat(initial.minBookingAmount).toString() : "",
   );
+  const [maxAmount, setMaxAmount] = useState(
+    initial?.maxBookingAmount ? parseFloat(initial.maxBookingAmount).toString() : "",
+  );
   const [minDays, setMinDays] = useState(initial?.minRentalDays?.toString() ?? "");
+  const [maxDays, setMaxDays] = useState(initial?.maxRentalDays?.toString() ?? "");
+  const [categoryIds, setCategoryIds] = useState<number[]>(initial?.applicableVehicleCategoryIds ?? []);
+  const [newCustomersOnly, setNewCustomersOnly] = useState(initial?.newCustomersOnly ?? false);
+  const [minCount, setMinCount] = useState(initial?.minBookingCount?.toString() ?? "");
+  const [maxCount, setMaxCount] = useState(initial?.maxBookingCount?.toString() ?? "");
+  const [planChoice, setPlanChoice] = useState<PlanChoice>(planChoiceOf(initial));
   const [stackable, setStackable] = useState(initial?.stackable ?? false);
   const [priority, setPriority] = useState(initial?.priority?.toString() ?? "0");
+  const [showEligibility, setShowEligibility] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  const { data: branchOptions = [], isLoading: loadingBranches } = useQuery({
+    queryKey: ["admin-coupon-branch-options"],
+    queryFn: async () => {
+      const branches = await adminService.getBranches();
+      // Numeric ids (applicableBranchIds) — rows without one are skipped
+      return branches
+        .map((b) => ({ id: Number((b as { id?: unknown }).id), name: b.name }))
+        .filter((b) => Number.isInteger(b.id) && b.id > 0)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: categoryOptions = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["admin-coupon-category-options"],
+    queryFn: async () => {
+      const categories = await adminService.getCategories();
+      return categories
+        .map((c) => ({ id: Number((c as { id?: unknown }).id), name: c.name }))
+        .filter((c) => Number.isInteger(c.id) && c.id > 0);
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const effectiveType = isEdit ? initial!.discountType : discountType;
+
+  // Client-side mirror of the server rules, so the admin sees the problem
+  // before saving (the server re-checks the merged rule).
+  const issues: string[] = [];
+  const valueNum = parseFloat(value);
+  if (effectiveType === "PERCENTAGE" && valueNum > 100) {
+    issues.push("A percentage discount can't be more than 100%.");
+  }
+  if (startDate && endDate && endDate < startDate) {
+    issues.push("Valid To can't be before Valid From.");
+  }
+  if (scope === "BRANCH" && branchIds.length === 0) {
+    issues.push("Pick at least one branch for a branch coupon.");
+  }
+  const numberFields: { label: string; raw: string; int: boolean; min: number }[] = [
+    { label: "Max discount cap", raw: effectiveType === "PERCENTAGE" ? maxCap : "", int: false, min: 0.01 },
+    { label: "Total usage limit", raw: totalLimit, int: true, min: 1 },
+    { label: "Per-customer limit", raw: perUser, int: true, min: 1 },
+    { label: "Per-branch limit", raw: perBranch, int: true, min: 1 },
+    { label: "Per-day limit", raw: perDay, int: true, min: 1 },
+    { label: "Min rental amount", raw: minAmount, int: false, min: 0 },
+    { label: "Max rental amount", raw: maxAmount, int: false, min: 0 },
+    { label: "Min rental days", raw: minDays, int: true, min: 1 },
+    { label: "Max rental days", raw: maxDays, int: true, min: 1 },
+    { label: "Min previous bookings", raw: minCount, int: true, min: 0 },
+    { label: "Max previous bookings", raw: maxCount, int: true, min: 0 },
+    { label: "Priority", raw: priority, int: true, min: 0 },
+  ];
+  for (const f of numberFields) {
+    if (f.raw.trim() === "") continue;
+    const n = Number(f.raw);
+    if (!Number.isFinite(n) || n < f.min || (f.int && !Number.isInteger(n))) {
+      issues.push(`${f.label} must be ${f.int ? "a whole number" : "a number"} of at least ${f.min}.`);
+    }
+  }
+  const pairIssue = (min: string, max: string, int: boolean, message: string) => {
+    const lo = numOrNull(min, int);
+    const hi = numOrNull(max, int);
+    if (lo !== null && hi !== null && Number.isFinite(lo) && Number.isFinite(hi) && hi < lo) issues.push(message);
+  };
+  pairIssue(minAmount, maxAmount, false, "Max rental amount can't be below the minimum.");
+  pairIssue(minDays, maxDays, true, "Max rental days can't be below the minimum.");
+  pairIssue(minCount, maxCount, true, "Max previous bookings can't be below the minimum.");
+
+  // Restrictions shared by create and update (null clears a limit on update)
+  const buildLimits = () => ({
+    maxDiscountCap: effectiveType === "PERCENTAGE" ? numOrNull(maxCap) : null,
+    applicableVehicleCategoryIds: categoryIds,
+    newCustomersOnly,
+    minBookingCount: numOrNull(minCount, true),
+    maxBookingCount: numOrNull(maxCount, true),
+    minBookingAmount: numOrNull(minAmount),
+    maxBookingAmount: numOrNull(maxAmount),
+    minRentalDays: numOrNull(minDays, true),
+    maxRentalDays: numOrNull(maxDays, true),
+    totalUsageLimit: numOrNull(totalLimit, true),
+    perUserLimit: numOrNull(perUser, true),
+    perBranchLimit: numOrNull(perBranch, true),
+    perDayLimit: numOrNull(perDay, true),
+    ...PLAN_FIELDS[planChoice],
+    stackable,
+    priority: numOrNull(priority, true) ?? 0,
+  });
+
   const mutation = useMutation({
     mutationFn: async () => {
+      const limits = buildLimits();
+      // A customer (USER) coupon keeps its scope and customers — not editable here
+      const scopeFields =
+        scope === "USER" ? {} : { scope, applicableBranchIds: scope === "BRANCH" ? branchIds : [] };
       if (isEdit) {
         return adminDiscountService.updateRule(initial!.publicId, {
           name: name.trim(),
-          description: description.trim() || undefined,
+          description: description.trim(),
           value: parseFloat(value),
-          ...(discountType === "PERCENTAGE" && maxCap ? { maxDiscountCap: parseFloat(maxCap) } : {}),
-          ...(maxCap === "" ? { maxDiscountCap: null } : {}),
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
-          ...(totalLimit ? { totalUsageLimit: parseInt(totalLimit) } : { totalUsageLimit: null }),
-          ...(perUser ? { perUserLimit: parseInt(perUser) } : { perUserLimit: null }),
-          ...(minAmount ? { minBookingAmount: parseFloat(minAmount) } : { minBookingAmount: null }),
-          ...(minDays ? { minRentalDays: parseInt(minDays) } : { minRentalDays: null }),
-          stackable,
-          priority: parseInt(priority) || 0,
+          startDate: istDayStart(startDate),
+          endDate: istDayEnd(endDate),
+          ...scopeFields,
+          ...limits,
         });
       } else {
+        // Create takes no nulls — blank limits are simply left out
+        const createLimits = Object.fromEntries(
+          Object.entries(limits).filter(([, v]) => v !== null),
+        ) as { [K in keyof typeof limits]?: Exclude<(typeof limits)[K], null> };
         return adminDiscountService.createRule({
           code: code.trim().toUpperCase(),
           name: name.trim(),
           ...(description.trim() ? { description: description.trim() } : {}),
           discountType,
           value: parseFloat(value),
-          ...(discountType === "PERCENTAGE" && maxCap ? { maxDiscountCap: parseFloat(maxCap) } : {}),
-          scope,
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
-          ...(totalLimit ? { totalUsageLimit: parseInt(totalLimit) } : {}),
-          ...(perUser ? { perUserLimit: parseInt(perUser) } : {}),
-          ...(minAmount ? { minBookingAmount: parseFloat(minAmount) } : {}),
-          ...(minDays ? { minRentalDays: parseInt(minDays) } : {}),
-          stackable,
-          priority: parseInt(priority) || 0,
+          scope: scope === "USER" ? "GLOBAL" : scope,
+          applicableBranchIds: scope === "BRANCH" ? branchIds : [],
+          startDate: istDayStart(startDate),
+          endDate: istDayEnd(endDate),
+          ...createLimits,
         });
       }
     },
@@ -173,10 +361,23 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
       toast.success(isEdit ? "Rule updated." : "Discount rule created.");
       onSaved();
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Failed to save discount rule.");
+    onError: (err) => {
+      toast.error(apiErrorText(err, "Failed to save discount rule."));
     },
   });
+
+  const eligibilityCount = [
+    categoryIds.length > 0,
+    newCustomersOnly,
+    minCount !== "",
+    maxCount !== "",
+    minAmount !== "",
+    maxAmount !== "",
+    minDays !== "",
+    maxDays !== "",
+    planChoice !== "ANY",
+  ].filter(Boolean).length;
+  const limitsCount = [totalLimit, perUser, perBranch, perDay].filter((v) => v !== "").length + (stackable ? 1 : 0);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -197,7 +398,8 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
     name.trim().length >= 1 &&
     parseFloat(value) > 0 &&
     startDate &&
-    endDate;
+    endDate &&
+    issues.length === 0;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -335,8 +537,16 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
             </div>
           )}
 
-          {/* Scope — only on create */}
-          {!isEdit && (
+          {/* Scope + branches (a customer coupon's scope isn't editable here) */}
+          {scope === "USER" ? (
+            <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 rounded border text-sm text-neutral-700">
+              <ScopeBadge scope="USER" />
+              <span className="text-xs text-neutral-500">
+                For {initial?.targetCustomerIds.length ?? 0} specific customer
+                {(initial?.targetCustomerIds.length ?? 0) === 1 ? "" : "s"} — scope can't be changed
+              </span>
+            </div>
+          ) : (
             <div className="space-y-2">
               <Label>Scope</Label>
               <Select
@@ -351,6 +561,23 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                   <SelectItem value="BRANCH">Branch-specific</SelectItem>
                 </SelectContent>
               </Select>
+              {scope === "BRANCH" && (
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-xs text-neutral-500">
+                    Valid only at the branches you pick ({branchIds.length} selected)
+                  </p>
+                  {loadingBranches ? (
+                    <div className="h-20 rounded-md border bg-neutral-50 animate-pulse" />
+                  ) : (
+                    <PickList
+                      options={branchOptions}
+                      selected={branchIds}
+                      onChange={setBranchIds}
+                      emptyText="Branches couldn't be loaded. Close this form and try again in a minute."
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -374,6 +601,140 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
             </div>
           </div>
 
+          {/* Eligibility toggle */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700"
+            onClick={() => setShowEligibility((p) => !p)}
+          >
+            {showEligibility ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            Who and what it applies to
+            {eligibilityCount > 0 && (
+              <span className="text-xs text-orange-600">({eligibilityCount} set)</span>
+            )}
+          </button>
+
+          {showEligibility && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="space-y-1.5">
+                <Label>Vehicle categories</Label>
+                <p className="text-xs text-neutral-500">
+                  {categoryIds.length === 0
+                    ? "None picked — valid for every category."
+                    : `Valid only for ${categoryIds.length} picked categor${categoryIds.length === 1 ? "y" : "ies"}.`}
+                </p>
+                {loadingCategories ? (
+                  <div className="h-20 rounded-md border bg-neutral-50 animate-pulse" />
+                ) : (
+                  <PickList
+                    options={categoryOptions}
+                    selected={categoryIds}
+                    onChange={setCategoryIds}
+                    emptyText="Categories couldn't be loaded. Close this form and try again in a minute."
+                  />
+                )}
+              </div>
+
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <Checkbox
+                  checked={newCustomersOnly}
+                  onCheckedChange={(v) => setNewCustomersOnly(!!v)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="text-sm font-medium text-neutral-800">New customers only</span>
+                  <span className="block text-xs text-neutral-500">
+                    Only customers with no confirmed or completed booking yet.
+                  </span>
+                </span>
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Min previous bookings</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="None"
+                    value={minCount}
+                    onChange={(e) => setMinCount(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Max previous bookings</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="None"
+                    value={maxCount}
+                    onChange={(e) => setMaxCount(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Min rental amount (₹)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="None"
+                    value={minAmount}
+                    onChange={(e) => setMinAmount(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Max rental amount (₹)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="None"
+                    value={maxAmount}
+                    onChange={(e) => setMaxAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 -mt-2">Rental before GST.</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Min rental days</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="None"
+                    value={minDays}
+                    onChange={(e) => setMinDays(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Max rental days</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="None"
+                    value={maxDays}
+                    onChange={(e) => setMaxDays(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment plan</Label>
+                <Select value={planChoice} onValueChange={(v) => setPlanChoice(v as PlanChoice)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ANY">Any plan</SelectItem>
+                    <SelectItem value="FULL">Full payment only</SelectItem>
+                    <SelectItem value="ADVANCE">Advance payment only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
           {/* Advanced toggle */}
           <button
             type="button"
@@ -381,7 +742,10 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
             onClick={() => setShowAdvanced((p) => !p)}
           >
             {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            Advanced settings
+            Usage limits and stacking
+            {limitsCount > 0 && (
+              <span className="text-xs text-orange-600">({limitsCount} set)</span>
+            )}
           </button>
 
           {showAdvanced && (
@@ -411,23 +775,23 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Min Booking Amount (₹)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="None"
-                    value={minAmount}
-                    onChange={(e) => setMinAmount(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Min Rental Days</Label>
+                  <Label>Per-Branch Limit</Label>
                   <Input
                     type="number"
                     min="1"
-                    placeholder="None"
-                    value={minDays}
-                    onChange={(e) => setMinDays(e.target.value)}
+                    placeholder="Unlimited"
+                    value={perBranch}
+                    onChange={(e) => setPerBranch(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Per-Day Limit</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Unlimited"
+                    value={perDay}
+                    onChange={(e) => setPerDay(e.target.value)}
                   />
                 </div>
               </div>
@@ -459,7 +823,19 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                   </Select>
                 </div>
               </div>
+              <p className="text-xs text-neutral-400 -mt-2">
+                Stackable: the coupon adds to a duration discount even where the branch doesn't
+                stack them. Otherwise the bigger saving applies.
+              </p>
             </div>
+          )}
+
+          {issues.length > 0 && (
+            <ul className="space-y-1 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {issues.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -519,8 +895,8 @@ function DeactivateDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Deactivate "{rule.code}"?</AlertDialogTitle>
           <AlertDialogDescription>
-            This rule will stop applying to new bookings immediately. This
-            cannot be undone from the UI.
+            This rule will stop applying to new bookings immediately. You can
+            reactivate it later from this list.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -538,11 +914,61 @@ function DeactivateDialog({
   );
 }
 
+// ── Reactivate confirm ────────────────────────────────────────────────────────
+
+function ReactivateDialog({
+  rule,
+  onClose,
+  onReactivated,
+}: {
+  rule: AdminDiscountRule;
+  onClose: () => void;
+  onReactivated: () => void;
+}) {
+  const mutation = useMutation({
+    mutationFn: () => adminDiscountService.reactivateRule(rule.publicId),
+    onSuccess: () => {
+      toast.success(`Rule "${rule.code}" reactivated.`);
+      onReactivated();
+    },
+    onError: (err) => {
+      toast.error(apiErrorText(err, "Failed to reactivate."));
+    },
+  });
+
+  const expired = istDay(rule.endDate) < istDay(new Date().toISOString());
+
+  return (
+    <AlertDialog open onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reactivate "{rule.code}"?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The rule applies to new bookings again, within its validity and limits.
+            {expired && " Its Valid To date has passed, so edit the dates too or it will still be rejected as expired."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-orange-500 hover:bg-orange-600 text-white"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? "Reactivating…" : "Reactivate"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ── Discount Rules Tab ────────────────────────────────────────────────────────
 
 function DiscountRulesTab() {
   const [search, setSearch] = useState("");
-  const [scopeFilter, setScopeFilter] = useState<"ALL" | "GLOBAL" | "BRANCH">("ALL");
+  const [scopeFilter, setScopeFilter] = useState<"ALL" | DiscountScope>("ALL");
+  const [reactivateRule, setReactivateRule] = useState<AdminDiscountRule | null>(null);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "active" | "inactive">("ALL");
   const [createOpen, setCreateOpen] = useState(false);
   const [editRule, setEditRule] = useState<AdminDiscountRule | null>(null);
@@ -587,6 +1013,7 @@ function DiscountRulesTab() {
               <SelectItem value="ALL">All scopes</SelectItem>
               <SelectItem value="GLOBAL">Global</SelectItem>
               <SelectItem value="BRANCH">Branch</SelectItem>
+              <SelectItem value="USER">Customer</SelectItem>
             </SelectContent>
           </Select>
           <Select value={activeFilter} onValueChange={(v) => setActiveFilter(v as any)}>
@@ -695,6 +1122,15 @@ function DiscountRulesTab() {
                     </td>
                     <td className="px-4 py-3.5">
                       <ScopeBadge scope={r.scope} />
+                      {r.scope === "BRANCH" && (
+                        <div
+                          className={`text-xs mt-0.5 ${r.applicableBranchIds.length === 0 ? "text-amber-600" : "text-neutral-400"}`}
+                        >
+                          {r.applicableBranchIds.length === 0
+                            ? "No branch set — valid everywhere"
+                            : `${r.applicableBranchIds.length} branch${r.applicableBranchIds.length === 1 ? "" : "es"}`}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-neutral-700">
                       <span className="font-medium">{r._count.usageLogs}</span>
@@ -720,7 +1156,7 @@ function DiscountRulesTab() {
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        {r.isActive && (
+                        {r.isActive ? (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -729,6 +1165,16 @@ function DiscountRulesTab() {
                             onClick={() => setDeactivateRule(r)}
                           >
                             <PowerOff className="w-3.5 h-3.5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-neutral-400 hover:text-green-600"
+                            title="Reactivate"
+                            onClick={() => setReactivateRule(r)}
+                          >
+                            <Power className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
@@ -770,7 +1216,7 @@ function DiscountRulesTab() {
               >
                 <Pencil className="w-3 h-3" /> Edit
               </Button>
-              {r.isActive && (
+              {r.isActive ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -778,6 +1224,15 @@ function DiscountRulesTab() {
                   onClick={() => setDeactivateRule(r)}
                 >
                   <PowerOff className="w-3 h-3" /> Deactivate
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-7 text-xs gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                  onClick={() => setReactivateRule(r)}
+                >
+                  <Power className="w-3 h-3" /> Reactivate
                 </Button>
               )}
             </div>
@@ -811,6 +1266,16 @@ function DiscountRulesTab() {
           onClose={() => setDeactivateRule(null)}
           onDeactivated={() => {
             setDeactivateRule(null);
+            invalidate();
+          }}
+        />
+      )}
+      {reactivateRule && (
+        <ReactivateDialog
+          rule={reactivateRule}
+          onClose={() => setReactivateRule(null)}
+          onReactivated={() => {
+            setReactivateRule(null);
             invalidate();
           }}
         />

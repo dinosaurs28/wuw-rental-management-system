@@ -65,6 +65,8 @@ import {
   fetchManagerVehicleDetails,
   fetchVehicleCategories,
   type Category,
+  VEHICLE_USE_CASES,
+  VEHICLE_USE_CASE_LABELS,
 } from "@/services/vehicle.service";
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
 
@@ -101,6 +103,7 @@ const vehicleSchema = z.object({
     .min(1, "At least one image is required"),
   hasFastag: z.boolean().default(false),
   fastagNumber: z.string().optional(),
+  useCases: z.array(z.enum(VEHICLE_USE_CASES)).default([]),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -141,6 +144,7 @@ export const ManagerVehicleFormPage = () => {
       images: [],
       hasFastag: false,
       fastagNumber: "",
+      useCases: [],
     },
   });
 
@@ -200,6 +204,9 @@ export const ManagerVehicleFormPage = () => {
                 .map((img: any) => img.file.url),
             hasFastag: vehicle.hasFastag ?? false,
             fastagNumber: vehicle.fastagNumber ?? "",
+            useCases: (vehicle.useCases ?? []).filter((t: string) =>
+              (VEHICLE_USE_CASES as readonly string[]).includes(t),
+            ),
           });
         } catch (error) {
           toast.error("Failed to load vehicle details");
@@ -229,6 +236,13 @@ export const ManagerVehicleFormPage = () => {
       formData.append("hasFastag", data.hasFastag.toString());
       if (data.hasFastag && data.fastagNumber) {
         formData.append("fastagNumber", data.fastagNumber);
+      }
+      // Always send trip types: '' clears all tags on edit, a missing key would leave them unchanged
+      const tripTypes: string[] = data.useCases ?? [];
+      if (tripTypes.length === 0) {
+        formData.append("useCases", "");
+      } else {
+        tripTypes.forEach((tag) => formData.append("useCases", tag));
       }
 
       formData.append("hourlyRate", data.hourlyRate?.toString() || "0");
@@ -506,6 +520,55 @@ export const ManagerVehicleFormPage = () => {
 
                     <Separator />
 
+                    {/* Trip type */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <MapPin className="w-4 h-4 text-neutral-500" />
+                        <h3 className="font-medium text-neutral-800 text-sm">Trip type</h3>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="useCases"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex flex-wrap gap-2">
+                              {VEHICLE_USE_CASES.map((tag) => {
+                                const active = field.value.includes(tag);
+                                return (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() =>
+                                      field.onChange(
+                                        active
+                                          ? field.value.filter((t) => t !== tag)
+                                          : [...field.value, tag],
+                                      )
+                                    }
+                                    className={cn(
+                                      "h-10 px-4 rounded-full text-sm font-medium border transition-colors",
+                                      active
+                                        ? "bg-neutral-900 text-white border-neutral-900"
+                                        : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100",
+                                    )}
+                                  >
+                                    {VEHICLE_USE_CASE_LABELS[tag]}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <p className="text-xs text-neutral-500">
+                              Optional. Customers can filter vehicles by trip type. Tag every unit of a model the same way.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator />
+
                     {/* FASTag */}
                     <div>
                       <div className="flex items-center gap-2 mb-4">
@@ -585,6 +648,12 @@ export const ManagerVehicleFormPage = () => {
                             </FormItem>
                           )}
                         />
+                        <p className="mt-2 text-[11px] leading-snug text-neutral-500">
+                          Hourly billing never costs more than the slab: up to 12 h it is capped at
+                          the 12-hour price (the daily price if none is set), up to 24 h at the daily
+                          price. Hours billed hourly get free km = hours × (24-hour free km ÷ 24).
+                          Leave 0 to bill by slab only.
+                        </p>
                       </div>
 
                       {/* 12-Hour */}
@@ -621,6 +690,10 @@ export const ManagerVehicleFormPage = () => {
                             )}
                           />
                         </div>
+                        <p className="mt-2 text-[11px] leading-snug text-neutral-500">
+                          Used for trips up to 12 hours (the "12 hours" option). Leave 0 to bill
+                          short trips at the daily price.
+                        </p>
                       </div>
 
                       {/* Daily */}

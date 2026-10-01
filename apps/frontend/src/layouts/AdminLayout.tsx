@@ -20,7 +20,6 @@ import {
   Building2,
   Car,
   BarChart3,
-  Bell,
   User,
   FileText,
   FileBarChart,
@@ -58,6 +57,11 @@ const items = [
     title: "Branches",
     url: "/admin/branches",
     icon: Building2,
+  },
+  {
+    title: "Vehicles",
+    url: "/admin/vehicles",
+    icon: Car,
   },
   {
     title: "Global Reports",
@@ -236,9 +240,6 @@ export function AdminLayout() {
             <Separator orientation="vertical" className="mr-2 h-4" />
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

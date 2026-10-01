@@ -11,6 +11,8 @@ import { QrCode, Calendar, Clock, Car, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 import { extensionService } from "@/services/extension.service";
 import { useBookingsStore } from "@/store/bookings.store";
+import { formatRentalLength } from "@/utils/formatters";
+import { formatInrExact, gstLabel, gstNumber } from "@/lib/gst";
 
 interface UserBookingCardProps {
   booking: Booking;
@@ -45,6 +47,30 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
   };
 
   const showExtendButton = isActive && eligibility?.eligible === true;
+
+  // "Paid" only for money actually received (an unpaid hold shows its total);
+  // older servers send just amountPaid / remainingBalance.
+  const total = Number(booking.total);
+  const paid = Number(booking.paid ?? (booking.paymentStatus === "SUCCESS" ? booking.amountPaid : 0)) || 0;
+  const showPaid = paid > 0 && paid < total;
+  const balanceDue = Number(
+    booking.balanceDue ??
+      (booking.isAdvancePayment && booking.paymentStatus === "SUCCESS" ? booking.remainingBalance : 0),
+  ) || 0;
+  // At the 15-day (or monthly 180-day) limit: say why there is no Extend button
+  const extendCapReason =
+    isActive && eligibility?.eligible === false && eligibility.atCap ? eligibility.reason : null;
+  // GST of the original booking, as the server stored it (#23): CGST + SGST
+  // when the split is sent, else the GST total; nothing from older servers.
+  const bookingTax = gstNumber(booking.totalTax);
+  const bookingCgst = gstNumber(booking.totalCgst);
+  const bookingSgst = gstNumber(booking.totalSgst);
+  const gstLine =
+    bookingTax == null || bookingTax <= 0
+      ? null
+      : bookingCgst != null && bookingSgst != null
+        ? `Rental incl. ${gstLabel("CGST", booking.cgstRate)} ${formatInrExact(bookingCgst)} · ${gstLabel("SGST", booking.sgstRate)} ${formatInrExact(bookingSgst)}`
+        : `Rental incl. GST ${formatInrExact(bookingTax)}`;
 
   return (
     <>
@@ -92,9 +118,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 </span>
                 <div className="flex items-center gap-2 text-base font-medium text-zinc-700">
                   <Clock className="h-4 w-4 text-zinc-400" />
-                  <span>
-                    {booking.days} {booking.days === 1 ? "day" : "days"}
-                  </span>
+                  <span>{formatRentalLength(booking.startAt, booking.endAt)}</span>
                 </div>
               </div>
             </div>
@@ -138,15 +162,26 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-200 mt-2">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
-                  {booking.isAdvancePayment ? "Amount Paid" : "Total Amount"}
+                  {showPaid ? "Amount Paid" : "Total Amount"}
                 </span>
                 <span className="text-2xl font-bold text-zinc-900 font-mono tracking-tight">
-                  {formatCurrency(booking.amountPaid ?? booking.total)}
+                  {formatCurrency(showPaid ? paid : total)}
                 </span>
-                {booking.isAdvancePayment && booking.remainingBalance > 0 && (
+                {balanceDue > 0 && (
                   <span className="text-xs text-zinc-500 mt-0.5">
-                    +{formatCurrency(booking.remainingBalance)} due at pickup · {formatCurrency(booking.total)} total
+                    +{formatCurrency(balanceDue)} due at{" "}
+                    {(booking.balanceDueAt ?? (booking.status === "PICKED_UP" ? "DROP" : "PICKUP")) === "DROP" ? "drop" : "pickup"} ·{" "}
+                    {formatCurrency(total)} total
                   </span>
+                )}
+                {booking.couponCode && Number(booking.totalDiscount ?? 0) > 0 && (
+                  <span className="text-xs text-emerald-600 mt-0.5">
+                    Discount −{formatCurrency(Number(booking.totalDiscount))} · coupon {booking.couponCode}
+                  </span>
+                )}
+                {gstLine && <span className="text-xs text-zinc-500 mt-0.5">{gstLine}</span>}
+                {extendCapReason && (
+                  <span className="text-xs text-zinc-500 mt-0.5">{extendCapReason}</span>
                 )}
               </div>
               <div className="flex items-center gap-2">

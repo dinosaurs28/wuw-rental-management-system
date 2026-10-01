@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import axios from "axios";
 import { updateProfileSchema } from "@repo/schemas";
 import type { UpdateProfileInput } from "@repo/schemas";
@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -38,8 +39,31 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
 
 import { useAuthStore } from "@/store/auth.store";
-import { userService } from "@/services/user.service";
+import { useVehicleRentalStore } from "@/store/vehicleRental.store";
+import { userService, type UserProfile } from "@/services/user.service";
 import { cn } from "@/lib/utils";
+import {
+  describeMissingProfileFields,
+  formatAadhaarInput,
+  formatDrivingLicenceInput,
+} from "@/lib/customerProfile";
+
+// Form values from a profile (GET /user/profile or the PUT response's data).
+const toFormValues = (
+  profile: Omit<UserProfile, "isProfileCompleted" | "missingFields">,
+): UpdateProfileInput => ({
+  name: profile.name || "",
+  phone: profile.phone || "",
+  dob: profile.dob || "",
+  addressLine1: profile.addressLine1 || "",
+  city: profile.city || "",
+  state: profile.state || "",
+  country: profile.country || "",
+  zipCode: profile.zipCode || "",
+  alternatePhone: profile.alternatePhone || "",
+  drivingLicenceNumber: formatDrivingLicenceInput(profile.drivingLicenceNumber),
+  aadhaarNumber: formatAadhaarInput(profile.aadhaarNumber),
+});
 
 export const PersonalInformationPage = () => {
   const navigate = useNavigate();
@@ -48,6 +72,11 @@ export const PersonalInformationPage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  // Server-derived completeness (null = not loaded yet). Booking needs it.
+  const [completeness, setCompleteness] = useState<{
+    complete: boolean;
+    missing: string[];
+  } | null>(null);
 
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
@@ -61,6 +90,8 @@ export const PersonalInformationPage = () => {
       country: "",
       zipCode: "",
       alternatePhone: "",
+      drivingLicenceNumber: "",
+      aadhaarNumber: "",
     },
   });
 
@@ -78,19 +109,12 @@ export const PersonalInformationPage = () => {
       setIsLoadingProfile(true);
       try {
         const profile = await userService.getProfile();
-        const formData: UpdateProfileInput = {
-          name: profile.name || "",
-          phone: profile.phone || "",
-          dob: profile.dob || "",
-          addressLine1: profile.addressLine1 || "",
-          city: profile.city || "",
-          state: profile.state || "",
-          country: profile.country || "",
-          zipCode: profile.zipCode || "",
-          alternatePhone: profile.alternatePhone || "",
-        };
-        form.reset(formData);
+        form.reset(toFormValues(profile));
         setUserEmail(profile.email || "");
+        setCompleteness({
+          complete: profile.isProfileCompleted,
+          missing: profile.missingFields ?? [],
+        });
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;
@@ -114,8 +138,22 @@ export const PersonalInformationPage = () => {
   const onSubmit = async (data: UpdateProfileInput) => {
     setIsSubmitting(true);
     try {
-      await userService.updateProfile(data);
+      const response = await userService.updateProfile(data);
+      // The server stores normalised numbers — show what it saved.
+      form.reset(toFormValues(response.data));
+      setCompleteness({
+        complete: response.isProfileCompleted,
+        missing: response.missingFields ?? [],
+      });
       toast.success("Profile updated successfully");
+      // Sent here from checkout (PROFILE_INCOMPLETE) — go back to the booking.
+      const { hasBookingIntent, clearBookingIntent } = useAuthStore.getState();
+      const hasVehicle = useVehicleRentalStore.getState().hasVehicleSelected();
+      if (hasBookingIntent && hasVehicle && response.isProfileCompleted) {
+        clearBookingIntent();
+        navigate("/booking/review-confirm");
+        return;
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
@@ -123,6 +161,18 @@ export const PersonalInformationPage = () => {
           toast.error("Session expired. Please sign in again.");
           navigate("/auth/sign-in", { replace: true });
           return;
+        }
+        // VALIDATION_ERROR: put each issue under its input.
+        const issues = error.response?.data?.errors;
+        if (Array.isArray(issues)) {
+          for (const issue of issues) {
+            const field = issue?.path?.[0];
+            if (typeof field === "string" && field in data) {
+              form.setError(field as keyof UpdateProfileInput, {
+                message: issue.message,
+              });
+            }
+          }
         }
         const message =
           error.response?.data?.message || "Failed to update profile";
@@ -192,6 +242,26 @@ export const PersonalInformationPage = () => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-8"
                 >
+                  {/* Completeness banner — booking is blocked until complete */}
+                  {completeness && !completeness.complete && (
+                    <div
+                      role="status"
+                      className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3"
+                    >
+                      <AlertCircle className="mt-0.5 size-5 shrink-0 text-amber-600" />
+                      <div className="text-sm">
+                        <p className="font-semibold text-amber-900">
+                          Complete your profile to book a vehicle
+                        </p>
+                        <p className="mt-0.5 text-amber-800">
+                          {completeness.missing.length > 0
+                            ? `Add your ${describeMissingProfileFields(completeness.missing)}.`
+                            : "Fill in the required details below."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Basic Info Section */}
                   <section>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
@@ -326,6 +396,74 @@ export const PersonalInformationPage = () => {
                                 />
                               </PopoverContent>
                             </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </section>
+
+                  {/* Identity Section — DL + Aadhaar numbers (#1) */}
+                  <section>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                      Identity
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Driving Licence Number */}
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenceNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Driving Licence Number *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="KA01 20110012345"
+                                autoComplete="off"
+                                autoCapitalize="characters"
+                                spellCheck={false}
+                                className="h-12"
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    formatDrivingLicenceInput(e.target.value),
+                                  )
+                                }
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Required to book a vehicle
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Aadhaar Number */}
+                      <FormField
+                        control={form.control}
+                        name="aadhaarNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Aadhaar Number *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="1234 5678 9012"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                maxLength={14}
+                                className="h-12 tabular-nums"
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    formatAadhaarInput(e.target.value),
+                                  )
+                                }
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Required to book a vehicle
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}

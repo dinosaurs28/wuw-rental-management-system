@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -17,8 +17,16 @@ import {
 } from "@/components/ui/popover";
 import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
+import { formatInrExact, gstLabel } from "@/lib/gst";
+import { round2 } from "@repo/schemas";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import type { VehicleGroupDetails } from "@/services/vehicle.service";
+import {
+  clampPaymentFlow,
+  durationDiscountTitle,
+  paymentOptionsFor,
+  roundMoney,
+} from "@/lib/paymentPlan";
 
 interface VehicleBookingPanelProps {
   group: VehicleGroupDetails;
@@ -58,13 +66,8 @@ export const VehicleBookingPanel = ({
   const pd = group.pricingDetails;
   const isAvailable = group.availability;
 
-  const fmt = (amount: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  // Paise are shown when present: GST is rounded to the paisa, not the rupee.
+  const fmt = (amount: number) => formatInrExact(amount);
 
   const disabledDays = useMemo(() => {
     const today = new Date();
@@ -79,15 +82,29 @@ export const VehicleBookingPanel = ({
     return { before: today };
   }, [pickupDate]);
 
-  const hasAdvance = !!group.advancePayAmount && group.advancePayAmount > 0 && !!pd;
   const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
 
-  // Auto-select payment flow based on branch config
+  // Payment plan (#6) from the server's paymentOptions (branch mode + amounts):
+  // the default plan on a new group, then kept inside the allowed plans.
+  const paymentOptions = paymentOptionsFor(group);
+  const optionsKey = `${paymentOptions.allowedFlows.join(",")}|${paymentOptions.defaultFlow}`;
+  const planGroupRef = useRef<string | null>(null);
   useEffect(() => {
-    const mode = group.customerPaymentMode ?? 'ADVANCE_ONLY';
-    if (mode === 'FULL_ONLY') setPaymentFlow('FULL');
-    else if (mode !== 'BOTH') setPaymentFlow('ADVANCE');
-  }, [group.customerPaymentMode]);
+    const isNewGroup = planGroupRef.current !== group.groupKey;
+    planGroupRef.current = group.groupKey;
+    const current = useVehicleRentalStore.getState().paymentFlow;
+    const next = isNewGroup ? paymentOptions.defaultFlow : clampPaymentFlow(current, paymentOptions);
+    if (next !== current) setPaymentFlow(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group.groupKey, optionsKey]);
+  const shownFlow = clampPaymentFlow(paymentFlow, paymentOptions);
+  const canChoosePlan = paymentOptions.allowedFlows.length === 2;
+  const advanceOnly = !canChoosePlan && paymentOptions.allowedFlows[0] === "ADVANCE";
+  // Full amount: rental + GST + refundable deposit (server's figure)
+  const payableTotal =
+    paymentOptions.payableTotal ?? (pd ? roundMoney(pd.finalTotal + (group.deposit ?? 0)) : 0);
+  const dueAtPickup =
+    paymentOptions.remainingAfterAdvance ?? roundMoney(payableTotal - paymentOptions.advanceAmount);
 
   const sectionTitle =
     "text-base font-black text-zinc-900 tracking-tight mb-4";
@@ -192,14 +209,14 @@ export const VehicleBookingPanel = ({
         {pd && (
           <section>
             <h3 className={sectionTitle}>Payment plan</h3>
-            {hasAdvance && group.customerPaymentMode === 'BOTH' ? (
+            {canChoosePlan ? (
               <div className="space-y-3">
                 <button
                   type="button"
                   onClick={() => setPaymentFlow("FULL")}
                   className={cn(
                     "w-full flex items-center justify-between gap-4 rounded-2xl border-2 p-4 text-left transition-all",
-                    paymentFlow === "FULL"
+                    shownFlow === "FULL"
                       ? "border-zinc-900"
                       : "border-zinc-200 hover:border-zinc-300",
                   )}
@@ -208,12 +225,12 @@ export const VehicleBookingPanel = ({
                     <span
                       className={cn(
                         "mt-0.5 flex size-5 items-center justify-center rounded-full border-2",
-                        paymentFlow === "FULL"
+                        shownFlow === "FULL"
                           ? "border-zinc-900 bg-zinc-900"
                           : "border-zinc-300",
                       )}
                     >
-                      {paymentFlow === "FULL" && (
+                      {shownFlow === "FULL" && (
                         <span className="size-2 rounded-full bg-white" />
                       )}
                     </span>
@@ -225,7 +242,7 @@ export const VehicleBookingPanel = ({
                     </div>
                   </div>
                   <span className="shrink-0 font-bold text-zinc-900">
-                    {fmt(pd.finalTotal)}
+                    {fmt(payableTotal)}
                   </span>
                 </button>
                 <button
@@ -233,7 +250,7 @@ export const VehicleBookingPanel = ({
                   onClick={() => setPaymentFlow("ADVANCE")}
                   className={cn(
                     "w-full flex items-center justify-between gap-4 rounded-2xl border-2 p-4 text-left transition-all",
-                    paymentFlow === "ADVANCE"
+                    shownFlow === "ADVANCE"
                       ? "border-zinc-900"
                       : "border-zinc-200 hover:border-zinc-300",
                   )}
@@ -242,12 +259,12 @@ export const VehicleBookingPanel = ({
                     <span
                       className={cn(
                         "mt-0.5 flex size-5 items-center justify-center rounded-full border-2",
-                        paymentFlow === "ADVANCE"
+                        shownFlow === "ADVANCE"
                           ? "border-zinc-900 bg-zinc-900"
                           : "border-zinc-300",
                       )}
                     >
-                      {paymentFlow === "ADVANCE" && (
+                      {shownFlow === "ADVANCE" && (
                         <span className="size-2 rounded-full bg-white" />
                       )}
                     </span>
@@ -256,28 +273,28 @@ export const VehicleBookingPanel = ({
                         <Wallet className="size-4 text-zinc-500" /> Pay advance
                       </p>
                       <p className="text-sm text-zinc-500 mt-0.5">
-                        {fmt(group.advancePayAmount)} now,{" "}
-                        {fmt(pd.finalTotal - group.advancePayAmount)} at pickup.
+                        {fmt(paymentOptions.advanceAmount)} now,{" "}
+                        {fmt(dueAtPickup)} at pickup.
                       </p>
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full bg-[#FF5F00] px-3 py-1 text-xs font-bold text-white">
-                    {fmt(group.advancePayAmount)}
+                    {fmt(paymentOptions.advanceAmount)}
                   </span>
                 </button>
               </div>
-            ) : hasAdvance ? (
+            ) : advanceOnly ? (
               <div className="rounded-2xl border-2 border-[#FF5F00] p-4 space-y-1">
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-zinc-900 flex items-center gap-2">
                     <Wallet className="size-4 text-[#FF5F00]" /> Advance payment
                   </p>
                   <span className="rounded-full bg-[#FF5F00] px-3 py-1 text-xs font-bold text-white">
-                    {fmt(group.advancePayAmount)} now
+                    {fmt(paymentOptions.advanceAmount)} now
                   </span>
                 </div>
                 <p className="text-sm text-zinc-500">
-                  {fmt(pd.finalTotal - group.advancePayAmount)} remaining due at pickup.
+                  {fmt(dueAtPickup)} remaining due at pickup.
                 </p>
               </div>
             ) : (
@@ -290,6 +307,9 @@ export const VehicleBookingPanel = ({
                   </span>
                 </p>
               </div>
+            )}
+            {paymentOptions.reasonMessage && (
+              <p className="mt-2 text-xs text-zinc-500">{paymentOptions.reasonMessage}</p>
             )}
           </section>
         )}
@@ -336,17 +356,29 @@ export const VehicleBookingPanel = ({
                   <div className="flex justify-between">
                     <span className="flex items-center gap-1.5 text-emerald-600">
                       <Check className="size-4" />
-                      Discount ({pd.discountPercent}%)
+                      {durationDiscountTitle(
+                        pd.durationDiscountLabel,
+                        pd.durationDiscountPercent ?? roundMoney(pd.discountPercent),
+                        pd.durationDiscountType,
+                      )}
                     </span>
                     <span className="font-medium text-emerald-600">
                       -{fmt(pd.discountAmount)}
                     </span>
                   </div>
                 )}
+                {pd.discountAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Taxable value</span>
+                    <span className="font-medium text-zinc-900">
+                      {fmt(round2(pd.basePrice - pd.discountAmount))}
+                    </span>
+                  </div>
+                )}
                 {pd.cgstAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">
-                      CGST ({(pd.taxRate / 2).toFixed(1)}%)
+                      {gstLabel("CGST", pd.cgstRate)}
                     </span>
                     <span className="font-medium text-zinc-700">
                       +{fmt(pd.cgstAmount)}
@@ -356,7 +388,7 @@ export const VehicleBookingPanel = ({
                 {pd.sgstAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">
-                      SGST ({(pd.taxRate / 2).toFixed(1)}%)
+                      {gstLabel("SGST", pd.sgstRate)}
                     </span>
                     <span className="font-medium text-zinc-700">
                       +{fmt(pd.sgstAmount)}

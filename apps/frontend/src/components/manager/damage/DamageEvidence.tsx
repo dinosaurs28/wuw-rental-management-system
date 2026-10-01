@@ -1,25 +1,20 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
 import { Image as ImageIcon, Maximize2 } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface DamageEvidenceProps {
-  images: { url: string }[];
+  images: { url: string; label?: string | null; mime?: string | null }[];
   damageDetails: Record<string, any>;
   vehicleType?: string;
+  /** Shown as the photo caption, e.g. the vehicle reg no. */
+  caption?: string;
 }
 
-export const DamageEvidence: React.FC<DamageEvidenceProps> = ({ images }) => {
-  const [open, setOpen] = useState(false);
+export const DamageEvidence: React.FC<DamageEvidenceProps> = ({ images, caption }) => {
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   return (
     <Card className="h-full flex flex-col">
@@ -27,70 +22,49 @@ export const DamageEvidence: React.FC<DamageEvidenceProps> = ({ images }) => {
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <ImageIcon className="w-5 h-5" />
           Damage Evidence
+          {images.length > 0 && (
+            <span className="text-xs font-normal text-muted-foreground">({images.length})</span>
+          )}
         </CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Maximize2 className="w-4 h-4" />
-              View All Images
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl w-full p-0 bg-black/90 border-none sm:rounded-none md:rounded-lg overflow-hidden">
-            <div className="relative w-full h-[80vh] flex items-center justify-center">
-              {images.length > 0 ? (
-                <Carousel className="w-full max-w-3xl">
-                  <CarouselContent>
-                    {images.map((img, idx) => (
-                      <CarouselItem
-                        key={idx}
-                        className="flex items-center justify-center h-full"
-                      >
-                        <div className="relative w-full h-full flex items-center justify-center p-4">
-                          <img
-                            src={img.url}
-                            alt={`Damage Evidence ${idx + 1}`}
-                            className="max-h-[70vh] w-auto max-w-full object-contain rounded-md"
-                          />
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="left-4 bg-white/10 hover:bg-white/20 text-white border-none" />
-                  <CarouselNext className="right-4 bg-white/10 hover:bg-white/20 text-white border-none" />
-                </Carousel>
-              ) : (
-                <div className="text-white text-center">
-                  No images available
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {images.length > 0 && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setViewerIndex(0)}>
+            <Maximize2 className="w-4 h-4" />
+            View All Images
+          </Button>
+        )}
+        <PhotoLightbox
+          open={viewerIndex !== null}
+          onOpenChange={(o) => !o && setViewerIndex(null)}
+          items={images.map((img, idx) => ({
+            url: img.url,
+            mime: img.mime,
+            label: [caption, img.label ?? `Damage photo ${idx + 1}`].filter(Boolean).join(" · "),
+          }))}
+          startIndex={viewerIndex ?? 0}
+          title="Damage Evidence"
+        />
       </CardHeader>
       <CardContent className="flex-1">
         {images.length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
-            {images.slice(0, 4).map((img, idx) => (
-              <div
+            {images.map((img, idx) => (
+              <button
+                type="button"
                 key={idx}
-                className="relative group cursor-pointer overflow-hidden rounded-md border bg-muted"
-                onClick={() => setOpen(true)}
+                className="relative group cursor-zoom-in overflow-hidden rounded-md border bg-muted text-left"
+                onClick={() => setViewerIndex(idx)}
+                aria-label={`Zoom damage photo ${idx + 1}`}
               >
                 <AspectRatio ratio={4 / 3}>
                   <img
                     src={img.url}
                     alt={`Preview ${idx + 1}`}
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
                   />
-                  {idx === 3 && images.length > 4 && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        +{images.length - 4}
-                      </span>
-                    </div>
-                  )}
+                  <ZoomBadge />
                 </AspectRatio>
-              </div>
+              </button>
             ))}
           </div>
         ) : (

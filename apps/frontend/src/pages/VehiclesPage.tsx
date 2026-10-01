@@ -20,9 +20,13 @@ import { useSearchStore } from "@/store/search.store";
 import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
-import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
+import type {
+  VehicleFilters as VehicleFiltersType,
+  VehicleUseCase,
+} from "@/services/vehicle.service";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
+import { snapPickupPastClosedToday } from "@/utils/bookingPickers";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -31,6 +35,7 @@ export const VehiclesPage = () => {
   const {
     branchPublicId,
     categoryPublicId,
+    useCases,
     pickupDate,
     returnDate,
     pickupTime: storePickupTime,
@@ -95,7 +100,7 @@ export const VehiclesPage = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBranch, category, debouncedSearch, sortBy]);
+  }, [selectedBranch, category, debouncedSearch, sortBy, useCases]);
 
   // Initialize state from store or set default branch
   useEffect(() => {
@@ -132,6 +137,7 @@ export const VehiclesPage = () => {
     if (selectedBranch) f.branch = selectedBranch;
     if (category && category !== "all") f.category = category;
     if (debouncedSearch) f.search = debouncedSearch;
+    if (useCases.length > 0) f.useCases = useCases;
     if (sortBy && sortBy !== "default")
       f.sort = sortBy as "price_low_to_high" | "price_high_to_low";
 
@@ -158,6 +164,7 @@ export const VehiclesPage = () => {
     category,
     debouncedSearch,
     sortBy,
+    useCases,
     selectedPickupDate,
     selectedReturnDate,
     pickupTime,
@@ -236,6 +243,13 @@ export const VehiclesPage = () => {
     setSearchCriteria({ categoryPublicId: cat });
   }, [setSearchCriteria]);
 
+  const handleUseCasesChange = useCallback(
+    (next: VehicleUseCase[]) => {
+      setSearchCriteria({ useCases: next });
+    },
+    [setSearchCriteria],
+  );
+
   const handleSortChange = useCallback((sort: string) => {
     setSortBy(sort);
   }, []);
@@ -311,6 +325,24 @@ export const VehiclesPage = () => {
   const { schedule } = useBranchSchedule(selectedBranch || undefined);
   const { verdict: scheduleVerdict, adjustedEndDateTime } =
     useBookingScheduleVerdict(schedule, startDateTime, endDateTime);
+
+  // Branch already closed for today: start the range at its next opening
+  // (only when the hours load / the branch changes — never fights a user's pick)
+  useEffect(() => {
+    const snap = snapPickupPastClosedToday({
+      schedule,
+      pickupDate: selectedPickupDate,
+      returnDate: selectedReturnDate,
+      returnTime,
+    });
+    if (!snap) return;
+    setSelectedPickupDate(snap.pickupDate);
+    setPickupTime(snap.pickupTime);
+    setSelectedReturnDate(snap.returnDate);
+    setReturnTime(snap.returnTime);
+    setSearchCriteria(snap);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule]);
 
   // Write-back: when return is bumped, persist the adjusted date/time to local state + store
   useEffect(() => {
@@ -436,6 +468,8 @@ export const VehiclesPage = () => {
             onReturnTimeChange={handleReturnTimeChange}
             schedule={schedule}
             scheduleVerdict={scheduleVerdict}
+            useCases={useCases}
+            onUseCasesChange={handleUseCasesChange}
           />
         </div>
 

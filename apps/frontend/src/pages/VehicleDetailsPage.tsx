@@ -9,6 +9,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VehicleImageGallery } from "@/components/vehicles/VehicleImageGallery";
 import { VehiclePricingCard } from "@/components/vehicles/VehiclePricingCard";
+import { UseCaseBadges } from "@/components/vehicles/UseCaseChips";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Breadcrumb,
@@ -23,6 +24,13 @@ import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useSearchStore } from "@/store/search.store";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
+import { gstSplitFromPricing } from "@/lib/gst";
+import { paymentOptionsFor } from "@/lib/paymentPlan";
+import { Share2 } from "lucide-react";
+import { buildVehicleShareUrl, shareVehicle } from "@/lib/share";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
+import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 
 export const VehicleDetailsPage = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -117,6 +125,36 @@ export const VehicleDetailsPage = () => {
 
   const vehicle = data?.data;
 
+  // Branch office hours: the vehicle's own branch (deep links), else the
+  // search branch (a cached payload may lack branchPublicId for up to 60 s)
+  const searchBranchPublicId = useSearchStore((state) => state.branchPublicId);
+  const scheduleBranchId = vehicle?.branchPublicId ?? searchBranchPublicId ?? undefined;
+  const { schedule } = useBranchSchedule(scheduleBranchId);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } = useBookingScheduleVerdict(
+    schedule,
+    startDateTime ?? undefined,
+    endDateTime ?? undefined,
+  );
+
+  // Review & confirm checks hours against the search branch — keep it on this vehicle's branch
+  useEffect(() => {
+    if (vehicle?.branchPublicId && vehicle.branchPublicId !== searchBranchPublicId) {
+      useSearchStore.getState().setSearchCriteria({ branchPublicId: vehicle.branchPublicId });
+    }
+  }, [vehicle?.branchPublicId, searchBranchPublicId]);
+
+  // Write-back: when the return is moved for office hours, update the store so
+  // the pricing card quotes the new return
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setEndDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    setEndTime(
+      `${String(adjusted.getHours()).padStart(2, "0")}:${String(adjusted.getMinutes()).padStart(2, "0")}`,
+    );
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
+
   // Update pricing in store when vehicle data changes
   useEffect(() => {
     if (vehicle?.pricing?.daily) {
@@ -128,17 +166,23 @@ export const VehicleDetailsPage = () => {
     if (vehicle?.advancePayAmount !== undefined) {
       setAdvancePayAmount(vehicle.advancePayAmount ?? 0);
     }
+    // Plans the branch + amounts allow (#6) — the review page renders these
+    if (vehicle) useVehicleRentalStore.getState().setPaymentOptions(paymentOptionsFor(vehicle));
     // Store full API pricing details when available (dates selected)
     if (vehicle?.pricingDetails) {
       setApiPricingDetails({
         basePrice:                  vehicle.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:     vehicle.pricingDetails.discountAmount          ?? 0,
-        durationDiscountPercent:    vehicle.pricingDetails.discountPercent         ?? 0,
+        durationDiscountAmount:     vehicle.pricingDetails.durationDiscountAmount  ?? vehicle.pricingDetails.discountAmount  ?? 0,
+        durationDiscountPercent:    vehicle.pricingDetails.durationDiscountPercent ?? vehicle.pricingDetails.discountPercent ?? 0,
+        durationDiscountLabel:      vehicle.pricingDetails.durationDiscountLabel   ?? null,
+        durationDiscountType:       vehicle.pricingDetails.durationDiscountType    ?? null,
         taxAmount:                  vehicle.pricingDetails.taxAmount               ?? 0,
         finalTotal:                 vehicle.pricingDetails.finalTotal              ?? 0,
+        gst:                        gstSplitFromPricing(vehicle.pricingDetails),
       });
     }
   }, [
+    vehicle,
     vehicle?.pricing?.daily,
     vehicle?.deposit,
     vehicle?.advancePayAmount,
@@ -200,6 +244,8 @@ export const VehicleDetailsPage = () => {
     currentState.setEndTime(savedEndTime);
     currentState.setPaymentFlow(savedPaymentFlow);
     currentState.setAdvancePayAmount(savedAdvanceAmount);
+    // Keeps the restored plan inside what the branch + amounts allow
+    currentState.setPaymentOptions(paymentOptionsFor(vehicle));
 
     // Set pricing
     setPricePerDay(vehicle.pricing?.daily || 0);
@@ -207,10 +253,13 @@ export const VehicleDetailsPage = () => {
     if (vehicle.pricingDetails) {
       setApiPricingDetails({
         basePrice:               vehicle.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:  vehicle.pricingDetails.discountAmount          ?? 0,
-        durationDiscountPercent: vehicle.pricingDetails.discountPercent         ?? 0,
+        durationDiscountAmount:  vehicle.pricingDetails.durationDiscountAmount  ?? vehicle.pricingDetails.discountAmount  ?? 0,
+        durationDiscountPercent: vehicle.pricingDetails.durationDiscountPercent ?? vehicle.pricingDetails.discountPercent ?? 0,
+        durationDiscountLabel:   vehicle.pricingDetails.durationDiscountLabel   ?? null,
+        durationDiscountType:    vehicle.pricingDetails.durationDiscountType    ?? null,
         taxAmount:               vehicle.pricingDetails.taxAmount               ?? 0,
         finalTotal:              vehicle.pricingDetails.finalTotal              ?? 0,
+        gst:                     gstSplitFromPricing(vehicle.pricingDetails),
       });
     }
 
@@ -365,6 +414,15 @@ export const VehicleDetailsPage = () => {
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-zinc-900 tracking-tight">
               {vehicleName}
             </h1>
+            <button
+              type="button"
+              onClick={() => shareVehicle(vehicleName, buildVehicleShareUrl({ vehicleId: vehicle.publicId ?? vehicleId }))}
+              aria-label="Share this vehicle"
+              className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-white text-zinc-900 rounded-full uppercase border border-zinc-200 hover:bg-zinc-100 transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
             <div className="flex items-center gap-3">
               <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-zinc-100 text-zinc-900 rounded-full uppercase border border-zinc-200">
                 {typeof vehicle.category === "string"
@@ -387,7 +445,15 @@ export const VehicleDetailsPage = () => {
             <span className="size-2 rounded-full bg-orange-500 shrink-0" />
             {vehicle.branch}
           </p>
+          <UseCaseBadges useCases={vehicle.useCases} className="mt-3" />
         </div>
+
+        {/* Schedule warning banner */}
+        {scheduleVerdict && scheduleVerdict.status !== "OK" && (
+          <div className="mb-6">
+            <ScheduleWarningBanner verdict={scheduleVerdict} />
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
@@ -406,6 +472,7 @@ export const VehicleDetailsPage = () => {
                 vehicle={vehicle}
                 onBookVehicle={handleBookVehicle}
                 isRefetching={isFetching}
+                schedule={schedule}
               />
             </div>
           </div>

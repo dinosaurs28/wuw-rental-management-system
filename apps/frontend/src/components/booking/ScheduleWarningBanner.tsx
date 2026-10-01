@@ -1,5 +1,8 @@
 import { AlertTriangle, Clock, XCircle, RefreshCw } from "lucide-react";
-import type { ScheduleVerdict } from "@/utils/branchScheduleValidator";
+import {
+  buildScheduleUserMessage,
+  type ScheduleVerdict,
+} from "@/utils/branchScheduleValidator";
 
 interface ScheduleWarningBannerProps {
   verdict: ScheduleVerdict | null;
@@ -83,19 +86,16 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
 
   // ── Return bumped ──────────────────────────────────────────────────────────
   if (verdict.status === "RETURN_BUMPED") {
-    const reason = verdict.closedDayName
-      ? `Branch is closed on ${verdict.closedDayName}.`
-      : `Return time is after closing (${verdict.closingTime}).`;
-
     return (
       <div className="flex items-start gap-3 bg-amber-950/70 border border-amber-800/60 rounded-xl px-4 py-4 text-amber-200">
         <RefreshCw className="size-4 shrink-0 mt-0.5 text-amber-400" strokeWidth={2.2} />
         <div className="text-sm space-y-0.5">
           <p className="font-bold text-amber-100 uppercase tracking-wide text-xs">
-            Return time adjusted — booking extended to 24 hrs
+            Return moved to {verdict.nextOpenLabel}
           </p>
           <p className="text-amber-300/90">
-            {reason} Your booking is now priced as a 24-hour rental.
+            {returnReasonText(verdict)} The return was moved to the next time the
+            branch accepts returns, and the price is for the new return time.
           </p>
           <p className="flex items-center gap-1.5 text-amber-100 font-semibold">
             <Clock className="size-3.5 shrink-0" />
@@ -106,5 +106,30 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
     );
   }
 
+  // ── Return outside hours (extensions; or an adjusted return past the 15-day limit) ──
+  if (verdict.status === "RETURN_OUTSIDE_HOURS") {
+    return (
+      <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3.5 text-red-800">
+        <XCircle className="size-4 shrink-0 mt-0.5 text-red-500" />
+        <div className="text-sm">
+          <span className="font-semibold">Branch closed at that return time — </span>
+          {verdict.nextOpenLabel
+            ? `${returnReasonText(verdict)} The next open return (${verdict.nextOpenLabel}) is past the 15-day limit. Please choose an earlier return.`
+            : buildScheduleUserMessage(verdict)}
+        </div>
+      </div>
+    );
+  }
+
   return null;
 };
+
+function returnReasonText(verdict: ScheduleVerdict): string {
+  if (verdict.reason === "CLOSED_DAY" || (!verdict.reason && verdict.closedDayName)) {
+    return `Branch is closed on ${verdict.closedDayName ?? "that day"}.`;
+  }
+  if (verdict.reason === "BEFORE_OPEN") {
+    return `The branch opens at ${verdict.openingTime ?? "opening time"} that day.`;
+  }
+  return `Return time is after closing (${verdict.closingTime ?? "closing time"}).`;
+}

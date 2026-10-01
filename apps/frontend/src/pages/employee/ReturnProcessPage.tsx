@@ -13,10 +13,16 @@ import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { DropDamageSection } from "@/components/employee/drop/DropDamageSection";
 import { DropDiscountPanel, type DropDiscountInput } from "@/components/employee/drop/DropDiscountPanel";
-import { KmChargeSummary } from "@/components/employee/drop/KmChargeSummary";
-import { LicenseReturnCheck } from "@/components/employee/drop/LicenseReturnCheck";
 import { previewKmCharge, type KmChargeFigures } from "@/components/employee/drop/kmCharge";
+import { RentalTimelineCard } from "@/components/employee/drop/RentalTimelineCard";
+import { LateReturnPanel, type LateReturnOptions } from "@/components/employee/drop/LateReturnPanel";
+import { DropBillSummary, LegacyReturnChargesSummary } from "@/components/employee/drop/DropBillSummary";
+import { SwapChargesNote } from "@/components/employee/drop/SwapChargesNote";
+import { DropOdometerFields } from "@/components/employee/drop/DropOdometerFields";
 import { ExtendBookingModal } from "@/components/employee/extension/ExtendBookingModal";
+import { DlStatusPanel } from "@/components/booking/DlStatus";
+import { SwapVehicleAction } from "@/components/employee/swap/SwapVehicleAction";
+import { BookingSwapHistory } from "@/components/employee/swap/BookingSwapHistory";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -58,7 +64,6 @@ import {
   Trash2,
   ArrowLeft,
   Fuel,
-  Gauge,
   AlertTriangle,
   FileCheck,
   X,
@@ -69,7 +74,7 @@ import {
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
-import { ZoomableImage } from "@/components/ui/ZoomableImage";
+import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
 
 const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   value: String(i + 1),
@@ -92,6 +97,14 @@ interface ReturnPageShellProps {
   vehicleRegNo?: string;
   onBack: () => void;
   headerActions?: React.ReactNode;
+  /** DL status reminder under the header (#3). */
+  dlStatusBlock?: React.ReactNode;
+  /** Original / extended / late rental time (#7). */
+  rentalTimelineBlock?: React.ReactNode;
+  /** "Swap vehicle" only while no drop bill (RETURN session) has been started (#13). */
+  canSwap: boolean;
+  /** The drop was recorded and sent for the branch manager's confirmation. */
+  awaitingManager: boolean;
 }
 
 function ReturnPageShell({
@@ -103,6 +116,10 @@ function ReturnPageShell({
   vehicleRegNo,
   onBack,
   headerActions,
+  dlStatusBlock,
+  rentalTimelineBlock,
+  canSwap,
+  awaitingManager,
 }: ReturnPageShellProps) {
   return (
     <div className="min-h-screen bg-[#F5F5F5] pb-20">
@@ -149,6 +166,8 @@ function ReturnPageShell({
           </div>
           <div className="flex items-center gap-2">
             {headerActions}
+            {/* Swap the car mid-rental (#13) — PICKED_UP, before the drop bill; the dialog shows any server refusal */}
+            {canSwap && <SwapVehicleAction bookingPublicId={bookingPublicId} bookingStatus={bookingStatus} />}
             <Button
               variant="outline"
               className="border-orange-500 text-orange-500 hover:bg-orange-50 px-6"
@@ -160,12 +179,31 @@ function ReturnPageShell({
           </div>
         </div>
 
+        {rentalTimelineBlock}
+
+        {dlStatusBlock}
+
+        {/* Vehicle swaps on this booking (#13) — hidden until there is one */}
+        <BookingSwapHistory bookingPublicId={bookingPublicId} />
+
         {isCompleted && (
           <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg flex items-center gap-3">
             <FileCheck className="h-5 w-5" />
             <div>
               <p className="font-semibold">Return Completed</p>
               <p className="text-sm">This vehicle has been returned and processed.</p>
+            </div>
+          </div>
+        )}
+
+        {awaitingManager && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Waiting for the branch manager</p>
+              <p className="text-sm">
+                This return was recorded and sent to the branch manager to confirm. Nothing more to do here.
+              </p>
             </div>
           </div>
         )}
@@ -183,7 +221,8 @@ export default function ReturnProcessPage() {
 
   // ── Photos ─────────────────────────────────────────────────────────────────
   const [returnPhotos, setReturnPhotos] = useState<{ publicId: string; url: string }[]>([]);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
+  const openLightbox = (items: LightboxItem[], index: number) => setLightbox({ items, index });
 
   // ── Charge inputs ──────────────────────────────────────────────────────────
   const [endOdometer, setEndOdometer] = useState("");
@@ -201,14 +240,17 @@ export default function ReturnProcessPage() {
     { id: "1", label: "", amount: "" },
   ]);
 
-  // licence handed back (required when it was collected at pickup)
-  const [licenseReturned, setLicenseReturned] = useState(false);
-  const [licenseError, setLicenseError] = useState<string | null>(null);
-  // Server said the licence is still out although the cached booking didn't — keep asking.
-  const [licenseAsked, setLicenseAsked] = useState(false);
+  // Late return (automatic charge): MANUAL-grace tick and the staff waiver — resent with every compute
+  const [lateOptions, setLateOptions] = useState<LateReturnOptions>({ applyGrace: false, waiver: null });
+  const [lateError, setLateError] = useState<string | null>(null);
+  // Extra km typed by staff — only after a mid-rental swap recorded without odometer readings
+  const [manualExtraKm, setManualExtraKm] = useState("");
 
   // ── Session ────────────────────────────────────────────────────────────────
   const [returnSession, setReturnSession] = useState<ReturnSessionResponse | null>(null);
+  // A drop bill (RETURN session) exists on the server — computed here or found on reload,
+  // even if cleared for edits. The vehicle can't be swapped from then on.
+  const [returnSessionStarted, setReturnSessionStarted] = useState(false);
   // Discount the server accepted — resent with every compute or it is dropped.
   const [appliedDiscount, setAppliedDiscount] = useState<DropDiscountInput | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
@@ -235,6 +277,11 @@ export default function ReturnProcessPage() {
     refetchOnWindowFocus: false,
   });
   const pickupCaptures = pickupCapturesData?.photos ?? [];
+  const pickupLightboxItems: LightboxItem[] = pickupCaptures.map((p, i) => ({
+    url: p.url,
+    mime: p.mime,
+    label: p.captureLabel ? `Pickup: ${p.captureLabel}` : `Pickup photo ${i + 1}`,
+  }));
 
   const { data: dropDamagesData, refetch: refetchDropDamages } = useQuery({
     queryKey: ["drop-damages", bookingId],
@@ -256,14 +303,37 @@ export default function ReturnProcessPage() {
   const isZeroBalance = returnSession !== null && netPayable === 0;
 
   const showFastagModule = !!frozenConfig?.fastagModuleEnabled && !!vehicle?.hasFastag;
-  const licenseRequired =
-    (!!booking?.licenseCollectedAt && !booking?.licenseReturnedAt) || licenseAsked;
+  // Km across mid-rental swaps: swaps with readings are measured segment by segment
+  // (km = earlier vehicles + end − the current vehicle's start); a swap without
+  // readings leaves km unmeasurable and staff type the extra km instead.
+  const kmSegments = booking?.kmSegments ?? null;
+  const manualKmAllowed = !!booking?.kmAllowance?.manualExtraKmAllowed;
+  const currentStartOdometer = kmSegments ? kmSegments.currentStartOdometer : booking?.startOdometer ?? null;
+  const swappedWithReadings = !!kmSegments && kmSegments.swapCount > 0 && kmSegments.complete;
+  const manualExtraKmValue =
+    manualKmAllowed && manualExtraKm.trim() !== "" && /^\d+$/.test(manualExtraKm.trim())
+      ? parseInt(manualExtraKm.trim(), 10)
+      : null;
+  const manualExtraKmMissing = manualKmAllowed && manualExtraKmValue == null;
   // Extra km is billed by the server; this is a read-only preview while typing.
   const endOdometerValue = endOdometer !== "" && !Number.isNaN(parseFloat(endOdometer))
     ? parseFloat(endOdometer)
     : null;
+  const endOdometerTooLow =
+    endOdometerValue != null && !manualKmAllowed && currentStartOdometer != null && endOdometerValue < currentStartOdometer;
+  const drivenKmFallback =
+    !manualKmAllowed && currentStartOdometer != null && endOdometerValue != null
+      ? (kmSegments?.priorKm ?? 0) + Math.max(0, endOdometerValue - currentStartOdometer)
+      : null;
+  // The drop can't be billed / completed until the readings are in
+  const readingsReady =
+    /^\d+$/.test(endOdometer.trim()) && endOdometerValue != null && !endOdometerTooLow && !manualExtraKmMissing;
   const kmPreview = endOdometerValue != null && booking?.kmAllowance
-    ? previewKmCharge(booking.startOdometer ?? null, endOdometerValue, booking.kmAllowance)
+    ? previewKmCharge(currentStartOdometer, endOdometerValue, booking.kmAllowance, {
+        priorKm: kmSegments?.priorKm ?? 0,
+        segments: kmSegments?.segments ?? [],
+        manualExtraKm: manualExtraKmValue,
+      })
     : null;
   const serverKm = returnSession?.km;
   const kmSummary: { figures: KmChargeFigures; source: "preview" | "computed" } | null = serverKm
@@ -277,11 +347,20 @@ export default function ReturnProcessPage() {
           extraKmCharge: parseFloat(serverKm.extraKmCharge) || 0,
           extraKmEnabled: serverKm.extraKmEnabled,
           autoKmSkipped: serverKm.autoKmSkipped ?? null,
+          priorKm: serverKm.priorKm ?? 0,
+          segments: serverKm.segments ?? [],
+          manualExtraKm: serverKm.manualExtraKm ?? null,
+          kmSource: serverKm.kmSource,
         },
       }
     : kmPreview
       ? { source: "preview", figures: kmPreview }
       : null;
+  // Rental time + late return: the last drop-bill compute's figures (return time frozen
+  // on the bill), else the booking's (measured to page load while the car is out).
+  const rentalTimeline = returnSession?.rentalTimeline ?? booking?.rentalTimeline ?? null;
+  const billedLate = returnSession?.late ?? null;
+  const swapCharges = booking?.swapCharges ?? [];
   // Fuel deficit detection
   const pickupFuelLevel = booking?.pickupFuelLevel ?? null;
   const hasFuelDeficit = returnFuelLevel && pickupFuelLevel
@@ -314,6 +393,27 @@ export default function ReturnProcessPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.pickupFuelLevel]);
 
+  // ── A mid-rental swap (#13) changes the vehicle being handed back: readings typed
+  //    for the previous car no longer apply and the fuel default is the new car's ──
+  const vehicleSig = booking
+    ? `${booking.items[0]?.vehicle.publicId ?? ""}|${booking.kmSegments?.swapCount ?? 0}`
+    : null;
+  const vehicleSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (vehicleSig == null) return;
+    const prev = vehicleSigRef.current;
+    vehicleSigRef.current = vehicleSig;
+    if (prev === null || prev === vehicleSig) return;
+    setEndOdometer("");
+    setManualExtraKm("");
+    setReturnFuelLevel(booking?.pickupFuelLevel ?? "");
+    setFuelDeficit(false);
+    setFuelCharge("");
+    setReturnSession(null);
+    toast.info("Vehicle swapped — enter the end odometer and fuel level of the vehicle being returned now.");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleSig]);
+
   // ── Auto-calculate fuel deficit charge from vehicle's fuelBar rate ──────────
   useEffect(() => {
     const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
@@ -331,14 +431,28 @@ export default function ReturnProcessPage() {
     if (!bookingId || !useSessionFlow || returnSession || isCompleted) return;
     paymentSessionService.getActiveReturnSession(bookingId).then((session) => {
       if (!session) return;
+      setReturnSessionStarted(true);
       if (session.discount) {
         setAppliedDiscount({ amount: parseFloat(session.discount.amount), reason: session.discount.reason });
       }
-      // Computed before an extension changed the free km — that bill is stale.
+      if (session.km?.kmSource === "STAFF_ENTERED" && session.km.manualExtraKm != null) {
+        setManualExtraKm(String(session.km.manualExtraKm));
+      }
+      // Computed before an extension changed the booked end / free km — that bill is stale.
       const allowance = booking?.kmAllowance;
-      if (session.km && !session.km.autoKmSkipped && allowance && session.km.includedKm !== allowance.includedKm) {
+      if (
+        session.billStale ||
+        (session.km && !session.km.autoKmSkipped && allowance && session.km.includedKm !== allowance.includedKm)
+      ) {
         toast.info("The rental changed since the charges were computed — enter the readings and compute them again.");
         return;
+      }
+      // Late-charge choices on that bill are resent by the next compute
+      if (session.late) {
+        setLateOptions({
+          applyGrace: session.late.graceType === "MANUAL" && session.late.graceApplied,
+          waiver: session.late.waived && session.late.waiverReason ? { reason: session.late.waiverReason } : null,
+        });
       }
       setReturnSession(session);
     });
@@ -369,11 +483,14 @@ export default function ReturnProcessPage() {
     onError: () => toast.error("Failed to remove photo"),
   });
 
-  const buildComputePayload = (discountToSend: DropDiscountInput | null) => {
+  const buildComputePayload = (discountToSend: DropDiscountInput | null, late: LateReturnOptions) => {
     const payload: Parameters<typeof paymentSessionService.computeReturnSession>[1] = {
       endOdometer: parseFloat(endOdometer),
       returnImageIds: returnPhotos.map((p) => p.publicId),
     };
+    if (late.applyGrace) payload.applyGrace = true;
+    if (late.waiver) payload.waiveLateCharge = late.waiver;
+    if (manualKmAllowed && manualExtraKmValue != null) payload.manualExtraKm = manualExtraKmValue;
     if (returnFuelLevel) payload.returnFuelLevel = returnFuelLevel;
     if (fuelDeficit && fuelCharge) payload.fuelCharge = parseFloat(fuelCharge);
     if (fastagChecked && fastagAmount) {
@@ -385,46 +502,55 @@ export default function ReturnProcessPage() {
         .filter((c) => c.label.trim() && c.amount && parseFloat(c.amount) > 0)
         .map((c) => ({ label: c.label.trim(), amount: parseFloat(c.amount) }));
     }
-    if (licenseRequired) payload.licenseReturned = licenseReturned;
     if (discountToSend) payload.discount = discountToSend;
     return payload;
   };
 
   const computeChargesMutation = useMutation({
-    mutationFn: (discountToSend: DropDiscountInput | null) =>
-      paymentSessionService.computeReturnSession(bookingId!, buildComputePayload(discountToSend)),
+    mutationFn: ({ discount, late }: { discount: DropDiscountInput | null; late: LateReturnOptions }) =>
+      paymentSessionService.computeReturnSession(bookingId!, buildComputePayload(discount, late)),
   });
 
   /**
    * Compute (or recompute) the RETURN bill. `trigger` only changes the feedback;
-   * `discountNotice` is kept on screen after an automatic discount removal.
+   * `discountNotice` is kept on screen after an automatic discount removal. `late`
+   * (grace tick / waiver) is kept only once the server accepts it.
    */
   const runCompute = async (
     discountToSend: DropDiscountInput | null,
-    trigger: "inputs" | "refresh" | "discount",
+    trigger: "inputs" | "refresh" | "discount" | "late",
     discountNotice: string | null = null,
+    late: LateReturnOptions = lateOptions,
   ): Promise<void> => {
     try {
-      const sessionResponse = await computeChargesMutation.mutateAsync(discountToSend);
+      const sessionResponse = await computeChargesMutation.mutateAsync({ discount: discountToSend, late });
       setReturnSession(sessionResponse);
+      setReturnSessionStarted(true);
       setAppliedDiscount(discountToSend);
-      setLicenseError(null);
+      setLateOptions(late);
+      setLateError(null);
       setDiscountError(discountNotice);
       toast.success(
         trigger === "discount"
           ? discountToSend ? "Discount applied" : "Discount removed"
-          : trigger === "refresh" ? "Charges updated" : "Charges computed",
+          : trigger === "late"
+            ? late.waiver ? "Late charge waived" : "Late charge updated"
+            : trigger === "refresh" ? "Charges updated" : "Charges computed",
       );
     } catch (err) {
       const message = apiErrorMessage(err, "Failed to compute charges");
       const code = dropErrorCode(err);
-      if (code === "LICENSE_NOT_RETURNED") {
-        setLicenseAsked(true);
-        setLicenseError(message);
-        setReturnSession(null); // unlock the inputs so the licence box can be ticked
+      if (code === "LATE_RATE_UNAVAILABLE") {
+        // Late, but the vehicle has no extra-hour rate — staff set pricing or waive it.
+        // Refresh the timeline: the car may have become late since the page loaded.
+        setLateError(message);
         queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
         toast.error(message);
         return;
+      }
+      if (code === "EXTENSION_PENDING") {
+        // Show the unsettled extension in the rental-time block (it may be new since page load)
+        queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       }
       if (code === "DISCOUNT_EXCEEDS_CHARGES") {
         if (trigger === "discount" || !discountToSend) {
@@ -433,7 +559,7 @@ export default function ReturnProcessPage() {
         }
         // The drop charges fell below the discount already given — drop it and rebill.
         toast.warning("Discount removed — it was more than the drop charges.");
-        await runCompute(null, trigger, `${message} The discount was removed.`);
+        await runCompute(null, trigger, `${message} The discount was removed.`, late);
         return;
       }
       toast.error(message);
@@ -497,15 +623,31 @@ export default function ReturnProcessPage() {
    */
   const recomputeBill = async (
     discountToSend: DropDiscountInput | null,
-    trigger: "refresh" | "discount",
+    trigger: "refresh" | "discount" | "late",
+    late: LateReturnOptions = lateOptions,
   ): Promise<void> => {
     if (endOdometer === "") {
       setAppliedDiscount(discountToSend);
+      setLateOptions(late);
       setReturnSession(null);
       toast.info("Re-enter the readings and compute the charges again.");
       return;
     }
-    await runCompute(discountToSend, trigger);
+    await runCompute(discountToSend, trigger, null, late);
+  };
+
+  /**
+   * "Apply grace" / waiver changed. On a live drop bill it rebills right away (kept
+   * only if the server accepts it); otherwise it is sent with the next compute /
+   * completion.
+   */
+  const handleLateOptionsChange = (next: LateReturnOptions) => {
+    setLateError(null);
+    if (useSessionFlow && returnSession && !billLocked) {
+      void recomputeBill(appliedDiscount, "late", next);
+      return;
+    }
+    setLateOptions(next);
   };
 
   /** A drop damage was added or removed — refresh the list and (session branches) the bill. */
@@ -532,6 +674,9 @@ export default function ReturnProcessPage() {
   /** Extension changes the booked period (and free km) — the bill must be recomputed. */
   const handleExtensionSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    // Lateness is measured from the new end — a waiver given for the old one doesn't carry over
+    setLateOptions({ applyGrace: false, waiver: null });
+    setLateError(null);
     if (returnSession && !paymentSettled) {
       setReturnSession(null);
       toast.info("Rental extended — compute the charges again for the new return time.");
@@ -543,23 +688,32 @@ export default function ReturnProcessPage() {
   // ── Legacy flow hooks (must be unconditional — declared before any early return) ──
   const [legacyShowCompleteDialog, setLegacyShowCompleteDialog] = useState(false);
   const [legacyHasDamage, setLegacyHasDamage] = useState(false);
-  const [legacySubmissionResult, setLegacySubmissionResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [legacySubmissionResult, setLegacySubmissionResult] = useState<{
+    success: boolean;
+    message: string;
+    /** Extra km / late return recorded for the branch manager to collect. */
+    returnCharges?: Awaited<ReturnType<typeof bookingService.completeReturn>>["returnCharges"];
+  } | null>(null);
 
   const completeReturnMutation = useMutation({
     mutationFn: (data: Parameters<typeof bookingService.completeReturn>[1]) =>
       bookingService.completeReturn(bookingId!, data),
-    onSuccess: (data: { message?: string }) => {
-      setLegacySubmissionResult({ success: true, message: data.message || "Return completed" });
+    onSuccess: (data) => {
+      setLegacySubmissionResult({
+        success: true,
+        message: data.message || "Return completed",
+        returnCharges: data.returnCharges,
+      });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Failed to complete return");
-      if (dropErrorCode(err) === "LICENSE_NOT_RETURNED") {
-        setLicenseAsked(true);
-        setLicenseError(message);
+      toast.error(apiErrorMessage(err, "Failed to complete return"));
+      // An unsettled extension / a return already sent to the manager / a changed
+      // rental: refresh so the page shows why
+      const code = dropErrorCode(err);
+      if (code === "EXTENSION_PENDING" || code === "RETURN_AWAITING_MANAGER" || code === "USE_DROP_BILL") {
         queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       }
-      toast.error(message);
     },
   });
 
@@ -580,6 +734,8 @@ export default function ReturnProcessPage() {
   }
 
   // ── Shell props (passed to the stable ReturnPageShell component above) ──────
+  // Legacy drop already recorded and sent to the manager — the vehicle is back
+  const awaitingManager = booking.status === "PICKED_UP" && !!booking.requiresManagerConfirmation;
   const shellProps = {
     isCompleted,
     bookingStatus: booking.status,
@@ -587,7 +743,35 @@ export default function ReturnProcessPage() {
     customerName: booking.customer.user.name,
     vehicleRegNo: vehicle?.regNo,
     onBack: () => navigate("/employee/dashboard"),
+    // The server refuses a swap once a drop bill exists or the return awaits the manager
+    canSwap: !returnSession && !returnSessionStarted && !awaitingManager,
+    awaitingManager,
+    // DL status from pickup (#3): a reminder of what to hand back; Fleet can correct it while on trip.
+    dlStatusBlock: (
+      <DlStatusPanel
+        role="employee"
+        publicId={booking.publicId}
+        bookingStatus={booking.status}
+        dlStatus={booking.dlStatus}
+        dlDepositNote={booking.dlDepositNote}
+        dlStatusUpdatedAt={booking.dlStatusUpdatedAt}
+        dropReminder={!isCompleted}
+      />
+    ),
+    // Original / extended / late rental time (#7) — server minutes, never rounded
+    rentalTimelineBlock: rentalTimeline ? (
+      <RentalTimelineCard
+        timeline={rentalTimeline}
+        lateBasis={isCompleted || awaitingManager ? "returned" : billedLate ? "billed" : "live"}
+        extensionHint={isCompleted || awaitingManager ? null : useSessionFlow ? "drop-bill" : "complete"}
+      />
+    ) : null,
   };
+
+  // Recorded and waiting for the branch manager: nothing to inspect or bill again
+  if (awaitingManager) {
+    return <ReturnPageShell {...shellProps}>{null}</ReturnPageShell>;
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // SESSION FLOW (usePaymentSessions = true)
@@ -631,15 +815,22 @@ export default function ReturnProcessPage() {
           >
             <CardContent className="pt-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {pickupCaptures.map((photo) => (
+                {pickupCaptures.map((photo, pIdx) => (
                   <div key={photo.publicId} className="rounded-lg overflow-hidden border bg-gray-50">
-                    <img
-                      src={photo.url}
-                      alt={photo.captureLabel ?? "Pickup photo"}
-                      className="w-full h-28 object-cover cursor-pointer"
-                      loading="lazy"
-                      onClick={() => setPreviewImage(photo.url)}
-                    />
+                    <button
+                      type="button"
+                      className="relative block w-full group"
+                      onClick={() => openLightbox(pickupLightboxItems, pIdx)}
+                      aria-label="View pickup photo"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.captureLabel ?? "Pickup photo"}
+                        className="w-full h-28 object-cover cursor-zoom-in"
+                        loading="lazy"
+                      />
+                      <ZoomBadge />
+                    </button>
                     {photo.captureLabel && (
                       <div className="px-2 py-1 bg-white border-t">
                         <p className="text-xs font-medium truncate">{photo.captureLabel}</p>
@@ -678,9 +869,10 @@ export default function ReturnProcessPage() {
                   <div
                     key={img.publicId}
                     className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer"
-                    onClick={() => setPreviewImage(img.url)}
+                    onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Return photo ${i + 1}` })), idx)}
                   >
                     <img src={img.url} alt={`Return ${idx}`} className="w-full h-full object-cover" />
+                    <ZoomBadge />
                     {!isCompleted && (
                       <Button
                         size="icon"
@@ -710,39 +902,20 @@ export default function ReturnProcessPage() {
           isLocked={!step2Complete || isCompleted}
         >
           <CardContent className="pt-4 space-y-5">
-            {/* ── Odometer ── */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Gauge className="h-4 w-4 text-muted-foreground" />
-                End Odometer Reading (km)
-              </Label>
-              {booking.startOdometer != null && (
-                <p className="text-xs text-muted-foreground">
-                  Start odometer: <span className="font-medium text-foreground">{booking.startOdometer} km</span>
-                </p>
-              )}
-              <Input
-                type="number"
-                min="0"
-                placeholder="e.g. 12850"
-                className="h-11 max-w-xs"
-                value={endOdometer}
-                onChange={(e) => { setEndOdometer(e.target.value); setReturnSession(null); }}
-                disabled={step3Complete}
-              />
-              {kmSummary ? (
-                <KmChargeSummary figures={kmSummary.figures} source={kmSummary.source} />
-              ) : (
-                booking.startOdometer != null && endOdometerValue != null && (
-                  <p className="text-sm text-muted-foreground">
-                    Driven:{" "}
-                    <span className="font-semibold text-foreground">
-                      {Math.max(0, endOdometerValue - booking.startOdometer).toFixed(0)} km
-                    </span>
-                  </p>
-                )
-              )}
-            </div>
+            {/* ── Odometer (km across mid-rental swaps; staff-entered km after a swap without readings) ── */}
+            <DropOdometerFields
+              endOdometer={endOdometer}
+              onEndOdometerChange={(v) => { setEndOdometer(v); setReturnSession(null); }}
+              manualExtraKm={manualExtraKm}
+              onManualExtraKmChange={(v) => { setManualExtraKm(v); setReturnSession(null); }}
+              disabled={step3Complete}
+              currentStartOdometer={currentStartOdometer}
+              swappedWithReadings={swappedWithReadings}
+              manualKmAllowed={manualKmAllowed}
+              endOdometerTooLow={endOdometerTooLow}
+              kmSummary={kmSummary}
+              drivenKmFallback={drivenKmFallback}
+            />
 
             {/* ── Fuel Level ── */}
             <div className="space-y-2">
@@ -752,7 +925,8 @@ export default function ReturnProcessPage() {
               </Label>
               {pickupFuelLevel && (
                 <p className="text-xs text-muted-foreground">
-                  Pickup level: <span className="font-medium text-foreground">{FUEL_LEVEL_OPTIONS.find((o) => o.value === pickupFuelLevel)?.label ?? pickupFuelLevel}</span>
+                  {swappedWithReadings ? "Level at the swap (this vehicle)" : "Pickup level"}:{" "}
+                  <span className="font-medium text-foreground">{FUEL_LEVEL_OPTIONS.find((o) => o.value === pickupFuelLevel)?.label ?? pickupFuelLevel}</span>
                 </p>
               )}
               <Select
@@ -789,7 +963,7 @@ export default function ReturnProcessPage() {
               </div>
               {fuelDeficit && (
                 <div className="space-y-1.5 ml-7">
-                  <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹)</Label>
+                  <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹, before GST — GST is added on the bill)</Label>
                   <div className="relative max-w-xs">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
                     <Input
@@ -867,11 +1041,14 @@ export default function ReturnProcessPage() {
               </div>
               {hasOtherCharges && (
                 <div className="ml-7 space-y-3">
+                  <p className="text-xs text-neutral-600">
+                    Amounts are before GST — GST is added on the bill. Late return is charged automatically, so don't add it here.
+                  </p>
                   {otherChargeItems.map((item) => (
                     <div key={item.id} className="flex gap-2 items-center">
                       <Input
                         className="h-10 flex-1"
-                        placeholder="Description (e.g. Late return fine)"
+                        placeholder="Description (e.g. Interior cleaning)"
                         value={item.label}
                         onChange={(e) => {
                           setOtherChargeItems((prev) => prev.map((c) => c.id === item.id ? { ...c, label: e.target.value } : c));
@@ -921,16 +1098,22 @@ export default function ReturnProcessPage() {
               )}
             </div>
 
-            {/* ── Licence returned ── */}
-            {licenseRequired && (
-              <LicenseReturnCheck
-                id="licenseReturned"
-                checked={licenseReturned}
-                onCheckedChange={(v) => { setLicenseReturned(v); setLicenseError(null); }}
-                disabled={step3Complete}
-                error={licenseError}
+            {/* ── Late return beyond the booked end (automatic EXTRA_TIME line) ── */}
+            {rentalTimeline && (
+              <LateReturnPanel
+                timeline={rentalTimeline}
+                billed={billedLate}
+                options={lateOptions}
+                onOptionsChange={handleLateOptionsChange}
+                collection="drop-bill"
+                readOnly={billLocked}
+                isPending={computeChargesMutation.isPending}
+                error={lateError}
               />
             )}
+
+            {/* ── Vehicle-swap difference billed on this drop ── */}
+            <SwapChargesNote charges={swapCharges} billedOnDropBill />
 
             {/* ── Discount carried over from the previous compute ── */}
             {appliedDiscount && !step3Complete && (
@@ -953,12 +1136,7 @@ export default function ReturnProcessPage() {
             {!step3Complete && (
               <Button
                 className="bg-[#FF5F00] hover:bg-[#e65600] text-white gap-2"
-                disabled={
-                  !endOdometer ||
-                  parseFloat(endOdometer) < 0 ||
-                  (licenseRequired && !licenseReturned) ||
-                  computeChargesMutation.isPending
-                }
+                disabled={!readingsReady || computeChargesMutation.isPending}
                 onClick={() => void runCompute(appliedDiscount, "inputs")}
               >
                 {computeChargesMutation.isPending ? (
@@ -969,6 +1147,9 @@ export default function ReturnProcessPage() {
                 Compute Charges
               </Button>
             )}
+
+            {/* ── Drop charges with per-line GST (server bill; updates on every recompute) ── */}
+            {step3Complete && returnSession?.bill && <DropBillSummary bill={returnSession.bill} />}
 
             {/* Recompute hint when session exists */}
             {step3Complete && !billLocked && (
@@ -1054,7 +1235,7 @@ export default function ReturnProcessPage() {
                   readOnly={billLocked}
                   billsAtDrop
                   onChanged={onDamagesChanged}
-                  onPreview={setPreviewImage}
+                  onPreview={(url, group) => openLightbox((group ?? [url]).map((u, i) => ({ url: u, label: group ? `Damage photo ${i + 1}` : undefined })), Math.max(0, (group ?? [url]).indexOf(url)))}
                 />
                 {dropDamages.length === 0 && (
                   <p className="text-xs text-amber-600">
@@ -1233,20 +1414,14 @@ export default function ReturnProcessPage() {
           />
         )}
 
-        {/* ── Image preview dialog ─────────────────────────────────────────── */}
-        <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border border-zinc-200 sm:rounded-2xl">
-            <DialogHeader className="px-4 pt-4 pb-3 border-b border-zinc-100">
-              <DialogTitle className="text-sm font-semibold text-zinc-700">Photo Preview</DialogTitle>
-              <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7 text-zinc-400 hover:text-zinc-900" onClick={() => setPreviewImage(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogHeader>
-            <div className="p-4">
-              {previewImage && <ZoomableImage src={previewImage} alt="Preview" />}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* ── Image preview lightbox ───────────────────────────────────────── */}
+        <PhotoLightbox
+          open={!!lightbox}
+          onOpenChange={(open) => !open && setLightbox(null)}
+          items={lightbox?.items ?? []}
+          startIndex={lightbox?.index ?? 0}
+          title="Photo Preview"
+        />
       </ReturnPageShell>
     );
   }
@@ -1266,6 +1441,9 @@ export default function ReturnProcessPage() {
               <FileCheck className="h-8 w-8 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-green-800">{legacySubmissionResult.message}</h2>
+            {legacySubmissionResult.returnCharges && (
+              <LegacyReturnChargesSummary charges={legacySubmissionResult.returnCharges} />
+            )}
             <Button className="w-full mt-4 bg-green-600 hover:bg-green-700" onClick={() => navigate("/employee/dashboard")}>
               Return to Dashboard
             </Button>
@@ -1288,9 +1466,17 @@ export default function ReturnProcessPage() {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {pickupCaptures.map((photo) => (
+              {pickupCaptures.map((photo, pIdx) => (
                 <div key={photo.publicId} className="rounded-lg overflow-hidden border bg-gray-50">
-                  <img src={photo.url} alt={photo.captureLabel ?? "Pickup photo"} className="w-full h-28 object-cover" loading="lazy" />
+                  <button
+                    type="button"
+                    className="relative block w-full group"
+                    onClick={() => openLightbox(pickupLightboxItems, pIdx)}
+                    aria-label="View pickup photo"
+                  >
+                    <img src={photo.url} alt={photo.captureLabel ?? "Pickup photo"} className="w-full h-28 object-cover cursor-zoom-in" loading="lazy" />
+                    <ZoomBadge />
+                  </button>
                   {photo.captureLabel && (
                     <div className="px-2 py-1 bg-white border-t">
                       <p className="text-xs font-medium truncate">{photo.captureLabel}</p>
@@ -1318,8 +1504,9 @@ export default function ReturnProcessPage() {
           {returnPhotos.length > 0 && (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 mt-6">
               {returnPhotos.map((img, idx) => (
-                <div key={img.publicId} className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer" onClick={() => setPreviewImage(img.url)}>
+                <div key={img.publicId} className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer" onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Return photo ${i + 1}` })), idx)}>
                   <img src={img.url} alt={`Return ${idx}`} className="w-full h-full object-cover" />
+                  <ZoomBadge />
                   <Button size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
                     onClick={(e) => { e.stopPropagation(); deleteReturnImageMutation.mutate(img.publicId); }} disabled={isCompleted}>
                     <Trash2 className="h-3 w-3" />
@@ -1331,21 +1518,37 @@ export default function ReturnProcessPage() {
         </CardContent>
       </Card>
 
-      {/* Km check — legacy (no drop bill here; the reading is informational) */}
+      {/* Km & time check — legacy (no drop bill: extra km and late return are recorded at
+          completion and the branch manager collects them at settlement) */}
       {!isCompleted && returnPhotos.length > 0 && (
         <Card className="border-none shadow-sm">
           <CardHeader className="px-6 pt-6 pb-3">
-            <CardTitle className="text-2xl">2. Km Check</CardTitle>
+            <CardTitle className="text-2xl">2. Km &amp; Time Check</CardTitle>
           </CardHeader>
-          <CardContent className="px-6 pb-6 space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-muted-foreground" /> End Odometer (km)
-            </Label>
-            <Input type="number" min="0" placeholder="e.g. 12850" className="h-11 max-w-xs" value={endOdometer}
-              onChange={(e) => setEndOdometer(e.target.value)} />
-            {kmPreview && booking.startOdometer != null && (
-              <KmChargeSummary figures={kmPreview} source="reference" />
+          <CardContent className="px-6 pb-6 space-y-4">
+            <DropOdometerFields
+              endOdometer={endOdometer}
+              onEndOdometerChange={setEndOdometer}
+              manualExtraKm={manualExtraKm}
+              onManualExtraKmChange={setManualExtraKm}
+              currentStartOdometer={currentStartOdometer}
+              swappedWithReadings={swappedWithReadings}
+              manualKmAllowed={manualKmAllowed}
+              endOdometerTooLow={endOdometerTooLow}
+              kmSummary={kmPreview ? { figures: kmPreview, source: "billed-later" } : null}
+              drivenKmFallback={drivenKmFallback}
+            />
+            {rentalTimeline && (
+              <LateReturnPanel
+                timeline={rentalTimeline}
+                billed={null}
+                options={lateOptions}
+                onOptionsChange={handleLateOptionsChange}
+                collection="branch-manager"
+                isPending={completeReturnMutation.isPending}
+              />
             )}
+            <SwapChargesNote charges={swapCharges} billedOnDropBill={false} />
           </CardContent>
         </Card>
       )}
@@ -1372,7 +1575,7 @@ export default function ReturnProcessPage() {
                 readOnly={isCompleted}
                 billsAtDrop={false}
                 onChanged={onDamagesChanged}
-                onPreview={setPreviewImage}
+                onPreview={(url, group) => openLightbox((group ?? [url]).map((u, i) => ({ url: u, label: group ? `Damage photo ${i + 1}` : undefined })), Math.max(0, (group ?? [url]).indexOf(url)))}
               />
             )}
           </CardContent>
@@ -1384,8 +1587,12 @@ export default function ReturnProcessPage() {
         <div className="flex flex-col gap-3">
           <Dialog open={legacyShowCompleteDialog} onOpenChange={setLegacyShowCompleteDialog}>
             <Button className="w-full bg-[#28A745] hover:bg-green-700 text-white"
-              onClick={() => setLegacyShowCompleteDialog(true)}
-              disabled={legacyShowDamage && dropDamages.length === 0}>
+              onClick={() => {
+                // Refresh the late-return preview — the server measures it to the moment of completion
+                queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+                setLegacyShowCompleteDialog(true);
+              }}
+              disabled={(legacyShowDamage && dropDamages.length === 0) || !readingsReady}>
               <FileCheck className="mr-2 h-4 w-4" /> Complete Return
             </Button>
             <DialogContent>
@@ -1397,22 +1604,26 @@ export default function ReturnProcessPage() {
                     : "Confirm the vehicle is in good condition with no new damage."}
                 </DialogDescription>
               </DialogHeader>
-              {licenseRequired && (
-                <LicenseReturnCheck
-                  id="licenseReturnedLegacy"
-                  checked={licenseReturned}
-                  onCheckedChange={(v) => { setLicenseReturned(v); setLicenseError(null); }}
-                  error={licenseError}
-                />
+              {((kmPreview?.extraKmCharge ?? 0) > 0 ||
+                (rentalTimeline?.lateMinutes ?? 0) > 0 ||
+                swapCharges.length > 0) && (
+                <p className="text-sm text-muted-foreground">
+                  Extra km, any late return and the vehicle-swap difference are worked out by the server when you
+                  confirm (GST added) and recorded for the branch manager to collect at settlement.
+                </p>
               )}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setLegacyShowCompleteDialog(false)}>Cancel</Button>
                 <Button className="bg-[#28A745] hover:bg-green-700 text-white"
-                  disabled={(licenseRequired && !licenseReturned) || completeReturnMutation.isPending}
+                  disabled={!readingsReady || completeReturnMutation.isPending}
                   onClick={() => completeReturnMutation.mutate({
                     returnImageIds: returnPhotos.map((p) => p.publicId),
-                    ...(licenseRequired ? { licenseReturned: true } : {}),
+                    endOdometer: parseInt(endOdometer.trim(), 10),
+                    ...(manualKmAllowed && manualExtraKmValue != null ? { manualExtraKm: manualExtraKmValue } : {}),
+                    ...(lateOptions.applyGrace ? { applyGrace: true } : {}),
+                    ...(lateOptions.waiver ? { waiveLateCharge: lateOptions.waiver } : {}),
                   })}>
+                  {completeReturnMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Confirm Complete
                 </Button>
               </DialogFooter>
@@ -1423,22 +1634,23 @@ export default function ReturnProcessPage() {
               Save at least one damage (or untick the damage box) to complete the return.
             </p>
           )}
+          {!readingsReady && (
+            <p className="text-xs text-amber-600 text-center">
+              {manualExtraKmMissing && endOdometer !== "" && !endOdometerTooLow
+                ? "Enter the extra km driven to complete the return."
+                : "Enter the end odometer reading to complete the return."}
+            </p>
+          )}
         </div>
       )}
 
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border border-zinc-200 sm:rounded-2xl">
-          <DialogHeader className="px-4 pt-4 pb-3 border-b border-zinc-100">
-            <DialogTitle className="text-sm font-semibold text-zinc-700">Photo Preview</DialogTitle>
-            <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7 text-zinc-400 hover:text-zinc-900" onClick={() => setPreviewImage(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogHeader>
-          <div className="p-4">
-            {previewImage && <ZoomableImage src={previewImage} alt="Preview" />}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PhotoLightbox
+        open={!!lightbox}
+        onOpenChange={(open) => !open && setLightbox(null)}
+        items={lightbox?.items ?? []}
+        startIndex={lightbox?.index ?? 0}
+        title="Photo Preview"
+      />
     </ReturnPageShell>
   );
 }

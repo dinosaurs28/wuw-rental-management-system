@@ -27,12 +27,41 @@ import {
 } from "@/components/ui/breadcrumb";
 import { fetchGSTRule, createOrUpdateGSTRule } from "@/services/gst.service";
 
-const gstRuleSchema = z.object({
-  gstNumber: z.string().min(1, "GST Number is required"),
-  cgstRate: z.coerce.number().min(0, "CGST Rate must be positive"),
-  sgstRate: z.coerce.number().min(0, "SGST Rate must be positive"),
-  igstRate: z.coerce.number().min(0, "IGST Rate must be positive").optional(),
-});
+// Mirrors the server's GST_RATE_INVALID checks (POST /branchManager/gst): rentals
+// are intra-state supplies, so GST is always CGST + SGST and IGST is never charged.
+const gstRuleSchema = z
+  .object({
+    gstNumber: z.string().min(1, "GST Number is required"),
+    cgstRate: z.coerce.number().min(0, "CGST Rate must be positive"),
+    sgstRate: z.coerce.number().min(0, "SGST Rate must be positive"),
+    igstRate: z.coerce.number().min(0, "IGST Rate must be positive").optional(),
+  })
+  .superRefine((v, ctx) => {
+    const total = v.cgstRate + v.sgstRate;
+    if (Math.abs(v.cgstRate - v.sgstRate) > 1e-9) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sgstRate"],
+        message: "CGST and SGST must be equal (intra-state supply).",
+      });
+    }
+    if (total <= 0 || total > 28) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cgstRate"],
+        message: "CGST + SGST must be more than 0% and at most 28%.",
+      });
+    }
+    const igst = v.igstRate ?? 0;
+    if (igst !== 0 && Math.abs(igst - total) > 0.005) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["igstRate"],
+        message:
+          "IGST is never charged on rentals; leave it 0 or set it equal to CGST + SGST for reference.",
+      });
+    }
+  });
 
 type GSTRuleFormValues = z.infer<typeof gstRuleSchema>;
 
@@ -40,6 +69,8 @@ export const ManagerGSTRulesPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // No saved rule: bookings, extensions and penalties are refused (GST_RULE_MISSING)
+  const [hasRule, setHasRule] = useState(true);
 
   const form = useForm<GSTRuleFormValues>({
     resolver: zodResolver(gstRuleSchema),
@@ -64,6 +95,7 @@ export const ManagerGSTRulesPage = () => {
     setIsLoading(true);
     try {
       const rule = await fetchGSTRule();
+      setHasRule(!!rule);
       if (rule) {
         form.reset({
           gstNumber: rule.gstNumber,
@@ -153,6 +185,19 @@ export const ManagerGSTRulesPage = () => {
           </div>
         </div>
 
+        {!hasRule && (
+          <div
+            role="alert"
+            className="mb-6 flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+          >
+            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p>
+              No GST rule is saved for this branch yet. Bookings, extensions and damage penalties are refused
+              until one is saved — check the rates below and save them.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
           {/* Left — Live Rate Preview + Info */}
@@ -192,6 +237,9 @@ export const ManagerGSTRulesPage = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Globe className="w-4 h-4 text-neutral-500" />
                     <span className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Interstate</span>
+                    <span className="ml-auto text-[10px] font-medium text-neutral-400 uppercase tracking-wide">
+                      Reference only
+                    </span>
                   </div>
                   <div className="bg-orange-50 rounded-lg p-3 text-center">
                     <p className="text-[11px] text-orange-600 font-medium mb-0.5">IGST</p>
@@ -208,10 +256,17 @@ export const ManagerGSTRulesPage = () => {
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium text-blue-800">About GST Rates</p>
                   <p className="text-xs text-blue-700 leading-relaxed">
-                    <strong>CGST + SGST</strong> apply to intrastate transactions (same state).
+                    Every rental is billed as an intrastate supply: <strong>CGST + SGST</strong> (equal halves, at most 28% together) on the
+                    rental after discounts, extensions, extra km, late return, fuel and other drop charges. Each is rounded to the paisa per line.
                   </p>
                   <p className="text-xs text-blue-700 leading-relaxed">
-                    <strong>IGST</strong> applies to interstate transactions (different state). Typically CGST + SGST combined.
+                    Not taxed: refundable deposits, FASTag/tolls and damage compensation (a damage marked as a penalty is taxed).
+                  </p>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    <strong>IGST</strong> is never charged. Leave it 0, or set it equal to CGST + SGST for reference.
+                  </p>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    A new rate applies to new charges only; existing bookings keep the rate they were priced at.
                   </p>
                 </div>
               </div>
@@ -340,7 +395,7 @@ export const ManagerGSTRulesPage = () => {
                               </div>
                             </FormControl>
                             <p className="text-xs text-neutral-400 mt-1.5">
-                              Integrated GST for interstate transactions. Leave 0 if not applicable.
+                              Reference only — IGST is never charged on rentals. Leave 0 or set it equal to CGST + SGST.
                             </p>
                             <FormMessage />
                           </FormItem>

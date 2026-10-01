@@ -19,6 +19,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
+import { gstSplitFromPricing } from "@/lib/gst";
+import { paymentOptionsFor } from "@/lib/paymentPlan";
+import { Share2 } from "lucide-react";
+import { buildVehicleShareUrl, shareVehicle } from "@/lib/share";
 import { useVehicleGroupDetails } from "@/hooks/useVehicleGroupDetails";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useSearchStore } from "@/store/search.store";
@@ -26,6 +30,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
+import { UseCaseBadges } from "@/components/vehicles/UseCaseChips";
 
 export const VehicleGroupDetailsPage = () => {
   const { groupKey: encodedGroupKey } = useParams<{ groupKey: string }>();
@@ -97,21 +102,6 @@ export const VehicleGroupDetailsPage = () => {
   const startDateTime = startDate && startTime ? `${startDate}T${startTime}` : null;
   const endDateTime   = endDate   && endTime   ? `${endDate}T${endTime}`     : null;
 
-  const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
-  const { verdict: scheduleVerdict, adjustedEndDateTime } =
-    useBookingScheduleVerdict(schedule, startDateTime ?? undefined, endDateTime ?? undefined);
-
-  // Write-back: when return is bumped, update the store so the pricing card reflects the new time
-  useEffect(() => {
-    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
-    const adjusted = new Date(adjustedEndDateTime);
-    if (isNaN(adjusted.getTime())) return;
-    setEndDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
-    const hh = String(adjusted.getHours()).padStart(2, "0");
-    const mm = String(adjusted.getMinutes()).padStart(2, "0");
-    setEndTime(`${hh}:${mm}`);
-  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
-
   const isDateRangeValid = useMemo(() => {
     if (!startDateTime || !endDateTime) return true;
     return new Date(endDateTime) > new Date(startDateTime);
@@ -134,21 +124,52 @@ export const VehicleGroupDetailsPage = () => {
 
   const group = data?.data;
 
+  // Branch office hours: the group's own branch (deep links), else the search
+  // branch (a cached payload may lack branchPublicId for up to 60 s)
+  const scheduleBranchId = group?.branchPublicId ?? branchPublicId ?? undefined;
+  const { schedule } = useBranchSchedule(scheduleBranchId);
+  const { verdict: scheduleVerdict, adjustedEndDateTime } =
+    useBookingScheduleVerdict(schedule, startDateTime ?? undefined, endDateTime ?? undefined);
+
+  // Review & confirm checks hours against the search branch — keep it on this group's branch
+  useEffect(() => {
+    if (group?.branchPublicId && group.branchPublicId !== branchPublicId) {
+      useSearchStore.getState().setSearchCriteria({ branchPublicId: group.branchPublicId });
+    }
+  }, [group?.branchPublicId, branchPublicId]);
+
+  // Write-back: when return is bumped, update the store so the pricing card reflects the new time
+  useEffect(() => {
+    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    const adjusted = new Date(adjustedEndDateTime);
+    if (isNaN(adjusted.getTime())) return;
+    setEndDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
+    const hh = String(adjusted.getHours()).padStart(2, "0");
+    const mm = String(adjusted.getMinutes()).padStart(2, "0");
+    setEndTime(`${hh}:${mm}`);
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
+
   // Sync pricing to store when data changes
   useEffect(() => {
     if (group?.pricing?.daily) setPricePerDay(group.pricing.daily);
     if (group?.deposit !== undefined) setDeposit(group.deposit ?? 0);
     if (group?.advancePayAmount !== undefined) setAdvancePayAmount(group.advancePayAmount ?? 0);
+    // Plans the branch + amounts allow (#6) — the review page renders these
+    if (group) useVehicleRentalStore.getState().setPaymentOptions(paymentOptionsFor(group));
     if (group?.pricingDetails) {
       setApiPricingDetails({
         basePrice:               group.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:  group.pricingDetails.discountAmount          ?? 0,
-        durationDiscountPercent: group.pricingDetails.discountPercent         ?? 0,
+        durationDiscountAmount:  group.pricingDetails.durationDiscountAmount  ?? group.pricingDetails.discountAmount  ?? 0,
+        durationDiscountPercent: group.pricingDetails.durationDiscountPercent ?? group.pricingDetails.discountPercent ?? 0,
+        durationDiscountLabel:   group.pricingDetails.durationDiscountLabel   ?? null,
+        durationDiscountType:    group.pricingDetails.durationDiscountType    ?? null,
         taxAmount:               group.pricingDetails.taxAmount               ?? 0,
         finalTotal:              group.pricingDetails.finalTotal              ?? 0,
+        gst:                     gstSplitFromPricing(group.pricingDetails),
       });
     }
   }, [
+    group,
     group?.pricing?.daily,
     group?.deposit,
     group?.advancePayAmount,
@@ -193,16 +214,21 @@ export const VehicleGroupDetailsPage = () => {
     setEndTime(savedEndTime);
     useVehicleRentalStore.getState().setPaymentFlow(savedPaymentFlow);
     useVehicleRentalStore.getState().setAdvancePayAmount(savedAdvanceAmount);
+    // Keeps the restored plan inside what the branch + amounts allow
+    useVehicleRentalStore.getState().setPaymentOptions(paymentOptionsFor(group));
 
     setPricePerDay(group.pricing?.daily || 0);
     setDeposit(group.deposit || 0);
     if (group.pricingDetails) {
       setApiPricingDetails({
         basePrice:               group.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:  group.pricingDetails.discountAmount          ?? 0,
-        durationDiscountPercent: group.pricingDetails.discountPercent         ?? 0,
+        durationDiscountAmount:  group.pricingDetails.durationDiscountAmount  ?? group.pricingDetails.discountAmount  ?? 0,
+        durationDiscountPercent: group.pricingDetails.durationDiscountPercent ?? group.pricingDetails.discountPercent ?? 0,
+        durationDiscountLabel:   group.pricingDetails.durationDiscountLabel   ?? null,
+        durationDiscountType:    group.pricingDetails.durationDiscountType    ?? null,
         taxAmount:               group.pricingDetails.taxAmount               ?? 0,
         finalTotal:              group.pricingDetails.finalTotal              ?? 0,
+        gst:                     gstSplitFromPricing(group.pricingDetails),
       });
     }
 
@@ -309,6 +335,8 @@ export const VehicleGroupDetailsPage = () => {
     pricing:          { daily: group.pricing.daily ?? 0 },
     deposit:          group.deposit,
     advancePayAmount: group.advancePayAmount,
+    customerPaymentMode: group.customerPaymentMode,
+    paymentOptions:   group.paymentOptions,
     pricingDetails:   group.pricingDetails,
     fastagNumber:     undefined,
     hasFastag:        false,
@@ -345,6 +373,15 @@ export const VehicleGroupDetailsPage = () => {
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-zinc-900 tracking-tight">
               {vehicleName}
             </h1>
+            <button
+              type="button"
+              onClick={() => shareVehicle(vehicleName, buildVehicleShareUrl({ groupKey }))}
+              aria-label="Share this vehicle"
+              className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-white text-zinc-900 rounded-full uppercase border border-zinc-200 hover:bg-zinc-100 transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
             <div className="flex items-center gap-3">
               <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-zinc-100 text-zinc-900 rounded-full uppercase border border-zinc-200">
                 {group.category}
@@ -367,6 +404,7 @@ export const VehicleGroupDetailsPage = () => {
             <span className="size-2 rounded-full bg-orange-500 shrink-0" />
             {group.branch}
           </p>
+          <UseCaseBadges useCases={group.useCases} className="mt-3" />
         </div>
 
         {/* Schedule warning banner */}
@@ -387,6 +425,7 @@ export const VehicleGroupDetailsPage = () => {
                 vehicle={vehicleForPricingCard as any}
                 onBookVehicle={handleBookVehicle}
                 isRefetching={isFetching}
+                schedule={schedule}
               />
             </div>
           </div>

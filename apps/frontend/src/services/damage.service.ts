@@ -36,7 +36,12 @@ export interface DamageReport {
     additionalCharges: number;
     estimatedCost: number;
     finalCost?: number | null;
-    gstRate: number;
+    /** CGST + SGST %; null when the branch has no GST rule (no silent 18%). */
+    gstRate: number | null;
+    cgstRate?: number | null;
+    sgstRate?: number | null;
+    /** True when the branch has no GST rule: a PENALTY close is refused (409 GST_RULE_MISSING). */
+    gstRuleMissing?: boolean;
   };
 }
 

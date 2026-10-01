@@ -1,4 +1,12 @@
 import apiClient from "@/lib/axios";
+import type {
+  BookingListCounts,
+  BookingListType,
+  OverdueReturnsResponse,
+  OverdueReturnsSnapshot,
+} from "@/types/overdueReturns";
+import type { BookingQrPhotoData, QrPhotoResponse } from "@/types/qrPhoto";
+import type { DlStatus } from "@/services/dlStatus.service";
 
 // ── Staff Activity Full Types ─────────────────────────────────────────────────
 export type StaffActivityLog = {
@@ -59,6 +67,9 @@ export interface Booking {
   isAdvancePayment?: boolean;
   remainingBalance?: number;
   remainingPaidAt?: string | null;
+  /** Original licence custody (#3); null = not recorded. */
+  dlStatus?: DlStatus;
+  dlDepositNote?: string | null;
 }
 
 export interface DamageReport {
@@ -124,9 +135,19 @@ export interface FleetBooking {
   endAt: string;
   totalFinal: string;
   status: "CONFIRMED" | "PICKED_UP";
+  days?: number;
+  rentalPeriodType?: string | null;
+  /** Daily / Monthly tab the booking belongs to. */
+  bookingType?: BookingListType;
+  /** Original licence custody (#3); null = not recorded. */
+  dlStatus?: DlStatus;
+  /** What was left instead of the licence (DEPOSIT only). */
+  dlDepositNote?: string | null;
+  dlStatusUpdatedAt?: string | null;
   customer: {
     publicId: string;
-    user: { name: string; email: string };
+    alternatePhone?: string | null;
+    user: { name: string; email: string; phone?: string | null };
   };
   items: {
     vehicle: {
@@ -136,6 +157,15 @@ export interface FleetBooking {
       images: { file: { url: string } }[];
     };
   }[];
+}
+
+/** One Daily / Monthly tab of a BM Fleet list. */
+export interface FleetTabResult {
+  bookings: FleetBooking[];
+  /** Both tabs' row counts; null if the server sent none. */
+  counts: BookingListCounts | null;
+  /** Rows in this tab on the server (may exceed bookings.length when capped by limit). */
+  total: number;
 }
 
 export interface NoShowBooking {
@@ -203,6 +233,8 @@ export const managerDashboardService = {
       isAdvancePayment: b.isAdvancePayment,
       remainingBalance: b.remainingBalance ? Number(b.remainingBalance) : undefined,
       remainingPaidAt: b.remainingPaidAt,
+      dlStatus: b.dlStatus ?? null,
+      dlDepositNote: b.dlDepositNote ?? null,
     }));
   },
 
@@ -275,9 +307,11 @@ export const managerDashboardService = {
     return response.data;
   },
 
-  getEmployees: async (): Promise<Employee[]> => {
+  /** Branch Fleet Executives (role STAFF). The endpoint pages at 10 unless `limit` is given. */
+  getEmployees: async (limit?: number): Promise<Employee[]> => {
     const response = await apiClient.get("/branchManager/dashboard/employees", {
       timeout: 10000,
+      ...(limit ? { params: { limit } } : {}),
     });
     const rawEmployees = response.data.data || [];
 
@@ -303,6 +337,43 @@ export const managerDashboardService = {
       timeout: 10000,
     });
     return response.data.data.bookings || [];
+  },
+
+  /**
+   * One Daily / Monthly tab of a Fleet list: "picked_up" (out on road,
+   * /bookings/pending) or "upcoming" (CONFIRMED, /bookings/active). Monthly
+   * ignores the date. `counts` covers both tabs.
+   */
+  getFleetTab: async (
+    list: "picked_up" | "upcoming",
+    type: BookingListType,
+    limit = 200,
+  ): Promise<FleetTabResult> => {
+    const path =
+      list === "picked_up"
+        ? "/branchManager/dashboard/bookings/pending"
+        : "/branchManager/dashboard/bookings/active";
+    const response = await apiClient.get(path, { params: { limit, type }, timeout: 10000 });
+    const data = response.data.data ?? {};
+    return {
+      bookings: data.bookings ?? [],
+      counts: data.counts ?? null,
+      total: data.pagination?.total ?? (data.bookings ?? []).length,
+    };
+  },
+
+  /**
+   * Overdue / no-show returns for the manager's branch, most overdue first.
+   * GET /branchManager/dashboard/bookings/overdue — always 200 (empty = []).
+   */
+  getOverdueReturns: async (
+    params: { page?: number; limit?: number; type?: BookingListType } = {},
+  ): Promise<OverdueReturnsSnapshot> => {
+    const response = await apiClient.get<OverdueReturnsResponse>(
+      "/branchManager/dashboard/bookings/overdue",
+      { params, timeout: 10000 },
+    );
+    return { ...response.data, fetchedAt: Date.now() };
   },
 
   getNoShowEligible: async (page = 1, limit = 20, graceHours = 0) => {
@@ -380,6 +451,32 @@ export const managerDashboardService = {
     return response.data.data;
   },
 
+  // Customer QR code photo (#4) for a booking of this branch: the booking's
+  // snapshot, else the customer's current photo.
+  getBookingQrPhoto: async (bookingId: string): Promise<BookingQrPhotoData> => {
+    const response = await apiClient.get<QrPhotoResponse<BookingQrPhotoData>>(
+      `/branchManager/dashboard/bookings/${bookingId}/qr-photo`,
+      { timeout: 10000 },
+    );
+    return response.data.data;
+  },
+
+  // Replaces the booking's QR code photo (HOLD/CONFIRMED only; 409 QR_PHOTO_FROZEN
+  // after pickup) and makes it the customer's current photo.
+  uploadBookingQrPhoto: async (
+    bookingId: string,
+    file: File,
+  ): Promise<QrPhotoResponse<BookingQrPhotoData>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<QrPhotoResponse<BookingQrPhotoData>>(
+      `/branchManager/dashboard/bookings/${bookingId}/qr-photo`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 },
+    );
+    return response.data;
+  },
+
   collectSafetyDeposit: async (bookingId: string, data: any) => {
     const response = await apiClient.post(
       `/branchManager/dashboard/bookings/${bookingId}/safety-deposit`,
@@ -415,4 +512,65 @@ export const managerDashboardService = {
     );
     return response.data;
   },
+
+  // Safety deposits Fleet requested at pickup that need the BM's approval
+  getSafetyDepositRequests: async (): Promise<SafetyDepositRequestRow[]> => {
+    const response = await apiClient.get("/branchManager/safety-deposit-requests", {
+      timeout: 10000,
+    });
+    return response.data.data || [];
+  },
+
+  approveSafetyDepositRequest: async (
+    publicId: string,
+    approvedAmount: number,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post(
+      `/branchManager/safety-deposit-requests/${publicId}/approve`,
+      { approvedAmount },
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
+
+  rejectSafetyDepositRequest: async (
+    publicId: string,
+    rejectionReason: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post(
+      `/branchManager/safety-deposit-requests/${publicId}/reject`,
+      { rejectionReason },
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
 };
+
+/** Window event fired after a confirmation / deposit request is acted on (nav badge refresh). */
+export const MANAGER_CONFIRMATIONS_CHANGED_EVENT = "manager-confirmations-changed";
+
+/** Pickups/returns awaiting confirmation + pending safety-deposit requests (nav badge). */
+export async function getPendingConfirmationsCount(): Promise<number> {
+  const results = await Promise.allSettled([
+    managerDashboardService.getManagerConfirmations(),
+    managerDashboardService.getSafetyDepositRequests(),
+  ]);
+  return results.reduce((n, r) => n + (r.status === "fulfilled" ? r.value.length : 0), 0);
+}
+
+export interface SafetyDepositRequestRow {
+  publicId: string;
+  /** Decimal as a string. */
+  requestedAmount: string;
+  reason: string;
+  status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  booking: {
+    publicId: string;
+    /** Absent from servers that predate the confirmations page. */
+    status?: string;
+    customer?: { user: { name: string | null } } | null;
+    items?: { vehicle: { make: string; model: string; regNo: string } }[];
+  };
+  requestedBy: { publicId: string; name: string; role: string };
+}

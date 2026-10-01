@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, User, ChevronDown } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function DashboardNavbar() {
   const navigate = useNavigate();
@@ -42,8 +43,9 @@ export function DashboardNavbar() {
         </div>
       </div>
 
-      {/* Right side - User menu */}
+      {/* Right side - Notifications + User menu */}
       <div className="flex items-center gap-4">
+        <NotificationBell role="CUSTOMER" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

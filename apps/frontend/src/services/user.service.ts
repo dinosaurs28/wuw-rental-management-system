@@ -3,7 +3,8 @@ import type { UpdateProfileInput } from "@repo/schemas";
 
 export interface UserProfile {
   name: string;
-  email: string;
+  /** null when the account only has a placeholder email. */
+  email: string | null;
   phone: string;
   dob: string | null;
   addressLine1: string;
@@ -12,13 +13,21 @@ export interface UserProfile {
   country: string;
   zipCode: string;
   alternatePhone: string;
+  /** Full, normalised (owner only). */
+  drivingLicenceNumber: string | null;
+  /** Full 12 digits (owner only) — never log it. */
+  aadhaarNumber: string | null;
+  /** Derived on the server: every required field, both numbers included. */
   isProfileCompleted: boolean;
+  /** Empty required fields (keys of CUSTOMER_PROFILE_FIELD_LABELS). */
+  missingFields?: string[];
 }
 
 export interface UpdateProfileResponse {
   message: string;
   isProfileCompleted: boolean;
-  data: Omit<UserProfile, "isProfileCompleted">;
+  missingFields?: string[];
+  data: Omit<UserProfile, "isProfileCompleted" | "missingFields">;
 }
 
 export const userService = {

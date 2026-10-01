@@ -1,6 +1,16 @@
 import axios from "axios";
+import type { PaymentOptions } from "@/lib/paymentPlan";
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+// Trip-type tags (#16) — exact enum strings used by the backend
+export const VEHICLE_USE_CASES = ["HIGHWAY", "HILL_STATION", "LONG_DRIVE"] as const;
+export type VehicleUseCase = (typeof VEHICLE_USE_CASES)[number];
+export const VEHICLE_USE_CASE_LABELS: Record<VehicleUseCase, string> = {
+  HIGHWAY: "Highway",
+  HILL_STATION: "Hill Station",
+  LONG_DRIVE: "Long Drive",
+};
 
 export interface VehicleFilters {
   branch?: string;
@@ -12,6 +22,7 @@ export interface VehicleFilters {
   offset?: number;
   start?: string;
   end?: string;
+  useCases?: VehicleUseCase[];
 }
 
 export interface VehicleImage {
@@ -28,7 +39,10 @@ export interface PublicVehicle {
   category: string;
   typeClass?: "TWO_WHEELER" | "FOUR_WHEELER" | "OTHER";
   branch: string;
+  /** Optional: cached payloads may lack it for ~60 s after a deploy. */
+  branchPublicId?: string;
   availableCount: number;
+  useCases?: VehicleUseCase[];
   imageUrl: VehicleImage[];
   pricing: {
     daily: number;
@@ -36,11 +50,22 @@ export interface PublicVehicle {
     halfDay?: number;
   };
   pricingDetails?: {
+    /** Period total (not a per-day rate). */
     price: number;
     finalPrice: number;
-    type: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY";
+    type: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
+    /** What the price covers, e.g. "5 hours", "12 hours", "1 day + 2 hours". */
+    billedAs?: string;
+    billedAsType?: BilledAsType;
+    /** Duration-slab saving already inside finalPrice (absent when none). */
+    discountAmount?: number;
+    discountPercent?: number;
+    discountLabel?: string | null;
   };
 }
+
+/** How a price was actually worked out (may differ from the duration's period type). */
+export type BilledAsType = "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
 
 // Group details response (from /public/vehicles/group/:groupKey)
 export interface VehicleGroupDetails {
@@ -49,31 +74,49 @@ export interface VehicleGroupDetails {
   model: string;
   category: string;
   branch: string;
+  /** Optional: cached payloads may lack it for ~60 s after a deploy. */
+  branchPublicId?: string;
   availableCount: number;
   totalCount: number;
+  useCases?: VehicleUseCase[];
   images: string[];
   pricing: { daily: number | null };
   deposit: number;
   availability: boolean | null;
   advancePayAmount: number;
   customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
+  /** Plans the customer may pick (server). Optional: cached payloads may lack it for ~30 s after a deploy. */
+  paymentOptions?: PaymentOptions;
   pricingDetails: {
     basePrice: number;
+    /** Combined discount (duration slab + coupon). */
     discountAmount: number;
     discountPercent: number;
+    // Duration-slab layer (absent on quotes cached before they existed)
+    durationDiscountAmount?: number;
+    durationDiscountPercent?: number;
+    durationDiscountLabel?: string | null;
+    durationDiscountType?: "PERCENTAGE" | "FLAT" | null;
+    couponDiscountAmount?: number;
     deposit: number;
     taxAmount: number;
     cgstAmount: number;
     sgstAmount: number;
     taxRate: number;
+    // Server GST rates; null for up to 60 s on a pricing result cached before they existed.
+    cgstRate?: number | null;
+    sgstRate?: number | null;
     finalTotal: number;
     freeKmLimit: number;
     extraKmRate: number;
     pricingBreakdown: {
-      periodType: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY";
+      periodType: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
       duration: { billableDuration: number; days: number; hours: number; minutes: number };
       applicablePrice: number;
       priceSource: string;
+      /** What the price covers, e.g. "5 hours", "1 day + 2 hours" (absent on stale cached quotes). */
+      billedAs?: string;
+      billedAsType?: BilledAsType;
     };
   } | null;
 }
@@ -90,6 +133,7 @@ export interface ManagerVehicle {
   model: string;
   regNo: string;
   status: string;
+  useCases?: VehicleUseCase[];
   category: {
     name: string;
   };
@@ -129,6 +173,8 @@ export const fetchPublicVehicles = async (
     if (filters.offset) params.append("offset", filters.offset.toString());
     if (filters.start) params.append("start", filters.start);
     if (filters.end) params.append("end", filters.end);
+    if (filters.useCases && filters.useCases.length > 0)
+      params.append("useCases", filters.useCases.join(","));
 
     const response = await axios.get<PublicVehiclesResponse>(
       `${API_URL}/public/vehicles`,
@@ -195,6 +241,8 @@ export interface VehicleDetails {
   };
   branch?: string;
   branchId: string;
+  /** Optional: cached payloads may lack it for ~60 s after a deploy. */
+  branchPublicId?: string;
   images: {
     id: string;
     publicId: string;
@@ -227,26 +275,39 @@ export interface VehicleDetails {
   advancePayAmount?: number;
   fuelBar?: number | null;
   customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
+  /** Plans the customer may pick (server). Optional: cached payloads may lack it for ~60 s after a deploy. */
+  paymentOptions?: PaymentOptions;
   hasFastag?: boolean;
   fastagNumber?: string;
+  useCases?: VehicleUseCase[];
   pricing: {
     daily: number;
   };
   deposit: number;
   pricingDetails: {
     basePrice: number;
+    /** Combined discount (duration slab + coupon). */
     discountAmount: number;
     discountPercent: number;
+    // Duration-slab layer (absent on quotes cached before they existed)
+    durationDiscountAmount?: number;
+    durationDiscountPercent?: number;
+    durationDiscountLabel?: string | null;
+    durationDiscountType?: "PERCENTAGE" | "FLAT" | null;
+    couponDiscountAmount?: number;
     deposit: number;
     taxAmount: number;
     cgstAmount: number;
     sgstAmount: number;
     taxRate: number;
+    // Server GST rates; null for up to 60 s on a pricing result cached before they existed.
+    cgstRate?: number | null;
+    sgstRate?: number | null;
     finalTotal: number;
     freeKmLimit: number;
     extraKmRate: number;
     pricingBreakdown: {
-      periodType: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY";
+      periodType: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
       duration: {
         billableDuration: number;
         days: number;
@@ -255,6 +316,9 @@ export interface VehicleDetails {
       };
       applicablePrice: number;
       priceSource: string;
+      /** What the price covers, e.g. "5 hours", "1 day + 2 hours" (absent on stale cached quotes). */
+      billedAs?: string;
+      billedAsType?: BilledAsType;
     };
   } | null;
 }

@@ -20,6 +20,7 @@ import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelp
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
+import { displayEmail } from "@repo/schemas";
 
 interface CustomerRow {
   customerId: string;
@@ -114,7 +115,10 @@ export const CustomerReportPage = () => {
     {
       accessorKey: "email",
       header: "Email",
-      cell: ({ row }) => <div className="text-xs text-gray-600">{row.original.email}</div>,
+      // "" (or a placeholder) for walk-ins without an email.
+      cell: ({ row }) => (
+        <div className="text-xs text-gray-600">{displayEmail(row.original.email) ?? "—"}</div>
+      ),
     },
     {
       accessorKey: "registeredAt",

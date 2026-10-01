@@ -23,15 +23,21 @@ import { customerSession, type CustomerSession } from "@/utils/customerSession";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
+import { describeMissingProfileFields } from "@/lib/customerProfile";
 
 interface SearchResult {
   publicId: string;
   name: string;
-  email: string;
+  /** null for a walk-in placeholder email. */
+  email: string | null;
   phone: string;
   customerProfile: {
     isProfileCompleted: boolean;
     publicId: string;
+    missingFields?: string[];
+    drivingLicenceNumber?: string | null;
+    /** "XXXX XXXX 1234" — search never returns the full number. */
+    aadhaarNumberMasked?: string | null;
   } | null;
 }
 
@@ -232,6 +238,21 @@ export default function EmployeeCustomerSelectPage() {
                             {customer.publicId.slice(-6)}
                           </span>
                         </div>
+                        {(customer.customerProfile?.drivingLicenceNumber ||
+                          customer.customerProfile?.aadhaarNumberMasked) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground font-mono">
+                            {customer.customerProfile?.drivingLicenceNumber && (
+                              <span>
+                                DL {customer.customerProfile.drivingLicenceNumber}
+                              </span>
+                            )}
+                            {customer.customerProfile?.aadhaarNumberMasked && (
+                              <span>
+                                Aadhaar {customer.customerProfile.aadhaarNumberMasked}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -243,8 +264,10 @@ export default function EmployeeCustomerSelectPage() {
                   </div>
                   {!customer.customerProfile?.isProfileCompleted && (
                     <div className="bg-yellow-50 px-4 py-2 text-xs flex items-center gap-2 text-yellow-700">
-                      <AlertCircle className="h-3 w-3" />
-                      Profile incomplete. You will need to complete it later.
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {customer.customerProfile?.missingFields?.length
+                        ? `Profile incomplete — missing ${describeMissingProfileFields(customer.customerProfile.missingFields)}. Complete it before booking.`
+                        : "Profile incomplete. You will need to complete it later."}
                     </div>
                   )}
                 </Card>

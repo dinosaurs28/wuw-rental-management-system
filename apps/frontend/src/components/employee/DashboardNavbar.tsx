@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -9,12 +9,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { LogOut, LayoutDashboard, History } from "lucide-react";
 import { ShiftBanner } from "@/components/manager/payment/ShiftBanner";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function DashboardNavbar() {
   const { user, logout } = useEmployeeAuthStore();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const onShifts = pathname.startsWith("/employee/shifts");
+  const activeLink = { color: "#FF5F00", background: "rgba(255,95,0,0.08)" };
 
   const handleLogout = () => {
     logout();
@@ -39,15 +43,23 @@ export function DashboardNavbar() {
             <nav className="hidden lg:flex items-center gap-1">
               <Link
                 to="/employee/dashboard"
-                className="text-sm font-semibold px-3 py-1 rounded-md transition-colors"
-                style={{ color: "#FF5F00", background: "rgba(255,95,0,0.08)" }}
+                className={`text-sm font-semibold px-3 py-1 rounded-md transition-colors ${onShifts ? "text-[#666666] hover:text-black" : ""}`}
+                style={onShifts ? undefined : activeLink}
               >
                 Dashboard
+              </Link>
+              <Link
+                to="/employee/shifts"
+                className={`text-sm font-semibold px-3 py-1 rounded-md transition-colors ${onShifts ? "" : "text-[#666666] hover:text-black"}`}
+                style={onShifts ? activeLink : undefined}
+              >
+                My Shifts
               </Link>
             </nav>
           </div>
 
-          {/* Right: user dropdown */}
+          {/* Right: notifications + user dropdown */}
+          <NotificationBell role="STAFF" className="ml-auto -mr-2" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2.5 cursor-pointer rounded-full px-2 py-1 hover:bg-gray-100 transition-colors">
@@ -82,6 +94,13 @@ export function DashboardNavbar() {
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate("/employee/shifts")}
+                className="cursor-pointer"
+              >
+                <History className="mr-2 h-4 w-4" />
+                My Shifts
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

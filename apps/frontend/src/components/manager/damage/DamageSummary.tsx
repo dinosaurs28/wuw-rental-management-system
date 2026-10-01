@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
 
 interface DamageSummaryProps {
   damageDetails: Record<string, any>;
@@ -12,7 +12,13 @@ export const DamageSummary: React.FC<DamageSummaryProps> = ({
   damageDetails,
 }) => {
   const damages = (damageDetails?.damages as any[]) || [];
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Lightbox over one damage's photos, opened at the clicked thumbnail
+  const [viewer, setViewer] = useState<{ damageIndex: number; photoIndex: number } | null>(null);
+  const viewerDamage = viewer ? damages[viewer.damageIndex] : null;
+  const viewerItems = ((viewerDamage?.photos as any[]) || []).map((photo, pIdx, all) => ({
+    url: photo.url as string,
+    label: `${viewerDamage?.area || "Damage"}${all.length > 1 ? ` · photo ${pIdx + 1}` : ""}`,
+  }));
 
   return (
     <Card className="h-full border-none shadow-none bg-transparent">
@@ -62,17 +68,20 @@ export const DamageSummary: React.FC<DamageSummaryProps> = ({
                 {damage.photos && damage.photos.length > 0 && (
                   <div className="md:col-span-1 flex gap-1 overflow-x-auto pb-1">
                     {damage.photos.map((photo: any, pIdx: number) => (
-                      <div
+                      <button
+                        type="button"
                         key={pIdx}
-                        className="w-16 h-16 flex-shrink-0 rounded overflow-hidden border bg-gray-50 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setSelectedImage(photo.url)}
+                        className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden border bg-gray-50 cursor-zoom-in hover:opacity-80 transition-opacity"
+                        onClick={() => setViewer({ damageIndex: index, photoIndex: pIdx })}
+                        aria-label={`Zoom ${damage.area || "damage"} photo ${pIdx + 1}`}
                       >
                         <img
                           src={photo.url}
                           alt="Damage"
                           className="w-full h-full object-cover"
                         />
-                      </div>
+                        <ZoomBadge />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -89,20 +98,13 @@ export const DamageSummary: React.FC<DamageSummaryProps> = ({
         )}
       </div>
 
-      <Dialog
-        open={!!selectedImage}
-        onOpenChange={(open) => !open && setSelectedImage(null)}
-      >
-        <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none flex justify-center items-center">
-          {selectedImage && (
-            <img
-              src={selectedImage}
-              alt="Full view"
-              className="max-h-[90vh] w-auto max-w-full rounded-md object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoLightbox
+        open={viewer !== null}
+        onOpenChange={(open) => !open && setViewer(null)}
+        items={viewerItems}
+        startIndex={viewer?.photoIndex ?? 0}
+        title="Damage Photos"
+      />
     </Card>
   );
 };

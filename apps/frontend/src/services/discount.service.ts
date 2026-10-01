@@ -1,11 +1,48 @@
 import apiClient from "@/lib/axios";
+import type { PaymentFlow, PaymentOptions } from "@/lib/paymentPlan";
+
+/**
+ * Server-priced breakdown with the coupon applied (coupon is pre-GST, so GST
+ * drops with it). Render totals from this, never `oldTotal − discountAmount`.
+ */
+export interface CouponPricing {
+  basePrice: number;
+  durationDiscountAmount: number;
+  durationDiscountPercent: number;
+  durationDiscountLabel: string | null;
+  /** A slab matched but the coupon replaced it (no stacking) — hide the duration line. */
+  durationSuppressed: boolean;
+  couponDiscountAmount: number;
+  /** Total discount (duration + coupon). */
+  discountAmount: number;
+  taxableAmount: number;
+  taxAmount: number;
+  cgstAmount: number;
+  sgstAmount: number;
+  taxRate: number;
+  /** Rental after discounts + GST, no deposit. */
+  finalTotal: number;
+  deposit: number;
+  /** finalTotal + deposit. */
+  payableTotal: number;
+}
 
 export interface CouponValidationResult {
   valid: true;
   couponCode: string;
+  /** Coupon layer only (pre-GST). */
   discountAmount: string;
   discountType?: string;
   discountValue?: string;
+  // Absent from servers older than the Oct 2026 coupon fixes
+  pricing?: CouponPricing;
+  payableTotal?: number;
+  /** Plan the coupon was checked for (the effective plan). */
+  paymentFlow?: PaymentFlow;
+  /** The sent paymentFlow isn't allowed for these amounts/branch. */
+  paymentFlowAdjusted?: boolean;
+  /** Recomputed with the post-coupon total — re-check the plan chooser with it. */
+  paymentOptions?: PaymentOptions;
 }
 
 export interface CouponValidationError {
@@ -55,23 +92,44 @@ export interface ManualDiscount {
   };
 }
 
+/** Branch discount config as GET returns it — Prisma Decimals arrive as strings. */
 export interface DiscountConfig {
   durationDiscountEnabled: boolean;
-  stackWithCoupons: boolean;
-  maxCombinedDiscountPercent: number;
+  stackWithCoupon: boolean;
+  /** null = no combined cap. */
+  maxCombinedDiscountPercent: number | string | null;
+  managerApprovalThreshold: number | string;
+  maxManualDiscountsPerEmployeePerDay: number;
+}
+
+/** The five fields a manager can PATCH (numbers, not Decimal strings). */
+export interface DiscountConfigUpdate {
+  durationDiscountEnabled: boolean;
+  stackWithCoupon: boolean;
+  maxCombinedDiscountPercent: number | null;
   managerApprovalThreshold: number;
-  maxManualDiscountsPerDay: number;
+  maxManualDiscountsPerEmployeePerDay: number;
 }
 
 export interface DurationSlab {
   id: number;
-  publicId: string;
+  branchId: number;
   minDays: number;
+  /** null = open-ended. */
   maxDays: number | null;
   discountType: "PERCENTAGE" | "FLAT";
-  discountValue: string;
+  /** Decimal string. */
+  value: string;
   label: string | null;
-  isActive: boolean;
+}
+
+export interface DurationSlabInput {
+  minDays: number;
+  /** null = open-ended (also clears it on update). */
+  maxDays: number | null;
+  discountType: "PERCENTAGE" | "FLAT";
+  value: number;
+  label: string | null;
 }
 
 export interface ManagerCoupon {
@@ -91,6 +149,9 @@ export interface ManagerCoupon {
   _count: { usageLogs: number };
 }
 
+export type DiscountScope = "GLOBAL" | "BRANCH" | "USER";
+export type CouponPaymentPlan = "FULL" | "ADVANCE" | "BOTH";
+
 export interface AdminDiscountRule {
   publicId: string;
   code: string;
@@ -99,12 +160,23 @@ export interface AdminDiscountRule {
   discountType: "PERCENTAGE" | "FLAT";
   value: string;
   maxDiscountCap: string | null;
-  scope: "GLOBAL" | "BRANCH";
+  scope: DiscountScope;
   applicableBranchIds: number[];
+  targetCustomerIds: number[];
+  newCustomersOnly: boolean;
+  minBookingCount: number | null;
+  maxBookingCount: number | null;
+  applicableVehicleCategoryIds: number[];
+  applicablePaymentPlans: CouponPaymentPlan[];
+  allowPartialPayment: boolean;
   totalUsageLimit: number | null;
   perUserLimit: number | null;
+  perBranchLimit: number | null;
+  perDayLimit: number | null;
   minBookingAmount: string | null;
+  maxBookingAmount: string | null;
   minRentalDays: number | null;
+  maxRentalDays: number | null;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -113,6 +185,32 @@ export interface AdminDiscountRule {
   createdBy: { name: string; publicId: string };
   _count: { usageLogs: number };
 }
+
+/** Restriction fields shared by create and update (null clears a limit on update). */
+export interface DiscountRuleLimits {
+  maxDiscountCap: number | null;
+  applicableBranchIds: number[];
+  targetCustomerIds: number[];
+  newCustomersOnly: boolean;
+  minBookingCount: number | null;
+  maxBookingCount: number | null;
+  minBookingAmount: number | null;
+  maxBookingAmount: number | null;
+  applicableVehicleCategoryIds: number[];
+  minRentalDays: number | null;
+  maxRentalDays: number | null;
+  applicablePaymentPlans: CouponPaymentPlan[];
+  allowPartialPayment: boolean;
+  totalUsageLimit: number | null;
+  perUserLimit: number | null;
+  perBranchLimit: number | null;
+  perDayLimit: number | null;
+  stackable: boolean;
+  priority: number;
+}
+
+/** Undefined/null fields are dropped (create takes no nulls). */
+type CreateRuleLimits = { [K in keyof DiscountRuleLimits]?: Exclude<DiscountRuleLimits[K], null> };
 
 export interface AdminManagerCoupon {
   publicId: string;
@@ -136,7 +234,7 @@ export interface AdminManagerCoupon {
 export const adminDiscountService = {
   listRules: async (params?: {
     isActive?: boolean;
-    scope?: "GLOBAL" | "BRANCH";
+    scope?: DiscountScope;
     search?: string;
     page?: number;
     pageSize?: number;
@@ -145,45 +243,43 @@ export const adminDiscountService = {
     return res.data;
   },
 
+  /**
+   * Dates are whole IST days: send `${day}T00:00:00+05:30` / `${day}T23:59:59.999+05:30`.
+   * 400 INVALID_DISCOUNT_RULE (with errors[]) / 409 COUPON_CODE_EXISTS carry a message.
+   */
   createRule: async (data: {
     code: string;
     name: string;
     description?: string;
     discountType: "PERCENTAGE" | "FLAT";
     value: number;
-    maxDiscountCap?: number;
-    scope: "GLOBAL" | "BRANCH";
+    scope: DiscountScope;
     startDate: string;
     endDate: string;
-    totalUsageLimit?: number;
-    perUserLimit?: number;
-    minBookingAmount?: number;
-    minRentalDays?: number;
-    stackable?: boolean;
-    priority?: number;
-  }): Promise<{ message: string; data: { publicId: string; code: string } }> => {
+  } & CreateRuleLimits): Promise<{ message: string; data: { publicId: string; code: string } }> => {
     const res = await apiClient.post("/admin/discount-rules", data);
     return res.data;
   },
 
   updateRule: async (
     publicId: string,
-    data: Partial<{
+    data: Partial<DiscountRuleLimits & {
       name: string;
       description: string;
       value: number;
-      maxDiscountCap: number | null;
+      scope: DiscountScope;
       startDate: string;
       endDate: string;
-      totalUsageLimit: number | null;
-      perUserLimit: number | null;
-      minBookingAmount: number | null;
-      minRentalDays: number | null;
-      stackable: boolean;
-      priority: number;
+      /** true reactivates a deactivated rule. */
+      isActive: true;
     }>,
   ): Promise<{ message: string; data: AdminDiscountRule }> => {
     const res = await apiClient.patch(`/admin/discount-rules/${publicId}`, data);
+    return res.data;
+  },
+
+  reactivateRule: async (publicId: string): Promise<{ message: string; data: AdminDiscountRule }> => {
+    const res = await apiClient.patch(`/admin/discount-rules/${publicId}`, { isActive: true });
     return res.data;
   },
 
@@ -193,7 +289,7 @@ export const adminDiscountService = {
   },
 
   generateCode: async (): Promise<{ data: { code: string } }> => {
-    const res = await apiClient.post("/admin/discount-rules/generate-code", {});
+    const res = await apiClient.post("/admin/discount-rules/generate-code", { pattern: "PROMOTIONAL" });
     return res.data;
   },
 
@@ -209,14 +305,18 @@ export const adminDiscountService = {
 
 // ── Public (no auth) ─────────────────────────────────────────────────────────
 
+export interface CouponValidateParams {
+  couponCode: string;
+  vehiclePublicId?: string;
+  groupKey?: string;
+  startAt: string;
+  endAt: string;
+  /** Plan the customer picked; omitted = the branch's default plan. */
+  paymentFlow?: PaymentFlow;
+}
+
 export const discountPublicService = {
-  validateCoupon: async (params: {
-    couponCode: string;
-    vehiclePublicId?: string;
-    groupKey?: string;
-    startAt: string;
-    endAt: string;
-  }): Promise<{ data: CouponValidation }> => {
+  validateCoupon: async (params: CouponValidateParams): Promise<{ data: CouponValidation }> => {
     const res = await apiClient.post("/public/discount/validate", params);
     return res.data;
   },
@@ -225,13 +325,7 @@ export const discountPublicService = {
 // ── Customer (authenticated) ──────────────────────────────────────────────────
 
 export const discountCustomerService = {
-  validateCoupon: async (params: {
-    couponCode: string;
-    vehiclePublicId?: string;
-    groupKey?: string;
-    startAt: string;
-    endAt: string;
-  }): Promise<{ data: CouponValidation }> => {
+  validateCoupon: async (params: CouponValidateParams): Promise<{ data: CouponValidation }> => {
     const res = await apiClient.post("/user/discount/validate", params);
     return res.data;
   },
@@ -273,38 +367,25 @@ export const managerDiscountService = {
     return res.data;
   },
 
-  updateConfig: async (data: Partial<DiscountConfig>): Promise<{ message: string; data: DiscountConfig }> => {
+  updateConfig: async (data: Partial<DiscountConfigUpdate>): Promise<{ message: string; data: DiscountConfig }> => {
     const res = await apiClient.patch("/branchManager/discount/config", data);
     return res.data;
   },
 
-  // Slabs
+  // Slabs — 400 INVALID_SLAB / 409 SLAB_OVERLAP carry a message
   getSlabs: async (): Promise<{ data: DurationSlab[] }> => {
     const res = await apiClient.get("/branchManager/discount/slabs");
     return res.data;
   },
 
-  createSlab: async (data: {
-    minDays: number;
-    maxDays?: number;
-    discountType: "PERCENTAGE" | "FLAT";
-    discountValue: number;
-    label?: string;
-  }): Promise<{ message: string; data: DurationSlab }> => {
+  createSlab: async (data: DurationSlabInput): Promise<{ message: string; data: DurationSlab }> => {
     const res = await apiClient.post("/branchManager/discount/slabs", data);
     return res.data;
   },
 
   updateSlab: async (
     id: number,
-    data: {
-      minDays?: number;
-      maxDays?: number;
-      discountType?: "PERCENTAGE" | "FLAT";
-      discountValue?: number;
-      label?: string;
-      isActive?: boolean;
-    },
+    data: Partial<DurationSlabInput>,
   ): Promise<{ message: string; data: DurationSlab }> => {
     const res = await apiClient.patch(`/branchManager/discount/slabs/${id}`, data);
     return res.data;

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, MapPin, Check, Loader2, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,13 +11,28 @@ import {
 } from "@/components/ui/popover";
 import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
+import { formatInrExact, gstSplitText } from "@/lib/gst";
+import { round2 } from "@repo/schemas";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import type { VehicleDetails } from "@/services/vehicle.service";
+import {
+  clampPaymentFlow,
+  durationDiscountTitle,
+  paymentOptionsFor,
+  roundMoney,
+} from "@/lib/paymentPlan";
+import type { BranchScheduleConfig } from "@/services/branch.service";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import { bookingPickerLimits } from "@/utils/bookingPickers";
+import { formatRentalLength } from "@/utils/formatters";
 
 interface VehiclePricingCardProps {
   vehicle: VehicleDetails;
   onBookVehicle: () => void;
   isRefetching?: boolean;
+  /** Branch office hours — limits the pickers and shows the hours line. */
+  schedule?: BranchScheduleConfig;
 }
 
 const periodTypeLabels: Record<string, string> = {
@@ -25,12 +40,14 @@ const periodTypeLabels: Record<string, string> = {
   HALF_DAY: "Half Day",
   FULL_DAY: "Full Day",
   MULTI_DAY: "Multi Day",
+  MONTHLY: "Monthly",
 };
 
 export const VehiclePricingCard = ({
   vehicle,
   onBookVehicle,
   isRefetching = false,
+  schedule,
 }: VehiclePricingCardProps) => {
   const {
     getStartDate,
@@ -48,12 +65,20 @@ export const VehiclePricingCard = ({
   const pickupDate = getStartDate();
   const returnDate = getEndDate();
 
-  // Auto-select payment flow based on branch config
+  // Payment plan (#6) from the server's paymentOptions (branch mode + amounts):
+  // the branch's default plan on a new vehicle, then kept inside the allowed plans.
+  const paymentOptions = paymentOptionsFor(vehicle);
+  const optionsKey = `${paymentOptions.allowedFlows.join(",")}|${paymentOptions.defaultFlow}`;
+  const planVehicleRef = useRef<string | null>(null);
   useEffect(() => {
-    const mode = vehicle.customerPaymentMode ?? 'ADVANCE_ONLY';
-    if (mode === 'FULL_ONLY') setPaymentFlow('FULL');
-    else if (mode !== 'BOTH') setPaymentFlow('ADVANCE');
-  }, [vehicle.customerPaymentMode]);
+    const isNewVehicle = planVehicleRef.current !== vehicle.publicId;
+    planVehicleRef.current = vehicle.publicId;
+    const current = useVehicleRentalStore.getState().paymentFlow;
+    const next = isNewVehicle ? paymentOptions.defaultFlow : clampPaymentFlow(current, paymentOptions);
+    if (next !== current) setPaymentFlow(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicle.publicId, optionsKey]);
+  const shownFlow = clampPaymentFlow(paymentFlow, paymentOptions);
 
   const formattedPickupDate = pickupDate
     ? format(pickupDate, "MMM dd, yyyy")
@@ -64,6 +89,12 @@ export const VehiclePricingCard = ({
 
   const isAvailable = vehicle.availability;
   const pd = vehicle.pricingDetails;
+
+  // What the customer pays in full: rental + GST + refundable deposit (server's figure)
+  const payableTotal =
+    paymentOptions.payableTotal ?? (pd ? roundMoney(pd.finalTotal + (vehicle.deposit ?? 0)) : 0);
+  const dueAtPickup =
+    paymentOptions.remainingAfterAdvance ?? roundMoney(payableTotal - paymentOptions.advanceAmount);
 
   // Validate that return datetime is strictly after pickup datetime
   const isDateRangeValid = useMemo(() => {
@@ -77,29 +108,25 @@ export const VehiclePricingCard = ({
     return end > start;
   }, [pickupDate, returnDate, startTime, endTime]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Paise are shown when present: GST is rounded to the paisa, not the rupee.
+  const formatCurrency = (amount: number) => formatInrExact(amount);
 
-  const disabledDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return { before: today };
-  }, []);
-
-  const returnDisabledDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (!pickupDate) return { before: today };
-    // Use start-of-day so same calendar day as pickup is selectable
-    const pickupDay = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
-    return { before: pickupDay.getTime() < today.getTime() ? today : pickupDay };
-  }, [pickupDate]);
+  // Office hours (#2) + 15-day window (#15). Also catches stale dates from the
+  // persisted store, the URL or a schedule adjustment.
+  const pickupDayKey = pickupDate?.getTime();
+  const returnDayKey = returnDate?.getTime();
+  const limits = useMemo(
+    () =>
+      bookingPickerLimits({
+        schedule,
+        pickupDate,
+        pickupTime: startTime || "10:00",
+        returnDate,
+        returnTime: endTime || "10:00",
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, pickupDayKey, startTime, returnDayKey, endTime],
+  );
 
   const handlePickupDateChange = (date: Date | undefined) => {
     setStartDate(date || null);
@@ -109,7 +136,14 @@ export const VehiclePricingCard = ({
     setEndDate(date || null);
   };
 
-  const canBook = isAvailable && pickupDate && returnDate && isDateRangeValid && !isRefetching;
+  const canBook =
+    isAvailable && pickupDate && returnDate && isDateRangeValid && !limits.windowError && !isRefetching;
+
+  // What the price covers ("5 hours", "1 day + 2 hours"); the period type is the fallback
+  const billedLabel =
+    pd?.pricingBreakdown.billedAs ??
+    periodTypeLabels[pd?.pricingBreakdown.periodType ?? ""] ??
+    pd?.pricingBreakdown.periodType;
 
   return (
     <Card className="overflow-hidden bg-white border border-zinc-200 shadow-2xl rounded-[2rem]">
@@ -118,10 +152,11 @@ export const VehiclePricingCard = ({
         <div className="p-5 sm:p-8 border-b border-zinc-200">
           <div className="flex items-baseline mb-4">
             <span className="text-4xl lg:text-5xl font-serif font-black text-zinc-900 tracking-tight">
-              {formatCurrency(vehicle.pricing.daily)}
+              {vehicle.pricing.daily > 0 ? formatCurrency(vehicle.pricing.daily) : "—"}
             </span>
             <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider ml-2">
-              /day
+              {/* The header is the base for the picked period, not a per-day rate */}
+              {vehicle.pricing.daily > 0 ? (pd?.pricingBreakdown.billedAs ? `/ ${pd.pricingBreakdown.billedAs}` : "/day") : ""}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-400 uppercase">
@@ -158,7 +193,7 @@ export const VehiclePricingCard = ({
                     mode="single"
                     selected={pickupDate || undefined}
                     onSelect={handlePickupDateChange}
-                    disabled={disabledDays}
+                    disabled={limits.isPickupDayDisabled}
                     initialFocus
                   />
                 </PopoverContent>
@@ -171,8 +206,14 @@ export const VehiclePricingCard = ({
                 Pickup Time
               </label>
               <div className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 flex items-center focus-within:border-zinc-300 transition-all">
-                <TimeSelect value={startTime || "10:00"} onChange={setStartTime} className="w-full" />
+                <TimeSelect
+                  value={startTime || "10:00"}
+                  onChange={setStartTime}
+                  isDisabled={limits.isPickupSlotDisabled}
+                  className="w-full"
+                />
               </div>
+              <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" />
             </div>
 
             {/* Return Date */}
@@ -200,7 +241,7 @@ export const VehiclePricingCard = ({
                     mode="single"
                     selected={returnDate || undefined}
                     onSelect={handleReturnDateChange}
-                    disabled={returnDisabledDays}
+                    disabled={limits.isReturnDayDisabled}
                     initialFocus
                   />
                 </PopoverContent>
@@ -213,10 +254,33 @@ export const VehiclePricingCard = ({
                 Return Time
               </label>
               <div className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 flex items-center focus-within:border-zinc-300 transition-all">
-                <TimeSelect value={endTime || "10:00"} onChange={setEndTime} className="w-full" />
+                <TimeSelect
+                  value={endTime || "10:00"}
+                  onChange={setEndTime}
+                  isDisabled={limits.isReturnSlotDisabled}
+                  className="w-full"
+                />
               </div>
+              <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
             </div>
           </div>
+
+          {/* Quick durations (#5) */}
+          <DurationPresetChips
+            pickupDate={pickupDate}
+            pickupTime={startTime || "10:00"}
+            returnDate={returnDate}
+            returnTime={endTime || "10:00"}
+            schedule={schedule}
+            onApply={(date, time) => {
+              setEndDate(date);
+              setEndTime(time);
+            }}
+          />
+
+          {limits.windowError && (
+            <p className="text-sm font-semibold text-red-500">{limits.windowError}</p>
+          )}
         </div>
 
         {/* Pricing Breakdown */}
@@ -232,17 +296,16 @@ export const VehiclePricingCard = ({
               {/* Period type badge */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-3 py-1 text-[10px] font-black tracking-[0.15em] bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full uppercase">
-                  {periodTypeLabels[pd.pricingBreakdown.periodType] ||
-                    pd.pricingBreakdown.periodType}
+                  {pd.pricingBreakdown.billedAs ? `Billed as ${billedLabel}` : billedLabel}
                 </span>
-                <span className="text-xs text-zinc-500">
-                  {pd.pricingBreakdown.duration.days > 0 &&
-                    `${pd.pricingBreakdown.duration.days}d `}
-                  {pd.pricingBreakdown.duration.hours > 0 &&
-                    `${pd.pricingBreakdown.duration.hours}h `}
-                  {pd.pricingBreakdown.duration.minutes > 0 &&
-                    `${pd.pricingBreakdown.duration.minutes}m`}
-                </span>
+                {pickupDate && returnDate && (
+                  <span className="text-xs text-zinc-500">
+                    {formatRentalLength(
+                      `${format(pickupDate, "yyyy-MM-dd")}T${startTime || "10:00"}`,
+                      `${format(returnDate, "yyyy-MM-dd")}T${endTime || "10:00"}`,
+                    )}
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-between text-base">
@@ -256,7 +319,12 @@ export const VehiclePricingCard = ({
                 <div className="flex justify-between text-base">
                   <span className="text-emerald-400 flex items-center gap-2">
                     <Check className="size-4" />
-                    Discount ({pd.discountPercent}%)
+                    {/* Detail quotes carry only the duration slab (no coupon yet) */}
+                    {durationDiscountTitle(
+                      pd.durationDiscountLabel,
+                      pd.durationDiscountPercent ?? roundMoney(pd.discountPercent),
+                      pd.durationDiscountType,
+                    )}
                   </span>
                   <span className="text-emerald-400 font-medium">
                     -{formatCurrency(pd.discountAmount)}
@@ -264,12 +332,28 @@ export const VehiclePricingCard = ({
                 </div>
               )}
 
-              {pd.taxAmount > 0 && (
+              {pd.discountAmount > 0 && (
                 <div className="flex justify-between text-base">
-                  <span className="text-zinc-400">GST ({pd.taxRate}%)</span>
-                  <span className="text-zinc-700 font-medium">
-                    +{formatCurrency(pd.taxAmount)}
+                  <span className="text-zinc-400">Taxable value</span>
+                  <span className="text-zinc-900 font-medium">
+                    {formatCurrency(round2(pd.basePrice - pd.discountAmount))}
                   </span>
+                </div>
+              )}
+
+              {pd.taxAmount > 0 && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-base">
+                    <span className="text-zinc-400">GST ({pd.taxRate}%)</span>
+                    <span className="text-zinc-700 font-medium">
+                      +{formatCurrency(pd.taxAmount)}
+                    </span>
+                  </div>
+                  {(pd.cgstAmount > 0 || pd.sgstAmount > 0) && (
+                    <p className="text-xs text-zinc-400 text-right">
+                      {gstSplitText(pd.cgstAmount, pd.sgstAmount, pd.cgstRate, pd.sgstRate)}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -301,98 +385,94 @@ export const VehiclePricingCard = ({
 
         {/* Deposit Info */}
         {!!vehicle.deposit && vehicle.deposit > 0 && (
-          <div className="px-5 py-4 sm:px-8 sm:py-6 bg-zinc-50 border-b border-zinc-200">
+          <div className="px-5 py-4 sm:px-8 sm:py-6 bg-zinc-50 border-b border-zinc-200 space-y-2">
             <div className="flex justify-between text-base">
-              <span className="text-zinc-400">Security Deposit</span>
+              <span className="text-zinc-400">Security Deposit (refundable)</span>
               <span className="text-zinc-900 font-medium">
                 {formatCurrency(vehicle.deposit)}
               </span>
             </div>
+            {!!pd && isDateRangeValid && !isRefetching && (
+              <div className="flex justify-between text-base">
+                <span className="text-zinc-900 font-semibold">Total payable</span>
+                <span className="text-zinc-900 font-bold">{formatCurrency(payableTotal)}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Payment Plan */}
-        {!!vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && !!pd && isDateRangeValid && (
+        {/* Payment Plan — only the plans the branch and the amounts allow */}
+        {!!pd && isDateRangeValid && (
           <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan
             </p>
-            {vehicle.customerPaymentMode === 'BOTH' ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentFlow("FULL")}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
-                      paymentFlow === "FULL"
-                        ? "bg-white text-zinc-950 border-zinc-900 shadow-sm"
-                        : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
-                    )}
-                  >
-                    <Check className={cn("size-4", paymentFlow === "FULL" ? "text-zinc-900" : "text-zinc-400")} />
-                    <span className="text-xs font-black uppercase tracking-wider">
-                      Full Pay
-                    </span>
-                    <span className="text-xs font-medium">
-                      {formatCurrency(pd.finalTotal)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentFlow("ADVANCE")}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
-                      paymentFlow === "ADVANCE"
-                        ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                        : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
-                    )}
-                  >
-                    <Wallet className="size-4" />
-                    <span className="text-xs font-black uppercase tracking-wider">
-                      Advance
-                    </span>
-                    <span className="text-xs font-medium">
-                      {formatCurrency(vehicle.advancePayAmount)} now
-                    </span>
-                  </button>
-                </div>
-                {paymentFlow === "ADVANCE" ? (
-                  <div className="text-xs text-zinc-400 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Pay now (advance)</span>
-                      <span className="text-orange-400 font-bold">
-                        {formatCurrency(vehicle.advancePayAmount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Remaining (at pickup)</span>
-                      <span className="text-zinc-300">
-                        {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-zinc-400 text-center">
-                    Pay the full amount upfront — no balance due at pickup.
-                  </p>
-                )}
-              </>
-            ) : (
-              <div className="text-xs text-zinc-400 space-y-1">
+            {paymentOptions.allowedFlows.length === 2 && (
+              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Payment plan">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={shownFlow === "FULL"}
+                  onClick={() => setPaymentFlow("FULL")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
+                    shownFlow === "FULL"
+                      ? "bg-white text-zinc-950 border-zinc-900 shadow-sm"
+                      : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900",
+                  )}
+                >
+                  <Check className={cn("size-4", shownFlow === "FULL" ? "text-zinc-900" : "text-zinc-400")} />
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Full Pay
+                  </span>
+                  <span className="text-xs font-medium">
+                    {formatCurrency(payableTotal)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={shownFlow === "ADVANCE"}
+                  onClick={() => setPaymentFlow("ADVANCE")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
+                    shownFlow === "ADVANCE"
+                      ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                      : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900",
+                  )}
+                >
+                  <Wallet className="size-4" />
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Advance
+                  </span>
+                  <span className="text-xs font-medium">
+                    {formatCurrency(paymentOptions.advanceAmount)} now
+                  </span>
+                </button>
+              </div>
+            )}
+            {shownFlow === "ADVANCE" ? (
+              <div className="text-xs text-zinc-500 space-y-1">
                 <div className="flex justify-between">
                   <span>Pay now (advance)</span>
-                  <span className="text-orange-400 font-bold">
-                    {formatCurrency(vehicle.advancePayAmount)}
+                  <span className="text-orange-500 font-bold">
+                    {formatCurrency(paymentOptions.advanceAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Remaining (at pickup)</span>
-                  <span className="text-zinc-300">
-                    {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
+                  <span>Due at pickup</span>
+                  <span className="text-zinc-700">
+                    {formatCurrency(dueAtPickup)}
                   </span>
                 </div>
               </div>
+            ) : (
+              <p className="text-xs text-zinc-500 text-center">
+                Pay {formatCurrency(payableTotal)} upfront — no balance due at pickup.
+              </p>
+            )}
+            {paymentOptions.reasonMessage && (
+              <p className="text-xs text-zinc-400 text-center">{paymentOptions.reasonMessage}</p>
             )}
           </div>
         )}

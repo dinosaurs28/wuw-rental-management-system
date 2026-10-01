@@ -13,8 +13,11 @@ interface StatsCardProps {
     label: string;
   };
   alert?: boolean;
+  /** Text shown next to the value while `alert` is on. */
+  alertLabel?: string;
   active?: boolean;
   isLoading?: boolean;
+  onClick?: () => void;
 }
 
 function StatsCard({
@@ -23,13 +26,29 @@ function StatsCard({
   icon: Icon,
   trend,
   alert,
+  alertLabel,
   active,
   isLoading,
+  onClick,
 }: StatsCardProps) {
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
         "p-6 rounded-xl bg-card border shadow-sm transition-all duration-200",
+        onClick && "cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         active && "border-primary/50 ring-1 ring-primary/20",
         alert && "border-orange-200 bg-orange-50/30",
       )}
@@ -81,9 +100,9 @@ function StatsCard({
           ) : (
             <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
           )}
-          {alert && (
+          {alert && alertLabel && !isLoading && (
             <span className="text-sm font-medium text-orange-600">
-              Pending Approvals
+              {alertLabel}
             </span>
           )}
         </div>
@@ -95,9 +114,19 @@ function StatsCard({
 interface DashboardStatsProps {
   stats?: EmployeeDashboardStats;
   isLoading: boolean;
+  /** Opens the overdue returns list. */
+  onOverdueClick?: () => void;
+  /** Highlights the overdue tile while that list is shown. */
+  overdueActive?: boolean;
 }
 
-export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
+export function DashboardStats({
+  stats,
+  isLoading,
+  onOverdueClick,
+  overdueActive,
+}: DashboardStatsProps) {
+  const overdueReturns = stats?.overdueReturns ?? 0;
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatsCard
@@ -113,12 +142,14 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
         isLoading={isLoading}
       />
       <StatsCard
-        title="ACTION REQUIRED"
-        value="0"
+        title="Overdue Returns"
+        value={overdueReturns}
         icon={AlertTriangle}
-        alert={true}
-        active={true}
+        alert={overdueReturns > 0}
+        alertLabel="Not returned yet"
+        active={overdueActive}
         isLoading={isLoading}
+        onClick={onOverdueClick}
       />
       <StatsCard
         title="Active Rentals"

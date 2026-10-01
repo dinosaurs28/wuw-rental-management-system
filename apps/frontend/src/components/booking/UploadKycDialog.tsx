@@ -32,14 +32,9 @@ import { Progress } from "@/components/ui/progress";
 import apiClient from "@/lib/axios";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
-const ACEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-  "application/pdf",
-];
+// The walk-in upload decodes and re-encodes the image server-side, so only
+// formats it can decode are offered (PDF / HEIC are rejected with a 400).
+const ACEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const uploadKycSchema = z.object({
   type: z.enum(["DL", "AADHAAR", "PAN"], {
@@ -56,7 +51,7 @@ const uploadKycSchema = z.object({
     )
     .refine(
       (file) => ACEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .png, .webp and .pdf files are accepted",
+      "Only JPG, PNG or WebP photos are accepted",
     ),
 });
 
@@ -241,7 +236,7 @@ export const UploadKycDialog = ({
                                   </span>
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  JPG, PNG, PDF (MAX. 15MB)
+                                  JPG, PNG, WebP (MAX. 15MB)
                                 </p>
                               </>
                             )}
@@ -250,7 +245,7 @@ export const UploadKycDialog = ({
                             id="dropzone-file"
                             type="file"
                             className="hidden"
-                            accept="image/*,application/pdf"
+                            accept={ACEPTED_IMAGE_TYPES.join(",")}
                             onChange={(e) => handleFileChange(e, onChange)}
                             {...fieldProps}
                           />

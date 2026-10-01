@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -29,6 +29,10 @@ import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 import type { BranchScheduleConfig } from "@/services/branch.service";
 import type { ScheduleVerdict } from "@/utils/branchScheduleValidator";
+import type { VehicleUseCase } from "@/services/vehicle.service";
+import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
+import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import { bookingPickerLimits, MAX_BOOKING_DAYS } from "@/utils/bookingPickers";
 
 interface VehicleFiltersProps {
   branches: { publicId: string; name: string }[];
@@ -55,6 +59,10 @@ interface VehicleFiltersProps {
   onReturnTimeChange?: (time: string) => void;
   schedule?: BranchScheduleConfig;
   scheduleVerdict?: ScheduleVerdict | null;
+  useCases?: VehicleUseCase[];
+  onUseCasesChange?: (useCases: VehicleUseCase[]) => void;
+  /** Fleet "Monthly rental" plan: 30–180 days, no 15-day limit on the return. */
+  monthly?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -88,9 +96,26 @@ export const VehicleFilters = ({
   onReturnTimeChange,
   schedule,
   scheduleVerdict,
+  useCases = [],
+  onUseCasesChange,
+  monthly = false,
 }: VehicleFiltersProps) => {
   // Local state for immediate input response
   const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Office hours (#2) + 15-day window (#15) for the date/time pickers
+  const limits = useMemo(
+    () =>
+      bookingPickerLimits({
+        schedule,
+        pickupDate,
+        pickupTime: pickupTime || "10:00",
+        returnDate,
+        returnTime: returnTime || "10:00",
+        monthly,
+      }),
+    [schedule, pickupDate, pickupTime, returnDate, returnTime, monthly],
+  );
 
   // Sync local state when prop changes (e.g. reset)
   useEffect(() => {
@@ -189,11 +214,7 @@ export const VehicleFilters = ({
                 mode="single"
                 selected={pickupDate || undefined}
                 onSelect={onPickupDateChange}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return date < today;
-                }}
+                disabled={limits.isPickupDayDisabled}
               />
             </PopoverContent>
           </Popover>
@@ -205,9 +226,14 @@ export const VehicleFilters = ({
             Pickup Time
           </label>
           <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
-            <TimeSelect value={pickupTime || "10:00"} onChange={(v) => onPickupTimeChange?.(v)} className="w-full" />
+            <TimeSelect
+              value={pickupTime || "10:00"}
+              onChange={(v) => onPickupTimeChange?.(v)}
+              isDisabled={limits.isPickupSlotDisabled}
+              className="w-full"
+            />
           </div>
-          <BranchHoursBadge schedule={schedule} date={pickupDate} />
+          <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" />
         </div>
 
         {/* Return Date */}
@@ -240,14 +266,9 @@ export const VehicleFilters = ({
                 mode="single"
                 selected={returnDate || undefined}
                 onSelect={onReturnDateChange}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  if (!pickupDate) return date < today;
-                  // Compare calendar day only so same day as pickup is always selectable
-                  const pickupDay = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
-                  return date < pickupDay || date < today;
-                }}
+                // Same calendar day as pickup stays selectable; closed days and
+                // days past the booking window are not
+                disabled={limits.isReturnDayDisabled}
               />
             </PopoverContent>
           </Popover>
@@ -259,9 +280,14 @@ export const VehicleFilters = ({
             Return Time
           </label>
           <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
-            <TimeSelect value={returnTime || "10:00"} onChange={(v) => onReturnTimeChange?.(v)} className="w-full" />
+            <TimeSelect
+              value={returnTime || "10:00"}
+              onChange={(v) => onReturnTimeChange?.(v)}
+              isDisabled={limits.isReturnSlotDisabled}
+              className="w-full"
+            />
           </div>
-          <BranchHoursBadge schedule={schedule} date={returnDate} />
+          <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
         </div>
 
         {/* Category */}
@@ -320,6 +346,41 @@ export const VehicleFilters = ({
           </Select>
         </div>
       </div>
+
+      {/* Quick durations (#5) + booking window (#15) */}
+      <div className="mt-5 relative z-10 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6 ml-2">
+        {!monthly && onReturnDateChange && onReturnTimeChange && (
+          <DurationPresetChips
+            pickupDate={pickupDate}
+            pickupTime={pickupTime || "10:00"}
+            returnDate={returnDate}
+            returnTime={returnTime || "10:00"}
+            schedule={schedule}
+            onApply={(date, time) => {
+              onReturnDateChange(date);
+              onReturnTimeChange(time);
+            }}
+          />
+        )}
+        <p className="text-[11px] font-medium text-zinc-400 sm:pt-2">
+          {monthly
+            ? "Monthly rental: 30 to 180 days, pickup within the next 15 days"
+            : `Book up to ${MAX_BOOKING_DAYS} days ahead, up to ${MAX_BOOKING_DAYS} days long`}
+        </p>
+      </div>
+      {limits.windowError && (
+        <p className="mt-3 ml-2 relative z-10 text-sm font-semibold text-red-500">{limits.windowError}</p>
+      )}
+
+      {/* Trip type (multi-select, OR) */}
+      {onUseCasesChange && (
+        <div className="mt-6 relative z-10">
+          <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+            Trip Type
+          </label>
+          <UseCaseFilterChips value={useCases} onChange={onUseCasesChange} />
+        </div>
+      )}
 
       {/* Schedule warning banner */}
       {scheduleVerdict && scheduleVerdict.status !== "OK" && (

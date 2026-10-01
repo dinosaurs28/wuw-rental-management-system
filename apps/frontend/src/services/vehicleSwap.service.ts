@@ -4,6 +4,7 @@ import type {
   VehicleSwapRequest,
   VehicleSwap,
   SwapHistoryFilters,
+  SwapCandidates,
 } from "@/types/vehicleSwap";
 
 export interface BookingVehicleDetails {
@@ -37,6 +38,30 @@ export const employeeVehicleSwapService = {
     );
     return response.data.data;
   },
+
+  /**
+   * Replacement candidates plus the swap context (stage, readings rule,
+   * current car, price-difference defaults) — employee
+   */
+  async getSwapCandidates(bookingId: string): Promise<SwapCandidates> {
+    const response = await apiClient.get(
+      `/employee/bookings/${bookingId}/available-vehicles`,
+    );
+    return {
+      vehicles: response.data.data ?? [],
+      swapContext: response.data.swapContext ?? null,
+    };
+  },
+
+  /**
+   * Swap history of one booking, newest first (employee)
+   */
+  async getBookingSwapHistory(bookingId: string): Promise<VehicleSwap[]> {
+    const response = await apiClient.get(
+      `/employee/bookings/${bookingId}/swap-history`,
+    );
+    return response.data.data ?? [];
+  },
 };
 
 export const vehicleSwapService = {
@@ -60,6 +85,20 @@ export const vehicleSwapService = {
       `/branchManager/dashboard/bookings/${bookingId}/available-vehicles`,
     );
     return response.data.data;
+  },
+
+  /**
+   * Replacement candidates plus the swap context (stage, readings rule,
+   * current car, price-difference defaults)
+   */
+  async getSwapCandidates(bookingId: string): Promise<SwapCandidates> {
+    const response = await apiClient.get(
+      `/branchManager/dashboard/bookings/${bookingId}/available-vehicles`,
+    );
+    return {
+      vehicles: response.data.data ?? [],
+      swapContext: response.data.swapContext ?? null,
+    };
   },
 
   /**

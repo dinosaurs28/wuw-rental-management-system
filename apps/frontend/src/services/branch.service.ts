@@ -59,6 +59,36 @@ export async function fetchBranchSchedule(branchPublicId: string): Promise<Branc
   return data;
 }
 
+/** Admin: any branch's office hours (view + edit). */
+export const adminBranchHours = {
+  get: async (branchPublicId: string): Promise<BranchScheduleConfig> => {
+    const { data } = await apiClient.get<BranchScheduleConfig>(
+      `/admin/dashboard/branches/${branchPublicId}/schedule`,
+    );
+    return data;
+  },
+
+  /** 400 INVALID_SCHEDULE (e.g. closing not after opening) carries a readable message. */
+  saveSchedule: async (branchPublicId: string, schedules: BranchScheduleRow[]): Promise<{ message: string }> => {
+    const { data } = await apiClient.patch<{ message: string }>(
+      `/admin/dashboard/branches/${branchPublicId}/schedule`,
+      { schedules },
+    );
+    return data;
+  },
+
+  saveSettings: async (
+    branchPublicId: string,
+    settings: { graceMinutes?: number; is24Hours?: boolean },
+  ): Promise<{ message: string }> => {
+    const { data } = await apiClient.patch<{ message: string }>(
+      `/admin/dashboard/branches/${branchPublicId}/grace`,
+      settings,
+    );
+    return data;
+  },
+};
+
 export const branchManagerService = {
   login: async (data: SignInInput): Promise<BranchManagerAuthResponse> => {
     const response = await apiClient.post<BranchManagerAuthResponse>(

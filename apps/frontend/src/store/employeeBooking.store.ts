@@ -11,6 +11,9 @@ interface Pricing {
 
 export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI";
 
+/** Counter plan (#15/#17): MONTHLY = 30–180 days, stored as rentalPeriodType MONTHLY. */
+export type EmployeeBookingPlan = "STANDARD" | "MONTHLY";
+
 interface EmployeeBookingState {
   selectedVehicleId: string | null;
   selectedGroupKey: string | null;
@@ -18,6 +21,7 @@ interface EmployeeBookingState {
   endDate: Date | null;
   startTime: string;
   endTime: string;
+  plan: EmployeeBookingPlan;
   paymentType: EmployeePaymentType;
   /** UPI (UTR) walk-ins: the 12-digit UTR the customer paid with. */
   utr: string;
@@ -30,6 +34,7 @@ interface EmployeeBookingState {
   setDates: (start: Date, end: Date) => void;
   setStartTime: (time: string) => void;
   setEndTime: (time: string) => void;
+  setPlan: (plan: EmployeeBookingPlan) => void;
   setPaymentType: (type: EmployeePaymentType) => void;
   setUtr: (utr: string) => void;
   setPricing: (pricing: Pricing) => void;
@@ -46,6 +51,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       endDate: null,
       startTime: getCurrentTime(),
       endTime: getCurrentTime(),
+      plan: "STANDARD",
       paymentType: "CASH",
       utr: "",
       pricing: null,
@@ -56,6 +62,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       setDates: (start, end) => set({ startDate: start, endDate: end }),
       setStartTime: (time) => set({ startTime: time }),
       setEndTime: (time) => set({ endTime: time }),
+      setPlan: (plan) => set({ plan }),
       setPaymentType: (type) => set({ paymentType: type }),
       setUtr: (utr) => set({ utr }),
       setPricing: (pricing) => set({ pricing }),
@@ -68,6 +75,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
           endDate: null,
           startTime: "10:00",
           endTime: "10:00",
+          plan: "STANDARD",
           paymentType: "CASH",
           utr: "",
           pricing: null,

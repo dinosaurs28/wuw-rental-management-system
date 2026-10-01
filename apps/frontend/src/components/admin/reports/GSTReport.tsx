@@ -96,7 +96,31 @@ interface SectionARow {
   igst: number;
   totalGST: number;
   invoiceTotal: number;
+  // Breakdown of the row (absent on older servers): original rental, confirmed
+  // extensions and taxable return charges / damage penalty.
+  rental?: GstPart;
+  extensions?: GstPart & { count: number };
+  returnCharges?: GstPart;
 }
+
+interface GstPart {
+  taxableAmount: number;
+  cgst: number;
+  sgst: number;
+}
+
+/** "Ext ₹x · Return ₹y" — the part of a row beyond the original rental (null when none). */
+const extraParts = (
+  row: SectionARow,
+  pick: (p: GstPart) => number,
+): string | null => {
+  const ext = row.extensions ? pick(row.extensions) : 0;
+  const ret = row.returnCharges ? pick(row.returnCharges) : 0;
+  const parts: string[] = [];
+  if (ext) parts.push(`Ext ${formatCurrency(ext, 2)}`);
+  if (ret) parts.push(`Return ${formatCurrency(ret, 2)}`);
+  return parts.length ? parts.join(" · ") : null;
+};
 
 interface GSTReportData {
   metadata: {
@@ -254,18 +278,26 @@ export const GSTReport = ({
     {
       accessorKey: "taxableAmount",
       header: "Taxable Amount",
-      cell: ({ row }) => (
-        <span className="font-medium">
-          {formatCurrency(row.original.taxableAmount)}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const extra = extraParts(row.original, (p) => p.taxableAmount);
+        return (
+          <span className="font-medium">
+            {formatCurrency(row.original.taxableAmount, 2)}
+            {extra && (
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                incl. {extra}
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "cgst",
       header: "CGST",
       cell: ({ row }) => (
         <span className="text-green-700">
-          {formatCurrency(row.original.cgst)}
+          {formatCurrency(row.original.cgst, 2)}
         </span>
       ),
     },
@@ -274,7 +306,7 @@ export const GSTReport = ({
       header: "SGST",
       cell: ({ row }) => (
         <span className="text-blue-700">
-          {formatCurrency(row.original.sgst)}
+          {formatCurrency(row.original.sgst, 2)}
         </span>
       ),
     },
@@ -283,25 +315,33 @@ export const GSTReport = ({
       header: "IGST",
       cell: ({ row }) => (
         <span className="text-amber-700">
-          {formatCurrency(row.original.igst)}
+          {formatCurrency(row.original.igst, 2)}
         </span>
       ),
     },
     {
       accessorKey: "totalGST",
       header: "Total GST",
-      cell: ({ row }) => (
-        <span className="font-medium text-orange-600">
-          {formatCurrency(row.original.totalGST)}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const extra = extraParts(row.original, (p) => p.cgst + p.sgst);
+        return (
+          <span className="font-medium text-orange-600">
+            {formatCurrency(row.original.totalGST, 2)}
+            {extra && (
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                incl. {extra}
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "invoiceTotal",
       header: "Invoice Total",
       cell: ({ row }) => (
         <span className="font-bold">
-          {formatCurrency(row.original.invoiceTotal)}
+          {formatCurrency(row.original.invoiceTotal, 2)}
         </span>
       ),
     },
@@ -399,6 +439,31 @@ export const GSTReport = ({
     SGST: "#3b82f6",
     IGST: "#f59e0b",
   };
+
+  // Output GST by source, summed from the per-row breakdown the server sends
+  // (rows from an older server have none, so the card is hidden).
+  const rows = data.sectionA_output ?? [];
+  const hasSourceBreakdown = rows.some((r) => r.rental || r.extensions || r.returnCharges);
+  const sumPart = (pick: (r: SectionARow) => GstPart | undefined) =>
+    rows.reduce(
+      (acc, r) => {
+        const p = pick(r);
+        if (!p) return acc;
+        return {
+          taxableAmount: acc.taxableAmount + p.taxableAmount,
+          gst: acc.gst + p.cgst + p.sgst,
+        };
+      },
+      { taxableAmount: 0, gst: 0 },
+    );
+  const gstBySource = [
+    { label: "Rental (as booked)", ...sumPart((r) => r.rental) },
+    {
+      label: `Extensions (${rows.reduce((s, r) => s + (r.extensions?.count ?? 0), 0)} confirmed)`,
+      ...sumPart((r) => r.extensions),
+    },
+    { label: "Return charges & damage penalty", ...sumPart((r) => r.returnCharges) },
+  ];
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -500,7 +565,7 @@ export const GSTReport = ({
               ₹{data.summary.totalCGST.toLocaleString("en-IN")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              9% on intra-state
+              Intra-state, at each branch's rate
             </p>
           </CardContent>
         </Card>
@@ -516,7 +581,7 @@ export const GSTReport = ({
               ₹{data.summary.totalSGST.toLocaleString("en-IN")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              9% on intra-state
+              Intra-state, at each branch's rate
             </p>
           </CardContent>
         </Card>
@@ -532,7 +597,7 @@ export const GSTReport = ({
               ₹{data.summary.totalIGST.toLocaleString("en-IN")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              18% on inter-state
+              Not charged — rentals are intra-state supplies
             </p>
           </CardContent>
         </Card>
@@ -555,6 +620,37 @@ export const GSTReport = ({
           </p>
         </CardContent>
       </Card>
+
+      {/* Output GST by source */}
+      {hasSourceBreakdown && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Output GST by source</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="py-1.5 pr-4 font-medium">Source</th>
+                    <th className="py-1.5 pr-4 font-medium text-right">Taxable value</th>
+                    <th className="py-1.5 font-medium text-right">GST (CGST + SGST)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {gstBySource.map((s) => (
+                    <tr key={s.label}>
+                      <td className="py-2 pr-4">{s.label}</td>
+                      <td className="py-2 pr-4 text-right">{formatCurrency(s.taxableAmount, 2)}</td>
+                      <td className="py-2 text-right">{formatCurrency(s.gst, 2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

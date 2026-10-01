@@ -15,17 +15,39 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import apiClient from "@/lib/axios";
 import { formatCurrency } from "@/utils/formatters";
+import { formatInrExact, gstSplitText } from "@/lib/gst";
 
-interface CreditNote {
+export interface CreditNote {
   publicId: string;
   creditNoteNumber: string | null;
   invoiceRef: { publicId: string; invoiceNumber: string | null } | null;
   receiptRef: { publicId: string; receiptNumber: string | null } | null;
   amount: number;
+  /**
+   * GST split of the (GST-inclusive) credit: it reverses the invoice's taxable
+   * value + GST first; the rest is non-taxable (deposit / FASTag / compensation).
+   * taxableAmount + taxAmount + nonTaxableAmount = amount. Absent on older servers.
+   */
+  taxableAmount?: number;
+  cgstAmount?: number;
+  sgstAmount?: number;
+  taxAmount?: number;
+  nonTaxableAmount?: number;
   reason: string;
   status: string;
   issuedBy: string;
   createdAt: string;
+}
+
+/** "Taxable ₹x + GST ₹y (CGST ₹a · SGST ₹b) + non-taxable ₹z" from the server's split. */
+function creditSplitText(cn: CreditNote): string | null {
+  if (cn.taxableAmount == null || cn.taxAmount == null) return null;
+  const parts = [`Taxable ${formatInrExact(cn.taxableAmount)}`];
+  if (cn.taxAmount !== 0) {
+    parts.push(`GST ${formatInrExact(cn.taxAmount)} (${gstSplitText(cn.cgstAmount, cn.sgstAmount)})`);
+  }
+  if (cn.nonTaxableAmount) parts.push(`non-taxable ${formatInrExact(cn.nonTaxableAmount)}`);
+  return parts.join(" + ");
 }
 
 interface CreditNoteDialogProps {
@@ -68,7 +90,10 @@ export const CreditNoteDialog = ({
         amount: amountNum,
         reason: reason.trim(),
       });
-      toast.success(`Credit note ${res.data.data.creditNoteNumber} issued.`);
+      const split = creditSplitText(res.data.data as CreditNote);
+      toast.success(`Credit note ${res.data.data.creditNoteNumber} issued.`, {
+        description: split ?? undefined,
+      });
       onIssued?.(res.data.data);
       setAmount("");
       setReason("");
@@ -160,6 +185,9 @@ export const CreditNoteDialog = ({
                     </span>
                     <span className="font-semibold">{formatCurrency(cn.amount)}</span>
                   </div>
+                  {creditSplitText(cn) && (
+                    <p className="text-gray-500 text-xs">{creditSplitText(cn)}</p>
+                  )}
                   <p className="text-gray-600 text-xs">{cn.reason}</p>
                   <p className="text-gray-400 text-xs">Issued by {cn.issuedBy}</p>
                 </div>

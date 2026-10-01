@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Clock, Save, Loader2, Users } from "lucide-react";
+import { Clock, Save, Loader2, Users, Info } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import apiClient from "@/lib/axios";
-import { formatScheduleTime } from "@/utils/branchScheduleValidator";
+import { formatScheduleTime, scheduleRowError } from "@/utils/branchScheduleValidator";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
@@ -24,8 +24,10 @@ interface SchedulePayload {
   days: DayScheduleRow[];
 }
 
+/** PATCH /branch/grace takes either or both fields. */
 interface GracePayload {
-  graceMinutes: number;
+  graceMinutes?: number;
+  is24Hours?: boolean;
 }
 
 type BookingRestrictionMode = "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
@@ -40,6 +42,8 @@ interface BranchScheduleResponse {
   is24Hours: boolean;
 }
 
+// Starting point for the editor when no hours have been saved yet. Not in
+// force until saved — until then the branch accepts bookings at any time.
 const DEFAULT_SCHEDULE: DayScheduleRow[] = DAY_NAMES.map((_, i) => ({
   dayOfWeek: i,
   isOpen: i !== 0, // Sun closed by default
@@ -173,6 +177,26 @@ export default function BranchSchedulePage() {
     onError: (e: any) => toast.error(e.response?.data?.message || "Failed to update grace period"),
   });
 
+  // "Open 24 hours" switch — same endpoint, is24Hours only
+  const allDayMutation = useMutation({
+    mutationFn: (is24Hours: boolean) => saveGrace({ is24Hours }),
+    onSuccess: (_, is24Hours) => {
+      toast.success(is24Hours ? "Branch set to open 24 hours" : "Daily hours are enforced again");
+      queryClient.invalidateQueries({ queryKey: ["branch-schedule-manager"] });
+    },
+    onError: (e: Error) =>
+      toast.error(
+        (e as { response?: { data?: { message?: string } } }).response?.data?.message ||
+          "Failed to update 24-hour setting",
+      ),
+  });
+
+  const is24Hours = !!data?.is24Hours;
+  // No saved rows = hours not set: the backend accepts bookings at any time
+  const hoursNotSet = !!data && data.schedules.length === 0;
+  const rowErrors = Object.fromEntries(rows.map((r) => [r.dayOfWeek, scheduleRowError(r)]));
+  const hasRowErrors = Object.values(rowErrors).some(Boolean);
+
   const restrictionMutation = useMutation({
     mutationFn: saveRestrictionMode,
     onSuccess: (_, vars) => {
@@ -190,6 +214,10 @@ export default function BranchSchedulePage() {
   };
 
   const handleSaveSchedule = () => {
+    if (hasRowErrors) {
+      toast.error("Fix the highlighted days first");
+      return;
+    }
     scheduleMutation.mutate({ days: rows });
   };
 
@@ -223,24 +251,79 @@ export default function BranchSchedulePage() {
             Branch Operating Hours
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Set the opening and closing times for each day. Bookings outside these
-            hours will be flagged or automatically extended to 24 hours.
+            Set the opening and closing times for each day. Pickups must be within
+            these hours; a return after closing (beyond the grace period) or on a
+            closed day is moved to the next time the branch is open. Extensions must
+            end within these hours.
           </p>
         </div>
+
+        {hoursNotSet && !is24Hours && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-900">
+            <Info className="size-4 shrink-0 mt-0.5 text-amber-600" />
+            <div>
+              <p className="font-semibold">Hours not set: bookings are accepted at any time</p>
+              <p className="mt-0.5 text-amber-800">
+                The times below are only a starting point. Save the schedule to start
+                limiting pickups and returns to your opening hours.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Schedule editor — takes 3 columns */}
           <div className="lg:col-span-3 space-y-6">
+            {/* Open 24 hours */}
             <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">Open 24 hours</p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      Accept pickups and returns at any time, every day. Your weekly
+                      schedule is kept and applies again when you switch this off.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={is24Hours}
+                    aria-label="Open 24 hours"
+                    disabled={allDayMutation.isPending}
+                    onClick={() => allDayMutation.mutate(!is24Hours)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none disabled:opacity-50 ${
+                      is24Hours ? "bg-primary" : "bg-zinc-200"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                        is24Hours ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+                {is24Hours && (
+                  <p className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800">
+                    The branch is open 24 hours — the daily hours below are not enforced.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className={is24Hours ? "opacity-60" : undefined}>
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Weekly Schedule</CardTitle>
                 <CardDescription>
-                  Toggle a day off to mark it as closed. Times use 24-hour format.
+                  Toggle a day off to mark it as closed. Times use 24-hour format; an
+                  open day must close after it opens (use 23:59 for midnight).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {rows.map((row) => (
-                  <div key={row.dayOfWeek} className="flex items-center gap-4">
+                  <div key={row.dayOfWeek} className="space-y-1">
+                  {/* Wraps the times under the day on a phone instead of overflowing the card */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     {/* Day toggle */}
                     <div className="w-28 flex items-center gap-2.5 shrink-0">
                       <button
@@ -286,6 +369,7 @@ export default function BranchSchedulePage() {
                           onChange={(e) =>
                             updateRow(row.dayOfWeek, { closeTime: e.target.value })
                           }
+                          aria-invalid={!!rowErrors[row.dayOfWeek]}
                           className="h-9 w-32 text-sm"
                         />
                       </div>
@@ -293,12 +377,16 @@ export default function BranchSchedulePage() {
                       <span className="text-sm text-zinc-400 italic">Closed all day</span>
                     )}
                   </div>
+                  {rowErrors[row.dayOfWeek] && (
+                    <p className="ml-32 text-xs text-red-600">{rowErrors[row.dayOfWeek]}</p>
+                  )}
+                  </div>
                 ))}
 
                 <div className="pt-4 border-t border-zinc-100">
                   <Button
                     onClick={handleSaveSchedule}
-                    disabled={scheduleMutation.isPending}
+                    disabled={scheduleMutation.isPending || hasRowErrors}
                     className="w-full sm:w-auto"
                   >
                     {scheduleMutation.isPending ? (
@@ -317,8 +405,8 @@ export default function BranchSchedulePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Grace Period</CardTitle>
                 <CardDescription>
-                  Allow returns up to this many minutes after closing time before
-                  the booking is bumped to 24 hours. Set to 0 to disable.
+                  Allow returns up to this many minutes after closing time before the
+                  return is moved to the next open day. Set to 0 to disable.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -439,10 +527,24 @@ export default function BranchSchedulePage() {
                 <CardDescription>How customers will see your hours</CardDescription>
               </CardHeader>
               <CardContent>
-                <PreviewPanel rows={rows} graceMinutes={graceMinutes} />
+                {is24Hours ? (
+                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    Open 24 hours, every day
+                  </p>
+                ) : (
+                  <>
+                    {hoursNotSet && (
+                      <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        Hours not set — customers can book any time. After you save:
+                      </p>
+                    )}
+                    <PreviewPanel rows={rows} graceMinutes={graceMinutes} />
+                  </>
+                )}
                 <p className="mt-4 text-[11px] text-zinc-400 leading-relaxed">
-                  Bookings with a return time after closing (beyond grace) will be
-                  automatically extended to 24 hours. Pickup on closed days is blocked.
+                  A return after closing (beyond grace), before opening or on a closed
+                  day is moved to the next open day at the pickup time. Pickup on closed
+                  days is blocked.
                 </p>
               </CardContent>
             </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -28,15 +28,42 @@ import {
 } from "@/components/ui/select";
 import { CarFront, Undo2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
 import { managerDashboardService } from "@/services/managerDashboard.service";
+import { DlStatusBadge, DlStatusPanel } from "@/components/booking/DlStatus";
+import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 
-export const ManagerConfirmations = () => {
+// Booking photo types from confirmation-details (pickup confirmations only carry PRE_DELIVERY)
+const PHOTO_TYPE_LABELS: Record<string, string> = {
+  PRE_DELIVERY: "Pickup",
+  POST_RETURN: "Return",
+  DAMAGE: "Damage",
+};
+
+/** "Pickup · Front", "Return", … — empty when the server sent neither type nor label. */
+const confirmationPhotoLabel = (photo: { type?: string | null; captureLabel?: string | null }) =>
+  [photo.type ? PHOTO_TYPE_LABELS[photo.type] ?? photo.type : null, photo.captureLabel]
+    .filter(Boolean)
+    .join(" · ");
+
+export const ManagerConfirmations = ({
+  focusBookingId,
+  onChanged,
+}: {
+  /** Opens this booking's review once the list has loaded (notification / overdue-list links). */
+  focusBookingId?: string | null;
+  /** Called after a confirmation is acted on (e.g. to refresh a pending count). */
+  onChanged?: () => void;
+} = {}) => {
   const [confirmations, setConfirmations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [tab, setTab] = useState("pickup");
+  const focusedRef = useRef<string | null>(null);
   
   // Dialog State
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [mediaViewer, setMediaViewer] = useState<{ index: number } | null>(null);
   const [details, setDetails] = useState<any>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
@@ -49,13 +76,21 @@ export const ManagerConfirmations = () => {
 
   useEffect(() => {
     loadConfirmations();
-  }, []);
+    // Re-runs when a link points at another booking
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBookingId]);
 
   const loadConfirmations = async () => {
     try {
       setIsLoading(true);
       const data = await managerDashboardService.getManagerConfirmations();
       setConfirmations(data);
+      const focused = focusBookingId ? data.find((c) => c.publicId === focusBookingId) : null;
+      if (focused && focusedRef.current !== focused.publicId) {
+        focusedRef.current = focused.publicId;
+        setTab(focused.status === "PICKED_UP" ? "return" : "pickup");
+        void handleReview(focused.publicId);
+      }
     } catch (error) {
       toast.error("Failed to load manager confirmations");
     } finally {
@@ -110,6 +145,7 @@ export const ManagerConfirmations = () => {
       toast.success(res.message || "Pickup confirmed successfully");
       setIsDialogOpen(false);
       loadConfirmations();
+      onChanged?.();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to confirm pickup");
     } finally {
@@ -132,6 +168,7 @@ export const ManagerConfirmations = () => {
       }
       setIsDialogOpen(false);
       loadConfirmations();
+      onChanged?.();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Action failed");
     } finally {
@@ -153,6 +190,7 @@ export const ManagerConfirmations = () => {
             {isPickup ? "Pickup Review" : "Return Review"}
           </Badge>
           <span className="font-mono text-sm text-gray-500">#{booking.publicId.substring(0, 8)}</span>
+          <DlStatusBadge status={booking.dlStatus} note={booking.dlDepositNote} />
         </div>
         <h4 className="font-semibold text-lg text-gray-900">
           {booking.items?.[0]?.vehicle?.make} {booking.items?.[0]?.vehicle?.model} (
@@ -167,7 +205,7 @@ export const ManagerConfirmations = () => {
   );
 
   return (
-    <Card className="border-none shadow-md overflow-hidden bg-white mt-8">
+    <Card className="border-none shadow-md overflow-hidden bg-white">
       <CardHeader className="bg-gray-50/50 border-b pb-4">
         <div className="flex items-center gap-2 text-orange-600 mb-1">
           <AlertCircle className="w-5 h-5" />
@@ -179,7 +217,7 @@ export const ManagerConfirmations = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
-        <Tabs defaultValue="pickup" className="w-full">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
           <div className="px-6 pt-4">
             <TabsList className="grid w-[400px] grid-cols-2">
               <TabsTrigger value="pickup" className="flex items-center gap-2">
@@ -234,14 +272,71 @@ export const ManagerConfirmations = () => {
                 </div>
               </div>
 
+              {/* Original licence custody (#3) — the BM can correct it at any status */}
+              {selectedBookingId && (
+                <DlStatusPanel
+                  role="manager"
+                  publicId={selectedBookingId}
+                  bookingStatus={details.status}
+                  dlStatus={details.dlStatus}
+                  dlDepositNote={details.dlDepositNote}
+                  dlStatusUpdatedAt={details.dlStatusUpdatedAt}
+                  dropReminder={details.status === "PICKED_UP"}
+                  onUpdated={(result) => {
+                    setDetails((prev: typeof details) =>
+                      prev
+                        ? {
+                            ...prev,
+                            dlStatus: result.dlStatus,
+                            dlDepositNote: result.dlDepositNote,
+                            dlStatusUpdatedAt: result.dlStatusUpdatedAt,
+                          }
+                        : prev,
+                    );
+                    loadConfirmations();
+                  }}
+                />
+              )}
+
+              {selectedBookingId && (
+                <CustomerQrPhotoCard
+                  target={{ kind: "booking", role: "manager", bookingId: selectedBookingId }}
+                />
+              )}
+
               {details.photos && details.photos.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-2 text-sm text-gray-700">Staff Uploaded Media</h4>
                   <div className="flex gap-2 overflow-x-auto pb-2">
-                    {details.photos.map((p: any) => (
-                      <img key={p.id} src={p.file.url} alt="Proof" className="w-24 h-24 object-cover rounded border" />
+                    {details.photos.map((p: any, pIdx: number) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="relative shrink-0 group"
+                        onClick={() => setMediaViewer({ index: pIdx })}
+                        aria-label="View photo"
+                      >
+                        <img src={p.file.url} alt={confirmationPhotoLabel(p) || "Proof"} className="w-24 h-24 object-cover rounded border cursor-zoom-in" />
+                        <ZoomBadge />
+                        {confirmationPhotoLabel(p) && (
+                          <span className="pointer-events-none absolute top-0 inset-x-0 truncate rounded-t bg-black/55 px-1 py-0.5 text-[10px] text-white">
+                            {confirmationPhotoLabel(p)}
+                          </span>
+                        )}
+                      </button>
                     ))}
                   </div>
+                  <PhotoLightbox
+                    open={!!mediaViewer}
+                    onOpenChange={(o) => !o && setMediaViewer(null)}
+                    items={details.photos.map((p: any, i: number): LightboxItem => ({
+                      url: p.file.url,
+                      mime: p.file.mime,
+                      label: [details.items[0]?.vehicle?.regNo, confirmationPhotoLabel(p)].filter(Boolean).join(" · ") || `Photo ${i + 1}`,
+                    }))}
+                    startIndex={mediaViewer?.index ?? 0}
+                    title="Staff Uploaded Media"
+                  />
                 </div>
               )}
 

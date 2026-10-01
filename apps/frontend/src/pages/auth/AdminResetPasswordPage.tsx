@@ -24,6 +24,7 @@ export default function AdminResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<ResetPasswordFormInput>({
@@ -33,6 +34,7 @@ export default function AdminResetPasswordPage() {
 
   async function onSubmit(values: ResetPasswordFormInput) {
     setIsLoading(true);
+    setLinkError(null);
     try {
       const response = await adminService.resetPassword(
         token ?? "",
@@ -41,6 +43,14 @@ export default function AdminResetPasswordPage() {
       toast.success(response.message);
       navigate("/admin/sign-in");
     } catch (error: any) {
+      if (
+        ["INVALID_TOKEN", "EXPIRED_TOKEN", "USED_TOKEN"].includes(
+          error.response?.data?.code,
+        )
+      ) {
+        setLinkError(error.response?.data?.message);
+        return;
+      }
       toast.error("Could not reset password", {
         description: error.response?.data?.message || "Please try again.",
       });
@@ -84,6 +94,20 @@ export default function AdminResetPasswordPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {linkError && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                >
+                  {linkError}{" "}
+                  <Link
+                    to="/admin/forgot-password"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Request a new link
+                  </Link>
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="password"

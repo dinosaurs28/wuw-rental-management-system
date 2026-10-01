@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { DropBill, OdometerSegment, RentalTimeline, ReturnLateSummary } from "@/types/drop";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 
@@ -7,7 +8,22 @@ export interface LedgerEntry {
   entryType: string;
   classification: string;
   amount: string;
-  gstAmount: string;
+  /**
+   * Stored GST of the line (negative on a discount = its GST reversal). Older
+   * servers don't send it on PICKUP session entries — there the GST was only in
+   * the session's gstAmount. The pickup remaining balance (referenceType
+   * BOOKING_REMAINING) is GST-inclusive and has gstAmount "0.00".
+   */
+  gstAmount?: string;
+  /**
+   * Taxable value: RETURN taxable lines (GST sits in gstAmount on top); on a
+   * discount, −the share that reduced taxable charges. On a PICKUP extension
+   * line it is the pre-discount base (its amount is the taxable value).
+   */
+  baseAmount?: string;
+  /** CGST / SGST of the line, signed like gstAmount ("0.00" otherwise). */
+  cgst?: string;
+  sgst?: string;
   description: string;
   referenceId: string | null;
   referenceType: string | null;
@@ -52,8 +68,15 @@ export interface ReturnKmSummary {
   extraKmRate: string;
   extraKmCharge: string;
   extraKmEnabled: boolean;
-  /** Set when extra km isn't billed automatically (the vehicle was swapped mid-rental). */
+  /** Set when extra km isn't measured (a mid-rental swap was recorded without readings). */
   autoKmSkipped?: "VEHICLE_SWAPPED" | null;
+  /** km on vehicles handed back at mid-rental swaps (with readings). */
+  priorKm?: number;
+  /** Extra km typed by staff (swap without readings); null otherwise. */
+  manualExtraKm?: number | null;
+  kmSource?: "ODOMETER" | "STAFF_ENTERED" | "NONE";
+  swapCount?: number;
+  segments?: OdometerSegment[];
 }
 
 export interface ReturnDiscount {
@@ -64,15 +87,27 @@ export interface ReturnDiscount {
 export interface ReturnSessionResponse {
   session: PaymentSession;
   chargeBreakdown: {
+    /** Before GST */
     subtotal: string;
     waivedTotal: string;
     finalTotal: string;
+    gstAmount?: string;
+    totalWithGst?: string;
     charges: ReturnChargeEntry[];
   };
   /** Present on compute responses. */
   km?: ReturnKmSummary;
   /** Drop discount applied by the last compute (null = none). */
   discount?: ReturnDiscount | null;
+  /** Late return as billed (null on sessions computed before automatic late charges). */
+  late?: ReturnLateSummary | null;
+  /** Per-line GST and the taxable / GST / total split (null on older sessions). */
+  bill?: DropBill | null;
+  rentalTimeline?: RentalTimeline;
+  /** GET only: the return time frozen on the bill. */
+  returnedAt?: string | null;
+  /** GET only: the booked end moved since the compute — recompute before taking payment. */
+  billStale?: boolean;
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────
@@ -113,8 +148,10 @@ export const paymentSessionService = {
       pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
-      /** Staff confirm they hold the customer's original driving licence. */
-      licenseCollected?: boolean;
+      /** Original licence custody (#3) — new clients always send it; re-initiating applies the new choice. */
+      dlStatus?: "COLLECTED" | "NOT_COLLECTED" | "DEPOSIT";
+      /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
+      dlDepositNote?: string | null;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(
@@ -212,10 +249,14 @@ export const paymentSessionService = {
       fastagNotes?: string;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
-      /** Required (true) when the licence was collected at pickup and not yet returned. */
-      licenseReturned?: boolean;
-      /** Re-applied on every compute — resend it or it is dropped. */
+      /** Re-applied on every compute — resend it or it is dropped. Pre-tax. */
       discount?: { amount: number; reason: string };
+      /** MANUAL grace branches only: staff ticked "Apply grace". */
+      applyGrace?: boolean;
+      /** Drops the automatic late charge (audit-logged) — resend it on every compute while waived. */
+      waiveLateCharge?: { reason: string } | null;
+      /** Only used when kmAllowance.manualExtraKmAllowed (swap without readings). */
+      manualExtraKm?: number | null;
     },
   ): Promise<ReturnSessionResponse> {
     const { data } = await apiClient.post(

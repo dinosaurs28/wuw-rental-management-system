@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +45,22 @@ import {
 } from "@/components/ui/form";
 import { customerSession, type CustomerSession } from "@/utils/customerSession";
 import apiClient from "@/lib/axios";
+import {
+  aadhaarNumberSchema,
+  drivingLicenceNumberSchema,
+  optionalEmailSchema,
+} from "@repo/schemas";
+import {
+  employeeCustomerService,
+  type CompleteWalkinProfilePayload,
+} from "@/services/employeeCustomer.service";
+import {
+  apiErrorCode,
+  formatAadhaarInput,
+  formatDrivingLicenceInput,
+  isVerificationPendingError,
+} from "@/lib/customerProfile";
+import { apiErrorMessage } from "@/lib/counterErrors";
 
 // --- STEPS ---
 type Step = "PHONE_OTP" | "PROFILE_DETAILS";
@@ -57,7 +73,10 @@ const phoneSchema = z.object({
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email address"),
+  // Optional for walk-ins (#1) — left out of the payload when blank.
+  email: optionalEmailSchema,
+  drivingLicenceNumber: drivingLicenceNumberSchema,
+  aadhaarNumber: aadhaarNumberSchema,
   dob: z.date({
     required_error: "Date of birth is required.",
   }),
@@ -70,6 +89,8 @@ const profileSchema = z.object({
 
 export default function EmployeeCreateCustomerPage() {
   const navigate = useNavigate();
+  // ?phone= — sent here to verify an earlier walk-in's phone (VERIFICATION_PENDING).
+  const [searchParams] = useSearchParams();
   const { isAuthenticated } = useEmployeeAuthStore();
 
   const [step, setStep] = useState<Step>("PHONE_OTP");
@@ -77,16 +98,29 @@ export default function EmployeeCreateCustomerPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [customerPublicId, setCustomerPublicId] = useState<string | null>(null);
   const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
+  // Set when the phone already belongs to a customer (CUSTOMER_ALREADY_EXISTS).
+  const [existingCustomerId, setExistingCustomerId] = useState<string | null>(
+    null,
+  );
 
   // Forms
   const phoneForm = useForm<z.infer<typeof phoneSchema>>({
     resolver: zodResolver(phoneSchema),
-    defaultValues: { phone: "", otp: "" },
+    defaultValues: { phone: searchParams.get("phone") ?? "", otp: "" },
   });
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      // Every text input starts controlled ("" not undefined) — React warns otherwise
+      name: "",
+      email: "",
+      drivingLicenceNumber: "",
+      aadhaarNumber: "",
+      addressLine1: "",
+      city: "",
+      state: "",
+      zipCode: "",
       country: "India", // Default
     },
   });
@@ -95,21 +129,57 @@ export default function EmployeeCreateCustomerPage() {
 
   const handleSendOtp = async (data: z.infer<typeof phoneSchema>) => {
     setIsLoading(true);
+    setExistingCustomerId(null);
     try {
       // Call Backend: Initiate Walkin (req.body: { phone })
-      const response = await apiClient.post("/employee/walkin/initiate", {
-        phone: data.phone,
-      });
+      const response = await employeeCustomerService.initiateWalkin(data.phone);
 
-      setCustomerPublicId(response.data.customer_public_id);
-      setReceivedOtp(response.data.otp);
+      setCustomerPublicId(response.customer_public_id);
+      setReceivedOtp(String(response.otp));
       setOtpSent(true);
+      if (response.resumed) {
+        // An earlier walk-in for this number never finished OTP — same customer.
+        toast.info("Resuming the earlier walk-in for this number");
+      }
       toast.success(
-        `OTP sent explicitly to customer phone: ${response.data.otp}`,
+        `OTP sent explicitly to customer phone: ${response.otp}`,
       );
     } catch (error: any) {
       console.error(error);
+      const existingId = error?.response?.data?.customer_public_id;
+      if (
+        apiErrorCode(error) === "CUSTOMER_ALREADY_EXISTS" &&
+        typeof existingId === "string"
+      ) {
+        setExistingCustomerId(existingId);
+      }
       toast.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // The phone already belongs to a customer: continue with that account
+  // instead of creating a new one (complete its profile on the vehicle page).
+  const handleUseExistingCustomer = async () => {
+    if (!existingCustomerId) return;
+    setIsLoading(true);
+    try {
+      const existing =
+        await employeeCustomerService.getCustomer(existingCustomerId);
+      const session: CustomerSession = {
+        publicId: existingCustomerId,
+        name: existing.name,
+        phone: existing.phone || phoneForm.getValues("phone"),
+        profileCompleted: existing.isProfileCompleted ?? false,
+        kycStatus: false,
+      };
+      customerSession.set(session);
+      useEmployeeBookingStore.getState().setUtr("");
+      toast.success(`Selected customer: ${existing.name}`);
+      navigate("/employee/vehicles");
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Failed to load the customer"));
     } finally {
       setIsLoading(false);
     }
@@ -148,13 +218,18 @@ export default function EmployeeCreateCustomerPage() {
     }
 
     setIsLoading(true);
+    // Never log the form values or the request: they carry the Aadhaar number.
     try {
       // Call Backend: Complete Walkin Profile
-      const payload = {
+      const email = data.email?.trim();
+      const payload: CompleteWalkinProfilePayload = {
         customer_public_id: customerPublicId,
         name: data.name,
-        email: data.email,
-        dob: data.dob.toISOString().split("T")[0], // Format as YYYY-MM-DD
+        // Blank = the walk-in keeps its (hidden) placeholder email.
+        ...(email ? { email } : {}),
+        drivingLicenceNumber: data.drivingLicenceNumber,
+        aadhaarNumber: data.aadhaarNumber,
+        dob: format(data.dob, "yyyy-MM-dd"),
         addressLine1: data.addressLine1,
         city: data.city,
         state: data.state,
@@ -162,30 +237,49 @@ export default function EmployeeCreateCustomerPage() {
         country: data.country,
       };
 
-      await apiClient.post("/employee/walkin/complete", payload);
+      const result =
+        await employeeCustomerService.completeWalkinProfile(payload);
 
-      // Fetch fresh customer details to get the updated profile status
-      const detailsResponse = await apiClient.get(
-        `/employee/customer/${customerPublicId}`,
-      );
-      const freshData = detailsResponse.data.data;
-
-      // Success! Store session with fresh data
+      // Success! Store session with the server-derived profile status
       const session: CustomerSession = {
         publicId: customerPublicId,
-        name: freshData.name,
+        name: data.name,
         phone: phoneForm.getValues("phone"),
-        profileCompleted: freshData.isProfileCompleted,
+        profileCompleted: result.isProfileCompleted,
         kycStatus: false, // New customer, no KYC yet
       };
       customerSession.set(session);
       useEmployeeBookingStore.getState().setUtr("");
 
-      toast.success("Customer profile created!");
+      if (result.isProfileCompleted) {
+        toast.success("Customer profile created!");
+      } else {
+        toast.warning(result.message);
+      }
       navigate("/employee/vehicles");
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to create profile");
+      const body = error?.response?.data;
+      // VALIDATION_ERROR: per-field messages under errors.fieldErrors
+      const fieldErrors: Record<string, string[] | undefined> =
+        body?.errors?.fieldErrors ?? {};
+      for (const [field, messages] of Object.entries(fieldErrors)) {
+        if (messages?.[0] && field in profileSchema.shape) {
+          profileForm.setError(field as keyof z.infer<typeof profileSchema>, {
+            message: messages[0],
+          });
+        }
+      }
+      if (body?.code === "EMAIL_ALREADY_EXISTS" || body?.code === "EMAIL_CHANGE_NOT_ALLOWED") {
+        profileForm.setError("email", { message: body.message });
+      }
+      if (isVerificationPendingError(error)) {
+        // The phone OTP is not verified for this customer: back to that step.
+        setStep("PHONE_OTP");
+        setOtpSent(false);
+        setReceivedOtp(null);
+        phoneForm.setValue("otp", "");
+      }
+      toast.error(body?.message || "Failed to create profile");
     } finally {
       setIsLoading(false);
     }
@@ -228,6 +322,11 @@ export default function EmployeeCreateCustomerPage() {
                             <Input
                               placeholder="+91 98765 43210"
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                // The "already exists" match was for the old number.
+                                setExistingCustomerId(null);
+                              }}
                               disabled={otpSent}
                             />
                           </FormControl>
@@ -273,6 +372,25 @@ export default function EmployeeCreateCustomerPage() {
                           )}
                         />
                       </>
+                    )}
+
+                    {existingCustomerId && !otpSent && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                        <p className="text-sm text-amber-800">
+                          A customer with this phone number already exists.
+                          Continue with that customer instead of creating a
+                          new account.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={handleUseExistingCustomer}
+                          disabled={isLoading}
+                        >
+                          Continue with existing customer
+                        </Button>
+                      </div>
                     )}
 
                     {!otpSent ? (
@@ -329,9 +447,60 @@ export default function EmployeeCreateCustomerPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email (optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="john@example.com" {...field} />
+                          <Input
+                            placeholder="john@example.com"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="drivingLicenceNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Driving Licence number *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="KA01 20110012345"
+                            autoComplete="off"
+                            autoCapitalize="characters"
+                            spellCheck={false}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                formatDrivingLicenceInput(e.target.value),
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="aadhaarNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Aadhaar number *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="1234 5678 9012"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={14}
+                            className="tabular-nums"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(formatAadhaarInput(e.target.value))
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { extensionService, type DisplacedBooking } from "@/services/extension.service";
+import { displayEmail } from "@repo/schemas";
 
 type ResolveAction = "CONFIRM_SWAP" | "CANCEL_WITH_REFUND" | "CANCEL_NO_REFUND";
 
@@ -221,13 +222,14 @@ export function DisplacedBookingsPage() {
                         {b.customer.phone}
                       </a>
                     )}
-                    {b.customer.email && (
+                    {/* Walk-in placeholder emails can't receive mail — hide them. */}
+                    {displayEmail(b.customer.email) && (
                       <a
-                        href={`mailto:${b.customer.email}`}
+                        href={`mailto:${displayEmail(b.customer.email)}`}
                         className="flex items-center gap-1.5 text-blue-600 hover:underline"
                       >
                         <Mail className="h-3.5 w-3.5" />
-                        {b.customer.email}
+                        {displayEmail(b.customer.email)}
                       </a>
                     )}
                   </div>

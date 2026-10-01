@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { managerDashboardService } from "@/services/managerDashboard.service";
 import type { Booking } from "@/services/managerDashboard.service";
+import { DlStatusPanel } from "@/components/booking/DlStatus";
 
 export const DashboardActiveBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -267,6 +268,18 @@ export const DashboardActiveBookings = () => {
                           {booking.status}
                         </Badge>
                       )}
+                      {/* Original licence custody (#3) */}
+                      <DlStatusPanel
+                        variant="compact"
+                        role="manager"
+                        publicId={booking.id}
+                        bookingStatus={booking.status}
+                        dlStatus={booking.dlStatus}
+                        dlDepositNote={booking.dlDepositNote}
+                        bookingLabel={`${booking.vehicleName} · ${booking.customerName}`}
+                        onUpdated={() => loadActiveBookings()}
+                        className="mt-1.5"
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

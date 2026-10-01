@@ -23,6 +23,7 @@ const purposeLabels: Record<string, string> = {
   EXTENSION_FEE: "Extension Fee",
   EXTENSION: "Extension Fee",
   DAMAGE_FEE: "Damage Fee",
+  SAFETY_DEPOSIT: "Safety Deposit",
 };
 
 function formatCollectedAt(iso: string): { label: string; isOld: boolean } {

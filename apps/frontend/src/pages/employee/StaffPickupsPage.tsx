@@ -69,12 +69,17 @@ import { kycService } from "@/services/kyc.service";
 // import { extensionService } from "@/services/extension.service";
 import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
+import type { DlStatus } from "@/services/dlStatus.service";
+import { DlStatusPanel, DlStatusSelector } from "@/components/booking/DlStatus";
+import { dlChoiceError, dlChoicePayload } from "@/lib/dlStatus";
 import type { AvailableVehicle } from "@/types/vehicleSwap";
 import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
 import {
   PickupImageCard,
   type UploadedImage,
 } from "@/components/employee/PickupImageCard";
+import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
+import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 
@@ -177,53 +182,90 @@ function YesNoToggle({
   );
 }
 
-// --- ORIGINAL LICENCE CHECK ---
-const LICENSE_NOT_COLLECTED_MESSAGE =
-  "Collect the customer's original driving licence before handing over the vehicle.";
+// --- RENTAL TERMS (#21) ---
+type PickupPricingRules = Awaited<ReturnType<typeof bookingService.getPickupPricingRules>>;
 
-interface LicenseCollectedCheckProps {
-  id?: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  error?: string | null;
-  disabled?: boolean;
-}
-
-function LicenseCollectedCheck({
-  id = "licenseCollected",
-  checked,
-  onChange,
-  error,
-  disabled = false,
-}: LicenseCollectedCheckProps) {
-  return (
-    <div className="space-y-1.5">
-      <div
-        className={cn(
-          "flex items-start gap-3 rounded-lg border p-3",
-          error ? "border-red-200 bg-red-50/60" : "border-amber-200 bg-amber-50/60",
-        )}
-      >
-        <Checkbox
-          id={id}
-          checked={checked}
-          onCheckedChange={(v) => onChange(!!v)}
-          disabled={disabled}
-          className="mt-0.5"
-        />
-        <div className="space-y-0.5">
-          <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
-            Original driving licence collected <span className="text-red-500">*</span>
-          </Label>
-          <p className="text-xs text-muted-foreground">
-            Keep the customer's physical licence until the car is returned.
-          </p>
-        </div>
+/**
+ * This booking's free km and overage rates — what staff tell the customer at
+ * handover. Uses the booking's plan-based allowance (the figures the drop bills
+ * with), never the 24-hour rate-card value or a 0 placeholder.
+ */
+function RentalTermsBox({
+  pricingRules,
+  isLoading,
+}: {
+  pricingRules: PickupPricingRules | null | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin text-[#FF5F00]" />
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading rental terms…
+        </span>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+    );
+  }
+  if (!pricingRules?.pricing && !pricingRules?.kmAllowance) return null;
+
+  const includedKm =
+    pricingRules.pricing?.includedKm ?? pricingRules.kmAllowance?.includedKm ?? null;
+  const extraKmEnabled =
+    pricingRules.pricing?.extraKmEnabled ?? pricingRules.kmAllowance?.extraKmEnabled;
+  const extraKmRate =
+    pricingRules.pricing?.extraKmRate ?? pricingRules.kmAllowance?.extraKmRate ?? null;
+
+  return (
+    <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+      <p className="text-xs font-semibold text-orange-800 uppercase tracking-wide mb-2">
+        Rental Terms
+      </p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        {includedKm != null && (
+          <div>
+            <p className="text-muted-foreground">Free km (this booking)</p>
+            <p className="font-semibold text-gray-800">
+              {includedKm.toLocaleString("en-IN")} km
+            </p>
+          </div>
+        )}
+        {(extraKmEnabled === false || extraKmRate != null) && (
+          <div>
+            <p className="text-muted-foreground">Extra km rate</p>
+            <p className="font-semibold text-gray-800">
+              {extraKmEnabled === false ? "Not charged" : `₹${extraKmRate}/km`}
+            </p>
+          </div>
+        )}
+        {pricingRules.pricing && (
+          <div>
+            <p className="text-muted-foreground">Extra hour rate</p>
+            <p className="font-semibold text-gray-800">
+              ₹{pricingRules.pricing.extraHourRate}/hr
+            </p>
+          </div>
+        )}
+        {pricingRules.frozenChargeConfig?.fuelModuleEnabled && (
+          <div>
+            <p className="text-muted-foreground">Fuel Tracking</p>
+            <p className="font-semibold text-green-700">Enabled</p>
+          </div>
+        )}
+        {pricingRules.frozenChargeConfig?.fastagModuleEnabled && (
+          <div>
+            <p className="text-muted-foreground">Fastag Charges</p>
+            <p className="font-semibold text-green-700">Enabled</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
+// --- ORIGINAL LICENCE (#3) ---
+// Server codes for a bad DL choice; shown under the selector rather than only as a toast.
+const DL_ERROR_CODES = ["INVALID_DL_STATUS", "DL_DEPOSIT_NOTE_REQUIRED", "DL_DEPOSIT_NOTE_TOO_LONG"];
 
 // ============================================================================
 // MAIN COMPONENT
@@ -234,6 +276,7 @@ export default function StaffPickupsPage() {
   const queryClient = useQueryClient();
 
   // --- STEP 0: Vehicle Available ---
+  const [pickupViewerIndex, setPickupViewerIndex] = useState<number | null>(null);
   const [vehicleAvailable, setVehicleAvailable] = useState<boolean | null>(null);
   const [swapCompleted, setSwapCompleted] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<AvailableVehicle | null>(null);
@@ -255,6 +298,8 @@ export default function StaffPickupsPage() {
   // --- STEP 7: Discount ---
   const [discountInput, setDiscountInput] = useState("");
   const [pendingDiscountCode, setPendingDiscountCode] = useState<string | null>(null);
+  /** Last counter-coupon refusal (server message), shown under the coupon field. */
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   // --- STEP 3: KYC ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
@@ -272,9 +317,10 @@ export default function StaffPickupsPage() {
   const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
-  // --- ORIGINAL LICENCE ---
-  const [licenseCollected, setLicenseCollected] = useState(false);
-  const [licenseError, setLicenseError] = useState<string | null>(null);
+  // --- ORIGINAL LICENCE (#3): required choice, nothing pre-selected ---
+  const [dlStatus, setDlStatus] = useState<DlStatus>(null);
+  const [dlDepositNote, setDlDepositNote] = useState("");
+  const [dlError, setDlError] = useState<string | null>(null);
 
   // --- CONFIRM DIALOG ---
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -309,6 +355,11 @@ export default function StaffPickupsPage() {
     retry: false,
   });
   const captureConfig = captureConfigData?.config ?? null;
+  // Captured angle photos in config order, for the multi-photo viewer
+  const filledCaptureSlots = (captureConfig?.fields ?? []).flatMap((f) => {
+    const slot = captureSlots[f.name];
+    return slot ? [{ url: slot.url, label: f.name }] : [];
+  });
 
   // Available vehicles for swap (only when vehicleAvailable === false)
   const {
@@ -324,12 +375,14 @@ export default function StaffPickupsPage() {
     enabled: vehicleAvailable === false,
   });
 
-  // Pricing rules (lazy — only when confirm dialog opens)
+  // Rental terms — shown on the inspection step (and the legacy confirm dialog),
+  // so staff always see this booking's free km and ₹/km at handover (#21)
   const { data: pricingRules, isLoading: isLoadingPricing } = useQuery({
     queryKey: ["pickup-pricing-rules", bookingId],
     queryFn: () =>
       bookingId ? bookingService.getPickupPricingRules(bookingId) : null,
-    enabled: isConfirmOpen,
+    enabled: !!bookingId,
+    retry: false,
   });
 
   // Extension query — temporarily disabled
@@ -397,7 +450,8 @@ export default function StaffPickupsPage() {
       fuelLevel: number;
       pickupImageIds?: string[];
       requireManagerConfirmation?: boolean;
-      licenseCollected: boolean;
+      dlStatus: NonNullable<DlStatus>;
+      dlDepositNote?: string | null;
     }) => bookingService.approvePickup(bookingId!, data),
     onSuccess: (response: any) => {
       toast.success(response?.message || "Vehicle Handover Confirmed!");
@@ -406,8 +460,8 @@ export default function StaffPickupsPage() {
       navigate("/employee/dashboard");
     },
     onError: (error: any) => {
-      if (error.response?.data?.code === "LICENSE_NOT_COLLECTED") {
-        setLicenseError(error.response.data.message || LICENSE_NOT_COLLECTED_MESSAGE);
+      if (DL_ERROR_CODES.includes(error.response?.data?.code)) {
+        setDlError(error.response.data.message);
       }
       toast.error(error.response?.data?.message || "Failed to confirm handover");
       setIsConfirmOpen(false);
@@ -455,9 +509,16 @@ export default function StaffPickupsPage() {
     },
     onError: (error: any) => {
       const status = error?.response?.status;
-      if (error?.response?.data?.code === "LICENSE_NOT_COLLECTED") {
-        const message = error.response.data.message || LICENSE_NOT_COLLECTED_MESSAGE;
-        setLicenseError(message);
+      if (error?.response?.data?.couponRejected) {
+        // The saved counter coupon failed its full check — nothing was saved.
+        // Drop it so staff can fix the code or start the payment without it.
+        setPendingDiscountCode(null);
+        setDiscountInput("");
+        setCouponError(error.response.data.message || "This coupon can't be used for this booking.");
+        toast.error(error.response.data.message || "This coupon can't be used for this booking.");
+      } else if (DL_ERROR_CODES.includes(error?.response?.data?.code)) {
+        const message = error.response.data.message;
+        setDlError(message);
         toast.error(message);
       } else if (status === 409) {
         setIsConfirmOpen(true);
@@ -472,9 +533,14 @@ export default function StaffPickupsPage() {
     onSuccess: (session) => {
       setPickupSession(session);
       setDiscountInput("");
+      setCouponError(null);
       toast.success("Discount applied");
     },
-    onError: (error: any) => toast.error(error?.response?.data?.message || "Invalid discount code"),
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || "Invalid discount code";
+      setCouponError(message);
+      toast.error(message);
+    },
   });
 
   const removeDiscountMutation = useMutation({
@@ -526,6 +592,8 @@ export default function StaffPickupsPage() {
       setShowSwapConfirmModal(false);
       setSelectedVehicle(null);
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      // The rental terms follow the car on the booking
+      queryClient.invalidateQueries({ queryKey: ["pickup-pricing-rules", bookingId] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to swap vehicle");
@@ -551,7 +619,11 @@ export default function StaffPickupsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId, useSessionFlow]);
 
-  const canProceedFromStep0 = vehicleAvailable === true || swapCompleted;
+  // A pickup session past OPEN already saved this car's handover readings, so
+  // the car is settled: step 0 is answered and locked (the server also refuses
+  // a pre-pickup swap then — PICKUP_IN_PROGRESS).
+  const pickupStarted = !!pickupSession && pickupSession.status !== "OPEN";
+  const canProceedFromStep0 = vehicleAvailable === true || swapCompleted || pickupStarted;
   // Extension step disabled — step 1 passes through automatically
   const canProceedFromStep1 = canProceedFromStep0;
   const canProceedFromStep2 = canProceedFromStep1;
@@ -560,6 +632,8 @@ export default function StaffPickupsPage() {
     areAllDocsApproved &&
     (watch("odo") ?? 0) > 0 &&
     watch("fuelLevel") !== "";
+  // DL choice is required (and a note for DEPOSIT) before the handover can be sent.
+  const dlChoiceReady = dlChoiceError(dlStatus, dlDepositNote) === null;
 
   // --- HANDLERS ---
   const handleFileSelect = async (file: File) => {
@@ -573,9 +647,21 @@ export default function StaffPickupsPage() {
     }
   };
 
-  const handleLicenseCollectedChange = (checked: boolean) => {
-    setLicenseCollected(checked);
-    setLicenseError(null);
+  const handleDlStatusChange = (value: NonNullable<DlStatus>) => {
+    setDlStatus(value);
+    setDlError(null);
+  };
+
+  const handleDlNoteChange = (note: string) => {
+    setDlDepositNote(note);
+    setDlError(null);
+  };
+
+  /** Blocks the handover until a DL status (and a deposit note for DEPOSIT) is chosen. */
+  const checkDlChoice = (): boolean => {
+    const problem = dlChoiceError(dlStatus, dlDepositNote);
+    setDlError(problem);
+    return problem === null;
   };
 
   const handleDeleteImage = (fileId: string) => {
@@ -640,7 +726,8 @@ export default function StaffPickupsPage() {
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
-      licenseCollected,
+      // dlStatus (+ dlDepositNote for DEPOSIT); the deprecated licenseCollected is no longer sent.
+      ...(dlStatus ? dlChoicePayload(dlStatus, dlDepositNote) : {}),
     };
 
     if (captureConfig) {
@@ -657,10 +744,7 @@ export default function StaffPickupsPage() {
   const onConfirmHandover = (data: HandoverFormValues) => {
     // const chargeConfig = booking?.frozenChargeConfig;
 
-    if (!licenseCollected) {
-      setLicenseError(LICENSE_NOT_COLLECTED_MESSAGE);
-      return;
-    }
+    if (!checkDlChoice()) return;
 
     // Validate required capture photos
     if (captureConfig) {
@@ -690,7 +774,8 @@ export default function StaffPickupsPage() {
           : undefined,
         // extensionPublicId: pendingExtensionPublicId ?? undefined, // extension disabled
         discountCode: pendingDiscountCode ?? undefined,
-        licenseCollected: payload.licenseCollected,
+        dlStatus: payload.dlStatus,
+        dlDepositNote: payload.dlDepositNote,
       });
     } else {
       setIsConfirmOpen(true);
@@ -698,10 +783,7 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandoverLegacy = (data: HandoverFormValues) => {
-    if (!licenseCollected) {
-      setLicenseError(LICENSE_NOT_COLLECTED_MESSAGE);
-      return;
-    }
+    if (!checkDlChoice()) return;
     const payload = buildHandoverPayload(data);
     handoverMutation.mutate(payload as any);
   };
@@ -838,6 +920,18 @@ export default function StaffPickupsPage() {
           </div>
         )}
 
+        {/* DL status recorded at pickup — Fleet can still correct it while on trip */}
+        {isPickedUp && (
+          <DlStatusPanel
+            role="employee"
+            publicId={booking.publicId}
+            bookingStatus={booking.status}
+            dlStatus={booking.dlStatus}
+            dlDepositNote={booking.dlDepositNote}
+            dlStatusUpdatedAt={booking.dlStatusUpdatedAt}
+          />
+        )}
+
         {/* ─────────────────────────────────────────────────────────── */}
         {/* STEP 0: VEHICLE AVAILABLE?                                  */}
         {/* ─────────────────────────────────────────────────────────── */}
@@ -846,19 +940,30 @@ export default function StaffPickupsPage() {
           title="Is the vehicle available and ready?"
           subtitle="Confirm the vehicle is on-site and in good condition"
           isCompleted={canProceedFromStep0}
-          isLocked={isPickedUp}
+          isLocked={isPickedUp || pickupStarted}
         >
           <CardContent className="pt-4 space-y-4">
             <YesNoToggle
-              value={vehicleAvailable}
+              value={pickupStarted && vehicleAvailable === null ? true : vehicleAvailable}
               onChange={(v) => {
                 setVehicleAvailable(v);
                 if (v && swapCompleted) {
                   // They previously swapped but now say yes — allow
                 }
               }}
-              disabled={isPickedUp || swapCompleted}
+              disabled={isPickedUp || swapCompleted || pickupStarted}
             />
+
+            {pickupStarted && !isPickedUp && (
+              <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <p className="text-sm">
+                  The pickup payment has been started with this vehicle, so it can't be
+                  swapped now. Complete the pickup, then swap it from the drop screen if
+                  needed.
+                </p>
+              </div>
+            )}
 
             {/* Swap completed success message */}
             {swapCompleted && (
@@ -872,7 +977,7 @@ export default function StaffPickupsPage() {
             )}
 
             {/* Inline swap panel */}
-            {vehicleAvailable === false && !swapCompleted && (
+            {vehicleAvailable === false && !swapCompleted && !pickupStarted && (
               <div className="mt-2 space-y-3">
                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-800">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -1112,6 +1217,14 @@ export default function StaffPickupsPage() {
                 })}
               </div>
             )}
+
+            {/* Customer QR code photo (#4) — informational, not part of the approval gate */}
+            {bookingId && (
+              <CustomerQrPhotoCard
+                className="mt-4"
+                target={{ kind: "booking", role: "staff", bookingId }}
+              />
+            )}
           </CardContent>
         </StepCard>
 
@@ -1128,6 +1241,10 @@ export default function StaffPickupsPage() {
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4">
+            {/* This booking's free km / extra km rate — tell the customer at handover (#21) */}
+            <div className="mb-5">
+              <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} />
+            </div>
             <form className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="odo" className="text-sm font-medium">
@@ -1144,6 +1261,7 @@ export default function StaffPickupsPage() {
                       className="h-12"
                       disabled={isPickedUp}
                       {...field}
+                      value={field.value ?? ""}
                       onChange={(e) => field.onChange(parseFloat(e.target.value))}
                     />
                   )}
@@ -1217,17 +1335,30 @@ export default function StaffPickupsPage() {
                     >
                       {slot ? (
                         <div className="relative">
-                          <img
-                            src={slot.url}
-                            alt={field.name}
-                            className="w-full h-28 object-cover"
-                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPickupViewerIndex(
+                                filledCaptureSlots.findIndex((s) => s.label === field.name),
+                              )
+                            }
+                            aria-label={`Zoom ${field.name} photo`}
+                            className="relative block w-full cursor-zoom-in"
+                          >
+                            <img
+                              src={slot.url}
+                              alt={field.name}
+                              className="w-full h-28 object-cover"
+                            />
+                            <ZoomBadge />
+                          </button>
                           {!isPickedUp && (
                             <button
                               type="button"
-                              onClick={() =>
-                                handleCaptureSlotDelete(field.name, slot.fileId)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCaptureSlotDelete(field.name, slot.fileId);
+                              }}
                               className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
                             >
                               <X className="h-3.5 w-3.5" />
@@ -1278,6 +1409,13 @@ export default function StaffPickupsPage() {
                     </div>
                   );
                 })}
+                <PhotoLightbox
+                  open={pickupViewerIndex !== null}
+                  onOpenChange={(o) => !o && setPickupViewerIndex(null)}
+                  items={filledCaptureSlots}
+                  startIndex={pickupViewerIndex ?? 0}
+                  title="Pickup Photos"
+                />
               </div>
             ) : (
               <>
@@ -1292,16 +1430,24 @@ export default function StaffPickupsPage() {
                 )}
                 {uploadedImages.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                    {uploadedImages.map((image) => (
+                    {uploadedImages.map((image, imgIdx) => (
                       <PickupImageCard
                         key={image.fileId}
                         image={image}
+                        onOpen={() => setPickupViewerIndex(imgIdx)}
                         onDelete={handleDeleteImage}
                         isDeleting={deletingImageId === image.fileId}
                       />
                     ))}
                   </div>
                 )}
+                <PhotoLightbox
+                  open={pickupViewerIndex !== null}
+                  onOpenChange={(o) => !o && setPickupViewerIndex(null)}
+                  items={uploadedImages.map((im, i) => ({ url: im.url, label: `Pickup photo ${i + 1}` }))}
+                  startIndex={pickupViewerIndex ?? 0}
+                  title="Pickup Photos"
+                />
               </>
             )}
           </CardContent>
@@ -1403,7 +1549,16 @@ export default function StaffPickupsPage() {
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4 space-y-3">
-            {pickupSession ? (
+            {!useSessionFlow ? (
+              // Legacy pickup has no payment session to carry a coupon line
+              <div className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-600">
+                <Tag className="h-4 w-4 mt-0.5 shrink-0 text-neutral-400" />
+                <span>
+                  Counter coupons need Unified Payments. This branch uses the standard pickup, so a
+                  coupon can't be applied here.
+                </span>
+              </div>
+            ) : pickupSession ? (
               // Session is open — apply/remove discount live
               (() => {
                 const discountEntry = pickupSession.entries.find((e) => e.classification === "DISCOUNT");
@@ -1435,7 +1590,10 @@ export default function StaffPickupsPage() {
                         className="pl-9 h-10 uppercase"
                         placeholder="Enter coupon code"
                         value={discountInput}
-                        onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          setDiscountInput(e.target.value.toUpperCase());
+                          setCouponError(null);
+                        }}
                         disabled={applyDiscountMutation.isPending}
                       />
                     </div>
@@ -1464,6 +1622,7 @@ export default function StaffPickupsPage() {
                       onChange={(e) => {
                         setDiscountInput(e.target.value.toUpperCase());
                         setPendingDiscountCode(null);
+                        setCouponError(null);
                       }}
                       disabled={!!pendingDiscountCode}
                     />
@@ -1493,15 +1652,19 @@ export default function StaffPickupsPage() {
                 {pendingDiscountCode && (
                   <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                     <Tag className="h-3.5 w-3.5" />
-                    <span>Coupon <strong>{pendingDiscountCode}</strong> will be applied at payment</span>
+                    <span>Coupon <strong>{pendingDiscountCode}</strong> will be checked and applied when you start the payment</span>
                   </div>
                 )}
                 {!pendingDiscountCode && (
                   <p className="text-xs text-muted-foreground">
-                    Discount will be validated and applied when you proceed to payment.
+                    The coupon is fully checked when you proceed to payment. If it can't be used, it is
+                    removed and the reason is shown here.
                   </p>
                 )}
               </div>
+            )}
+            {useSessionFlow && couponError && (
+              <p className="text-xs text-red-600">{couponError}</p>
             )}
           </CardContent>
         </StepCard>
@@ -1570,19 +1733,24 @@ export default function StaffPickupsPage() {
                       GST and discounts will be computed on the next step
                     </p>
 
-                    <LicenseCollectedCheck
-                      checked={licenseCollected}
-                      onChange={handleLicenseCollectedChange}
-                      error={licenseError}
-                      disabled={initiatePickupSessionMutation.isPending}
-                    />
+                    <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+                      <DlStatusSelector
+                        id="dl-status-session"
+                        value={dlStatus}
+                        note={dlDepositNote}
+                        onValueChange={handleDlStatusChange}
+                        onNoteChange={handleDlNoteChange}
+                        error={dlError}
+                        disabled={initiatePickupSessionMutation.isPending}
+                      />
+                    </div>
 
                     <Button
                       type="button"
                       className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-12 text-sm font-semibold rounded-xl"
                       disabled={
                         !isHandoverReady ||
-                        !licenseCollected ||
+                        !dlChoiceReady ||
                         initiatePickupSessionMutation.isPending
                       }
                       onClick={handleSubmit(onConfirmHandover)}
@@ -1593,14 +1761,30 @@ export default function StaffPickupsPage() {
                         "Confirm & Proceed to Payment →"
                       )}
                     </Button>
-                    {!isHandoverReady && (
+                    {!isHandoverReady ? (
                       <p className="text-xs text-center text-muted-foreground">
                         Complete all steps above to proceed
+                      </p>
+                    ) : !dlChoiceReady && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        Choose the driving licence status to proceed
                       </p>
                     )}
                   </>
                 ) : (
                   <>
+                    {/* DL choice sent with the session; correctable until the payment completes */}
+                    <DlStatusPanel
+                      role="employee"
+                      publicId={booking.publicId}
+                      bookingStatus={booking.status}
+                      dlStatus={dlStatus ?? booking.dlStatus}
+                      dlDepositNote={dlStatus ? dlDepositNote : booking.dlDepositNote}
+                      onUpdated={(result) => {
+                        setDlStatus(result.dlStatus);
+                        setDlDepositNote(result.dlDepositNote ?? "");
+                      }}
+                    />
                     <LedgerSummaryCard
                       session={pickupSession}
                       onRemoveDiscount={() => removeDiscountMutation.mutate()}
@@ -1626,17 +1810,22 @@ export default function StaffPickupsPage() {
         {!isPickedUp && !useSessionFlow && (
           <div className="pt-2 space-y-4">
             {isHandoverReady && (
-              <LicenseCollectedCheck
-                checked={licenseCollected}
-                onChange={handleLicenseCollectedChange}
-                error={licenseError}
-                disabled={handoverMutation.isPending}
-              />
+              <div className="rounded-lg border border-gray-200 bg-white p-3">
+                <DlStatusSelector
+                  id="dl-status-legacy"
+                  value={dlStatus}
+                  note={dlDepositNote}
+                  onValueChange={handleDlStatusChange}
+                  onNoteChange={handleDlNoteChange}
+                  error={dlError}
+                  disabled={handoverMutation.isPending}
+                />
+              </div>
             )}
             <Button
               type="button"
               className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-14 text-base font-semibold rounded-xl shadow-md"
-              disabled={!isHandoverReady || !licenseCollected || handoverMutation.isPending}
+              disabled={!isHandoverReady || !dlChoiceReady || handoverMutation.isPending}
               onClick={handleSubmit(onConfirmHandoverLegacy)}
             >
               {handoverMutation.isPending ? (
@@ -1648,9 +1837,13 @@ export default function StaffPickupsPage() {
                 "Confirm Handover"
               )}
             </Button>
-            {!isHandoverReady && (
+            {!isHandoverReady ? (
               <p className="text-xs text-center text-muted-foreground">
                 Complete all steps above to enable handover
+              </p>
+            ) : !dlChoiceReady && (
+              <p className="text-xs text-center text-muted-foreground">
+                Choose the driving licence status to enable handover
               </p>
             )}
           </div>
@@ -1751,59 +1944,16 @@ export default function StaffPickupsPage() {
               </div>
             </div>
 
-            {/* Pricing Rules */}
-            {isLoadingPricing ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-[#FF5F00]" />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  Loading pricing rules…
-                </span>
-              </div>
-            ) : pricingRules?.pricing ? (
-              <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3">
-                <p className="text-xs font-semibold text-orange-800 uppercase tracking-wide mb-2">
-                  Rental Terms
-                </p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Free KM (24hr)</p>
-                    <p className="font-semibold text-gray-800">
-                      {pricingRules.pricing.freeKm24Hour} km
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Extra KM Rate</p>
-                    <p className="font-semibold text-gray-800">
-                      ₹{pricingRules.pricing.extraKmRate}/km
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Extra Hour Rate</p>
-                    <p className="font-semibold text-gray-800">
-                      ₹{pricingRules.pricing.extraHourRate}/hr
-                    </p>
-                  </div>
-                  {pricingRules.frozenChargeConfig?.fuelModuleEnabled && (
-                    <div>
-                      <p className="text-muted-foreground">Fuel Tracking</p>
-                      <p className="font-semibold text-green-700">Enabled</p>
-                    </div>
-                  )}
-                  {pricingRules.frozenChargeConfig?.fastagModuleEnabled && (
-                    <div>
-                      <p className="text-muted-foreground">Fastag Charges</p>
-                      <p className="font-semibold text-green-700">Enabled</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
+            {/* Rental terms (also shown on the inspection step) */}
+            <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} />
 
-            <LicenseCollectedCheck
-              id="licenseCollectedConfirm"
-              checked={licenseCollected}
-              onChange={handleLicenseCollectedChange}
-              error={licenseError}
+            <DlStatusSelector
+              id="dl-status-confirm"
+              value={dlStatus}
+              note={dlDepositNote}
+              onValueChange={handleDlStatusChange}
+              onNoteChange={handleDlNoteChange}
+              error={dlError}
               disabled={handoverMutation.isPending}
             />
 
@@ -1824,7 +1974,7 @@ export default function StaffPickupsPage() {
             <Button
               className="bg-[#FF5F00] hover:bg-[#e65600]"
               onClick={handleSubmit(onConfirmHandoverLegacy)}
-              disabled={!licenseCollected || handoverMutation.isPending}
+              disabled={!dlChoiceReady || handoverMutation.isPending}
             >
               {handoverMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

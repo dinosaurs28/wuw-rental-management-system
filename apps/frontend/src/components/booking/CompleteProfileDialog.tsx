@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,12 +33,33 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import apiClient from "@/lib/axios";
+import {
+  aadhaarNumberSchema,
+  drivingLicenceNumberSchema,
+  optionalEmailSchema,
+} from "@repo/schemas";
 import { customerSession, type CustomerSession } from "@/utils/customerSession";
+import {
+  employeeCustomerKey,
+  employeeCustomerService,
+  type CompleteWalkinProfilePayload,
+} from "@/services/employeeCustomer.service";
+import {
+  apiErrorCode,
+  describeMissingProfileFields,
+  EMAIL_CHANGE_NOT_ALLOWED,
+  formatAadhaarInput,
+  formatDrivingLicenceInput,
+  isVerificationPendingError,
+} from "@/lib/customerProfile";
+import { useNavigate } from "react-router-dom";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email address"),
+  // Optional at the counter (#1) — left out of the payload when blank.
+  email: optionalEmailSchema,
+  drivingLicenceNumber: drivingLicenceNumberSchema,
+  aadhaarNumber: aadhaarNumberSchema,
   dob: z.date({
     required_error: "Date of birth is required.",
   }),
@@ -62,14 +85,22 @@ export const CompleteProfileDialog = ({
   customer,
   onSuccess,
 }: CompleteProfileDialogProps) => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  // Empty required fields reported by the server (e.g. the DL/Aadhaar numbers).
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  // The customer already has a real (sign-in) email — read-only at the counter.
+  const [hasStoredEmail, setHasStoredEmail] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: customer.name || "",
       email: "",
+      drivingLicenceNumber: "",
+      aadhaarNumber: "",
       country: "India",
       city: "",
       state: "",
@@ -84,15 +115,19 @@ export const CompleteProfileDialog = ({
 
       setIsFetching(true);
       try {
-        const response = await apiClient.get(
-          `/employee/customer/${customer.publicId}`,
+        const data = await employeeCustomerService.getCustomer(
+          customer.publicId,
         );
-        const data = response.data.data;
 
         if (data) {
           form.reset({
             name: data.name || customer.name || "",
+            // null for a walk-in placeholder — never prefill or resend one.
             email: data.email || "",
+            drivingLicenceNumber: formatDrivingLicenceInput(
+              data.drivingLicenceNumber,
+            ),
+            aadhaarNumber: formatAadhaarInput(data.aadhaarNumber),
             country: data.country || "India",
             city: data.city || "",
             state: data.state || "",
@@ -100,6 +135,8 @@ export const CompleteProfileDialog = ({
             zipCode: data.zipCode || "",
             dob: data.dob ? new Date(data.dob) : undefined,
           });
+          setMissingFields(data.missingFields ?? []);
+          setHasStoredEmail(!!data.email);
         }
       } catch (error) {
         console.error("Failed to fetch customer details", error);
@@ -112,15 +149,20 @@ export const CompleteProfileDialog = ({
     fetchDetails();
   }, [open, customer.publicId, customer.name, form]);
 
+  // Never log the form values or the request: they carry the Aadhaar number.
   const onSubmit = async (data: ProfileFormValues) => {
-    console.log("Form submitted with data:", data);
     setIsLoading(true);
     try {
-      const payload = {
+      const email = data.email?.trim();
+      const payload: CompleteWalkinProfilePayload = {
         customer_public_id: customer.publicId,
         name: data.name,
-        email: data.email,
-        dob: data.dob ? data.dob.toISOString().split("T")[0] : undefined, // Format as YYYY-MM-DD
+        // Blank = keep the stored email (real or placeholder). A real stored
+        // email is never resent: the counter can't change it.
+        ...(email && !hasStoredEmail ? { email } : {}),
+        drivingLicenceNumber: data.drivingLicenceNumber,
+        aadhaarNumber: data.aadhaarNumber,
+        dob: data.dob ? format(data.dob, "yyyy-MM-dd") : undefined,
         addressLine1: data.addressLine1,
         city: data.city,
         state: data.state,
@@ -128,29 +170,66 @@ export const CompleteProfileDialog = ({
         country: data.country,
       };
 
-      console.log("Sending payload to backend:", payload);
-      await apiClient.post("/employee/walkin/complete", payload);
+      const result =
+        await employeeCustomerService.completeWalkinProfile(payload);
 
-      // Fetch fresh details to ensure we have the latest server state
-      const detailsResponse = await apiClient.get(
-        `/employee/customer/${customer.publicId}`,
-      );
-      const freshData = detailsResponse.data.data;
-
-      // Update local session
+      // Update local session with the server-derived completeness
       const newSession: CustomerSession = {
         ...customer,
-        name: freshData.name,
-        profileCompleted: freshData.isProfileCompleted,
+        name: data.name,
+        profileCompleted: result.isProfileCompleted,
       };
       customerSession.set(newSession);
+      setMissingFields(result.missingFields ?? []);
+      // Refresh the DL / Aadhaar line shown for this customer.
+      queryClient.invalidateQueries({
+        queryKey: employeeCustomerKey(customer.publicId),
+      });
 
-      toast.success("Profile updated successfully");
+      if (result.isProfileCompleted) {
+        toast.success("Profile updated successfully");
+      } else {
+        toast.warning(result.message);
+      }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Profile update error:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
+      const body = error?.response?.data;
+      // VALIDATION_ERROR: per-field messages under errors.fieldErrors
+      const fieldErrors: Record<string, string[] | undefined> =
+        body?.errors?.fieldErrors ?? {};
+      for (const [field, messages] of Object.entries(fieldErrors)) {
+        if (messages?.[0] && field in profileSchema.shape) {
+          form.setError(field as keyof ProfileFormValues, {
+            message: messages[0],
+          });
+        }
+      }
+      if (
+        body?.code === "EMAIL_ALREADY_EXISTS" ||
+        apiErrorCode(error) === EMAIL_CHANGE_NOT_ALLOWED
+      ) {
+        form.setError("email", { message: body.message });
+      }
+      if (isVerificationPendingError(error)) {
+        // An earlier walk-in whose phone OTP was never verified: entering the
+        // number on the new-customer page resumes that same walk-in.
+        toast.error(body?.message || "Verify the customer's phone number first.", {
+          action: {
+            label: "Verify phone",
+            onClick: () => {
+              onOpenChange(false);
+              navigate(
+                customer.phone
+                  ? `/employee/customer/create?phone=${encodeURIComponent(customer.phone)}`
+                  : "/employee/customer/create",
+              );
+            },
+          },
+        });
+        return;
+      }
+      toast.error(body?.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
     }
@@ -163,6 +242,11 @@ export const CompleteProfileDialog = ({
           <DialogTitle>Complete Customer Profile</DialogTitle>
           <DialogDescription>
             Complete the profile for {customer.phone} to proceed with KYC.
+            {missingFields.length > 0 && (
+              <span className="mt-1 block text-amber-700">
+                Missing: {describeMissingProfileFields(missingFields)}.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -173,8 +257,7 @@ export const CompleteProfileDialog = ({
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                console.log("Form validation errors:", errors);
+              onSubmit={form.handleSubmit(onSubmit, () => {
                 toast.error("Please fill in all required fields");
               })}
               className="space-y-4"
@@ -197,14 +280,76 @@ export const CompleteProfileDialog = ({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="john@example.com" {...field} />
+                      <Input
+                        placeholder="john@example.com"
+                        {...field}
+                        value={field.value ?? ""}
+                        // A real email is the customer's login: only they can change it.
+                        readOnly={hasStoredEmail}
+                        className={cn(hasStoredEmail && "bg-zinc-50 text-zinc-500")}
+                      />
                     </FormControl>
+                    {hasStoredEmail && (
+                      <FormDescription>
+                        This is the customer's sign-in email. It can't be
+                        changed at the counter.
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="drivingLicenceNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Driving Licence number *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="KA01 20110012345"
+                          autoComplete="off"
+                          autoCapitalize="characters"
+                          spellCheck={false}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              formatDrivingLicenceInput(e.target.value),
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="aadhaarNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aadhaar number *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="1234 5678 9012"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          maxLength={14}
+                          className="tabular-nums"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(formatAadhaarInput(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="dob"

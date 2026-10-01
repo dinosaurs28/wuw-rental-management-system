@@ -32,6 +32,8 @@ import {
   counterErrorCode,
   isValidUtr,
 } from "@/lib/counterErrors";
+import apiClient from "@/lib/axios";
+import { CreditNoteDialog, type CreditNote } from "@/components/manager/CreditNoteDialog";
 
 const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
 
@@ -56,6 +58,15 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
       .then((s) => { setSummary(s); setAmount(parseFloat(s.netPayable).toFixed(2)); })
       .catch(() => toast.error("Failed to load settlement details."))
       .finally(() => setLoadingSummary(false));
+  }, [bookingPublicId]);
+
+  // Credit notes already issued on this booking (shown in the credit-note dialog)
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
+  useEffect(() => {
+    apiClient
+      .get<{ data: CreditNote[] }>(`/branchManager/credit-notes/${bookingPublicId}`)
+      .then((res) => setCreditNotes(res.data?.data ?? []))
+      .catch(() => setCreditNotes([]));
   }, [bookingPublicId]);
 
   const totalNum = parseFloat(amount) || 0;
@@ -111,7 +122,20 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                 {[
                   ["Rental Balance", summary.rentalBalanceRemaining],
                   ["Damage Charges", summary.damageCharges],
-                  ["Extension Charges", summary.extensionCharges],
+                  // Confirmed extensions (taxable + GST) — informational, already inside the rental total
+                  ["Extension Charges (incl. GST, part of rental total)", summary.extensionCharges],
+                  // Extra km / late return recorded at a legacy drop, or the drop bill (incl. GST) — part of Net Payable
+                  ...(summary.returnCharges != null && parseFloat(summary.returnCharges) > 0
+                    ? [["Return Charges (drop bill / extra km / late return, incl. GST)", summary.returnCharges]]
+                    : []),
+                  // Refundable safety deposit still held — counted in Net Payable and in Already Paid
+                  ...(summary.safetyDepositHeld != null && parseFloat(summary.safetyDepositHeld) > 0
+                    ? [["Safety Deposit Held (refundable)", summary.safetyDepositHeld]]
+                    : []),
+                  // Refunds paid out — already taken off Already Paid
+                  ...(summary.refunded != null && parseFloat(summary.refunded) > 0
+                    ? [["Refunded to Customer", summary.refunded]]
+                    : []),
                 ].map(([label, val]) => (
                   <div key={label} className="flex justify-between items-center px-4 py-2.5">
                     <span className="text-neutral-500 text-xs">{label}</span>
@@ -126,6 +150,21 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   <span className="text-sm font-semibold text-neutral-800">Net Payable</span>
                   <span className="text-sm font-bold text-neutral-900">₹ {parseFloat(summary.netPayable).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </div>
+              </div>
+
+              {/* Credit note against this booking's invoice (reverses taxable value + CGST/SGST first) */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 px-4 py-2.5">
+                <p className="text-xs text-neutral-500">
+                  {creditNotes.length > 0
+                    ? `${creditNotes.length} credit note${creditNotes.length === 1 ? "" : "s"} issued.`
+                    : "Correcting the invoice?"}{" "}
+                  A credit note doesn't change the amount to collect here.
+                </p>
+                <CreditNoteDialog
+                  bookingPublicId={bookingPublicId}
+                  existingCreditNotes={creditNotes}
+                  onIssued={(cn) => setCreditNotes((prev) => [cn, ...prev])}
+                />
               </div>
 
               {/* Method */}

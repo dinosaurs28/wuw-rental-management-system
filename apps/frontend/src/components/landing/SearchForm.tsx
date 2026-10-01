@@ -17,10 +17,16 @@ const getCategoryIcon = (name: string) => {
     return Car;
 };
 
+import { useEffect, useMemo } from "react";
 import { useBranches } from "@/hooks/useBranches";
 import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
+import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useSearchStore } from "@/store/search.store";
 import { cn } from "@/lib/utils";
+import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
+import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import { bookingPickerLimits, MAX_BOOKING_DAYS, snapPickupPastClosedToday } from "@/utils/bookingPickers";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -47,6 +53,7 @@ export const SearchForm = () => {
     const {
         branchPublicId,
         categoryPublicId,
+        useCases,
         pickupDate,
         returnDate,
         pickupTime,
@@ -54,13 +61,35 @@ export const SearchForm = () => {
         setSearchCriteria,
     } = useSearchStore();
 
+    // Office hours (#2) and the 15-day window (#15) for the pickers
+    const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
+    const limits = useMemo(
+        () =>
+            bookingPickerLimits({
+                schedule,
+                pickupDate,
+                pickupTime: pickupTime || "10:00",
+                returnDate,
+                returnTime: returnTime || "10:00",
+            }),
+        [schedule, pickupDate, pickupTime, returnDate, returnTime],
+    );
+
+    // Branch already closed for today: start the default range at its next opening
+    useEffect(() => {
+        const snap = snapPickupPastClosedToday({ schedule, pickupDate, returnDate, returnTime });
+        if (snap) setSearchCriteria(snap);
+        // Only when the hours load / the branch changes — never fights a user's pick
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [schedule]);
+
     const handleSearch = () => {
-        if (branchPublicId && pickupDate && returnDate) {
+        if (branchPublicId && pickupDate && returnDate && !limits.windowError) {
             navigate("/vehicles");
         }
     };
 
-    const isFormValid = branchPublicId && pickupDate && returnDate;
+    const isFormValid = branchPublicId && pickupDate && returnDate && !limits.windowError;
 
     return (
         <motion.div
@@ -105,6 +134,15 @@ export const SearchForm = () => {
                             );
                         })
                     )}
+                </div>
+
+                {/* Trip type Row */}
+                <div className="flex items-center flex-wrap gap-3 mb-[26px]">
+                    <span className="text-[15px] font-bold tracking-[-0.01em] text-zinc-900">Trip type</span>
+                    <UseCaseFilterChips
+                        value={useCases}
+                        onChange={(next) => setSearchCriteria({ useCases: next })}
+                    />
                 </div>
 
                 {/* Main Search Row */}
@@ -172,11 +210,7 @@ export const SearchForm = () => {
                                         onSelect={(date) => setSearchCriteria({ pickupDate: date })}
                                         initialFocus
                                         className="p-3 bg-white rounded-2xl"
-                                        disabled={(date) => {
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
-                                            return date < today;
-                                        }}
+                                        disabled={limits.isPickupDayDisabled}
                                     />
                                 </PopoverContent>
                             </Popover>
@@ -186,6 +220,7 @@ export const SearchForm = () => {
                                 <TimeSelect
                                     value={pickupTime || "10:00"}
                                     onChange={(v) => setSearchCriteria({ pickupTime: v })}
+                                    isDisabled={limits.isPickupSlotDisabled}
                                     triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
                                 />
                             </div>
@@ -220,10 +255,8 @@ export const SearchForm = () => {
                                         onSelect={(date) => setSearchCriteria({ returnDate: date })}
                                         initialFocus
                                         className="p-3 bg-white rounded-2xl"
-                                        disabled={(date) =>
-                                            (pickupDate ? date < pickupDate : date < new Date()) ||
-                                            date < new Date("1900-01-01")
-                                        }
+                                        // Compares calendar days, so a same-day return (a daytime 12 h trip) is selectable
+                                        disabled={limits.isReturnDayDisabled}
                                     />
                                 </PopoverContent>
                             </Popover>
@@ -233,6 +266,7 @@ export const SearchForm = () => {
                                 <TimeSelect
                                     value={returnTime || "10:00"}
                                     onChange={(v) => setSearchCriteria({ returnTime: v })}
+                                    isDisabled={limits.isReturnSlotDisabled}
                                     triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
                                 />
                             </div>
@@ -260,6 +294,30 @@ export const SearchForm = () => {
                         </motion.button>
                     </div>
                 </div>
+
+                {/* Quick durations, branch hours for the picked dates, 15-day window */}
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_200px] gap-x-7 gap-y-2 items-start">
+                    <DurationPresetChips
+                        pickupDate={pickupDate}
+                        pickupTime={pickupTime || "10:00"}
+                        returnDate={returnDate}
+                        returnTime={returnTime || "10:00"}
+                        schedule={schedule}
+                        onApply={(date, time) => setSearchCriteria({ returnDate: date, returnTime: time })}
+                    />
+                    <div>
+                        <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" className="mt-0 pl-0.5" />
+                    </div>
+                    <div>
+                        <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" className="mt-0 pl-0.5" />
+                    </div>
+                    <p className="text-[11px] font-medium text-zinc-400">
+                        Book up to {MAX_BOOKING_DAYS} days ahead
+                    </p>
+                </div>
+                {limits.windowError && (
+                    <p className="mt-3 text-sm font-semibold text-red-500">{limits.windowError}</p>
+                )}
             </div>
         </motion.div>
     );

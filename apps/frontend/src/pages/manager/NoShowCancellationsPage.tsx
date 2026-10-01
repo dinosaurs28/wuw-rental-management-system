@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
+import { displayEmail } from "@repo/schemas";
 import {
   managerDashboardService,
   type CancellationStats,
@@ -205,7 +206,9 @@ function BookingCard({ b }: { b: CancelledBooking }) {
       </div>
       <div className="space-y-0.5">
         <p className="text-sm font-medium text-neutral-900">{b.customer.user.name}</p>
-        <p className="text-xs text-neutral-500">{b.customer.user.phone ?? b.customer.user.email}</p>
+        <p className="text-xs text-neutral-500">
+          {b.customer.user.phone || displayEmail(b.customer.user.email) || "—"}
+        </p>
       </div>
       <div className="space-y-0.5">
         <p className="text-sm text-neutral-700">
@@ -510,7 +513,9 @@ export default function NoShowCancellationsPage() {
                             <td className="px-5 py-4">
                               <p className="text-sm font-medium text-neutral-900">{b.customer.user.name}</p>
                               <p className="text-xs text-neutral-500">
-                                {b.customer.user.phone ?? b.customer.user.email}
+                                {b.customer.user.phone ||
+                                  displayEmail(b.customer.user.email) ||
+                                  "—"}
                               </p>
                             </td>
                             <td className="px-5 py-4">

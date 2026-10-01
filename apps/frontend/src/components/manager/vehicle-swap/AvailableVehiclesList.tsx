@@ -2,6 +2,39 @@ import React from "react";
 import type { AvailableVehicle } from "@/types/vehicleSwap";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatSwapRupees, swapAmount } from "./swapFormat";
+
+/** Per-candidate price difference preview (pro-rated, before GST). */
+export const SwapPriceLine: React.FC<{
+  priceDifference: string | null | undefined;
+  /** Amount on its own line (right-aligned list column) */
+  stacked?: boolean;
+  className?: string;
+}> = ({ priceDifference, stacked = false, className = "" }) => {
+  // Older server: no prices in the list
+  if (priceDifference === undefined) return null;
+  const amount = swapAmount(priceDifference);
+  if (amount === null) {
+    return <p className={`text-xs text-amber-700 ${className}`}>Price difference unavailable</p>;
+  }
+  if (amount <= 0) {
+    return <p className={`text-xs text-gray-500 ${className}`}>No extra cost</p>;
+  }
+  if (stacked) {
+    return (
+      <div className={className}>
+        <p className="text-sm font-semibold text-orange-700">+{formatSwapRupees(amount)}</p>
+        <p className="text-[11px] text-gray-500">rest of rental, before GST</p>
+      </div>
+    );
+  }
+  return (
+    <p className={`text-xs text-gray-700 ${className}`}>
+      <span className="font-semibold text-orange-700">+{formatSwapRupees(amount)}</span>{" "}
+      rest of rental, before GST
+    </p>
+  );
+};
 
 interface AvailableVehiclesListProps {
   vehicles: AvailableVehicle[];
@@ -56,12 +89,23 @@ export const AvailableVehiclesList: React.FC<AvailableVehiclesListProps> = ({
                       {vehicle.make} {vehicle.model}
                     </h4>
                     <p className="text-sm text-gray-600">{vehicle.regNo}</p>
-                    <Badge
-                      variant="outline"
-                      className="bg-green-50 text-green-700 border-green-200"
-                    >
-                      {vehicle.status}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-50 text-green-700 border-green-200"
+                      >
+                        {vehicle.status}
+                      </Badge>
+                      {vehicle.isUpgrade && (
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-50 text-blue-700 border-blue-200"
+                        >
+                          Upgrade
+                        </Badge>
+                      )}
+                    </div>
+                    <SwapPriceLine priceDifference={vehicle.priceDifference} />
                   </div>
                 </CardContent>
               </Card>

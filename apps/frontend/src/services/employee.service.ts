@@ -1,6 +1,11 @@
 import apiClient from "@/lib/axios";
 import { z } from "zod";
 import { emailAuthSchemaSignin } from "@repo/schemas";
+import type {
+  BookingListType,
+  OverdueReturnsResponse,
+  OverdueReturnsSnapshot,
+} from "@/types/overdueReturns";
 
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 
@@ -20,6 +25,8 @@ export interface EmployeeDashboardStats {
   todaysPickups: number;
   todaysReturns: number;
   activeRentals: number;
+  /** Picked-up rentals past their return time that are not back yet (OVERDUE + IN_GRACE). */
+  overdueReturns?: number;
 }
 
 export const employeeService = {
@@ -80,6 +87,20 @@ export const employeeService = {
       "/employee/dashboard/stats",
     );
     return response.data;
+  },
+
+  /**
+   * Overdue / no-show returns for the staff member's branch, most overdue first.
+   * GET /employee/dashboard/overdue-returns — always 200 (empty = []).
+   */
+  getOverdueReturns: async (
+    params: { page?: number; limit?: number; type?: BookingListType } = {},
+  ): Promise<OverdueReturnsSnapshot> => {
+    const response = await apiClient.get<OverdueReturnsResponse>(
+      "/employee/dashboard/overdue-returns",
+      { params },
+    );
+    return { ...response.data, fetchedAt: Date.now() };
   },
 
   getVehicleGroupDetails: async (

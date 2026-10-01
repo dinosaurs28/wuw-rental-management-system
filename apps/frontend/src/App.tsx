@@ -41,6 +41,7 @@ import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBoo
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 import RemainingPaymentStatusPage from "@/pages/employee/RemainingPaymentStatusPage";
+import EmployeeShiftHistoryPage from "@/pages/employee/EmployeeShiftHistoryPage";
 import ManagerCaptureConfigPage from "@/pages/manager/ManagerCaptureConfigPage";
 import BranchSchedulePage from "@/pages/manager/BranchSchedulePage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
@@ -68,6 +69,7 @@ import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminBranchesPage } from "./pages/admin/AdminBranchesPage";
+import { AdminVehiclesPage } from "./pages/admin/AdminVehiclesPage";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { GlobalReports } from "./pages/admin/reports/GlobalReports";
 import { VehicleHistoryPage } from "./pages/admin/reports/VehicleHistoryPage";
@@ -91,6 +93,8 @@ import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
+import { PeriodReportPage } from "./pages/manager/PeriodReportPage";
+import { ConfirmationsPage } from "./pages/manager/ConfirmationsPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
 
 const ExternalRedirect = ({ to }: { to: string }) => {
@@ -136,16 +140,18 @@ function App() {
             element={<SignInPage defaultTab="sign-up" />}
           />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
-          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/auth/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
-          <Route path="/employee/forgot-password" element={<EmployeeForgotPasswordPage />} />
-          <Route path="/employee/reset-password/:token" element={<EmployeeResetPasswordPage />} />
           <Route
             path="/employee/booking/status/:transactionId"
             element={<EmployeeBookingStatusPage />}
           />
         </Route>
+
+        {/* Forgot/reset pages stay reachable while signed in (emailed link) */}
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/employee/forgot-password" element={<EmployeeForgotPasswordPage />} />
+        <Route path="/employee/reset-password/:token" element={<EmployeeResetPasswordPage />} />
 
         <Route
           path="/branch-manager/sign-in"
@@ -232,6 +238,8 @@ function App() {
             element={<NoShowCancellationsPage />}
           />
           <Route path="/manager/fleet" element={<FleetStatusPage />} />
+          <Route path="/manager/period" element={<PeriodReportPage />} />
+          <Route path="/manager/confirmations" element={<ConfirmationsPage />} />
           <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"
@@ -297,6 +305,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             {/* Future Admin Routes */}
             <Route path="/admin/branches" element={<AdminBranchesPage />} />
+            <Route path="/admin/vehicles" element={<AdminVehiclesPage />} />
             <Route path="/admin/branches/:branchId" element={<AdminBranchDetailPage />} />
             <Route path="/admin/reports" element={<GlobalReports />} />
             <Route
@@ -388,6 +397,7 @@ function App() {
             path="/employee/payment/remaining-status/:transactionId"
             element={<RemainingPaymentStatusPage />}
           />
+          <Route path="/employee/shifts" element={<EmployeeShiftHistoryPage />} />
         </Route>
 
         {/* Catch all */}

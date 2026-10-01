@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 
 type ResetPasswordFormInput = Omit<z.infer<typeof resetPasswordSchema>, "token">;
 
+const LINK_ERROR_CODES = ["INVALID_TOKEN", "EXPIRED_TOKEN", "USED_TOKEN"];
+
 const fieldClass =
   "h-[58px] w-full rounded-[14px] bg-white border-[1.5px] border-zinc-200 px-5 text-[16px] font-medium text-zinc-900 placeholder:text-[#8a8a93] transition-colors hover:border-zinc-300 focus-visible:border-zinc-900 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none";
 
@@ -24,14 +26,26 @@ export default function ResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: resetPassword, isPending } = useResetPassword();
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const form = useForm<ResetPasswordFormInput>({
     resolver: zodResolver(resetPasswordSchema.omit({ token: true })),
     defaultValues: { password: "" },
   });
 
-  const onSubmit = (data: ResetPasswordFormInput) =>
-    resetPassword({ token: token ?? "", password: data.password });
+  const onSubmit = (data: ResetPasswordFormInput) => {
+    setLinkError(null);
+    resetPassword(
+      { token: token ?? "", password: data.password },
+      {
+        onError: (error: any) => {
+          if (LINK_ERROR_CODES.includes(error.response?.data?.code)) {
+            setLinkError(error.response?.data?.message);
+          }
+        },
+      },
+    );
+  };
 
   return (
     <AuthLayout
@@ -39,6 +53,20 @@ export default function ResetPasswordPage() {
       subtitle="Choose a new password for your account."
     >
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {linkError && (
+          <div
+            role="alert"
+            className="rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-medium text-red-700"
+          >
+            {linkError}{" "}
+            <Link
+              to="/auth/forgot-password"
+              className="font-bold underline underline-offset-2"
+            >
+              Request a new link
+            </Link>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="reset-password" className={labelClass}>
             New password

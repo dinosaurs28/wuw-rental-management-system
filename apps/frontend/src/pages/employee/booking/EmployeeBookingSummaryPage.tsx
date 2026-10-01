@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { formatRentalLength } from "@/utils/formatters";
 import { toast } from "sonner";
 import { ArrowLeft, Car, ArrowRight } from "lucide-react";
 
@@ -26,16 +28,23 @@ import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequired
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { usePaymentStore } from "@/store/payment.store";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
+import { qrPhotoKeys } from "@/hooks/useQrPhoto";
 import {
   apiErrorMessage,
   cleanUtr,
   counterErrorCode,
   isValidUtr,
 } from "@/lib/counterErrors";
+import { CUSTOMER_PROFILE_INCOMPLETE } from "@/lib/customerProfile";
+import { gstLabel } from "@/lib/gst";
+import { round2 } from "@repo/schemas";
+import { durationDiscountTitle } from "@/lib/paymentPlan";
+import { customerSession } from "@/utils/customerSession";
 
 export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const initialized = useRef(false);
   const allowNavigationRef = useRef(false);
 
@@ -119,6 +128,45 @@ export const EmployeeBookingSummaryPage = () => {
         return;
       }
 
+      if (
+        error?.response?.data?.code === "QR_PHOTO_MISMATCH" ||
+        error?.response?.data?.code === "INVALID_QR_PHOTO_ID"
+      ) {
+        // The QR photo was replaced elsewhere — reload it on the page we go back to.
+        queryClient.invalidateQueries({
+          queryKey: qrPhotoKeys.customer(payload?.customer_public_id ?? ""),
+        });
+      }
+
+      // Customer profile incomplete (e.g. DL / Aadhaar number missing): mark
+      // the session so the page we go back to offers "Complete Profile".
+      if (error?.response?.data?.code === CUSTOMER_PROFILE_INCOMPLETE) {
+        const session = customerSession.get();
+        if (session && session.publicId === payload?.customer_public_id) {
+          customerSession.set({ ...session, profileCompleted: false });
+        }
+      }
+
+      // The KYC document isn't this customer's — make staff pick one again.
+      if (error?.response?.data?.code === "KYC_CUSTOMER_MISMATCH") {
+        useEmployeeBookingStore.getState().setCustomerKycId(null);
+      }
+
+      // Return outside office hours (#2): put the server's next in-hours return
+      // into the walk-in so the vehicle page shows it (re-priced) to confirm.
+      const adjustedReturn = error?.response?.data?.verdict?.adjustedReturn;
+      if (error?.response?.data?.code === "BRANCH_SCHEDULE_RETURN_ADJUSTED" && adjustedReturn) {
+        const adjusted = new Date(adjustedReturn);
+        const store = useEmployeeBookingStore.getState();
+        if (!isNaN(adjusted.getTime()) && store.startDate) {
+          store.setDates(
+            new Date(store.startDate),
+            new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()),
+          );
+          store.setEndTime(format(adjusted, "HH:mm"));
+        }
+      }
+
       if (error?.response?.data?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
         const conflicts = error.response.data.conflicts ?? [];
         const first = conflicts[0];
@@ -141,7 +189,7 @@ export const EmployeeBookingSummaryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [bookingPayload, navigate, showUtrRetry]);
+  }, [bookingPayload, navigate, showUtrRetry, queryClient]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -471,9 +519,21 @@ export const EmployeeBookingSummaryPage = () => {
               {vehicle.regNo && ` • ${vehicle.regNo}`}
             </div>
             <div className="flex items-center gap-2 mt-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded w-fit">
-              <span>{format(startDate, "MMM dd, yyyy")}</span>
+              <span>{format(startDate, "MMM dd, yyyy h:mm a")}</span>
               <ArrowRight className="size-3" />
-              <span>{format(endDate, "MMM dd, yyyy")} (IST)</span>
+              <span>{format(endDate, "MMM dd, yyyy h:mm a")} (IST)</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+              <span>{formatRentalLength(startDate, endDate)}</span>
+              {vehicle.pricingBreakdown?.billedAs && (
+                <span>· billed as {vehicle.pricingBreakdown.billedAs}</span>
+              )}
+              {(bookingData?.data?.rentalPeriodType === "MONTHLY" ||
+                bookingData?.data?.plan === "MONTHLY") && (
+                <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wide">
+                  Monthly rental
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -488,29 +548,39 @@ export const EmployeeBookingSummaryPage = () => {
             </div>
             {totals?.grandDiscountTotal > 0 && (
               <div className="flex justify-between text-green-600">
-                <span>Discount</span>
+                {/* Walk-ins take no coupon: the discount is the duration slab */}
+                <span>{totals.durationDiscountLabel ? durationDiscountTitle(totals.durationDiscountLabel) : "Discount"}</span>
                 <span>-{formatPrice(totals.grandDiscountTotal)}</span>
               </div>
             )}
 
-            {/* Tax Breakdown */}
+            {totals?.grandDiscountTotal > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxable value</span>
+                <span>
+                  {formatPrice(round2(totals.grandBaseTotal - totals.grandDiscountTotal))}
+                </span>
+              </div>
+            )}
+
+            {/* Tax Breakdown — rates exactly as the server sent them, no fallback */}
             {totals?.grandTaxTotal > 0 && (
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Tax ({totals.taxRate}%)
+                    {gstLabel("GST", totals.taxRate)}
                   </span>
                   <span>{formatPrice(totals.grandTaxTotal)}</span>
                 </div>
                 {totals.grandCGSTTotal !== undefined && (
                   <div className="flex justify-between text-xs text-muted-foreground pl-2">
-                    <span>CGST ({(totals.taxRate || 18) / 2}%)</span>
+                    <span>{gstLabel("CGST", totals.cgstRate)}</span>
                     <span>{formatPrice(totals.grandCGSTTotal)}</span>
                   </div>
                 )}
                 {totals.grandSGSTTotal !== undefined && (
                   <div className="flex justify-between text-xs text-muted-foreground pl-2">
-                    <span>SGST ({(totals.taxRate || 18) / 2}%)</span>
+                    <span>{gstLabel("SGST", totals.sgstRate)}</span>
                     <span>{formatPrice(totals.grandSGSTTotal)}</span>
                   </div>
                 )}

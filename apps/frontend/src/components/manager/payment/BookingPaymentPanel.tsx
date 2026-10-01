@@ -84,7 +84,9 @@ export function BookingPaymentPanel({ bookingPublicId, role = "manager" }: Booki
 
   if (!state) return null;
 
-  const amountDue = parseFloat(state.amountRemaining);
+  const amountDue = parseFloat(state.amountDue);
+  // Owed incl. drop / return charges and a held safety deposit (older servers: the booking total)
+  const totalDue = state.totalOwed ?? state.totalFinal;
 
   return (
     <div className="space-y-4">
@@ -111,13 +113,13 @@ export function BookingPaymentPanel({ bookingPublicId, role = "manager" }: Booki
               <div>
                 <p className="text-neutral-500 text-xs mb-0.5">Total Due</p>
                 <p className="font-semibold text-neutral-900">
-                  ₹ {parseFloat(state.totalDue).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹ {parseFloat(totalDue).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
                 <p className="text-neutral-500 text-xs mb-0.5">Collected</p>
                 <p className="font-semibold text-green-700">
-                  ₹ {parseFloat(state.totalCollected).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹ {parseFloat(state.totalCollectedConfirmed).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -125,7 +127,7 @@ export function BookingPaymentPanel({ bookingPublicId, role = "manager" }: Booki
               <div>
                 <p className="text-neutral-500 text-xs mb-0.5">Pending Confirmation</p>
                 <p className="font-semibold text-yellow-700">
-                  ₹ {parseFloat(state.totalPendingConfirmation).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹ {parseFloat(state.totalCollectedPending).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>

@@ -21,7 +21,27 @@ export interface Booking {
   isAdvancePayment: boolean;
   advanceAmount: number;
   remainingBalance: number;
+  /** Money actually received (0 for an unpaid hold / expired / failed booking). */
   amountPaid: number;
+  // Payment summary (absent from older servers)
+  paid?: number;
+  /** Balance still owed on an advance booking (0 otherwise). */
+  balanceDue?: number;
+  /** PICKUP before handover, DROP once picked up; null when nothing is due. */
+  balanceDueAt?: "PICKUP" | "DROP" | null;
+  dueAtPickup?: number;
+  dueAtDrop?: number;
+  /** Applied coupon (online or at the counter). */
+  couponCode?: string | null;
+  /** Original booking (extensions excluded). */
+  totalBase?: number;
+  totalDiscount?: number;
+  totalTax?: number;
+  /** CGST / SGST of totalTax and the booking's frozen rates (null = not stored). */
+  totalCgst?: number | null;
+  totalSgst?: number | null;
+  cgstRate?: number | null;
+  sgstRate?: number | null;
   createdAt: string;
   vehicles: BookingVehicle[];
 }

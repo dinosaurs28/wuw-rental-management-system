@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ZoomBadge } from "@/components/ui/PhotoLightbox";
 import { useMutation } from "@tanstack/react-query";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -54,7 +55,7 @@ interface DropDamageSectionProps {
   billsAtDrop: boolean;
   /** Called after a damage is added or removed so the page can refresh the list (and the bill). */
   onChanged: () => void | Promise<void>;
-  onPreview: (url: string) => void;
+  onPreview: (url: string, group?: string[]) => void;
 }
 
 interface DraftDamage {
@@ -211,9 +212,10 @@ export function DropDamageSection({
                       <div
                         key={img.publicId}
                         className="relative aspect-square rounded overflow-hidden border bg-muted cursor-pointer"
-                        onClick={() => onPreview(img.url)}
+                        onClick={() => onPreview(img.url, item.photos.map((p) => p.url))}
                       >
                         <img src={img.url} alt={`Damage ${idx + 1}`} className="w-full h-full object-cover" />
+                        <ZoomBadge />
                       </div>
                     ))}
                   </div>
@@ -277,7 +279,7 @@ export function DropDamageSection({
                   <div
                     key={img.publicId}
                     className="relative aspect-square rounded overflow-hidden border bg-muted group cursor-pointer"
-                    onClick={() => onPreview(img.url)}
+                    onClick={() => onPreview(img.url, draft.photos.map((p) => p.url))}
                   >
                     <img src={img.url} alt={`Damage ${idx + 1}`} className="w-full h-full object-cover" />
                     <Button

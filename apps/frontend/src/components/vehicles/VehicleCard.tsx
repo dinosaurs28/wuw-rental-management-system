@@ -10,6 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { PublicVehicle, ManagerVehicle } from "@/services/vehicle.service";
+import { UseCaseBadges } from "@/components/vehicles/UseCaseChips";
+import { durationDiscountTitle } from "@/lib/paymentPlan";
 
 interface VehicleCardProps {
   vehicle: PublicVehicle | ManagerVehicle;
@@ -53,26 +55,34 @@ export const VehicleCard = ({
       : vehicle.customPricing;
   };
 
+  // The listed price is the total for the picked period (never a per-day or
+  // per-hour rate). billedAs says what it covers, e.g. "5 hours", "1 day + 2 hours".
   const getPriceLabel = () => {
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
-      const typeMap: Record<string, string> = {
-        HOURLY: variant === "dark" ? "/ hr" : "/ hour",
-        HALF_DAY: variant === "dark" ? "/ half day" : "/ half day",
-        FULL_DAY: variant === "dark" ? "/ day" : "/ day",
-        MULTI_DAY: variant === "dark" ? "/ total" : "total",
-      };
-      return typeMap[vehicle.pricingDetails.type] || "/ day";
+      if (vehicle.pricingDetails.billedAs) return `/ ${vehicle.pricingDetails.billedAs}`;
+      // Older cached quotes without billedAs: only a full day is exactly "/ day"
+      return vehicle.pricingDetails.type === "FULL_DAY" ? "/ day" : variant === "dark" ? "/ total" : "total";
     }
     return "/ day";
   };
 
+  // Duration-slab saving already inside the listed price (absent when none)
+  const slabNote = (() => {
+    if (!("pricingDetails" in vehicle) || !vehicle.pricingDetails) return null;
+    const amount = Number(vehicle.pricingDetails.discountAmount ?? 0);
+    if (!(amount > 0)) return null;
+    return `${durationDiscountTitle(vehicle.pricingDetails.discountLabel)} −₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} included`;
+  })();
+
   const getDurationLabel = () => {
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
+      if (vehicle.pricingDetails.billedAs) return `Billed as ${vehicle.pricingDetails.billedAs}`;
       const typeMap: Record<string, string> = {
         HOURLY: "Hourly",
         HALF_DAY: "Half day",
         FULL_DAY: "Full day",
         MULTI_DAY: "Multi day",
+        MONTHLY: "Monthly",
       };
       return typeMap[vehicle.pricingDetails.type] || "Full day";
     }
@@ -204,6 +214,7 @@ export const VehicleCard = ({
                   </span>
                 )}
               </div>
+              <UseCaseBadges useCases={vehicle.useCases} tone="dark" />
             </div>
 
             {/* Price */}
@@ -215,6 +226,9 @@ export const VehicleCard = ({
                 {getPriceLabel()}
               </span>
             </div>
+            {slabNote && (
+              <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
+            )}
           </div>
         </div>
 
@@ -276,7 +290,7 @@ export const VehicleCard = ({
         {hasPricingDetails && (
           <div className="absolute top-4 right-4 z-10">
             <span className="px-3 py-1 bg-[#FF5F00] text-white text-[10px] font-black tracking-[0.15em] uppercase rounded-sm">
-              {vehicle.pricingDetails!.type.replace("_", " ")}
+              {vehicle.pricingDetails!.billedAs ?? vehicle.pricingDetails!.type.replace("_", " ")}
             </span>
           </div>
         )}
@@ -288,6 +302,11 @@ export const VehicleCard = ({
           <h3 className="text-2xl font-black text-black leading-tight uppercase">
             {vehicle.make} {vehicle.model}
           </h3>
+
+          <UseCaseBadges
+            useCases={vehicle.useCases}
+            className="justify-center md:justify-start"
+          />
 
           {/* Branch / Availability */}
           <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
@@ -324,6 +343,9 @@ export const VehicleCard = ({
                   {getPriceLabel()}
                </span>
             </div>
+            {slabNote && (
+              <p className="mt-1 text-xs font-semibold text-emerald-600">{slabNote}</p>
+            )}
           </div>
           {limitsLoading ? (
             <Skeleton className="h-12 w-full sm:w-32 rounded-none" />

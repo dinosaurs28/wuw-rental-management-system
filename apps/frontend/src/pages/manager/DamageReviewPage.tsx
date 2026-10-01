@@ -39,6 +39,13 @@ import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import apiClient from "@/lib/axios";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import { formatCurrency, cn } from "@/lib/utils";
+import {
+  GST_RULE_MISSING_MESSAGE,
+  formatInrExact,
+  gstSplitText,
+  previewPenaltyGst,
+} from "@/lib/gst";
+import { round2 } from "@repo/schemas";
 import { Label } from "@/components/ui/label";
 
 /**
@@ -54,6 +61,26 @@ const settlementModeOf = (report: DamageReport): SettlementMode => {
   const managerCharges = report.managerCharges ?? !report.chargedAtDrop;
   if (managerCharges) return "REVIEW";
   return report.chargedAtDrop ? "CHARGED_AT_DROP" : "COMPANY_EXPENSE";
+};
+
+/** A PENALTY on a branch without a GST rule — the server refuses to close it. */
+const penaltyGstMissing = (report: DamageReport): boolean =>
+  report.chargeType === "PENALTY" &&
+  (!!report.financialHint.gstRuleMissing ||
+    report.financialHint.cgstRate == null ||
+    report.financialHint.sgstRate == null);
+
+/** Net the review will settle: return charges + damage (+ CGST/SGST on a penalty) − safety deposit. */
+const settlementPreview = (report: DamageReport, finalCost: number) => {
+  const penaltyGst = previewPenaltyGst(
+    report.chargeType,
+    finalCost,
+    report.financialHint.cgstRate,
+    report.financialHint.sgstRate,
+  );
+  const additionalCharges = report.financialHint.additionalCharges ?? 0;
+  const net = round2(additionalCharges + finalCost + penaltyGst.gst - report.booking.deposit);
+  return { penaltyGst, additionalCharges, net };
 };
 
 export const DamageReviewPage = () => {
@@ -181,11 +208,13 @@ export const DamageReviewPage = () => {
       return;
     }
 
-    const gstRate = report.financialHint.gstRate ?? 18;
-    const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
-    const totalDamage = finalCost + taxAmount;
-    const additionalCharges = report.financialHint.additionalCharges ?? 0;
-    const net = additionalCharges + totalDamage - report.booking.deposit;
+    // A penalty needs the branch GST rule (the close answers 409 GST_RULE_MISSING).
+    if (penaltyGstMissing(report)) {
+      toast.error(GST_RULE_MISSING_MESSAGE);
+      setIsConfirmOpen(false);
+      return;
+    }
+    const { net } = settlementPreview(report, finalCost);
     const isDue = net > 0;
 
     if (isDue && !paymentMethod) {
@@ -250,11 +279,9 @@ export const DamageReviewPage = () => {
 
   if (!report) return null;
 
-  const gstRate = report.financialHint.gstRate ?? 18;
-  const taxAmount = report.chargeType === "PENALTY" ? finalCost * (gstRate / 100) : 0;
-  const totalDamage = finalCost + taxAmount;
-  const additionalCharges = report.financialHint.additionalCharges ?? 0;
-  const net = additionalCharges + totalDamage - report.booking.deposit;
+  const gstRate = report.financialHint.gstRate;
+  const { penaltyGst, additionalCharges, net } = settlementPreview(report, finalCost);
+  const taxAmount = penaltyGst.gst;
   const isRefund = net <= 0;
   const settlementMode = settlementModeOf(report);
   const dispositionOnly = settlementMode !== "REVIEW";
@@ -314,6 +341,7 @@ export const DamageReviewPage = () => {
           <div className="space-y-6">
             <DamageEvidence
               images={report.images}
+              caption={report.vehicle?.regNo}
               damageDetails={report.damageDetails}
               vehicleType={
                 report.vehicle.make.includes("Scooter") ? "Two Wheeler" : "Four Wheeler"
@@ -379,6 +407,9 @@ export const DamageReviewPage = () => {
                     setOnlineTransactionRef={setOnlineTransactionRef}
                     chargeType={report.chargeType}
                     gstRate={gstRate}
+                    cgstRate={report.financialHint.cgstRate}
+                    sgstRate={report.financialHint.sgstRate}
+                    gstRuleMissing={penaltyGstMissing(report)}
                   />
                 )}
 
@@ -452,8 +483,18 @@ export const DamageReviewPage = () => {
                       </div>
                       {report.chargeType === "PENALTY" && taxAmount > 0 && (
                         <div className="flex justify-between text-orange-700">
-                          <span>GST ({gstRate}%):</span>
-                          <span className="font-semibold">+ {formatCurrency(taxAmount)}</span>
+                          <span>
+                            GST ({gstRate}%):
+                            <span className="block text-[11px] text-orange-600">
+                              {gstSplitText(
+                                penaltyGst.cgst,
+                                penaltyGst.sgst,
+                                report.financialHint.cgstRate,
+                                report.financialHint.sgstRate,
+                              )}
+                            </span>
+                          </span>
+                          <span className="font-semibold">+ {formatInrExact(taxAmount)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-blue-700">
@@ -463,7 +504,7 @@ export const DamageReviewPage = () => {
                       <div className="flex justify-between font-semibold border-t pt-2">
                         <span>Net:</span>
                         <span className={isRefund ? "text-green-700" : "text-red-700"}>
-                          {isRefund ? `Refund ${formatCurrency(Math.abs(net))}` : `Collect ${formatCurrency(net)}`}
+                          {isRefund ? `Refund ${formatInrExact(Math.abs(net))}` : `Collect ${formatInrExact(net)}`}
                         </span>
                       </div>
                       <div className="flex justify-between">

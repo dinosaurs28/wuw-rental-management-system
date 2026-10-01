@@ -1,9 +1,14 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Tag, X, Loader2, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { discountPublicService, discountCustomerService } from "@/services/discount.service";
+import {
+  discountPublicService,
+  discountCustomerService,
+  type CouponValidationResult,
+} from "@/services/discount.service";
+import type { PaymentFlow } from "@/lib/paymentPlan";
 import { useAuthStore } from "@/store/auth.store";
 
 interface CouponInputProps {
@@ -11,43 +16,105 @@ interface CouponInputProps {
   groupKey?: string;
   startAt?: string;
   endAt?: string;
+  /** Plan the customer picked — the coupon is checked for it, and re-checked when it changes. */
+  paymentFlow?: PaymentFlow;
   appliedCode: string | null;
+  /** Coupon layer (pre-GST) of the applied coupon. */
   appliedAmount?: number;
-  onApply: (code: string, amount?: number) => void;
+  /** The applied coupon has no server breakdown yet (restored from an older session) — re-check it. */
+  needsRecheck?: boolean;
+  /** The server accepted the coupon: its breakdown and post-coupon plan options. */
+  onApply: (code: string, result: CouponValidationResult) => void;
   onRemove: () => void;
+  /** True while an applied coupon is being re-checked (totals may still change). */
+  onCheckingChange?: (checking: boolean) => void;
 }
 
+// Fallback text per server code — the server's own `reason` is shown first.
 const ERROR_MESSAGES: Record<string, string> = {
   COUPON_NOT_FOUND: "Invalid coupon code. Please check and try again.",
   COUPON_EXPIRED: "This coupon has expired.",
+  COUPON_NOT_YET_VALID: "This coupon is not valid yet.",
   COUPON_INACTIVE: "This coupon is no longer active.",
-  COUPON_BRANCH_MISMATCH: "This coupon is not valid at this branch.",
-  COUPON_MIN_DURATION: "This coupon requires a longer rental period.",
-  COUPON_MIN_AMOUNT: "This coupon requires a higher booking amount.",
-  COUPON_USAGE_LIMIT: "This coupon has reached its total usage limit.",
-  COUPON_ALREADY_USED: "You have already used this coupon.",
-  COUPON_PER_USER_LIMIT_EXCEEDED: "You have already used this coupon the maximum number of times.",
+  COUPON_BRANCH_SCOPE_MISMATCH: "This coupon is not valid at this branch.",
+  COUPON_USER_SCOPE_MISMATCH: "This coupon is not available for your account.",
   COUPON_USER_RESTRICTED: "This coupon is not available for your account.",
-  COUPON_CATEGORY_MISMATCH: "This coupon is not valid for this vehicle category.",
+  COUPON_NEW_CUSTOMERS_ONLY: "This coupon is only for first-time customers.",
+  COUPON_MIN_BOOKING_COUNT: "You need more completed bookings to use this coupon.",
+  COUPON_MAX_BOOKING_COUNT: "You are not eligible for this coupon based on your booking history.",
+  COUPON_MIN_DAYS: "This coupon requires a longer rental period.",
+  COUPON_MAX_DAYS: "This coupon is only valid for shorter rentals.",
+  COUPON_MIN_AMOUNT: "This coupon requires a higher booking amount.",
+  COUPON_MAX_AMOUNT: "This coupon is only valid for smaller bookings.",
+  COUPON_VEHICLE_CATEGORY_MISMATCH: "This coupon is not valid for this vehicle category.",
+  COUPON_PAYMENT_PLAN_MISMATCH: "This coupon is not valid for the payment plan you picked.",
+  COUPON_USAGE_LIMIT_EXCEEDED: "This coupon has reached its total usage limit.",
+  COUPON_PER_USER_LIMIT_EXCEEDED: "You have already used this coupon the maximum number of times.",
+  COUPON_BRANCH_LIMIT_EXCEEDED: "This coupon has reached its limit at this branch.",
+  COUPON_DAILY_LIMIT_EXCEEDED: "This coupon has reached today's limit. Try again tomorrow.",
+  COUPON_STACKING_NOT_ALLOWED: "This coupon can't be combined with the duration discount.",
   COUPON_INVALID: "This coupon is not valid.",
 };
+
+type CheckOutcome =
+  | { ok: true; result: CouponValidationResult }
+  | { ok: false; rejected: boolean; message: string };
 
 export function CouponInput({
   vehiclePublicId,
   groupKey,
   startAt,
   endAt,
+  paymentFlow,
   appliedCode,
   appliedAmount = 0,
+  needsRecheck = false,
   onApply,
   onRemove,
+  onCheckingChange,
 }: CouponInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Server preview of the coupon for this vehicle, dates and plan (nothing is recorded)
+  const checkCoupon = async (code: string): Promise<CheckOutcome> => {
+    if (!((vehiclePublicId || groupKey) && startAt && endAt)) {
+      return { ok: false, rejected: false, message: "Please select rental dates before applying a coupon." };
+    }
+    const params = {
+      couponCode: code,
+      ...(vehiclePublicId ? { vehiclePublicId } : { groupKey }),
+      startAt,
+      endAt,
+      ...(paymentFlow ? { paymentFlow } : {}),
+    };
+    try {
+      // Signed in: the customer endpoint enforces per-customer coupons and limits
+      const res = isAuthenticated
+        ? await discountCustomerService.validateCoupon(params)
+        : await discountPublicService.validateCoupon(params);
+      if (!res.data.valid) {
+        return {
+          ok: false,
+          rejected: true,
+          message: res.data.reason || ERROR_MESSAGES[res.data.code] || "Invalid coupon code.",
+        };
+      }
+      return { ok: true, result: res.data };
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      return {
+        ok: false,
+        rejected: false,
+        message: message || "Couldn't validate coupon. Please try again.",
+      };
+    }
+  };
 
   const handleApply = async () => {
     const code = inputValue.trim().toUpperCase();
@@ -55,56 +122,90 @@ export function CouponInput({
 
     setError(null);
     setLoading(true);
-
     try {
-      const hasContext = (vehiclePublicId || groupKey) && startAt && endAt;
-      if (hasContext) {
-        const params = {
-          couponCode: code,
-          ...(vehiclePublicId ? { vehiclePublicId } : { groupKey }),
-          startAt: startAt!,
-          endAt: endAt!,
-        };
-
-        // Use authenticated endpoint when logged in — enforces per-user limits
-        const res = isAuthenticated
-          ? await discountCustomerService.validateCoupon(params)
-          : await discountPublicService.validateCoupon(params);
-
-        if (!res.data.valid) {
-          const msg = ERROR_MESSAGES[(res.data as any).code] || (res.data as any).reason || "Invalid coupon code.";
-          setError(msg);
-          return;
-        }
-
-        onApply(code, parseFloat(res.data.discountAmount));
-        setInputValue("");
-        toast.success(`Coupon ${code} applied! Saved ₹${res.data.discountAmount}`);
-      } else {
-        setError("Please select rental dates before applying a coupon.");
+      const outcome = await checkCoupon(code);
+      if (!outcome.ok) {
+        setError(outcome.message);
+        return;
       }
-    } catch {
-      setError("Couldn't validate coupon. Please try again.");
+      onApply(code, outcome.result);
+      setInputValue("");
+      const saved = outcome.result.pricing?.couponDiscountAmount ?? Number(outcome.result.discountAmount);
+      toast.success(`Coupon ${code} applied! ₹${saved.toFixed(2)} off`);
     } finally {
       setLoading(false);
     }
   };
 
+  // Re-check an applied coupon when the plan changes (a coupon can be limited
+  // to one plan, and the plan options depend on the post-coupon total) or when
+  // it was restored without the server's breakdown.
+  const lastChecked = useRef<{ flow?: PaymentFlow; code: string | null }>({ flow: paymentFlow, code: appliedCode });
+  useEffect(() => {
+    const prev = lastChecked.current;
+    lastChecked.current = { flow: paymentFlow, code: appliedCode };
+    if (!appliedCode) return;
+    const flowChanged = prev.code === appliedCode && prev.flow !== paymentFlow;
+    if (!flowChanged && !needsRecheck) return;
+
+    let cancelled = false;
+    setRechecking(true);
+    onCheckingChange?.(true);
+    void checkCoupon(appliedCode).then((outcome) => {
+      if (cancelled) return;
+      setRechecking(false);
+      onCheckingChange?.(false);
+      if (outcome.ok) {
+        onApply(appliedCode, outcome.result);
+      } else if (outcome.rejected) {
+        onRemove();
+        setError(outcome.message);
+        toast.error(`Coupon ${appliedCode} was removed: ${outcome.message}`);
+      } else {
+        // Network trouble: keep the coupon — the booking re-checks it before payment
+        setError(outcome.message);
+      }
+    });
+    return () => {
+      cancelled = true;
+      setRechecking(false);
+      onCheckingChange?.(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentFlow, appliedCode, needsRecheck]);
+
   if (appliedCode) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-        <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-        <span className="text-sm font-medium text-green-800 flex-1">
-          Coupon applied: <span className="font-mono uppercase">{appliedCode}</span>
-          {appliedAmount > 0 && <span className="ml-1 text-green-600 font-semibold">(Saved ₹{appliedAmount.toFixed(2)})</span>}
-        </span>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-green-600 hover:text-green-800 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+          {rechecking ? (
+            <Loader2 className="w-4 h-4 text-green-600 shrink-0 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+          )}
+          <span className="text-sm font-medium text-green-800 flex-1">
+            Coupon applied: <span className="font-mono uppercase">{appliedCode}</span>
+            {rechecking ? (
+              <span className="ml-1 text-green-600 font-normal">(re-checking…)</span>
+            ) : (
+              appliedAmount > 0 && (
+                <span className="ml-1 text-green-600 font-semibold">(₹{appliedAmount.toFixed(2)} off)</span>
+              )
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              onRemove();
+            }}
+            className="text-green-600 hover:text-green-800 transition-colors"
+            aria-label="Remove coupon"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {error && <p className="text-xs text-amber-600 pl-1">{error}</p>}
       </div>
     );
   }

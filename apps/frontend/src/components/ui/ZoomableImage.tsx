@@ -7,18 +7,23 @@ interface ZoomableImageProps {
   src: string;
   alt: string;
   className?: string;
+  /** Extra classes for the image canvas (e.g. a taller viewport in a lightbox). */
+  canvasClassName?: string;
+  /** Max height of the image area (CSS value). Defaults to 65vh. */
+  maxHeight?: string;
 }
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
 
-export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
+export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight = "65vh" }: ZoomableImageProps) {
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const scaleRef = useRef(1);
   const translateRef = useRef({ x: 0, y: 0 });
   const dragStartRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
@@ -27,22 +32,37 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
   scaleRef.current = scale;
   translateRef.current = translate;
 
+  // Keep the image from being dragged out of view: limit pan to the overflow at this scale.
+  const clamp = useCallback((x: number, y: number, s: number) => {
+    const c = containerRef.current;
+    const i = imgRef.current;
+    if (!c || !i || s <= 1) return { x: 0, y: 0 };
+    const maxX = Math.max(0, (i.offsetWidth * s - c.clientWidth) / 2);
+    const maxY = Math.max(0, (i.offsetHeight * s - c.clientHeight) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  }, []);
+
   // Non-passive wheel listener so preventDefault works in all browsers
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const onWheel = (e: WheelEvent) => {
+      // At 1x only intercept zoom-in / pinch gestures so page scroll is not trapped.
+      if (scaleRef.current <= 1 && e.deltaY >= 0 && !e.ctrlKey) return;
       e.preventDefault();
       const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
       setScale((prev) => {
         const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, +(prev + delta).toFixed(2)));
-        if (next <= MIN_SCALE) setTranslate({ x: 0, y: 0 });
+        setTranslate((t) => clamp(t.x, t.y, next));
         return next;
       });
     };
     container.addEventListener("wheel", onWheel, { passive: false });
     return () => container.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [clamp]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (scaleRef.current <= 1) return;
@@ -58,11 +78,14 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragStartRef.current) return;
-    setTranslate({
-      x: dragStartRef.current.tx + e.clientX - dragStartRef.current.x,
-      y: dragStartRef.current.ty + e.clientY - dragStartRef.current.y,
-    });
-  }, []);
+    setTranslate(
+      clamp(
+        dragStartRef.current.tx + e.clientX - dragStartRef.current.x,
+        dragStartRef.current.ty + e.clientY - dragStartRef.current.y,
+        scaleRef.current,
+      ),
+    );
+  }, [clamp]);
 
   const stopDrag = useCallback(() => {
     setIsDragging(false);
@@ -94,16 +117,19 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
       lastTouchDistRef.current = dist;
       setScale((prev) => {
         const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev * ratio));
-        if (next <= MIN_SCALE) setTranslate({ x: 0, y: 0 });
+        setTranslate((t) => clamp(t.x, t.y, next));
         return next;
       });
     } else if (e.touches.length === 1 && dragStartRef.current) {
-      setTranslate({
-        x: dragStartRef.current.tx + e.touches[0].clientX - dragStartRef.current.x,
-        y: dragStartRef.current.ty + e.touches[0].clientY - dragStartRef.current.y,
-      });
+      setTranslate(
+        clamp(
+          dragStartRef.current.tx + e.touches[0].clientX - dragStartRef.current.x,
+          dragStartRef.current.ty + e.touches[0].clientY - dragStartRef.current.y,
+          scaleRef.current,
+        ),
+      );
     }
-  }, []);
+  }, [clamp]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.touches.length < 2) lastTouchDistRef.current = null;
@@ -115,12 +141,26 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
   }, []);
 
   const zoomIn = () =>
-    setScale((prev) => Math.min(MAX_SCALE, +(prev + ZOOM_STEP).toFixed(2)));
+    setScale((prev) => {
+      const next = Math.min(MAX_SCALE, +(prev + ZOOM_STEP).toFixed(2));
+      setTranslate((t) => clamp(t.x, t.y, next));
+      return next;
+    });
+
+  // Double click / double tap toggles between fit and 2.5x
+  const toggleZoom = () => {
+    if (scaleRef.current > 1) {
+      setScale(1);
+      setTranslate({ x: 0, y: 0 });
+    } else {
+      setScale(2.5);
+    }
+  };
 
   const zoomOut = () =>
     setScale((prev) => {
       const next = Math.max(MIN_SCALE, +(prev - ZOOM_STEP).toFixed(2));
-      if (next <= MIN_SCALE) setTranslate({ x: 0, y: 0 });
+      setTranslate((t) => clamp(t.x, t.y, next));
       return next;
     });
 
@@ -173,13 +213,17 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
       {/* Image canvas */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-lg bg-zinc-100 flex items-center justify-center select-none"
+        className={cn(
+          "relative overflow-hidden rounded-lg bg-zinc-100 flex items-center justify-center select-none",
+          canvasClassName,
+        )}
         style={{
-          maxHeight: "65vh",
+          maxHeight,
           minHeight: "200px",
           cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
           touchAction: "none",
         }}
+        onDoubleClick={toggleZoom}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={stopDrag}
@@ -189,11 +233,13 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
         onTouchEnd={handleTouchEnd}
       >
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           draggable={false}
-          className="max-w-full max-h-[65vh] object-contain pointer-events-none"
+          className="max-w-full object-contain pointer-events-none"
           style={{
+            maxHeight,
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
             transformOrigin: "center center",
             transition: isDragging ? "none" : "transform 0.15s ease-out",
@@ -209,7 +255,7 @@ export function ZoomableImage({ src, alt, className }: ZoomableImageProps) {
 
       {scale === 1 && (
         <p className="text-center text-[11px] text-zinc-400 font-medium">
-          Scroll or pinch to zoom · Use buttons to zoom
+          Scroll or pinch to zoom · Double-click to zoom · Use buttons to zoom
         </p>
       )}
     </div>

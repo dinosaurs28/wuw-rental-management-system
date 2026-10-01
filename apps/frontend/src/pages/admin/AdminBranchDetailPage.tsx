@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { AdminBranchHoursCard } from "@/components/branch/AdminBranchHoursCard";
 import {
     adminService,
     type AdminBranch,
@@ -158,8 +159,9 @@ export const AdminBranchDetailPage = () => {
 
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Branch Info Card */}
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 space-y-6">
                     <BranchInfoCard branch={branch} onRefresh={fetchData} />
+                    <AdminBranchHoursCard branchPublicId={branch.publicId} />
                 </div>
 
                 {/* Managers Section */}

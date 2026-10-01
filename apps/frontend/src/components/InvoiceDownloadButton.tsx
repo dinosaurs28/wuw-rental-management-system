@@ -31,7 +31,11 @@ export function InvoiceDownloadButton({
 }: InvoiceDownloadButtonProps) {
   const [actionState, setActionState] = useState<ActionState>("idle");
 
-  const shouldShow = bookingStatus === "CONFIRMED" || bookingStatus === "RETURNED";
+  // PICKED_UP too: the invoice is re-synced (extensions etc.) before it is built.
+  const shouldShow =
+    bookingStatus === "CONFIRMED" ||
+    bookingStatus === "PICKED_UP" ||
+    bookingStatus === "RETURNED";
   if (!shouldShow) return null;
 
   const isLoading = actionState !== "idle";

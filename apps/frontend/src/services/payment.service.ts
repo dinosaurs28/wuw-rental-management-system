@@ -49,12 +49,23 @@ export type ShiftStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED";
 export type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED";
 export type RefundMethod = "CASH" | "ONLINE";
 
+/** GET .../bookings/:id/financial-state (money as strings) */
 export interface FinancialState {
   lifecycleState: LifecycleState;
-  totalDue: string;
-  totalCollected: string;
-  totalPendingConfirmation: string;
-  amountRemaining: string;
+  /** Booking.totalFinal (rental incl. GST, refundable deposit, confirmed extensions) */
+  totalFinal: string;
+  /** Money in (refund rows excluded) */
+  totalCollectedConfirmed: string;
+  totalCollectedPending: string;
+  totalRefunded: string;
+  /** max(0, totalOwed − (confirmed − refunds paid out)) */
+  amountDue: string;
+  /** Drop / return charges outside totalFinal, incl. GST, after the drop discount. Absent on older servers. */
+  returnCharges?: string;
+  /** Refundable safety deposit taken and not yet credited back at drop. Absent on older servers. */
+  safetyDepositHeld?: string;
+  /** totalFinal + returnCharges + safety deposit held. Absent on older servers. */
+  totalOwed?: string;
 }
 
 export interface PaymentTransaction {
@@ -97,8 +108,20 @@ export interface SettlementSummary {
   rentalBalanceRemaining: string;
   damageCharges: string;
   extensionCharges: string;
+  /**
+   * Return charges outside the rental total, incl. GST — a legacy drop's extra km / late return /
+   * swap difference, or the drop bill — included in netPayable. Absent on older servers.
+   */
+  returnCharges?: string;
+  /** Paid, less refunds paid out */
   alreadyPaid: string;
   netPayable: string;
+  /** Refundable safety deposit taken and not yet credited back at drop. Absent on older servers. */
+  safetyDepositHeld?: string;
+  /** Refunds paid out. Absent on older servers. */
+  refunded?: string;
+  /** What netPayable is measured against. Absent on older servers. */
+  totalOwed?: string;
 }
 
 export interface RefundItem {
@@ -121,13 +144,180 @@ export interface CashShift {
   employeeName: string;
   openedAt: string;
   closedAt?: string;
+  /** Legacy key: on new servers it equals the expected drawer (`expectedClosing`). */
   expectedTotal?: string;
   actualTotal?: string;
   pendingTotal?: string;
   discrepancyExplanation?: string;
   managerNote?: string;
   status: ShiftStatus;
+  // Shift money figures (2-dp strings). Optional because older responses lack them.
+  isOpen?: boolean;
+  branchName?: string | null;
+  openingCash?: string;
+  cashCollected?: string;
+  cashRefunded?: string;
+  expectedClosing?: string;
+  closingCash?: string | null;
+  variance?: string | null;
+  pendingCash?: string;
+  confirmedCash?: string;
+  rejectedCash?: string;
+  upiCollected?: string;
 }
+
+// ── Cash shift views (D10 contract) ──────────────────────────────────────────
+// Money is a 2-dp string; closingCash/variance are null while the shift is OPEN.
+
+export interface ShiftView {
+  publicId: string;
+  status: ShiftStatus;
+  isOpen: boolean;
+  /** IST date (YYYY-MM-DD) the shift opened on — the day filters and totals use. */
+  istDate: string;
+  openedAt: string;
+  closedAt: string | null;
+  employeePublicId: string;
+  employeeName: string;
+  branchName: string | null;
+  openingCash: string;
+  cashCollected: string;
+  cashRefunded: string;
+  expectedClosing: string;
+  closingCash: string | null;
+  variance: string | null;
+  pendingCash: string;
+  confirmedCash: string;
+  rejectedCash: string;
+  upiCollected: string;
+  transactionCount: number;
+  discrepancyExplanation: string | null;
+  reconciledByName: string | null;
+  reconciledAt: string | null;
+  /** Closed before the opening-cash change: stored figures don't add up as an equation. */
+  legacyVariance: boolean;
+}
+
+export type ShiftTransactionPurpose =
+  | "ADVANCE"
+  | "REMAINING_BALANCE"
+  | "FULL_PAYMENT"
+  | "EXTENSION"
+  | "DAMAGE_FEE"
+  | "SAFETY_DEPOSIT"
+  | "OVERPAYMENT_REFUND"
+  | "CANCELLATION_REFUND";
+
+export interface ShiftTransaction {
+  publicId: string;
+  bookingPublicId: string;
+  customerName: string | null;
+  purpose: ShiftTransactionPurpose;
+  method: PaymentMethod;
+  /** The transaction's CURRENT status (may have changed after the shift closed). */
+  status: TransactionStatus;
+  /** OUT = refund paid from the drawer. */
+  direction: "IN" | "OUT";
+  totalAmount: string;
+  cashAmount: string;
+  onlineAmount: string;
+  onlineGateway: string | null;
+  onlineTransactionRef: string | null;
+  collectedAt: string | null;
+  confirmedAt: string | null;
+  rejectedAt: string | null;
+  createdAt: string | null;
+  collectedByName: string | null;
+  confirmedByName: string | null;
+  rejectedByName: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  /** Recorded after the close snapshot, so not part of the shift's figures. */
+  linkedAfterClose: boolean;
+}
+
+export interface ShiftDetail extends ShiftView {
+  transactions: ShiftTransaction[];
+}
+
+export interface ShiftDayTotals {
+  shiftCount: number;
+  openCount: number;
+  closedCount: number;
+  flaggedCount: number;
+  openingCash: string;
+  cashCollected: string;
+  cashRefunded: string;
+  expectedClosing: string;
+  /** Closed shifts only. */
+  closingCash: string;
+  /** Closed shifts only, leaving out legacy (old-rule) closes. */
+  variance: string;
+  pendingCash: string;
+  upiCollected: string;
+  /** Closed shifts flagged legacyVariance, whose variance is left out of `variance`. */
+  legacyCount: number;
+}
+
+export type ShiftListStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED" | "ENDED";
+
+export interface ShiftListFilters {
+  status?: ShiftListStatus;
+  /** Single IST day (YYYY-MM-DD); overrides from/to. */
+  date?: string;
+  from?: string;
+  to?: string;
+  /** Only shifts open right now; ignores dates and status. */
+  openNow?: boolean;
+  /** BM list only. */
+  employeePublicId?: string;
+}
+
+export interface ShiftListResult<Row extends ShiftView = ShiftView> {
+  data: Row[];
+  total: number;
+  /** Per IST day, newest first, over the whole filter (not just this page). */
+  dailyTotals: Array<ShiftDayTotals & { date: string }>;
+  summary: ShiftDayTotals | null;
+  /** Shifts open right now, whatever the filters. */
+  openNowCount: number;
+}
+
+/** BM list row: ShiftView plus the legacy keys the old page read. */
+export type BranchShiftRow = ShiftView & Omit<CashShift, keyof ShiftView>;
+
+const toShiftQuery = (page: number, pageSize: number, filters?: ShiftListFilters) => {
+  const params: Record<string, string | number> = { page, pageSize };
+  if (!filters) return params;
+  if (filters.openNow) {
+    params.openNow = "true";
+  } else {
+    if (filters.status) params.status = filters.status;
+    if (filters.date) params.date = filters.date;
+    else {
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+    }
+  }
+  if (filters.employeePublicId) params.employeePublicId = filters.employeePublicId;
+  return params;
+};
+
+type ShiftListResponse<Row> = {
+  shifts: Row[];
+  total: number;
+  dailyTotals?: Array<ShiftDayTotals & { date: string }>;
+  summary?: ShiftDayTotals;
+  openNowCount?: number;
+};
+
+const toShiftListResult = <Row extends ShiftView>(body: ShiftListResponse<Row>): ShiftListResult<Row> => ({
+  data: body.shifts ?? [],
+  total: body.total ?? 0,
+  dailyTotals: body.dailyTotals ?? [],
+  summary: body.summary ?? null,
+  openNowCount: body.openNowCount ?? 0,
+});
 
 export interface RecordPaymentPayload {
   bookingPublicId: string;
@@ -355,17 +545,17 @@ export const paymentService = {
       )
       .then((r) => r.data),
 
-  getAllShifts: (page = 1, pageSize = 20, filters?: { from?: string; to?: string; status?: string }) =>
+  getAllShifts: (page = 1, pageSize = 20, filters?: ShiftListFilters) =>
     apiClient
-      .get<{ shifts: CashShift[]; total: number }>(
+      .get<ShiftListResponse<BranchShiftRow>>(
         `/branchManager/payment/shifts`,
-        { params: { page, pageSize, ...filters } }
+        { params: toShiftQuery(page, pageSize, filters) }
       )
-      .then((r) => ({ data: r.data.shifts, total: r.data.total })),
+      .then((r) => toShiftListResult(r.data)),
 
   getShift: (publicId: string) =>
     apiClient
-      .get<{ data: CashShift }>(
+      .get<{ data: ShiftDetail & Omit<CashShift, keyof ShiftView> }>(
         `/branchManager/payment/shifts/${publicId}`
       )
       .then((r) => r.data.data),
@@ -506,11 +696,12 @@ export const employeePaymentService = {
       )
       .then((r) => r.data),
 
-  openShift: () =>
+  /** `openingCash` is the float counted into the drawer (0 allowed). */
+  openShift: (openingCash?: number) =>
     apiClient
       .post<{ data: CashShift; message: string }>(
         `/employee/payment/shifts`,
-        {}
+        openingCash === undefined ? {} : { openingCash }
       )
       .then((r) => r.data),
 
@@ -531,4 +722,20 @@ export const employeePaymentService = {
         payload
       )
       .then((r) => r.data),
+
+  /** The signed-in Fleet Executive's own shifts, across every branch. */
+  getMyShifts: (page = 1, pageSize = 20, filters?: Omit<ShiftListFilters, "employeePublicId">) =>
+    apiClient
+      .get<ShiftListResponse<ShiftView>>(
+        `/employee/payment/shifts/me`,
+        { params: toShiftQuery(page, pageSize, filters) }
+      )
+      .then((r) => toShiftListResult(r.data)),
+
+  getMyShift: (publicId: string) =>
+    apiClient
+      .get<{ data: ShiftDetail }>(
+        `/employee/payment/shifts/me/${publicId}`
+      )
+      .then((r) => r.data.data),
 };

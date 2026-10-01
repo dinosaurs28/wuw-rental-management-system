@@ -7,6 +7,7 @@ import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
 import { QuickActions } from "@/components/manager/dashboard/QuickActions";
+import { RecentVehicleSwaps } from "@/components/manager/dashboard/RecentVehicleSwaps";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import {
   managerDashboardService,
@@ -199,6 +200,9 @@ export const DashboardPage = () => {
               <StaffActivity activities={staffActivity} isLoading={isLoading} />
             </div>
           </div>
+
+          {/* ── Vehicle swaps (branch audit trail) ─────────────────────────── */}
+          <RecentVehicleSwaps limit={5} />
 
         </div>
       </div>

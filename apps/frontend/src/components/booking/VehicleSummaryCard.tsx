@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
-import { useSearchStore } from "@/store/search.store";
 import { Car, Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
+import { formatRentalLength } from "@/utils/formatters";
 
 export const VehicleSummaryCard = () => {
   const {
@@ -16,12 +16,15 @@ export const VehicleSummaryCard = () => {
     endDate,
     startTime,
     endTime,
-    rentalDays,
   } = useVehicleRentalStore();
 
-  const { pickupTime, returnTime } = useSearchStore();
-  const resolvedStartTime = pickupTime || startTime;
-  const resolvedEndTime = returnTime || endTime;
+  // The times picked on the vehicle page — the ones the booking is created with
+  const resolvedStartTime = startTime;
+  const resolvedEndTime = endTime;
+  const rentalLength =
+    startDate && endDate
+      ? formatRentalLength(`${startDate}T${resolvedStartTime}`, `${endDate}T${resolvedEndTime}`)
+      : "-";
 
   const imageUrl = vehicleImages?.[0];
 
@@ -108,10 +111,10 @@ export const VehicleSummaryCard = () => {
           </div>
 
           {/* Duration Badge */}
-          {rentalDays > 0 && (
+          {rentalLength !== "-" && (
             <div className="pt-3 border-t border-zinc-100">
               <span className="inline-flex items-center px-3 py-1.5 text-xs font-semibold bg-secondary text-secondary-foreground rounded-full">
-                {rentalDays} {rentalDays === 1 ? "day" : "days"} rental
+                {rentalLength} rental
               </span>
             </div>
           )}

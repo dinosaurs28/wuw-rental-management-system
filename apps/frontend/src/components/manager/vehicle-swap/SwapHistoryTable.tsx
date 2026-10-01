@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
+import { formatKm, formatSwapRupees, swapAmount, swapStageLabel } from "./swapFormat";
 
 interface SwapHistoryTableProps {
   swaps: VehicleSwap[];
@@ -87,12 +88,20 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                 <TableHead className="w-8"></TableHead>
                 <TableHead>New Vehicle</TableHead>
                 <TableHead>Reason</TableHead>
+                <TableHead>Handover</TableHead>
+                <TableHead>Price Difference</TableHead>
                 <TableHead>Performed By</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {swaps.map((swap) => (
+              {swaps.map((swap) => {
+                const stage = swapStageLabel(swap.bookingStatusAtSwap);
+                const difference = swapAmount(swap.priceDifference);
+                const hasReadings =
+                  swap.originalVehicleEndOdometer != null &&
+                  swap.newVehicleStartOdometer != null;
+                return (
                 <TableRow key={swap.id} className="hover:bg-gray-50">
                   <TableCell className="text-sm">
                     <div className="flex flex-col">
@@ -102,6 +111,9 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                       <span className="text-xs text-gray-500">
                         {format(new Date(swap.swappedAt), "hh:mm a")}
                       </span>
+                      {stage && (
+                        <span className="text-[11px] text-gray-500 mt-0.5">{stage}</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -143,6 +155,36 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                       {reasonLabels[swap.reason] || swap.reason}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-xs text-gray-700 whitespace-nowrap">
+                    {hasReadings ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span>
+                          In: {formatKm(swap.originalVehicleEndOdometer!)}
+                          {swap.originalVehicleFuelLevel && ` · fuel ${swap.originalVehicleFuelLevel}/10`}
+                        </span>
+                        <span>
+                          Out: {formatKm(swap.newVehicleStartOdometer!)}
+                          {swap.newVehicleFuelLevel && ` · fuel ${swap.newVehicleFuelLevel}/10`}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">
+                    {difference !== null && difference > 0 ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-gray-900">
+                          {formatSwapRupees(difference)}
+                        </span>
+                        <span className={swap.chargeDifference ? "text-orange-700" : "text-gray-500"}>
+                          {swap.chargeDifference ? "Billed at drop (+GST)" : "Waived"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {swap.swappedBy ? (
                       <div className="flex flex-col">
@@ -167,7 +209,8 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

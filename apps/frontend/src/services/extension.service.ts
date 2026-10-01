@@ -1,5 +1,6 @@
 import apiClient from "@/lib/axios";
 import type { RazorpayOrder } from "@/lib/razorpay";
+import type { BranchScheduleConfig } from "@/services/branch.service";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,12 +41,33 @@ export interface ResolutionOption {
   newTotalFinal: string;
 }
 
-export interface ExtensionPricing {
+/**
+ * GST split of an extension charge (2-dp Decimal strings), stored on the
+ * extension when it is priced: additionalAmount = taxableAmount + taxAmount,
+ * taxableAmount = baseAmount − discountAmount, taxAmount = cgstAmount + sgstAmount,
+ * taxRate = CGST% + SGST% (e.g. "18.00"). Optional: absent on older responses.
+ */
+export interface ExtensionGstSplit {
+  baseAmount?: string;
+  discountAmount?: string;
+  taxableAmount?: string;
+  taxAmount?: string;
+  cgstAmount?: string;
+  sgstAmount?: string;
+  taxRate?: string;
+}
+
+export interface ExtensionPricing extends ExtensionGstSplit {
   originalDays: number;
   newDays: number;
   originalTotalFinal: string;
   newTotalFinal: string;
+  /** Amount to collect, GST included. */
   additionalAmount: string;
+  /** Current rental length in hours (startAt → current endAt). */
+  originalHours?: number;
+  /** Hours this quote adds. */
+  extensionHours?: number;
 }
 
 export interface ExtensionEvaluation {
@@ -58,7 +80,7 @@ export interface ExtensionEvaluation {
   recommendedResolution: ExtensionResolutionType;
 }
 
-export interface BookingExtension {
+export interface BookingExtension extends ExtensionGstSplit {
   publicId: string;
   bookingPublicId: string;
   extensionStatus: ExtensionStatus;
@@ -98,7 +120,7 @@ export interface CommitExtensionPayload {
   collectNow?: boolean;
 }
 
-export interface CommitExtensionResult {
+export interface CommitExtensionResult extends ExtensionGstSplit {
   publicId: string;
   extensionStatus: ExtensionStatus;
   resolutionType: ExtensionResolutionType;
@@ -115,6 +137,31 @@ export interface CollectExtensionResult {
     extension: string;
   };
   payment: "pending" | "confirmed";
+}
+
+/**
+ * Extension eligibility (#15 cap + #2 office hours). The cap/hours fields are
+ * absent on the customer endpoint's early answers (booking not active, an
+ * extension already pending), so treat them as optional.
+ */
+export interface ExtensionEligibility {
+  eligible: boolean;
+  reason: string | null;
+  /** Customer endpoint only. */
+  hoursUntilEnd?: number;
+  /** Latest end an extension may request (ISO). */
+  maxEndAt?: string;
+  /** The booking already ends at the limit — nothing left to extend. */
+  atCap?: boolean;
+  /** 15, or 180 for monthly-plan bookings. */
+  maxBookingDays?: number;
+  isMonthly?: boolean;
+  rentalPeriodType?: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY" | null;
+  bookingStartAt?: string;
+  currentEndAt?: string;
+  branchPublicId?: string;
+  /** Same shape as GET /public/branch/:id/schedule. */
+  officeHours?: BranchScheduleConfig;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -221,13 +268,23 @@ export const extensionService = {
 
   customerCheckEligibility: (bookingPublicId: string) =>
     apiClient
-      .get<{
-        data: {
-          eligible: boolean;
-          hoursUntilEnd: number;
-          reason: string | null;
-        };
-      }>(`/user/bookings/${bookingPublicId}/extension-eligibility`)
+      .get<{ data: ExtensionEligibility }>(`/user/bookings/${bookingPublicId}/extension-eligibility`)
+      .then((r) => r.data.data),
+
+  /** Fleet (STAFF): cap + office hours for a booking in the staff member's branch. */
+  employeeCheckEligibility: (bookingPublicId: string) =>
+    apiClient
+      .get<{ data: ExtensionEligibility; message: string }>(
+        `/employee/extensions/eligibility/${bookingPublicId}`,
+      )
+      .then((r) => r.data.data),
+
+  /** Branch manager: cap + office hours for a booking in their branch. */
+  managerCheckEligibility: (bookingPublicId: string) =>
+    apiClient
+      .get<{ data: ExtensionEligibility; message: string }>(
+        `/branchManager/extensions/eligibility/${bookingPublicId}`,
+      )
       .then((r) => r.data.data),
 
   customerEvaluate: (bookingPublicId: string, newEndAt: string, notes?: string) =>

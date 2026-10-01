@@ -106,10 +106,19 @@ export interface SalesReportBooking {
     cgst: number;
     sgst: number;
     totalTax: number;
+    /** GST of the original rental + confirmed extensions (= totalTax). */
+    gstAmount?: number;
     depositAmount: number;
     totalAmount: number;
     amountPaid: number;
     balanceAmount: number;
+    /** Confirmed extensions (already inside base/discount/GST/total above). */
+    extension?: {
+      count: number;
+      taxableAmount: number;
+      gstAmount: number;
+      totalAmount: number;
+    };
   };
   payment: {
     depositMethod: string;

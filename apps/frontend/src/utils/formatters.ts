@@ -234,6 +234,23 @@ export function snapTo15Minutes(h: number, m: number): { h: number; m: number } 
   return { h, m: snapped };
 }
 
+/**
+ * Rental length for labels: under 24 h → "N hours" (a 12 h trip is "12 hours",
+ * not "1 day"); otherwise whole days rounded up ("2 days").
+ */
+export function formatRentalLength(
+  start: string | Date | null | undefined,
+  end: string | Date | null | undefined,
+): string {
+  if (!start || !end) return "-";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return "-";
+  const hours = Math.ceil(ms / 3_600_000 - 1e-9);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"}`;
+  const days = Math.ceil(ms / 86_400_000 - 1e-9);
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
+
 export function getCurrentTime(): string {
   const now = new Date();
   const { h, m } = snapTo15Minutes(now.getHours(), now.getMinutes());
