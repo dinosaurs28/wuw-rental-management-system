@@ -1,66 +1,93 @@
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/counterErrors';
+import {
+  defaultChargeDifference,
+  priceDifferenceOf,
+  type SwapCandidate,
+  type SwapReason,
+  type VehicleSwapRecord,
+} from '../../types/vehicleSwap';
+import {
+  SwapCandidateList,
+  SwapPriceDifference,
+  SwapReasonChips,
+  chargeDifferenceToSend,
+  swapCandidatesKey,
+  swapHistoryKey,
+  swapInr,
+  useSwapCandidates,
+} from './SwapParts';
 
-interface AvailableVehicle {
-  id: number;
-  publicId: string;
-  make: string;
-  model: string;
-  regNo: string;
-  categoryName?: string;
-  images?: { url: string | null }[];
-}
-
-const REASONS = ['CUSTOMER_REQUEST', 'MAINTENANCE', 'UPGRADE', 'DOWNGRADE', 'DAMAGE', 'OTHER'] as const;
-const REASON_LABEL: Record<string, string> = {
-  CUSTOMER_REQUEST: 'Customer request',
-  MAINTENANCE: 'Maintenance',
-  UPGRADE: 'Upgrade',
-  DOWNGRADE: 'Downgrade',
-  DAMAGE: 'Damage',
-  OTHER: 'Other',
-};
-
-// #51 — "is the vehicle available?" gate → pick a same-category replacement → swap.
+// #51 — "is the vehicle available?" gate → pick a replacement (same category
+// first, higher categories flagged "Upgrade") → swap. Before pickup: no
+// readings. The pre-GST price difference shows per car; "Charge customer"
+// decides whether it goes on the drop bill (#13).
 export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId: string; onSwapped: () => void }) {
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [reason, setReason] = useState<(typeof REASONS)[number]>('CUSTOMER_REQUEST');
+  // No default: the reason decides whether the customer pays the difference.
+  const [reason, setReason] = useState<SwapReason | null>(null);
+  const [charge, setCharge] = useState(false);
   const [reasonNotes, setReasonNotes] = useState('');
   const [markMaint, setMarkMaint] = useState(false);
   const [maintNotes, setMaintNotes] = useState('');
   const [swapping, setSwapping] = useState(false);
 
-  const { data: vehicles = [], isLoading, isError } = useQuery({
-    queryKey: ['employee', 'available-vehicles', bookingId],
-    queryFn: async () => (await employeeApi.getAvailableVehicles(bookingId)).data?.data ?? [],
-    select: (rows: any[]) => rows as AvailableVehicle[],
-    enabled: open,
-    staleTime: 30_000,
-    retry: false,
-  });
+  const { data, isLoading, isError, error } = useSwapCandidates(bookingId, open);
+  const vehicles = data?.vehicles ?? [];
+  const context = data?.context ?? null;
+  const selected: SwapCandidate | null = vehicles.find((v) => v.id === selectedId) ?? null;
+
+  // A reload can drop the picked car (taken meanwhile).
+  useEffect(() => {
+    if (selectedId != null && data && !data.vehicles.some((v) => v.id === selectedId)) setSelectedId(null);
+  }, [data]);
+
+  const pickReason = (r: SwapReason) => {
+    setReason(r);
+    setCharge(defaultChargeDifference(context, r));
+  };
 
   const doSwap = async () => {
-    if (!selectedId) { Alert.alert('Select a vehicle', 'Pick a replacement vehicle first.'); return; }
+    if (!selected) { Alert.alert('Select a vehicle', 'Pick a replacement vehicle first.'); return; }
+    if (!reason) { Alert.alert('Reason required', 'Pick the reason for the swap.'); return; }
     if (markMaint && !maintNotes.trim()) { Alert.alert('Notes required', 'Add notes when marking the original for maintenance.'); return; }
     setSwapping(true);
     try {
-      await employeeApi.swapVehicle(bookingId, {
-        newVehicleId: selectedId,
+      const res = await employeeApi.swapVehicle(bookingId, {
+        newVehicleId: selected.id,
         reason,
         ...(reasonNotes.trim() ? { reasonNotes: reasonNotes.trim() } : {}),
         ...(markMaint ? { markOriginalForMaintenance: true, originalVehicleNotes: maintNotes.trim() } : {}),
+        chargeDifference: chargeDifferenceToSend(selected, reason, charge),
       });
-      Alert.alert('Vehicle swapped', 'The booking now points to the new vehicle.');
+      const swap = (res.data?.data ?? null) as VehicleSwapRecord | null;
+      const diff = priceDifferenceOf(swap?.priceDifference) ?? 0;
+      const money =
+        diff > 0
+          ? swap?.chargeDifference
+            ? ` Price difference ${swapInr(diff)} + GST goes on the drop bill.`
+            : ` The ${swapInr(diff)} price difference was waived.`
+          : '';
+      Alert.alert('Vehicle swapped', `The booking now points to the new vehicle.${money}`);
       setOpen(false);
       setSelectedId(null);
+      setReason(null);
+      setCharge(false);
+      qc.invalidateQueries({ queryKey: swapHistoryKey(bookingId) });
       onSwapped();
     } catch (err: any) {
-      Alert.alert('Swap failed', err?.response?.data?.message ?? 'Could not swap the vehicle.');
+      const code = err?.response?.data?.code;
+      // The picked car can't take this booking any more — reload the list.
+      if (code === 'VEHICLE_NOT_AVAILABLE' || code === 'VEHICLE_BUSY' || code === 'BOOKING_CHANGED' || code === 'VEHICLE_NOT_FOUND') {
+        qc.invalidateQueries({ queryKey: swapCandidatesKey(bookingId) });
+      }
+      Alert.alert('Swap failed', apiErrorMessage(err, 'Could not swap the vehicle.'));
     } finally {
       setSwapping(false);
     }
@@ -71,7 +98,7 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
       <TouchableOpacity style={styles.toggleRow} onPress={() => setOpen((v) => !v)} activeOpacity={0.8}>
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Text style={styles.title}>Assigned vehicle not available?</Text>
-          <Text style={styles.sub}>Swap to another vehicle of the same category.</Text>
+          <Text style={styles.sub}>Swap to another vehicle of the same or a higher category.</Text>
         </View>
         <Switch
           value={open}
@@ -84,53 +111,26 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
       {open && (
         <>
           <View style={styles.divider} />
-          {isLoading ? (
+          {isLoading || (!data && !isError) ? (
             <ActivityIndicator color={Colors.orange} style={{ marginVertical: 12 }} />
           ) : isError ? (
-            <Text style={styles.emptyText}>Could not load alternatives.</Text>
+            <Text style={styles.emptyText}>{apiErrorMessage(error, 'Could not load alternatives.')}</Text>
           ) : vehicles.length === 0 ? (
-            <Text style={styles.emptyText}>No alternative vehicles available in this category/branch.</Text>
+            <Text style={styles.emptyText}>No alternative vehicles of the same or a higher category are free in this branch.</Text>
           ) : (
             <>
-              {vehicles.map((v) => {
-                const sel = v.id === selectedId;
-                const thumb = v.images?.[0]?.url ?? null;
-                return (
-                  <TouchableOpacity
-                    key={v.id}
-                    style={[styles.vehRow, sel && styles.vehRowActive]}
-                    onPress={() => setSelectedId(v.id)}
-                    activeOpacity={0.85}
-                  >
-                    {thumb ? (
-                      <Image source={{ uri: thumb }} style={styles.vehThumb} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.vehThumb, styles.vehThumbPlaceholder]}>
-                        <Ionicons name="car-outline" size={18} color={Colors.ink4} />
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.vehName}>{v.make} {v.model}</Text>
-                      <Text style={styles.vehReg}>{v.regNo}{v.categoryName ? ` · ${v.categoryName}` : ''}</Text>
-                    </View>
-                    <Ionicons name={sel ? 'radio-button-on' : 'radio-button-off'} size={20} color={sel ? Colors.orange : Colors.ink4} />
-                  </TouchableOpacity>
-                );
-              })}
+              {context?.pricingError ? (
+                <Text style={styles.warnText}>Price differences unavailable: {context.pricingError}</Text>
+              ) : null}
+              <SwapCandidateList
+                vehicles={vehicles}
+                selectedId={selectedId}
+                onSelect={(v) => setSelectedId(v.id)}
+                disabled={swapping}
+              />
 
               <Text style={styles.fieldLabel}>Reason</Text>
-              <View style={styles.reasonWrap}>
-                {REASONS.map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[styles.reasonChip, reason === r && styles.reasonChipActive]}
-                    onPress={() => setReason(r)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.reasonText, reason === r && styles.reasonTextActive]}>{REASON_LABEL[r]}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <SwapReasonChips value={reason} onChange={pickReason} disabled={swapping} />
 
               <TextInput
                 style={styles.input}
@@ -139,6 +139,17 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
                 placeholder="Notes (optional)"
                 placeholderTextColor={Colors.ink4}
               />
+
+              {selected && (
+                <SwapPriceDifference
+                  candidate={selected}
+                  pricingError={context?.pricingError ?? null}
+                  reason={reason}
+                  charge={charge}
+                  onChargeChange={setCharge}
+                  disabled={swapping}
+                />
+              )}
 
               <View style={styles.maintRow}>
                 <Text style={styles.maintLabel}>Mark original for maintenance</Text>
@@ -160,9 +171,9 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
               )}
 
               <TouchableOpacity
-                style={[styles.swapBtn, (swapping || !selectedId) && styles.swapBtnDisabled]}
+                style={[styles.swapBtn, (swapping || !selected || !reason) && styles.swapBtnDisabled]}
                 onPress={doSwap}
-                disabled={swapping || !selectedId}
+                disabled={swapping || !selected || !reason}
                 activeOpacity={0.85}
               >
                 {swapping ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.swapBtnText}>Swap vehicle</Text>}
@@ -182,21 +193,8 @@ const styles = StyleSheet.create({
   sub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2 },
   divider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 14 },
   emptyText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
-  vehRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, borderRadius: 12,
-    borderWidth: 1.5, borderColor: Colors.hairline, marginBottom: 8, backgroundColor: Colors.bg,
-  },
-  vehRowActive: { borderColor: Colors.orange, backgroundColor: '#fff7f2' },
-  vehThumb: { width: 48, height: 40, borderRadius: 8, backgroundColor: Colors.surface },
-  vehThumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  vehName: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
-  vehReg: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 1 },
+  warnText: { fontFamily: Fonts.body, fontSize: 12, color: '#d97706', marginBottom: 10, lineHeight: 17 },
   fieldLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3, marginTop: 6, marginBottom: 8 },
-  reasonWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  reasonChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline },
-  reasonChipActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
-  reasonText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink2 },
-  reasonTextActive: { color: Colors.white },
   input: {
     backgroundColor: Colors.bg, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline,
     paddingHorizontal: 14, paddingVertical: 11, fontFamily: Fonts.body, fontSize: 14, color: Colors.ink, marginTop: 10,

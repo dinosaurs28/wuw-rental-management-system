@@ -90,6 +90,15 @@ export default function CounterPaymentPanel({ bookingPublicId }: Props) {
         <>
           <View style={styles.divider} />
           <Row label="Booking total" value={inr(data.totalFinal)} />
+          {Number(data.returnCharges ?? 0) > 0 && (
+            <Row label="Drop / return charges" value={inr(data.returnCharges)} />
+          )}
+          {Number(data.safetyDepositHeld ?? 0) > 0 && (
+            <Row label="Safety deposit held" value={inr(data.safetyDepositHeld)} />
+          )}
+          {data.totalOwed != null && Number(data.totalOwed) !== Number(data.totalFinal) && (
+            <Row label="Total owed" value={inr(data.totalOwed)} />
+          )}
           <Row label="Collected (confirmed)" value={inr(data.totalCollectedConfirmed)} />
           {Number(data.totalCollectedPending) > 0 && (
             <Row label="Collected (pending)" value={inr(data.totalCollectedPending)} amber />

@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +18,7 @@ import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
 import { SHIFT_REQUIRED_MESSAGE } from '../../lib/counterErrors';
 import { useAuthStore } from '../../store/auth';
+import NotificationBell from '../../components/notifications/NotificationBell';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -23,14 +26,20 @@ interface DashboardStats {
   todaysPickups: number;
   todaysReturns: number;
   activeRentals: number;
+  // Rentals past their return time and not back yet (#8). Absent on older servers.
+  overdueReturns?: number;
 }
 
 interface Shift {
   publicId: string;
   status: string;
   openedAt: string;
-  expectedTotal?: string | null; // confirmed cash in drawer (Decimal string)
+  expectedTotal?: string | null; // = expectedClosing on #22 servers; confirmed cash before
   pendingTotal?: string | null;  // collected, awaiting manager confirmation
+  // #22: expected in drawer = opening + cash collected − cash refunded (live).
+  // Absent on older servers.
+  expectedClosing?: string | null;
+  pendingCash?: string | null;
 }
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
@@ -84,6 +93,7 @@ export default function EmployeeDashboard() {
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
+  const isFocused = useIsFocused();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['employee', 'dashboard-stats'],
     queryFn: async () => {
@@ -91,7 +101,22 @@ export default function EmployeeDashboard() {
       return res.data as DashboardStats;
     },
     staleTime: 60_000,
+    // Keeps the overdue count current while the dashboard is on screen.
+    refetchInterval: isFocused ? 60_000 : false,
   });
+  const overdueReturns = stats?.overdueReturns ?? 0;
+
+  // Back from another screen: refresh the counts. The first focus is the initial load.
+  const statsFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!statsFocusedOnceRef.current) {
+        statsFocusedOnceRef.current = true;
+        return;
+      }
+      refetchStats();
+    }, [refetchStats]),
+  );
 
   const { data: shiftData, isLoading: shiftLoading, isFetching: shiftFetching, refetch: refetchShift } = useQuery<Shift | null>({
     queryKey: ['employee', 'active-shift'],
@@ -102,7 +127,10 @@ export default function EmployeeDashboard() {
     staleTime: 30_000,
   });
 
-  const refreshing = statsFetching || shiftFetching;
+  // The pull-to-refresh spinner follows the pull only, so the 60 s overdue
+  // poll and the on-focus refresh run quietly in the background.
+  const [pulling, setPulling] = useState(false);
+  const refreshing = pulling && (statsFetching || shiftFetching);
 
   // Staff can't take a booking without an open cash shift (the server rejects
   // it with SHIFT_REQUIRED). With no shift cached, re-check before blocking in
@@ -125,9 +153,10 @@ export default function EmployeeDashboard() {
     router.push('/employee/customer/search');
   };
 
-  const onRefresh = () => {
-    refetchStats();
-    refetchShift();
+  const onRefresh = async () => {
+    setPulling(true);
+    await Promise.all([refetchStats(), refetchShift()]);
+    setPulling(false);
   };
 
   return (
@@ -157,6 +186,7 @@ export default function EmployeeDashboard() {
           </View>
         </View>
         <View style={styles.headerRight}>
+          <NotificationBell />
           <TouchableOpacity
             style={styles.headerIconBtn}
             onPress={() => router.push('/(employee)/scan')}
@@ -194,13 +224,20 @@ export default function EmployeeDashboard() {
 
             <View style={styles.shiftCashRow}>
               <View style={styles.shiftCashItem}>
-                <Text style={styles.shiftCashLabel}>In drawer (confirmed)</Text>
-                <Text style={styles.shiftCashValue}>₹{Number(shiftData.expectedTotal ?? 0).toLocaleString('en-IN')}</Text>
+                {/* #22: opening + cash collected − cash refunded; older servers send confirmed cash only */}
+                <Text style={styles.shiftCashLabel}>
+                  {shiftData.expectedClosing != null ? 'Expected in drawer' : 'In drawer (confirmed)'}
+                </Text>
+                <Text style={styles.shiftCashValue}>
+                  ₹{Number(shiftData.expectedClosing ?? shiftData.expectedTotal ?? 0).toLocaleString('en-IN')}
+                </Text>
               </View>
               <View style={styles.shiftCashDivider} />
               <View style={styles.shiftCashItem}>
                 <Text style={styles.shiftCashLabel}>Pending confirmation</Text>
-                <Text style={styles.shiftCashValuePending}>₹{Number(shiftData.pendingTotal ?? 0).toLocaleString('en-IN')}</Text>
+                <Text style={styles.shiftCashValuePending}>
+                  ₹{Number(shiftData.pendingCash ?? shiftData.pendingTotal ?? 0).toLocaleString('en-IN')}
+                </Text>
               </View>
             </View>
           </View>
@@ -220,7 +257,39 @@ export default function EmployeeDashboard() {
             </TouchableOpacity>
           </View>
         )}
+        {/* Own shift history (#22) */}
+        {!shiftLoading && (
+          <TouchableOpacity
+            style={styles.shiftHistoryLink}
+            onPress={() => router.push('/employee/shift/history' as never)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="time-outline" size={14} color={Colors.ink3} />
+            <Text style={styles.shiftHistoryText}>Shift history</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.ink4} />
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Overdue returns (#8) — rentals past their return time, not back yet */}
+      {overdueReturns > 0 && (
+        <TouchableOpacity
+          style={styles.overdueAlert}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'overdue' } })}
+          activeOpacity={0.85}
+        >
+          <View style={styles.overdueAlertIcon}>
+            <Ionicons name="alarm-outline" size={20} color={Colors.availNone} />
+          </View>
+          <View style={styles.overdueAlertBody}>
+            <Text style={styles.overdueAlertTitle}>
+              {overdueReturns} overdue return{overdueReturns === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.overdueAlertSub}>Past the return time and not back yet</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.availNone} />
+        </TouchableOpacity>
+      )}
 
       {/* Stats */}
       <Text style={styles.sectionTitle}>Today</Text>
@@ -269,6 +338,11 @@ export default function EmployeeDashboard() {
           label="Return Queue"
           icon="arrow-down-circle-outline"
           onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns' } })}
+        />
+        <QuickAction
+          label={overdueReturns > 0 ? `Overdue Returns (${overdueReturns})` : 'Overdue Returns'}
+          icon="alarm-outline"
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'overdue' } })}
         />
         <QuickAction
           label="Scan Booking"
@@ -408,6 +482,16 @@ const styles = StyleSheet.create({
   shiftCashLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
   shiftCashValue: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
   shiftCashValuePending: { fontFamily: Fonts.displayBold, fontSize: 18, color: '#d97706', letterSpacing: -0.4 },
+  shiftHistoryLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
+  shiftHistoryText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
 
   shiftInactive: {
     flexDirection: 'row',
@@ -442,6 +526,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.white,
   },
+
+  /* Overdue returns alert */
+  overdueAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: Colors.availNoneSoft,
+    borderWidth: 1,
+    borderColor: '#e53e3e30',
+  },
+  overdueAlertIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overdueAlertBody: { flex: 1, gap: 2 },
+  overdueAlertTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.availNone },
+  overdueAlertSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink2 },
 
   /* Stats */
   sectionTitle: {

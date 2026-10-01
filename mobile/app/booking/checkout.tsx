@@ -17,7 +17,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
-import { vehiclesApi, userApi, paymentApi, type RazorpayOrder } from '../../lib/api';
+import {
+  vehiclesApi,
+  userApi,
+  paymentApi,
+  couponRejection,
+  type CouponPreviewPricing,
+  type CustomerBookingCreateResponse,
+  type RazorpayOrder,
+} from '../../lib/api';
+import { paymentOptionsFor, pickFlow, serverPaymentOptions } from '../../lib/paymentPlan';
+import { durationDiscountText, quoteDiscountLines } from '../../lib/discounts';
 import {
   CHECKING_PAYMENT_TEXT,
   QR_CANCEL_POLL_DELAYS,
@@ -29,15 +39,81 @@ import { durationLabel } from '../../lib/pricing';
 import { rangeLengthLabel, startOfDay } from '../../lib/dates';
 import { useAuthStore } from '../../store/auth';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
+import { profileIncompleteMessage } from '../../lib/identity';
+import { gstLabel, gstNumber, inrExact, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
+import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
+import { useBranchSchedule } from '../../hooks/useBranchSchedule';
+import { rangeHoursLine } from '../../lib/branchSchedule';
 import RazorpayPayOptions from '../../components/payments/RazorpayPayOptions';
 import Button from '../../components/ui/Button';
 import { LEGAL_URLS } from '../../constants/links';
-import type { VehicleDetail, KycDocument, UserProfile } from '../../types/api';
+import type { VehicleDetail, KycDocument, UserProfile, PaymentFlow, PaymentOptions } from '../../types/api';
 
 // The backend still accepts a pickup a little earlier today, so only a pickup
 // well in the past (or on an earlier day) sends the customer back to re-pick.
 const PICKUP_GRACE_MS = 15 * 60 * 1000;
+
+const PRICE_UNAVAILABLE_TEXT =
+  "We couldn't price this rental for these dates, so it can't be paid yet. Go back and choose the dates again.";
+
+// GST of a coupon preview (validate `data.pricing`, numbers) — the coupon is
+// taken off before GST, so these replace the vehicle quote's GST figures.
+type CouponGst = { taxable: number; tax: number; cgst: number; sgst: number; rate: number | null };
+
+function couponGstFrom(p: any): CouponGst | null {
+  const taxable = gstNumber(p?.taxableAmount);
+  const tax = gstNumber(p?.taxAmount);
+  if (taxable === null || tax === null) return null; // older server: no breakdown
+  return {
+    taxable,
+    tax,
+    cgst: gstNumber(p?.cgstAmount) ?? 0,
+    sgst: gstNumber(p?.sgstAmount) ?? 0,
+    rate: gstNumber(p?.taxRate),
+  };
+}
+
+// A coupon the server priced for this booking (#20): its re-priced breakdown
+// and the payment plans the post-coupon total leaves (#6).
+type AppliedCoupon = {
+  code: string;
+  amount: number;
+  gst?: CouponGst | null;
+  pricing?: CouponPreviewPricing | null;
+  paymentOptions?: PaymentOptions | null;
+};
+
+// Plans this booking may be paid with: the server's paymentOptions (the
+// coupon preview's once a coupon is applied — the total moved), else the
+// local mirror of the same rules for an older server.
+function checkoutPaymentOptions(
+  vehicle: VehicleDetail,
+  coupon: AppliedCoupon | null,
+  payableTotal: number | null,
+): PaymentOptions {
+  const server = coupon ? serverPaymentOptions(coupon.paymentOptions) : serverPaymentOptions(vehicle.paymentOptions);
+  return paymentOptionsFor(server, {
+    mode: vehicle.customerPaymentMode,
+    advanceAmount: vehicle.advancePayAmount ?? 0,
+    payableTotal,
+  });
+}
+
+// Alert as a yes/no question (dismissing it counts as no).
+function askToContinue(title: string, message: string, okText: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+        { text: okText, onPress: () => resolve(true) },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    );
+  });
+}
 
 function DateInput({ label, value }: { label: string; value: string }) {
   return (
@@ -78,7 +154,11 @@ function LineItem({
 export default function Checkout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { vehicleId, start, end } = useLocalSearchParams<{ vehicleId: string; start?: string; end?: string }>();
+  // `branch`: the vehicle's branch from the previous screen (office hours
+  // fallback); `adjusted`: set when the return was moved to fit branch hours.
+  const { vehicleId, start, end, branch: branchParam, adjusted } = useLocalSearchParams<{
+    vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string;
+  }>();
   // Booking is account-based (the API requires a token, KYC and a complete
   // profile). Normally requireAuth on the vehicle CTA stops a guest before
   // they get here; this guards a deep link or a restored navigation state.
@@ -102,10 +182,11 @@ export default function Checkout() {
   const [couponInput, setCouponInput] = useState('');
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
-  // Payment plan + terms
-  const [flow, setFlow] = useState<'FULL' | 'ADVANCE'>('FULL');
+  // Payment plan (#6) + terms. null = not picked: the branch's default plan
+  // (FULL when it offers both), clamped to the plans it allows (pickFlow).
+  const [flow, setFlow] = useState<PaymentFlow | null>(null);
   const [terms, setTerms] = useState(false);
 
   const mountedRef = useRef(true);
@@ -138,11 +219,22 @@ export default function Checkout() {
         status: 'AVAILABLE',
         deposit: d.deposit ?? 0,
         advancePayAmount: Number(d.advancePayAmount ?? 0),
+        // Branch payment plan (#6) — the group branch used to drop these.
+        customerPaymentMode: d.customerPaymentMode,
+        paymentOptions: d.paymentOptions ?? null,
         pricingDetails: d.pricingDetails ?? null,
+        branchPublicId: d.branchPublicId ?? null,
       } as VehicleDetail;
     },
     enabled: !!vehicleId,
   });
+
+  // Branch office hours (#2) for the itinerary line.
+  const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
+  const { data: schedule } = useBranchSchedule(branchPublicId);
+
+  // Back to the vehicle page to pick new times.
+  const changeTimes = () => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`));
 
   const { data: kyc, isLoading: kycLoading } = useQuery({
     queryKey: ['kyc'],
@@ -151,9 +243,10 @@ export default function Checkout() {
     enabled: !isGuest,
   });
 
-  // Only used to prefill the Razorpay sheet — shares the ['profile'] cache with
-  // the profile tab, and a failure must never block checkout.
-  const { data: profile } = useQuery({
+  // Prefills the Razorpay sheet and drives the profile-complete pre-check (#1) —
+  // shares the ['profile'] cache with the profile tab, and a failure to load
+  // must never block checkout (the server still enforces the rule).
+  const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => userApi.profile(),
     select: (res) => res.data as UserProfile,
@@ -161,8 +254,10 @@ export default function Checkout() {
   });
   const authUser = useAuthStore((s) => s.user);
 
-  const applyCoupon = async () => {
-    const code = couponInput.trim();
+  // Prices the coupon on the server for the plan the customer has picked
+  // (signed in: the customer's own coupons and limits apply). `recheck`: the
+  // coupon is already applied and the plan changed — drop it if it no longer fits.
+  const previewCoupon = async (code: string, plan: PaymentFlow, recheck = false) => {
     if (!code || !vehicle) return;
     setCouponBusy(true);
     setCouponError(null);
@@ -172,19 +267,62 @@ export default function Checkout() {
         ...(isGroupKey ? { groupKey: vehicle.publicId } : { vehiclePublicId: vehicle.publicId }),
         startAt: startDate.toISOString(),
         endAt: endDate.toISOString(),
+        paymentFlow: plan,
       });
+      if (!mountedRef.current) return;
       const d = res.data?.data;
       if (d?.valid) {
-        setAppliedCoupon({ code: d.couponCode ?? code.toUpperCase(), amount: Number(d.discountAmount ?? 0) });
+        setAppliedCoupon({
+          code: d.couponCode ?? code.toUpperCase(),
+          amount: Number(d.discountAmount ?? 0),
+          // The coupon is pre-GST: the preview's post-coupon GST replaces the quote's
+          gst: couponGstFrom(d.pricing),
+          // Totals and plans come from the server's re-priced breakdown (#20/#6)
+          pricing: d.pricing ?? null,
+          paymentOptions: serverPaymentOptions(d.paymentOptions),
+        });
         setCouponInput('');
       } else {
-        setCouponError(d?.reason ?? 'This coupon is not valid for this booking.');
+        if (recheck) setAppliedCoupon(null);
+        setCouponError(
+          recheck && d?.reason
+            ? `${code} was removed: ${d.reason}`
+            : d?.reason ?? 'This coupon is not valid for this booking.',
+        );
       }
     } catch (err: any) {
-      setCouponError(err?.response?.data?.message ?? 'Could not validate coupon.');
+      if (!mountedRef.current) return;
+      setCouponError(
+        err?.response?.data?.message ??
+          (recheck ? 'Could not re-check the coupon for this payment plan.' : 'Could not validate coupon.'),
+      );
     } finally {
-      setCouponBusy(false);
+      if (mountedRef.current) setCouponBusy(false);
     }
+  };
+
+  const applyCoupon = () => {
+    if (!vehicle) return;
+    const pd = vehicle.pricingDetails;
+    const plan = pickFlow(flow, checkoutPaymentOptions(vehicle, null, pd ? round2(pd.finalTotal + pd.deposit) : null));
+    void previewCoupon(couponInput.trim(), plan);
+  };
+
+  // Some coupons are for one plan only (COUPON_PAYMENT_PLAN_MISMATCH), so a
+  // plan change re-checks the applied coupon.
+  const selectFlow = (next: PaymentFlow) => {
+    if (couponBusy) return;
+    setFlow(next);
+    if (appliedCoupon) void previewCoupon(appliedCoupon.code, next, true);
+  };
+
+  // Not a sign-in problem: the profile is missing fields (e.g. DL / Aadhaar
+  // number). Saving the profile returns here (profile/edit goes back).
+  const promptCompleteProfile = (message: string) => {
+    Alert.alert('Complete your profile', message, [
+      { text: 'Go to Profile', onPress: () => router.push('/profile/edit') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleBook = async (mode: CheckoutMode) => {
@@ -195,6 +333,16 @@ export default function Checkout() {
     if (startDate.getTime() < now.getTime() - PICKUP_GRACE_MS || startDate < startOfDay(now)) {
       setStartPassed(true);
       return;
+    }
+    // #1 — the server refuses an incomplete profile (403 PROFILE_INCOMPLETE);
+    // say so before the customer gets to payment.
+    if (profile && !profile.isProfileCompleted) {
+      // The cached copy may predate an update made elsewhere (e.g. the web) — recheck.
+      const latest = (await refetchProfile()).data ?? profile;
+      if (!latest.isProfileCompleted) {
+        promptCompleteProfile(profileIncompleteMessage(latest.missingFields ?? [], 'self'));
+        return;
+      }
     }
     if (!kyc || kyc.length === 0) {
       Alert.alert(
@@ -211,6 +359,12 @@ export default function Checkout() {
       Alert.alert('Accept terms', 'Please accept the Terms & Conditions to continue.');
       return;
     }
+    // No server price (e.g. the branch has no GST rule): the total incl. GST is
+    // unknown, so never start a payment against a guessed amount.
+    if (!vehicle.pricingDetails) {
+      Alert.alert('Price unavailable', PRICE_UNAVAILABLE_TEXT);
+      return;
+    }
 
     // Recompute advance validity at submit time using the SAME fallback as the
     // displayed total, so the sent payment_flow can never diverge from the
@@ -222,12 +376,16 @@ export default function Checkout() {
     const dailyNow = pdNow?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
     const subtotalNow = pdNow ? pdNow.basePrice : dailyNow * daysNow;
     const depositNow = pdNow?.deposit ?? 0;
-    const taxNow = pdNow?.taxAmount ?? Math.round(subtotalNow * 0.18);
+    const taxNow = pdNow?.taxAmount ?? 0; // never a guessed rate — no pricing is blocked above
     const baseTotalNow = pdNow ? pdNow.finalTotal + depositNow : subtotalNow + depositNow + taxNow;
-    const totalNow = Math.max(0, baseTotalNow - (appliedCoupon?.amount ?? 0));
-    const advNow = vehicle.advancePayAmount ?? 0;
-    const sendFlow: 'FULL' | 'ADVANCE' =
-      flow === 'ADVANCE' && advNow > 0 && advNow < totalNow ? 'ADVANCE' : 'FULL';
+    // With a coupon the server's re-priced total wins — the coupon comes off
+    // before GST, so subtracting it from the GST-inclusive total would be wrong.
+    const totalNow = appliedCoupon?.pricing
+      ? appliedCoupon.pricing.payableTotal
+      : Math.max(0, baseTotalNow - (appliedCoupon?.amount ?? 0));
+    // The plan shown selected: the branch's allowed plans for this total (#6).
+    // The server re-decides and converts (never rejects) a plan it won't take.
+    const sendFlow: PaymentFlow = pickFlow(flow, checkoutPaymentOptions(vehicle, appliedCoupon, totalNow));
 
     // #36 — submit the customer-chosen KYC doc (default: first).
     const chosenKyc = kyc.find((k) => k.publicId === selectedKycId) ?? kyc[0]!;
@@ -246,10 +404,15 @@ export default function Checkout() {
         ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
       });
 
-      const { holdId, data } = res.data;
+      const created = res.data as CustomerBookingCreateResponse;
+      const { holdId, data } = created;
       const totals = data?.totals ?? {};
       const transactionId: string | undefined = totals.transactionId;
-      const rzp: RazorpayOrder | undefined = totals.razorpay;
+      const rzp: RazorpayOrder | null | undefined = totals.razorpay;
+      // The plan actually charged — the server may have converted the one sent.
+      const chargedFlow: PaymentFlow =
+        created.isAdvancePayment != null ? (created.isAdvancePayment ? 'ADVANCE' : 'FULL') : created.payment_flow ?? sendFlow;
+      const payNowAmount = totals.payNowAmount ?? (chargedFlow === 'ADVANCE' ? totals.advanceAmount : totals.grandFinalTotal);
 
       const confirmParams = {
         holdId,
@@ -259,9 +422,9 @@ export default function Checkout() {
         end: endDate.toISOString(),
         total: String(totals.grandFinalTotal ?? ''),
         deposit: String(totals.grandDeposit ?? ''),
-        payNow: String(totals.advanceAmount ?? ''),
-        remaining: String(totals.remainingBalance ?? 0),
-        flow: sendFlow,
+        payNow: String(payNowAmount ?? ''),
+        remaining: String(totals.dueAtPickup ?? totals.remainingBalance ?? 0),
+        flow: chargedFlow,
         coupon: totals.appliedCouponCode ?? '',
       };
 
@@ -274,6 +437,23 @@ export default function Checkout() {
       const releaseHold = async () => {
         try { await userApi.cancelHold(holdId); } catch { /* best-effort */ }
       };
+
+      // #6 — the branch (or the amounts) didn't allow the plan shown: say what
+      // will be charged before opening the payment sheet.
+      if (created.paymentFlowAdjusted) {
+        setFlow(chargedFlow);
+        const amountText = payNowAmount != null ? inrExact(payNowAmount) : null;
+        const proceed = await askToContinue(
+          'Payment plan changed',
+          `${created.paymentFlowAdjustMessage ?? 'This booking uses a different payment plan.'}` +
+            (amountText ? ` You'll pay ${amountText} now.` : ''),
+          amountText ? `Pay ${amountText}` : 'Continue',
+        );
+        if (!proceed) {
+          await releaseHold();
+          return;
+        }
+      }
 
       let payment;
       try {
@@ -346,6 +526,68 @@ export default function Checkout() {
         params: { transactionId, ...(verified ? { verified: '1' } : {}), ...confirmParams },
       });
     } catch (err: any) {
+      // #20 — the coupon stopped being valid (expired, limit reached, wrong
+      // plan…). Refused before any payment: drop it and show the new total.
+      const rejected = couponRejection(err);
+      if (rejected) {
+        setAppliedCoupon(null);
+        setCouponError(rejected.message);
+        Alert.alert(
+          'Coupon removed',
+          `${rejected.message}\n\nYou have not been charged. Check the new total, then pay again.`,
+        );
+        return;
+      }
+      if (err?.response?.data?.code === 'PROFILE_INCOMPLETE') {
+        void refetchProfile(); // the cached copy was out of date — refresh the banner
+        promptCompleteProfile(
+          err.response.data.message ??
+            profileIncompleteMessage(err.response.data.missingFields ?? [], 'self'),
+        );
+        return;
+      }
+      const body = err?.response?.data;
+      // #2 — the return falls outside branch hours: the server proposes the
+      // next in-hours return. Reopen checkout with it so the new price shows
+      // before the customer pays again.
+      if (body?.code === 'BRANCH_SCHEDULE_RETURN_ADJUSTED' && body?.verdict?.adjustedReturn) {
+        const adjustedReturn = String(body.verdict.adjustedReturn);
+        const label: string = body.verdict.nextOpenLabel ?? 'the new time';
+        Alert.alert('Return time adjusted', body.message ?? `The branch is closed at your return time. Return at ${label} instead?`, [
+          { text: 'Change times', style: 'cancel', onPress: changeTimes },
+          {
+            text: `Use ${label}`,
+            onPress: () =>
+              router.replace({
+                pathname: '/booking/checkout',
+                params: {
+                  vehicleId,
+                  start: startDate.toISOString(),
+                  end: adjustedReturn,
+                  adjusted: label,
+                  ...(branchPublicId ? { branch: branchPublicId } : {}),
+                },
+              }),
+          },
+        ]);
+        return;
+      }
+      // #2 / #15 — pickup outside branch hours, or past the 15-day limit.
+      if (
+        body?.code === 'BRANCH_SCHEDULE_VIOLATION' ||
+        body?.code === 'BOOKING_MAX_PERIOD_EXCEEDED' ||
+        body?.code === 'INVALID_DATES'
+      ) {
+        Alert.alert(
+          body.code === 'BOOKING_MAX_PERIOD_EXCEEDED' ? 'Booking period too long' : body.code === 'INVALID_DATES' ? 'Check your dates' : 'Outside branch hours',
+          body.message ?? 'Please choose different times.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Change times', onPress: changeTimes },
+          ],
+        );
+        return;
+      }
       Alert.alert('Booking failed', err.response?.data?.message ?? 'Unable to complete booking. Please try again.');
     } finally {
       setLoading(false);
@@ -388,17 +630,37 @@ export default function Checkout() {
   const daily = pd?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
   const subtotal = pd ? pd.basePrice : daily * days;
   const deposit = pd?.deposit ?? 0;
-  const tax = pd?.taxAmount ?? Math.round(subtotal * 0.18);
-  const couponDiscount = appliedCoupon?.amount ?? 0;
+  const tax = pd?.taxAmount ?? 0; // no pricing ⇒ "GST not available" and payment is blocked
+  // The server's re-priced breakdown once a coupon is applied (#20).
+  const couponPricing = appliedCoupon?.pricing ?? null;
+  const couponDiscount = couponPricing?.couponDiscountAmount ?? appliedCoupon?.amount ?? 0;
   const baseTotal = pd ? pd.finalTotal + deposit : subtotal + deposit + tax;
-  const total = Math.max(0, baseTotal - couponDiscount);
+  // The coupon comes off before GST, so the post-coupon total is the server's,
+  // never baseTotal − coupon (only an older server without a breakdown).
+  const total = couponPricing ? couponPricing.payableTotal : Math.max(0, baseTotal - couponDiscount);
+  // GST lines exactly as the server priced them (#23): taxable value after all
+  // discounts, then CGST/SGST. With a coupon, the coupon preview's figures.
+  const gstView: CouponGst | null =
+    appliedCoupon?.gst ??
+    (pd
+      ? {
+          taxable: round2(pd.basePrice - pd.discountAmount),
+          tax: pd.taxAmount,
+          cgst: pd.cgstAmount,
+          sgst: pd.sgstAmount,
+          rate: pd.taxRate,
+        }
+      : null);
 
   const chosenKyc = kyc?.find((k) => k.publicId === selectedKycId) ?? kyc?.[0] ?? null;
-  const advanceAmount = vehicle.advancePayAmount ?? 0;
-  const canAdvance = advanceAmount > 0 && advanceAmount < total;
-  const effectiveFlow: 'FULL' | 'ADVANCE' = canAdvance && flow === 'ADVANCE' ? 'ADVANCE' : 'FULL';
+  // Payment plan (#6): only what the branch allows for this total — a chooser
+  // only when it offers both (FULL preselected); handleBook sends the same plan.
+  const payOptions = checkoutPaymentOptions(vehicle, appliedCoupon, pd ? total : null);
+  const effectiveFlow: PaymentFlow = pickFlow(flow, payOptions);
+  const advanceAmount = payOptions.advanceAmount;
   const payNow = effectiveFlow === 'ADVANCE' ? advanceAmount : total;
-  const remainingAtPickup = effectiveFlow === 'ADVANCE' ? Math.max(0, total - advanceAmount) : 0;
+  const remainingAtPickup =
+    effectiveFlow === 'ADVANCE' ? payOptions.remainingAfterAdvance ?? Math.max(0, round2(total - advanceAmount)) : 0;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -437,6 +699,28 @@ export default function Checkout() {
           </View>
           <DateInput label="Return" value={fmt(endDate)} />
         </View>
+        {/* #2 — branch hours for these days; a note when the return was moved to fit them */}
+        <View style={styles.hoursWrap}>
+          <BranchHoursLine text={rangeHoursLine(schedule, startDate, endDate)} />
+          {adjusted ? (
+            <TimesNotice
+              notice={{ tone: 'warn', text: `Return moved to ${adjusted} to fit branch hours. The price below is for the new return time.` }}
+            />
+          ) : null}
+        </View>
+
+        {/* #1 — profile incomplete (e.g. no DL / Aadhaar number): booking is refused until it is fixed */}
+        {profile && !profile.isProfileCompleted && (
+          <TouchableOpacity
+            style={[styles.kycBanner, styles.kycMissing]}
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.kycText, styles.kycTextMissing]}>
+              {profileIncompleteMessage(profile.missingFields ?? [], 'self')} Tap to update your profile.
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* KYC status */}
         <View style={[styles.kycBanner, kyc && kyc.length > 0 ? styles.kycOk : styles.kycMissing]}>
@@ -486,10 +770,13 @@ export default function Checkout() {
           <View style={styles.couponApplied}>
             <Ionicons name="pricetag" size={16} color="#2d9d61" />
             <Text style={styles.couponAppliedText}>
-              <Text style={styles.couponCode}>{appliedCoupon.code}</Text> applied · −₹
-              {appliedCoupon.amount.toLocaleString('en-IN')}
+              <Text style={styles.couponCode}>{appliedCoupon.code}</Text> applied · {inrExact(couponDiscount)} off before GST
             </Text>
-            <TouchableOpacity onPress={() => setAppliedCoupon(null)} hitSlop={8}>
+            <TouchableOpacity
+              onPress={() => { setAppliedCoupon(null); setCouponError(null); }}
+              disabled={couponBusy}
+              hitSlop={8}
+            >
               <Ionicons name="close-circle" size={18} color={Colors.ink4} />
             </TouchableOpacity>
           </View>
@@ -520,52 +807,88 @@ export default function Checkout() {
         <Text style={styles.sectionTitle}>Price breakdown</Text>
         <View style={styles.priceCard}>
           <LineItem
-            label={pd ? `Base rate (${durationText})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
+            label={pd ? `Base rate (${pd.pricingBreakdown?.billedAs ?? durationText})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
             value={`₹${(pd?.basePrice ?? daily * days).toLocaleString('en-IN')}`}
           />
-          {(pd?.discountAmount ?? 0) > 0 && (
-            <LineItem label="Discount" value={`−₹${pd!.discountAmount.toLocaleString('en-IN')}`} credit />
-          )}
+          {/* Duration slab named (#24). With a coupon, the server's re-priced
+              layers — a slab the coupon replaced (no stacking) is not shown. */}
+          {couponPricing
+            ? !couponPricing.durationSuppressed &&
+              couponPricing.durationDiscountAmount > 0 && (
+                <LineItem
+                  label={durationDiscountText({ ...couponPricing, durationDiscountType: pd?.durationDiscountType ?? null })}
+                  value={`−${inrExact(couponPricing.durationDiscountAmount)}`}
+                  credit
+                />
+              )
+            : pd &&
+              quoteDiscountLines(pd).map((l) => (
+                <LineItem key={l.label} label={l.label} value={`−${inrExact(l.amount)}`} credit />
+              ))}
           {couponDiscount > 0 && (
-            <LineItem label={`Coupon (${appliedCoupon!.code})`} value={`−₹${couponDiscount.toLocaleString('en-IN')}`} credit />
+            <LineItem label={`Coupon (${appliedCoupon!.code})`} value={`−${inrExact(couponDiscount)}`} credit />
           )}
-          <LineItem label="Deposit (refundable)" value={`₹${deposit.toLocaleString('en-IN')}`} />
-          <LineItem label={`GST${pd ? ` (${pd.taxRate}%)` : ''}`} value={`₹${tax.toLocaleString('en-IN')}`} />
+          {gstView ? (
+            <>
+              <LineItem label="Taxable value" value={inrExact(gstView.taxable)} />
+              {gstView.cgst > 0 || gstView.sgst > 0 ? (
+                <>
+                  <LineItem label={gstLabel('CGST', pd?.cgstRate)} value={inrExact(gstView.cgst)} />
+                  <LineItem label={gstLabel('SGST', pd?.sgstRate)} value={inrExact(gstView.sgst)} />
+                </>
+              ) : (
+                <LineItem label={gstLabel('GST', gstView.rate)} value={inrExact(gstView.tax)} />
+              )}
+            </>
+          ) : (
+            <LineItem label="GST" value="Not available" />
+          )}
+          <LineItem label="Deposit (refundable, no GST)" value={inrExact(deposit)} />
+          {!pd && <Text style={styles.priceUnavailable}>{PRICE_UNAVAILABLE_TEXT}</Text>}
           <View style={styles.divider} />
           <LineItem label="Total" value={`₹${total.toLocaleString('en-IN')}`} bold />
         </View>
 
-        {/* Payment plan */}
-        {canAdvance && (
+        {/* Payment plan (#6) — the branch's plans for this total. Two cards only
+            when it offers both; otherwise the one plan that will be charged. */}
+        {pd && (
           <>
             <Text style={styles.sectionTitle}>Payment plan</Text>
             <View style={styles.planRow}>
-              <TouchableOpacity
-                style={[styles.planCard, flow === 'FULL' && styles.planCardActive]}
-                onPress={() => setFlow('FULL')}
-                activeOpacity={0.85}
-              >
-                <View style={styles.planTop}>
-                  <Text style={[styles.planTitle, flow === 'FULL' && styles.planTitleActive]}>Pay full</Text>
-                  {flow === 'FULL' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
-                </View>
-                <Text style={styles.planAmount}>₹{total.toLocaleString('en-IN')}</Text>
-                <Text style={styles.planNote}>Nothing due at pickup</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.planCard, flow === 'ADVANCE' && styles.planCardActive]}
-                onPress={() => setFlow('ADVANCE')}
-                activeOpacity={0.85}
-              >
-                <View style={styles.planTop}>
-                  <Text style={[styles.planTitle, flow === 'ADVANCE' && styles.planTitleActive]}>Pay advance</Text>
-                  {flow === 'ADVANCE' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
-                </View>
-                <Text style={styles.planAmount}>₹{advanceAmount.toLocaleString('en-IN')}</Text>
-                <Text style={styles.planNote}>₹{Math.max(0, total - advanceAmount).toLocaleString('en-IN')} at pickup</Text>
-              </TouchableOpacity>
+              {payOptions.allowedFlows.includes('FULL') && (
+                <TouchableOpacity
+                  style={[styles.planCard, effectiveFlow === 'FULL' && styles.planCardActive]}
+                  onPress={() => effectiveFlow !== 'FULL' && selectFlow('FULL')}
+                  disabled={payOptions.allowedFlows.length < 2 || couponBusy}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.planTop}>
+                    <Text style={[styles.planTitle, effectiveFlow === 'FULL' && styles.planTitleActive]}>Pay full</Text>
+                    {effectiveFlow === 'FULL' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
+                  </View>
+                  <Text style={styles.planAmount}>{inrExact(total)}</Text>
+                  <Text style={styles.planNote}>Nothing due at pickup</Text>
+                </TouchableOpacity>
+              )}
+              {payOptions.allowedFlows.includes('ADVANCE') && (
+                <TouchableOpacity
+                  style={[styles.planCard, effectiveFlow === 'ADVANCE' && styles.planCardActive]}
+                  onPress={() => effectiveFlow !== 'ADVANCE' && selectFlow('ADVANCE')}
+                  disabled={payOptions.allowedFlows.length < 2 || couponBusy}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.planTop}>
+                    <Text style={[styles.planTitle, effectiveFlow === 'ADVANCE' && styles.planTitleActive]}>Pay advance</Text>
+                    {effectiveFlow === 'ADVANCE' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
+                  </View>
+                  <Text style={styles.planAmount}>{inrExact(advanceAmount)}</Text>
+                  <Text style={styles.planNote}>
+                    {inrExact(payOptions.remainingAfterAdvance ?? Math.max(0, round2(total - advanceAmount)))} at pickup
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {payOptions.reasonMessage ? <Text style={styles.planReason}>{payOptions.reasonMessage}</Text> : null}
           </>
         )}
 
@@ -600,7 +923,7 @@ export default function Checkout() {
         <View style={styles.ctaSummary}>
           <Text style={styles.ctaTotal}>₹{payNow.toLocaleString('en-IN')}</Text>
           <Text style={styles.ctaTotalNote}>
-            {flow === 'ADVANCE' && canAdvance ? `pay now · ₹${remainingAtPickup.toLocaleString('en-IN')} later` : `total · ${durationText}`}
+            {effectiveFlow === 'ADVANCE' ? `advance now · ${inrExact(remainingAtPickup)} at pickup` : `total · ${durationText}`}
           </Text>
         </View>
         {startPassed ? (
@@ -618,7 +941,7 @@ export default function Checkout() {
           <RazorpayPayOptions
             payLabel="Confirm & pay"
             onPay={handleBook}
-            disabled={loading || !terms}
+            disabled={loading || !terms || !pd || couponBusy}
             busyMode={loading ? payMode : null}
             busyLabel={checkingPayment ? CHECKING_PAYMENT_TEXT : undefined}
             noUpiNote="No UPI app on this phone — scan the QR with a UPI app on another phone."
@@ -670,6 +993,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   datesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  hoursWrap: { marginTop: 8, gap: 8 },
   dateInput: {
     flex: 1,
     backgroundColor: Colors.surface,
@@ -764,6 +1088,7 @@ const styles = StyleSheet.create({
   lineValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
   lineValueBold: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
   lineValueCredit: { color: '#2d9d61' },
+  priceUnavailable: { fontFamily: Fonts.body, fontSize: 12, color: '#856404', lineHeight: 17 },
   divider: { height: 1, backgroundColor: Colors.hairline },
 
   // Payment plan
@@ -783,6 +1108,7 @@ const styles = StyleSheet.create({
   planTitleActive: { color: Colors.ink, fontFamily: Fonts.bodySemiBold },
   planAmount: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
   planNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
+  planReason: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 8, lineHeight: 17 },
 
   // Terms
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 20 },

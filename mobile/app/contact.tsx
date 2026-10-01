@@ -1,9 +1,12 @@
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
 import { CONTACT, whatsappUrl } from '../constants/links';
+import { vehiclesApi } from '../lib/api';
+import { hasOfficeHours, toScheduleConfig, weeklyHours } from '../lib/branchSchedule';
 import WhatsAppSupportButton from '../components/ui/WhatsAppSupportButton';
 import { useWhatsAppConfig } from '../hooks/useWhatsAppConfig';
 
@@ -40,6 +43,23 @@ export default function Contact() {
   const { data: waConfig } = useWhatsAppConfig();
   const waEnabled = !!waConfig && waConfig.isEnabled && !!waConfig.phoneNumber;
 
+  // Opening hours per branch, live from each branch's schedule (#2) — shares
+  // the ['branches'] and ['branch-schedule', id] caches with the booking screens.
+  const { data: branches, isLoading: branchesLoading } = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => (await vehiclesApi.branches()).data?.data ?? [],
+    select: (rows: any[]) => rows as { publicId: string; name: string }[],
+    staleTime: 5 * 60_000,
+  });
+  const hours = useQueries({
+    queries: (branches ?? []).map((b) => ({
+      queryKey: ['branch-schedule', b.publicId],
+      queryFn: async () => toScheduleConfig((await vehiclesApi.branchSchedule(b.publicId)).data),
+      staleTime: 5 * 60_000,
+      retry: 1,
+    })),
+  });
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -54,7 +74,7 @@ export default function Contact() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>We're here to help. Reach {CONTACT.businessName} any day of the week.</Text>
+        <Text style={styles.intro}>We're here to help. Reach {CONTACT.businessName} by phone or WhatsApp.</Text>
 
         <Text style={styles.sectionTitle}>Get in touch</Text>
         <View style={styles.card}>
@@ -92,13 +112,56 @@ export default function Contact() {
             value={`${CONTACT.address.line1} ${CONTACT.address.line2}, ${CONTACT.address.cityPin}`}
             onPress={() => Linking.openURL(CONTACT.map.url)}
           />
-          <Row icon="time-outline" label={CONTACT.hours.days} value={CONTACT.hours.time} />
         </View>
 
         <TouchableOpacity style={styles.mapBtn} onPress={() => Linking.openURL(CONTACT.map.url)} activeOpacity={0.85}>
           <Ionicons name="map-outline" size={18} color={Colors.white} />
           <Text style={styles.mapBtnText}>Open in Maps</Text>
         </TouchableOpacity>
+
+        {/* Opening hours — each branch's pickup / return hours as set by the branch */}
+        {branchesLoading || (branches?.length ?? 0) > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Opening hours</Text>
+            <View style={styles.card}>
+              {branchesLoading ? <ActivityIndicator style={styles.hoursLoading} color={Colors.orange} /> : null}
+              {(branches ?? []).map((b, i) => {
+                const q = hours[i];
+                const config = q?.data ?? null;
+                const rows = weeklyHours(config);
+                return (
+                  <View key={b.publicId} style={styles.row}>
+                    <View style={styles.rowIcon}>
+                      <Ionicons name="time-outline" size={18} color={Colors.orange} />
+                    </View>
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowValue}>{b.name}</Text>
+                      {q?.isLoading ? (
+                        <Text style={styles.hoursMuted}>Loading hours…</Text>
+                      ) : q?.isError || !config ? (
+                        <Text style={styles.hoursMuted}>Hours unavailable right now</Text>
+                      ) : rows.length === 0 ? (
+                        <Text style={styles.hoursMuted}>Bookings accepted at any time</Text>
+                      ) : (
+                        rows.map((r) => (
+                          <View key={r.days} style={styles.hoursRow}>
+                            <Text style={styles.hoursDays}>{r.days}</Text>
+                            <Text style={styles.hoursTime}>{r.hours}</Text>
+                          </View>
+                        ))
+                      )}
+                      {hasOfficeHours(config) && config.graceMinutes > 0 ? (
+                        <Text style={styles.hoursMuted}>
+                          Returns accepted up to {config.graceMinutes} min after closing
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -166,4 +229,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   mapBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
+  hoursLoading: { paddingVertical: 16 },
+  hoursRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
+  hoursDays: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
+  hoursTime: { flexShrink: 1, textAlign: 'right', fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink },
+  hoursMuted: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 4 },
 });

@@ -13,6 +13,8 @@ import { Colors, Fonts } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth';
 import Avatar from '../../components/ui/Avatar';
 import ConfirmModal from '../../components/ui/ConfirmModal';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
+import { notificationsScreenHref, unreadBadgeLabel } from '../../lib/notifications';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -21,11 +23,14 @@ function MenuItem({
   label,
   onPress,
   danger,
+  badge,
 }: {
   icon: IoniconName;
   label: string;
   onPress: () => void;
   danger?: boolean;
+  /** Small count pill before the chevron (e.g. unread notifications). */
+  badge?: string;
 }) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.8}>
@@ -33,6 +38,11 @@ function MenuItem({
         <Ionicons name={icon} size={18} color={danger ? '#e53e3e' : Colors.ink2} />
       </View>
       <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
+      {badge ? (
+        <View style={styles.menuBadge}>
+          <Text style={styles.menuBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
       <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
     </TouchableOpacity>
   );
@@ -44,6 +54,7 @@ export default function EmployeeProfile() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const [showSignOut, setShowSignOut] = useState(false);
+  const unreadBadge = unreadBadgeLabel(useUnreadNotificationCount());
 
   const handleSignOut = async () => {
     setShowSignOut(false);
@@ -98,6 +109,12 @@ export default function EmployeeProfile() {
               label="Close Current Shift"
               onPress={() => router.push('/employee/shift/close')}
             />
+            <View style={styles.divider} />
+            <MenuItem
+              icon="time-outline"
+              label="Shift History"
+              onPress={() => router.push('/employee/shift/history' as never)}
+            />
           </View>
         </View>
 
@@ -105,6 +122,13 @@ export default function EmployeeProfile() {
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionLabel}>Account</Text>
           <View style={styles.menuCard}>
+            <MenuItem
+              icon="notifications-outline"
+              label="Notifications"
+              badge={unreadBadge}
+              onPress={() => router.push(notificationsScreenHref('STAFF'))}
+            />
+            <View style={styles.divider} />
             <MenuItem
               icon="log-out-outline"
               label="Sign Out"
@@ -240,5 +264,15 @@ const styles = StyleSheet.create({
     color: Colors.ink,
   },
   menuLabelDanger: { color: '#e53e3e' },
+  menuBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: Colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white },
   divider: { height: 1, backgroundColor: Colors.hairline, marginLeft: 66 },
 });

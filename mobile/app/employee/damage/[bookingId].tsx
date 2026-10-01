@@ -195,6 +195,7 @@ export default function DropDamageScreen() {
               return { fileId: res.data.fileId, url: res.data.url };
             }}
             genericLabel="Add"
+            profile="damage"
             onPendingChange={setPhotosPending}
           />
         </View>

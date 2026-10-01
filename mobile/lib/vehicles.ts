@@ -12,7 +12,10 @@ export function normalizeGroup(g: any): Vehicle {
     model: g.model,
     category: g.category,
     branch: g.branch,
+    // Optional (#2): cached listing payloads may not carry it yet.
+    branchPublicId: g.branchPublicId ?? null,
     availableCount: g.availableCount,
+    useCases: Array.isArray(g.useCases) ? g.useCases : [],
     images,
     pricing: {
       daily: g.pricing?.daily ?? null,

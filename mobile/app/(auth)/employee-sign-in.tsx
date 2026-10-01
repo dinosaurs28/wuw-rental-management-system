@@ -132,6 +132,13 @@ export default function EmployeeSignIn() {
             onPress={handleSubmit(onSubmit)}
             loading={loading}
           />
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => router.push('/(auth)/employee-forgot-password' as never)}
+            hitSlop={8}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -181,4 +188,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   form: { gap: 16, marginBottom: 28 },
+  forgotRow: { marginTop: 20, alignItems: 'center' },
+  forgotText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
 });

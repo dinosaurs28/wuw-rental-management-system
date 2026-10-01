@@ -16,13 +16,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { activeExpected, activePending, money, signedInr } from '../../../lib/cashShift';
+import type { ActiveShift } from '../../../types/shift';
 
-interface ActiveShift {
-  publicId: string;
-  status: string;
-  openedAt: string;
-  expectedTotal?: number | string; // confirmed cash in drawer (Decimal string)
-  pendingTotal?: number | string;  // collected, awaiting manager confirmation
+// The drawer breakdown: opening + collected − refunded = expected. The parts
+// are null on servers older than #22, which only sent the expected total.
+interface DrawerFigures {
+  opening: number | null;
+  collected: number | null;
+  refunded: number | null;
+  expected: number | null;
 }
 
 // Cash is reconciled to the paisa, so amounts show two decimals.
@@ -49,7 +52,16 @@ export default function CloseShift() {
   const [explanation, setExplanation] = useState('');
   const [done, setDone] = useState(false);
   const [resultMsg, setResultMsg] = useState('');
-  const [closeResult, setCloseResult] = useState<{ discrepancy?: number; status?: string }>({});
+  const [closeResult, setCloseResult] = useState<{
+    discrepancy?: number;
+    status?: string;
+    expected?: number;
+    counted?: number;
+    publicId?: string;
+  }>({});
+  // DISCREPANCY_EXPLANATION_REQUIRED: money moved after this screen loaded, so
+  // the server's close-time numbers replace the ones on screen.
+  const [serverFigures, setServerFigures] = useState<DrawerFigures | null>(null);
 
   const { data: shift, isLoading: shiftLoading } = useQuery<ActiveShift | null>({
     queryKey: ['employee', 'active-shift'],
@@ -72,18 +84,50 @@ export default function CloseShift() {
     onSuccess: (res) => {
       setResultMsg(res.data?.message ?? 'Shift closed successfully');
       const d = res.data?.data ?? {};
+      // `variance` = counted − expected drawer; older servers only send `discrepancy`.
+      const variance = money(d.variance ?? d.discrepancy);
       setCloseResult({
-        discrepancy: d.discrepancy != null ? Number(d.discrepancy) : undefined,
+        discrepancy: variance ?? undefined,
         status: d.status,
+        expected: money(d.expectedClosing ?? d.expectedTotal) ?? undefined,
+        counted: money(d.closingCash ?? d.actualTotal) ?? undefined,
+        publicId: d.publicId ?? shift?.publicId,
       });
+      setServerFigures(null);
       setDone(true);
+      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+      qc.invalidateQueries({ queryKey: ['employee', 'shifts'] });
+    },
+    onError: (err: any) => {
+      const body = err?.response?.data;
+      if (body?.code !== 'DISCREPANCY_EXPLANATION_REQUIRED') return;
+      setServerFigures({
+        opening: money(body.openingCash),
+        collected: money(body.cashCollected),
+        refunded: money(body.cashRefunded),
+        expected: money(body.expectedClosing ?? body.expectedTotal),
+      });
       qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
     },
   });
 
   const isValid = actualTotal.trim() !== '' && !isNaN(parseFloat(actualTotal)) && parseFloat(actualTotal) >= 0;
-  const expected = shift?.expectedTotal != null ? Number(shift.expectedTotal) : null;
-  const pending = shift?.pendingTotal != null ? Number(shift.pendingTotal) : 0;
+  // Expected in drawer = opening + collected (pending + confirmed) − refunded.
+  const figures: DrawerFigures | null =
+    serverFigures ??
+    (shift
+      ? {
+          opening: money(shift.openingCash),
+          collected: money(shift.cashCollected),
+          refunded: money(shift.cashRefunded),
+          expected: activeExpected(shift),
+        }
+      : null);
+  const expected = figures?.expected ?? null;
+  const hasBreakdown = figures != null && figures.opening != null && figures.collected != null && figures.refunded != null;
+  const pending = activePending(shift);
+  const confirmed = money(shift?.confirmedCash);
+  const upi = money(shift?.upiCollected) ?? 0;
   // Backend requires a discrepancyExplanation (min 10 chars) whenever counted
   // cash != expected, compared exactly — so compare in paise.
   const hasDiscrepancy = isValid && expected != null && paise(parseFloat(actualTotal)) !== paise(expected);
@@ -110,13 +154,39 @@ export default function CloseShift() {
                 color={closeResult.status === 'DISCREPANCY_FLAGGED' ? '#d97706' : '#10b981'}
               />
               <Text style={styles.discrepancyText}>
-                {closeResult.discrepancy === 0
-                  ? 'Cash matched the expected total exactly.'
-                  : `Discrepancy of ${inr(Math.abs(closeResult.discrepancy))} (${closeResult.discrepancy > 0 ? 'over' : 'short'})${closeResult.status === 'DISCREPANCY_FLAGGED' ? ' — flagged for reconciliation.' : '.'}`}
+                {paise(closeResult.discrepancy) === 0
+                  ? 'Cash matched the expected drawer exactly.'
+                  : `Variance ${signedInr(closeResult.discrepancy)} (${closeResult.discrepancy > 0 ? 'over' : 'short'})${closeResult.status === 'DISCREPANCY_FLAGGED' ? ' — flagged for reconciliation.' : '.'}`}
               </Text>
             </View>
           )}
+          {closeResult.expected != null && closeResult.counted != null && (
+            <View style={styles.resultCard}>
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Expected in drawer</Text>
+                <Text style={styles.resultValue}>{inr(closeResult.expected)}</Text>
+              </View>
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Counted</Text>
+                <Text style={styles.resultValue}>{inr(closeResult.counted)}</Text>
+              </View>
+            </View>
+          )}
         </View>
+        {closeResult.publicId ? (
+          <TouchableOpacity
+            style={styles.secondaryBtn}
+            onPress={() =>
+              router.replace({
+                pathname: '/employee/shift/[publicId]',
+                params: { publicId: closeResult.publicId! },
+              } as never)
+            }
+            activeOpacity={0.85}
+          >
+            <Text style={styles.secondaryBtnText}>View shift details</Text>
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity
           style={styles.doneBtn}
           onPress={() => router.replace('/(employee)/dashboard')}
@@ -148,7 +218,8 @@ export default function CloseShift() {
         </View>
         <Text style={styles.heading}>Close Shift</Text>
         <Text style={styles.desc}>
-          Enter the actual cash you have on hand. A discrepancy report will be flagged if amounts differ.
+          Count all the cash in the drawer, including the opening cash. If it differs from the expected amount the
+          shift is flagged for your manager.
         </Text>
 
         {/* Shift info */}
@@ -169,29 +240,69 @@ export default function CloseShift() {
               <Ionicons name="key-outline" size={15} color={Colors.ink3} />
               <Text style={styles.shiftInfoText}>{shift.publicId.slice(-8).toUpperCase()}</Text>
             </View>
-            {expected != null && (
-              <View style={styles.shiftInfoRow}>
-                <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
-                <Text style={styles.shiftInfoText}>Confirmed cash: {inr(expected)}</Text>
+            {hasBreakdown ? (
+              <View style={styles.breakdown}>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Opening cash</Text>
+                  <Text style={styles.breakdownValue}>{inr(figures!.opening!)}</Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>+ Cash collected</Text>
+                  <Text style={styles.breakdownValue}>{inr(figures!.collected!)}</Text>
+                </View>
+                {pending > 0 || (confirmed != null && confirmed > 0) ? (
+                  <Text style={styles.breakdownSub}>
+                    {confirmed != null ? `${inr(confirmed)} confirmed` : null}
+                    {confirmed != null && pending > 0 ? ' · ' : null}
+                    {pending > 0 ? (
+                      <Text style={styles.pendingText}>{inr(pending)} pending confirmation</Text>
+                    ) : null}
+                  </Text>
+                ) : null}
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>− Cash refunded</Text>
+                  <Text style={styles.breakdownValue}>{inr(figures!.refunded!)}</Text>
+                </View>
+                <View style={[styles.breakdownRow, styles.breakdownTotal]}>
+                  <Text style={styles.breakdownTotalLabel}>Expected in drawer</Text>
+                  <Text style={styles.breakdownTotalValue}>{expected != null ? inr(expected) : '—'}</Text>
+                </View>
+                {upi > 0 ? (
+                  <Text style={styles.breakdownSub}>
+                    UPI collected {inr(upi)} — paid to the account, not in the drawer
+                  </Text>
+                ) : null}
               </View>
-            )}
-            {pending > 0 && (
-              <View style={styles.shiftInfoRow}>
-                <Ionicons name="hourglass-outline" size={15} color="#b45309" />
-                <Text style={[styles.shiftInfoText, styles.pendingText]}>
-                  Pending (awaiting manager): {inr(pending)}
-                </Text>
-              </View>
+            ) : (
+              // Servers older than #22 send only the manager-confirmed total.
+              <>
+                {expected != null && (
+                  <View style={styles.shiftInfoRow}>
+                    <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
+                    <Text style={styles.shiftInfoText}>Confirmed cash: {inr(expected)}</Text>
+                  </View>
+                )}
+                {pending > 0 && (
+                  <View style={styles.shiftInfoRow}>
+                    <Ionicons name="hourglass-outline" size={15} color="#b45309" />
+                    <Text style={[styles.shiftInfoText, styles.pendingText]}>
+                      Pending (awaiting manager): {inr(pending)}
+                    </Text>
+                  </View>
+                )}
+              </>
             )}
           </View>
         )}
 
         {/* Actual total input */}
         <View style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>Actual Cash in Hand (₹)</Text>
+          <Text style={styles.fieldLabel}>Counted Cash in Drawer (₹)</Text>
           {expected != null && (
             <Text style={styles.expectedHint}>
-              System expects {inr(expected)} (confirmed cash). Enter the total physical cash you are handing over.
+              {hasBreakdown
+                ? `Expected ${inr(expected)} = opening + cash collected − cash refunded. UPI payments are not in the drawer.`
+                : `System expects ${inr(expected)} (confirmed cash). Enter the total physical cash you are handing over.`}
             </Text>
           )}
           <View style={[styles.amountWrap, !isValid && actualTotal ? styles.amountWrapError : null]}>
@@ -216,7 +327,8 @@ export default function CloseShift() {
         {hasDiscrepancy && (
           <View style={styles.fieldBlock}>
             <Text style={styles.fieldLabel}>
-              Discrepancy explanation (required — {inr(Math.abs(parseFloat(actualTotal) - (expected ?? 0)))}{' '}
+              Discrepancy explanation (required —{' '}
+              {inr(Math.abs(paise(parseFloat(actualTotal)) - paise(expected ?? 0)) / 100)}{' '}
               {parseFloat(actualTotal) > (expected ?? 0) ? 'over' : 'short'})
             </Text>
             <TextInput
@@ -309,6 +421,34 @@ const styles = StyleSheet.create({
   shiftInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   shiftInfoText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink2 },
   pendingText: { color: '#b45309' },
+
+  breakdown: {
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
+  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  breakdownLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink2 },
+  breakdownValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
+  breakdownSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: -4, lineHeight: 17 },
+  breakdownTotal: { paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.hairline },
+  breakdownTotalLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
+  breakdownTotalValue: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
+
+  resultCard: {
+    alignSelf: 'stretch',
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    gap: 8,
+  },
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  resultLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink3 },
+  resultValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
 
   noShiftBox: {
     flexDirection: 'row',
@@ -445,6 +585,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  secondaryBtn: {
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginHorizontal: 24,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    backgroundColor: Colors.surface,
+  },
+  secondaryBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
   doneBtn: {
     backgroundColor: Colors.ink,
     borderRadius: 16,

@@ -2,7 +2,8 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { unitLabel } from '../../lib/pricing';
+import { priceUnitFor, unitLabel } from '../../lib/pricing';
+import { slabChipText } from '../../lib/discounts';
 import type { Vehicle } from '../../types/api';
 
 interface Props {
@@ -16,11 +17,14 @@ export default function OfferCard({ vehicle, onPress }: Props) {
   const thumb = vehicle.images?.[0];
   const dated = !!vehicle.priceInfo;
 
-  // Per-period headline rate; 0 means "unpriced" → em-dash, never "₹0".
+  // Headline price for the searched period + what it covers ("for 12 hours",
+  // #5); without dates, the daily rate. 0 means "unpriced" → em-dash, never "₹0".
   const rawRate = vehicle.priceInfo?.price ?? vehicle.pricing?.daily ?? null;
   const rate = rawRate && rawRate > 0 ? rawRate : null;
-  const unit = unitLabel(vehicle.priceInfo?.type);
+  const unit = vehicle.priceInfo ? priceUnitFor(vehicle.priceInfo) : unitLabel(null);
   const total = dated && vehicle.priceInfo!.finalPrice > 0 ? vehicle.priceInfo!.finalPrice : null;
+  // A duration slab (#24) already inside the dated total, e.g. "Weekly −10%".
+  const slabChip = total != null ? slabChipText(vehicle.priceInfo) : null;
 
   const count = vehicle.availableCount;
 
@@ -83,6 +87,11 @@ export default function OfferCard({ vehicle, onPress }: Props) {
               {total != null ? (
                 <Text style={styles.total}>₹{total.toLocaleString('en-IN')} total</Text>
               ) : null}
+              {slabChip ? (
+                <View style={styles.slabChip}>
+                  <Text style={styles.slabChipText}>{slabChip}</Text>
+                </View>
+              ) : null}
             </>
           ) : (
             <Text style={styles.price}>—</Text>
@@ -133,4 +142,12 @@ const styles = StyleSheet.create({
   price: { fontFamily: Fonts.displayBold, fontSize: 26, color: Colors.white, letterSpacing: -0.5 },
   priceUnit: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDarkMuted, letterSpacing: 0 },
   total: { fontFamily: Fonts.body, fontSize: 15, color: Colors.onDarkMuted },
+  slabChip: {
+    alignSelf: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: Colors.availGood + '26',
+  },
+  slabChipText: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.availGood },
 });

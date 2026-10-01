@@ -20,7 +20,15 @@ export interface FilterValue {
   branch: string | null;
   category: string | null;
   sort: string | null;
+  // Trip-type tags (HIGHWAY | HILL_STATION | LONG_DRIVE); multi-select, OR.
+  useCases: string[];
 }
+
+export const TRIP_TYPE_OPTIONS: Option[] = [
+  { id: 'HIGHWAY', label: 'Highway' },
+  { id: 'HILL_STATION', label: 'Hill Station' },
+  { id: 'LONG_DRIVE', label: 'Long Drive' },
+];
 
 const SORT_OPTIONS: Option[] = [
   { id: 'price_low_to_high', label: 'Price: Low to High' },
@@ -53,12 +61,18 @@ export default function FilterSheet({
     if (visible) setDraft(value);
   }, [visible]);
 
-  const toggle = (key: keyof FilterValue, id: string) =>
+  const toggleUseCase = (id: string) =>
+    setDraft((d) => ({
+      ...d,
+      useCases: d.useCases.includes(id) ? d.useCases.filter((u) => u !== id) : [...d.useCases, id],
+    }));
+
+  const toggle = (key: 'branch' | 'category' | 'sort', id: string) =>
     setDraft((d) => ({ ...d, [key]: d[key] === id ? null : id }));
 
-  const clearAll = () => setDraft({ branch: null, category: null, sort: null });
+  const clearAll = () => setDraft({ branch: null, category: null, sort: null, useCases: [] });
 
-  const renderChips = (key: keyof FilterValue, options: Option[]) => (
+  const renderChips = (key: 'branch' | 'category' | 'sort', options: Option[]) => (
     <View style={styles.chipWrap}>
       {options.map((opt) => {
         const active = draft[key] === opt.id;
@@ -106,6 +120,23 @@ export default function FilterSheet({
                 {renderChips('category', categories)}
               </>
             )}
+            <Text style={styles.sectionLabel}>Trip type</Text>
+            <View style={styles.chipWrap}>
+              {TRIP_TYPE_OPTIONS.map((opt) => {
+                const active = draft.useCases.includes(opt.id);
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => toggleUseCase(opt.id)}
+                    activeOpacity={0.8}
+                  >
+                    {active && <Ionicons name="checkmark" size={13} color={Colors.white} />}
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             {showSort && (
               <>
                 <Text style={styles.sectionLabel}>Sort by</Text>

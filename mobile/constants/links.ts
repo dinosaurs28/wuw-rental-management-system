@@ -25,7 +25,8 @@ export const CONTACT = {
   ],
   // Fallback WhatsApp number (used only if the backend config is unavailable).
   whatsappFallback: '918000800469',
-  hours: { days: 'All Days of the Week', time: '8:00 AM – 11:00 PM' },
+  // Opening hours are not kept here: the contact screen shows each branch's
+  // live schedule (GET /api/public/branch/:id/schedule).
   map: {
     lat: 13.347515306525745,
     lng: 74.78242847482501,
@@ -50,4 +51,12 @@ export function resolveTemplate(
 export function whatsappUrl(phoneNumber: string, message?: string): string {
   const base = `https://wa.me/${phoneNumber}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+// Public website URL for a vehicle: the group page when `id` is a groupKey
+// (contains '__'), else the single-vehicle page. No dates or private data.
+export function vehicleShareUrl(id: string): string {
+  return id.includes('__')
+    ? `${SITE_ORIGIN}/vehicle/group/${encodeURIComponent(id)}`
+    : `${SITE_ORIGIN}/vehicle/${encodeURIComponent(id)}`;
 }

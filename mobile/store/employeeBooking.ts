@@ -20,17 +20,27 @@ export interface EmployeeBookingVehicle {
   advancePayAmount: number;
 }
 
+export type WalkinPlan = 'STANDARD' | 'MONTHLY';
+
 interface EmployeeBookingState {
   customer: EmployeeBookingCustomer | null;
   start: string | null; // ISO datetime
   end: string | null; // ISO datetime
   vehicle: EmployeeBookingVehicle | null;
   customerKycId: string | null;
+  // QrPhoto.publicId of the customer's current QR code photo (#4); required
+  // before the summary, sent as qr_photo_id on create.
+  qrPhotoId: string | null;
+  // Rental plan (#15/#17): MONTHLY = the counter monthly plan (30–180 days),
+  // sent as plan on create. STANDARD bookings follow the 15-day rule.
+  plan: WalkinPlan;
 
   setCustomer: (c: EmployeeBookingCustomer) => void;
   setDates: (start: string, end: string) => void;
+  setPlan: (plan: WalkinPlan) => void;
   setVehicle: (v: EmployeeBookingVehicle) => void;
   setCustomerKycId: (id: string | null) => void;
+  setQrPhotoId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -45,10 +55,15 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>((set) => ({
   end: null,
   vehicle: null,
   customerKycId: null,
+  qrPhotoId: null,
+  plan: 'STANDARD',
 
   setCustomer: (customer) => set({ customer }),
   setDates: (start, end) => set({ start, end }),
+  setPlan: (plan) => set({ plan }),
   setVehicle: (vehicle) => set({ vehicle }),
   setCustomerKycId: (customerKycId) => set({ customerKycId }),
-  reset: () => set({ customer: null, start: null, end: null, vehicle: null, customerKycId: null }),
+  setQrPhotoId: (qrPhotoId) => set({ qrPhotoId }),
+  reset: () =>
+    set({ customer: null, start: null, end: null, vehicle: null, customerKycId: null, qrPhotoId: null, plan: 'STANDARD' }),
 }));

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,14 +12,40 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import {
+  aadhaarError,
+  drivingLicenceError,
+  formatAadhaarInput,
+  normalizeAadhaar,
+  normalizeDrivingLicence,
+  profileIncompleteMessage,
+} from '../../../lib/identity';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
+
+/** GET /employee/customer/:publicId — the fields this form prefills from. */
+interface CustomerPrefill {
+  name: string;
+  email: string | null; // null for a walk-in placeholder
+  phone: string | null;
+  dob: string | null;
+  addressLine1: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  country: string | null;
+  drivingLicenceNumber?: string | null;
+  aadhaarNumber?: string | null;
+  isProfileCompleted?: boolean;
+  missingFields?: string[];
+}
 
 // Date of birth from the three DD / MM / YYYY boxes → "YYYY-MM-DD", or an
 // error. Same rule as the web form and the backend: required, and 18+.
@@ -41,8 +68,8 @@ function parseDob(dd: string, mm: string, yyyy: string): { value: string } | { e
 }
 
 function Field({
-  label, value, onChangeText, ...rest
-}: { label: string; value: string; onChangeText: (t: string) => void } & TextInputProps) {
+  label, value, onChangeText, hint, ...rest
+}: { label: string; value: string; onChangeText: (t: string) => void; hint?: string } & TextInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -53,24 +80,43 @@ function Field({
         placeholderTextColor={Colors.ink4}
         {...rest}
       />
+      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
     </View>
   );
+}
+
+// Stored DOBs are "YYYY-MM-DD" (sometimes a full ISO string) → DD / MM / YYYY boxes.
+function dobParts(dob: string | null | undefined): { d: string; m: string; y: string } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dob ?? ''));
+  return match ? { y: match[1]!, m: match[2]!, d: match[3]! } : null;
 }
 
 export default function CreateCustomerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
   const resetBooking = useEmployeeBookingStore((s) => s.reset);
   const setBookingCustomer = useEmployeeBookingStore((s) => s.setCustomer);
 
-  const [step, setStep] = useState<Step>('PHONE');
+  // Complete mode (#1): fill in an EXISTING customer's missing details (e.g. DL
+  // and Aadhaar numbers) via the same walk-in complete endpoint, skipping the
+  // phone/OTP steps. `next=back` returns to the screen that sent us here (the
+  // walk-in summary after a 422 CUSTOMER_PROFILE_INCOMPLETE); otherwise the
+  // booking flow starts for this customer.
+  const params = useLocalSearchParams<{ mode?: string; publicId?: string; next?: string }>();
+  const completePublicId = params.mode === 'complete' && params.publicId ? String(params.publicId) : null;
+  const isComplete = !!completePublicId;
+
+  const [step, setStep] = useState<Step>(isComplete ? 'PROFILE' : 'PHONE');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [phone, setPhone] = useState('');
-  const [customerPublicId, setCustomerPublicId] = useState('');
+  const [customerPublicId, setCustomerPublicId] = useState(completePublicId ?? '');
   const [otpShown, setOtpShown] = useState('');
   const [otp, setOtp] = useState('');
+  // true when initiate picked up an earlier, never-verified walk-in for this phone.
+  const [resumed, setResumed] = useState(false);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -83,6 +129,59 @@ export default function CreateCustomerScreen() {
   const [zipCode, setZipCode] = useState('');
   const [country, setCountry] = useState('India');
   const [altPhone, setAltPhone] = useState('');
+  const [dlNumber, setDlNumber] = useState('');
+  const [aadhaar, setAadhaar] = useState('');
+
+  // Same query (key + shape) as the customer detail screen, so it is usually cached.
+  const {
+    data: existing,
+    isLoading: existingLoading,
+    isError: existingError,
+  } = useQuery<CustomerPrefill>({
+    queryKey: ['employee', 'customer', completePublicId],
+    queryFn: async () => {
+      const res = await employeeApi.getCustomer(completePublicId as string);
+      return res.data?.data as CustomerPrefill;
+    },
+    enabled: isComplete,
+    staleTime: 60_000,
+    retry: false,
+  });
+  // The customer already has a real email (null = placeholder): read-only here,
+  // and never resent — the server refuses a change (EMAIL_CHANGE_NOT_ALLOWED).
+  const hasStoredEmail = isComplete && !!existing?.email;
+
+  // The error box sits below the (long) profile form — bring it into view.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  // Prefill once. The email is null for a walk-in placeholder, so the input
+  // stays empty and a placeholder is never re-sent.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!existing || prefilledRef.current) return;
+    prefilledRef.current = true;
+    setName(existing.name ?? '');
+    setEmail(existing.email ?? '');
+    setPhone(existing.phone ?? '');
+    const dob = dobParts(existing.dob);
+    if (dob) {
+      setDobDay(dob.d);
+      setDobMonth(dob.m);
+      setDobYear(dob.y);
+    }
+    setAddressLine1(existing.addressLine1 ?? '');
+    setCity(existing.city ?? '');
+    setStateName(existing.state ?? '');
+    setZipCode(existing.zipCode ?? '');
+    setCountry(existing.country || 'India');
+    setDlNumber(existing.drivingLicenceNumber ?? '');
+    setAadhaar(existing.aadhaarNumber ? formatAadhaarInput(existing.aadhaarNumber) : '');
+  }, [existing]);
 
   const sendOtp = async () => {
     const p = phone.trim();
@@ -94,12 +193,29 @@ export default function CreateCustomerScreen() {
     setBusy(true);
     try {
       const res = await employeeApi.walkinInitiate(p);
-      setCustomerPublicId(res.data?.customer_public_id);
+      const id: string | undefined = res.data?.customer_public_id;
+      // Complete mode only falls back to OTP to verify THIS customer's phone.
+      if (isComplete && id !== completePublicId) {
+        setError('This phone number belongs to a different customer record.');
+        return;
+      }
+      setCustomerPublicId(id ?? '');
+      setResumed(res.data?.resumed === true);
       setOtpShown(String(res.data?.otp ?? ''));
       setOtp(String(res.data?.otp ?? '')); // dev: OTP is returned in the response
       setStep('OTP');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Could not send OTP.');
+      const data = err?.response?.data;
+      const message: string = data?.message ?? 'Could not send OTP.';
+      setError(message);
+      // The phone already belongs to a customer: open them instead of dead-ending.
+      if (data?.code === 'CUSTOMER_ALREADY_EXISTS' && data?.customer_public_id && !isComplete) {
+        const existingId = String(data.customer_public_id);
+        Alert.alert('Customer already exists', `${message.replace(/\.$/, '')}. Open their profile to continue.`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open customer', onPress: () => router.replace(`/employee/customer/${existingId}`) },
+        ]);
+      }
     } finally {
       setBusy(false);
     }
@@ -124,19 +240,28 @@ export default function CreateCustomerScreen() {
 
   const completeProfile = async () => {
     if (name.trim().length < 2) return setError('Enter the customer name.');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('Enter a valid email.');
+    // Email is optional for walk-ins (#1): only checked when filled in.
+    const emailValue = email.trim();
+    if (emailValue && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailValue)) return setError('Enter a valid email.');
     const dob = parseDob(dobDay.trim(), dobMonth.trim(), dobYear.trim());
     if ('error' in dob) return setError(dob.error);
+    const dlProblem = drivingLicenceError(dlNumber);
+    if (dlProblem) return setError(dlProblem);
+    const aadhaarProblem = aadhaarError(aadhaar);
+    if (aadhaarProblem) return setError(aadhaarProblem);
     if (!addressLine1.trim() || !city.trim() || !stateName.trim() || !zipCode.trim() || !country.trim()) {
       return setError('Fill in the full address.');
     }
     setError(null);
     setBusy(true);
     try {
-      await employeeApi.walkinComplete({
+      const res = await employeeApi.walkinComplete({
         customer_public_id: customerPublicId,
         name: name.trim(),
-        email: email.trim(),
+        // Blank = omitted: the server keeps the stored email (or placeholder).
+        ...(emailValue && !hasStoredEmail ? { email: emailValue } : {}),
+        drivingLicenceNumber: normalizeDrivingLicence(dlNumber.trim()),
+        aadhaarNumber: normalizeAadhaar(aadhaar.trim()),
         addressLine1: addressLine1.trim(),
         city: city.trim(),
         state: stateName.trim(),
@@ -145,17 +270,63 @@ export default function CreateCustomerScreen() {
         dob: dob.value,
         ...(altPhone.trim() ? { alternatePhone: altPhone.trim() } : {}),
       });
+      // Detail screen + search badge read these.
+      qc.invalidateQueries({ queryKey: ['employee', 'customer', customerPublicId] });
+      qc.invalidateQueries({ queryKey: ['employee', 'customer-search'] });
+      // Saved, but something the counter can't set here is still missing
+      // (e.g. an online customer without a phone number) — booking would 422.
+      if (res.data?.isProfileCompleted === false) {
+        setError(
+          res.data?.message ??
+            profileIncompleteMessage(res.data?.missingFields ?? [], 'staff'),
+        );
+        return;
+      }
+      const bookingCustomer = { publicId: customerPublicId, name: name.trim(), phone: phone.trim() || null };
+      if (isComplete && params.next === 'back') {
+        // Mid-booking: keep the vehicle, dates and KYC already chosen.
+        setBookingCustomer(bookingCustomer);
+        router.back();
+        return;
+      }
       resetBooking();
-      setBookingCustomer({ publicId: customerPublicId, name: name.trim(), phone: phone.trim() });
+      setBookingCustomer(bookingCustomer);
       router.replace('/employee/booking/vehicles');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Could not save the customer.');
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const message: string = data?.message ?? 'Could not save the customer.';
+      // An earlier walk-in whose OTP was never verified: verify the phone first,
+      // then this same form is submitted again. Older servers sent no code.
+      const verificationPending =
+        data?.code === 'VERIFICATION_PENDING' ||
+        (status === 403 && !data?.code && /verif/i.test(message));
+      if (isComplete && verificationPending && phone.trim()) {
+        setError(message);
+        Alert.alert('Verify the phone number', `${message} A code will be sent to ${phone.trim()}.`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Send OTP', onPress: () => { void sendOtp(); } },
+        ]);
+        return;
+      }
+      // New walk-in whose OTP did not stick: back to the phone step to resend it.
+      if (!isComplete && verificationPending) setStep('PHONE');
+      setError(message);
     } finally {
       setBusy(false);
     }
   };
 
   const stepIndex = step === 'PHONE' ? 1 : step === 'OTP' ? 2 : 3;
+  const headerTitle = isComplete ? 'Complete profile' : 'New Customer';
+  const headerSubtitle = isComplete
+    ? step === 'OTP' ? 'Verify the phone number' : 'Required before booking'
+    : `Step ${stepIndex} of 3`;
+  // What the server says is still missing on this customer (complete mode).
+  const missingNote =
+    isComplete && existing && existing.missingFields && existing.missingFields.length > 0
+      ? profileIncompleteMessage(existing.missingFields, 'staff')
+      : null;
 
   return (
     <KeyboardAvoidingView
@@ -168,12 +339,13 @@ export default function CreateCustomerScreen() {
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.title}>New Customer</Text>
-          <Text style={styles.subtitle}>Step {stepIndex} of 3</Text>
+          <Text style={styles.title}>{headerTitle}</Text>
+          <Text style={styles.subtitle}>{headerSubtitle}</Text>
         </View>
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -196,6 +368,12 @@ export default function CreateCustomerScreen() {
         {step === 'OTP' && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Verify OTP</Text>
+            {resumed ? (
+              <View style={styles.otpBanner}>
+                <Ionicons name="refresh-outline" size={16} color={Colors.orange} />
+                <Text style={styles.otpBannerText}>Resuming the earlier walk-in for this number.</Text>
+              </View>
+            ) : null}
             {otpShown ? (
               <View style={styles.otpBanner}>
                 <Ionicons name="information-circle-outline" size={16} color={Colors.orange} />
@@ -214,12 +392,43 @@ export default function CreateCustomerScreen() {
           </View>
         )}
 
-        {step === 'PROFILE' && (
+        {step === 'PROFILE' && isComplete && existingLoading && (
+          <ActivityIndicator style={styles.prefillLoader} color={Colors.orange} size="large" />
+        )}
+
+        {step === 'PROFILE' && !(isComplete && existingLoading) && (
           <>
+            {isComplete && existingError ? (
+              <View style={styles.noteBox}>
+                <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
+                <Text style={styles.noteText}>Could not load the saved details. Fill in every field to save the profile.</Text>
+              </View>
+            ) : missingNote ? (
+              <View style={styles.noteBox}>
+                <Ionicons name="information-circle-outline" size={16} color={Colors.orange} />
+                <Text style={styles.noteText}>{missingNote}</Text>
+              </View>
+            ) : null}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Customer details</Text>
               <Field label="Full name" value={name} onChangeText={setName} placeholder="Customer name" autoCapitalize="words" />
-              <Field label="Email" value={email} onChangeText={setEmail} placeholder="name@example.com" keyboardType="email-address" autoCapitalize="none" />
+              <Field
+                label="Email (optional)"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="name@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                // A real stored email is the customer's sign-in: only they can change it.
+                editable={!hasStoredEmail}
+                style={hasStoredEmail ? [styles.input, styles.inputLocked] : styles.input}
+                hint={
+                  hasStoredEmail
+                    ? "The customer's sign-in email. It can't be changed at the counter."
+                    : 'Leave blank if the customer has no email.'
+                }
+              />
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Date of birth</Text>
                 <View style={styles.dobRow}>
@@ -256,6 +465,27 @@ export default function CreateCustomerScreen() {
               <Field label="Alternate phone (optional)" value={altPhone} onChangeText={setAltPhone} placeholder="Optional" keyboardType="phone-pad" />
             </View>
             <View style={styles.card}>
+              <Text style={styles.cardTitle}>Identity</Text>
+              <Text style={styles.cardSub}>Required to create a booking.</Text>
+              <Field
+                label="Driving Licence number *"
+                value={dlNumber}
+                onChangeText={setDlNumber}
+                placeholder="KA01 20110012345"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={24}
+              />
+              <Field
+                label="Aadhaar number *"
+                value={aadhaar}
+                onChangeText={(t) => setAadhaar(formatAadhaarInput(t))}
+                placeholder="1234 5678 9012"
+                keyboardType="number-pad"
+                maxLength={14}
+              />
+            </View>
+            <View style={styles.card}>
               <Text style={styles.cardTitle}>Address</Text>
               <Field label="Address line" value={addressLine1} onChangeText={setAddressLine1} placeholder="Street address" />
               <Field label="City" value={city} onChangeText={setCity} placeholder="City" />
@@ -276,16 +506,20 @@ export default function CreateCustomerScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={[styles.cta, busy && styles.ctaDisabled]}
+          style={[styles.cta, (busy || (isComplete && existingLoading)) && styles.ctaDisabled]}
           onPress={step === 'PHONE' ? sendOtp : step === 'OTP' ? verifyOtp : completeProfile}
-          disabled={busy}
+          disabled={busy || (isComplete && existingLoading)}
           activeOpacity={0.85}
         >
           {busy ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <Text style={styles.ctaText}>
-              {step === 'PHONE' ? 'Send OTP' : step === 'OTP' ? 'Verify' : 'Create & continue'}
+              {step === 'PHONE'
+                ? 'Send OTP'
+                : step === 'OTP'
+                  ? 'Verify'
+                  : isComplete ? 'Save & continue' : 'Create & continue'}
             </Text>
           )}
         </TouchableOpacity>
@@ -324,6 +558,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.ink,
   },
+  inputLocked: {
+    color: Colors.ink3,
+  },
 
   otpBanner: {
     flexDirection: 'row',
@@ -338,6 +575,10 @@ const styles = StyleSheet.create({
   otpBannerText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, flex: 1 },
   otpCode: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.orange, letterSpacing: 2 },
   otpHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+
+  prefillLoader: { marginTop: 60 },
+  noteBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.hairline },
+  noteText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, flex: 1, lineHeight: 18 },
 
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#e53e3e10', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e53e3e30' },
   errorText: { fontFamily: Fonts.body, fontSize: 13, color: '#e53e3e', flex: 1 },

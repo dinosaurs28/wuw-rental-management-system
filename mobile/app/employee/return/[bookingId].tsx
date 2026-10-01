@@ -15,11 +15,14 @@ import {
   View,
 } from 'react-native';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import ImageViewer, { type ViewerImage } from '../../../components/ui/ImageViewer';
 import RemainingBalanceCollect from '../../../components/employee/RemainingBalanceCollect';
 import LedgerSummaryCard from '../../../components/ui/LedgerSummaryCard';
 import PhotoCaptureSection, { type CapturedPhoto } from '../../../components/employee/PhotoCaptureSection';
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
 import UtrInput from '../../../components/employee/UtrInput';
+import ActiveRentalSwap from '../../../components/employee/ActiveRentalSwap';
+import { DlStatusCard } from '../../../components/employee/DlStatus';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +38,18 @@ import {
 } from '../../../lib/counterErrors';
 import type { ReturnSession } from '../../../types/api';
 import type { DropDamage, DropDiscount, ReturnBooking, ReturnKmSummary } from '../../../types/return';
+import type {
+  CompleteReturnResponse,
+  DropBill,
+  RentalTimeline,
+  ReturnLateSummary,
+} from '../../../types/return';
+import RentalTimeBlock from '../../../components/employee/drop/RentalTimeBlock';
+import LateReturnCard from '../../../components/employee/drop/LateReturnCard';
+import DropBillCard, {
+  LegacyReturnChargesCard,
+  SwapChargesCard,
+} from '../../../components/employee/drop/DropBillCard';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -45,19 +60,28 @@ interface AppliedDiscount {
   reason: string;
 }
 
-const LICENSE_NOT_RETURNED_MESSAGE = "Return the customer's original driving licence before closing the drop.";
 const DAMAGE_DECISION_MESSAGE = 'Choose "No damage", or save the damage you found, before completing the drop.';
-const VEHICLE_SWAPPED_KM_NOTE = "Vehicle was swapped during the rental — extra km isn't calculated automatically.";
+const VEHICLE_SWAPPED_KM_NOTE = "Vehicle was swapped without odometer readings — km driven can't be measured.";
+const WAIVE_REASON_MESSAGE = 'Give a reason for waiving the late charge (at least 3 characters).';
 
 const num = (x: unknown) => Number(x ?? 0) || 0;
 const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const km = (n: number) => `${n.toLocaleString('en-IN')} km`;
 
+// Booking times in IST (the branch's business time), whatever the device zone.
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IN', {
+  const opts: Intl.DateTimeFormatOptions = {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
-  });
+  };
+  try {
+    return new Date(iso).toLocaleDateString('en-IN', { ...opts, timeZone: 'Asia/Kolkata' });
+  } catch {
+    return new Date(iso).toLocaleDateString('en-IN', opts);
+  }
 }
+
+// Odometer readings are whole km (the server rejects decimals).
+const isWholeKm = (s: string) => /^\d+$/.test(s.trim());
 
 // Fuel is recorded in bars, "1".."10" (pickup and return).
 const FUEL_LEVELS = Array.from({ length: 10 }, (_, i) => String(i + 1));
@@ -126,9 +150,20 @@ export default function ReturnScreen() {
   const qc = useQueryClient();
 
   const [done, setDone] = useState(false);
+  const [photoViewer, setPhotoViewer] = useState<{ images: ViewerImage[]; index: number } | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [requireManager, setRequireManager] = useState(false);
-  const [licenseReturned, setLicenseReturned] = useState(false);
+  // Legacy complete response: return charges the branch manager collects.
+  const [legacyResult, setLegacyResult] = useState<CompleteReturnResponse | null>(null);
+
+  // Late return (#12): the MANUAL-grace tick and the waiver are resent with
+  // every compute while they should stay.
+  const [applyGrace, setApplyGrace] = useState(false);
+  const [waiveLate, setWaiveLate] = useState(false);
+  const [waiveReason, setWaiveReason] = useState('');
+  const [waiveError, setWaiveError] = useState<string | null>(null);
+  // Extra km typed by staff — only when a swap left km unmeasurable.
+  const [manualKm, setManualKm] = useState('');
 
   // charge inputs
   const [endOdo, setEndOdo] = useState('');
@@ -154,11 +189,20 @@ export default function ReturnScreen() {
   // Photos taken but still uploading — they'd be missing from returnImageIds.
   const [photosPending, setPhotosPending] = useState(0);
   const [session, setSession] = useState<ReturnSession | null>(null);
+  // A drop bill (RETURN session) exists on the server — computed here or found
+  // on reload, even when cleared for "Edit charges". No swap from then on.
+  const [returnStarted, setReturnStarted] = useState(false);
   const [kmSummary, setKmSummary] = useState<ReturnKmSummary | null>(null);
   // Sticky once the server says extra km can't be auto-calculated (vehicle swap),
   // so the local preview stops showing km math after "Edit charges".
   const [kmAutoSkipped, setKmAutoSkipped] = useState<ReturnKmSummary['autoKmSkipped']>(null);
   const [serverDiscount, setServerDiscount] = useState<DropDiscount | null>(null);
+  // Drop bill with GST (#23) and the late line's summary, from the compute.
+  const [bill, setBill] = useState<DropBill | null>(null);
+  const [lateSummary, setLateSummary] = useState<ReturnLateSummary | null>(null);
+  // Rental timeline from the last compute / restore (late part measured to the
+  // bill's frozen return time); the booking's own copy otherwise.
+  const [serverTimeline, setServerTimeline] = useState<RentalTimeline | null>(null);
   const [computing, setComputing] = useState(false);
   // Set when damages changed but the bill could not be recomputed yet.
   const [billStale, setBillStale] = useState(false);
@@ -258,6 +302,9 @@ export default function ReturnScreen() {
         focusedOnceRef.current = true;
         return;
       }
+      // The refetched booking carries the current rental timeline (an extension
+      // may have moved the end time).
+      setServerTimeline(null);
       refetch();
       refetchDamages();
     }, [refetch, refetchDamages]),
@@ -279,11 +326,28 @@ export default function ReturnScreen() {
         const data = res.data?.data;
         const s = data?.session as ReturnSession | undefined;
         if (!mountedRef.current || computedHereRef.current || !s || s.status === 'COMPLETED') return;
+        setReturnStarted(true);
+        if (data?.rentalTimeline) setServerTimeline(data.rentalTimeline as RentalTimeline);
+        // Keep the late-return choices the bill was computed with for "Edit charges".
+        const late = (data?.late ?? null) as ReturnLateSummary | null;
+        if (late?.waived) {
+          setWaiveLate(true);
+          setWaiveReason(late.waiverReason ?? '');
+        }
+        if (late?.graceType === 'MANUAL' && late.graceApplied) setApplyGrace(true);
+        const d = (data?.discount ?? null) as DropDiscount | null;
+        if (d) setDiscount({ amount: num(d.amount), reason: d.reason });
+        // An extension moved the end time since this bill was computed — the
+        // server refuses payment on it, so start from the charges form.
+        if (data?.billStale) {
+          setNotice('The rental period changed since the drop bill was computed — enter the return details and compute the charges again.');
+          return;
+        }
         setSession(s);
         applyKm((data?.km ?? null) as ReturnKmSummary | null);
-        const d = (data?.discount ?? null) as DropDiscount | null;
+        setBill((data?.bill ?? null) as DropBill | null);
+        setLateSummary(late);
         setServerDiscount(d);
-        if (d) setDiscount({ amount: num(d.amount), reason: d.reason });
       } catch {
         /* no active session — start fresh */
       }
@@ -297,18 +361,34 @@ export default function ReturnScreen() {
     booking.isAdvancePayment &&
     num(booking.remainingBalance) > 0 &&
     !booking.remainingPaidAt;
-  const licenseRequired = !!booking?.licenseCollectedAt && !booking?.licenseReturnedAt;
+  // Legacy drop already recorded and sent for the manager's confirmation — the
+  // vehicle is back; nothing more to inspect or bill here.
+  const awaitingManager = booking?.status === 'PICKED_UP' && !!booking.requiresManagerConfirmation;
 
-  const startOdo = booking?.startOdometer ?? null;
+  // Odometer at the original pickup (shown under "State at Pickup").
+  const pickupOdo = booking?.startOdometer ?? null;
+  // Mid-rental swaps with readings are measured segment by segment: km on the
+  // vehicles already handed back + this vehicle from its start reading.
+  const kmSegments = booking?.kmSegments ?? null;
+  const swappedMidRental = (kmSegments?.swapCount ?? 0) > 0;
+  const startOdo = kmSegments?.complete
+    ? kmSegments.currentStartOdometer ?? pickupOdo
+    : pickupOdo;
+  const priorKm = kmSegments?.complete ? kmSegments.priorKm : 0;
   const allowance = booking?.kmAllowance ?? null;
-  // Vehicle swapped mid-rental: pickup and drop odometers belong to different
-  // vehicles, so there's no km math (and no end ≥ start check).
-  const vehicleSwapped = allowance?.autoKmSkipped === 'VEHICLE_SWAPPED' || kmAutoSkipped === 'VEHICLE_SWAPPED';
-  // Read-only preview of the server's extra-km charge (same formula as compute).
+  // Swap recorded WITHOUT readings: km can't be measured (no end ≥ start
+  // check); only staff-entered extra km is billed.
+  const vehicleSwapped =
+    allowance?.autoKmSkipped === 'VEHICLE_SWAPPED' ||
+    kmAutoSkipped === 'VEHICLE_SWAPPED' ||
+    kmSegments?.complete === false;
+  const manualKmAllowed = !!allowance?.manualExtraKmAllowed;
+  // Read-only preview of the server's extra-km charge (same formula as compute),
+  // before GST.
   const kmPreview = useMemo(() => {
     const e = parseFloat(endOdo);
     if (!Number.isFinite(e)) return null;
-    const driven = Math.max(0, e - (startOdo ?? e));
+    const driven = priorKm + Math.max(0, e - (startOdo ?? e));
     if (!allowance) return { driven, belowStart: startOdo != null && e < startOdo, allowance: null };
     const rate = num(allowance.extraKmRate);
     const extra = Math.max(0, driven - allowance.includedKm);
@@ -323,7 +403,46 @@ export default function ReturnScreen() {
         charge: allowance.extraKmEnabled ? Math.ceil(extra * rate) : 0,
       },
     };
-  }, [endOdo, startOdo, allowance]);
+  }, [endOdo, startOdo, priorKm, allowance]);
+  // Staff-entered extra km preview (swap without readings), at the allowance rate.
+  const manualKmPreview = useMemo(() => {
+    if (!manualKmAllowed || !allowance || !isWholeKm(manualKm)) return null;
+    const extra = Number(manualKm);
+    const rate = num(allowance.extraKmRate);
+    return { extra, rate, enabled: allowance.extraKmEnabled, charge: allowance.extraKmEnabled ? Math.ceil(extra * rate) : 0 };
+  }, [manualKmAllowed, allowance, manualKm]);
+
+  // Rental timeline (#7) — the compute's copy once there is one.
+  const timeline = serverTimeline ?? booking?.rentalTimeline ?? null;
+  // Late-return controls apply only while the vehicle is out and late.
+  const lateShown = !!timeline && booking?.status === 'PICKED_UP' && timeline.lateMinutes > 0;
+  const manualGrace =
+    !!timeline && timeline.gracePolicyEnabled && timeline.graceType === 'MANUAL' && timeline.graceMinutes > 0;
+
+  // Late return / manual km fields of a compute or legacy-complete body.
+  // Returns an error message when a field is invalid.
+  const dropExtras = (): { error: string } | {
+    applyGrace?: boolean;
+    waiveLateCharge?: { reason: string };
+    manualExtraKm?: number;
+  } => {
+    const extras: { applyGrace?: boolean; waiveLateCharge?: { reason: string }; manualExtraKm?: number } = {};
+    if (lateShown && waiveLate) {
+      const reason = waiveReason.trim();
+      if (reason.length < 3) {
+        setWaiveError(WAIVE_REASON_MESSAGE);
+        return { error: WAIVE_REASON_MESSAGE };
+      }
+      extras.waiveLateCharge = { reason };
+    }
+    if (manualGrace && applyGrace) extras.applyGrace = true;
+    if (manualKmAllowed && manualKm.trim()) {
+      if (!isWholeKm(manualKm)) return { error: 'Enter the extra km as a whole number.' };
+      extras.manualExtraKm = Number(manualKm);
+    }
+    setWaiveError(null);
+    return extras;
+  };
 
   const fuelModuleEnabled = !!booking?.frozenChargeConfig?.fuelModuleEnabled;
   // FASTag tolls only when the branch module is on AND the vehicle has a tag.
@@ -341,6 +460,29 @@ export default function ReturnScreen() {
       setFuelLevel((cur) => cur || booking.pickupFuelLevel!);
     }
   }, [booking?.pickupFuelLevel]);
+
+  // A mid-rental swap (#13) changes the vehicle being handed back: readings
+  // typed for the previous car no longer apply (its odometer would be measured
+  // against the replacement's start), and the fuel default is the new car's.
+  const vehicleSig = booking
+    ? `${booking.items[0]?.vehicle.publicId ?? ''}|${booking.kmSegments?.swapCount ?? 0}`
+    : null;
+  const vehicleSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (vehicleSig == null) return;
+    const prev = vehicleSigRef.current;
+    vehicleSigRef.current = vehicleSig;
+    if (prev === null || prev === vehicleSig) return;
+    setEndOdo('');
+    setManualKm('');
+    setKmAutoSkipped(null);
+    const startFuel = booking?.pickupFuelLevel;
+    setFuelLevel(startFuel && fuelBars(startFuel) != null ? startFuel : '');
+    setChargeFuel(false);
+    setFuelAmt('');
+    setNotice('Vehicle swapped — enter the end odometer and fuel level of the vehicle being returned now.');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleSig]);
 
   const selectFuelLevel = (level: string) => {
     setFuelLevel(level);
@@ -367,6 +509,8 @@ export default function ReturnScreen() {
     setSession(null);
     setKmSummary(null);
     setServerDiscount(null);
+    setBill(null);
+    setLateSummary(null);
     setBillStale(false);
     setNotice(message);
   };
@@ -380,11 +524,11 @@ export default function ReturnScreen() {
       if (source === 'auto') pendingRecomputeRef.current = true;
       return false;
     }
-    const endOdoNum = parseFloat(endOdo);
-    if (!Number.isFinite(endOdoNum) || endOdoNum < 0) {
-      setErrorMsg('Enter a valid odometer reading.');
+    if (!isWholeKm(endOdo)) {
+      setErrorMsg('Enter the end odometer reading in whole km.');
       return false;
     }
+    const endOdoNum = Number(endOdo.trim());
     if (fuelModuleEnabled && fuelBars(fuelLevel) == null) {
       setErrorMsg('Select the return fuel level.');
       return false;
@@ -393,8 +537,9 @@ export default function ReturnScreen() {
       setErrorMsg('Take at least one return photo.');
       return false;
     }
-    if (licenseRequired && !licenseReturned) {
-      setErrorMsg(LICENSE_NOT_RETURNED_MESSAGE);
+    const extras = dropExtras();
+    if ('error' in extras) {
+      setErrorMsg(extras.error);
       return false;
     }
     setErrorMsg(null);
@@ -418,14 +563,18 @@ export default function ReturnScreen() {
           .map((l) => ({ label: l.label.trim(), amount: num(l.amount) }));
         if (lines.length > 0) body.otherCharges = lines;
       }
-      if (licenseReturned) body.licenseReturned = true;
       if (nextDiscount) body.discount = nextDiscount;
+      Object.assign(body, extras);
       const res = await employeeApi.computeReturnSession(bookingId as string, body);
       const data = res.data?.data;
       computedHereRef.current = true;
       if (mountedRef.current) {
+        setReturnStarted(true);
         setSession(data?.session as ReturnSession);
         applyKm((data?.km ?? null) as ReturnKmSummary | null);
+        setBill((data?.bill ?? null) as DropBill | null);
+        setLateSummary((data?.late ?? null) as ReturnLateSummary | null);
+        if (data?.rentalTimeline) setServerTimeline(data.rentalTimeline as RentalTimeline);
         setServerDiscount((data?.discount ?? null) as DropDiscount | null);
         setDiscount(nextDiscount);
         setDiscountError(null);
@@ -438,8 +587,11 @@ export default function ReturnScreen() {
       const code = err?.response?.data?.code;
       const message = apiErrorMessage(err, 'Could not compute charges.');
       if (source === 'auto') setBillStale(true);
-      if (code === 'LICENSE_NOT_RETURNED') {
-        // Booking data was stale — refetch so the licence toggle shows.
+      if (code === 'EXTENSION_PENDING' || code === 'LATE_RATE_UNAVAILABLE' || code === 'RETURN_AWAITING_MANAGER') {
+        // An extension is unpaid / awaiting the manager, or the car became late
+        // since the screen opened (no extra-hour rate: the late card with its
+        // waive control appears once the timeline is fresh) — refresh it.
+        setServerTimeline(null);
         refetch();
         setErrorMsg(message);
       } else if (code === 'DISCOUNT_EXCEEDS_CHARGES' && session) {
@@ -692,31 +844,49 @@ export default function ReturnScreen() {
       setErrorMsg(DAMAGE_DECISION_MESSAGE);
       return;
     }
-    if (licenseRequired && !licenseReturned) {
-      setErrorMsg(LICENSE_NOT_RETURNED_MESSAGE);
+    // The server bills extra km from this reading (manager collects it).
+    if (!isWholeKm(endOdo)) {
+      setErrorMsg('Enter the end odometer reading in whole km.');
+      return;
+    }
+    const extras = dropExtras();
+    if ('error' in extras) {
+      setErrorMsg(extras.error);
       return;
     }
     setErrorMsg(null);
     setShowConfirm(true);
   };
 
-  // Legacy (no payment sessions): plain complete.
+  // Legacy (no payment sessions): the server records km and bills extra km /
+  // late return for the branch manager to collect.
   const completeLegacy = async () => {
     if (settleBusyRef.current) return;
+    const extras = dropExtras();
+    if ('error' in extras || !isWholeKm(endOdo)) {
+      setErrorMsg('error' in extras ? extras.error : 'Enter the end odometer reading in whole km.');
+      return;
+    }
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
     try {
-      await employeeApi.completeReturn(bookingId as string, {
+      const res = await employeeApi.completeReturn(bookingId as string, {
         returnImageIds: returnPhotos.map((p) => p.fileId),
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
-        ...(licenseReturned ? { licenseReturned: true } : {}),
+        endOdometer: Number(endOdo.trim()),
+        ...extras,
       });
+      if (mountedRef.current) setLegacyResult((res.data ?? null) as CompleteReturnResponse | null);
       onSettled();
     } catch (err: any) {
       if (!mountedRef.current) return;
-      // 409: the branch now uses payment sessions — refetch so the screen switches flow.
-      if (err?.response?.data?.code === 'LICENSE_NOT_RETURNED' || err?.response?.status === 409) refetch();
+      // 409: the branch now uses payment sessions (or pricing / GST isn't set
+      // up) — refetch so the screen shows the current state.
+      if (err?.response?.status === 409) {
+        setServerTimeline(null);
+        refetch();
+      }
       setErrorMsg(apiErrorMessage(err, 'Could not complete the return.'));
     } finally {
       settleBusyRef.current = false;
@@ -766,6 +936,7 @@ export default function ReturnScreen() {
               : `${vehicle.make} ${vehicle.model} has been returned by ${customer.name}. Status updated to RETURNED.`}
             {!requireManager && damages.length > 0 ? ' The vehicle is with the manager for a damage check.' : ''}
           </Text>
+          {legacyResult && <LegacyReturnChargesCard result={legacyResult} />}
           <TouchableOpacity style={styles.doneBtn} onPress={() => router.replace('/(employee)/bookings')} activeOpacity={0.85}>
             <Text style={styles.doneBtnText}>Back to Queue</Text>
           </TouchableOpacity>
@@ -777,7 +948,7 @@ export default function ReturnScreen() {
   const net = session ? num(session.netPayable) : 0;
   const sessionDone = session?.status === 'COMPLETED';
   const safetyDeposit = num(booking.safetyDeposit);
-  const showDamages = !hasRemainingBalance && !sessionDone;
+  const showDamages = !hasRemainingBalance && !sessionDone && !awaitingManager;
   // The bill on screen may not include the latest damages yet.
   const billBusy = computing || billStale || damagesFetching || !!deletingDamageId;
 
@@ -836,6 +1007,9 @@ export default function ReturnScreen() {
             </View>
           </View>
 
+          {/* Original driving licence status (#3, D6): what to hand back; Fleet can change it */}
+          <DlStatusCard booking={booking} context="return" onUpdated={() => refetch()} />
+
           {/* Vehicle */}
           <SectionHeader title="Vehicle" />
           <View style={styles.card}>
@@ -860,8 +1034,21 @@ export default function ReturnScreen() {
           <View style={styles.card}>
             <InfoRow icon="calendar-outline" label="Pickup" value={formatDate(booking.startAt)} />
             <View style={styles.divider} />
+            {timeline && timeline.extendedMinutes > 0 && (
+              <>
+                <InfoRow icon="calendar-outline" label="Originally due" value={formatDate(timeline.originalEndAt)} />
+                <View style={styles.divider} />
+              </>
+            )}
             <InfoRow icon="calendar-outline" label="Return Due" value={formatDate(booking.endAt)} />
             <View style={styles.divider} />
+            {/* Original / extended / late / total rental time (#7) */}
+            {timeline && (
+              <>
+                <RentalTimeBlock timeline={timeline} />
+                <View style={styles.divider} />
+              </>
+            )}
             <InfoRow icon="cash-outline" label="Total" value={inr(num(booking.totalFinal))} />
             {safetyDeposit > 0 && (
               <>
@@ -882,8 +1069,18 @@ export default function ReturnScreen() {
             )}
           </View>
 
+          {/* Sent to the manager earlier — show it instead of the drop steps */}
+          {awaitingManager && (
+            <View style={styles.noticeBox}>
+              <Ionicons name="time-outline" size={16} color="#d97706" />
+              <Text style={styles.noticeText}>
+                This return was recorded{booking.returnedAt ? ` at ${formatDate(booking.returnedAt)}` : ''} and sent to the branch manager to confirm. Nothing more to do here.
+              </Text>
+            </View>
+          )}
+
           {/* Extend an active rental (before charges are computed) */}
-          {booking.status === 'PICKED_UP' && !session && (
+          {booking.status === 'PICKED_UP' && !session && !awaitingManager && (
             <TouchableOpacity
               style={styles.extendBtn}
               onPress={() => router.push({
@@ -898,21 +1095,70 @@ export default function ReturnScreen() {
             </TouchableOpacity>
           )}
 
+          {/* Swap the car mid-rental (#13, before the drop bill) + this booking's swap history */}
+          <ActiveRentalSwap
+            bookingId={booking.publicId}
+            canSwap={booking.status === 'PICKED_UP' && !session && !returnStarted && !awaitingManager}
+          />
+
           {/* Payment ledger */}
           <SectionHeader title="Payment" />
           <CounterPaymentPanel bookingPublicId={booking.publicId} />
 
           {/* State at pickup */}
-          {(startOdo != null || booking.pickupFuelLevel) && (
+          {(pickupOdo != null || booking.pickupFuelLevel) && (
             <>
               <SectionHeader title="State at Pickup" />
               <View style={styles.card}>
-                {startOdo != null && (
-                  <InfoRow icon="speedometer-outline" label="Odometer" value={km(startOdo)} />
+                {pickupOdo != null && (
+                  <InfoRow icon="speedometer-outline" label="Odometer" value={km(pickupOdo)} />
                 )}
-                {startOdo != null && booking.pickupFuelLevel && <View style={styles.divider} />}
-                {booking.pickupFuelLevel && (
-                  <InfoRow icon="water-outline" label="Fuel level" value={fuelLabel(booking.pickupFuelLevel)} />
+                {(() => {
+                  // After a mid-rental swap pickupFuelLevel is the replacement's fuel at the swap.
+                  const pickupFuel = swappedMidRental
+                    ? booking.originalPickupFuelLevel ?? null
+                    : booking.pickupFuelLevel;
+                  return pickupFuel ? (
+                    <>
+                      {pickupOdo != null && <View style={styles.divider} />}
+                      <InfoRow icon="water-outline" label="Fuel level" value={fuelLabel(pickupFuel)} />
+                    </>
+                  ) : null;
+                })()}
+                {/* Mid-rental swap (#13): km is measured per vehicle */}
+                {swappedMidRental && kmSegments && (
+                  kmSegments.complete ? (
+                    <>
+                      <View style={styles.divider} />
+                      <InfoRow
+                        icon="swap-horizontal-outline"
+                        label={kmSegments.swapCount > 1 ? 'Km on swapped-out vehicles' : 'Km on swapped-out vehicle'}
+                        value={km(kmSegments.priorKm)}
+                      />
+                      {kmSegments.currentStartOdometer != null && (
+                        <>
+                          <View style={styles.divider} />
+                          <InfoRow
+                            icon="speedometer-outline"
+                            label="Current vehicle at swap"
+                            value={km(kmSegments.currentStartOdometer)}
+                          />
+                        </>
+                      )}
+                      {booking.pickupFuelLevel && (
+                        <>
+                          <View style={styles.divider} />
+                          <InfoRow
+                            icon="water-outline"
+                            label="Fuel at swap"
+                            value={fuelLabel(booking.pickupFuelLevel)}
+                          />
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <Text style={styles.hint}>{VEHICLE_SWAPPED_KM_NOTE}</Text>
+                  )
                 )}
               </View>
             </>
@@ -929,13 +1175,25 @@ export default function ReturnScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.captureStrip}
                 >
-                  {pickupCaptures.map((p) => (
-                    <View key={p.publicId} style={styles.captureThumbWrap}>
+                  {pickupCaptures.map((p, i) => (
+                    <TouchableOpacity
+                      key={p.publicId}
+                      style={styles.captureThumbWrap}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel="View pickup photo"
+                      onPress={() =>
+                        setPhotoViewer({
+                          images: pickupCaptures.map((c) => ({ url: c.url, label: c.captureLabel })),
+                          index: i,
+                        })
+                      }
+                    >
                       <Image source={{ uri: p.url }} style={styles.captureThumb} resizeMode="cover" />
                       {p.captureLabel ? (
                         <Text style={styles.captureLabel} numberOfLines={1}>{p.captureLabel}</Text>
                       ) : null}
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
@@ -943,7 +1201,7 @@ export default function ReturnScreen() {
           )}
 
           {/* Return condition photos — required before compute / complete (like the web) */}
-          {!hasRemainingBalance && !session && (
+          {!hasRemainingBalance && !session && !awaitingManager && (
             <>
               <SectionHeader title="Return Condition Photos" />
               <View style={styles.card}>
@@ -965,29 +1223,9 @@ export default function ReturnScreen() {
             </>
           )}
 
-          {/* Original driving licence held since pickup */}
-          {!hasRemainingBalance && licenseRequired && !session && (
-            <>
-              <SectionHeader title="Driving Licence" />
-              <View style={styles.card}>
-                <View style={styles.toggleRow}>
-                  <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={styles.toggleLabel}>Original driving licence returned to customer</Text>
-                    <Text style={styles.hint}>Hand back the physical licence collected at pickup.</Text>
-                  </View>
-                  <Switch
-                    value={licenseReturned}
-                    onValueChange={setLicenseReturned}
-                    trackColor={{ false: Colors.ink4, true: Colors.orange }}
-                    thumbColor={Colors.white}
-                  />
-                </View>
-              </View>
-            </>
-          )}
-
           {/* === Charges / settlement (only once rental balance is clear) === */}
-          {!hasRemainingBalance && booking.usePaymentSessions && !session && (
+          {/* Odometer on every branch: legacy drops bill extra km too (#21) */}
+          {!hasRemainingBalance && !session && !awaitingManager && (
             <>
               <SectionHeader title="Return Inspection" />
               <View style={styles.card}>
@@ -999,7 +1237,7 @@ export default function ReturnScreen() {
                   onChangeText={setEndOdo}
                   placeholder={startOdo != null && !vehicleSwapped ? `≥ ${startOdo}` : '0'}
                   placeholderTextColor={Colors.ink4}
-                  keyboardType="numeric"
+                  keyboardType="number-pad"
                   returnKeyType="done"
                 />
                 {vehicleSwapped ? (
@@ -1010,41 +1248,98 @@ export default function ReturnScreen() {
                   <View style={styles.kmPreview}>
                     <Text style={styles.kmPreviewText}>
                       Km driven {kmPreview.driven.toLocaleString('en-IN')}
+                      {priorKm > 0 ? ` (incl. ${priorKm.toLocaleString('en-IN')} on the swapped-out vehicle)` : ''}
                       {kmPreview.allowance
                         ? ` · Included ${kmPreview.allowance.included.toLocaleString('en-IN')}`
                           + (kmPreview.allowance.enabled
-                            ? ` · Extra ${kmPreview.allowance.extra.toLocaleString('en-IN')} km × ${inr(kmPreview.allowance.rate)} = ${inr(kmPreview.allowance.charge)}`
+                            ? ` · Extra ${kmPreview.allowance.extra.toLocaleString('en-IN')} km × ${inr(kmPreview.allowance.rate)} = ${inr(kmPreview.allowance.charge)} + GST`
                             : ' · Extra km not charged')
                         : ''}
                     </Text>
+                    {!booking.usePaymentSessions && !!kmPreview.allowance?.charge && (
+                      <Text style={styles.kmPreviewText}>Billed with GST — the branch manager collects it.</Text>
+                    )}
                     {kmPreview.belowStart && (
-                      <Text style={styles.kmPreviewWarn}>Lower than the pickup reading ({km(startOdo ?? 0)}).</Text>
+                      <Text style={styles.kmPreviewWarn}>
+                        Lower than the {swappedMidRental ? "current vehicle's reading at the swap" : 'pickup reading'} ({km(startOdo ?? 0)}).
+                      </Text>
                     )}
                   </View>
                 )}
 
-                {/* Return fuel level — defaults to the pickup level */}
-                <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Return fuel level (bars)</Text>
-                <View style={styles.fuelGrid}>
-                  {FUEL_LEVELS.map((lvl) => (
-                    <TouchableOpacity
-                      key={lvl}
-                      style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
-                      onPress={() => selectFuelLevel(lvl)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                {booking.pickupFuelLevel && (
-                  <Text style={styles.hint}>
-                    Pickup level {fuelLabel(booking.pickupFuelLevel)}
-                    {fuelDeficitBars > 0 ? ` · ${fuelDeficitBars} bar${fuelDeficitBars > 1 ? 's' : ''} short` : ''}
-                  </Text>
+                {/* Swap without readings: staff enter the extra km (billed at the plan rate) */}
+                {manualKmAllowed && (
+                  <>
+                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Extra km driven (entered by staff)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={manualKm}
+                      onChangeText={(t) => setManualKm(t.replace(/[^\d]/g, ''))}
+                      placeholder="0"
+                      placeholderTextColor={Colors.ink4}
+                      keyboardType="number-pad"
+                      returnKeyType="done"
+                    />
+                    <Text style={styles.hint}>
+                      Km beyond the {allowance ? `${allowance.includedKm.toLocaleString('en-IN')} km ` : ''}included in the plan, across every vehicle used. Leave blank if none.
+                      {manualKmPreview && manualKmPreview.extra > 0
+                        ? manualKmPreview.enabled
+                          ? ` ${manualKmPreview.extra.toLocaleString('en-IN')} km × ${inr(manualKmPreview.rate)} = ${inr(manualKmPreview.charge)} + GST.`
+                          : ' Extra km is not charged at this branch.'
+                        : ''}
+                    </Text>
+                  </>
+                )}
+
+                {/* Return fuel level — defaults to the pickup level (drop bill branches) */}
+                {booking.usePaymentSessions && (
+                  <>
+                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Return fuel level (bars)</Text>
+                    <View style={styles.fuelGrid}>
+                      {FUEL_LEVELS.map((lvl) => (
+                        <TouchableOpacity
+                          key={lvl}
+                          style={[styles.fuelPill, fuelLevel === lvl && styles.fuelPillActive]}
+                          onPress={() => selectFuelLevel(lvl)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.fuelPillText, fuelLevel === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {booking.pickupFuelLevel && (
+                      <Text style={styles.hint}>
+                        {swappedMidRental ? 'Level at swap' : 'Pickup level'} {fuelLabel(booking.pickupFuelLevel)}
+                        {fuelDeficitBars > 0 ? ` · ${fuelDeficitBars} bar${fuelDeficitBars > 1 ? 's' : ''} short` : ''}
+                      </Text>
+                    )}
+                  </>
                 )}
               </View>
 
+              {/* Late return without an extension — billed automatically (#12) */}
+              {lateShown && timeline && (
+                <LateReturnCard
+                  timeline={timeline}
+                  legacy={!booking.usePaymentSessions}
+                  applyGrace={applyGrace}
+                  onApplyGraceChange={setApplyGrace}
+                  waive={waiveLate}
+                  onWaiveChange={(v) => { setWaiveLate(v); setWaiveError(null); }}
+                  waiveReason={waiveReason}
+                  onWaiveReasonChange={(t) => { setWaiveReason(t); setWaiveError(null); }}
+                  waiveError={waiveError}
+                  disabled={computing || settling}
+                />
+              )}
+
+              {/* Vehicle-swap price difference billed at drop (#13) */}
+              <SwapChargesCard charges={booking.swapCharges ?? []} legacy={!booking.usePaymentSessions} />
+            </>
+          )}
+
+          {!hasRemainingBalance && booking.usePaymentSessions && !session && !awaitingManager && (
+            <>
               <SectionHeader title="Additional Charges" />
               <View style={styles.card}>
                 <ChargeToggle
@@ -1061,7 +1356,7 @@ export default function ReturnScreen() {
                     style={styles.input}
                     value={fuelAmt}
                     onChangeText={setFuelAmt}
-                    placeholder="Amount ₹"
+                    placeholder="Amount ₹ (before GST)"
                     placeholderTextColor={Colors.ink4}
                     keyboardType="numeric"
                   />
@@ -1070,6 +1365,7 @@ export default function ReturnScreen() {
                       {fuelDeficitBars} bar{fuelDeficitBars > 1 ? 's' : ''} × {inr(fuelBarRate)} = {inr(Math.ceil(fuelDeficitBars * fuelBarRate))} (editable)
                     </Text>
                   )}
+                  <Text style={styles.hintTight}>GST is added on top.</Text>
                 </ChargeToggle>
                 {fuelDeficitBars > 0 && !chargeFuel && (
                   <Text style={styles.hint}>Return fuel is lower than pickup — turn this on to charge.</Text>
@@ -1094,6 +1390,7 @@ export default function ReturnScreen() {
                         placeholder="Note (optional)"
                         placeholderTextColor={Colors.ink4}
                       />
+                      <Text style={styles.hintTight}>Tolls are passed on at cost — no GST.</Text>
                     </ChargeToggle>
                     <View style={styles.divider} />
                   </>
@@ -1106,7 +1403,7 @@ export default function ReturnScreen() {
                         style={[styles.input, styles.otherLabelInput]}
                         value={line.label}
                         onChangeText={(t) => setOtherLines((prev) => prev.map((l) => (l.id === line.id ? { ...l, label: t } : l)))}
-                        placeholder="Description (e.g. Late return fine)"
+                        placeholder="Description (e.g. Cleaning)"
                         placeholderTextColor={Colors.ink4}
                       />
                       <TextInput
@@ -1131,6 +1428,9 @@ export default function ReturnScreen() {
                   <TouchableOpacity onPress={() => setOtherLines((prev) => [...prev, newOtherLine()])} hitSlop={8}>
                     <Text style={styles.link}>+ Add another charge</Text>
                   </TouchableOpacity>
+                  <Text style={styles.hintTight}>
+                    Amounts are before GST — GST is added on top. Late return is billed automatically; record damage under Vehicle Condition.
+                  </Text>
                 </ChargeToggle>
 
                 {discount && (
@@ -1139,7 +1439,7 @@ export default function ReturnScreen() {
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text style={styles.toggleLabel}>Discount −{inr(discount.amount)}</Text>
-                        <Text style={styles.hint} numberOfLines={2}>{discount.reason} · applied on compute</Text>
+                        <Text style={styles.hint} numberOfLines={2}>{discount.reason} · before GST, applied on compute</Text>
                       </View>
                       <TouchableOpacity onPress={removeDiscount} hitSlop={8}>
                         <Text style={styles.linkDanger}>Remove</Text>
@@ -1223,7 +1523,19 @@ export default function ReturnScreen() {
                           {i > 0 && <View style={styles.divider} />}
                           <View style={styles.damageRow}>
                             {d.photos[0] ? (
-                              <Image source={{ uri: d.photos[0].url }} style={styles.damageThumb} resizeMode="cover" />
+                              <TouchableOpacity
+                                activeOpacity={0.85}
+                                accessibilityRole="button"
+                                accessibilityLabel="View damage photos"
+                                onPress={() =>
+                                  setPhotoViewer({
+                                    images: d.photos.map((ph) => ({ url: ph.url, label: d.area })),
+                                    index: 0,
+                                  })
+                                }
+                              >
+                                <Image source={{ uri: d.photos[0].url }} style={styles.damageThumb} resizeMode="cover" />
+                              </TouchableOpacity>
                             ) : (
                               <View style={[styles.damageThumb, styles.damageThumbEmpty]}>
                                 <Ionicons name="image-outline" size={18} color={Colors.ink4} />
@@ -1286,7 +1598,7 @@ export default function ReturnScreen() {
           )}
 
           {/* Manager confirmation escalation (#50) — legacy (non-session) returns only */}
-          {!hasRemainingBalance && !booking.usePaymentSessions && (
+          {!hasRemainingBalance && !booking.usePaymentSessions && !awaitingManager && (
             <>
               <SectionHeader title="Confirmation" />
               <View style={styles.card}>
@@ -1315,17 +1627,42 @@ export default function ReturnScreen() {
                   {kmSummary.autoKmSkipped === 'VEHICLE_SWAPPED' ? (
                     <View style={styles.card}>
                       <InfoRow icon="speedometer-outline" label="End odometer" value={km(kmSummary.endOdometer)} />
-                      <Text style={styles.hint}>{VEHICLE_SWAPPED_KM_NOTE}</Text>
+                      {kmSummary.kmSource === 'STAFF_ENTERED' ? (
+                        <>
+                          <View style={styles.divider} />
+                          <InfoRow
+                            icon="create-outline"
+                            label="Extra km (entered by staff)"
+                            value={kmSummary.extraKmEnabled
+                              ? `${km(kmSummary.extraKm)} × ${inr(num(kmSummary.extraKmRate))} = ${inr(num(kmSummary.extraKmCharge))}`
+                              : `${km(kmSummary.extraKm)} · not charged`}
+                            valueColor={num(kmSummary.extraKmCharge) > 0 ? '#f59e0b' : undefined}
+                          />
+                          <Text style={styles.hint}>Before GST. {VEHICLE_SWAPPED_KM_NOTE}</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.hint}>{VEHICLE_SWAPPED_KM_NOTE}</Text>
+                      )}
                     </View>
                   ) : (
                     <View style={styles.card}>
                       <InfoRow
                         icon="speedometer-outline"
-                        label="Odometer"
+                        label={(kmSummary.priorKm ?? 0) > 0 ? 'Current vehicle' : 'Odometer'}
                         value={kmSummary.startOdometer != null
                           ? `${kmSummary.startOdometer.toLocaleString('en-IN')} → ${km(kmSummary.endOdometer)}`
                           : km(kmSummary.endOdometer)}
                       />
+                      {(kmSummary.priorKm ?? 0) > 0 && (
+                        <>
+                          <View style={styles.divider} />
+                          <InfoRow
+                            icon="swap-horizontal-outline"
+                            label="Swapped-out vehicle"
+                            value={km(kmSummary.priorKm ?? 0)}
+                          />
+                        </>
+                      )}
                       <View style={styles.divider} />
                       <InfoRow icon="navigate-outline" label="Km driven" value={km(kmSummary.kmDriven)} />
                       <View style={styles.divider} />
@@ -1333,7 +1670,7 @@ export default function ReturnScreen() {
                       <View style={styles.divider} />
                       <InfoRow
                         icon="trending-up-outline"
-                        label="Extra km"
+                        label="Extra km (before GST)"
                         value={kmSummary.extraKmEnabled
                           ? `${km(kmSummary.extraKm)} × ${inr(num(kmSummary.extraKmRate))} = ${inr(num(kmSummary.extraKmCharge))}`
                           : `${km(kmSummary.extraKm)} · not charged`}
@@ -1345,13 +1682,21 @@ export default function ReturnScreen() {
               )}
 
               <SectionHeader title="Settlement" />
-              <LedgerSummaryCard session={session} />
+              {/* GST-aware drop bill (#23); sessions computed before it fall back to the ledger */}
+              {bill ? (
+                <DropBillCard bill={bill} session={session} late={lateSummary} />
+              ) : (
+                <LedgerSummaryCard session={session} />
+              )}
 
               {/* Drop discount — part of the compute body, re-sent on every recompute */}
               {!sessionDone && (
                 discountOpen ? (
                   <View style={[styles.card, { marginTop: 8 }]}>
-                    <Text style={styles.fieldLabel}>Discount amount (₹)</Text>
+                    <Text style={styles.fieldLabel}>Discount amount (₹, before GST)</Text>
+                    <Text style={[styles.hintTight, { marginBottom: 8 }]}>
+                      Taken off the drop charges before GST, so the customer also saves the GST on it. It can't exceed the drop charges.
+                    </Text>
                     <TextInput
                       style={styles.input}
                       value={discountAmt}
@@ -1520,6 +1865,8 @@ export default function ReturnScreen() {
                     setSession(null);
                     setKmSummary(null);
                     setServerDiscount(null);
+                    setBill(null);
+                    setLateSummary(null);
                     setDiscountOpen(false);
                     setBillStale(false);
                     setErrorMsg(null);
@@ -1552,7 +1899,12 @@ export default function ReturnScreen() {
 
         {/* Footer CTA */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-          {hasRemainingBalance ? (
+          {awaitingManager ? (
+            <View style={styles.footerNote}>
+              <Ionicons name="time-outline" size={16} color={Colors.ink3} />
+              <Text style={styles.footerNoteText}>Waiting for the branch manager to confirm this return.</Text>
+            </View>
+          ) : hasRemainingBalance ? (
             <View style={styles.footerNote}>
               <Ionicons name="lock-closed-outline" size={16} color={Colors.ink3} />
               <Text style={styles.footerNoteText}>Collect the rental balance to continue.</Text>
@@ -1574,9 +1926,9 @@ export default function ReturnScreen() {
             </View>
           ) : !booking.usePaymentSessions ? (
             <TouchableOpacity
-              style={[styles.confirmBtn, (settling || !!deletingDamageId) && styles.confirmBtnDisabled]}
+              style={[styles.confirmBtn, (settling || !!deletingDamageId || !endOdo.trim()) && styles.confirmBtnDisabled]}
               onPress={requestLegacyComplete}
-              disabled={settling || !!deletingDamageId}
+              disabled={settling || !!deletingDamageId || !endOdo.trim()}
               activeOpacity={0.85}
             >
               {settling ? <ActivityIndicator size="small" color={Colors.white} /> : (
@@ -1644,13 +1996,21 @@ export default function ReturnScreen() {
         icon="arrow-down-circle-outline"
         iconColor="#3b82f6"
         title="Complete Return"
-        message={damages.length > 0
+        message={(damages.length > 0
           ? `Confirm that ${customer.name} has returned the vehicle? The recorded damage goes to the branch manager, who charges it and sets the vehicle's status.`
-          : `Confirm that ${customer.name} has returned the vehicle with no new damage?`}
+          : `Confirm that ${customer.name} has returned the vehicle with no new damage?`)
+          + ' Any extra km or late-return charge is billed with GST and collected by the branch manager.'}
         confirmLabel="Complete Return"
         confirmColor="#3b82f6"
         onConfirm={() => { setShowConfirm(false); completeLegacy(); }}
         onCancel={() => setShowConfirm(false)}
+      />
+
+      <ImageViewer
+        visible={!!photoViewer}
+        images={photoViewer?.images ?? []}
+        startIndex={photoViewer?.index ?? 0}
+        onClose={() => setPhotoViewer(null)}
       />
     </>
   );

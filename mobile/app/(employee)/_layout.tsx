@@ -2,7 +2,9 @@ import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, Fonts } from '../../constants/colors';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
+import { unreadBadgeLabel } from '../../lib/notifications';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -32,6 +34,8 @@ export default function EmployeeTabLayout() {
   // A fixed height overrides the bar's own safe-area sizing, so the bottom
   // inset (Android 3-button navigation, iPhone home indicator) is added back.
   const insets = useSafeAreaInsets();
+  // Unread notifications (#19) badge the Profile tab, where the inbox lives.
+  const unreadBadge = unreadBadgeLabel(useUnreadNotificationCount());
   return (
     <Tabs
       screenOptions={{
@@ -57,6 +61,9 @@ export default function EmployeeTabLayout() {
             tabBarIcon: ({ focused }) => (
               <TabIcon focused={focused} icon={tab.icon} activeIcon={tab.activeIcon} />
             ),
+            ...(tab.name === 'profile'
+              ? { tabBarBadge: unreadBadge, tabBarBadgeStyle: styles.badge }
+              : null),
           }}
         />
       ))}
@@ -73,4 +80,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: { backgroundColor: '#ff6a1f14' },
+  badge: {
+    backgroundColor: Colors.orange,
+    color: Colors.white,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 10,
+  },
 });

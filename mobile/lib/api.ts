@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
 import type { DropDamageInput } from '../types/return';
+import type { AppNotification, NotificationAudience, NotificationPage } from '../types/notifications';
+import type { MyShiftsParams } from '../types/shift';
+import type { DlCollectionStatus, UpdateDlStatusBody } from './dlStatus';
+import type { ExtensionGstFields } from './gst';
+import type { PaymentFlow, PaymentOptions } from '../types/api';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -56,6 +61,8 @@ export interface VehicleListParams {
   branch?: string;
   search?: string;
   sort?: 'price_low_to_high' | 'price_high_to_low';
+  // Comma list of trip-type tags (HIGHWAY,HILL_STATION,LONG_DRIVE); OR match.
+  useCases?: string;
   start?: string;
   end?: string;
   limit?: number;
@@ -71,14 +78,15 @@ export const vehiclesApi = {
     api.get(`/api/public/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
   categories: () => api.get('/api/public/categories'),
   branches: () => api.get('/api/public/branches'),
-  // Coupon preview (stateless). Returns { data: { valid, discountAmount, ... } }, always HTTP 200.
-  validateCoupon: (body: {
-    couponCode: string;
-    vehiclePublicId?: string;
-    groupKey?: string;
-    startAt: string;
-    endAt: string;
-  }) => api.post('/api/public/discount/validate', body),
+  // Office hours (#2), no auth: { schedules: [{ dayOfWeek, isOpen, openTime, closeTime }],
+  // graceMinutes, is24Hours } at the top level. is24Hours or no rows = open 24/7.
+  branchSchedule: (branchPublicId: string) =>
+    api.get(`/api/public/branch/${encodeURIComponent(branchPublicId)}/schedule`),
+  // Coupon preview (stateless): { data: CouponValidateResult }, HTTP 200 for a
+  // valid or invalid code (409 GST_RULE_MISSING). Signed-in customers go through
+  // the authenticated endpoint so per-customer coupons work — see couponValidatePath.
+  validateCoupon: (body: CouponValidateBody) =>
+    api.post<{ data: CouponValidateResult }>(couponValidatePath(), body),
   // Customer booking summary + payment initiation (creates a 10-min HOLD).
   createBooking: (body: {
     vehicles: string[];
@@ -228,12 +236,16 @@ export interface CustomerExtensionQuote {
     originalTotalFinal: string;
     additionalAmount: string;
     newTotalFinal: string;
-  };
+    /** Rental length before the extension / hours this quote adds (numbers). */
+    originalHours?: number;
+    extensionHours?: number;
+  } & ExtensionGstFields; // GST split of additionalAmount (= taxableAmount + taxAmount)
   resolutionOptions: { type: CustomerExtensionResolution; description: string; partialNewEndAt?: string }[];
 }
 
 export const extensionApi = {
-  // { data: { eligible, hoursUntilEnd?, reason } }
+  // { data: ExtensionEligibility } (types/api.ts) — the 15-day cap (maxEndAt,
+  // atCap) and the branch's officeHours ride along; early returns omit them.
   eligibility: (bookingPublicId: string) =>
     api.get(`/api/user/bookings/${bookingPublicId}/extension-eligibility`),
   // { data: CustomerExtensionQuote }. NO_RESOLUTION quotes are already released
@@ -259,15 +271,37 @@ export const extensionApi = {
 export const employeeApi = {
   login: (email: string, password: string) =>
     api.post('/api/employee/auth/login', { email, password }),
+  // Fleet Executive password reset (email 6-digit code, STAFF accounts only).
+  forgotPassword: (email: string) =>
+    api.post('/api/employee/auth/email/forgot-password', { email }),
+  resetPassword: (email: string, otp: string, password: string) =>
+    api.post('/api/employee/auth/email/reset-password', { email, otp, password }),
   dashboardStats: () => api.get('/api/employee/dashboard/stats'),
+  // { data: null | ActiveShift } (types/shift.ts).
   getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
-  openShift: () => api.post('/api/employee/payment/shifts'),
+  // openingCash: the float counted into the drawer (0–10,00,000, 2 dp); omitted = 0.
+  // 201 { data: { publicId, status, openedAt, openingCash } }; 409 SHIFT_ALREADY_OPEN,
+  // 400 INVALID_OPENING_CASH.
+  openShift: (body?: { openingCash: number }) => api.post('/api/employee/payment/shifts', body ?? {}),
+  // 400 DISCREPANCY_EXPLANATION_REQUIRED carries the server's expectedClosing,
+  // openingCash, cashCollected and cashRefunded when the count differs.
   closeShift: (publicId: string, body: { actualTotal: number; discrepancyExplanation?: string }) =>
     api.post(`/api/employee/payment/shifts/${publicId}/close`, body),
-  listPickups: (params?: { date?: string }) =>
+  // Own shift history across every branch (#22): MyShiftsResponse.
+  getMyShifts: (params?: MyShiftsParams) => api.get('/api/employee/payment/shifts/me', { params }),
+  // One own shift with its transactions: { data: ShiftDetail }; 404 SHIFT_NOT_FOUND.
+  getMyShift: (publicId: string) => api.get(`/api/employee/payment/shifts/me/${publicId}`),
+  // `type` splits the queue into Daily / Monthly tabs (#17): Monthly ignores
+  // `date` and lists every monthly booking. With `type` an empty list is 200 [];
+  // both add { type, counts: { daily, monthly } }.
+  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY' }) =>
     api.get('/api/employee/booking', { params }),
-  listReturns: (params?: { date?: string }) =>
+  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY' }) =>
     api.get('/api/employee/return', { params }),
+  // PICKED_UP bookings past their return time, most overdue first (#8). Always
+  // 200 — OverdueReturnsResponse (types/queue.ts). limit defaults 50, max 200.
+  listOverdueReturns: (params?: { page?: number; limit?: number; type?: 'DAILY' | 'MONTHLY' }) =>
+    api.get('/api/employee/dashboard/overdue-returns', { params }),
   scanBooking: (bookingId: string) =>
     api.get(`/api/employee/booking/${bookingId}/scan`),
   searchCustomer: (query: string) =>
@@ -300,9 +334,12 @@ export const employeeApi = {
     payRemainingAtPickup?: boolean;
     // gated by booking.frozenChargeConfig.safetyDepositEnabled
     safetyDepositRequest?: { requestedAmount: number; reason: string };
-    // Staff confirm they hold the customer's original driving licence; the
-    // backend rejects the handover (LICENSE_NOT_COLLECTED) unless true.
-    licenseCollected: boolean;
+    // Original driving licence status (#3) — required by the UI, no default.
+    // DEPOSIT needs dlDepositNote (≤200 chars); the server clears it otherwise.
+    dlStatus?: DlCollectionStatus;
+    dlDepositNote?: string | null;
+    // Deprecated alias kept for old builds (dlStatus wins). Never send false.
+    licenseCollected?: boolean;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
@@ -317,8 +354,14 @@ export const employeeApi = {
   completeReturn: (bookingId: string, body?: {
     returnImageIds?: string[];
     requireManagerConfirmation?: boolean;
-    // required true when the original licence was collected at pickup
-    licenseReturned?: boolean;
+    // Legacy drop: extra km and late return are billed by the server and
+    // collected by the branch manager (response: CompleteReturnResponse).
+    endOdometer?: number;
+    // only used when kmAllowance.manualExtraKmAllowed (swap without readings)
+    manualExtraKm?: number;
+    // MANUAL grace branches only
+    applyGrace?: boolean;
+    waiveLateCharge?: { reason: string } | null;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
   getBookingKyc: (bookingId: string) =>
     api.get(`/api/employee/kyc/${bookingId}`),
@@ -352,10 +395,14 @@ export const employeeApi = {
       fastagNotes?: string;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
-      // required true when the original licence was collected at pickup
-      licenseReturned?: boolean;
-      // re-applied on every compute — resend it on recomputes
+      // re-applied on every compute — resend it on recomputes. Pre-tax.
       discount?: { amount: number; reason: string };
+      // Late return: "Apply grace" (MANUAL grace branches only)
+      applyGrace?: boolean;
+      // Late return waiver — resend on every compute while it should stay
+      waiveLateCharge?: { reason: string } | null;
+      // only used when kmAllowance.manualExtraKmAllowed (swap without readings)
+      manualExtraKm?: number | null;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
   getReturnSession: (bookingId: string) =>
@@ -396,10 +443,16 @@ export const employeeApi = {
     api.post('/api/employee/walkin/initiate', { phone }),
   walkinVerify: (customerPublicId: string, otp: string) =>
     api.post('/api/employee/walkin/verify', { customer_public_id: customerPublicId, otp }),
+  // Also completes an EXISTING customer's profile (complete mode). Omit `email`
+  // when blank — the server keeps the stored one. 200 adds
+  // { customer_public_id, isProfileCompleted, missingFields, hasEmail }.
   walkinComplete: (body: {
     customer_public_id: string;
     name: string;
-    email: string;
+    email?: string;
+    /** Raw input is fine — normalised server-side. */
+    drivingLicenceNumber: string;
+    aadhaarNumber: string;
     addressLine1: string;
     city: string;
     state: string;
@@ -417,8 +470,30 @@ export const employeeApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: UPLOAD_TIMEOUT_MS,
     }),
-  walkinKycDelete: (id: string) =>
-    api.delete('/api/employee/walkin/kyc', { data: { id } }),
+  // customer_public_id: the server checks the document belongs to this customer.
+  walkinKycDelete: (id: string, customerPublicId: string) =>
+    api.delete('/api/employee/walkin/kyc', { data: { id, customer_public_id: customerPublicId } }),
+
+  // ── customer QR code photo (#4) — multipart field 'file', JPEG ≤10 MB ─────
+  // Customer level: the customer's CURRENT photo (User.publicId).
+  getCustomerQrPhoto: (customerPublicId: string) =>
+    api.get(`/api/employee/customer/${customerPublicId}/qr-photo`),
+  uploadCustomerQrPhoto: (customerPublicId: string, formData: FormData) =>
+    api.post(`/api/employee/customer/${customerPublicId}/qr-photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  deleteCustomerQrPhoto: (customerPublicId: string) =>
+    api.delete(`/api/employee/customer/${customerPublicId}/qr-photo`),
+  // Booking level (branch-scoped): the booking's snapshot, else the customer's
+  // current photo. POST replaces both; 409 QR_PHOTO_FROZEN after pickup.
+  getBookingQrPhoto: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/qr-photo`),
+  uploadBookingQrPhoto: (bookingId: string, formData: FormData) =>
+    api.post(`/api/employee/bookings/${bookingId}/qr-photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
 
   // ── walk-in vehicle selection ─────────────────────────────────────────────
   vehicleCategories: () => api.get('/api/employee/vehicles/categories'),
@@ -447,6 +522,10 @@ export const employeeApi = {
     payment_type: 'CASH' | 'ONLINE' | 'UPI';
     /** Required for UPI — then confirmed via bookingPaymentStatus like CASH. */
     utr?: string;
+    /** QrPhoto.publicId of the customer's current QR code photo (409 QR_PHOTO_MISMATCH if replaced). */
+    qr_photo_id?: string;
+    /** Counter monthly plan (#15/#17): 30–180 days, pickup within 15 days. Omitted = STANDARD. */
+    plan?: 'STANDARD' | 'MONTHLY';
   }) => api.post('/api/employee/booking/create', body),
   cancelBookingHold: (holdId: string) =>
     api.delete(`/api/employee/booking/hold/${holdId}`),
@@ -464,8 +543,9 @@ export const employeeApi = {
       timeout: UPLOAD_TIMEOUT_MS,
     }),
 
-  // ── vehicle swap at pickup (#51) ──────────────────────────────────────────
+  // ── vehicle swap at pickup (#51) and during the rental (#13) ──────────────
   // bookingId = booking publicId. AvailableVehicle.id is the NUMERIC vehicle id.
+  // Shapes: types/vehicleSwap.ts (data = candidates, swapContext = stage/readings/pricing).
   getAvailableVehicles: (bookingId: string) =>
     api.get(`/api/employee/bookings/${bookingId}/available-vehicles`),
   swapVehicle: (
@@ -476,8 +556,19 @@ export const employeeApi = {
       reasonNotes?: string;
       markOriginalForMaintenance?: boolean;
       originalVehicleNotes?: string; // required when markOriginalForMaintenance
+      // Mid-rental swap (#13): all four readings are required when the booking
+      // is PICKED_UP (400 READINGS_REQUIRED); fuel is bars "1".."10".
+      originalVehicleEndOdometer?: number;
+      originalVehicleFuelLevel?: string;
+      newVehicleStartOdometer?: number;
+      newVehicleFuelLevel?: string;
+      // Bill the pre-GST price difference at drop; omitted ⇒ server default for the reason.
+      chargeDifference?: boolean;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/swap-vehicle`, body),
+  // This booking's swaps, newest first (VehicleSwapRecord[] in types/vehicleSwap).
+  getBookingSwapHistory: (bookingId: string) =>
+    api.get(`/api/employee/bookings/${bookingId}/swap-history`),
 
   // ── counter discount (coupon + manual) (#52) — money fields are STRINGS ────
   getDiscountSummary: (bookingId: string) =>
@@ -490,7 +581,14 @@ export const employeeApi = {
     api.post(`/api/employee/discount/bookings/${bookingId}/manual-discount`, body),
 
   // ── booking extension at counter (#53) — newEndAt MUST be ISO-8601 UTC 'Z' ─
-  evaluateExtension: (body: { bookingPublicId: string; newEndAt: string; notes?: string }) =>
+  // { data: ExtensionEligibility } (types/api.ts): how far the booking may run
+  // (15 days, 180 for a monthly plan) and the branch's office hours. 404 when
+  // the booking isn't in this branch.
+  extensionEligibility: (bookingPublicId: string) =>
+    api.get(`/api/employee/extensions/eligibility/${encodeURIComponent(bookingPublicId)}`),
+  // 400 BRANCH_SCHEDULE_VIOLATION (end outside office hours) or
+  // BOOKING_MAX_PERIOD_EXCEEDED { maxEndAt } — both carry a message.
+  evaluateExtension:(body: { bookingPublicId: string; newEndAt: string; notes?: string }) =>
     api.post('/api/employee/extensions/evaluate', body),
   commitExtension: (body: {
     extensionPublicId: string;
@@ -595,10 +693,17 @@ export const employeeApi = {
       pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
-      // must be true — backend rejects with LICENSE_NOT_COLLECTED otherwise
-      licenseCollected: boolean;
+      // Original driving licence status (#3); re-initiating applies a changed choice.
+      dlStatus?: DlCollectionStatus;
+      dlDepositNote?: string | null;
+      // Deprecated alias kept for old builds (dlStatus wins). Never send false.
+      licenseCollected?: boolean;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
+  // Fleet changes the original-licence status (#3) — CONFIRMED / PICKED_UP only
+  // (409 DL_STATUS_LOCKED otherwise). 200 { message, data: UpdateDlStatusResult }.
+  updateDlStatus: (publicId: string, body: UpdateDlStatusBody) =>
+    api.patch(`/api/employee/bookings/${publicId}/dl-status`, body),
   getActivePickupSession: (bookingId: string) =>
     api.get(`/api/employee/bookings/${bookingId}/pickup-session`),
   getPickupCaptureConfig: (bookingId: string) =>
@@ -607,8 +712,14 @@ export const employeeApi = {
     api.post(`/api/employee/bookings/${bookingId}/pickup-session/add-deposit`, body),
   removeDepositFromPickupSession: (bookingId: string) =>
     api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-deposit`),
+  // 200 adds `coupon: CounterCouponQuote`. Refusals carry couponRejected: true —
+  // 409 COUPON_ALREADY_APPLIED / COUPON_STACKING_NOT_ALLOWED, 422 COUPON_NOTHING_TO_DISCOUNT
+  // or any coupon failure code; always show the server's message.
   applyDiscountToPickupSession: (bookingId: string, body: { discountCode: string }) =>
-    api.post(`/api/employee/bookings/${bookingId}/pickup-session/apply-discount`, body),
+    api.post<{ message: string; data: unknown; coupon?: CounterCouponQuote }>(
+      `/api/employee/bookings/${bookingId}/pickup-session/apply-discount`,
+      body,
+    ),
   removeDiscountFromPickupSession: (bookingId: string) =>
     api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
   recordRefund: (
@@ -625,14 +736,53 @@ export interface CouponValidateBody {
   groupKey?: string;
   startAt: string;
   endAt: string;
+  /** Plan the customer picked; omitted = the branch default (#6). */
+  paymentFlow?: PaymentFlow;
+}
+
+/**
+ * The server's re-priced breakdown with the coupon applied (numbers). The
+ * coupon comes off before GST, so render totals from here — never
+ * `oldTotal − discountAmount`.
+ */
+export interface CouponPreviewPricing {
+  basePrice: number;
+  durationDiscountAmount: number;
+  durationDiscountPercent: number;
+  durationDiscountLabel: string | null;
+  /** A slab matched but the coupon replaced it (no stacking): hide the duration line. */
+  durationSuppressed: boolean;
+  couponDiscountAmount: number;
+  /** Total discount (duration + coupon). */
+  discountAmount: number;
+  taxableAmount: number;
+  taxAmount: number;
+  cgstAmount: number;
+  sgstAmount: number;
+  taxRate: number;
+  /** Rental after discounts + GST (no deposit). */
+  finalTotal: number;
+  deposit: number;
+  /** finalTotal + deposit. */
+  payableTotal: number;
 }
 
 export interface CouponValidateValid {
   valid: true;
   couponCode: string;
+  /** Coupon layer only (pre-GST), Decimal string. */
   discountAmount: string;
   discountType?: string;
   discountValue?: string;
+  // Absent on older servers.
+  pricing?: CouponPreviewPricing;
+  payableTotal?: number;
+  /** Plan the coupon was checked for (the effective plan). */
+  paymentFlow?: PaymentFlow;
+  /** The sent paymentFlow isn't allowed for these amounts / this branch. */
+  paymentFlowAdjusted?: boolean;
+  /** Recomputed with the post-coupon total — drives the plan chooser. */
+  paymentOptions?: PaymentOptions;
 }
 
 export interface CouponValidateInvalid {
@@ -645,5 +795,110 @@ export type CouponValidateResult = CouponValidateValid | CouponValidateInvalid;
 
 export const discountApi = {
   validateCoupon: (body: CouponValidateBody) =>
-    api.post<{ data: CouponValidateResult }>('/api/public/discount/validate', body),
+    api.post<{ data: CouponValidateResult }>(couponValidatePath(), body),
+};
+
+// A signed-in customer previews through /api/user/discount/validate (their own
+// customer id: USER-scoped and manager "friend" coupons, per-user limits and
+// loyalty coupons only work there). Guests — and a staff session, which the
+// customer route refuses — use the anonymous public preview.
+export function couponValidatePath(): string {
+  const { token, user } = useAuthStore.getState();
+  return token && user?.role !== 'STAFF' ? '/api/user/discount/validate' : '/api/public/discount/validate';
+}
+
+/**
+ * 4xx body of a coupon the server refused while booking (422 at customer
+ * booking create; 409/422 on the pickup counter). Always carries `message`.
+ */
+export interface CouponRejectedBody {
+  success: false;
+  code: string;
+  message: string;
+  couponRejected: true;
+  appliedCouponCode?: string | null;
+}
+
+// Pickup-counter coupon (Unified Payments). Money fields are 2-dp STRINGS.
+// totalCredit = discountAmount (pre-GST) + gstAmount — the bill line.
+export interface CounterCouponQuote {
+  couponCode: string;
+  discountAmount: string;
+  cgstAmount: string;
+  sgstAmount: string;
+  gstAmount: string;
+  totalCredit: string;
+  rentalBase: string;
+  owedBeforeCoupon: string;
+  /** OWED: limited to the rental still due; COMBINED_CAP: the branch's maximum discount. */
+  cappedBy: 'OWED' | 'COMBINED_CAP' | null;
+}
+
+export function couponRejection(err: any): CouponRejectedBody | null {
+  const body = err?.response?.data;
+  return body?.couponRejected === true ? (body as CouponRejectedBody) : null;
+}
+
+// POST /api/public/vehicles/booking — 200 body (fields this app reads).
+export interface CustomerBookingCreateResponse {
+  holdId: string;
+  /** The plan actually charged (may differ from the one sent). */
+  payment_flow?: PaymentFlow;
+  paymentFlowRequested?: PaymentFlow;
+  paymentFlowAdjusted?: boolean;
+  paymentFlowAdjustReason?: string | null;
+  paymentFlowAdjustMessage?: string | null;
+  paymentOptions?: PaymentOptions;
+  isAdvancePayment?: boolean;
+  data?: {
+    totals?: {
+      grandFinalTotal?: number;
+      grandDeposit?: number;
+      grandDiscountTotal?: number;
+      grandDurationDiscountTotal?: number;
+      grandCouponDiscountTotal?: number;
+      durationDiscountLabel?: string | null;
+      appliedCouponCode?: string | null;
+      advanceAmount?: number;
+      /** Razorpay order amount (advance or full). */
+      payNowAmount?: number;
+      /** Balance due at pickup (0 for FULL). */
+      dueAtPickup?: number;
+      remainingBalance?: number;
+      transactionId?: string;
+      razorpay?: RazorpayOrder | null;
+    };
+  };
+}
+
+// ─── notifications (#19) ────────────────────────────────────────────────────
+// One inbox per role, always scoped server-side to the signed-in user.
+// Errors: 400 INVALID_CURSOR (drop the cursor, reload page 1), 400
+// INVALID_PUSH_TOKEN, 404 NOTIFICATION_NOT_FOUND.
+
+function notificationsBase(audience: NotificationAudience): string {
+  return audience === 'STAFF' ? '/api/employee/notifications' : '/api/user/notifications';
+}
+
+export const notificationsApi = {
+  // { data: NotificationPage } — newest first. limit 1–50 (default 20).
+  list: (audience: NotificationAudience, params?: { cursor?: string; limit?: number; unreadOnly?: boolean }) =>
+    api.get<{ data: NotificationPage }>(notificationsBase(audience), { params }),
+  // { data: { unreadCount } }
+  unreadCount: (audience: NotificationAudience) =>
+    api.get<{ data: { unreadCount: number } }>(`${notificationsBase(audience)}/unread-count`),
+  // { data: { notification, unreadCount } } — idempotent.
+  markRead: (audience: NotificationAudience, publicId: string) =>
+    api.patch<{ data: { notification: AppNotification; unreadCount: number } }>(
+      `${notificationsBase(audience)}/${encodeURIComponent(publicId)}/read`,
+    ),
+  // { data: { updated, unreadCount: 0 } }
+  markAllRead: (audience: NotificationAudience) =>
+    api.patch<{ data: { updated: number; unreadCount: number } }>(`${notificationsBase(audience)}/read-all`),
+  // The token is re-assigned to whoever registered it last on the server.
+  registerPushToken: (audience: NotificationAudience, body: { token: string; platform: 'ios' | 'android' }) =>
+    api.post(`${notificationsBase(audience)}/push-token`, body),
+  // { data: { removed: 0 | 1 } }. Short timeout: it runs during sign-out.
+  unregisterPushToken: (audience: NotificationAudience, token: string) =>
+    api.delete(`${notificationsBase(audience)}/push-token`, { data: { token }, timeout: 5_000 }),
 };

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,17 +17,41 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
-import { useEmployeeBookingStore } from '../../../store/employeeBooking';
+import { useEmployeeBookingStore, type WalkinPlan } from '../../../store/employeeBooking';
+import { useAuthStore } from '../../../store/auth';
 import DateRangePicker from '../../../components/ui/DateRangePicker';
+import DurationChips from '../../../components/ui/DurationChips';
+import { BranchHoursLine, TimesNotice } from '../../../components/booking/BranchHours';
+import { useBranchSchedule } from '../../../hooks/useBranchSchedule';
+import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
 import {
+  bookingTimesNotice,
+  closedDayText,
+  fitBookingRange,
+  isClosedDay,
+  rangeHoursLine,
+  rangeScheduleIssue,
+  slotsWithinHours,
+} from '../../../lib/branchSchedule';
+import {
+  DURATION_PRESETS,
+  activePresetHours,
+  bookingWindowLastDay,
   initialRange,
+  maxReturnFor,
+  monthlyReturnMax,
+  monthlyReturnMin,
   normalizeRange,
+  presetRange,
+  rangeLengthLabel,
   timeOf,
-  timeSlotsFor,
   withSelectedSlot,
   withTime,
   type TimeSlot,
 } from '../../../lib/dates';
+
+// Monthly plan quick lengths: the engine counts a month as 30 days.
+const MONTH_PRESETS = [1, 2, 3, 6].map((n) => ({ label: `${n} month${n > 1 ? 's' : ''}`, hours: n * 30 * 24 }));
 
 interface VehicleCard {
   groupKey: string;
@@ -39,7 +63,8 @@ interface VehicleCard {
   availableCount: number;
   imageUrl: Array<{ file: { url: string } }>;
   pricing: { daily: number };
-  pricingDetails?: { price: number; finalPrice: number; type: string };
+  // billedAs (#5): what the total covers, e.g. "12 hours", "1 month + 5 days"
+  pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string };
 }
 
 type TypeClass = 'TWO_WHEELER' | 'FOUR_WHEELER';
@@ -72,7 +97,17 @@ function fmtDate(d: Date) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function TimeRow({ value, slots, onChange }: { value: string; slots: TimeSlot[]; onChange: (t: string) => void }) {
+function TimeRow({
+  value,
+  slots,
+  onChange,
+  emptyText,
+}: {
+  value: string;
+  slots: TimeSlot[];
+  onChange: (t: string) => void;
+  emptyText?: string;
+}) {
   const scrollRef = useRef<ScrollView>(null);
   // An off-grid current value (e.g. 6:05 PM) stays listed and selected.
   const data = withSelectedSlot(slots, value);
@@ -92,7 +127,9 @@ function TimeRow({ value, slots, onChange }: { value: string; slots: TimeSlot[];
           <Text style={[styles.timePillText, value === t.value && styles.timePillTextActive]}>{t.label}</Text>
         </TouchableOpacity>
       ))}
-      {data.length === 0 ? <Text style={styles.timeEmpty}>No times left on this day. Pick another date.</Text> : null}
+      {data.length === 0 ? (
+        <Text style={styles.timeEmpty}>{emptyText ?? 'No times left on this day. Pick another date.'}</Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -103,12 +140,48 @@ export default function WalkinVehiclesScreen() {
   const customer = useEmployeeBookingStore((s) => s.customer);
   const setVehicle = useEmployeeBookingStore((s) => s.setVehicle);
   const setDates = useEmployeeBookingStore((s) => s.setDates);
+  const setStorePlan = useEmployeeBookingStore((s) => s.setPlan);
 
   // Pickup today at the next 5-minute mark, return 24 hours later; every
   // change goes through normalizeRange so the return stays after the pickup.
   const [range, setRange] = useState(() => initialRange());
   const { start: startDate, end: endDate } = range;
   const [showDates, setShowDates] = useState(false);
+
+  // Rental plan (#15/#17): Standard = up to 15 days; Monthly rental = the
+  // counter-only monthly plan, 30–180 days with the pickup inside 15 days.
+  const [plan, setPlan] = useState<WalkinPlan>(() => useEmployeeBookingStore.getState().plan);
+  const monthly = plan === 'MONTHLY';
+
+  // Office hours of the staff member's branch (#2): pickers offer only times
+  // it accepts, and the range is moved back inside hours and length limits
+  // whenever a change lands outside them. Fleet staff can't bypass hours.
+  const branchPublicId = useAuthStore((s) => s.user?.branchPublicId ?? null);
+  const { data: schedule } = useBranchSchedule(branchPublicId);
+  const maxEnd = useCallback((s: Date) => (monthly ? monthlyReturnMax(s) : maxReturnFor(s)), [monthly]);
+  const fit = useCallback(
+    (r: { start: Date; end: Date }) =>
+      fitBookingRange(r, { config: schedule, maxEnd, minEnd: monthly ? monthlyReturnMin : undefined }),
+    [schedule, maxEnd, monthly],
+  );
+  useEffect(() => {
+    setRange((r) => fit(r));
+  }, [fit, range]);
+  const timesNotice = bookingTimesNotice(schedule, startDate, endDate, { monthly });
+  const presets = monthly ? MONTH_PRESETS : DURATION_PRESETS;
+  const presetIssue = (hours: number) => {
+    const next = presetRange(startDate, hours);
+    if (next.end.getTime() > maxEnd(startDate).getTime()) {
+      return `past the ${monthly ? MONTHLY_MAX_DAYS : MAX_BOOKING_DAYS}-day limit`;
+    }
+    return rangeScheduleIssue(schedule, next.start, next.end);
+  };
+  const choosePlan = (next: WalkinPlan) => {
+    if (next === plan) return;
+    setPlan(next);
+    // Monthly starts at the 30-day minimum; Standard goes back to one day.
+    setRange((r) => presetRange(r.start, next === 'MONTHLY' ? MONTHLY_MIN_DAYS * 24 : 24));
+  };
 
   const [category, setCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -171,15 +244,23 @@ export default function WalkinVehiclesScreen() {
   const selectGroup = async (card: VehicleCard) => {
     if (blockedReason(card)) return;
     // The screen may have sat open past the pickup time — bump it first.
-    const next = normalizeRange(startDate, endDate);
+    const next = fit(normalizeRange(startDate, endDate));
     const start = toLocalISO(next.start);
     const end = toLocalISO(next.end);
     if (start !== startISO || end !== endISO) setRange(next);
+    // Times the server would refuse (15-day / monthly limits, pickup outside
+    // branch hours): stop here with the same message.
+    const blocking = bookingTimesNotice(schedule, next.start, next.end, { monthly });
+    if (blocking?.tone === 'error') {
+      Alert.alert('Change the rental period', blocking.text);
+      return;
+    }
     setSelecting(card.groupKey);
     try {
       const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start, end });
       const d = res.data?.data;
       setDates(start, end);
+      setStorePlan(plan);
       setVehicle({
         groupKey: card.groupKey,
         make: d?.make ?? card.make,
@@ -230,6 +311,29 @@ export default function WalkinVehiclesScreen() {
       {/* Rental period */}
       <Text style={styles.sectionLabel}>Rental period</Text>
       <View style={styles.periodCard}>
+        {/* Plan — Monthly rental is a counter-only option (#15/#17) */}
+        <View style={styles.planRow}>
+          {(['STANDARD', 'MONTHLY'] as const).map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[styles.planBtn, plan === p && styles.planBtnActive]}
+              onPress={() => choosePlan(p)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ selected: plan === p }}
+            >
+              <Text style={[styles.planText, plan === p && styles.planTextActive]}>
+                {p === 'MONTHLY' ? 'Monthly rental' : 'Standard'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.planHint}>
+          {monthly
+            ? `${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days · pickup within the next ${MAX_BOOKING_DAYS} days`
+            : `Up to ${MAX_BOOKING_DAYS} days · return by ${fmtDate(bookingWindowLastDay())}`}
+        </Text>
+
         <TouchableOpacity style={styles.dateRow} onPress={() => setShowDates(true)} activeOpacity={0.8}>
           <View style={styles.dateCol}>
             <Text style={styles.dateColLabel}>PICKUP</Text>
@@ -243,22 +347,41 @@ export default function WalkinVehiclesScreen() {
           <Ionicons name="calendar-outline" size={18} color={Colors.ink3} />
         </TouchableOpacity>
 
+        {/* Quick lengths (#5): 12 hours / 1 day, or months on the monthly plan */}
+        <DurationChips
+          presets={presets}
+          activeHours={activePresetHours(startDate, endDate, presets)}
+          issueFor={presetIssue}
+          onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+        />
+
         <View style={styles.timeBlock}>
           <Text style={styles.timeLabel}>Pickup time</Text>
           <TimeRow
             value={timeOf(startDate)}
-            slots={timeSlotsFor(startDate)}
+            slots={slotsWithinHours(startDate, schedule, 'pickup')}
+            emptyText={closedDayText(schedule, startDate)}
             onChange={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
           />
         </View>
         <View style={styles.timeBlock}>
-          <Text style={styles.timeLabel}>Return time</Text>
+          <Text style={styles.timeLabel}>
+            Return time{rangeLengthLabel(startDate, endDate) ? ` · ${rangeLengthLabel(startDate, endDate)}` : ''}
+          </Text>
           <TimeRow
             value={timeOf(endDate)}
-            slots={timeSlotsFor(endDate, { after: startDate })}
+            slots={slotsWithinHours(endDate, schedule, 'return', {
+              after: monthly ? new Date(monthlyReturnMin(startDate).getTime() - 1) : startDate,
+              before: maxEnd(startDate),
+            })}
+            emptyText={closedDayText(schedule, endDate)}
             onChange={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
           />
         </View>
+
+        {/* Branch hours (#2) and anything the server would refuse */}
+        <BranchHoursLine text={rangeHoursLine(schedule, startDate, endDate)} />
+        <TimesNotice notice={timesNotice} />
       </View>
 
       {/* Booking restriction — same banner as the web listing */}
@@ -395,7 +518,12 @@ export default function WalkinVehiclesScreen() {
                 {blocked ? (
                   <Text style={styles.cardBlockedText}>{blocked}</Text>
                 ) : (
-                  <Text style={styles.cardPrice}>₹{Number(price).toLocaleString('en-IN')}{item.pricingDetails ? ' total' : '/day'}</Text>
+                  <Text style={styles.cardPrice}>
+                    ₹{Number(price).toLocaleString('en-IN')}
+                    {item.pricingDetails
+                      ? ` total${item.pricingDetails.billedAs ? ` · ${item.pricingDetails.billedAs}` : ''}`
+                      : '/day'}
+                  </Text>
                 )}
               </View>
               {busy ? (
@@ -414,6 +542,14 @@ export default function WalkinVehiclesScreen() {
         endDate={endDate}
         onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setShowDates(false)}
+        maxStartDay={bookingWindowLastDay()}
+        endDayBounds={monthly ? (p) => ({ min: monthlyReturnMin(p), max: monthlyReturnMax(p) }) : undefined}
+        isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
+        note={
+          monthly
+            ? `Monthly rental: return ${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days after pickup`
+            : `Bookings open up to ${MAX_BOOKING_DAYS} days ahead`
+        }
       />
     </View>
   );
@@ -437,6 +573,15 @@ const styles = StyleSheet.create({
 
   sectionLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3, textTransform: 'uppercase', letterSpacing: 1 },
   periodCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.hairline, padding: 14, gap: 14 },
+  planRow: { flexDirection: 'row', gap: 8 },
+  planBtn: {
+    flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12,
+    backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline,
+  },
+  planBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  planText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
+  planTextActive: { color: Colors.white },
+  planHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: -6 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dateCol: { flex: 1 },
   dateColLabel: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.ink3, letterSpacing: 0.6, marginBottom: 2 },

@@ -9,11 +9,12 @@ import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
 import { extensionApi, userApi } from '../../lib/api';
 import { startsInLabel } from '../../lib/dates';
+import { gstLabel, gstNumber, inrExact, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
 import VerifyLicenseCard, { type DLStatus } from '../../components/ui/VerifyLicenseCard';
-import type { BookingTrip, BookingVehicle } from '../../types/api';
+import type { BookingTrip, BookingVehicle, ExtensionEligibility } from '../../types/api';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -100,6 +101,12 @@ export default function TripDetail() {
     total: string;
     paymentStatus: string;
     vehiclesJson: string;
+    // Partial payment + coupon (#6/#20) from the trips list — absent on older servers.
+    paid?: string;
+    balanceDue?: string;
+    balanceDueAt?: string;
+    couponCode?: string;
+    totalDiscount?: string;
   }>();
 
   const { bookingId, id, make, model, thumbnail, startAt, vehiclesJson } = params;
@@ -116,16 +123,50 @@ export default function TripDetail() {
   const total: string = live ? String(live.total) : params.total;
   const paymentStatus: string = live?.paymentStatus ?? params.paymentStatus;
 
+  // What was actually received and what is still owed (#6). `paid` is 0 for a
+  // HOLD / expired / failed booking, so "Paid" only ever shows real money.
+  const paidNow = gstNumber(live ? live.paid : params.paid);
+  const balanceDue = gstNumber(live ? live.balanceDue : params.balanceDue) ?? 0;
+  const balanceDueAt = (live ? live.balanceDueAt : params.balanceDueAt) ?? null;
+  const couponCode = (live ? live.couponCode : params.couponCode) || null;
+  const totalDiscount = gstNumber(live ? live.totalDiscount : params.totalDiscount) ?? 0;
+  const partlyPaid = paymentStatus === 'SUCCESS' && balanceDue > 0;
+
+  // GST of the original booking (#23). totalBase / totalDiscount / totalTax
+  // leave out the refundable deposit and extensions (each extension carries its
+  // own GST); older servers don't send them, so nothing is shown then.
+  const gstSource = live as (BookingTrip & { totalBase?: number; totalDiscount?: number; totalTax?: number }) | null | undefined;
+  const bookingTax = gstNumber(gstSource?.totalTax);
+  const bookingBase = gstNumber(gstSource?.totalBase);
+  const bookingDiscount = gstNumber(gstSource?.totalDiscount) ?? 0;
+  const bookingTaxable = bookingBase != null ? round2(bookingBase - bookingDiscount) : null;
+  // CGST / SGST as the server stored them (newer servers); otherwise one GST row
+  const bookingCgst = gstNumber(gstSource?.totalCgst);
+  const bookingSgst = gstNumber(gstSource?.totalSgst);
+  const bookingGst =
+    bookingBase != null && bookingTax != null && bookingTaxable != null && bookingTaxable > 0
+      ? {
+          base: bookingBase,
+          discount: bookingDiscount,
+          taxable: bookingTaxable,
+          tax: bookingTax,
+          split: bookingCgst != null && bookingSgst != null ? { cgst: bookingCgst, sgst: bookingSgst } : null,
+        }
+      : null;
+  const beyondRental = bookingGst ? round2(Number(total) - bookingGst.taxable - bookingGst.tax) : 0;
+
   const canExtendStatus = status === 'CONFIRMED' || status === 'PICKED_UP';
   // { eligible, reason }: eligible = not ended and no other extension open.
   const { data: eligibility, refetch: refetchEligibility } = useQuery({
     queryKey: ['extension-eligibility', bookingId],
     queryFn: async () => {
       const res = await extensionApi.eligibility(bookingId);
-      return (res.data?.data ?? null) as { eligible: boolean; reason: string | null } | null;
+      return (res.data?.data ?? null) as ExtensionEligibility | null;
     },
     enabled: canExtendStatus && !!bookingId,
   });
+  // #15 — the trip already runs to the booking-period limit: no Extend, say why.
+  const extendCapped = canExtendStatus && eligibility?.atCap === true;
   // An extension left open (e.g. the app was closed mid-quote) blocks new ones;
   // the extend screen can release it, so keep the way in visible.
   const extensionBlocked = !!eligibility?.reason && /pending extension/i.test(eligibility.reason);
@@ -197,7 +238,12 @@ export default function TripDetail() {
     );
   };
   const numericId = Number(id);
-  const canInvoice = (status === 'CONFIRMED' || status === 'RETURNED') && Number.isFinite(numericId) && numericId > 0;
+  // PICKED_UP too: the server re-syncs the invoice (extensions etc.) before
+  // building it; the final version is rebuilt at drop.
+  const canInvoice =
+    (status === 'CONFIRMED' || status === 'PICKED_UP' || status === 'RETURNED') &&
+    Number.isFinite(numericId) &&
+    numericId > 0;
 
   const openInvoice = async () => {
     if (!canInvoice || invoiceBusy) return;
@@ -319,6 +365,12 @@ export default function TripDetail() {
             <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
           </TouchableOpacity>
         )}
+        {!showExtend && extendCapped && eligibility?.reason ? (
+          <View style={styles.extendCapNote}>
+            <Ionicons name="information-circle-outline" size={16} color={Colors.ink3} />
+            <Text style={styles.extendCapText}>{eligibility.reason}</Text>
+          </View>
+        ) : null}
 
         {/* Payment */}
         <View style={styles.section}>
@@ -329,6 +381,95 @@ export default function TripDetail() {
               label="Total"
               value={`₹${Number(total).toLocaleString('en-IN')}`}
             />
+            {/* Original booking, in order: rental → discounts (duration slab +
+                coupon, #20/#24) → taxable value → GST (#23). Rental + GST of the
+                taxable value is what the booking cost before deposit/extensions. */}
+            {bookingGst ? (
+              <View style={styles.gstBlock}>
+                <View style={styles.gstRow}>
+                  <Text style={styles.gstLabel}>Rental (excl. GST)</Text>
+                  <Text style={styles.gstValue}>{inrExact(bookingGst.base)}</Text>
+                </View>
+                {bookingGst.discount > 0 ? (
+                  <>
+                    <View style={styles.gstRow}>
+                      <Text style={styles.gstLabel}>
+                        {couponCode ? `Discounts (incl. coupon ${couponCode})` : 'Discounts'}
+                      </Text>
+                      <Text style={[styles.gstValue, styles.creditValue]}>−{inrExact(bookingGst.discount)}</Text>
+                    </View>
+                    <View style={styles.gstRow}>
+                      <Text style={styles.gstLabel}>Taxable value</Text>
+                      <Text style={styles.gstValue}>{inrExact(bookingGst.taxable)}</Text>
+                    </View>
+                  </>
+                ) : couponCode ? (
+                  <View style={styles.gstRow}>
+                    <Text style={styles.gstLabel}>Coupon applied</Text>
+                    <Text style={styles.gstValue}>{couponCode}</Text>
+                  </View>
+                ) : null}
+                {bookingGst.split ? (
+                  <>
+                    <View style={styles.gstRow}>
+                      <Text style={styles.gstLabel}>{gstLabel('CGST', live?.cgstRate)}</Text>
+                      <Text style={styles.gstValue}>{inrExact(bookingGst.split.cgst)}</Text>
+                    </View>
+                    <View style={styles.gstRow}>
+                      <Text style={styles.gstLabel}>{gstLabel('SGST', live?.sgstRate)}</Text>
+                      <Text style={styles.gstValue}>{inrExact(bookingGst.split.sgst)}</Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.gstRow}>
+                    <Text style={styles.gstLabel}>GST</Text>
+                    <Text style={styles.gstValue}>{inrExact(bookingGst.tax)}</Text>
+                  </View>
+                )}
+                {beyondRental > 0 ? (
+                  <Text style={styles.gstNote}>
+                    The total also includes the refundable deposit and any extension or other charges.
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+            {/* Older servers (no GST figures): discounts on their own */}
+            {!bookingGst && (totalDiscount > 0 || couponCode) ? (
+              <View style={styles.gstBlock}>
+                {totalDiscount > 0 ? (
+                  <View style={styles.gstRow}>
+                    <Text style={styles.gstLabel}>
+                      {couponCode ? `Discounts (incl. coupon ${couponCode})` : 'Discounts'}
+                    </Text>
+                    <Text style={[styles.gstValue, styles.creditValue]}>−{inrExact(totalDiscount)}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.gstRow}>
+                    <Text style={styles.gstLabel}>Coupon applied</Text>
+                    <Text style={styles.gstValue}>{couponCode}</Text>
+                  </View>
+                )}
+              </View>
+            ) : null}
+            {/* Paid so far / still owed — "Paid" only once the payment succeeded */}
+            {paidNow != null && paidNow > 0 ? (
+              <View style={[styles.infoRow, styles.payRowGap]}>
+                <View style={styles.infoLeft}>
+                  <Ionicons name="wallet-outline" size={15} color={Colors.ink3} />
+                  <Text style={styles.infoLabel}>{partlyPaid ? 'Paid (advance)' : 'Paid'}</Text>
+                </View>
+                <Text style={styles.infoValue}>{inrExact(paidNow)}</Text>
+              </View>
+            ) : null}
+            {balanceDue > 0 ? (
+              <View style={[styles.infoRow, styles.payRowGap]}>
+                <View style={styles.infoLeft}>
+                  <Ionicons name="time-outline" size={15} color={Colors.ink3} />
+                  <Text style={styles.infoLabel}>{balanceDueAt === 'DROP' ? 'Due at drop' : 'Due at pickup'}</Text>
+                </View>
+                <Text style={[styles.infoValue, styles.dueValue]}>{inrExact(balanceDue)}</Text>
+              </View>
+            ) : null}
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
@@ -338,7 +479,9 @@ export default function TripDetail() {
               <View style={[styles.payBadge, { backgroundColor: paymentStatus === 'SUCCESS' ? '#2d9d6120' : '#f59e0b20' }]}>
                 <Text style={[styles.payBadgeText, { color: paymentStatus === 'SUCCESS' ? '#2d9d61' : '#d97706' }]}>
                   {paymentStatus === 'SUCCESS'
-                    ? 'Paid'
+                    ? partlyPaid
+                      ? 'Advance paid'
+                      : 'Paid'
                     : paymentStatus === 'FAILED'
                     ? 'Failed'
                     : paymentStatus === 'REFUNDED'
@@ -352,7 +495,7 @@ export default function TripDetail() {
           </View>
         </View>
 
-        {/* Invoice — available once confirmed/returned */}
+        {/* Invoice — available once confirmed (also while the car is out) */}
         {canInvoice && (
           <TouchableOpacity style={styles.invoiceBtn} onPress={openInvoice} disabled={invoiceBusy} activeOpacity={0.85}>
             {invoiceBusy ? (
@@ -516,6 +659,15 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
   infoValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
 
+  gstBlock: { marginTop: 10, paddingLeft: 23, gap: 6 },
+  gstRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gstLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  gstValue: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink2 },
+  gstNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink4, lineHeight: 15 },
+  creditValue: { color: '#2d9d61' },
+  payRowGap: { marginTop: 12 },
+  dueValue: { color: '#d97706' },
+
   payBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   payBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11 },
 
@@ -556,6 +708,19 @@ const styles = StyleSheet.create({
   extendTextWrap: { flex: 1, gap: 2 },
   extendTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
   extendSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
+  extendCapNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  extendCapText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 18 },
 
   cancelBtn: {
     flexDirection: 'row',

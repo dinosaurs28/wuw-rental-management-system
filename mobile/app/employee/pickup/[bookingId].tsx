@@ -20,12 +20,23 @@ import PhotoCaptureSection, { type CapturedPhoto, type CaptureField } from '../.
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
 import VehicleSwapSection from '../../../components/employee/VehicleSwapSection';
 import UtrInput from '../../../components/employee/UtrInput';
+import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
+import { DlStatusCard, DlStatusSelector } from '../../../components/employee/DlStatus';
+import {
+  dlChoiceBody,
+  dlStatusLabel,
+  isDlErrorCode,
+  type DlCollectionStatus,
+  type DlStatusFields,
+} from '../../../lib/dlStatus';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
-import { employeeApi } from '../../../lib/api';
+import { couponRejection, employeeApi } from '../../../lib/api';
+import { counterCouponCapNote } from '../../../lib/discounts';
+import { rangeLengthLabel } from '../../../lib/dates';
 import {
   apiErrorMessage,
   cleanUtr,
@@ -41,7 +52,8 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 // Pickup and return payment sessions share one serialized shape.
 type PickupSession = ReturnSession;
 
-interface BookingDetail {
+// DlStatusFields: the original-licence status (#3) — null until recorded.
+interface BookingDetail extends DlStatusFields {
   publicId: string;
   startAt: string;
   endAt: string;
@@ -146,6 +158,10 @@ function SessionBill({ session }: { session: PickupSession }) {
   const net = num(session.netPayable);
   const entries = (session.entries ?? []).filter((e) => !e.isVoided);
   const gst = num(session.gstAmount);
+  // The remaining balance is GST-inclusive (its GST is on the booking); the GST
+  // row is only the GST of lines priced before GST, e.g. an extension (#23).
+  const isGstInclusive = (e: { referenceType?: string | null }) => e.referenceType === 'BOOKING_REMAINING';
+  const hasGstInclusive = entries.some(isGstInclusive);
 
   return (
     <View style={styles.card}>
@@ -163,6 +179,10 @@ function SessionBill({ session }: { session: PickupSession }) {
               {isDeposit && !!e.description && (
                 <Text style={styles.billSub} numberOfLines={1}>{e.description}</Text>
               )}
+              {isGstInclusive(e) && <Text style={styles.billSub}>GST already included</Text>}
+              {e.classification === 'TAXABLE' && !isGstInclusive(e) && num(e.gstAmount) > 0 && (
+                <Text style={styles.billSub}>Excl. GST — GST shown below</Text>
+              )}
             </View>
             <Text style={[styles.billValue, credit && styles.billCredit]}>
               {amt < 0 ? '−' : ''}{inr(amt)}
@@ -172,7 +192,7 @@ function SessionBill({ session }: { session: PickupSession }) {
       })}
       {gst > 0 && (
         <View style={styles.billRow}>
-          <Text style={styles.billLabel}>GST</Text>
+          <Text style={styles.billLabel}>{hasGstInclusive ? 'GST on other charges' : 'GST'}</Text>
           <Text style={styles.billValue}>{inr(gst)}</Text>
         </View>
       )}
@@ -203,8 +223,11 @@ export default function PickupScreen() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   // Shots still uploading (or failed) — they aren't in `photos` yet.
   const [pendingPhotos, setPendingPhotos] = useState(0);
-  const [licenseCollected, setLicenseCollected] = useState(false);
-  const [licenseRejected, setLicenseRejected] = useState(false);
+  // Original driving licence status (#3): a required choice, nothing pre-selected.
+  const [dlStatus, setDlStatus] = useState<DlCollectionStatus | null>(null);
+  const [dlDepositNote, setDlDepositNote] = useState('');
+  // The server refused the DL choice — highlight the section.
+  const [dlRejected, setDlRejected] = useState(false);
   const [done, setDone] = useState(false);
   // What was settled on the pickup session, for the success screen.
   const [paid, setPaid] = useState<{ amount: number; method: string } | null>(null);
@@ -229,6 +252,8 @@ export default function PickupScreen() {
   const [depositError, setDepositError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState<string | null>(null);
+  // Why the applied coupon is smaller than its face value (capped by the server).
+  const [couponNote, setCouponNote] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
   const [utr, setUtr] = useState('');
@@ -349,6 +374,10 @@ export default function PickupScreen() {
     };
   };
 
+  // dlStatus (+ dlDepositNote for DEPOSIT). The handover gate guarantees a choice;
+  // licenseCollected is no longer sent (the server keeps it for old builds only).
+  const dlBody = () => (dlStatus ? dlChoiceBody(dlStatus, dlDepositNote) : {});
+
   const onPickupDone = (settled: { amount: number; method: string } | null) => {
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
     qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
@@ -372,15 +401,15 @@ export default function PickupScreen() {
           : {}),
         // Re-arms the backend's 402 remaining-balance guard as defense-in-depth behind the UI gate.
         payRemainingAtPickup: true,
-        // Required toggle below; the backend also enforces it (LICENSE_NOT_COLLECTED).
-        licenseCollected,
+        // Original driving licence status — required choice below.
+        ...dlBody(),
       }),
     onSuccess: () => onPickupDone(null),
     onError: (err: any) => {
       setShowConfirm(false);
       // An auto-approved safety deposit is counter money — it needs an open shift.
       if (handleShiftRequired(err)) return;
-      if (err?.response?.data?.code === 'LICENSE_NOT_COLLECTED') setLicenseRejected(true);
+      if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
       // 409: the branch switched to payment sessions — reload so the screen follows.
       if (err?.response?.status === 409) refetch();
       setErrorMsg(apiErrorMessage(err, 'Something went wrong.'));
@@ -404,11 +433,11 @@ export default function PickupScreen() {
     initiateBusyRef.current = true;
     setInitiating(true);
     setErrorMsg(null);
-    setLicenseRejected(false);
+    setDlRejected(false);
     try {
       const res = await employeeApi.initiatePickupSession(bookingId as string, {
         ...handoverBody(),
-        licenseCollected,
+        ...dlBody(),
       });
       const s = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
@@ -418,7 +447,7 @@ export default function PickupScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (err: any) {
       if (!mountedRef.current) return;
-      if (err?.response?.data?.code === 'LICENSE_NOT_COLLECTED') setLicenseRejected(true);
+      if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
       // 409: payment sessions were switched off for the branch — reload into the legacy flow.
       if (err?.response?.status === 409) refetch();
       setErrorMsg(apiErrorMessage(err, 'Could not start the payment.'));
@@ -510,14 +539,22 @@ export default function PickupScreen() {
     );
   };
 
+  // Counter coupon (#20): the server runs the full coupon check. A refusal
+  // (already has a coupon, can't stack with the duration discount, nothing
+  // left to discount, limits…) comes back with a message saying why.
   const applyCoupon = () => {
     const code = couponCode.trim().toUpperCase();
     if (!code) return;
+    let capNote: string | null = null;
     void runSessionAction(
       'coupon',
-      () => employeeApi.applyDiscountToPickupSession(bookingId as string, { discountCode: code }),
-      () => { setCouponCode(''); setCouponError(null); },
-      setCouponError,
+      async () => {
+        const res = await employeeApi.applyDiscountToPickupSession(bookingId as string, { discountCode: code });
+        capNote = counterCouponCapNote(res.data?.coupon?.cappedBy);
+        return res;
+      },
+      () => { setCouponCode(''); setCouponError(null); setCouponNote(capNote); },
+      (message) => { setCouponError(message); setCouponNote(null); },
       'Invalid coupon code.',
     );
   };
@@ -526,7 +563,7 @@ export default function PickupScreen() {
     void runSessionAction(
       'removeCoupon',
       () => employeeApi.removeDiscountFromPickupSession(bookingId as string),
-      () => setCouponError(null),
+      () => { setCouponError(null); setCouponNote(null); },
       setCouponError,
       'Could not remove the coupon.',
     );
@@ -641,6 +678,19 @@ export default function PickupScreen() {
         else setUtrError(message);
         return;
       }
+      // 409 COUPON_NO_LONGER_VALID (the coupon is re-checked when the payment is
+      // recorded): nothing was recorded — take the coupon off and collect in full.
+      const rejected = couponRejection(err);
+      if (rejected) {
+        void reloadSession();
+        setCouponError(rejected.message);
+        setCouponNote(null);
+        Alert.alert('Coupon can no longer be used', `${rejected.message}\n\nNo payment was recorded.`, [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Remove coupon', style: 'destructive', onPress: removeCoupon },
+        ]);
+        return;
+      }
       // 409 amount mismatch / 400 not awaiting payment: the bill moved on — reload it.
       if (err?.response?.status === 409 || err?.response?.status === 400) void reloadSession();
       setErrorMsg(apiErrorMessage(err, 'Could not record the payment.'));
@@ -725,11 +775,23 @@ export default function PickupScreen() {
                 ? 'Wait for the photos to upload (retry or remove failed ones).'
                 : !sessionMode && depositInvalid
                   ? 'Enter the deposit amount and reason, or turn the request off.'
-                  : !licenseCollected
-                    ? 'Collect the customer\'s original driving licence.'
-                    : sessionMode && restoring
-                      ? 'Checking for an open payment…'
-                      : null;
+                  : !dlStatus
+                    ? 'Choose the driving licence status.'
+                    : dlStatus === 'DEPOSIT' && !dlDepositNote.trim()
+                      ? 'Note what the customer left as the DL deposit.'
+                      : sessionMode && restoring
+                        ? 'Checking for an open payment…'
+                        : null;
+
+  // What was recorded for the licence: the choice sent from this screen, else the
+  // server's value (a pickup session reopened after an app restart).
+  const recordedDlStatus = dlStatus ?? booking.dlStatus ?? null;
+  const recordedDlNote = dlStatus
+    ? dlStatus === 'DEPOSIT' ? dlDepositNote.trim() || null : null
+    : booking.dlDepositNote ?? null;
+  const dlSummary = `${dlStatusLabel(recordedDlStatus)}${
+    recordedDlStatus === 'DEPOSIT' && recordedDlNote ? ` · ${recordedDlNote}` : ''
+  }`;
 
   const recordedOdo = booking.startOdometer ?? (odoValid ? Number(odo) : null);
   const recordedFuel = booking.pickupFuelLevel ? Number(booking.pickupFuelLevel) : fuelLevel;
@@ -765,7 +827,7 @@ export default function PickupScreen() {
             )}
             <View style={styles.successRow}>
               <Ionicons name="id-card-outline" size={15} color={Colors.ink3} />
-              <Text style={styles.successRowText}>Original driving licence collected</Text>
+              <Text style={styles.successRowText}>{dlSummary}</Text>
             </View>
             {sessionMode && (
               <View style={styles.successRow}>
@@ -796,7 +858,11 @@ export default function PickupScreen() {
   if (awaitingManager || booking.status !== 'CONFIRMED') {
     const pickedUp = booking.status === 'PICKED_UP';
     return (
-      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+      <KeyboardAvoidingView
+        style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={insets.top}
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color={Colors.ink} />
@@ -806,7 +872,12 @@ export default function PickupScreen() {
             <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
           </View>
         </View>
-        <View style={styles.successBody}>
+        {/* Scrolls so the DL status editor below fits on small screens */}
+        <ScrollView
+          contentContainerStyle={styles.successBodyScroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={[styles.successIcon, awaitingManager && styles.waitingIcon]}>
             <Ionicons
               name={awaitingManager ? 'time' : pickedUp ? 'checkmark-circle' : 'information-circle'}
@@ -824,6 +895,10 @@ export default function PickupScreen() {
                 ? `${vehicle ? vehicleName : 'The vehicle'} has already been handed over to ${customer.name}.`
                 : `This booking is ${booking.status.replace(/_/g, ' ').toLowerCase()} — there's no pickup to do.`}
           </Text>
+          {/* Original driving licence (#3) — Fleet can still change it while CONFIRMED / PICKED_UP */}
+          {(awaitingManager || pickedUp || !!booking.dlStatus) && (
+            <DlStatusCard booking={booking} onUpdated={() => refetch()} style={styles.dlCardWide} />
+          )}
           {awaitingManager && (
             <TouchableOpacity style={styles.refreshBtn} onPress={() => refetch()} activeOpacity={0.85}>
               <Ionicons name="refresh-outline" size={16} color={Colors.ink2} />
@@ -837,8 +912,8 @@ export default function PickupScreen() {
           >
             <Text style={styles.doneBtnText}>Back to Queue</Text>
           </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -853,7 +928,7 @@ export default function PickupScreen() {
       return;
     }
     setErrorMsg(null);
-    setLicenseRejected(false);
+    setDlRejected(false);
     setShowConfirm(true);
   };
 
@@ -1047,6 +1122,10 @@ export default function PickupScreen() {
           </View>
         )}
 
+        {/* Customer QR code photo (#4) — informational, not part of the DL gate */}
+        <SectionHeader title={QR_PHOTO_LABEL} />
+        <QrPhotoSection target={{ kind: 'booking', bookingId: booking.publicId }} />
+
         {/* Vehicle */}
         <SectionHeader title="Vehicle" />
         <View style={styles.card}>
@@ -1096,7 +1175,15 @@ export default function PickupScreen() {
           <View style={styles.divider} />
           <InfoRow icon="calendar-outline" label="Return" value={formatDate(booking.endAt)} />
           <View style={styles.divider} />
-          <InfoRow icon="time-outline" label="Duration" value={`${booking.days} day${booking.days !== 1 ? 's' : ''}`} />
+          <InfoRow
+            icon="time-outline"
+            label="Duration"
+            // "12 hours" under a day (#5) — booking.days rounds a 12 h rental up to 1 day.
+            value={
+              rangeLengthLabel(new Date(booking.startAt), new Date(booking.endAt)) ??
+              `${booking.days} day${booking.days !== 1 ? 's' : ''}`
+            }
+          />
           <View style={styles.divider} />
           <InfoRow
             icon="cash-outline"
@@ -1199,19 +1286,31 @@ export default function PickupScreen() {
           <>
             {/* Saved with the session — the vehicle goes out when it's settled */}
             <SectionHeader title="Handover Details" />
-            <View style={styles.card}>
-              {recordedOdo != null && (
-                <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
-              )}
-              {recordedFuel != null && (
-                <>
-                  {recordedOdo != null && <View style={styles.divider} />}
-                  <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
-                </>
-              )}
-              {(recordedOdo != null || recordedFuel != null) && <View style={styles.divider} />}
-              <InfoRow icon="id-card-outline" label="Original licence" value="Collected" />
-            </View>
+            {(recordedOdo != null || recordedFuel != null) && (
+              <View style={styles.card}>
+                {recordedOdo != null && (
+                  <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
+                )}
+                {recordedFuel != null && (
+                  <>
+                    {recordedOdo != null && <View style={styles.divider} />}
+                    <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
+                  </>
+                )}
+              </View>
+            )}
+            {/* Original driving licence (#3), as saved with the session — still changeable */}
+            <DlStatusCard
+              booking={booking}
+              onUpdated={(r) => {
+                // Keep this screen's choice in step, so the summary after payment is right.
+                if (r?.dlStatus) {
+                  setDlStatus(r.dlStatus);
+                  setDlDepositNote(r.dlDepositNote ?? '');
+                }
+                refetch();
+              }}
+            />
 
             {/* The bill */}
             <SectionHeader title="Bill" />
@@ -1307,6 +1406,7 @@ export default function PickupScreen() {
                   <View style={styles.toggleTextWrap}>
                     <Text style={styles.toggleTitle}>{discountEntry.description || 'Coupon discount'}</Text>
                     <Text style={[styles.toggleSub, { color: '#10b981' }]}>−{inr(num(discountEntry.amount))} off the bill</Text>
+                    {couponNote ? <Text style={styles.toggleSub}>{couponNote}</Text> : null}
                   </View>
                   <TouchableOpacity onPress={removeCoupon} disabled={sessionBusy} hitSlop={8}>
                     {sessionAction === 'removeCoupon'
@@ -1575,27 +1675,20 @@ export default function PickupScreen() {
               </>
             )}
 
-            {/* Original driving licence — held until the car comes back */}
-            <SectionHeader title="Original Licence" />
-            <View style={[styles.card, licenseRejected && styles.cardError]}>
-              <TouchableOpacity
-                style={styles.toggleRow}
-                onPress={() => { setLicenseCollected((v) => !v); setLicenseRejected(false); }}
-                activeOpacity={0.8}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: licenseCollected }}
-              >
-                <View style={styles.toggleTextWrap}>
-                  <View style={styles.toggleTitleRow}>
-                    <Text style={styles.toggleTitle}>Original driving licence collected</Text>
-                    {!licenseCollected && <Text style={styles.requiredTag}>Required</Text>}
-                  </View>
-                  <Text style={styles.toggleSub}>Keep the customer's physical licence until the car is returned.</Text>
-                </View>
-                <View style={[styles.switch, licenseCollected && styles.switchOn]}>
-                  <View style={[styles.knob, licenseCollected && styles.knobOn]} />
-                </View>
-              </TouchableOpacity>
+            {/* Original driving licence (#3) — a required choice, nothing pre-selected */}
+            <SectionHeader title="Driving Licence" />
+            <View style={[styles.card, dlRejected && styles.cardError]}>
+              <View style={styles.toggleTitleRow}>
+                <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
+                {!dlStatus && <Text style={styles.requiredTag}>Required</Text>}
+              </View>
+              <Text style={[styles.toggleSub, styles.dlSub]}>Record it before handing over the keys.</Text>
+              <DlStatusSelector
+                value={dlStatus}
+                note={dlDepositNote}
+                onChange={(v) => { setDlStatus(v); setDlRejected(false); }}
+                onNoteChange={(t) => { setDlDepositNote(t); setDlRejected(false); }}
+              />
             </View>
 
             {/* Manager confirmation escalation (#50) — legacy flow only */}
@@ -1623,6 +1716,12 @@ export default function PickupScreen() {
             {sessionMode && (
               <Text style={styles.nextStepNote}>
                 Next: review the bill, add a safety deposit or coupon, and collect the payment.
+              </Text>
+            )}
+            {/* #20 — the counter coupon lives on the Unified Payments pickup bill only */}
+            {!sessionMode && booking.status === 'CONFIRMED' && (
+              <Text style={styles.nextStepNote}>
+                Counter coupons need Unified Payments, which this branch doesn't use.
               </Text>
             )}
           </>
@@ -1691,7 +1790,7 @@ export default function PickupScreen() {
       icon="car-outline"
       iconColor={Colors.orange}
       title="Confirm Pickup"
-      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}Original driving licence collected\n\nHand over the vehicle to ${customer.name}?`}
+      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}${dlSummary}\n\nHand over the vehicle to ${customer.name}?`}
       confirmLabel="Confirm Pickup"
       confirmColor={Colors.orange}
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
@@ -1859,6 +1958,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardError: { borderColor: '#e53e3e60' },
+  dlSub: { marginBottom: 12 },
+  dlCardWide: { width: '100%' },
   toggleSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2, lineHeight: 16 },
   switch: {
     width: 46, height: 28, borderRadius: 14, backgroundColor: Colors.hairline,
@@ -2042,6 +2143,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+    gap: 16,
+  },
+  // successBody inside a ScrollView (the "nothing to hand over" view).
+  successBodyScroll: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     gap: 16,
   },
   successIcon: {

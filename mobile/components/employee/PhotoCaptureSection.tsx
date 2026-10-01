@@ -9,7 +9,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../lib/image';
+import {
+  prepareImageForUpload,
+  toUploadForm,
+  uploadErrorMessage,
+  type UploadProfile,
+} from '../../lib/image';
+import ImageViewer from '../ui/ImageViewer';
 import CameraCapture, { type CapturedSize } from './CameraCapture';
 
 export interface CapturedPhoto {
@@ -36,6 +42,9 @@ interface Props {
   // Number of shots taken but not yet in `value` (still uploading, or failed
   // and awaiting retry). Lets the screen hold its submit until they land.
   onPendingChange?: (count: number) => void;
+  // 'damage' keeps more detail (2000px, q0.8) for damage evidence; the default
+  // keeps licence/KYC-style small uploads. A 413 retries once at 'standard'.
+  profile?: UploadProfile;
 }
 
 // A shot that has been taken but isn't in `value` yet.
@@ -55,12 +64,14 @@ export default function PhotoCaptureSection({
   upload,
   genericLabel = 'Add photo',
   onPendingChange,
+  profile = 'standard',
 }: Props) {
   // Camera-only on purpose: no gallery, and no confirm step after the shot.
   // A labeled slot opens a single shot; the generic tile stays open for many.
   const [camera, setCamera] = useState<{ label?: string; multiple: boolean } | null>(null);
   const [pending, setPending] = useState<PendingShot[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ images: { url: string; label?: string }[]; index: number } | null>(null);
   const seq = useRef(0);
   const mounted = useRef(true);
   // Uploads finish in the background and can overlap, so always build the next
@@ -90,11 +101,22 @@ export default function PhotoCaptureSection({
     try {
       // Raw camera output is 3–8 MB and is rejected by the reverse proxy
       // before it reaches the API — always downscale first.
-      const file = await prepareImageForUpload(
-        { uri: shot.uri, width: shot.width, mimeType: 'image/jpeg' },
-        `photo_${shot.key}`,
-      );
-      const { fileId, url } = await upload(toUploadForm(file));
+      const asset = { uri: shot.uri, width: shot.width, mimeType: 'image/jpeg' };
+      const file = await prepareImageForUpload(asset, `photo_${shot.key}`, profile);
+      let result: { fileId: string; url: string };
+      try {
+        result = await upload(toUploadForm(file));
+      } catch (err: any) {
+        // The larger damage profile can trip a tight proxy limit — retry once
+        // at the standard size before giving up.
+        if (profile !== 'standard' && err?.response?.status === 413) {
+          const small = await prepareImageForUpload(asset, `photo_${shot.key}`, 'standard');
+          result = await upload(toUploadForm(small));
+        } else {
+          throw err;
+        }
+      }
+      const { fileId, url } = result;
       if (!mounted.current) return;
       // Replace any existing photo for a labeled slot; append for generic.
       const current = valueRef.current;
@@ -133,6 +155,11 @@ export default function PhotoCaptureSection({
   const discard = (key: string) => setPending((list) => list.filter((p) => p.key !== key));
 
   const remove = (fileId: string) => commit(valueRef.current.filter((p) => p.fileId !== fileId));
+
+  const openViewer = (fileId: string) => {
+    const index = Math.max(0, value.findIndex((p) => p.fileId === fileId));
+    setViewer({ images: value.map((p) => ({ url: p.url, label: p.label })), index });
+  };
 
   const genericPhotos = value.filter((p) => !p.label);
   const genericPending = pending.filter((p) => !p.label);
@@ -180,7 +207,15 @@ export default function PhotoCaptureSection({
                 </View>
                 {shot ? (
                   <View style={styles.thumbWrap}>
-                    <Image source={{ uri: shot.url }} style={styles.thumb} resizeMethod="resize" />
+                    <TouchableOpacity
+                      style={styles.thumb}
+                      onPress={() => openViewer(shot.fileId)}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View ${f.name} photo`}
+                    >
+                      <Image source={{ uri: shot.url }} style={styles.thumb} resizeMethod="resize" />
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.removeBtn} onPress={() => remove(shot.fileId)} hitSlop={6}>
                       <Ionicons name="close" size={13} color={Colors.white} />
                     </TouchableOpacity>
@@ -207,7 +242,15 @@ export default function PhotoCaptureSection({
         <View style={styles.genericGrid}>
           {genericPhotos.map((p) => (
             <View key={p.fileId} style={styles.thumbWrap}>
-              <Image source={{ uri: p.url }} style={styles.thumb} resizeMethod="resize" />
+              <TouchableOpacity
+                style={styles.thumb}
+                onPress={() => openViewer(p.fileId)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="View photo"
+              >
+                <Image source={{ uri: p.url }} style={styles.thumb} resizeMethod="resize" />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.removeBtn} onPress={() => remove(p.fileId)} hitSlop={6}>
                 <Ionicons name="close" size={13} color={Colors.white} />
               </TouchableOpacity>
@@ -243,6 +286,13 @@ export default function PhotoCaptureSection({
         title={camera?.label ?? (fields && fields.length > 0 ? 'More photos' : 'Photos')}
         onCapture={onShot}
         onClose={() => setCamera(null)}
+      />
+
+      <ImageViewer
+        visible={!!viewer}
+        images={viewer?.images ?? []}
+        startIndex={viewer?.index ?? 0}
+        onClose={() => setViewer(null)}
       />
     </View>
   );

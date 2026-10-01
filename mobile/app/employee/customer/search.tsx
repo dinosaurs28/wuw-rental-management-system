@@ -18,10 +18,15 @@ import { employeeApi } from '../../../lib/api';
 interface CustomerResult {
   publicId: string;
   name: string;
-  email: string;
+  // null for a walk-in placeholder email.
+  email: string | null;
   phone: string | null;
   customerProfile: {
+    // Derived server-side: includes the DL + Aadhaar numbers (#1).
     isProfileCompleted: boolean;
+    missingFields?: string[];
+    drivingLicenceNumber?: string | null;
+    aadhaarNumberMasked?: string | null;
   } | null;
 }
 
@@ -129,7 +134,7 @@ export default function CustomerSearch() {
               </View>
               <View style={styles.customerInfo}>
                 <Text style={styles.customerName}>{item.name}</Text>
-                <Text style={styles.customerPhone}>{item.phone ?? item.email}</Text>
+                <Text style={styles.customerPhone}>{item.phone || item.email || '—'}</Text>
               </View>
               <View style={[styles.kycBadge, item.customerProfile?.isProfileCompleted ? styles.kycGreen : styles.kycAmber]}>
                 <Text style={[styles.kycText, item.customerProfile?.isProfileCompleted ? styles.kycTextGreen : styles.kycTextAmber]}>

@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -12,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { MAX_OPENING_CASH, inr2, money, sanitizeAmount } from '../../../lib/cashShift';
 
 export default function OpenShift() {
   const router = useRouter();
@@ -23,27 +28,41 @@ export default function OpenShift() {
   const [done, setDone] = useState(false);
   const [adopted, setAdopted] = useState(false);
   const [openedAt, setOpenedAt] = useState('');
+  // Opening float counted into the drawer (#22). Required, prefilled 0 — an
+  // empty drawer is a valid start.
+  const [openingCash, setOpeningCash] = useState('0');
+  const [openedWith, setOpenedWith] = useState<number | null>(null);
   // Pushed on top of a flow in this stack (walk-in hold, pickup, drop,
   // extension — via promptOpenShift) → go straight back to it once the shift
   // is open. From the dashboard / profile tabs it is the stack's first screen.
   const [fromFlow] = useState(() => (navigation.getState()?.index ?? 0) > 0);
 
+  const amount = openingCash.trim() === '' ? NaN : Number(openingCash);
+  const amountError = isNaN(amount)
+    ? 'Enter the cash in the drawer now (₹0 if it is empty).'
+    : amount > MAX_OPENING_CASH
+      ? 'Opening cash cannot exceed ₹10,00,000.'
+      : null;
+
   const mutation = useMutation({
-    mutationFn: async (): Promise<{ openedAt?: string; adopted: boolean }> => {
+    mutationFn: async (): Promise<{ openedAt?: string; adopted: boolean; opening: number | null }> => {
       try {
-        const res = await employeeApi.openShift();
-        return { openedAt: res.data?.data?.openedAt, adopted: false };
+        const res = await employeeApi.openShift({ openingCash: amount });
+        const d = res.data?.data;
+        return { openedAt: d?.openedAt, adopted: false, opening: money(d?.openingCash) ?? amount };
       } catch (err: any) {
         // 409 = a shift is already open (e.g. started on the web) — adopt it.
         if (err?.response?.status !== 409) throw err;
         const active = await employeeApi.getActiveShift().catch(() => null);
         const shift = active?.data?.data;
         if (!shift) throw err;
-        return { openedAt: shift.openedAt, adopted: true };
+        // That shift keeps the opening cash it was opened with.
+        return { openedAt: shift.openedAt, adopted: true, opening: money(shift.openingCash) };
       }
     },
-    onSuccess: ({ openedAt: at, adopted: wasOpen }) => {
+    onSuccess: ({ openedAt: at, adopted: wasOpen, opening }) => {
       qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+      qc.invalidateQueries({ queryKey: ['employee', 'shifts'] });
       if (next === 'new-booking') {
         router.replace('/employee/customer/search');
         return;
@@ -53,6 +72,7 @@ export default function OpenShift() {
         return;
       }
       if (at) setOpenedAt(at);
+      setOpenedWith(opening);
       setAdopted(wasOpen);
       setDone(true);
     },
@@ -87,6 +107,12 @@ export default function OpenShift() {
               </Text>
             </View>
           ) : null}
+          {openedWith != null ? (
+            <View style={styles.detailPill}>
+              <Ionicons name="cash-outline" size={14} color={Colors.ink3} />
+              <Text style={styles.detailText}>Opening cash {inr2(openedWith)}</Text>
+            </View>
+          ) : null}
         </View>
 
         <TouchableOpacity
@@ -101,12 +127,20 @@ export default function OpenShift() {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
         <Ionicons name="arrow-back" size={22} color={Colors.ink} />
       </TouchableOpacity>
 
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.bodyScroll}
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.iconWrap}>
           <Ionicons name="business-outline" size={36} color={Colors.orange} />
         </View>
@@ -130,6 +164,31 @@ export default function OpenShift() {
           </View>
         </View>
 
+        {/* Opening cash — the float already in the drawer */}
+        <View style={styles.fieldBlock}>
+          <Text style={styles.fieldLabel}>Opening cash in drawer (₹)</Text>
+          <Text style={styles.fieldHelp}>
+            Count the cash in the drawer before you start. At close you will be expected to hold this plus the
+            cash you collect, minus cash refunds.
+          </Text>
+          <View style={[styles.amountWrap, amountError ? styles.amountWrapError : null]}>
+            <Text style={styles.rupeeSymbol}>₹</Text>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="0"
+              placeholderTextColor={Colors.ink4}
+              value={openingCash}
+              onChangeText={(t) => setOpeningCash(sanitizeAmount(t))}
+              // Prefilled 0: typing replaces it instead of appending to it.
+              selectTextOnFocus
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              accessibilityLabel="Opening cash in drawer in rupees"
+            />
+          </View>
+          {amountError ? <Text style={styles.fieldError}>{amountError}</Text> : null}
+        </View>
+
         {mutation.isError && (
           <View style={styles.errorBox}>
             <Ionicons name="alert-circle-outline" size={16} color="#e53e3e" />
@@ -138,12 +197,16 @@ export default function OpenShift() {
             </Text>
           </View>
         )}
-      </View>
+      </ScrollView>
 
       <TouchableOpacity
-        style={[styles.openBtn, mutation.isPending && styles.openBtnLoading]}
+        style={[
+          styles.openBtn,
+          mutation.isPending && styles.openBtnLoading,
+          !!amountError && styles.openBtnDisabled,
+        ]}
         onPress={() => mutation.mutate()}
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || !!amountError}
         activeOpacity={0.85}
       >
         {mutation.isPending ? (
@@ -155,7 +218,7 @@ export default function OpenShift() {
           </>
         )}
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -167,7 +230,8 @@ const styles = StyleSheet.create({
   },
   back: { marginTop: 8, marginBottom: 24, width: 36, height: 36, justifyContent: 'center' },
 
-  body: { flex: 1, gap: 16 },
+  bodyScroll: { flex: 1 },
+  body: { flexGrow: 1, gap: 16, paddingBottom: 16 },
 
   iconWrap: {
     width: 72,
@@ -203,6 +267,37 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   infoText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.ink2, flex: 1 },
 
+  fieldBlock: { gap: 8, marginTop: 4 },
+  fieldLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.ink2,
+    letterSpacing: 0.2,
+  },
+  fieldHelp: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17, marginTop: -2 },
+  fieldError: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e' },
+  amountWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingHorizontal: 16,
+    height: 56,
+    gap: 8,
+  },
+  amountWrapError: { borderColor: '#e53e3e' },
+  rupeeSymbol: { fontFamily: Fonts.bodySemiBold, fontSize: 20, color: Colors.ink2 },
+  amountInput: {
+    flex: 1,
+    fontFamily: Fonts.displayBold,
+    fontSize: 22,
+    color: Colors.ink,
+    letterSpacing: -0.5,
+    padding: 0,
+  },
+
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -230,6 +325,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   openBtnLoading: { opacity: 0.7 },
+  openBtnDisabled: { opacity: 0.4 },
   openBtnText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 16,

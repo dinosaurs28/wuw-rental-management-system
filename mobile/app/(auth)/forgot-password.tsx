@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,7 +26,7 @@ import { authApi } from '../../lib/api';
 type Step = 'email' | 'reset';
 
 const emailSchema = z.object({
-  email: z.string().email('Enter a valid email'),
+  email: z.string().trim().email('Enter a valid email'),
 });
 type EmailForm = z.infer<typeof emailSchema>;
 
@@ -50,12 +50,21 @@ export default function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  // Backend sends at most one code per resendAfterSeconds (60 s) per account.
+  const [cooldown, setCooldown] = useState(0);
+  const [expiresIn, setExpiresIn] = useState(10);
   const [toast, setToast] = useState<
     { title: string; message?: string; type?: 'error' | 'success' } | null
   >(null);
 
   const emailForm = useForm<EmailForm>({ resolver: zodResolver(emailSchema) });
   const resetForm = useForm<ResetForm>({ resolver: zodResolver(resetSchema) });
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const errMsg = (err: any) =>
     err.response?.data?.message ??
@@ -68,8 +77,10 @@ export default function ForgotPassword() {
   const onRequest = async (data: EmailForm) => {
     setLoading(true);
     try {
-      await authApi.forgotPassword(data.email);
+      const res = await authApi.forgotPassword(data.email);
       setEmail(data.email);
+      setExpiresIn(res.data?.expiresInMinutes ?? 10);
+      setCooldown(res.data?.resendAfterSeconds ?? 60);
       setStep('reset');
       setToast({
         title: 'Check your email',
@@ -102,10 +113,11 @@ export default function ForgotPassword() {
   };
 
   const resend = async () => {
-    if (loading) return;
+    if (loading || cooldown > 0) return;
     setLoading(true);
     try {
-      await authApi.forgotPassword(email);
+      const res = await authApi.forgotPassword(email);
+      setCooldown(res.data?.resendAfterSeconds ?? 60);
       setToast({ title: 'Code resent', message: `Sent again to ${email}.`, type: 'success' });
     } catch (err: any) {
       setToast({ title: 'Could not resend', message: errMsg(err), type: 'error' });
@@ -153,7 +165,7 @@ export default function ForgotPassword() {
             <Text style={styles.subtitle}>
               {step === 'email'
                 ? 'Enter your email and we’ll send you a 6-digit reset code.'
-                : `Enter the code sent to ${email} and choose a new password.`}
+                : `Enter the code sent to ${email} (valid for ${expiresIn} minutes) and choose a new password. Only the most recent code works.`}
             </Text>
           </View>
 
@@ -197,9 +209,12 @@ export default function ForgotPassword() {
                 />
               </View>
               <Button title="Update password" onPress={resetForm.handleSubmit(onReset)} loading={loading} />
-              <TouchableOpacity style={styles.resendRow} onPress={resend} disabled={loading}>
+              <TouchableOpacity style={styles.resendRow} onPress={resend} disabled={loading || cooldown > 0}>
                 <Text style={styles.resendText}>
-                  Didn’t get it? <Text style={styles.resendLink}>Resend code</Text>
+                  Didn’t get it?{' '}
+                  <Text style={styles.resendLink}>
+                    {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </>

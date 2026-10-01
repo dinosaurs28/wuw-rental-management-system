@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   AppState,
   Dimensions,
   ScrollView,
@@ -19,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
+import { vehicleShareUrl } from '../../constants/links';
 import { useRequireAuth } from '../../lib/auth-gate';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
@@ -26,13 +28,48 @@ import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
-import { initialRange, normalizeRange, rangeLengthLabel, refreshRange, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
+import {
+  DURATION_PRESETS,
+  activePresetHours,
+  bookingWindowLastDay,
+  initialRange,
+  maxReturnFor,
+  normalizeRange,
+  presetRange,
+  rangeLengthLabel,
+  refreshRange,
+  timeLabel,
+  timeOf,
+  withTime,
+} from '../../lib/dates';
+import { MAX_BOOKING_DAYS } from '../../lib/bookingWindow';
+import { formatGstRate, gstLabel, inrExact, round2 } from '../../lib/gst';
+import {
+  bookingTimesNotice,
+  closedDayText,
+  fitBookingRange,
+  isClosedDay,
+  rangeHoursLine,
+  rangeScheduleIssue,
+  slotsWithinHours,
+} from '../../lib/branchSchedule';
+import { useBranchSchedule } from '../../hooks/useBranchSchedule';
+import DurationChips from '../../components/ui/DurationChips';
+import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
+import { paymentOptionsFor, serverPaymentOptions } from '../../lib/paymentPlan';
+import { quoteDiscountLines } from '../../lib/discounts';
 import type { VehicleDetail } from '../../types/api';
 
 const { width, height } = Dimensions.get('window');
 const HERO_HEIGHT = height * 0.38;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const TRIP_TYPE_LABELS: Record<string, string> = {
+  HIGHWAY: 'Highway',
+  HILL_STATION: 'Hill Station',
+  LONG_DRIVE: 'Long Drive',
+};
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -45,7 +82,11 @@ function fmtStamp(d: Date) {
 // title, "category | branch" line, real-data spec grid, payment options and a
 // sticky Book-now bar. All facts come from the API — nothing invented.
 export default function VehicleDetail() {
-  const { id, start: startParam, end: endParam } = useLocalSearchParams<{ id: string; start?: string; end?: string }>();
+  // `branch`: the searched branch, used for office hours until the vehicle
+  // payload (whose branchPublicId wins) has loaded or when a cached one lacks it.
+  const { id, start: startParam, end: endParam, branch: branchParam } = useLocalSearchParams<{
+    id: string; start?: string; end?: string; branch?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -98,17 +139,40 @@ export default function VehicleDetail() {
         category: d.category,
         branch: d.branch,
         availableCount: d.availableCount,
+        useCases: Array.isArray(d.useCases) ? d.useCases : [],
         images: d.images ?? [],
         pricing: { daily: d.pricing?.daily ?? null },
         availability: d.availability,
         status: 'AVAILABLE',
         deposit: d.deposit ?? 0,
         advancePayAmount: Number(d.advancePayAmount ?? 0),
+        // Branch payment plan (#6) — the group branch used to drop these.
+        customerPaymentMode: d.customerPaymentMode,
+        paymentOptions: d.paymentOptions ?? null,
         pricingDetails: d.pricingDetails ?? null,
+        branchPublicId: d.branchPublicId ?? null,
       } as VehicleDetail;
     },
     enabled: !!id,
   });
+
+  // Office hours (#2) + the 15-day limit (#15): the pickers offer only times
+  // the branch accepts, and a range that lands outside them is moved back in.
+  const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
+  const { data: schedule } = useBranchSchedule(branchPublicId);
+  const fit = useCallback(
+    (r: { start: Date; end: Date }) => fitBookingRange(r, { config: schedule, maxEnd: (s) => maxReturnFor(s) }),
+    [schedule],
+  );
+  useEffect(() => {
+    setRange((r) => fit(r));
+  }, [fit, range]);
+  const timesNotice = bookingTimesNotice(schedule, startDate, endDate);
+  const presetIssue = (hours: number) => {
+    const next = presetRange(startDate, hours);
+    if (next.end.getTime() > maxReturnFor(startDate).getTime()) return `past the ${MAX_BOOKING_DAYS}-day booking limit`;
+    return rangeScheduleIssue(schedule, next.start, next.end);
+  };
 
   if (isLoading) {
     return (
@@ -136,8 +200,20 @@ export default function VehicleDetail() {
   const pb = pd?.pricingBreakdown;
   const realPeriodLabel = pb ? periodLabel(pb.periodType) : null;
   const realDuration = pb ? durationLabel(pb.duration) : null;
+  // What the price covers (#5): an 8 h trip may be billed as "12 hours", a 13 h
+  // one as "1 day", a 26 h one as "1 day + 2 hours". Absent on cached payloads.
+  const billedAs = pb?.billedAs ?? null;
+  const underDay = endDate.getTime() - startDate.getTime() < 24 * 3_600_000;
+  const periodText = billedAs
+    ? underDay && realDuration && realDuration !== billedAs
+      ? `${realDuration} · billed as ${billedAs}`
+      : billedAs
+    : realPeriodLabel
+    ? `${realPeriodLabel}${realDuration ? ` · ${realDuration}` : ''}`
+    : rangeLength;
   const unitPrice = pb ? Math.round(pb.applicablePrice) : (vehicle.pricing?.daily ?? null);
-  const unit = pb ? unitLabel(pb.periodType) : '/day';
+  // applicablePrice is the period TOTAL, so pair it with what it covers.
+  const unit = pb ? (billedAs ? `for ${billedAs}` : unitLabel(pb.periodType)) : '/day';
   const total = pd ? pd.finalTotal + pd.deposit : null;
 
   // Green check lines — real rate terms only.
@@ -152,11 +228,20 @@ export default function VehicleDetail() {
   if (vehicle.branch) specs.push({ icon: 'location-outline', label: vehicle.branch });
   if (pd?.freeKmLimit) specs.push({ icon: 'speedometer-outline', label: `${pd.freeKmLimit} km included` });
   if (pd?.extraKmRate) specs.push({ icon: 'navigate-outline', label: `₹${pd.extraKmRate}/km after limit` });
-  if (pd?.taxRate) specs.push({ icon: 'receipt-outline', label: `Incl. ${pd.taxRate}% GST` });
+  // GST is charged on top of the rental (after discounts), not included in it.
+  if (pd?.taxRate) specs.push({ icon: 'receipt-outline', label: `+${formatGstRate(pd.taxRate) ?? `${pd.taxRate}%`} GST` });
 
-  // Real payment flows (mirrors checkout: FULL always, ADVANCE when valid).
-  const advance = vehicle.advancePayAmount ?? 0;
-  const canAdvance = total != null && advance > 0 && advance < total;
+  // Payment plans this branch offers for these amounts (#6) — the server's
+  // paymentOptions (same rules checkout and booking create use).
+  const payOptions = paymentOptionsFor(serverPaymentOptions(vehicle.paymentOptions), {
+    mode: vehicle.customerPaymentMode,
+    advanceAmount: vehicle.advancePayAmount ?? 0,
+    payableTotal: total,
+  });
+  const advance = payOptions.advanceAmount;
+  const offersFull = payOptions.allowedFlows.includes('FULL');
+  const offersAdvance = payOptions.allowedFlows.includes('ADVANCE');
+  const dueAtPickup = payOptions.remainingAfterAdvance ?? (total != null ? round2(total - advance) : null);
 
   const avColor = vehicle.availability === null
     ? Colors.onDarkMuted
@@ -221,10 +306,15 @@ export default function VehicleDetail() {
                 style={styles.iconBtn}
                 hitSlop={8}
                 activeOpacity={0.85}
-                onPress={() => Share.share({
-                  title: `${vehicle.make} ${vehicle.model}`,
-                  message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}`,
-                })}
+                onPress={() => {
+                  const shareUrl = vehicleShareUrl(id);
+                  // `url` is iOS-only, so the link also goes in the message for Android.
+                  Share.share({
+                    title: `${vehicle.make} ${vehicle.model}`,
+                    message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}\n${shareUrl}`,
+                    url: shareUrl,
+                  });
+                }}
               >
                 <Ionicons name="share-outline" size={20} color={Colors.white} />
               </TouchableOpacity>
@@ -250,6 +340,15 @@ export default function VehicleDetail() {
           <Text style={styles.titleSub}>
             {[vehicle.category, vehicle.branch].filter(Boolean).join(' | ')}
           </Text>
+          {(vehicle.useCases ?? []).length > 0 ? (
+            <View style={styles.tripRow}>
+              {(vehicle.useCases ?? []).map((u) => (
+                <View key={u} style={styles.tripChip}>
+                  <Text style={styles.tripChipText}>{TRIP_TYPE_LABELS[u] ?? u}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
 
         {/* ── Spec grid (real fields only) ── */}
@@ -286,15 +385,24 @@ export default function VehicleDetail() {
           </View>
         </TouchableOpacity>
 
+        {/* Quick lengths (#5) + branch hours (#2) */}
+        <View style={styles.itinExtras}>
+          <DurationChips
+            tone="dark"
+            presets={DURATION_PRESETS}
+            activeHours={activePresetHours(startDate, endDate)}
+            issueFor={presetIssue}
+            onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+          />
+          <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, startDate, endDate)} />
+          <TimesNotice tone="dark" notice={timesNotice} />
+        </View>
+
         {/* Period + availability */}
         <View style={styles.badgeRow}>
           <View style={styles.periodBadge}>
             <Ionicons name="time-outline" size={12} color={Colors.onDarkMuted} />
-            <Text style={styles.periodText}>
-              {realPeriodLabel
-                ? `${realPeriodLabel}${realDuration ? ` · ${realDuration}` : ''}`
-                : rangeLength}
-            </Text>
+            <Text style={styles.periodText}>{periodText}</Text>
           </View>
           <View style={[styles.availBadge, { backgroundColor: avColor + '1f', borderColor: avColor + '40' }]}>
             <View style={[styles.availDot, { backgroundColor: avColor }]} />
@@ -308,14 +416,26 @@ export default function VehicleDetail() {
           <>
             <Text style={styles.sectionTitle}>Pricing breakdown</Text>
             <View style={styles.darkCard}>
-              <PriceLine label={`Base rate (${realDuration ?? rangeLength})`} value={`₹${pd.basePrice.toLocaleString('en-IN')}`} />
-              <PriceLine label="Deposit (refundable)" value={`₹${pd.deposit.toLocaleString('en-IN')}`} />
-              <PriceLine label={`Tax (GST ${pd.taxRate}%)`} value={`₹${pd.taxAmount.toLocaleString('en-IN')}`} />
+              {/* Base → discount → taxable value → CGST/SGST → deposit (no GST) → total (#23) */}
+              <PriceLine label={`Base rate (${billedAs ?? realDuration ?? rangeLength})`} value={inrExact(pd.basePrice)} />
+              {/* Duration slab named (#24), e.g. "Weekly discount (10%)" */}
+              {quoteDiscountLines(pd).map((l) => (
+                <PriceLine key={l.label} label={l.label} value={`-${inrExact(l.amount)}`} valueColor={Colors.availGood} />
+              ))}
               {pd.discountAmount > 0 && (
-                <PriceLine label="Discount" value={`-₹${pd.discountAmount.toLocaleString('en-IN')}`} valueColor={Colors.availGood} />
+                <PriceLine label="Taxable value" value={inrExact(round2(pd.basePrice - pd.discountAmount))} />
               )}
+              {pd.taxAmount > 0 && (pd.cgstAmount > 0 || pd.sgstAmount > 0) ? (
+                <>
+                  <PriceLine label={gstLabel('CGST', pd.cgstRate)} value={inrExact(pd.cgstAmount)} />
+                  <PriceLine label={gstLabel('SGST', pd.sgstRate)} value={inrExact(pd.sgstAmount)} />
+                </>
+              ) : (
+                <PriceLine label={gstLabel('GST', pd.taxRate)} value={inrExact(pd.taxAmount)} />
+              )}
+              <PriceLine label="Deposit (refundable, no GST)" value={inrExact(pd.deposit)} />
               <View style={styles.priceDivider} />
-              <PriceLine label="Total" value={`₹${(pd.finalTotal + pd.deposit).toLocaleString('en-IN')}`} bold />
+              <PriceLine label="Total" value={inrExact(round2(pd.finalTotal + pd.deposit))} bold />
             </View>
           </>
         ) : (
@@ -325,31 +445,34 @@ export default function VehicleDetail() {
           </View>
         )}
 
-        {/* ── Payment options (real flows from checkout) ── */}
+        {/* ── Payment options — only the plans the branch allows for this total (#6) ── */}
         {total != null ? (
           <>
             <Text style={styles.sectionTitle}>Payment options</Text>
             <View style={styles.darkCard}>
-              <View style={styles.payRow}>
-                <Ionicons name="card-outline" size={20} color={Colors.onDark} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.payTitle}>Pay in full</Text>
-                  <Text style={styles.paySub}>₹{total.toLocaleString('en-IN')} now · deposit included</Text>
-                </View>
-              </View>
-              {canAdvance ? (
-                <>
-                  <View style={styles.priceDivider} />
-                  <View style={styles.payRow}>
-                    <Ionicons name="time-outline" size={20} color={Colors.onDark} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.payTitle}>Reserve with advance</Text>
-                      <Text style={styles.paySub}>
-                        ₹{advance.toLocaleString('en-IN')} now · ₹{(total - advance).toLocaleString('en-IN')} at pickup
-                      </Text>
-                    </View>
+              {offersFull ? (
+                <View style={styles.payRow}>
+                  <Ionicons name="card-outline" size={20} color={Colors.onDark} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payTitle}>Pay in full</Text>
+                    <Text style={styles.paySub}>{inrExact(total)} now · deposit included</Text>
                   </View>
-                </>
+                </View>
+              ) : null}
+              {offersFull && offersAdvance ? <View style={styles.priceDivider} /> : null}
+              {offersAdvance ? (
+                <View style={styles.payRow}>
+                  <Ionicons name="time-outline" size={20} color={Colors.onDark} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payTitle}>Reserve with advance</Text>
+                    <Text style={styles.paySub}>
+                      {inrExact(advance)} now{dueAtPickup != null ? ` · ${inrExact(dueAtPickup)} at pickup` : ''}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              {payOptions.reasonMessage ? (
+                <Text style={styles.payReason}>{payOptions.reasonMessage}</Text>
               ) : null}
             </View>
           </>
@@ -380,14 +503,22 @@ export default function VehicleDetail() {
             // moment they commit to booking, and returns them to this car.
             if (!requireAuth({ returnTo: `/vehicle/${id}` })) return;
             // The page may have sat open past its pickup time — bump it first.
-            const next = normalizeRange(startDate, endDate);
+            const next = fit(normalizeRange(startDate, endDate));
             setRange(next);
+            // Times the server would refuse (15-day limit, pickup outside
+            // branch hours) — say so here instead of after checkout.
+            const blocking = bookingTimesNotice(schedule, next.start, next.end);
+            if (blocking?.tone === 'error') {
+              Alert.alert('Change your times', blocking.text);
+              return;
+            }
             router.push({
               pathname: '/booking/checkout',
               params: {
                 vehicleId: vehicle.publicId,
                 start: next.start.toISOString(),
                 end: next.end.toISOString(),
+                ...(branchPublicId ? { branch: branchPublicId } : {}),
               },
             });
           }}
@@ -406,14 +537,22 @@ export default function VehicleDetail() {
         endDate={endDate}
         onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setShowPicker(false)}
+        maxStartDay={bookingWindowLastDay()}
+        isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
+        note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
       />
 
       {/* Time picker — today lists only future times; a same-day return only
-          times after the pickup */}
+          times after the pickup; both only inside branch hours and the 15-day limit */}
       <TimeFieldPicker
         visible={timePicker !== null}
         value={timePicker === 'end' ? timeOf(endDate) : timeOf(startDate)}
-        slots={timePicker === 'end' ? timeSlotsFor(endDate, { after: startDate }) : timeSlotsFor(startDate)}
+        slots={
+          timePicker === 'end'
+            ? slotsWithinHours(endDate, schedule, 'return', { after: startDate, before: maxReturnFor(startDate) })
+            : slotsWithinHours(startDate, schedule, 'pickup')
+        }
+        emptyText={closedDayText(schedule, timePicker === 'end' ? endDate : startDate)}
         title={timePicker === 'end' ? 'Return time' : 'Pickup time'}
         onSelect={(t) => {
           if (timePicker === 'end') setRange((r) => normalizeRange(r.start, withTime(r.end, t)));
@@ -479,6 +618,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, rowGap: 16,
   },
   specItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 12 },
+  tripRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  tripChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.orange,
+  },
+  tripChipText: { fontFamily: Fonts.bodyMedium, fontSize: 12.5, color: Colors.orange },
   specText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 14.5, color: Colors.onDark },
 
   itinCard: {
@@ -492,6 +640,7 @@ const styles = StyleSheet.create({
   itinValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14.5, color: Colors.white },
   itinTimeLink: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.orange, marginTop: 5 },
   itinEdit: { paddingHorizontal: 14 },
+  itinExtras: { marginHorizontal: 16, marginTop: 12, gap: 10 },
 
   badgeRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -539,6 +688,7 @@ const styles = StyleSheet.create({
   payRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 },
   payTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
   paySub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.onDarkMuted, marginTop: 2 },
+  payReason: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.onDarkMuted, lineHeight: 17, marginTop: 6 },
 
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

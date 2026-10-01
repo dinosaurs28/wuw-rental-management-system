@@ -27,6 +27,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    // Detach this device from the user's pushes while the session still
+    // authenticates, so a phone shared between a customer and a Fleet login
+    // stops getting the previous account's alerts. Best-effort: it never
+    // fails the sign-out (the DELETE has a 5 s timeout).
+    // (Dynamic import: lib/push → lib/api → this store.)
+    try {
+      const { unregisterPushAsync } = await import('../lib/push');
+      await unregisterPushAsync();
+    } catch {
+      /* push unavailable — sign out regardless */
+    }
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     set({ token: null, user: null });

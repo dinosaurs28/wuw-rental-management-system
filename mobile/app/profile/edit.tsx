@@ -24,6 +24,12 @@ import { userApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import Input from '../../components/ui/Input';
 import Toast from '../../components/ui/Toast';
+import {
+  aadhaarNumberSchema,
+  drivingLicenceNumberSchema,
+  formatAadhaarInput,
+  joinProfileFieldLabels,
+} from '../../lib/identity';
 
 // ─── Date picker constants ────────────────────────────────────────────────────
 const NOW_YEAR = new Date().getFullYear();
@@ -49,9 +55,15 @@ const schema = z.object({
   country: z.string().min(1, 'Country is required'),
   zipCode: z.string().min(1, 'ZIP code is required'),
   alternatePhone: z.string().length(10, 'Must be exactly 10 digits').regex(/^\d+$/, 'Digits only').optional().or(z.literal('')),
+  // Required to book (#1). Same rules and messages as the web forms; the
+  // output is normalised (DL uppercase without separators, Aadhaar 12 digits).
+  drivingLicenceNumber: drivingLicenceNumberSchema,
+  aadhaarNumber: aadhaarNumberSchema,
 });
 
 type FormData = z.infer<typeof schema>;
+type FormField = keyof FormData;
+const FORM_FIELDS: readonly string[] = Object.keys(schema.shape);
 
 // ─── WheelPicker ─────────────────────────────────────────────────────────────
 function WheelPicker({
@@ -266,6 +278,45 @@ function PhoneInput({
   );
 }
 
+// ─── AadhaarInput ─────────────────────────────────────────────────────────────
+// Digits only, shown grouped as "1234 5678 9012"; the schema strips the spaces.
+function AadhaarInput({
+  control,
+  name,
+  label,
+  error,
+}: {
+  control: any;
+  name: any;
+  label: string;
+  error?: string;
+}) {
+  return (
+    <View style={ph.wrapper}>
+      <Text style={ph.label}>{label}</Text>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <View style={[ph.row, error && ph.rowError]}>
+            <TextInput
+              style={ph.input}
+              onChangeText={(t) => onChange(formatAadhaarInput(t))}
+              onBlur={onBlur}
+              value={value}
+              keyboardType="number-pad"
+              maxLength={14}
+              placeholder="1234 5678 9012"
+              placeholderTextColor={Colors.ink4}
+            />
+          </View>
+        )}
+      />
+      {error ? <Text style={ph.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
 // ─── EditProfile screen ───────────────────────────────────────────────────────
 export default function EditProfile() {
   const router = useRouter();
@@ -281,7 +332,7 @@ export default function EditProfile() {
     select: (res) => res.data as import('../../types/api').UserProfile,
   });
 
-  const { control, handleSubmit, formState: { errors, isDirty } } = useForm<FormData>({
+  const { control, handleSubmit, setError, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: profile ? {
       name: profile.name ?? user?.name ?? '',
@@ -293,10 +344,16 @@ export default function EditProfile() {
       country: profile.country ?? 'India',
       zipCode: profile.zipCode ?? '',
       alternatePhone: profile.alternatePhone ?? '',
+      drivingLicenceNumber: profile.drivingLicenceNumber ?? '',
+      aadhaarNumber: profile.aadhaarNumber ? formatAadhaarInput(profile.aadhaarNumber) : '',
     } : undefined,
   });
 
+  // Fields the server still needs before this customer can book (#1).
+  const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
+
   const mutation = useMutation({
+    // Both numbers are always sent (already normalised by the schema).
     mutationFn: (data: FormData) => userApi.updateProfile(data as any),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['profile'] });
@@ -305,6 +362,14 @@ export default function EditProfile() {
       setTimeout(() => router.back(), 1200);
     },
     onError: (err: any) => {
+      // 400 VALIDATION_ERROR: put each issue under its input (path[0] = field).
+      const issues: any[] = Array.isArray(err.response?.data?.errors) ? err.response.data.errors : [];
+      for (const issue of issues) {
+        const field = issue?.path?.[0];
+        if (typeof field === 'string' && FORM_FIELDS.includes(field) && issue?.message) {
+          setError(field as FormField, { type: 'server', message: String(issue.message) });
+        }
+      }
       setToast({
         title: 'Update failed',
         message: err.response?.data?.message ?? 'Something went wrong.',
@@ -340,6 +405,13 @@ export default function EditProfile() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {missingText ? (
+            <View style={styles.missingBanner}>
+              <Ionicons name="alert-circle-outline" size={18} color="#d97706" />
+              <Text style={styles.missingText}>To book a vehicle, add your {missingText}.</Text>
+            </View>
+          ) : null}
+
           <Text style={styles.section}>Basic Info</Text>
           <View style={styles.card}>
             <Input control={control} name="name" label="Full name" placeholder="Jane Smith" autoCapitalize="words" error={errors.name?.message} />
@@ -355,6 +427,22 @@ export default function EditProfile() {
             <Input control={control} name="state" label="State" placeholder="Karnataka" error={errors.state?.message} />
             <Input control={control} name="country" label="Country" placeholder="India" error={errors.country?.message} />
             <Input control={control} name="zipCode" label="ZIP / PIN code" placeholder="560001" keyboardType="number-pad" error={errors.zipCode?.message} />
+          </View>
+
+          <Text style={styles.section}>Identity</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardHint}>Required to book a vehicle</Text>
+            <Input
+              control={control}
+              name="drivingLicenceNumber"
+              label="Driving Licence number *"
+              placeholder="KA01 20110012345"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={24}
+              error={errors.drivingLicenceNumber?.message}
+            />
+            <AadhaarInput control={control} name="aadhaarNumber" label="Aadhaar number *" error={errors.aadhaarNumber?.message} />
           </View>
 
           <TouchableOpacity
@@ -408,6 +496,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
     gap: 14,
   },
+  cardHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginBottom: -4 },
+  missingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 14,
+    padding: 12,
+  },
+  missingText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: '#92400e', lineHeight: 18 },
   saveBtn: {
     marginTop: 28,
     backgroundColor: Colors.orange,

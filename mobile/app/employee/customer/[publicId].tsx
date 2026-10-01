@@ -12,11 +12,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
+import { maskAadhaar, profileIncompleteMessage } from '../../../lib/identity';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
+import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
 
 interface CustomerDetail {
   name: string;
-  email: string;
+  // null when the customer only has a walk-in placeholder email.
+  email: string | null;
   phone: string | null;
   dob: string | null;
   addressLine1: string | null;
@@ -24,7 +27,12 @@ interface CustomerDetail {
   state: string | null;
   zipCode: string | null;
   country: string | null;
-  isProfileCompleted: boolean;
+  // Derived server-side (#1); absent when the customer has no profile row yet.
+  isProfileCompleted?: boolean;
+  // Full numbers (prefill only) — show the Aadhaar masked here.
+  drivingLicenceNumber?: string | null;
+  aadhaarNumber?: string | null;
+  missingFields?: string[];
 }
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -80,7 +88,10 @@ export default function CustomerDetailScreen() {
           <Text style={styles.errorText}>Could not load customer details.</Text>
         </View>
       ) : customer ? (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 180 }]}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Avatar block */}
           <View style={styles.avatarBlock}>
             <View style={styles.avatar}>
@@ -98,9 +109,22 @@ export default function CustomerDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Contact</Text>
             <View style={styles.card}>
-              <InfoRow label="Email" value={customer.email} />
+              <InfoRow label="Email" value={customer.email || 'Not provided'} />
               <View style={styles.divider} />
               <InfoRow label="Phone" value={customer.phone} />
+            </View>
+          </View>
+
+          {/* Identity numbers (#1) — required before a booking */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Identity</Text>
+            <View style={styles.card}>
+              <InfoRow label="Driving Licence" value={customer.drivingLicenceNumber || 'Not added'} />
+              <View style={styles.divider} />
+              <InfoRow
+                label="Aadhaar"
+                value={customer.aadhaarNumber ? maskAadhaar(customer.aadhaarNumber) : 'Not added'}
+              />
             </View>
           </View>
 
@@ -154,6 +178,12 @@ export default function CustomerDetailScreen() {
               </View>
             </View>
           )}
+
+          {/* Customer QR code photo (#4): the customer's current one */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{QR_PHOTO_LABEL}</Text>
+            <QrPhotoSection target={{ kind: 'customer', publicId: publicId as string }} allowRemove />
+          </View>
         </ScrollView>
       ) : null}
 
@@ -165,10 +195,28 @@ export default function CustomerDetailScreen() {
               <Text style={styles.bookBtnText}>Create booking for this customer</Text>
             </TouchableOpacity>
           ) : (
-            <View style={styles.footerNote}>
-              <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Profile incomplete — cannot create a booking.</Text>
-            </View>
+            <>
+              <View style={styles.footerNote}>
+                <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
+                <Text style={styles.footerNoteText}>
+                  {profileIncompleteMessage(customer.missingFields ?? [], 'staff')}
+                </Text>
+              </View>
+              {/* #1 — fill in the missing details (walk-in complete), then book */}
+              <TouchableOpacity
+                style={styles.bookBtn}
+                onPress={() =>
+                  router.push({
+                    pathname: '/employee/customer/create',
+                    params: { mode: 'complete', publicId: publicId as string },
+                  })
+                }
+                activeOpacity={0.85}
+              >
+                <Ionicons name="create-outline" size={20} color={Colors.white} />
+                <Text style={styles.bookBtnText}>Complete profile</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       )}
@@ -266,5 +314,5 @@ const styles = StyleSheet.create({
   },
   bookBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
   footerNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  footerNoteText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
+  footerNoteText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3, flexShrink: 1, lineHeight: 18 },
 });

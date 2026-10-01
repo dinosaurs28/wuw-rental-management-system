@@ -33,11 +33,55 @@ interface Props {
   endDate: Date;
   onConfirm: (start: Date, end: Date) => void;
   onClose: () => void;
+  // Last day a pickup can be on, and by default the last return day too
+  // (the 15-day booking window). No upper limit when omitted.
+  maxStartDay?: Date;
+  // Return days allowed for a pickup day, inclusive (e.g. 30–180 days for a
+  // monthly plan). Defaults to the pickup day … maxStartDay.
+  endDayBounds?: (pickupDay: Date) => { min?: Date; max?: Date | null };
+  // Days the branch is closed: greyed out for both pickup and return.
+  isDayClosed?: (day: Date) => boolean;
+  // Extra line under the range hint, e.g. "Bookings open up to 15 days ahead".
+  note?: string;
 }
 
-export default function DateRangePicker({ visible, startDate, endDate, onConfirm, onClose }: Props) {
+export default function DateRangePicker({
+  visible,
+  startDate,
+  endDate,
+  onConfirm,
+  onClose,
+  maxStartDay,
+  endDayBounds,
+  isDayClosed,
+  note,
+}: Props) {
   // Earliest pickable day: today, or tomorrow once today has no pickup times left.
   const minDay = sod(nextFiveMinuteMark());
+  const lastStartDay = maxStartDay ? sod(maxStartDay) : null;
+  const closed = (d: Date) => !!isDayClosed?.(d);
+  const startAllowed = (d: Date) => d >= minDay && (!lastStartDay || d <= lastStartDay) && !closed(d);
+  const endRange = (pickup: Date) => {
+    const b = endDayBounds?.(pickup);
+    const max = b?.max === undefined ? lastStartDay : b.max ? sod(b.max) : null;
+    return { min: b?.min ? sod(b.min) : pickup, max };
+  };
+  const endAllowed = (d: Date, pickup: Date) => {
+    const { min, max } = endRange(pickup);
+    return d >= min && (!max || d <= max) && !closed(d);
+  };
+  // Return day suggested for a new pickup: the next open day (the first
+  // allowed day for a minimum length), or the same day when nothing later fits.
+  const defaultEnd = (pickup: Date) => {
+    const { min, max } = endRange(pickup);
+    const from = min > pickup ? min : new Date(pickup.getFullYear(), pickup.getMonth(), pickup.getDate() + 1);
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
+      if (max && d > max) break;
+      if (!closed(d)) return d;
+    }
+    return min > pickup ? min : pickup;
+  };
 
   const [displayMonth, setDisplayMonth] = useState(
     () => new Date(startDate.getFullYear(), startDate.getMonth(), 1),
@@ -66,12 +110,15 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
     return out;
   }, [displayMonth]);
 
+  // A cell is a pickup choice in 'start' mode or before the pickup; otherwise a return choice.
+  const dayDisabled = (d: Date) => (picking === 'end' && d >= tempStart ? !endAllowed(d, tempStart) : !startAllowed(d));
+
   const handleDay = (day: number) => {
     const d = sod(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day));
-    if (d < minDay) return;
+    if (dayDisabled(d)) return;
     if (picking === 'start' || d < tempStart) {
       setTempStart(d);
-      setTempEnd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+      setTempEnd(defaultEnd(d));
       setPicking('end');
     } else {
       // Tapping the pickup date again makes it a same-day return.
@@ -79,8 +126,20 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
     }
   };
 
+  // Paging stops at the month of the last selectable day (when there is one).
+  const lastDay = (() => {
+    const endMax = endRange(tempStart).max;
+    if (!lastStartDay || !endMax) return null;
+    return endMax > lastStartDay ? endMax : lastStartDay;
+  })();
+  const canGoNext =
+    !lastDay ||
+    displayMonth.getFullYear() * 12 + displayMonth.getMonth() < lastDay.getFullYear() * 12 + lastDay.getMonth();
+
   const prevMonth = () => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1));
-  const nextMonth = () => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
+  const nextMonth = () => {
+    if (canGoNext) setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
+  };
   const sameStartEnd = sameDay(tempStart, tempEnd);
   // Length with the caller's times, exactly as it will be once confirmed.
   const preview = normalizeRange(withTime(tempStart, timeOf(startDate)), withTime(tempEnd, timeOf(endDate)));
@@ -131,8 +190,11 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
               ? 'Select pickup date'
               : sameDayReturn
               ? 'Same-day return · tap a later date to extend'
+              : endRange(tempStart).min > tempStart
+              ? lengthText
               : `${lengthText} · tap the pickup date again for same day`}
           </Text>
+          {note ? <Text style={styles.noteText}>{note}</Text> : null}
 
           {/* Month nav */}
           <View style={styles.monthNav}>
@@ -140,8 +202,13 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
               <Ionicons name="chevron-back" size={18} color={Colors.ink} />
             </TouchableOpacity>
             <Text style={styles.monthTitle}>{MONTHS[displayMonth.getMonth()]} {displayMonth.getFullYear()}</Text>
-            <TouchableOpacity onPress={nextMonth} style={styles.navBtn} hitSlop={8}>
-              <Ionicons name="chevron-forward" size={18} color={Colors.ink} />
+            <TouchableOpacity
+              onPress={nextMonth}
+              style={[styles.navBtn, !canGoNext && styles.navBtnDisabled]}
+              hitSlop={8}
+              disabled={!canGoNext}
+            >
+              <Ionicons name="chevron-forward" size={18} color={canGoNext ? Colors.ink : Colors.ink4} />
             </TouchableOpacity>
           </View>
 
@@ -158,7 +225,8 @@ export default function DateRangePicker({ visible, startDate, endDate, onConfirm
               if (!day) return <View key={`e-${i}`} style={styles.cell} />;
 
               const d = sod(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day));
-              const isPast = d < minDay;
+              // Past, past the booking window, or a closed branch day.
+              const isPast = dayDisabled(d);
               const isStart = sameDay(d, tempStart);
               const isEnd = sameDay(d, tempEnd);
               const inRange = !sameStartEnd && d > tempStart && d < tempEnd;
@@ -263,6 +331,11 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyMedium, fontSize: 12,
     color: Colors.orange, textAlign: 'center', marginBottom: 14,
   },
+  noteText: {
+    fontFamily: Fonts.body, fontSize: 11.5,
+    color: Colors.ink3, textAlign: 'center', marginTop: -8, marginBottom: 14, paddingHorizontal: H_PAD,
+  },
+  navBtnDisabled: { opacity: 0.4 },
 
   monthNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

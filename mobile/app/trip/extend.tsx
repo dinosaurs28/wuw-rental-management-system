@@ -29,29 +29,55 @@ import {
   type CheckoutMode,
 } from '../../lib/razorpay';
 import { apiErrorMessage } from '../../lib/counterErrors';
+import { extensionGstSplit, formatExtensionHours, gstLabel, gstSplitText, inrExact } from '../../lib/gst';
 import { isSameDay, rangeLengthLabel, startOfDay, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
+import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS } from '../../lib/bookingWindow';
+import {
+  buildScheduleErrorMessage,
+  closedDayText,
+  fitReturnTime,
+  hasOfficeHours,
+  isClosedDay,
+  isReturnTimeAllowed,
+  rangeHoursLine,
+  slotsWithinHours,
+  toScheduleConfig,
+  validateReturnTime,
+} from '../../lib/branchSchedule';
 import { useAuthStore } from '../../store/auth';
 import Button from '../../components/ui/Button';
 import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 import RazorpayPayOptions from '../../components/payments/RazorpayPayOptions';
-import type { UserProfile } from '../../types/api';
+import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
+import type { ExtensionEligibility, UserProfile } from '../../types/api';
 
 type Phase = 'pick' | 'quote' | 'done' | 'failed';
 type PollOutcome = { status: 'CONFIRMED' | 'PENDING' | 'FAILED'; message?: string; newEndAt?: string };
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
-const DAY_COUNT = 30; // new return dates offered, from the current return's day
+// New return dates offered, from the current return's day: up to the server's
+// maxEndAt (180 days for a monthly plan, #15), else 30 when it sends no limit.
+const DAY_COUNT = 30;
+const MAX_STRIP_DAYS = MONTHLY_MAX_DAYS + 1;
 const QUICK = [
   { label: '+3 hours', ms: 3 * HOUR_MS },
+  // A 12-hour trip becomes a full day (#5).
+  { label: '+12 hours', ms: 12 * HOUR_MS },
   { label: '+1 day', ms: DAY_MS },
   { label: '+2 days', ms: 2 * DAY_MS },
   { label: '+3 days', ms: 3 * DAY_MS },
 ];
+// Monthly-plan bookings: whole months (30 days, as billed).
+const MONTH_QUICK = [
+  { label: '+1 month', ms: 30 * DAY_MS },
+  { label: '+2 months', ms: 60 * DAY_MS },
+];
 // Same cadence as the other Checkout polls (2s settle, then back off).
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
 
-const inr = (v: string | number) => `₹${(Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+// Paise shown when present: the extension's GST is rounded to the paisa.
+const inr = (v: string | number) => inrExact(v);
 
 function fmtWhen(d: Date | string) {
   return new Date(d).toLocaleString('en-IN', {
@@ -82,8 +108,46 @@ export default function ExtendTrip() {
     return d && !isNaN(d.getTime()) ? d : null;
   }, [endAt]);
 
+  // How far this trip may run (#15: 15 days from pickup, 180 for a monthly
+  // plan) and when the branch takes returns (#2) — both ride on the
+  // eligibility response, cached with the trip screen's copy.
+  const { data: eligibility, refetch: refetchEligibility } = useQuery({
+    queryKey: ['extension-eligibility', bookingId],
+    queryFn: async () => {
+      const res = await extensionApi.eligibility(bookingId!);
+      return (res.data?.data ?? null) as ExtensionEligibility | null;
+    },
+    enabled: !!bookingId,
+  });
+  const maxEnd = useMemo(() => {
+    const d = eligibility?.maxEndAt ? new Date(eligibility.maxEndAt) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  }, [eligibility?.maxEndAt]);
+  const schedule = useMemo(() => toScheduleConfig(eligibility?.officeHours), [eligibility?.officeHours]);
+  const maxDays = eligibility?.maxBookingDays ?? MAX_BOOKING_DAYS;
+  const atCap = eligibility?.atCap === true;
+
   // Default: one more day, same return time.
   const [newEnd, setNewEnd] = useState<Date | null>(() => (currentEnd ? new Date(currentEnd.getTime() + DAY_MS) : null));
+
+  // Once the limit and hours are known, keep the chosen return inside them.
+  useEffect(() => {
+    if (!currentEnd) return;
+    setNewEnd((e) => {
+      if (!e) return e;
+      const fitted = fitReturnTime(e, schedule, { after: currentEnd, before: maxEnd });
+      return fitted && fitted.getTime() !== e.getTime() ? fitted : e;
+    });
+  }, [schedule, maxEnd, currentEnd]);
+
+  // An accepted new return: after the current one, within the limit, inside branch hours.
+  const returnOk = (at: Date) =>
+    !!currentEnd &&
+    at.getTime() > currentEnd.getTime() &&
+    (!maxEnd || at.getTime() <= maxEnd.getTime()) &&
+    (!hasOfficeHours(schedule) || isReturnTimeAllowed(schedule, at));
+  const daySlots = (day: Date) =>
+    currentEnd ? slotsWithinHours(day, schedule, 'return', { after: currentEnd, before: maxEnd }) : [];
   const [timeOpen, setTimeOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('pick');
   const [quote, setQuote] = useState<CustomerExtensionQuote | null>(null);
@@ -123,28 +187,37 @@ export default function ExtendTrip() {
   });
 
   // New return dates: the current return's day (when later times are left on
-  // it) and the days after it.
+  // it) and the days after it, up to the booking-period limit (#15).
   const days = useMemo(() => {
     if (!currentEnd) return [];
     const first = startOfDay(currentEnd);
+    const last = maxEnd ? startOfDay(maxEnd) : null;
+    const count = last ? MAX_STRIP_DAYS : DAY_COUNT;
     const out: Date[] = [];
-    for (let i = 0; i < DAY_COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i);
+      if (last && d.getTime() > last.getTime()) break;
       if (i === 0 && timeSlotsFor(d, { after: currentEnd }).length === 0) continue;
       out.push(d);
     }
     return out;
-  }, [currentEnd]);
+  }, [currentEnd, maxEnd]);
 
+  // Keeps the chosen time on the new day when the branch accepts it there,
+  // else the nearest accepted time that day.
   const pickDay = (day: Date) => {
     if (!newEnd || !currentEnd) return;
-    let next = withTime(day, timeOf(newEnd));
-    if (next.getTime() <= currentEnd.getTime()) {
-      const first = timeSlotsFor(day, { after: currentEnd })[0];
-      if (!first) return;
-      next = withTime(day, first.value);
+    const same = withTime(day, timeOf(newEnd));
+    if (returnOk(same)) {
+      setNewEnd(same);
+      setError(null);
+      return;
     }
-    setNewEnd(next);
+    const slots = daySlots(day);
+    if (!slots.length) return;
+    const want = timeOf(newEnd);
+    const pick = slots.find((s) => s.value >= want) ?? slots[slots.length - 1]!;
+    setNewEnd(withTime(day, pick.value));
     setError(null);
   };
 
@@ -163,6 +236,18 @@ export default function ExtendTrip() {
 
   const checkPrice = async () => {
     if (!bookingId || !newEnd) return;
+    // Same rules the server applies (#15 / #2), said before a quote is made.
+    if (maxEnd && newEnd.getTime() > maxEnd.getTime()) {
+      setError(`This booking can be extended up to ${fmtWhen(maxEnd)} (${maxDays}-day limit).`);
+      return;
+    }
+    if (hasOfficeHours(schedule)) {
+      const verdict = validateReturnTime(schedule, newEnd);
+      if (verdict.status === 'RETURN_OUTSIDE_HOURS') {
+        setError(buildScheduleErrorMessage(verdict));
+        return;
+      }
+    }
     setEvaluating(true);
     setError(null);
     try {
@@ -178,6 +263,9 @@ export default function ExtendTrip() {
       const data = err?.response?.data;
       const message = apiErrorMessage(err, 'Could not check the extension. Please try again.');
       setError(message);
+      // The limit moved on since this screen loaded — refresh it so the
+      // pickers stop at the server's maxEndAt.
+      if (data?.code === 'BOOKING_MAX_PERIOD_EXCEEDED') void refetchEligibility();
       // Another extension is open. An unpaid one can be released and retried;
       // one already paid at the counter waits for the branch.
       if (
@@ -399,12 +487,28 @@ export default function ExtendTrip() {
     );
   }
 
-  // Times after the current return on the chosen day (all of them on later days).
-  const slots = timeSlotsFor(newEnd, { after: currentEnd });
+  // Times after the current return on the chosen day (all of them on later
+  // days), inside branch hours and the booking-period limit.
+  const slots = daySlots(newEnd);
+  // Return inside the grace after closing: accepted, but say so (#2).
+  const returnVerdict = hasOfficeHours(schedule) ? validateReturnTime(schedule, newEnd) : null;
+  const graceNotice =
+    returnVerdict?.status === 'RETURN_GRACE'
+      ? {
+          tone: 'warn' as const,
+          text: `The branch closes at ${returnVerdict.closingTime} that day — returns are accepted until ${returnVerdict.gracePeriodEnd}.`,
+        }
+      : null;
   const offered = quote?.resolutionOptions?.[0];
   const quoteType = offered?.type ?? 'NO_RESOLUTION';
   const extraAmount = Number(quote?.pricing.additionalAmount ?? 0);
-  const quoteLength = quote ? rangeLengthLabel(new Date(quote.oldEndAt), new Date(quote.requestedEndAt)) : null;
+  // The server's hours for the quoted time (a partial quote is already narrowed).
+  const quoteLength = quote
+    ? formatExtensionHours(quote.pricing.extensionHours) ??
+      rangeLengthLabel(new Date(quote.oldEndAt), new Date(quote.requestedEndAt))
+    : null;
+  // GST split of the extra charge (#23) — null from an older server.
+  const quoteGst = extensionGstSplit(quote?.pricing);
   const pickLength = rangeLengthLabel(currentEnd, newEnd);
 
   return (
@@ -418,17 +522,34 @@ export default function ExtendTrip() {
           <Line label="Current return" value={fmtWhen(currentEnd)} />
         </View>
 
-        {phase === 'pick' && (
+        {/* #15 — nothing left to extend: the server says why */}
+        {phase === 'pick' && atCap && (
+          <View style={[styles.banner, styles.bannerBad]}>
+            <Ionicons name="close-circle" size={18} color={Colors.availNone} />
+            <View style={styles.bannerTextWrap}>
+              <Text style={[styles.bannerTitle, { color: Colors.availNone }]}>Can't extend this trip</Text>
+              <Text style={styles.bannerText}>
+                {eligibility?.reason ?? `This booking has reached the maximum rental period of ${maxDays} days.`}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {phase === 'pick' && !atCap && (
           <>
             <Text style={styles.sectionTitle}>Extend by</Text>
             <View style={styles.chipRow}>
-              {QUICK.map((q) => {
-                const active = newEnd.getTime() === currentEnd.getTime() + q.ms;
+              {(eligibility?.isMonthly ? [...QUICK, ...MONTH_QUICK] : QUICK).map((q) => {
+                const target = new Date(currentEnd.getTime() + q.ms);
+                const active = newEnd.getTime() === target.getTime();
+                // Past the limit or outside branch hours: not offered.
+                const blocked = !returnOk(target);
                 return (
                   <TouchableOpacity
                     key={q.label}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => { setNewEnd(new Date(currentEnd.getTime() + q.ms)); setError(null); }}
+                    style={[styles.chip, active && styles.chipActive, blocked && styles.chipBlocked]}
+                    onPress={() => { setNewEnd(target); setError(null); }}
+                    disabled={blocked}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{q.label}</Text>
@@ -446,11 +567,15 @@ export default function ExtendTrip() {
             >
               {days.map((d) => {
                 const active = isSameDay(d, newEnd);
+                // Closed days, and days with no accepted return time left, are greyed out (#2).
+                const closed = isClosedDay(schedule, d);
+                const off = !active && daySlots(d).length === 0;
                 return (
                   <TouchableOpacity
                     key={d.getTime()}
-                    style={[styles.day, active && styles.dayActive]}
+                    style={[styles.day, active && styles.dayActive, off && styles.dayOff]}
                     onPress={() => pickDay(d)}
+                    disabled={off}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.dayWeek, active && styles.dayTextActive]}>
@@ -458,7 +583,7 @@ export default function ExtendTrip() {
                     </Text>
                     <Text style={[styles.dayNum, active && styles.dayTextActive]}>{d.getDate()}</Text>
                     <Text style={[styles.dayMonth, active && styles.dayTextActive]}>
-                      {d.toLocaleDateString('en-IN', { month: 'short' })}
+                      {closed ? 'Closed' : d.toLocaleDateString('en-IN', { month: 'short' })}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -471,10 +596,17 @@ export default function ExtendTrip() {
               <Text style={styles.timeValue}>{timeLabel(timeOf(newEnd))}</Text>
               <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
             </TouchableOpacity>
+            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd)} />
+            <TimesNotice notice={graceNotice} />
 
             <View style={[styles.card, styles.summaryCard]}>
               <Line label="New return" value={fmtWhen(newEnd)} strong />
               {pickLength ? <Text style={styles.summaryNote}>Extending by {pickLength}</Text> : null}
+              {maxEnd ? (
+                <Text style={styles.summaryNote}>
+                  Latest possible return {fmtWhen(maxEnd)} ({maxDays}-day limit)
+                </Text>
+              ) : null}
             </View>
           </>
         )}
@@ -518,9 +650,25 @@ export default function ExtendTrip() {
                 <Line label="New return" value={fmtWhen(quote.requestedEndAt)} />
                 {quoteLength ? <Line label="Extra time" value={quoteLength} /> : null}
                 <View style={styles.divider} />
-                <Line label="Current total" value={inr(quote.pricing.originalTotalFinal)} />
-                <Line label="Extra charge" value={inr(quote.pricing.additionalAmount)} strong />
-                <Line label="New total" value={inr(quote.pricing.newTotalFinal)} />
+                <Line label="Current total" value={inrExact(quote.pricing.originalTotalFinal)} />
+                {quoteGst ? (
+                  <>
+                    <Line label="Extension charge (excl. GST)" value={inrExact(quoteGst.taxable)} />
+                    {quoteGst.discount > 0 ? (
+                      <Text style={styles.splitNote}>After a {inrExact(quoteGst.discount)} discount</Text>
+                    ) : null}
+                    <Line label={gstLabel('GST', quoteGst.rate)} value={inrExact(quoteGst.tax)} />
+                    {quoteGst.tax > 0 ? (
+                      <Text style={styles.splitNote}>{gstSplitText(quoteGst.cgst, quoteGst.sgst)}</Text>
+                    ) : null}
+                  </>
+                ) : null}
+                <Line
+                  label={quoteGst ? 'Extra charge (incl. GST)' : 'Extra charge'}
+                  value={inrExact(quote.pricing.additionalAmount)}
+                  strong
+                />
+                <Line label="New total" value={inrExact(quote.pricing.newTotalFinal)} />
               </View>
             )}
 
@@ -553,7 +701,11 @@ export default function ExtendTrip() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         {phase === 'pick' && (
-          <Button title="Check price" onPress={checkPrice} loading={evaluating} />
+          atCap ? (
+            <Button title="Back to trip" variant="secondary" onPress={() => router.back()} />
+          ) : (
+            <Button title="Check price" onPress={checkPrice} loading={evaluating} />
+          )
         )}
         {phase === 'quote' && quoteType === 'NO_RESOLUTION' && (
           <Button title="Choose another time" variant="secondary" onPress={changeTime} />
@@ -578,6 +730,7 @@ export default function ExtendTrip() {
         visible={timeOpen}
         value={timeOf(newEnd)}
         slots={slots}
+        emptyText={closedDayText(schedule, newEnd)}
         title="New return time"
         onSelect={(v) => { setNewEnd(withTime(newEnd, v)); setError(null); }}
         onClose={() => setTimeOpen(false)}
@@ -617,6 +770,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: { marginTop: 8 },
   summaryNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right' },
+  splitNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', marginTop: -4 },
   divider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 4 },
 
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
@@ -644,6 +798,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
   },
   chipActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  chipBlocked: { opacity: 0.4 },
   chipText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
   chipTextActive: { color: Colors.white },
 
@@ -660,6 +815,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  dayOff: { opacity: 0.4 },
   dayWeek: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.ink3 },
   dayNum: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
   dayMonth: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.ink3 },

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
-import { unitLabel, periodLabel } from '../../lib/pricing';
+import { billedBadge, priceUnitFor } from '../../lib/pricing';
 import { availabilityLabel, availabilityColor } from '../../lib/availability';
 import StudioImage from './StudioImage';
 import Chip from '../ui/Chip';
@@ -22,12 +22,13 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
   const thumb = vehicle.images?.[0];
   const handlePress = onPress ?? (() => router.push(`/vehicle/${vehicle.publicId}`));
 
-  // Per-period headline RATE (priceInfo.price) + matching unit; total lives on detail.
+  // Headline price for the searched period (priceInfo.price) + what it covers
+  // ("for 12 hours"); without dates, the daily rate. Breakdown lives on detail.
   // A 0 rate means "unpriced" (no custom/branch-default rate) → show the em-dash, not "₹0".
   const rawPrice = vehicle.priceInfo?.price ?? vehicle.pricing?.daily ?? null;
   const price = rawPrice && rawPrice > 0 ? rawPrice : null;
-  const priceUnit = vehicle.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/ day';
-  const badge = vehicle.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
+  const priceUnit = vehicle.priceInfo ? priceUnitFor(vehicle.priceInfo) : '/ day';
+  const badge = vehicle.priceInfo ? billedBadge(vehicle.priceInfo) : null;
   const availLabel = availabilityLabel(vehicle.availableCount);
 
   return (

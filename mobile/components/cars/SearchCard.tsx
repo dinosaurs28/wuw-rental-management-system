@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   AppState,
   FlatList,
@@ -14,7 +14,32 @@ import { useFocusEffect } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
 import DateRangePicker from '../ui/DateRangePicker';
 import TimeFieldPicker from '../ui/TimeFieldPicker';
-import { initialRange, normalizeRange, refreshRange, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
+import DurationChips from '../ui/DurationChips';
+import { BranchHoursLine, TimesNotice } from '../booking/BranchHours';
+import { useBranchSchedule } from '../../hooks/useBranchSchedule';
+import {
+  DURATION_PRESETS,
+  activePresetHours,
+  bookingWindowLastDay,
+  initialRange,
+  maxReturnFor,
+  normalizeRange,
+  presetRange,
+  refreshRange,
+  timeLabel,
+  timeOf,
+  withTime,
+} from '../../lib/dates';
+import { MAX_BOOKING_DAYS } from '../../lib/bookingWindow';
+import {
+  bookingTimesNotice,
+  closedDayText,
+  fitBookingRange,
+  isClosedDay,
+  rangeHoursLine,
+  rangeScheduleIssue,
+  slotsWithinHours,
+} from '../../lib/branchSchedule';
 
 export interface SearchQuery {
   branchId: string;
@@ -59,6 +84,24 @@ export default function SearchCard({
   const [range, setRange] = useState(() => initialRange(initialStart, initialEnd));
   const { start, end } = range;
 
+  // The branch's office hours (#2) and the 15-day limit (#15): pickers only
+  // offer accepted times, and any change that lands outside them (a new
+  // branch, a closed day, a pickup that slipped past closing) is moved back in.
+  const { data: schedule } = useBranchSchedule(branch?.publicId);
+  const fit = useCallback(
+    (r: { start: Date; end: Date }) => fitBookingRange(r, { config: schedule, maxEnd: (s) => maxReturnFor(s) }),
+    [schedule],
+  );
+  useEffect(() => {
+    setRange((r) => fit(r));
+  }, [fit, range]);
+  const notice = bookingTimesNotice(schedule, start, end);
+  const presetIssue = (hours: number) => {
+    const next = presetRange(start, hours);
+    if (next.end.getTime() > maxReturnFor(start).getTime()) return `past the ${MAX_BOOKING_DAYS}-day booking limit`;
+    return rangeScheduleIssue(schedule, next.start, next.end);
+  };
+
   // The home tab stays mounted, so the shown pickup can slip into the past.
   // While this screen is focused — on focus, on return to the foreground and
   // every 15s — move a past pickup to the next 5-minute mark (and the return
@@ -89,7 +132,7 @@ export default function SearchCard({
       return;
     }
     // The card may have sat open past its pickup time — bump it first.
-    const next = normalizeRange(start, end);
+    const next = fit(normalizeRange(start, end));
     setRange(next);
     onSubmit({
       branchId: branch.publicId,
@@ -166,6 +209,19 @@ export default function SearchCard({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Quick lengths (#5) + branch hours (#2) */}
+      <View style={styles.extras}>
+        <DurationChips
+          tone="dark"
+          presets={DURATION_PRESETS}
+          activeHours={activePresetHours(start, end)}
+          issueFor={presetIssue}
+          onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+        />
+        <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, start, end)} />
+        <TimesNotice tone="dark" notice={notice} />
+      </View>
       <View style={styles.underline} />
 
       {/* CTA */}
@@ -180,11 +236,15 @@ export default function SearchCard({
         endDate={end}
         onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
         onClose={() => setDateOpen(false)}
+        maxStartDay={bookingWindowLastDay()}
+        isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
+        note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
       />
       <TimeFieldPicker
         visible={pickupOpen}
         value={timeOf(start)}
-        slots={timeSlotsFor(start)}
+        slots={slotsWithinHours(start, schedule, 'pickup')}
+        emptyText={closedDayText(schedule, start)}
         title="Pickup time"
         onSelect={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
         onClose={() => setPickupOpen(false)}
@@ -192,7 +252,8 @@ export default function SearchCard({
       <TimeFieldPicker
         visible={returnOpen}
         value={timeOf(end)}
-        slots={timeSlotsFor(end, { after: start })}
+        slots={slotsWithinHours(end, schedule, 'return', { after: start, before: maxReturnFor(start) })}
+        emptyText={closedDayText(schedule, end)}
         title="Return time"
         onSelect={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
         onClose={() => setReturnOpen(false)}
@@ -222,6 +283,7 @@ const styles = StyleSheet.create({
   sep: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted },
   dash: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginHorizontal: 2 },
   underline: { height: 1, backgroundColor: Colors.hairlineOnDark, marginLeft: 34 },
+  extras: { marginLeft: 34, paddingBottom: 16, gap: 10 },
 
   cta: {
     backgroundColor: Colors.orange,

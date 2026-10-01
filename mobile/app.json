@@ -89,6 +89,14 @@
           }
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ff6a1f",
+          "defaultChannel": "default"
+        }
+      ],
       "./plugins/withUpiQueries.js"
     ],
     "experiments": {

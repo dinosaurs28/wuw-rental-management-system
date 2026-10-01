@@ -18,6 +18,7 @@ import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../../lib/image';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
+import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
 import type { KycType, KycSide } from '../../../types/api';
 
 interface WalkinKyc {
@@ -49,6 +50,9 @@ export default function WalkinKycScreen() {
   const vehicle = useEmployeeBookingStore((s) => s.vehicle);
   const customerKycId = useEmployeeBookingStore((s) => s.customerKycId);
   const setCustomerKycId = useEmployeeBookingStore((s) => s.setCustomerKycId);
+  // The customer QR code photo is required before the summary (#4).
+  const qrPhotoId = useEmployeeBookingStore((s) => s.qrPhotoId);
+  const setQrPhotoId = useEmployeeBookingStore((s) => s.setQrPhotoId);
 
   const [docType, setDocType] = useState<KycType>('DL');
   const [side, setSide] = useState<KycSide>('FRONT');
@@ -76,8 +80,10 @@ export default function WalkinKycScreen() {
   const selectedType = docs.find((d) => d.publicId === customerKycId)?.type;
   const bookingKycId = selectedType ? completeFronts.get(selectedType) : undefined;
 
+  const canContinue = !!bookingKycId && !!qrPhotoId;
+
   const continueToSummary = () => {
-    if (!bookingKycId) return;
+    if (!bookingKycId || !qrPhotoId) return;
     setCustomerKycId(bookingKycId);
     router.push('/employee/booking/summary');
   };
@@ -133,7 +139,7 @@ export default function WalkinKycScreen() {
         onPress: async () => {
           setDeleting(doc.publicId);
           try {
-            await employeeApi.walkinKycDelete(doc.publicId);
+            await employeeApi.walkinKycDelete(doc.publicId, customer!.publicId);
             if (customerKycId === doc.publicId) setCustomerKycId(null);
             await qc.invalidateQueries({ queryKey: ['employee', 'walkin-kyc', customer!.publicId] });
           } catch (err: any) {
@@ -176,9 +182,17 @@ export default function WalkinKycScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Customer QR code photo (#4) — required for a walk-in booking */}
+        <Text style={styles.sectionLabel}>{QR_PHOTO_LABEL}</Text>
+        <QrPhotoSection
+          target={{ kind: 'customer', publicId: customer.publicId }}
+          onChange={(photo) => setQrPhotoId(photo?.publicId ?? null)}
+          required
+        />
+
         {/* Add a document */}
         <Text style={styles.sectionLabel}>Add a document</Text>
         <View style={styles.card}>
@@ -301,10 +315,13 @@ export default function WalkinKycScreen() {
                 : 'Upload the front and back of a driving licence, Aadhaar or PAN.'}
           </Text>
         )}
+        {!qrPhotoId && (
+          <Text style={styles.footerHint}>Capture the customer QR code photo to continue.</Text>
+        )}
         <TouchableOpacity
-          style={[styles.cta, !bookingKycId && styles.disabled]}
+          style={[styles.cta, !canContinue && styles.disabled]}
           onPress={continueToSummary}
-          disabled={!bookingKycId}
+          disabled={!canContinue}
           activeOpacity={0.85}
         >
           <Text style={styles.ctaText}>Continue to summary</Text>

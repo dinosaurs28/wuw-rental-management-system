@@ -15,12 +15,26 @@ export function unitLabel(periodType?: string | null): string {
     case 'FULL_DAY':
       return '/ day';
     case 'MULTI_DAY':
-      return '/ day'; // applicablePrice for a multi-day rental is the daily rate
     case 'MONTHLY':
-      return '/ mo';
+      // The API's price for these is the TOTAL for the whole period (listing
+      // price / applicablePrice), never a per-day or per-month rate (#5).
+      return 'total';
     default:
       return '/ day';
   }
+}
+
+// Suffix for a listed period price: what it covers when the server says
+// ("for 12 hours", "for 1 day + 2 hours" — #5), else the period-type unit.
+export function priceUnitFor(info?: { billedAs?: string | null; type?: string | null } | null): string {
+  if (info?.billedAs) return `for ${info.billedAs}`;
+  return unitLabel(info?.type);
+}
+
+// Badge for a listed price: the billed length ("12 hours", "1 day") when the
+// server sends it, else the period type ("Half day").
+export function billedBadge(info?: { billedAs?: string | null; type?: string | null } | null): string | null {
+  return info?.billedAs ?? periodLabel(info?.type);
 }
 
 // Human label for the rental period type (e.g. shown as a badge).

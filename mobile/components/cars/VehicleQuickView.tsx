@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { unitLabel, periodLabel } from '../../lib/pricing';
+import { periodLabel, priceUnitFor } from '../../lib/pricing';
 import type { Vehicle } from '../../types/api';
 
 const { height } = Dimensions.get('window');
@@ -29,8 +29,9 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
   // Treat a 0 rate as unpriced so we show "—" rather than "₹0".
   const rawPrice = vehicle?.priceInfo?.price ?? vehicle?.pricing?.daily ?? null;
   const price = rawPrice && rawPrice > 0 ? rawPrice : null;
-  const priceUnit = vehicle?.priceInfo ? unitLabel(vehicle.priceInfo.type) : '/day';
-  const periodBadge = vehicle?.priceInfo ? periodLabel(vehicle.priceInfo.type) : null;
+  // The listed price is the period total — "for 12 hours" when the server says what it covers (#5).
+  const priceUnit = vehicle?.priceInfo ? priceUnitFor(vehicle.priceInfo) : '/day';
+  const periodBadge = vehicle?.priceInfo && !vehicle.priceInfo.billedAs ? periodLabel(vehicle.priceInfo.type) : null;
 
   const handleViewDetails = () => {
     const id = vehicle!.publicId;
@@ -122,7 +123,7 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
               <View style={styles.priceSummary}>
                 <View style={styles.priceSummaryRow}>
                   <Text style={styles.priceSummaryLabel}>
-                    {periodBadge ? `${periodBadge} rate` : 'Daily rate'}
+                    {vehicle?.priceInfo?.billedAs ? 'Price' : periodBadge ? `${periodBadge} rate` : 'Daily rate'}
                   </Text>
                   <Text style={styles.priceSummaryValue}>
                     {price != null ? `₹${price.toLocaleString('en-IN')} ${priceUnit}` : '—'}

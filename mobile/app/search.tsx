@@ -21,6 +21,9 @@ import { normalizeGroups } from '../lib/vehicles';
 import OfferCard from '../components/cars/OfferCard';
 import FilterSheet, { type FilterValue } from '../components/cars/FilterSheet';
 import SearchCard, { type SearchQuery } from '../components/cars/SearchCard';
+import { TimesNotice } from '../components/booking/BranchHours';
+import { useBranchSchedule } from '../hooks/useBranchSchedule';
+import { bookingTimesNotice } from '../lib/branchSchedule';
 import { timeLabel, timeOf } from '../lib/dates';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -50,6 +53,7 @@ export default function Search() {
   const [end, setEnd] = useState<string | null>(params.end ?? null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<string | null>(null);
+  const [useCases, setUseCases] = useState<string[]>([]);
 
   const { data: branches } = useQuery({
     queryKey: ['branches'],
@@ -65,12 +69,13 @@ export default function Search() {
   });
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', start ?? '', end ?? ''],
+    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', useCases.join(','), start ?? '', end ?? ''],
     queryFn: () =>
       vehiclesApi.list({
         branch: branchId || undefined,
         category: categoryId || undefined,
         sort: (sort as any) || undefined,
+        useCases: useCases.length ? useCases.join(',') : undefined,
         start: start || undefined,
         end: end || undefined,
         limit: 40,
@@ -88,6 +93,16 @@ export default function Search() {
 
   const startStamp = fmtStamp(start);
   const endStamp = fmtStamp(end);
+
+  // Searched times the branch won't accept (outside office hours, past the
+  // 15-day limit) — flagged above the offers so it isn't a checkout surprise.
+  const { data: schedule } = useBranchSchedule(branchId);
+  const startD = start ? new Date(start) : null;
+  const endD = end ? new Date(end) : null;
+  const timesNotice =
+    startD && endD && !isNaN(startD.getTime()) && !isNaN(endD.getTime())
+      ? bookingTimesNotice(schedule, startD, endD)
+      : null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -111,13 +126,21 @@ export default function Search() {
 
       {/* Filter & sort */}
       <TouchableOpacity
-        style={[styles.filterChip, (sort || categoryId) && styles.filterChipActive]}
+        style={[styles.filterChip, (sort || categoryId || useCases.length > 0) && styles.filterChipActive]}
         onPress={() => setFilterOpen(true)}
         activeOpacity={0.85}
       >
         <Ionicons name="filter-outline" size={17} color={Colors.white} />
-        <Text style={styles.filterChipText}>Filter & sort</Text>
+        <Text style={styles.filterChipText}>
+          {useCases.length > 0 ? `Filter & sort · ${useCases.length} trip type${useCases.length > 1 ? 's' : ''}` : 'Filter & sort'}
+        </Text>
       </TouchableOpacity>
+
+      {timesNotice ? (
+        <View style={styles.noticeWrap}>
+          <TimesNotice tone="dark" notice={timesNotice} />
+        </View>
+      ) : null}
 
       {/* Offers — one big card per row */}
       {isLoading ? (
@@ -142,6 +165,8 @@ export default function Search() {
                   params: {
                     ...(start ? { start } : {}),
                     ...(end ? { end } : {}),
+                    // Office hours on the vehicle page until its own payload loads.
+                    ...((item.branchPublicId ?? branchId) ? { branch: item.branchPublicId ?? branchId } : {}),
                   },
                 })
               }
@@ -154,12 +179,13 @@ export default function Search() {
         visible={filterOpen}
         branches={(branches ?? []).map((b) => ({ id: b.publicId, label: b.name }))}
         categories={(categories ?? []).map((c) => ({ id: c.publicId, label: c.name }))}
-        value={{ branch: branchId, category: categoryId, sort }}
+        value={{ branch: branchId, category: categoryId, sort, useCases }}
         onApply={(v: FilterValue) => {
           setBranchId(v.branch);
           setBranchName(v.branch ? (branches ?? []).find((b) => b.publicId === v.branch)?.name ?? branchName : null);
           setCategoryId(v.category);
           setSort(v.sort);
+          setUseCases(v.useCases);
         }}
         onClose={() => setFilterOpen(false)}
       />
@@ -231,6 +257,7 @@ const styles = StyleSheet.create({
   filterChipActive: { borderWidth: 1, borderColor: Colors.orange },
   filterChipText: { fontFamily: Fonts.bodyMedium, fontSize: 15, color: Colors.white },
 
+  noticeWrap: { paddingHorizontal: 16, marginTop: 12 },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32, gap: 14 },
   loader: { marginTop: 60 },
   noResults: { alignItems: 'center', paddingTop: 48 },

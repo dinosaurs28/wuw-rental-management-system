@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
@@ -26,6 +27,32 @@ import {
   promptOpenShift,
 } from '../../lib/counterErrors';
 import { isSameDay, rangeLengthLabel, startOfDay, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
+import {
+  extensionGstSplit,
+  formatExtensionHours,
+  gstLabel,
+  gstSplitText,
+  inrExact,
+  type ExtensionGstFields,
+  type ExtensionGstSplit,
+} from '../../lib/gst';
+import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS } from '../../lib/bookingWindow';
+import {
+  buildScheduleErrorMessage,
+  closedDayText,
+  fitReturnTime,
+  hasOfficeHours,
+  isClosedDay,
+  isReturnTimeAllowed,
+  rangeHoursLine,
+  slotsWithinHours,
+  toScheduleConfig,
+  validateReturnTime,
+} from '../../lib/branchSchedule';
+import { useBranchSchedule } from '../../hooks/useBranchSchedule';
+import { useAuthStore } from '../../store/auth';
+import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
+import type { ExtensionEligibility } from '../../types/api';
 import UtrInput from '../../components/employee/UtrInput';
 import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 
@@ -58,7 +85,10 @@ interface Evaluation {
   extensionPublicId: string;
   oldEndAt: string;
   requestedEndAt: string;
-  pricing: { additionalAmount: string; newTotalFinal: string };
+  // additionalAmount = taxableAmount + taxAmount (GST split, #23). Hours are
+  // numbers: current rental length and the time this quote adds.
+  pricing: { additionalAmount: string; newTotalFinal: string; originalHours?: number; extensionHours?: number } &
+    ExtensionGstFields;
   resolutionOptions: ResolutionOption[];
   recommendedResolution: Resolution;
 }
@@ -71,10 +101,28 @@ const RESOLUTION_LABEL: Record<Resolution, string> = {
   NO_RESOLUTION: 'No extension available',
 };
 
-const inr = (v: number | string) => `₹${(Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+// Paise shown when present: the extension's GST is rounded to the paisa.
+const inr = (v: number | string) => inrExact(v);
 const DAY_MS = 86_400_000;
-const PRESETS = [1, 2, 3, 7]; // extra days, same return time
-const DAY_COUNT = 30; // return dates offered in the strip
+const HOUR_MS = 3_600_000;
+// Extra time on top of the current return (whole days keep the same clock
+// time); +12h turns a 12-hour rental into a full day (#5).
+const PRESETS = [
+  { label: '+12h', ms: 12 * HOUR_MS },
+  { label: '+1d', ms: DAY_MS },
+  { label: '+2d', ms: 2 * DAY_MS },
+  { label: '+3d', ms: 3 * DAY_MS },
+  { label: '+7d', ms: 7 * DAY_MS },
+];
+// Monthly-plan bookings (#15) can run to 180 days: whole months (30 days, as billed).
+const MONTH_PRESETS = [
+  { label: '+1 mo', ms: 30 * DAY_MS },
+  { label: '+2 mo', ms: 60 * DAY_MS },
+];
+// Return dates offered in the strip: up to the server's maxEndAt (180 days for
+// a monthly plan), else 30 days when an older server sends no limit.
+const DAY_COUNT = 30;
+const MAX_STRIP_DAYS = MONTHLY_MAX_DAYS + 1;
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString('en-IN', {
@@ -88,6 +136,23 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
       <Text style={styles.label}>{label}</Text>
       <Text style={[styles.value, accent && styles.valueAccent]}>{value}</Text>
     </View>
+  );
+}
+
+// The extension charge's GST split, as the server stored it (never computed here).
+function GstSplitRows({ split }: { split: ExtensionGstSplit }) {
+  return (
+    <>
+      {split.discount > 0 ? (
+        <>
+          <Row label="Extension rental" value={inr(split.base)} />
+          <Row label="Discount" value={`−${inr(split.discount)}`} />
+        </>
+      ) : null}
+      <Row label="Extension charge (excl. GST)" value={inr(split.taxable)} />
+      <Row label={gstLabel('GST', split.rate)} value={inr(split.tax)} />
+      {split.tax > 0 ? <Text style={styles.gstNote}>{gstSplitText(split.cgst, split.sgst)}</Text> : null}
+    </>
   );
 }
 
@@ -108,8 +173,57 @@ export default function ExtensionScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // How far the booking may run (#15: 15 days from pickup, 180 for a monthly
+  // plan) and when the branch takes returns (#2). Keyed on the current return
+  // so a cancelled pending extension refreshes it.
+  const {
+    data: eligibility,
+    isError: eligibilityFailed,
+    refetch: refetchEligibility,
+  } = useQuery({
+    queryKey: ['employee', 'extension-eligibility', bookingId, currentEnd],
+    queryFn: async () =>
+      ((await employeeApi.extensionEligibility(bookingId!)).data?.data ?? null) as ExtensionEligibility | null,
+    enabled: !!bookingId,
+    retry: false,
+  });
+  const maxEnd = useMemo(() => {
+    const d = eligibility?.maxEndAt ? new Date(eligibility.maxEndAt) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  }, [eligibility?.maxEndAt]);
+  const eligibilityHours = useMemo(() => toScheduleConfig(eligibility?.officeHours), [eligibility?.officeHours]);
+  // Older server without the eligibility endpoint: the staff branch's hours.
+  const staffBranch = useAuthStore((s) => s.user?.branchPublicId ?? null);
+  const { data: branchHours } = useBranchSchedule(eligibilityFailed ? staffBranch : null);
+  const schedule = eligibilityHours ?? branchHours ?? null;
+  const maxDays = eligibility?.maxBookingDays ?? MAX_BOOKING_DAYS;
+  // Not extendable (at the limit, or not CONFIRMED / PICKED_UP): the server says why.
+  const notExtendable = eligibility && !eligibility.eligible ? eligibility.reason ?? 'This booking cannot be extended.' : null;
+
   // Step 1 — new return date + time (default: one more day, same time) and notes
   const [newEnd, setNewEnd] = useState<Date | null>(() => (endAt ? new Date(new Date(endAt).getTime() + DAY_MS) : null));
+
+  // Once the limit and hours are known, keep the chosen return inside them.
+  useEffect(() => {
+    if (!currentEnd) return;
+    const base = new Date(currentEnd);
+    const after = base.getTime() > Date.now() ? base : new Date();
+    setNewEnd((e) => {
+      if (!e) return e;
+      const fitted = fitReturnTime(e, schedule, { after, before: maxEnd });
+      return fitted && fitted.getTime() !== e.getTime() ? fitted : e;
+    });
+  }, [schedule, maxEnd, currentEnd]);
+
+  // An accepted new return: after the current one (and now), within the
+  // limit, inside branch hours.
+  const returnOk = (at: Date) =>
+    !!currentEnd &&
+    at.getTime() > Math.max(new Date(currentEnd).getTime(), Date.now()) &&
+    (!maxEnd || at.getTime() <= maxEnd.getTime()) &&
+    (!hasOfficeHours(schedule) || isReturnTimeAllowed(schedule, at));
+  const daySlots = (day: Date) =>
+    currentEnd ? slotsWithinHours(day, schedule, 'return', { after: new Date(currentEnd), before: maxEnd }) : [];
   const [timeOpen, setTimeOpen] = useState(false);
   const [notes, setNotes] = useState('');
 
@@ -120,6 +234,8 @@ export default function ExtensionScreen() {
 
   // Step 3 — committed: the vehicle is held until this is paid or cancelled
   const [amountDue, setAmountDue] = useState(0);
+  // GST split of the committed charge (a partial extension is repriced at commit)
+  const [dueGst, setDueGst] = useState<ExtensionGstSplit | null>(null);
   const [heldUntil, setHeldUntil] = useState<string | null>(null);
   const [method, setMethod] = useState<Method>('CASH');
   const [utr, setUtr] = useState('');
@@ -127,6 +243,16 @@ export default function ExtensionScreen() {
   const [doneMsg, setDoneMsg] = useState('');
 
   const extensionPublicId = evaluation?.extensionPublicId ?? null;
+
+  // Committing, collecting or cancelling a committed extension moves the
+  // booking's return time (and maybe its Daily/Monthly tab): refresh the Fleet
+  // queues, the overdue list (under ['employee', 'returns']) and the counts.
+  const qc = useQueryClient();
+  const refreshQueues = () => {
+    qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
+  };
 
   // An evaluated/committed extension blocks any new one until it is paid or
   // cancelled, so leaving mid-way offers to cancel it instead of stranding it.
@@ -143,6 +269,7 @@ export default function ExtensionScreen() {
           onPress: async () => {
             try {
               await employeeApi.cancelExtension(extensionPublicId!, 'Cancelled at the counter before payment');
+              refreshQueues();
               navigation.dispatch(data.action);
             } catch (err: any) {
               Alert.alert('Could not cancel', apiErrorMessage(err, 'Please try again.'));
@@ -154,30 +281,39 @@ export default function ExtensionScreen() {
   });
 
   // Return dates: from the current return's day (or today, for a rental
-  // that's already overdue), skipping a first day with no later times left.
+  // that's already overdue), skipping a first day with no later times left,
+  // up to the booking-period limit (#15).
   const days = useMemo(() => {
     if (!currentEnd) return [];
     const end = new Date(currentEnd);
     const from = startOfDay(end.getTime() > Date.now() ? end : new Date());
+    const last = maxEnd ? startOfDay(maxEnd) : null;
+    const count = last ? MAX_STRIP_DAYS : DAY_COUNT;
     const out: Date[] = [];
-    for (let i = 0; i < DAY_COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
+      if (last && d.getTime() > last.getTime()) break;
       if (i === 0 && timeSlotsFor(d, { after: end }).length === 0) continue;
       out.push(d);
     }
     return out;
-  }, [currentEnd]);
+  }, [currentEnd, maxEnd]);
 
+  // Keeps the chosen time on the new day when the branch accepts it there,
+  // else the nearest accepted time that day.
   const pickDay = (day: Date) => {
     if (!newEnd || !baseEnd) return;
-    let next = withTime(day, timeOf(newEnd));
-    const earliest = Math.max(baseEnd.getTime(), Date.now());
-    if (next.getTime() <= earliest) {
-      const first = timeSlotsFor(day, { after: baseEnd })[0];
-      if (!first) return;
-      next = withTime(day, first.value);
+    const same = withTime(day, timeOf(newEnd));
+    if (returnOk(same)) {
+      setNewEnd(same);
+      setError(null);
+      return;
     }
-    setNewEnd(next);
+    const slots = daySlots(day);
+    if (!slots.length) return;
+    const want = timeOf(newEnd);
+    const pick = slots.find((s) => s.value >= want) ?? slots[slots.length - 1]!;
+    setNewEnd(withTime(day, pick.value));
     setError(null);
   };
 
@@ -190,6 +326,18 @@ export default function ExtensionScreen() {
     if (requested.getTime() <= Date.now()) {
       setError('Pick a return time in the future.');
       return;
+    }
+    // Same rules the server applies (#15 / #2), said before a quote is made.
+    if (maxEnd && requested.getTime() > maxEnd.getTime()) {
+      setError(`This booking can be extended up to ${fmt(maxEnd.toISOString())} (${maxDays}-day limit).`);
+      return;
+    }
+    if (hasOfficeHours(schedule)) {
+      const verdict = validateReturnTime(schedule, requested);
+      if (verdict.status === 'RETURN_OUTSIDE_HOURS') {
+        setError(buildScheduleErrorMessage(verdict));
+        return;
+      }
     }
     setBusy(true); setError(null);
     try {
@@ -219,6 +367,9 @@ export default function ExtensionScreen() {
     } catch (err: any) {
       const message = apiErrorMessage(err, 'Could not evaluate the extension.');
       setError(message);
+      // The limit moved on since this screen loaded — refresh it so the
+      // pickers stop at the server's maxEndAt.
+      if (err?.response?.data?.code === 'BOOKING_MAX_PERIOD_EXCEEDED') void refetchEligibility();
       // An earlier extension was committed but never paid and blocks new ones.
       // Cash already collected (PAYMENT_COLLECTED) is for a manager to confirm
       // or reject — only an unpaid one may be cancelled here.
@@ -238,6 +389,7 @@ export default function ExtensionScreen() {
               setBusy(true); setError(null);
               try {
                 await employeeApi.cancelExtension(pendingId, 'Unpaid extension replaced at the counter');
+                refreshQueues();
               } catch (cancelErr: any) {
                 setError(apiErrorMessage(cancelErr, 'Could not cancel the pending extension.'));
                 setBusy(false);
@@ -306,8 +458,15 @@ export default function ExtensionScreen() {
         collectNow: true,
       });
       const d = res.data?.data;
+      refreshQueues();
       // The committed amount is what's due — a partial extension is repriced.
       setAmountDue(Number(d?.remainAmount?.extension ?? d?.additionalAmount ?? evaluation.pricing.additionalAmount));
+      // The committed split; an older server sends none, so fall back to the
+      // quote's unless the charge was repriced (partial).
+      setDueGst(
+        extensionGstSplit(d) ??
+          (resolution === 'PARTIAL_EXTENSION' ? null : extensionGstSplit(evaluation.pricing)),
+      );
       setHeldUntil(resolution === 'PARTIAL_EXTENSION' && opt?.partialNewEndAt ? opt.partialNewEndAt : evaluation.requestedEndAt);
       setPhase('collect');
     } catch (err: any) {
@@ -333,6 +492,7 @@ export default function ExtensionScreen() {
         ...(upi ? { onlineTransactionRef: cleanUtr(utr) } : {}),
       });
       const payment = res.data?.data?.payment;
+      refreshQueues();
       setDoneMsg(
         payment === 'confirmed'
           ? upi
@@ -383,7 +543,23 @@ export default function ExtensionScreen() {
   const canCommit =
     !!resolution && resolution !== 'NO_RESOLUTION' && (resolution !== 'SWAP_CURRENT_TO_OTHER' || !!swapVehicleId);
   const pickLength = baseEnd && newEnd ? rangeLengthLabel(baseEnd, newEnd) : null;
-  const slots = newEnd && baseEnd ? timeSlotsFor(newEnd, { after: baseEnd }) : [];
+  // Accepted return times on the chosen day: branch hours + the 15-day limit.
+  const slots = newEnd ? daySlots(newEnd) : [];
+  // Return inside the grace after closing: accepted, but say so (#2).
+  const returnVerdict = newEnd && hasOfficeHours(schedule) ? validateReturnTime(schedule, newEnd) : null;
+  const graceNotice =
+    returnVerdict?.status === 'RETURN_GRACE'
+      ? {
+          tone: 'warn' as const,
+          text: `The branch closes at ${returnVerdict.closingTime} that day — returns are accepted until ${returnVerdict.gracePeriodEnd}.`,
+        }
+      : null;
+  // The quote's extra time (server hours) and the GST split of its charge (#23).
+  const quotedLength = evaluation
+    ? formatExtensionHours(evaluation.pricing.extensionHours) ??
+      rangeLengthLabel(new Date(evaluation.oldEndAt), new Date(evaluation.requestedEndAt))
+    : null;
+  const quotedGst = extensionGstSplit(evaluation?.pricing);
 
   return (
     <KeyboardAvoidingView style={[styles.root, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -406,35 +582,54 @@ export default function ExtensionScreen() {
           </View>
         )}
 
+        {/* #15 — nothing left to extend (or not extendable now): the server says why */}
+        {phase === 'select' && notExtendable && (
+          <View style={styles.errorBox}>
+            <Ionicons name="close-circle-outline" size={16} color="#e53e3e" />
+            <Text style={styles.errorText}>{notExtendable}</Text>
+          </View>
+        )}
+
         {/* ── Step 1: new return date + time ── */}
-        {phase === 'select' && baseEnd && newEnd && (
+        {phase === 'select' && !notExtendable && baseEnd && newEnd && (
           <>
             <Text style={styles.sectionLabel}>Extend by</Text>
-            <View style={styles.presetRow}>
-              {PRESETS.map((d) => {
-                const active = newEnd.getTime() === baseEnd.getTime() + d * DAY_MS;
-                return (
-                  <TouchableOpacity
-                    key={d}
-                    style={[styles.preset, active && styles.presetActive]}
-                    onPress={() => { setNewEnd(new Date(baseEnd.getTime() + d * DAY_MS)); setError(null); }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.presetText, active && styles.presetTextActive]}>+{d}d</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* Monthly plan: a second row of whole-month presets */}
+            {(eligibility?.isMonthly ? [PRESETS, MONTH_PRESETS] : [PRESETS]).map((presets, r) => (
+              <View key={r} style={[styles.presetRow, r > 0 && styles.presetRowNext]}>
+                {presets.map((p) => {
+                  const target = new Date(baseEnd.getTime() + p.ms);
+                  const active = newEnd.getTime() === target.getTime();
+                  // Past the limit or outside branch hours: not offered.
+                  const blocked = !returnOk(target);
+                  return (
+                    <TouchableOpacity
+                      key={p.label}
+                      style={[styles.preset, active && styles.presetActive, blocked && styles.presetBlocked]}
+                      onPress={() => { setNewEnd(target); setError(null); }}
+                      disabled={blocked}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.presetText, active && styles.presetTextActive]}>{p.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
 
             <Text style={styles.sectionLabel}>New return date</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll} contentContainerStyle={styles.dayRow}>
               {days.map((d) => {
                 const active = isSameDay(d, newEnd);
+                // Closed days, and days with no accepted return time left, are greyed out (#2).
+                const closed = isClosedDay(schedule, d);
+                const off = !active && daySlots(d).length === 0;
                 return (
                   <TouchableOpacity
                     key={d.getTime()}
-                    style={[styles.day, active && styles.dayActive]}
+                    style={[styles.day, active && styles.dayActive, off && styles.dayOff]}
                     onPress={() => pickDay(d)}
+                    disabled={off}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.dayWeek, active && styles.dayTextActive]}>
@@ -442,7 +637,7 @@ export default function ExtensionScreen() {
                     </Text>
                     <Text style={[styles.dayNum, active && styles.dayTextActive]}>{d.getDate()}</Text>
                     <Text style={[styles.dayMonth, active && styles.dayTextActive]}>
-                      {d.toLocaleDateString('en-IN', { month: 'short' })}
+                      {closed ? 'Closed' : d.toLocaleDateString('en-IN', { month: 'short' })}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -455,10 +650,17 @@ export default function ExtensionScreen() {
               <Text style={styles.timeValue}>{timeLabel(timeOf(newEnd))}</Text>
               <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
             </TouchableOpacity>
+            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd)} />
+            <TimesNotice notice={graceNotice} />
 
             <View style={styles.card}>
               <Row label="New return" value={fmt(newEnd.toISOString())} accent />
               {pickLength ? <Text style={styles.extendNote}>Extending by {pickLength}</Text> : null}
+              {maxEnd ? (
+                <Text style={styles.extendNote}>
+                  Latest possible return {fmt(maxEnd.toISOString())} ({maxDays}-day limit)
+                </Text>
+              ) : null}
             </View>
 
             <Text style={styles.sectionLabel}>Notes (optional)</Text>
@@ -479,12 +681,11 @@ export default function ExtensionScreen() {
           <>
             <View style={styles.card}>
               <Row label="Requested return" value={fmt(evaluation.requestedEndAt)} accent />
-              {rangeLengthLabel(new Date(evaluation.oldEndAt), new Date(evaluation.requestedEndAt)) ? (
-                <Row label="Extra time" value={rangeLengthLabel(new Date(evaluation.oldEndAt), new Date(evaluation.requestedEndAt))!} />
-              ) : null}
+              {quotedLength ? <Row label="Extra time" value={quotedLength} /> : null}
               <View style={styles.divider} />
+              {quotedGst ? <GstSplitRows split={quotedGst} /> : null}
               <View style={styles.row}>
-                <Text style={styles.label}>Additional due</Text>
+                <Text style={styles.label}>{quotedGst ? 'Additional due (incl. GST)' : 'Additional due'}</Text>
                 <Text style={styles.amount}>{inr(evaluation.pricing.additionalAmount)}</Text>
               </View>
             </View>
@@ -580,8 +781,9 @@ export default function ExtensionScreen() {
             <View style={styles.card}>
               {heldUntil ? <Row label="New return" value={fmt(heldUntil)} accent /> : null}
               <View style={styles.divider} />
+              {dueGst ? <GstSplitRows split={dueGst} /> : null}
               <View style={styles.row}>
-                <Text style={styles.label}>Amount due</Text>
+                <Text style={styles.label}>{dueGst ? 'Amount due (incl. GST)' : 'Amount due'}</Text>
                 <Text style={styles.amount}>{inr(amountDue)}</Text>
               </View>
               <Text style={styles.holdNote}>The vehicle is on hold until this is collected or the extension is cancelled.</Text>
@@ -639,9 +841,15 @@ export default function ExtensionScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         {phase === 'select' && (
-          <TouchableOpacity style={[styles.primaryBtn, busy && styles.btnDisabled]} onPress={() => evaluate()} disabled={busy} activeOpacity={0.85}>
-            {busy ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={styles.primaryBtnText}>Check availability</Text>}
-          </TouchableOpacity>
+          notExtendable ? (
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => router.back()} activeOpacity={0.85}>
+              <Text style={styles.primaryBtnText}>Back</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.primaryBtn, busy && styles.btnDisabled]} onPress={() => evaluate()} disabled={busy} activeOpacity={0.85}>
+              {busy ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={styles.primaryBtnText}>Check availability</Text>}
+            </TouchableOpacity>
+          )
         )}
         {phase === 'resolve' && !noOption && (
           <TouchableOpacity
@@ -674,6 +882,7 @@ export default function ExtensionScreen() {
           visible={timeOpen}
           value={timeOf(newEnd)}
           slots={slots}
+          emptyText={closedDayText(schedule, newEnd)}
           title="New return time"
           onSelect={(v) => { setNewEnd(withTime(newEnd, v)); setError(null); }}
           onClose={() => setTimeOpen(false)}
@@ -699,6 +908,7 @@ const styles = StyleSheet.create({
   valueAccent: { fontSize: 15, color: Colors.orange },
   extendNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right' },
   holdNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
+  gstNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', marginTop: -4 },
   amount: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
   changeLink: { alignSelf: 'center', paddingVertical: 6 },
   changeLinkText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
@@ -706,10 +916,12 @@ const styles = StyleSheet.create({
   sectionLabel: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3, textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
 
   presetRow: { flexDirection: 'row', gap: 8 },
+  presetRowNext: { marginTop: 8 },
   preset: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline },
   presetActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   presetText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink2 },
   presetTextActive: { color: Colors.white },
+  presetBlocked: { opacity: 0.4 },
 
   dayScroll: { marginHorizontal: -20 },
   dayRow: { paddingHorizontal: 20, gap: 8 },
@@ -718,6 +930,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
   },
   dayActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  dayOff: { opacity: 0.4 },
   dayWeek: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.ink3 },
   dayNum: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
   dayMonth: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.ink3 },

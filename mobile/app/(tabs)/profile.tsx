@@ -23,8 +23,11 @@ import { LEGAL_URLS } from '../../constants/links';
 import WhatsAppSupportButton from '../../components/ui/WhatsAppSupportButton';
 import { useAuthStore } from '../../store/auth';
 import { useIsGuest } from '../../lib/auth-gate';
+import { displayEmail, joinProfileFieldLabels, maskAadhaar } from '../../lib/identity';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
+import { notificationsScreenHref, unreadBadgeLabel } from '../../lib/notifications';
 import type { KycDocument, KycType, KycSide } from '../../types/api';
 
 const DOC_TYPES: {
@@ -53,6 +56,7 @@ export default function Profile() {
   const signOut = useAuthStore((s) => s.signOut);
   const user = useAuthStore((s) => s.user);
   const isGuest = useIsGuest();
+  const unreadBadge = unreadBadgeLabel(useUnreadNotificationCount());
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -157,7 +161,9 @@ export default function Profile() {
   };
 
   const name = profile?.name ?? user?.name ?? '—';
-  const email = profile?.email ?? user?.email ?? '—';
+  // Placeholder (walk-in / deleted) addresses are never shown.
+  const email = displayEmail(profile?.email ?? user?.email) ?? '—';
+  const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
 
   const approvedCount = kyc.filter((d) => d.status === 'APPROVED').length;
   const isProfileComplete = profile?.isProfileCompleted ?? false;
@@ -257,7 +263,20 @@ export default function Profile() {
         <View style={styles.card}>
           <InfoRow icon="person-outline" label="Name" value={name} />
           <InfoRow icon="mail-outline" label="Email" value={email} />
-          <InfoRow icon="call-outline" label="Phone" value={profile?.phone ?? 'Not added'} muted={!profile?.phone} />
+          <InfoRow icon="call-outline" label="Phone" value={profile?.phone || 'Not added'} muted={!profile?.phone} />
+          <InfoRow
+            icon="card-outline"
+            label="Driving Licence number"
+            value={profile?.drivingLicenceNumber || 'Not added'}
+            muted={!profile?.drivingLicenceNumber}
+          />
+          <InfoRow
+            icon="finger-print-outline"
+            label="Aadhaar number"
+            value={profile?.aadhaarNumber ? maskAadhaar(profile.aadhaarNumber) : 'Not added'}
+            muted={!profile?.aadhaarNumber}
+            last={!profile?.dob}
+          />
           {profile?.dob && (
             <InfoRow icon="calendar-outline" label="Date of birth" value={new Date(profile.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} last />
           )}
@@ -266,6 +285,12 @@ export default function Profile() {
         {/* Bookings */}
         <Text style={styles.sectionTitle}>Bookings</Text>
         <View style={styles.card}>
+          <LinkRow
+            icon="notifications-outline"
+            label="Notifications"
+            badge={unreadBadge}
+            onPress={() => router.push(notificationsScreenHref('CUSTOMER'))}
+          />
           <LinkRow icon="receipt-outline" label="Cancellations & fees" onPress={() => router.push('/cancellations')} last />
         </View>
 
@@ -280,7 +305,11 @@ export default function Profile() {
             <Ionicons name="alert-circle-outline" size={18} color="#d97706" />
             <View style={styles.incompleteBannerText}>
               <Text style={styles.incompleteBannerTitle}>Complete your profile first</Text>
-              <Text style={styles.incompleteBannerSub}>Name, phone and address required to upload KYC documents.</Text>
+              <Text style={styles.incompleteBannerSub}>
+                {missingText
+                  ? `Add your ${missingText} to upload KYC documents and book.`
+                  : 'Name, phone, address, Driving Licence and Aadhaar number required to upload KYC and book.'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#d97706" />
           </TouchableOpacity>
@@ -403,11 +432,14 @@ function LinkRow({
   label,
   onPress,
   last,
+  badge,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   onPress: () => void;
   last?: boolean;
+  /** Small count pill before the chevron (e.g. unread notifications). */
+  badge?: string;
 }) {
   return (
     <TouchableOpacity style={[styles.infoRow, last && styles.lastRow]} onPress={onPress} activeOpacity={0.7}>
@@ -415,6 +447,11 @@ function LinkRow({
         <Ionicons name={icon} size={16} color={Colors.ink3} />
       </View>
       <Text style={[styles.infoValue, { flex: 1 }]}>{label}</Text>
+      {badge ? (
+        <View style={styles.linkBadge}>
+          <Text style={styles.linkBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
       <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
     </TouchableOpacity>
   );
@@ -587,6 +624,16 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginBottom: 2 },
   infoValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink },
   infoValueMuted: { color: Colors.ink3 },
+  linkBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: Colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white },
 
   /* Doc row */
   docRow: {

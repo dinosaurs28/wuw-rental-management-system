@@ -27,6 +27,8 @@ import { useAuthStore } from '../store/auth';
 import { useSavedStore } from '../store/saved';
 import SplashAnimation from '../components/SplashAnimation';
 import NoInternetScreen from '../components/NoInternetScreen';
+import { useNotificationBridge } from '../hooks/useNotifications';
+import { configureNotificationPresentation } from '../lib/push';
 
 // Public connectivity probes — checking the device has internet, NOT whether
 // our backend is up. Backend failures are surfaced by individual queries.
@@ -36,6 +38,9 @@ const CONNECTIVITY_PROBES = [
 ];
 
 SplashScreen.preventAutoHideAsync();
+
+// Pushes that arrive while the app is open still show a banner (#19).
+configureNotificationPresentation();
 
 // Route groups a guest genuinely cannot use — every screen under them acts on a
 // specific customer's or employee's own records. Everything else (the fleet,
@@ -56,6 +61,7 @@ const GUEST_BLOCKED_SEGMENTS = [
   'delete-account', // userApi.deleteAccount
   'cancellations',  // userApi.cancellationHistory — one customer's fees
   'document-viewer',// renders a KYC document handed to it by an account screen
+  'notifications',  // notificationsApi — one customer's inbox
 ];
 
 function RootLayoutNav() {
@@ -64,6 +70,9 @@ function RootLayoutNav() {
   const isLoaded = useAuthStore((s) => s.isLoaded);
   const router = useRouter();
   const segments = useSegments();
+
+  // Push registration, inbox refresh on foreground/push, and push-tap deep links.
+  useNotificationBridge();
 
   useEffect(() => {
     if (!isLoaded || segments.length < 1) return;

@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
+import { unreadBadgeLabel } from '../../lib/notifications';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -23,6 +25,8 @@ export default function TabLayout() {
   // 3-button navigation bar is ~48dp tall — without this the tabs sat under
   // the system buttons.
   const insets = useSafeAreaInsets();
+  // Unread notifications (#19) badge the Profile tab, where the inbox lives.
+  const unreadBadge = unreadBadgeLabel(useUnreadNotificationCount());
   return (
     <Tabs
       screenOptions={{
@@ -54,9 +58,21 @@ export default function TabLayout() {
           options={{
             title: tab.label,
             tabBarIcon: ({ color }) => <Ionicons name={tab.icon} size={23} color={color} />,
+            ...(tab.name === 'profile'
+              ? { tabBarBadge: unreadBadge, tabBarBadgeStyle: styles.badge }
+              : null),
           }}
         />
       ))}
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    backgroundColor: Colors.orange,
+    color: Colors.white,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 10,
+  },
+});

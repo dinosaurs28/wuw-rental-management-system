@@ -14,9 +14,11 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { userApi } from '../../lib/api';
+import { rangeLengthLabel } from '../../lib/dates';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
+import NotificationBell from '../../components/notifications/NotificationBell';
 import type { BookingTrip, BookingStatus } from '../../types/api';
 
 type Tab = 'active' | 'upcoming' | 'past';
@@ -73,6 +75,13 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           paymentStatus: trip.paymentStatus ?? '',
           // full vehicle list so trip detail can render every vehicle (#39)
           vehiclesJson:  JSON.stringify(trip.vehicles),
+          // Partial payment + coupon (#6/#20), shown before the live refetch.
+          // Omitted when the server didn't send them.
+          ...(trip.paid != null ? { paid: String(trip.paid) } : {}),
+          ...(trip.balanceDue != null ? { balanceDue: String(trip.balanceDue) } : {}),
+          ...(trip.balanceDueAt ? { balanceDueAt: trip.balanceDueAt } : {}),
+          ...(trip.couponCode ? { couponCode: trip.couponCode } : {}),
+          ...(trip.totalDiscount != null ? { totalDiscount: String(trip.totalDiscount) } : {}),
         },
       })}
       activeOpacity={0.88}
@@ -87,12 +96,22 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           <StatusBadge label={STATUS_LABEL[trip.status] ?? trip.status} tone={STATUS_TONE[trip.status] ?? 'neutral'} />
         </View>
         <Text style={styles.dates}>
-          {formatDate(trip.startAt)} → {formatDate(trip.endAt)} · {trip.days}d
+          {formatDate(trip.startAt)} → {formatDate(trip.endAt)} ·{' '}
+          {/* "12 hours" under a day, else whole days (#5) — Booking.days rounds a 12 h trip up to 1 */}
+          {rangeLengthLabel(new Date(trip.startAt), new Date(trip.endAt)) ?? `${trip.days}d`}
         </Text>
         <View style={styles.cardBottom}>
-          <Text style={styles.total}>
-            ₹{Number(trip.total).toLocaleString('en-IN')}
-          </Text>
+          <View style={styles.totalWrap}>
+            <Text style={styles.total}>
+              ₹{Number(trip.total).toLocaleString('en-IN')}
+            </Text>
+            {/* Advance booking with a balance still owed (#6) */}
+            {Number(trip.balanceDue ?? 0) > 0 ? (
+              <Text style={styles.dueNote} numberOfLines={1}>
+                ₹{Number(trip.balanceDue).toLocaleString('en-IN')} due at {trip.balanceDueAt === 'DROP' ? 'drop' : 'pickup'}
+              </Text>
+            ) : null}
+          </View>
           <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
         </View>
       </View>
@@ -173,6 +192,7 @@ export default function Trips() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>My Trips</Text>
+        <NotificationBell />
       </View>
 
       {/* Tabs */}
@@ -235,7 +255,14 @@ export default function Trips() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
   title: {
     fontFamily: Fonts.displayBold,
     fontSize: 26,
@@ -323,6 +350,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.ink,
   },
+  totalWrap: { flexShrink: 1 },
+  dueNote: { fontFamily: Fonts.body, fontSize: 11, color: '#d97706', marginTop: 1 },
   empty: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 40 },
   emptyIcon: {
     width: 64,

@@ -134,7 +134,10 @@ export default function Home() {
               <CarCard
                 vehicle={item}
                 width={250}
-                onPress={() => router.push(`/vehicle/${item.publicId}`)}
+                onPress={() => {
+                  const branch = item.branchPublicId ?? selectedBranch?.publicId;
+                  router.push({ pathname: `/vehicle/${item.publicId}` as any, params: branch ? { branch } : {} });
+                }}
               />
             )}
           />

@@ -1,4 +1,5 @@
 // Small date helpers for customer screens.
+import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS, bookingWindowEnd } from './bookingWindow';
 
 // "Starts in N days" badge — derived client-side (no API field).
 // Returns null when the booking is not upcoming (already started / past).
@@ -166,4 +167,123 @@ export function rentalLengthLabel(hours: number): string | null {
 
 export function rangeLengthLabel(start: Date, end: Date): string | null {
   return rentalLengthLabel((end.getTime() - start.getTime()) / 3_600_000);
+}
+
+// ── Booking length limits + quick lengths (#15, #5) ────────────────────────
+
+const HOUR_IN_MS = 3_600_000;
+const DAY_IN_MS = 24 * HOUR_IN_MS;
+
+// Last calendar day a booking can touch: today + 15 (the server's window).
+export function bookingWindowLastDay(now: Date = new Date()): Date {
+  return startOfDay(bookingWindowEnd(now));
+}
+
+// Latest return for a standard booking picked up at `start`: the end of the
+// 15-day window or pickup + 15 days, whichever comes first (server rule).
+export function maxReturnFor(start: Date, now: Date = new Date()): Date {
+  const windowEnd = bookingWindowEnd(now);
+  const byLength = new Date(start.getTime() + MAX_BOOKING_DAYS * DAY_IN_MS);
+  return windowEnd.getTime() < byLength.getTime() ? windowEnd : byLength;
+}
+
+// Monthly plan (Fleet counter only): the return is 30–180 days after pickup.
+export function monthlyReturnMin(start: Date): Date {
+  return new Date(start.getTime() + MONTHLY_MIN_DAYS * DAY_IN_MS);
+}
+
+export function monthlyReturnMax(start: Date): Date {
+  return new Date(start.getTime() + MONTHLY_MAX_DAYS * DAY_IN_MS);
+}
+
+// One-tap rental lengths offered next to the date pickers.
+export const DURATION_PRESETS: { label: string; hours: number }[] = [
+  { label: '12 hours', hours: 12 },
+  { label: '1 day', hours: 24 },
+];
+
+// Return = pickup + N hours, rolling past midnight when needed.
+export function presetRange(start: Date, hours: number): { start: Date; end: Date } {
+  return { start, end: new Date(start.getTime() + hours * HOUR_IN_MS) };
+}
+
+// Which quick length (in hours) the range is exactly, else null.
+export function activePresetHours(start: Date, end: Date, presets: { hours: number }[] = DURATION_PRESETS): number | null {
+  const hours = (end.getTime() - start.getTime()) / HOUR_IN_MS;
+  return presets.some((p) => p.hours === hours) ? hours : null;
+}
+
+// Offset-less "YYYY-MM-DDTHH:mm" in device time — the employee endpoints read it as IST.
+export function toLocalMinuteIso(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${timeOf(d)}`;
+}
+
+// ── Overdue returns ─────────────────────────────────────────────────────────
+
+// Date + time pinned to IST (the branch's business time), whatever zone the
+// device is set to, e.g. "1 Oct 2026, 6:05 pm". Falls back to device time on
+// an engine without time-zone support.
+export function fmtIstDateTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const opts: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
+  try {
+    return d.toLocaleString('en-IN', { ...opts, timeZone: 'Asia/Kolkata' });
+  } catch {
+    return d.toLocaleString('en-IN', opts);
+  }
+}
+
+// Whole minutes as "45m", "3h 20m" or "2d 4h".
+export function fmtDurationMinutes(totalMinutes: number): string {
+  const m = Math.max(0, Math.floor(totalMinutes));
+  if (m < 60) return `${m}m`;
+  if (m < 1440) {
+    const h = Math.floor(m / 60);
+    const rest = m % 60;
+    return rest ? `${h}h ${rest}m` : `${h}h`;
+  }
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  return h ? `${d}d ${h}h` : `${d}d`;
+}
+
+// ── Rental time at drop ─────────────────────────────────────────────────────
+
+// Exact rental length, never rounded and never switched to days:
+// "26 hours", "1 hour", "26 h 35 min", "45 min".
+export function rentalMinutesLabel(totalMinutes: number): string {
+  const m = Math.max(0, Math.round(totalMinutes));
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  if (h === 0) return `${rest} min`;
+  if (rest === 0) return `${h} ${h === 1 ? 'hour' : 'hours'}`;
+  return `${h} h ${rest} min`;
+}
+
+// Short IST date + time for timeline rows, e.g. "2 Oct, 6:05 pm".
+export function fmtIstShort(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const opts: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
+  try {
+    return d.toLocaleString('en-IN', { ...opts, timeZone: 'Asia/Kolkata' });
+  } catch {
+    return d.toLocaleString('en-IN', opts);
+  }
 }

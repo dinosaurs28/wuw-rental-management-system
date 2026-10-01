@@ -142,8 +142,213 @@ export interface KmAllowance {
   includedKm: number;
   extraKmRate: string;
   extraKmEnabled: boolean;
-  // set when extra km can't be auto-calculated (vehicle swapped mid-rental)
+  // set when extra km can't be auto-calculated — only a mid-rental swap
+  // recorded WITHOUT odometer readings (swaps with readings are measured)
   autoKmSkipped?: 'VEHICLE_SWAPPED' | null;
+  // true only then: staff type the extra km at drop (manualExtraKm)
+  manualExtraKmAllowed?: boolean;
+}
+
+// ── Rental timeline (#7) and late return (#12) ─────────────────────────────
+
+export type LateReturnStatus =
+  | 'ON_TIME'
+  | 'WITHIN_GRACE'
+  | 'CHARGED'
+  | 'WAIVED'
+  | 'DISABLED'
+  | 'RATE_UNAVAILABLE';
+
+export type GraceType = 'AUTOMATIC' | 'MANUAL';
+
+// What the automatic late-return line bills (money as 2 dp strings).
+export interface LateChargePreview {
+  hours: number;
+  rate: string | null;
+  taxable: string;
+  cgst: string;
+  sgst: string;
+  gst: string;
+  gstRate: string | null;
+  total: string;
+  status: LateReturnStatus;
+  graceApplied: boolean;
+  // 'GST_RULE_MISSING' when the branch has no GST rule (GST not shown)
+  gstUnavailableReason?: string | null;
+}
+
+export interface RentalTimelineExtension {
+  publicId: string;
+  oldEndAt: string;
+  newEndAt: string;
+  minutes: number;
+  status: 'CONFIRMED' | 'PAYMENT_COLLECTED' | 'PENDING_PAYMENT' | string;
+  // committed hold not paid yet
+  unpaid: boolean;
+  // cash taken, the branch manager hasn't confirmed it
+  awaitingConfirmation: boolean;
+  isPartial: boolean;
+  trigger: string;
+  additionalAmount: string; // GST-inclusive
+  taxAmount: string;
+}
+
+// Original / extended / late rental time, in whole minutes
+// (originalMinutes + extendedMinutes = totalMinutes exactly).
+export interface RentalTimeline {
+  startAt: string;
+  originalEndAt: string;
+  currentEndAt: string;
+  originalMinutes: number;
+  extendedMinutes: number;
+  totalMinutes: number;
+  extensionCount: number;
+  extensions: RentalTimelineExtension[];
+  // Late part, as of the return time frozen on the open drop bill, else now.
+  returnedAt: string | null;
+  lateMinutes: number;
+  graceMinutes: number;
+  graceType: GraceType | null;
+  gracePolicyEnabled: boolean;
+  graceApplied: boolean;
+  extraTimeEnabled: boolean;
+  totalWithLateMinutes: number;
+  lateChargePreview: LateChargePreview | null;
+  // MANUAL grace only: what "Apply grace" would bill
+  lateChargePreviewWithGrace: LateChargePreview | null;
+}
+
+// `late` on the drop bill / legacy complete response.
+export interface ReturnLateSummary {
+  dueAt: string;
+  returnedAt: string;
+  lateMinutes: number;
+  graceMinutes: number;
+  graceApplied: boolean;
+  gracePolicyEnabled: boolean;
+  graceType: GraceType | null;
+  extraTimeEnabled: boolean;
+  chargeableMinutes: number;
+  hours: number;
+  rate: string | null;
+  status: LateReturnStatus;
+  taxable: string;
+  cgst: string;
+  sgst: string;
+  gst: string;
+  gstRate: string | null;
+  total: string;
+  waived: boolean;
+  waivedAmount: string;
+  waiverReason: string | null;
+}
+
+// ── Mid-rental swaps (#13 at drop) ─────────────────────────────────────────
+
+export interface KmSegment {
+  endedBySwapPublicId: string | null;
+  startOdometer: number | null;
+  endOdometer: number | null;
+  km: number | null;
+}
+
+// Odometer segments across mid-rental swaps (null unless PICKED_UP).
+export interface KmSegments {
+  swapCount: number;
+  swapsMissingReadings: number;
+  // every swap has readings, so km can be measured
+  complete: boolean;
+  // km on vehicles already handed back
+  priorKm: number;
+  // drop endOdometer must be ≥ this (when complete)
+  currentStartOdometer: number | null;
+  segments: KmSegment[];
+}
+
+// A vehicle-swap difference that will be billed on the drop bill.
+export interface SwapChargePreview {
+  swapPublicId: string;
+  swappedAt: string;
+  label: string;
+  taxable: string;
+  // null when the branch has no GST rule
+  cgst: string | null;
+  sgst: string | null;
+  gst: string | null;
+  total: string | null;
+  gstUnavailableReason: string | null;
+}
+
+// ── Drop bill with GST (#23) ───────────────────────────────────────────────
+
+export interface GstRates {
+  cgstRate: number;
+  sgstRate: number;
+  rate: number;
+}
+
+export interface DropBillLine {
+  type: string;
+  label: string;
+  // EXTRA_KM | LATE_RETURN | VEHICLE_SWAP | OTHER_CHARGE | DROP_DAMAGE | …
+  referenceType: string;
+  referenceId: string | null;
+  taxable: boolean;
+  amount: string; // taxable value (full amount when not taxable)
+  cgst: string;
+  sgst: string;
+  gst: string;
+  total: string;
+}
+
+export interface DropBill {
+  gstRates: GstRates | null;
+  lines: DropBillLine[];
+  subtotal: string; // Σ line amounts, before discount and GST
+  taxableTotal: string;
+  nonTaxableTotal: string;
+  discount: {
+    amount: string;
+    taxableShare: string;
+    nonTaxableShare: string;
+    cgst: string;
+    sgst: string;
+    gst: string;
+  } | null;
+  taxableValue: string;
+  nonTaxableValue: string;
+  cgst: string;
+  sgst: string;
+  gst: string;
+  total: string; // drop charges incl. GST, before the deposit credit
+}
+
+// Legacy (no Unified Payments) complete: charges the branch manager collects.
+export interface LegacyReturnChargeLine {
+  type: 'EXTRA_KM' | 'EXTRA_TIME' | 'VEHICLE_SWAP' | string;
+  label: string;
+  // VEHICLE_SWAP: the swap's publicId (absent on older servers).
+  referenceId?: string | null;
+  taxable: boolean;
+  amount: string;
+  cgst: string;
+  sgst: string;
+  gst: string;
+  total: string;
+}
+
+// POST /api/employee/return/:bookingId/complete
+export interface CompleteReturnResponse {
+  message: string;
+  returnedAt?: string;
+  km?: ReturnKmSummary | null; // null when endOdometer wasn't sent
+  late?: ReturnLateSummary | null;
+  returnCharges?: {
+    collectedBy: 'BRANCH_MANAGER' | string;
+    gstRates: GstRates | null;
+    lines: LegacyReturnChargeLine[];
+    total: string;
+  } | null;
 }
 
 // GET /api/employee/return/:bookingId
@@ -156,6 +361,8 @@ export interface ReturnBooking {
   isAdvancePayment: boolean;
   remainingBalance: string | number | null;
   remainingPaidAt: string | null;
+  // A legacy drop was recorded and sent for the branch manager's confirmation.
+  requiresManagerConfirmation?: boolean;
   days: number | null;
   startOdometer: number | null;
   pickupFuelLevel: string | null;
@@ -165,7 +372,20 @@ export interface ReturnBooking {
   // Original driving licence held at the counter since pickup.
   licenseCollectedAt?: string | null;
   licenseReturnedAt?: string | null;
+  // Original driving licence status chosen at pickup (#3); null = not recorded.
+  // Same union as lib/dlStatus DlCollectionStatus.
+  dlStatus?: 'COLLECTED' | 'NOT_COLLECTED' | 'DEPOSIT' | null;
+  dlDepositNote?: string | null;
+  dlStatusUpdatedAt?: string | null;
   kmAllowance?: KmAllowance | null;
+  // Drop (D5) — absent on servers older than this release.
+  rentalTimeline?: RentalTimeline | null;
+  kmSegments?: KmSegments | null;
+  swapCharges?: SwapChargePreview[];
+  // Fuel bars at the original pickup (pickupFuelLevel is the current
+  // vehicle's start fuel — the replacement's after a mid-rental swap).
+  originalPickupFuelLevel?: string | null;
+  returnedAt?: string | null;
   customer: { user: { name: string; phone: string | null } };
   items: Array<{
     vehicle: {
@@ -194,6 +414,13 @@ export interface ReturnKmSummary {
   extraKmCharge: string;
   extraKmEnabled: boolean;
   autoKmSkipped?: 'VEHICLE_SWAPPED' | null;
+  // km on vehicles handed back at mid-rental swaps (included in kmDriven)
+  priorKm?: number;
+  // extra km typed by staff (swap without readings)
+  manualExtraKm?: number | null;
+  kmSource?: 'ODOMETER' | 'STAFF_ENTERED' | 'NONE';
+  swapCount?: number;
+  segments?: KmSegment[];
 }
 
 export interface DropDiscount {

@@ -15,6 +15,24 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 export const UPLOAD_MAX_WIDTH = 1280;
 export const UPLOAD_QUALITY = 0.55;
 
+// Damage evidence needs the detail of scratches, dents and cracks, which the
+// licence profile smears. 2000px matches the server's own resize cap.
+export const DAMAGE_MAX_WIDTH = 2000;
+export const DAMAGE_QUALITY = 0.8;
+
+// A customer QR code photo (Aadhaar secure QR etc.) is dense; the licence
+// profile's blur makes it unreadable. ~1600px at q0.8 keeps the modules sharp.
+export const QR_MAX_WIDTH = 1600;
+export const QR_QUALITY = 0.8;
+
+export type UploadProfile = 'standard' | 'damage' | 'qr';
+
+const PROFILES: Record<UploadProfile, { width: number; quality: number }> = {
+  standard: { width: UPLOAD_MAX_WIDTH, quality: UPLOAD_QUALITY },
+  damage: { width: DAMAGE_MAX_WIDTH, quality: DAMAGE_QUALITY },
+  qr: { width: QR_MAX_WIDTH, quality: QR_QUALITY },
+};
+
 const EXT_BY_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -38,17 +56,19 @@ export interface UploadFile {
 export async function prepareImageForUpload(
   asset: Pick<ImagePickerAsset, 'uri' | 'mimeType' | 'width'>,
   baseName: string,
+  profile: UploadProfile = 'standard',
 ): Promise<UploadFile> {
   try {
+    const { width: maxWidth, quality } = PROFILES[profile];
     // Only downscale — `resize: { width }` would otherwise upscale a small
     // image, inflating it for no benefit.
     const actions =
-      asset.width && asset.width > UPLOAD_MAX_WIDTH
-        ? [{ resize: { width: UPLOAD_MAX_WIDTH } }]
+      asset.width && asset.width > maxWidth
+        ? [{ resize: { width: maxWidth } }]
         : [];
 
     const out = await ImageManipulator.manipulateAsync(asset.uri, actions, {
-      compress: UPLOAD_QUALITY,
+      compress: quality,
       format: ImageManipulator.SaveFormat.JPEG,
     });
 

@@ -19,11 +19,13 @@ interface Props {
   // defaults to the full 30-minute grid.
   slots?: TimeSlot[];
   title?: string;
+  // Shown when no time is left (e.g. the branch is closed that day).
+  emptyText?: string;
   onSelect: (value: string) => void;
   onClose: () => void;
 }
 
-export default function TimeFieldPicker({ visible, value, slots = GRID_SLOTS, title, onSelect, onClose }: Props) {
+export default function TimeFieldPicker({ visible, value, slots = GRID_SLOTS, title, emptyText, onSelect, onClose }: Props) {
   // An off-grid current value (e.g. 6:05 PM) stays listed and selected; the
   // list opens scrolled to it, or to the next later time.
   const data = useMemo(() => withSelectedSlot(slots, value), [slots, value]);
@@ -46,7 +48,7 @@ export default function TimeFieldPicker({ visible, value, slots = GRID_SLOTS, ti
             showsVerticalScrollIndicator={false}
             initialScrollIndex={data.length ? scrollIndex : undefined}
             getItemLayout={(_, index) => ({ length: 48, offset: 48 * index, index })}
-            ListEmptyComponent={<Text style={styles.empty}>No times left on this day. Pick another date.</Text>}
+            ListEmptyComponent={<Text style={styles.empty}>{emptyText ?? 'No times left on this day. Pick another date.'}</Text>}
             renderItem={({ item }) => {
               const active = item.value === value;
               return (
