@@ -159,7 +159,8 @@ jobs:
             DB_ENV_FILE=/var/www/vrms/packages/db/.env
             [ -f "$DB_ENV_FILE" ] || DB_ENV_FILE=/var/www/vrms/apps/backend/.env
             for migration in \
-              20260927090000_licence_drop_damage_utr
+              20260927090000_licence_drop_damage_utr \
+              20261001090000_client_batch_oct
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

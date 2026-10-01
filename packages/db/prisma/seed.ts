@@ -384,6 +384,7 @@ async function main() {
       publicId: nanoid(),
       name: "John Customer",
       email: "customer@vrms.com",
+      phone: "9876543210",
       passwordHash,
       role: Role.CUSTOMER,
       authProvider: AuthProvider.PASSWORD,
@@ -402,6 +403,10 @@ async function main() {
           city: "Manipal",
           state: "Karnataka",
           zipCode: "576104",
+          // Test identity numbers (Verhoeff-valid Aadhaar) so the seed
+          // customer has a complete profile and can book.
+          drivingLicenceNumber: "KA0120110012345",
+          aadhaarNumber: "234123412346",
           isProfileCompleted: true,
         },
       },

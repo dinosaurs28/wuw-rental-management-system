@@ -63,6 +63,7 @@ enum ChargeType {
   DAMAGE
   GRACE_ADJUSTMENT
   SAFETY_DEPOSIT
+  VEHICLE_SWAP
 }
 
 enum OverrideStatus {
@@ -181,6 +182,43 @@ enum SwapReason {
   OTHER
 }
 
+// Original driving licence custody at pickup. DEPOSIT = the customer left a
+// deposit (cash / alternate ID, described in Booking.dlDepositNote) instead.
+enum DlCollectionStatus {
+  COLLECTED
+  NOT_COLLECTED
+  DEPOSIT
+}
+
+// Trip-type tags a vehicle is suited for; customers filter the fleet by them.
+enum VehicleUseCase {
+  HIGHWAY
+  HILL_STATION
+  LONG_DRIVE
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_DISPLACED
+  PAYMENT_NEEDS_REFUND
+  REFUND_COMPLETED
+  EXTENSION_CONFIRMED
+  EXTENSION_REJECTED
+  PICKUP_COMPLETED
+  PICKUP_APPROVAL_REQUESTED
+  RETURN_COMPLETED
+  RETURN_APPROVAL_REQUESTED
+  RETURN_OVERDUE
+  DAMAGE_REPORTED
+  DAMAGE_CHARGED
+  VEHICLE_SWAPPED
+  APPROVAL_REQUESTED
+  APPROVAL_RESOLVED
+  CASH_DELAYED
+  SHIFT_DISCREPANCY
+}
+
 // USER & AUTH
 
 model User {
@@ -230,6 +268,8 @@ model User {
   creditEntriesCreated  CustomerCreditEntry[]  @relation("CreditEntryCreator")
   creditClearancesActed CreditClearance[]      @relation("CreditClearanceActor")
   creditNotesIssued     CreditNote[]           @relation("CreditNoteIssuer")
+  notifications         Notification[]
+  pushTokens            PushToken[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -270,7 +310,7 @@ model EmailVerificationOtp {
 model PasswordResetToken {
   id        Int       @id @default(autoincrement())
   userId    Int
-  tokenHash String
+  tokenHash String    @unique
   expiresAt DateTime
   used      Boolean   @default(false)
   usedAt    DateTime?
@@ -297,6 +337,15 @@ model Customer {
   country            String        @default("India")
   zipCode            String        @default("")
   isProfileCompleted Boolean       @default(false)
+  // Identity numbers, stored normalised (DL: uppercase, no spaces/'-'/'/';
+  // Aadhaar: 12 digits). Both are required for a complete profile.
+  drivingLicenceNumber String?
+  aadhaarNumber        String?
+  // Photo of the QR the walk-in customer presents (Aadhaar / DigiLocker).
+  qrPhotoFileId       Int?
+  qrPhotoFile         FileObject?   @relation("CustomerQrPhoto", fields: [qrPhotoFileId], references: [id], onDelete: SetNull)
+  qrPhotoCapturedAt   DateTime?
+  qrPhotoCapturedById Int?
   kycs               CustomerKyc[]
   bookings           Booking[]
 
@@ -306,6 +355,10 @@ model Customer {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  @@index([drivingLicenceNumber])
+  @@index([aadhaarNumber])
+  @@index([qrPhotoFileId])
 }
 
 model CustomerKyc {
@@ -345,6 +398,8 @@ model FileObject {
   cancellationInvoices  CancellationInvoice[] @relation("CancellationInvoicePdf")
   returnReceiptPdfs ReturnReceipt[] @relation("ReturnReceiptPdf")
   creditNotePdfs    CreditNote[]   @relation("CreditNotePdf")
+  customerQrPhotos  Customer[]     @relation("CustomerQrPhoto")
+  bookingQrPhotos   Booking[]      @relation("BookingQrPhoto")
 
   @@index([publicId])
 }
@@ -380,6 +435,7 @@ model Branch {
   paymentSessions         PaymentSession[]
   creditEntries           CustomerCreditEntry[]
   schedules               BranchSchedule[]
+  notifications           Notification[]
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
@@ -624,6 +680,7 @@ model Vehicle {
   status          VehicleStatus @default(AVAILABLE)
   fastagNumber    String?
   hasFastag       Boolean       @default(false)
+  useCases        VehicleUseCase[] @default([])
   branch           Branch                     @relation(fields: [branchId], references: [id])
   category         VehicleCategory            @relation(fields: [categoryId], references: [id])
   insuranceRecords VehicleInsurance[]
@@ -866,6 +923,18 @@ model Booking {
   licenseCollectedById Int?
   licenseReturnedAt    DateTime?
   licenseReturnedById  Int?
+  // Licence custody status chosen at pickup; editable by STAFF/MANAGER later.
+  dlStatus             DlCollectionStatus?
+  dlStatusUpdatedAt    DateTime?
+  dlStatusUpdatedById  Int?
+  dlDepositNote        String?
+
+  // Snapshot of the customer's QR photo at walk-in booking create.
+  qrPhotoFileId        Int?
+  qrPhotoFile          FileObject?    @relation("BookingQrPhoto", fields: [qrPhotoFileId], references: [id], onDelete: SetNull)
+
+  // Actual vehicle return time (drop completed).
+  returnedAt           DateTime?
 
   // Discount Tracking
   couponCode            String?
@@ -909,6 +978,7 @@ model Booking {
   // Credit Ledger
   creditEntry            CustomerCreditEntry?
   creditNotes            CreditNote[]
+  notifications          Notification[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -930,6 +1000,8 @@ model Booking {
   @@index([rentalPeriodType])
   @@index([discountRuleId])
   @@index([couponCode])
+  @@index([qrPhotoFileId])
+  @@index([branchId, status, rentalPeriodType])
 }
 
 model BookingItem {
@@ -1052,6 +1124,12 @@ model Invoice {
   tax           Decimal
   damageCharges Decimal
   total         Decimal
+  // GST breakdown (CGST+SGST on taxableAmount). total includes depositAmount,
+  // a refundable security deposit that is not a taxable supply.
+  taxableAmount Decimal       @default(0) @db.Decimal(10, 2)
+  cgstAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  sgstAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  depositAmount Decimal       @default(0) @db.Decimal(10, 2)
   status        InvoiceStatus @default(PENDING)
 
   // PDF Generation Fields
@@ -1078,6 +1156,9 @@ model InvoiceItem {
   amount     Decimal
   isTaxable  Boolean @default(true)
   chargeType String?
+  taxAmount  Decimal @default(0) @db.Decimal(10, 2)
+  // Where the line came from, e.g. "LEDGER:<entryPublicId>", "EXTENSION:<publicId>"
+  sourceRef  String?
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
 }
@@ -1334,6 +1415,18 @@ model VehicleSwap {
   originalVehicleNotes   String?
   swappedAt              DateTime       @default(now())
 
+  // CONFIRMED = swapped before pickup, PICKED_UP = swapped mid-rental
+  bookingStatusAtSwap        BookingStatus?
+  // Readings taken at a mid-rental swap (fuel in bars "1".."10")
+  originalVehicleEndOdometer Int?
+  originalVehicleFuelLevel   String?
+  newVehicleStartOdometer    Int?
+  newVehicleFuelLevel        String?
+  // Pro-rated price gap for the remaining period (never negative) and
+  // whether staff chose to bill it (billed at drop as a VEHICLE_SWAP line)
+  priceDifference            Decimal        @default(0) @db.Decimal(10, 2)
+  chargeDifference           Boolean        @default(false)
+
   booking                Booking        @relation(fields: [bookingId], references: [id])
   originalVehicle        Vehicle        @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])
   newVehicle             Vehicle        @relation("NewVehicle", fields: [newVehicleId], references: [id])
@@ -1558,6 +1651,7 @@ model CouponUsageLog {
   @@index([discountRuleId, customerId])
   @@index([discountRuleId, branchId, appliedAt])
   @@index([customerId, appliedAt])
+  @@index([bookingId])
 }
 
 // Manager-issued manual discount override for a booking.
@@ -1728,6 +1822,12 @@ model CashShift {
   status                CashShiftStatus @default(OPEN)
   openedAt              DateTime        @default(now())
   closedAt              DateTime?
+  // Float counted into the drawer when the shift opened
+  openingCash           Decimal         @default(0) @db.Decimal(10, 2)
+  // Close-time snapshots: physical cash taken in (COLLECTED + CONFIRMED) and
+  // cash refunds paid out of the drawer, from transactions linked to the shift
+  cashCollected         Decimal         @default(0) @db.Decimal(10, 2)
+  cashRefunded          Decimal         @default(0) @db.Decimal(10, 2)
   // Sum of all CONFIRMED cash transactions linked to this shift
   expectedTotal         Decimal         @default(0) @db.Decimal(10, 2)
   // Actual cash counted by employee at shift close
@@ -1749,6 +1849,7 @@ model CashShift {
   @@index([employeeId, status])
   @@index([branchId, status])
   @@index([openedAt])
+  @@index([branchId, openedAt])
 }
 
 // ── Rental Extension System ───────────────────────────────────────────────────
@@ -1769,9 +1870,17 @@ model BookingExtension {
   requestedEndAt       DateTime
   actualNewEndAt       DateTime?                // Set on CONFIRMED — may differ if PARTIAL
 
-  // Pricing delta
+  // Pricing delta. additionalAmount = taxableAmount + taxAmount, where
+  // taxableAmount = baseAmount - discountAmount and taxAmount = cgst + sgst.
   additionalAmount     Decimal                  @db.Decimal(10, 2)
   newTotalFinal        Decimal                  @db.Decimal(10, 2)
+  baseAmount           Decimal                  @default(0) @db.Decimal(10, 2)
+  discountAmount       Decimal                  @default(0) @db.Decimal(10, 2)
+  taxableAmount        Decimal                  @default(0) @db.Decimal(10, 2)
+  taxAmount            Decimal                  @default(0) @db.Decimal(10, 2)
+  cgstAmount           Decimal                  @default(0) @db.Decimal(10, 2)
+  sgstAmount           Decimal                  @default(0) @db.Decimal(10, 2)
+  taxRate              Decimal                  @default(0) @db.Decimal(5, 2)
 
   // Resolution
   resolutionType       ExtensionResolutionType?
@@ -1880,6 +1989,13 @@ model ChargeEntry {
   // Calculation metadata
   quantity Decimal? @db.Decimal(10, 4) // e.g. excess km, extra hours
   unitRate Decimal? @db.Decimal(10, 2) // e.g. rate per extra km
+
+  // GST frozen when the charge is recorded (finalAmount is the taxable value;
+  // gstAmount = cgstAmount + sgstAmount). Zero for non-taxable charges.
+  gstAmount  Decimal @default(0) @db.Decimal(10, 2)
+  cgstAmount Decimal @default(0) @db.Decimal(10, 2)
+  sgstAmount Decimal @default(0) @db.Decimal(10, 2)
+  taxRate    Decimal @default(0) @db.Decimal(5, 2)
 
   notes       String?
   isOverridden Boolean @default(false)
@@ -2133,6 +2249,7 @@ enum LedgerEntryType {
   DISCOUNT
   PAYMENT
   REFUND
+  VEHICLE_SWAP
 }
 
 enum LedgerEntryClassification {
@@ -2216,6 +2333,9 @@ model CreditNote {
   receiptId        Int?
 
   amount           Decimal          @db.Decimal(10, 2)
+  taxableAmount    Decimal          @default(0) @db.Decimal(10, 2)
+  cgstAmount       Decimal          @default(0) @db.Decimal(10, 2)
+  sgstAmount       Decimal          @default(0) @db.Decimal(10, 2)
   reason           String
   status           CreditNoteStatus @default(APPROVED)
 
@@ -2236,4 +2356,47 @@ model CreditNote {
   @@index([invoiceId])
   @@index([receiptId])
   @@index([issuedById])
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+// One row per recipient. dedupeKey makes every event idempotent per user
+// (verify/webhook/poll races, retries, multiple processes).
+model Notification {
+  id        Int              @id @default(autoincrement())
+  publicId  String           @unique
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId  Int?
+  branch    Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  bookingId Int?
+  booking   Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  type      NotificationType
+  title     String
+  body      String
+  // { bookingPublicId?, extensionPublicId?, entity?, entityPublicId? } —
+  // clients map type + data to their own routes
+  data      Json?
+  dedupeKey String
+  readAt    DateTime?
+  pushedAt  DateTime?
+  createdAt DateTime         @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([bookingId])
+}
+
+// Expo push tokens registered by the mobile app.
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
