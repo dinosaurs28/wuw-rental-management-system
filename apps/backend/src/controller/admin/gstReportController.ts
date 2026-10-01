@@ -11,6 +11,8 @@ import {
   summaryRow,
   csvCurrency,
   csvDate,
+  getExtraOutputGstByBooking,
+  emptyExtraOutputGst,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -25,9 +27,12 @@ import {
  * - Anchor on booking.startAt via buildBookingWhere + REVENUE_BOOKING_STATUSES
  *   (NOT invoice.createdAt / invoice status). CONFIRMED bookings without a
  *   finalized invoice therefore appear; Document No falls back to Booking ID.
- * - CGST/SGST sourced from BookingItem.cgstAmount + sgstAmount (NEVER invoice.tax/2).
+ * - CGST/SGST sourced from BookingItem.cgstAmount + sgstAmount (NEVER invoice.tax/2),
+ *   plus the split stored on CONFIRMED BookingExtensions and the GST stored on
+ *   taxable InvoiceItems (return charges, damage penalty) — canonical rule #23.
  * - IGST = 0 (no column in DB; intra-state).
- * - Taxable = booking.totalBase − booking.totalDiscount (base before GST).
+ * - Taxable = booking.totalBase − booking.totalDiscount (base before GST)
+ *   + extension taxable values + taxable return charges.
  * - Customer GSTIN = "" (not stored; do NOT use branch gstNumber as customer GSTIN).
  *
  * Query Parameters:
@@ -101,14 +106,28 @@ export const GetGSTReport = async (req: Request, res: Response) => {
     const monthlyBreakdown: Record<string, any> = {};
     const branchBreakdown: Record<string, any> = {};
 
+    // Output GST beyond the original rental (canonical rule #23): confirmed
+    // extensions and taxable invoice lines (return charges, damage penalty),
+    // each from the GST stored when the line was created.
+    const extraGst = await getExtraOutputGstByBooking(
+      bookings.map((b: any) => b.id),
+      { includeInvoiceLines: true },
+    );
+    const r2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
+
     const outputRows = bookings.map((b: any) => {
-      const cgst = b.items.reduce((s: number, it: any) => s + Number(it.cgstAmount), 0);
-      const sgst = b.items.reduce((s: number, it: any) => s + Number(it.sgstAmount), 0);
+      const extra = extraGst.get(b.id) ?? emptyExtraOutputGst();
+      const rentalCgst = b.items.reduce((s: number, it: any) => s + Number(it.cgstAmount), 0);
+      const rentalSgst = b.items.reduce((s: number, it: any) => s + Number(it.sgstAmount), 0);
+      const cgst = r2(rentalCgst + extra.extensionCgst + extra.chargesCgst);
+      const sgst = r2(rentalSgst + extra.extensionSgst + extra.chargesSgst);
       const igst = 0;
-      const rowGST = cgst + sgst;
-      // Taxable = base before GST (booking.totalBase − totalDiscount).
-      const taxableAmount = Number(b.totalBase) - Number(b.totalDiscount);
-      const invoiceTotal = taxableAmount + rowGST;
+      const rowGST = r2(cgst + sgst);
+      // Taxable = rental base before GST (booking.totalBase − totalDiscount)
+      // + confirmed extensions + taxable return charges.
+      const rentalTaxable = Number(b.totalBase) - Number(b.totalDiscount);
+      const taxableAmount = r2(rentalTaxable + extra.extensionTaxable + extra.chargesTaxable);
+      const invoiceTotal = r2(taxableAmount + rowGST);
       const documentNo = b.invoice?.invoiceNumber || b.invoice?.publicId || b.publicId;
 
       totalTaxableAmount += taxableAmount;
@@ -182,6 +201,20 @@ export const GetGSTReport = async (req: Request, res: Response) => {
         invoiceDate: b.startAt.toISOString(),
         totalAmount: invoiceTotal,
         isInterState: false,
+
+        // Breakdown of the row (rental / confirmed extensions / taxable return charges)
+        rental: { taxableAmount: r2(rentalTaxable), cgst: r2(rentalCgst), sgst: r2(rentalSgst) },
+        extensions: {
+          count: extra.extensionCount,
+          taxableAmount: extra.extensionTaxable,
+          cgst: extra.extensionCgst,
+          sgst: extra.extensionSgst,
+        },
+        returnCharges: {
+          taxableAmount: extra.chargesTaxable,
+          cgst: extra.chargesCgst,
+          sgst: extra.chargesSgst,
+        },
       };
     });
 

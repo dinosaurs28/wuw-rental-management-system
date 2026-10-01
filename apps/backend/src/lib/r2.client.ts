@@ -6,8 +6,13 @@ const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
 if (!accountId || !accessKeyId || !secretAccessKey) {
   console.warn("[R2] Credentials missing! Client will not work correctly.");
-} else {
-  console.log(`[R2] Client initialized with endpoint: https://${accountId}.r2.cloudflarestorage.com`);
+}
+
+// R2_ENDPOINT overrides the Cloudflare endpoint, e.g. a local MinIO for tests,
+// so a local backend never writes to (or deletes from) the live buckets.
+const endpoint = process.env.R2_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`;
+if (accountId && accessKeyId && secretAccessKey) {
+  console.log(`[R2] Client initialized with endpoint: ${endpoint}`);
 }
 
 // Single S3-compatible client for the Cloudflare R2 account.
@@ -15,7 +20,8 @@ if (!accountId || !accessKeyId || !secretAccessKey) {
 // the bucket name is passed per-command, not per-client.
 export const r2 = new S3Client({
   region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  endpoint,
+  forcePathStyle: Boolean(process.env.R2_ENDPOINT),
   credentials: {
     accessKeyId: accessKeyId || "",
     secretAccessKey: secretAccessKey || "",

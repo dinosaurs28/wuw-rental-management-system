@@ -23,8 +23,32 @@ import { PricingEngineService } from "../../services/pricing/pricing-engine.serv
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import Decimal from "decimal.js";
+import {
+  getBranchGstRatesCached,
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+} from "../../services/tax/gst.service.js";
+import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { MAX_BOOKING_DAYS } from "@repo/schemas";
+import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
+import {
+  getCustomerPaymentMode,
+  resolvePaymentOptions,
+  resolveEffectiveFlow,
+  type PaymentFlow,
+} from "../../services/payment/payment-flow.service.js";
+import { couponValidationService, normalizeCouponCode } from "../../services/discount/coupon-validation.service.js";
 
 const pricingEngine = new PricingEngineService();
+
+/** A coupon the booking can't use any more — answered as 422 { couponRejected: true }. */
+class CouponRejectedError extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+    this.name = "CouponRejectedError";
+  }
+}
 
 /** Order details the client needs to open Razorpay Checkout. */
 type RazorpayCheckoutPayload = {
@@ -59,13 +83,16 @@ function parseGroupKey(groupKey: string): { make: string; model: string; categor
 /**
  * Atomically resolves a groupKey to the best available vehicle within a Prisma transaction.
  * Checks only DB-level CONFIRMED/PICKED_UP conflicts — Redis holds are checked outside.
- * Selects the lowest-odometer candidate to distribute fleet wear evenly.
+ * Selects the lowest-odometer candidate to distribute fleet wear evenly, trying
+ * the pre-priced representative (preferredVehicleId) first so the unit booked
+ * is the one whose price and advance were quoted.
  */
 async function resolveVehicleFromGroup(
   groupKey: string,
   startDate: Date,
   endDate: Date,
   tx: typeof prisma,
+  preferredVehicleId?: number,
 ): Promise<NonNullable<Awaited<ReturnType<typeof prisma.vehicle.findFirst>>>> {
   const parsed = parseGroupKey(groupKey);
   if (!parsed) throw Object.assign(new Error("Invalid groupKey format"), { code: "INVALID_GROUP_KEY", status: 400 });
@@ -87,6 +114,7 @@ async function resolveVehicleFromGroup(
   const targetModel = normalizeStr(model);
   const candidates = branchVehicles
     .filter((v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel)
+    .sort((a, b) => Number(b.id === preferredVehicleId) - Number(a.id === preferredVehicleId))
     .slice(0, 10);
 
   if (candidates.length === 0) {
@@ -150,9 +178,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC document" });
     }
 
-    const kycOwner = kycFile.customerKycs?.[0]?.customer?.userId;
-    if (kycOwner && kycOwner !== userData.id) {
-      return res.status(StatusCode.FORBIDDEN).json({ message: "KYC document does not belong to your account" });
+    // The file must be one of the caller's own KYC documents: a file that isn't
+    // linked to any KYC row (e.g. a pickup photo) is rejected too.
+    const kycOwners = (kycFile.customerKycs ?? []).map((k) => k.customer?.userId);
+    if (kycOwners.length === 0) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "KYC_DOCUMENT_INVALID",
+        message: "Invalid KYC document. Select one of your uploaded KYC documents.",
+      });
+    }
+    if (!kycOwners.includes(userData.id)) {
+      return res.status(StatusCode.FORBIDDEN).json({
+        success: false,
+        code: "KYC_NOT_OWNED",
+        message: "KYC document does not belong to your account",
+      });
     }
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -182,6 +223,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Start date cannot be in the past",
       });
+    }
+
+    // ── 15-day booking window (#15) — customers can't choose a monthly plan ──
+    try {
+      assertBookingWindow(startDate, endDate);
+    } catch (windowErr) {
+      if (windowErr instanceof BookingWindowError) {
+        return res.status(StatusCode.BAD_REQUEST).json(windowErr.toJSON());
+      }
+      throw windowErr;
     }
 
     // ── Resolve groupKeys to specific vehicles (atomic within the DB transaction below) ──
@@ -231,19 +282,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       const firstParsed = parseGroupKey(resolvedGroupKeys[0]!);
       bookingBranchId = firstParsed?.branchId;
     }
-    let cgstRate = 9;
-    let sgstRate = 9;
-
-    if (bookingBranchId) {
-      const gstRule = await prisma.gSTRule.findUnique({
-        where: { branchId: bookingBranchId },
-      });
-      if (gstRule) {
-        cgstRate = Number(gstRule.cgstRate);
-        sgstRate = Number(gstRule.sgstRate);
-      }
+    if (!bookingBranchId) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Could not resolve the branch for this booking" });
     }
-    const totalTaxRate = cgstRate + sgstRate;
+    // No silent 9/9 fallback: a branch without a GST rule fails with
+    // GST_RULE_MISSING (answered as 409 in the catch below).
+    const { cgstRate, sgstRate, rate: totalTaxRate } = await getBranchGstRatesCached(bookingBranchId);
 
     let grandBaseTotal = 0;
     let grandDiscountTotal = 0;
@@ -253,6 +297,39 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandDeposit = 0;
     let grandFinalTotal = 0;
     let grandAdvanceAmount = 0; // sum of per-vehicle fixed advance amounts
+    let grandDurationDiscountTotal = 0;
+    let grandCouponDiscountTotal = 0;
+    let durationDiscountLabel: string | null = null;
+
+    // ── Payment plan + coupon context ──────────────────────────────────────────
+    // The branch's customerPaymentMode and the amounts decide the plan
+    // (converted, never rejected): ADVANCE only when 0 < advance < payable
+    // total, which needs the post-coupon totals. So the coupon is priced
+    // without its payment-plan rules here, and they are checked below against
+    // the plan actually charged (an ADVANCE_ONLY branch with no advance on the
+    // vehicle charges in full, so a full-payment coupon is valid there).
+    const customerPaymentMode = await getCustomerPaymentMode(bookingBranchId);
+    const requestedFlow: PaymentFlow = payment_flow === "ADVANCE" ? "ADVANCE" : "FULL";
+    // One coupon per booking: it is priced on the first vehicle only
+    const requestedCoupon = couponCode ? normalizeCouponCode(couponCode) : undefined;
+    let couponItemPriced = false;
+    let appliedCouponRule: import("@repo/database/client").DiscountRule | undefined;
+    const couponFor = () => {
+      if (!requestedCoupon || couponItemPriced) return undefined;
+      couponItemPriced = true;
+      return requestedCoupon;
+    };
+    const couponItem = (): any => items.find((i: any) => i.appliedCouponCode);
+    const rejectIfCouponInvalid = (pr: Awaited<ReturnType<typeof pricingEngine.calculateBookingPrice>>, couponSent: string | undefined) => {
+      if (!couponSent) return;
+      if (!pr.discountEvaluation.couponValid) {
+        throw new CouponRejectedError(
+          pr.discountEvaluation.couponFailureCode ?? "COUPON_INVALID",
+          pr.discountEvaluation.couponFailureReason ?? "This coupon can't be used for this booking.",
+        );
+      }
+      appliedCouponRule = pr.discountEvaluation.couponRule;
+    };
 
     // Calculate total duration info once for the booking overall constraints
     const bookingDuration = DurationCalculatorService.calculate(
@@ -337,6 +414,18 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         }
 
         if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+          // Never offer an adjusted return past the 15-day limit
+          try {
+            assertBookingWindow(startDate, verdict.adjustedReturn);
+          } catch (windowErr) {
+            if (windowErr instanceof BookingWindowError) {
+              return res.status(StatusCode.BAD_REQUEST).json({
+                ...windowErr.toJSON(),
+                message: `The branch is closed at the chosen return time, and the next open return (${verdict.nextOpenLabel ?? "next available time"}) is past the ${MAX_BOOKING_DAYS}-day limit. Please choose an earlier return.`,
+              });
+            }
+            throw windowErr;
+          }
           return res.status(StatusCode.BAD_REQUEST).json({
             code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
             message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours. Please confirm the new return time.`,
@@ -369,14 +458,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     for (const v of vehiclesData) {
 
       // Calculate pricing via Phase 2 Pricing Engine
+      const itemCoupon = couponFor();
       const pricingResult = await pricingEngine.calculateBookingPrice(
         v.id,
         startDateDt,
         endDateDt,
         v.branchId,
         customerId,
-        couponCode?.toUpperCase(),
+        itemCoupon,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { deferPaymentPlanCheck: true },
       );
+      // A coupon that no longer applies is rejected, never silently dropped
+      rejectIfCouponInvalid(pricingResult, itemCoupon);
 
       const baseTotal = Number(pricingResult.basePrice.toString());
       const days = bookingDuration.days;
@@ -405,6 +502,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         baseTotal,
         discountAmount,
         discountPercent: discountPercent * 100, // as percentage (e.g., 10 instead of 0.1)
+        durationDiscountAmount: Number(pricingResult.durationDiscountAmount.toFixed(2)),
+        durationDiscountLabel: pricingResult.durationDiscountLabel,
+        durationSlabId: pricingResult.durationSlabId,
+        couponDiscountAmount: Number(pricingResult.couponDiscountAmount.toFixed(2)),
         appliedCouponCode: pricingResult.appliedCouponCode ?? null,
         couponRuleId: pricingResult.couponRuleId ?? null,
         deposit,
@@ -420,11 +521,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           actualHours: bookingDuration.actualDuration,
           freeKmLimit: pricingResult.freeKmLimit,
           extraKmRate: Number(pricingResult.extraKmRate.toString()),
+          billedAs: pricingResult.pricingBreakdown.billedAs,
+          billedAsType: pricingResult.pricingBreakdown.billedAsType,
         },
       });
 
       grandBaseTotal += baseTotal;
       grandDiscountTotal += discountAmount;
+      grandDurationDiscountTotal += Number(pricingResult.durationDiscountAmount.toString());
+      grandCouponDiscountTotal += Number(pricingResult.couponDiscountAmount.toString());
+      durationDiscountLabel ??= pricingResult.durationDiscountLabel;
       grandTaxTotal += taxAmount;
       grandCGSTTotal += cgstAmount;
       grandSGSTTotal += sgstAmount;
@@ -434,10 +540,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     // Pre-price group vehicles so grand totals are correct before payment initiation.
-    // All vehicles in a group share the same pricing rules, so this representative
-    // pricing matches what the transaction will compute for the atomically resolved vehicle.
+    // The representative is picked by the same rule as the public group page
+    // (lowest-odometer unit free for the dates, Redis holds included), and the
+    // transaction tries that unit first, so the price and advance shown are charged.
+    const groupRepVehicleIds: number[] = [];
+    let groupCouponIndex = -1; // which group slot carries the booking's coupon
     if (resolvedGroupKeys.length > 0) {
-      for (const gk of resolvedGroupKeys) {
+      for (const [gkIndex, gk] of resolvedGroupKeys.entries()) {
         const gkParsed = parseGroupKey(gk)!;
         console.log(`[booking] resolving group key: ${gk} → make:${gkParsed.make} model:${gkParsed.model} categoryId:${gkParsed.categoryId} branchId:${gkParsed.branchId}`);
         const targetMake = normalizeStr(gkParsed.make);
@@ -450,22 +559,40 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             deletedAt: null,
             insuranceExpiry: { gt: new Date() },
           },
-          select: { id: true, make: true, model: true, branchId: true, advancePayAmount: true },
+          select: { id: true, publicId: true, status: true, make: true, model: true, branchId: true, advancePayAmount: true },
           orderBy: { odo: "asc" },
         });
-        const repVehicle = candidates.find(
-          (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
+        const { representative: repVehicle } = await pickGroupRepresentative(
+          candidates.filter(
+            (v) =>
+              normalizeStr(v.make) === targetMake &&
+              normalizeStr(v.model) === targetModel &&
+              !groupRepVehicleIds.includes(v.id),
+          ),
+          startDate,
+          endDate,
         );
         if (!repVehicle) {
-          return res.status(StatusCode.CONFLICT).json({ message: `No vehicles available for group ${gk}` });
+          return res.status(StatusCode.CONFLICT).json({
+            code: "NO_VEHICLE_AVAILABLE",
+            message: `No ${gkParsed.make} ${gkParsed.model} is available for the selected dates. Please try different dates or refresh to see current availability.`,
+          });
         }
+        groupRepVehicleIds.push(repVehicle.id);
         console.log(`[booking] repVehicle id:${repVehicle.id} branchId:${repVehicle.branchId}`);
+        const groupCoupon = couponFor();
+        if (groupCoupon) groupCouponIndex = gkIndex;
         const pr = await pricingEngine.calculateBookingPrice(
-          repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, couponCode?.toUpperCase(),
+          repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, groupCoupon,
+          undefined, undefined, undefined, undefined, { deferPaymentPlanCheck: true },
         );
+        rejectIfCouponInvalid(pr, groupCoupon);
         console.log(`[booking] pricing for vehicle ${repVehicle.id}: base:${pr.basePrice} discount:${pr.discountAmount} tax:${pr.taxAmount} deposit:${pr.deposit} finalTotal:${pr.finalTotal}`);
         grandBaseTotal     += Number(pr.basePrice.toString());
         grandDiscountTotal += Number(pr.discountAmount.toString());
+        grandDurationDiscountTotal += Number(pr.durationDiscountAmount.toString());
+        grandCouponDiscountTotal   += Number(pr.couponDiscountAmount.toString());
+        durationDiscountLabel ??= pr.durationDiscountLabel;
         grandTaxTotal      += Number(pr.taxAmount.toString());
         grandCGSTTotal     += Number(pr.cgstAmount.toString());
         grandSGSTTotal     += Number(pr.sgstAmount.toString());
@@ -483,13 +610,44 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
     grandAdvanceAmount = Number(grandAdvanceAmount.toFixed(2));
+    grandDurationDiscountTotal = Number(grandDurationDiscountTotal.toFixed(2));
+    grandCouponDiscountTotal = Number(grandCouponDiscountTotal.toFixed(2));
 
-    // Fall back to FULL if ADVANCE was requested but no advance amount is configured,
-    // or if the configured advance amount is ≥ the total (which would make it a full payment anyway).
-    const isAdvancePayment =
-      payment_flow === "ADVANCE" &&
-      grandAdvanceAmount > 0 &&
-      grandAdvanceAmount < grandFinalTotal;
+    // Effective plan: the branch mode, then the amounts — the advance is valid
+    // only if 0 < advance < full payable (rental after discounts + GST + deposit).
+    // A plan the branch/amounts don't allow is converted, never rejected.
+    const paymentOptions = resolvePaymentOptions({
+      mode: customerPaymentMode,
+      advanceAmount: grandAdvanceAmount,
+      payableTotal: grandFinalTotal,
+    });
+    const effectiveFlow = resolveEffectiveFlow(requestedFlow, paymentOptions);
+    if (effectiveFlow.adjusted) {
+      console.warn(
+        `[booking] payment_flow ${requestedFlow} → ${effectiveFlow.flow} (${effectiveFlow.reason}) ` +
+        `branch=${bookingBranchId} mode=${customerPaymentMode} advance=${grandAdvanceAmount} total=${grandFinalTotal}`,
+      );
+    }
+    const isAdvancePayment = effectiveFlow.flow === "ADVANCE";
+
+    // The coupon's payment-plan rules, against the plan actually charged
+    if (appliedCouponRule) {
+      const planCheck = couponValidationService.checkPaymentPlan(appliedCouponRule, effectiveFlow.flow);
+      if (!planCheck.valid) {
+        throw new CouponRejectedError(
+          planCheck.failureCode ?? "COUPON_PAYMENT_PLAN_MISMATCH",
+          planCheck.failureReason ?? "This coupon is not valid for this payment plan.",
+        );
+      }
+      const minAdvance = appliedCouponRule.minAdvanceAfterDiscount;
+      if (isAdvancePayment && minAdvance != null && grandAdvanceAmount < Number(minAdvance)) {
+        throw new CouponRejectedError(
+          "COUPON_PAYMENT_PLAN_MISMATCH",
+          `This coupon needs an advance of at least ₹${Number(minAdvance).toFixed(2)}` +
+            (paymentOptions.allowedFlows.includes("FULL") ? "; pay the full amount to use it." : "."),
+        );
+      }
+    }
 
     const chargeAmount = isAdvancePayment ? grandAdvanceAmount : grandFinalTotal;
 
@@ -548,9 +706,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     const booking = await prisma.$transaction(async (tx) => {
       // Atomically resolve each groupKey to a specific vehicle within the transaction
-      for (const gk of resolvedGroupKeys) {
+      for (const [gkIndex, gk] of resolvedGroupKeys.entries()) {
         try {
-          const resolved = await resolveVehicleFromGroup(gk, startDate, endDate, tx as any);
+          const resolved = await resolveVehicleFromGroup(gk, startDate, endDate, tx as any, groupRepVehicleIds[gkIndex]);
           resolvedGroupVehicles.push(resolved as any);
         } catch (err: any) {
           if (err.code === "NO_VEHICLE_AVAILABLE") {
@@ -567,15 +725,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       // Re-price the resolved group vehicles and add them to items.
       // Grand totals were already computed from representative vehicles before payment
       // initiation — do NOT add to them again here to avoid double-counting.
-      for (const v of resolvedGroupVehicles) {
+      for (const [gvIndex, v] of resolvedGroupVehicles.entries()) {
+        const groupCoupon = gvIndex === groupCouponIndex ? requestedCoupon : undefined;
         const pricingResult = await pricingEngine.calculateBookingPrice(
           v.id,
           startDateDt,
           endDateDt,
           v.branchId,
           customerId,
-          couponCode?.toUpperCase(),
+          groupCoupon,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          { paymentPlan: effectiveFlow.flow },
         );
+        rejectIfCouponInvalid(pricingResult, groupCoupon);
 
         const baseTotal       = Number(pricingResult.basePrice.toString());
         const discountPercent = Number(pricingResult.discountPercent.toString()) / 100;
@@ -597,6 +762,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           baseTotal,
           discountAmount,
           discountPercent:   discountPercent * 100,
+          durationDiscountAmount: Number(pricingResult.durationDiscountAmount.toFixed(2)),
+          durationDiscountLabel:  pricingResult.durationDiscountLabel,
+          durationSlabId:         pricingResult.durationSlabId,
+          couponDiscountAmount:   Number(pricingResult.couponDiscountAmount.toFixed(2)),
           appliedCouponCode: pricingResult.appliedCouponCode ?? null,
           couponRuleId:      pricingResult.couponRuleId ?? null,
           deposit,
@@ -611,6 +780,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             actualHours:   bookingDuration.actualDuration,
             freeKmLimit:   pricingResult.freeKmLimit,
             extraKmRate:   Number(pricingResult.extraKmRate.toString()),
+            billedAs:      pricingResult.pricingBreakdown.billedAs,
+            billedAsType:  pricingResult.pricingBreakdown.billedAsType,
           },
         });
       }
@@ -652,20 +823,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             bookingDuration.billableDuration.toString(),
           ),
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-          ...(items[0]?.appliedCouponCode
+          ...(couponItem()?.appliedCouponCode
             ? {
-                couponCode: items[0].appliedCouponCode,
-                discountRuleId: items[0].couponRuleId ?? undefined,
+                couponCode: couponItem().appliedCouponCode,
+                discountRuleId: couponItem().couponRuleId ?? undefined,
               }
             : {}),
-          totalBase: grandBaseTotal,
-          totalDiscount: grandDiscountTotal,
-          totalDeposit: grandDeposit,
-          totalTax: grandTaxTotal,
-          totalFinal: grandFinalTotal,
+          // 2-dp strings: Prisma stores a JS number in these unscaled Decimal
+          // columns with float noise (8885.2 → 8885.200000000001)
+          totalBase: grandBaseTotal.toFixed(2),
+          totalDiscount: grandDiscountTotal.toFixed(2),
+          totalDeposit: grandDeposit.toFixed(2),
+          totalTax: grandTaxTotal.toFixed(2),
+          totalFinal: grandFinalTotal.toFixed(2),
           isAdvancePayment: isAdvancePayment,
-          advanceAmount: isAdvancePayment ? grandAdvanceAmount : 0,
-          remainingBalance: remainingBalance,
+          advanceAmount: isAdvancePayment ? grandAdvanceAmount.toFixed(2) : 0,
+          remainingBalance: remainingBalance.toFixed(2),
           transactionId,
           ...(frozenChargeConfig ? { frozenChargeConfig: frozenChargeConfig as any } : {}),
           pricingSnapshot: {
@@ -678,7 +851,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
               grandCGSTTotal,
               grandSGSTTotal,
               taxRate: totalTaxRate,
+              cgstRate,
+              sgstRate,
               grandFinalTotal,
+              // Discount layers (they add up to grandDiscountTotal)
+              grandDurationDiscountTotal,
+              grandCouponDiscountTotal,
+              durationDiscountLabel,
+              couponCode: couponItem()?.appliedCouponCode ?? null,
+              paymentFlowRequested: requestedFlow,
+              paymentFlow: effectiveFlow.flow,
+              customerPaymentMode,
             },
           },
           createdById: userData.id,
@@ -689,28 +872,70 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           bookingId: newBooking.id,
           vehicleId: i.vehicleId,
           days: i.days,
-          baseTotal: i.baseTotal,
-          discountAmount: i.discountAmount,
-          discountPercent: i.discountPercent,
-          deposit: i.deposit,
-          taxAmount: i.taxAmount,
-          cgstAmount: i.cgstAmount,
-          sgstAmount: i.sgstAmount,
-          taxRate: i.taxRate,
-          finalTotal: i.finalTotal,
+          // String(n) is the exact decimal the number prints as (no float noise)
+          baseTotal: String(i.baseTotal),
+          discountAmount: String(i.discountAmount),
+          discountPercent: String(i.discountPercent),
+          deposit: String(i.deposit),
+          taxAmount: String(i.taxAmount),
+          cgstAmount: String(i.cgstAmount),
+          sgstAmount: String(i.sgstAmount),
+          taxRate: String(i.taxRate),
+          finalTotal: String(i.finalTotal),
         })),
       });
 
-      // Record coupon usage log so totalUsageLimit / perUserLimit checks are enforced
-      const appliedCouponRuleId = items[0]?.couponRuleId ?? null;
-      if (appliedCouponRuleId) {
+      // Record coupon usage log so totalUsageLimit / perUserLimit checks are enforced.
+      // Lock the rule and re-check the limits first: two holds racing for the last
+      // use of a limited coupon serialise here and the second is rejected.
+      const appliedCouponRuleId: number | null = couponItem()?.couponRuleId ?? null;
+      if (appliedCouponRuleId && appliedCouponRule) {
+        await couponValidationService.lockRule(tx, appliedCouponRuleId);
+        const usage = await couponValidationService.checkUsageLimits(
+          appliedCouponRule,
+          { customerId, branchId: newBooking.branchId, bookingId: newBooking.id },
+          tx,
+        );
+        if (!usage.valid) {
+          throw new CouponRejectedError(
+            usage.failureCode ?? "COUPON_USAGE_LIMIT_EXCEEDED",
+            usage.failureReason ?? "This coupon has reached its usage limit.",
+          );
+        }
         await tx.couponUsageLog.create({
           data: {
             discountRuleId: appliedCouponRuleId,
             bookingId: newBooking.id,
             customerId,
             branchId: newBooking.branchId,
-            discountedAmount: new Decimal(grandDiscountTotal),
+            // Only the coupon layer — the duration slab is not coupon savings
+            discountedAmount: new Decimal(grandCouponDiscountTotal),
+          },
+        });
+      }
+
+      // Discount layers on record (duration slab / coupon) for summaries and reports
+      if (grandDiscountTotal > 0 || appliedCouponRuleId) {
+        const firstSlabId = items.find((i: any) => i.durationSlabId)?.durationSlabId ?? null;
+        await tx.discountApplication.create({
+          data: {
+            publicId: createID(),
+            bookingId: newBooking.id,
+            originalAmount: new Decimal(grandBaseTotal).toFixed(2),
+            durationDiscountAmount: new Decimal(grandDurationDiscountTotal).toFixed(2),
+            durationDiscountPercent: grandBaseTotal > 0
+              ? new Decimal(grandDurationDiscountTotal).div(grandBaseTotal).mul(100).toDecimalPlaces(4).toString()
+              : "0",
+            durationSlabId: firstSlabId,
+            couponDiscountAmount: new Decimal(grandCouponDiscountTotal).toFixed(2),
+            couponDiscountPercent: grandBaseTotal - grandDurationDiscountTotal > 0
+              ? new Decimal(grandCouponDiscountTotal).div(grandBaseTotal - grandDurationDiscountTotal).mul(100).toDecimalPlaces(4).toString()
+              : "0",
+            discountRuleId: appliedCouponRuleId,
+            manualDiscountAmount: "0.00",
+            totalDiscountAmount: new Decimal(grandDiscountTotal).toFixed(2),
+            finalAmount: new Decimal(grandBaseTotal).sub(grandDiscountTotal).toFixed(2),
+            paymentPlan: effectiveFlow.flow,
           },
         });
       }
@@ -767,7 +992,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       message: "Summary created successfully",
       holdId,
       payment_type: parsed.data.payment_type,
-      payment_flow,
+      // The plan actually charged (may differ from the one requested — see paymentFlowAdjusted)
+      payment_flow: effectiveFlow.flow,
+      paymentFlowRequested: requestedFlow,
+      paymentFlowAdjusted: effectiveFlow.adjusted,
+      paymentFlowAdjustReason: effectiveFlow.reason,
+      paymentFlowAdjustMessage: effectiveFlow.message,
+      paymentOptions,
       isAdvancePayment,
       expiresIn: holdExpiry,
       expiresAt: holdData.expiresAt,
@@ -783,9 +1014,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandCGSTTotal,
           grandSGSTTotal,
           taxRate: totalTaxRate,
+          cgstRate,
+          sgstRate,
           grandFinalTotal,
-          appliedCouponCode: items[0]?.appliedCouponCode ?? null,
+          grandDurationDiscountTotal,
+          grandCouponDiscountTotal,
+          durationDiscountLabel,
+          appliedCouponCode: couponItem()?.appliedCouponCode ?? null,
           advanceAmount: isAdvancePayment ? grandAdvanceAmount : grandFinalTotal,
+          // Charged now (Razorpay order amount) and what stays due at pickup
+          payNowAmount: chargeAmount,
+          dueAtPickup: remainingBalance,
           remainingBalance,
           encryptedFinalPrice,
           transactionId,
@@ -794,8 +1033,21 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       },
     });
   } catch (e: any) {
+    if (e instanceof CouponRejectedError) {
+      // Raised before the Razorpay order (or rolled back with the hold): the
+      // customer is never charged an amount without the coupon they saw.
+      return res.status(StatusCode.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        code: e.code,
+        message: e.message,
+        couponRejected: true,
+      });
+    }
     if (e?.code === "NO_VEHICLE_AVAILABLE") {
       return res.status(409).json({ code: "NO_VEHICLE_AVAILABLE", message: e.message });
+    }
+    if (isGstRuleMissing(e)) {
+      return res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
     }
     if (e?.code === "INVALID_GROUP_KEY") {
       return res.status(StatusCode.BAD_REQUEST).json({ message: e.message });

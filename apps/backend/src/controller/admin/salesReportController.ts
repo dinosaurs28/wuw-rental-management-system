@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, PaymentStatus } from "@repo/database/client";
 import { exportSalesReportToExcel } from "../../utils/exportToExcel.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 import {
   resolveReportRange,
   parseCategoryIds,
@@ -13,6 +14,8 @@ import {
   summaryRow,
   csvCurrency,
   csvDate,
+  getExtraOutputGstByBooking,
+  emptyExtraOutputGst,
   type PaidAmounts,
 } from "../../utils/reporting/index.js";
 
@@ -170,15 +173,22 @@ export const GetSalesReport = async (req: Request, res: Response) => {
       },
     });
     const detailById = new Map(detailRows.map((b) => [b.id, b]));
+    // Confirmed extensions: their split (stored when priced) is added to the
+    // original rental's base/discount/GST so the row reconciles with totalFinal.
+    const extraGst = await getExtraOutputGstByBooking(pageIds);
+    const r2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
 
     const formatted = pageSlice
       .map((e) => {
         const b = detailById.get(e.id);
         if (!b) return null;
-        const gst = b.items.reduce(
+        const ext = extraGst.get(b.id) ?? emptyExtraOutputGst();
+        const rentalGst = b.items.reduce(
           (s, it) => s + Number(it.cgstAmount) + Number(it.sgstAmount),
           0,
         );
+        const extensionGst = r2(ext.extensionCgst + ext.extensionSgst);
+        const gst = r2(rentalGst + extensionGst);
         const v = b.items[0]?.vehicle;
         const vehicleName = v ? `${v.make} ${v.model}` : "N/A";
         return {
@@ -188,7 +198,8 @@ export const GetSalesReport = async (req: Request, res: Response) => {
           customer: {
             name: b.customer.user.name,
             phone: b.customer.user.phone,
-            email: b.customer.user.email,
+            // Walk-in placeholder addresses are never shown (D1)
+            email: displayEmail(b.customer.user.email) ?? "",
           },
           vehicle: {
             regNo: v?.regNo || "N/A",
@@ -203,11 +214,19 @@ export const GetSalesReport = async (req: Request, res: Response) => {
             days: b.days,
           },
           financial: {
-            baseAmount: Number(b.totalBase),
-            discount: Number(b.totalDiscount),
+            // Original rental + confirmed extensions (base − discount + GST + deposit = total)
+            baseAmount: r2(Number(b.totalBase) + ext.extensionBase),
+            discount: r2(Number(b.totalDiscount) + ext.extensionDiscount),
             gstAmount: gst,
             totalTax: gst,
             totalAmount: Number(b.totalFinal),
+            depositAmount: Number(b.totalDeposit),
+            extension: {
+              count: ext.extensionCount,
+              taxableAmount: ext.extensionTaxable,
+              gstAmount: extensionGst,
+              totalAmount: ext.extensionTotal,
+            },
             amountPaid: e.paid,
             outstanding: e.outstanding,
             balanceAmount: e.outstanding,

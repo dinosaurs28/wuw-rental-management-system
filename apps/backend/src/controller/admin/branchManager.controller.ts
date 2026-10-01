@@ -8,15 +8,16 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { z } from "zod";
 
+// Emails are stored lowercased: sign-in and password reset look them up that way.
 const createManagerSchema = z.object({
     name: z.string().min(1, "Name is required"),
-    email: z.string().email("Invalid email"),
+    email: z.string().trim().toLowerCase().email("Invalid email"),
     password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const updateManagerSchema = z.object({
     name: z.string().min(1).optional(),
-    email: z.string().email().optional(),
+    email: z.string().trim().toLowerCase().email().optional(),
     password: z.string().min(6).optional(),
 });
 

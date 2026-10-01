@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma } from "@repo/database/client";
-import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
-import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { previewCoupon } from "../../services/discount/coupon-preview.service.js";
+import { isGstRuleMissing, GST_RULE_MISSING, GST_RULE_MISSING_MESSAGE } from "../../services/tax/gst.service.js";
 import { z } from "zod";
-
-const pricingEngine = new PricingEngineService();
 
 const validateSchema = z
   .object({
@@ -14,6 +11,8 @@ const validateSchema = z
     groupKey: z.string().min(1).optional(),
     startAt: z.string().min(1),
     endAt: z.string().min(1),
+    // Plan the customer picked (optional — older clients omit it)
+    paymentFlow: z.enum(["FULL", "ADVANCE"]).optional(),
   })
   .refine((d) => d.vehiclePublicId || d.groupKey, {
     message: "Either vehiclePublicId or groupKey is required",
@@ -33,71 +32,27 @@ export const ValidateCoupon = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.format() });
     }
 
-    const { couponCode, vehiclePublicId, groupKey, startAt, endAt } = parsed.data;
+    const { couponCode, vehiclePublicId, groupKey, startAt, endAt, paymentFlow } = parsed.data;
 
-    let vehicle: { id: number; branchId: number; categoryId: number } | null = null;
-
-    if (vehiclePublicId) {
-      vehicle = await prisma.vehicle.findUnique({
-        where: { publicId: vehiclePublicId },
-        select: { id: true, branchId: true, categoryId: true },
-      });
-    } else if (groupKey) {
-      // groupKey format: make__model__categoryId__branchId
-      const parts = groupKey.split("__");
-      const categoryId = parseInt(parts[2] ?? "", 10);
-      const branchId = parseInt(parts[3] ?? "", 10);
-      if (isNaN(categoryId) || isNaN(branchId)) {
-        return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key" });
-      }
-      vehicle = await prisma.vehicle.findFirst({
-        where: { branchId, categoryId, status: "AVAILABLE" },
-        select: { id: true, branchId: true, categoryId: true },
-        orderBy: { odo: "asc" },
-      });
-    }
-
-    if (!vehicle) {
-      return res.status(StatusCode.NOT_FOUND).json({ message: "Vehicle not found" });
-    }
-
-    const startDt = TimezoneService.parseISO(startAt);
-    const endDt = TimezoneService.parseISO(endAt);
-    if (!startDt.isValid || !endDt.isValid) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid date format" });
-    }
-
-    const pricing = await pricingEngine.calculateBookingPrice(
-      vehicle.id,
-      startDt,
-      endDt,
-      vehicle.branchId,
-      0, // no customer context for public preview — customer-specific checks use 0 as sentinel
-      couponCode.toUpperCase(),
-    );
-
-    const valid = pricing.discountEvaluation?.couponValid === true;
-
-    if (!valid) {
-      return res.status(StatusCode.OK).json({
-        data: {
-          valid: false,
-          code: pricing.discountEvaluation?.couponFailureCode ?? "COUPON_INVALID",
-          reason: pricing.discountEvaluation?.couponFailureReason ?? "Invalid coupon code.",
-        },
-      });
-    }
-
-    return res.status(StatusCode.OK).json({
-      data: {
-        valid: true,
-        couponCode: pricing.appliedCouponCode ?? couponCode.toUpperCase(),
-        discountAmount: pricing.couponDiscountAmount.toFixed(2),
-        discountType: pricing.discountEvaluation?.couponRule?.discountType,
-        discountValue: pricing.discountEvaluation?.couponRule?.value?.toString(),
-      },
+    // No customer context for the public preview — customer-specific checks use 0 as
+    // the sentinel. Signed-in clients use POST /api/user/discount/validate instead.
+    const result = await previewCoupon({
+      couponCode,
+      vehiclePublicId,
+      groupKey,
+      startAt,
+      endAt,
+      customerId: 0,
+      paymentFlow,
     });
+    if (result.status !== 200) {
+      return res.status(result.status).json({ message: result.message });
+    }
+    return res.status(StatusCode.OK).json({ data: result.data });
   } catch (error) {
+    if (isGstRuleMissing(error)) {
+      return res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
+    }
     console.error("ValidateCoupon Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }

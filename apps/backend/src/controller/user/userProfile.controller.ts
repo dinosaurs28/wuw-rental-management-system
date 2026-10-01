@@ -1,8 +1,25 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
-import { updateProfileSchema } from "@repo/schemas";
+import {
+  aadhaarNumberSchema,
+  drivingLicenceNumberSchema,
+  updateProfileSchema,
+} from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
+import {
+  displayEmail,
+  getMissingProfileFields,
+  profileFieldsOf,
+} from "../../utils/customer/identity.js";
+
+// Old mobile builds send no DL/Aadhaar numbers: tolerate omission (the stored
+// values are kept and the profile stays incomplete without them); a value that
+// is sent must still be valid.
+const updateProfileRequestSchema = updateProfileSchema.extend({
+  drivingLicenceNumber: drivingLicenceNumberSchema.optional(),
+  aadhaarNumber: aadhaarNumberSchema.optional(),
+});
 
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
@@ -26,9 +43,14 @@ export const getUserProfile = async (req: Request, res: Response) => {
       });
     }
 
+    const missingFields = getMissingProfileFields(
+      profileFieldsOf(user, user.customerProfile),
+    );
+
     return res.status(StatusCode.OK).json({
       name: user.name,
-      email: user.email,
+      // null when the account only has a walk-in placeholder address.
+      email: displayEmail(user.email),
       phone: user.phone,
       dob: user.customerProfile?.dob || null,
       addressLine1: user.customerProfile?.addressLine1 || "",
@@ -37,7 +59,11 @@ export const getUserProfile = async (req: Request, res: Response) => {
       country: user.customerProfile?.country || "",
       zipCode: user.customerProfile?.zipCode || "",
       alternatePhone: user.customerProfile?.alternatePhone || "",
-      isProfileCompleted: user.customerProfile?.isProfileCompleted || false,
+      // Full numbers: this is the owner's own profile (prefills the form).
+      drivingLicenceNumber: user.customerProfile?.drivingLicenceNumber ?? null,
+      aadhaarNumber: user.customerProfile?.aadhaarNumber ?? null,
+      isProfileCompleted: !!user.customerProfile && missingFields.length === 0,
+      missingFields,
     });
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -52,33 +78,42 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     const publicId = req.public_Id;
     const body = req.body;
 
-    const validation = updateProfileSchema.safeParse(body);
+    const validation = updateProfileRequestSchema.safeParse(body);
     if (!validation.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid input",
+        success: false,
+        code: "VALIDATION_ERROR",
+        // First issue as the message, e.g. "Enter a valid Aadhaar number".
+        message: validation.error.errors[0]?.message ?? "Invalid input",
         errors: validation.error.errors,
       });
     }
 
     const data = validation.data;
 
-    const user = await prisma.user.findUnique({ where: { publicId } });
+    const user = await prisma.user.findUnique({
+      where: { publicId },
+      include: {
+        customerProfile: {
+          select: { drivingLicenceNumber: true, aadhaarNumber: true },
+        },
+      },
+    });
     if (!user) {
       return res
         .status(StatusCode.NOT_FOUND)
         .json({ message: "User not found" });
     }
 
-    // Check if profile is completed
-    const isProfileCompleted = !!(
-      data.name &&
-      data.phone &&
-      data.addressLine1 &&
-      data.city &&
-      data.state &&
-      data.zipCode &&
-      data.country
-    );
+    // Numbers omitted by an old client keep their stored values.
+    const drivingLicenceNumber =
+      data.drivingLicenceNumber ?? user.customerProfile?.drivingLicenceNumber ?? null;
+    const aadhaarNumber =
+      data.aadhaarNumber ?? user.customerProfile?.aadhaarNumber ?? null;
+
+    // Check if profile is completed (DL + Aadhaar numbers included, #1)
+    const isProfileCompleted =
+      getMissingProfileFields({ ...data, drivingLicenceNumber, aadhaarNumber }).length === 0;
 
     // Transaction to update User and Upsert Customer
     const updatedProfile = await prisma.$transaction(async (tx) => {
@@ -99,6 +134,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
           country: data.country,
           zipCode: data.zipCode,
           alternatePhone: data.alternatePhone,
+          drivingLicenceNumber,
+          aadhaarNumber,
           isProfileCompleted,
         },
         create: {
@@ -111,6 +148,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
           country: data.country,
           zipCode: data.zipCode,
           alternatePhone: data.alternatePhone,
+          drivingLicenceNumber,
+          aadhaarNumber,
           isProfileCompleted,
         },
       });
@@ -121,12 +160,17 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       };
     });
 
+    const missingFields = getMissingProfileFields(
+      profileFieldsOf(updatedProfile, updatedProfile.customerProfile),
+    );
+
     return res.status(StatusCode.OK).json({
       message: "Profile updated successfully",
       isProfileCompleted: updatedProfile.customerProfile.isProfileCompleted,
+      missingFields,
       data: {
         name: updatedProfile.name,
-        email: updatedProfile.email,
+        email: displayEmail(updatedProfile.email),
         phone: updatedProfile.phone,
         dob: updatedProfile.customerProfile.dob,
         addressLine1: updatedProfile.customerProfile.addressLine1,
@@ -135,6 +179,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         country: updatedProfile.customerProfile.country,
         zipCode: updatedProfile.customerProfile.zipCode,
         alternatePhone: updatedProfile.customerProfile.alternatePhone,
+        drivingLicenceNumber: updatedProfile.customerProfile.drivingLicenceNumber,
+        aadhaarNumber: updatedProfile.customerProfile.aadhaarNumber,
       },
     });
   } catch (error) {

@@ -88,6 +88,9 @@ export function initCleanupWorker(): void {
             await tx.branchPricingSetting.deleteMany({ where: { branchId } });
             await tx.categoryDepositSetting.deleteMany({ where: { branchId } });
             await tx.pricingDiscountSlab.deleteMany({ where: { branchId } });
+            // Duration slabs + discount config reference the branch with ON DELETE RESTRICT
+            await tx.durationDiscountSlab.deleteMany({ where: { branchId } });
+            await tx.branchDiscountConfig.deleteMany({ where: { branchId } });
 
             // B. Delete Bookings & Related Data
             const bookings = await tx.booking.findMany({
@@ -153,6 +156,11 @@ export function initCleanupWorker(): void {
               });
 
               await tx.emailVerificationOtp.deleteMany({
+                where: { userId: { in: userIds } },
+              });
+              // Reset-link rows reference the user (FK, ON DELETE RESTRICT);
+              // left behind they would block the user delete below.
+              await tx.passwordResetToken.deleteMany({
                 where: { userId: { in: userIds } },
               });
               await tx.userProvider.deleteMany({

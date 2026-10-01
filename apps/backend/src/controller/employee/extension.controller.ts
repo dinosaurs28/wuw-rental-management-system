@@ -15,6 +15,20 @@ import {
   validateNewUtr,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
+import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { EXTENSION_IN_SESSION } from "../../services/extension/extension.service.js";
+import {
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+} from "../../services/tax/gst.service.js";
+import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import {
+  buildExtensionLimits,
+  maxPeriodReachedMessage,
+  EXTENDABLE_BOOKING_STATUSES,
+} from "../../services/extension/extension-limits.service.js";
 
 // ONLINE = UPI at the counter: onlineTransactionRef is the customer's 12-digit
 // UTR (validated by validateNewUtr, which returns INVALID_UTR when missing).
@@ -83,6 +97,15 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
     // A committed or paid extension blocks new quotes — the app offers to cancel it
     if (error instanceof ExtensionPendingError) {
       res.status(StatusCode.CONFLICT).json(error.toJSON());
+      return;
+    }
+    // 15-day limit (BOOKING_MAX_PERIOD_EXCEEDED) / office hours (BRANCH_SCHEDULE_VIOLATION)
+    if (error instanceof BookingWindowError || error instanceof BranchScheduleError) {
+      res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
+      return;
+    }
+    if (isGstRuleMissing(error)) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
       return;
     }
     console.error("EvaluateExtension Error:", error);
@@ -158,6 +181,8 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         extensionStatus: extension.extensionStatus,
         resolutionType: extension.resolutionType,
         additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
+        // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
+        ...extensionSplitView(extension),
         remainAmount,
         usePaymentSession,
       },
@@ -165,6 +190,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
   } catch (error: any) {
     if (error instanceof CounterGuardError) {
       res.status(error.status).json(error.toJSON());
+      return;
+    }
+    if (isGstRuleMissing(error)) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
       return;
     }
     console.error("CommitExtension Error:", error);
@@ -240,6 +269,11 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
   } catch (error: any) {
     if (error instanceof CounterGuardError) {
       res.status(error.status).json(error.toJSON());
+      return;
+    }
+    // Already on an open pickup payment session — collecting here would charge twice
+    if (error?.code === EXTENSION_IN_SESSION) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: EXTENSION_IN_SESSION, message: error.message });
       return;
     }
     console.error("CollectExtensionPayment Error:", error);
@@ -332,6 +366,46 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;
     }
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/employee/extensions/eligibility/:bookingPublicId
+ * How far a booking of this branch can be extended (15-day cap, monthly plan
+ * up to 180 days) and the branch's office hours, so the extension pickers stop
+ * at maxEndAt and only offer in-hours return times.
+ */
+export const GetExtensionEligibility = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingPublicId } = req.params;
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingPublicId, branchId: req.branch_Id },
+      select: { status: true, startAt: true, endAt: true, rentalPeriodType: true, branchId: true },
+    });
+    if (!booking) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
+      return;
+    }
+
+    const limits = await buildExtensionLimits(booking);
+    const extendable = EXTENDABLE_BOOKING_STATUSES.includes(booking.status);
+    const eligible = extendable && !limits.atCap;
+
+    res.status(StatusCode.OK).json({
+      message: "Extension eligibility fetched",
+      data: {
+        eligible,
+        reason: !extendable
+          ? `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`
+          : limits.atCap
+            ? maxPeriodReachedMessage(limits)
+            : null,
+        ...limits,
+      },
+    });
+  } catch (error: any) {
+    console.error("GetExtensionEligibility (employee) Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

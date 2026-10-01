@@ -3,6 +3,7 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
 import { paymentSessionService } from "../payment/paymentSession.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Helper type for billing breakdown
@@ -67,6 +68,18 @@ export class AdvanceDepositService {
    *
    * `upi` = paid to the branch's UPI QR at the counter: also books a CONFIRMED
    * REMAINING_BALANCE PaymentTransaction keyed on the (already validated) UTR.
+   *
+   * `cash` = cash taken at the counter: books a COLLECTED REMAINING_BALANCE
+   * PaymentTransaction on the collector's open cash shift, so it counts in
+   * their drawer and goes to the BM's cash confirmation like other counter cash.
+   *
+   * ONLINE_RAZORPAY (counter checkout, `transactionId` = the order id) books a
+   * CONFIRMED REMAINING_BALANCE PaymentTransaction — not linked to a cash shift,
+   * it is neither drawer cash nor counter UPI. `online` names the staff member
+   * who verified it and the captured pay_xxx id, when known.
+   *
+   * Every method writes its PaymentTransaction, so the booking's payment state
+   * (financial-state.service) moves on from PARTIALLY_PAID.
    */
   async recordRemainingPayment(
     bookingPublicId: string,
@@ -74,6 +87,8 @@ export class AdvanceDepositService {
     transactionId: string,
     paidDuring: "PICKUP" | "RETURN",
     upi?: { utr: string; collectedById: number },
+    cash?: { collectedById: number },
+    online?: { collectedById?: number | null; gatewayPaymentId?: string | null },
   ): Promise<Booking> {
     const booking = await prisma.booking.findUnique({
       where: { publicId: bookingPublicId },
@@ -137,7 +152,7 @@ export class AdvanceDepositService {
           data: {
             isVoided: true,
             voidedAt: new Date(),
-            voidedById: upi?.collectedById ?? null,
+            voidedById: upi?.collectedById ?? cash?.collectedById ?? null,
             voidReason: `Remaining balance paid separately (${transactionId})`,
           },
         });
@@ -177,6 +192,63 @@ export class AdvanceDepositService {
             confirmedAt: now,
             cashShiftId: activeShift?.id ?? null,
             notes: `Remaining balance collected at ${paidDuring.toLowerCase()} (${transactionId})`,
+          },
+        });
+      }
+
+      if (cash && method === DepositMethod.CASH) {
+        const cashShift = await tx.cashShift.findFirst({
+          where: { employeeId: cash.collectedById, status: "OPEN" },
+          select: { id: true },
+        });
+
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            // One counter cash remaining payment per booking — a double submit hits this key
+            idempotencyKey: `remaining:cash:${booking.publicId}`,
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            purpose: PaymentPurpose.REMAINING_BALANCE,
+            method: PaymentMethod.CASH,
+            status: "COLLECTED",
+            totalAmount: booking.remainingBalance,
+            cashAmount: booking.remainingBalance,
+            onlineAmount: 0,
+            collectedById: cash.collectedById,
+            collectedAt: new Date(),
+            cashShiftId: cashShift?.id ?? null,
+            notes: `Remaining balance collected in cash at ${paidDuring.toLowerCase()} (${transactionId})`,
+          },
+        });
+      }
+
+      if (method === DepositMethod.ONLINE_RAZORPAY) {
+        const now = new Date();
+        const verifierId = online?.collectedById ?? null;
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            // One Razorpay remaining payment per booking — a concurrent status check hits this key
+            idempotencyKey: `remaining:razorpay:${booking.publicId}`,
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            purpose: PaymentPurpose.REMAINING_BALANCE,
+            method: PaymentMethod.ONLINE,
+            status: "CONFIRMED",
+            totalAmount: booking.remainingBalance,
+            cashAmount: 0,
+            onlineAmount: booking.remainingBalance,
+            // The order id is what the status checks key on; pay_xxx is kept for reconciliation
+            onlineTransactionRef: transactionId,
+            onlineGateway: "RAZORPAY",
+            collectedById: verifierId,
+            collectedAt: now,
+            confirmedById: verifierId,
+            confirmedAt: now,
+            notes:
+              `Remaining balance paid online at ${paidDuring.toLowerCase()}` +
+              (online?.gatewayPaymentId ? ` (razorpay_payment_id=${online.gatewayPaymentId})` : ""),
           },
         });
       }
@@ -254,7 +326,7 @@ export class AdvanceDepositService {
       throw new Error("Booking cannot be cancelled from current state");
     }
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const updatedBooking = await tx.booking.update({
         where: { id: bookingId },
         data: {
@@ -297,6 +369,14 @@ export class AdvanceDepositService {
 
       return { booking: updatedBooking, cancellationInvoice };
     });
+
+    void notifyEvents.bookingCancelled({
+      bookingId,
+      actorPublicId: cancelledByPublicId,
+      reason,
+      bySystem: cancelledByPublicId === "SYSTEM",
+    });
+    return result;
   }
   
   // ========================================

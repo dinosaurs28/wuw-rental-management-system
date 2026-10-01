@@ -25,6 +25,8 @@ class ExtensionVehicleAllocatorService {
     bookingPublicId: string,
     newVehicleId: number,
     actor: ActorContext,
+    // The extended end — the replacement must be free until then, not just the current end
+    availabilityEndAt?: Date,
   ): Promise<VehicleSwap> {
     const vehicleSwap = await vehicleSwapService.performVehicleSwap(
       bookingPublicId,
@@ -33,6 +35,8 @@ class ExtensionVehicleAllocatorService {
       SwapReason.CUSTOMER_REQUEST,
       "Extension vehicle swap — booking extended beyond current vehicle availability",
       false,
+      undefined,
+      { branchId: actor.actorBranchId, availabilityEndAt },
     );
 
     return vehicleSwap;

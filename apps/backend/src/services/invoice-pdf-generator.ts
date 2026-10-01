@@ -20,14 +20,23 @@ import {
 
 // ─── Section renderers ─────────────────────────────────────────────────────────
 
+/** CGST/SGST row labels with the section's frozen rate ("CGST" alone when lines mix rates). */
+function taxLabels(ctx: PDFRenderContext, section: InvoiceSection): { cgstLabel: string; sgstLabel: string } {
+  const cgst = section.cgstRate === undefined ? ctx.invoiceData.cgstRate : section.cgstRate;
+  const sgst = section.sgstRate === undefined ? ctx.invoiceData.sgstRate : section.sgstRate;
+  return {
+    cgstLabel: cgst != null ? `CGST (${cgst}%)` : "CGST",
+    sgstLabel: sgst != null ? `SGST (${sgst}%)` : "SGST",
+  };
+}
+
 /** Renders the Vehicle Rental section (multi-column table with Days/Rate/Discount). */
 function renderVehicleRentalSection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
   letter: string,
 ): void {
-  const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
-  const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
+  const { cgstLabel, sgstLabel } = taxLabels(ctx, section);
 
   drawSectionHeader(ctx, `${letter}  Vehicle Rental`, C.taxable, C.taxableAccent);
   drawRentalTableHeader(ctx);
@@ -39,14 +48,13 @@ function renderVehicleRentalSection(
   drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
 }
 
-/** Renders the Extension Charges section (3-column: Description / Extra Days / Amount). */
+/** Renders the Extension Charges section (3-column: Description / Extra Time / Amount). */
 function renderExtensionChargesSection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
   letter: string,
 ): void {
-  const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
-  const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
+  const { cgstLabel, sgstLabel } = taxLabels(ctx, section);
 
   drawSectionHeader(
     ctx,
@@ -64,14 +72,37 @@ function renderExtensionChargesSection(
   drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
 }
 
+/** Renders the taxable return charges (extra km, late return, fuel, swap, other). */
+function renderTaxableReturnChargesSection(
+  ctx: PDFRenderContext,
+  section: InvoiceSection,
+  letter: string,
+): void {
+  const { cgstLabel, sgstLabel } = taxLabels(ctx, section);
+
+  drawSectionHeader(
+    ctx,
+    `${letter}  Return Charges`,
+    C.taxable,
+    C.taxableAccent,
+    "GST applicable",
+  );
+  drawSimpleTableHeader(ctx, "Amount (before GST)");
+
+  for (const item of section.items) {
+    drawSimpleTableRow(ctx, item.description, item.amount);
+  }
+
+  drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
+}
+
 /** Renders the Damage Penalty section. */
 function renderDamagePenaltySection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
   letter: string,
 ): void {
-  const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
-  const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
+  const { cgstLabel, sgstLabel } = taxLabels(ctx, section);
 
   drawSectionHeader(
     ctx,
@@ -100,7 +131,7 @@ function renderAdditionalChargesSection(
     `${sectionLabel}  Additional Return Charges`,
     C.nonTaxable,
     C.nonTaxableAccent,
-    section.taxTotal > 0 ? "GST included in grand total" : undefined,
+    "Non-taxable",
   );
   drawSimpleTableHeader(ctx, "Amount");
 
@@ -108,10 +139,9 @@ function renderAdditionalChargesSection(
     drawSimpleTableRow(ctx, item.description, item.amount);
   }
 
-  // Show section subtotal only — GST for these items is in the grand total
-  const cgstLabel = `CGST (${ctx.invoiceData.cgstRate}%)`;
-  const sgstLabel = `SGST (${ctx.invoiceData.sgstRate}%)`;
-  drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
+  // Non-taxable lines (FASTAG/tolls, grace) — no GST rows
+  const zeroedSection = { ...section, cgst: 0, sgst: 0, taxTotal: 0 };
+  drawSectionTotals(ctx, zeroedSection, "", "");
 }
 
 /** Renders Damage Compensation section. */
@@ -186,6 +216,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
           renderVehicleRentalSection(ctx, section, letter);
         } else if (section.type === "EXTENSION_CHARGES") {
           renderExtensionChargesSection(ctx, section, letter);
+        } else if (section.type === "TAXABLE_RETURN_CHARGES") {
+          renderTaxableReturnChargesSection(ctx, section, letter);
         } else if (section.type === "DAMAGE_PENALTY") {
           renderDamagePenaltySection(ctx, section, letter);
         }

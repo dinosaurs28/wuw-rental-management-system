@@ -20,7 +20,6 @@ import {
   LedgerEntryClassification,
   PaymentSessionType,
   PaymentSessionStatus,
-  DiscountType,
 } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { paymentSessionService } from "../../services/payment/paymentSession.service.js";
@@ -34,6 +33,20 @@ import {
 import type { FrozenChargeConfig } from "../../types/charge-engine.types.js";
 import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js";
 import { createID } from "../../utils/nanoID.js";
+import {
+  quoteCounterCoupon,
+  writeCounterCouponEntry,
+  serializeCounterCouponQuote,
+  CounterCouponError,
+  COUNTER_COUPON_REF,
+} from "../../services/discount/counter-coupon.service.js";
+import { DL_COLLECTION_STATUSES, DL_DEPOSIT_NOTE_MAX } from "@repo/schemas";
+import {
+  resolvePickupDlStatus,
+  dlStatusUpdateData,
+  dlValidationError,
+  DlStatusError,
+} from "../../services/booking/dl-status.service.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -51,7 +64,10 @@ const initiatePickupSessionSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
-  // Must be true — the branch keeps the customer's physical licence for the rental
+  // Original licence custody (#3): COLLECTED / NOT_COLLECTED / DEPOSIT (+ note).
+  // licenseCollected is the old builds' tick: true ⇒ COLLECTED, false ⇒ refused.
+  dlStatus: z.enum(DL_COLLECTION_STATUSES).optional(),
+  dlDepositNote: z.string().trim().max(DL_DEPOSIT_NOTE_MAX).nullish(),
   licenseCollected: z.boolean().optional(),
 });
 
@@ -63,6 +79,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
 
     const validation = initiatePickupSessionSchema.safeParse(req.body);
     if (!validation.success) {
+      const dlError = dlValidationError(validation.error);
+      if (dlError) return res.status(dlError.status).json(dlError.toJSON());
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Validation failed",
         errors: validation.error.format(),
@@ -79,6 +97,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       pickupFuelLevel,
       pickupImageIds,
       captureImages,
+      dlStatus,
+      dlDepositNote,
       licenseCollected,
     } = validation.data;
 
@@ -129,15 +149,14 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       });
     }
 
-    if (licenseCollected !== true) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Collect the customer's original driving licence before handing over the vehicle.",
-        code: "LICENSE_NOT_COLLECTED",
-      });
-    }
+    // Original licence custody (#3). Old builds send the boolean tick instead
+    // (true ⇒ COLLECTED, false ⇒ refused); sending neither records nothing.
+    // Throws DlStatusError (LICENSE_NOT_COLLECTED / DL_DEPOSIT_NOTE_REQUIRED).
+    const dlChoice = resolvePickupDlStatus({ dlStatus, dlDepositNote, licenseCollected });
 
-    // Written only while unset, so a re-initiated session keeps the first collection time
-    const licenseCollectedData = { licenseCollectedAt: new Date(), licenseCollectedById: actor.id };
+    // A re-initiated session may change the choice; licenseCollectedAt is only
+    // written while unset, so it keeps the first collection time.
+    const licenseCollectedData = dlChoice ? dlStatusUpdateData(dlChoice, actor.id, booking) : null;
 
     // Create or return existing PICKUP session
     const session = await paymentSessionService.createSession(
@@ -158,17 +177,21 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     // one with no entries (nothing due) — so return it as-is instead of
     // re-writing handover data (fuel record, photos, deposit request).
     if (session.status !== PaymentSessionStatus.OPEN || (session.entries?.length ?? 0) > 0) {
-      if (!booking.licenseCollectedAt) {
+      if (licenseCollectedData) {
         await prisma.booking.update({
           where: { id: booking.id },
           data: licenseCollectedData,
         });
       }
-      await paymentSessionService.updateStatus(
-        session.id,
-        PaymentSessionStatus.AWAITING_PAYMENT,
-        {},
-      );
+      // Already awaiting payment (staff pressed initiate again): no transition —
+      // AWAITING_PAYMENT → AWAITING_PAYMENT is not an allowed move and used to 500.
+      if (session.status !== PaymentSessionStatus.AWAITING_PAYMENT) {
+        await paymentSessionService.updateStatus(
+          session.id,
+          PaymentSessionStatus.AWAITING_PAYMENT,
+          {},
+        );
+      }
       // Balance paid after this session was created: drop its stale line
       if (booking.remainingPaidAt) {
         const staleLines = (session.entries ?? []).filter(
@@ -176,6 +199,15 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         );
         for (const line of staleLines) {
           await ledgerService.voidEntry(line.publicId, actor.id, "Remaining balance paid separately");
+        }
+        // A counter coupon was sized against that balance — staff re-apply it if still wanted
+        if (staleLines.length > 0) {
+          const couponLines = (session.entries ?? []).filter(
+            (e: any) => e.referenceType === COUNTER_COUPON_REF && !e.isVoided,
+          );
+          for (const line of couponLines) {
+            await ledgerService.voidEntry(line.publicId, actor.id, "Balance it discounted was paid separately");
+          }
         }
       }
       const updatedSession = await paymentSessionService.getSession(session.publicId);
@@ -258,7 +290,10 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
             bookingId: booking.id,
             extensionStatus: ExtensionStatus.PENDING_PAYMENT,
           },
-          select: { id: true, publicId: true, additionalAmount: true, requestedEndAt: true },
+          select: {
+            id: true, publicId: true, additionalAmount: true, requestedEndAt: true,
+            baseAmount: true, taxableAmount: true, taxAmount: true, cgstAmount: true, sgstAmount: true, taxRate: true,
+          },
         });
         if (!extension) {
           throw Object.assign(
@@ -268,15 +303,22 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         }
         const extAmount = new Decimal(extension.additionalAmount.toString());
         if (extAmount.gt(0)) {
-          const extDate = new Date(extension.requestedEndAt).toLocaleDateString("en-IN", {
-            day: "2-digit", month: "short", year: "numeric",
+          const extDate = new Date(extension.requestedEndAt).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
           });
+          // The extension's GST was computed and frozen when it was priced: post
+          // the taxable value as the TAXABLE amount and its stored GST alongside,
+          // so the session net (taxable + GST) still equals additionalAmount.
+          const extTaxable = new Decimal(extension.taxableAmount.toString());
+          const extGst = new Decimal(extension.taxAmount.toString());
+          const splitHolds = extTaxable.gt(0) && extTaxable.add(extGst).eq(extAmount);
           await ledgerService.addEntry(
             session.id,
             booking.id,
             LedgerEntryType.EXTENSION,
             LedgerEntryClassification.TAXABLE,
-            extAmount,
+            splitHolds ? extTaxable : extAmount,
             `Extension charge (until ${extDate})`,
             actor.id,
             String(actor.role),
@@ -284,63 +326,40 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
               idempotencyKey: `pickup:${booking.id}:ext:${extension.id}:${session.id}`,
               referenceType: "BOOKING_EXTENSION",
               referenceId: extension.publicId,
+              ...(splitHolds && {
+                baseAmount: new Decimal(extension.baseAmount.toString()),
+                gstAmount: extGst,
+                metadata: {
+                  cgstAmount: new Decimal(extension.cgstAmount.toString()).toFixed(2),
+                  sgstAmount: new Decimal(extension.sgstAmount.toString()).toFixed(2),
+                  taxRate: new Decimal(extension.taxRate.toString()).toFixed(2),
+                },
+              }),
             },
             tx as any,
           );
         }
       }
 
-      // ── Discount ledger entry ────────────────────────────────────────────
+      // ── Counter coupon ───────────────────────────────────────────────────
+      // Fully validated against the booking (same rules as online). An invalid
+      // code fails the whole initiate (422/409 with its code) instead of being
+      // silently skipped, so staff never promise a discount that isn't applied.
       if (discountCode) {
-        const now = new Date();
-        const rule = await (tx as any).discountRule.findUnique({ where: { code: discountCode } });
-        if (rule && rule.isActive && rule.startDate <= now && rule.endDate >= now) {
-          // We need the session totals recomputed after base+deposit+extension to compute %
-          await paymentSessionService.recomputeTotals(session.id, tx as any);
-          const refreshedSession = await (tx as any).paymentSession.findUnique({
-            where: { id: session.id },
-            select: { taxableBase: true, totalCharges: true },
-          });
-          const taxableBase = new Decimal(refreshedSession.taxableBase?.toString() ?? "0");
-          const totalCharges = new Decimal(refreshedSession.totalCharges?.toString() ?? "0");
-          let discountAmount: Decimal;
-          if (rule.discountType === DiscountType.PERCENTAGE) {
-            discountAmount = taxableBase.mul(rule.value).div(100);
-            if (rule.maxDiscountCap) {
-              discountAmount = Decimal.min(discountAmount, new Decimal(rule.maxDiscountCap.toString()));
-            }
-          } else {
-            discountAmount = Decimal.min(new Decimal(rule.value.toString()), totalCharges);
-          }
-          discountAmount = discountAmount.toDecimalPlaces(2);
-          if (discountAmount.gt(0)) {
-            await (tx as any).ledgerEntry.create({
-              data: {
-                publicId: createID(),
-                sessionId: session.id,
-                bookingId: booking.id,
-                entryType: LedgerEntryType.DISCOUNT,
-                classification: LedgerEntryClassification.DISCOUNT,
-                amount: discountAmount.negated().toFixed(2),
-                baseAmount: "0.00",
-                gstAmount: "0.00",
-                description: `Coupon discount (${rule.code})`,
-                referenceId: rule.publicId,
-                referenceType: "DISCOUNT_RULE",
-                idempotencyKey: `pickup:${booking.id}:discount:${session.id}:${rule.id}`,
-                actorId: actor.id,
-                actorRole: String(actor.role),
-              },
-            });
-          }
-        }
+        const quote = await quoteCounterCoupon(tx, booking.id, session.id, discountCode);
+        await writeCounterCouponEntry(tx, {
+          sessionId: session.id,
+          bookingId: booking.id,
+          quote,
+          actor: { id: actor.id, role: String(actor.role) },
+        });
       }
 
       // ── Handover metadata ────────────────────────────────────────────────
       // Save odo/fuel/photos now; vehicle status is updated by runPostCompletionHooks
       // when payment is recorded.
 
-      if (!booking.licenseCollectedAt) {
+      if (licenseCollectedData) {
         await tx.booking.update({
           where: { id: booking.id },
           data: licenseCollectedData,
@@ -432,7 +451,12 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       description: `Pickup payment session initiated for booking ${booking.publicId}`,
       entity: "PaymentSession",
       entityId: session.publicId,
-      metadata: { remainingBalance, safetyDepositAmount },
+      metadata: {
+        remainingBalance,
+        safetyDepositAmount,
+        dlStatus: dlChoice?.dlStatus ?? null,
+        dlDepositNote: dlChoice?.dlDepositNote ?? null,
+      },
     });
 
     await staffActivityService.logFromRequest(req, {
@@ -449,6 +473,12 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       data: serializePickupSession(updatedSession!),
     });
   } catch (err: any) {
+    if (err instanceof DlStatusError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    if (err instanceof CounterCouponError) {
+      return res.status(err.status).json({ ...err.toJSON(), couponRejected: true });
+    }
     console.error("InitiatePickupSession Error:", err);
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({
       message: err.message ?? "Internal server error",
@@ -584,20 +614,14 @@ export const ApplyDiscountToPickupSession = async (req: Request, res: Response) 
 
     const booking = await prisma.booking.findFirst({
       where: { publicId: bookingId, branchId: actor.branchId! },
-      select: { id: true, customerId: true },
+      select: { id: true, customerId: true, status: true },
     });
     if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
-
-    // Validate discount rule
-    const now = new Date();
-    const rule = await prisma.discountRule.findUnique({
-      where: { code: discountCode },
-    });
-    if (!rule || !rule.isActive || rule.startDate > now || rule.endDate < now) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid or expired discount code" });
-    }
-    if (rule.scope === "BRANCH" && !rule.applicableBranchIds.includes(actor.branchId!)) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Discount code not valid for this branch" });
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        code: "INVALID_BOOKING_STATUS",
+        message: `A counter coupon can only be applied before pickup. Booking status: ${booking.status}`,
+      });
     }
 
     // Find active PICKUP session
@@ -607,68 +631,36 @@ export const ApplyDiscountToPickupSession = async (req: Request, res: Response) 
         sessionType: PaymentSessionType.PICKUP,
         status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT] },
       },
-      include: { entries: { where: { isVoided: false } } },
+      select: { id: true, publicId: true },
     });
     if (!session) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found. Initiate a session first." });
     }
 
-    // Compute discount amount from rule
-    const taxableBase = new Decimal(session.taxableBase?.toString() ?? "0");
-    const totalCharges = new Decimal(session.totalCharges?.toString() ?? "0");
-
-    let discountAmount: Decimal;
-    if (rule.discountType === DiscountType.PERCENTAGE) {
-      discountAmount = taxableBase.mul(rule.value).div(100);
-      if (rule.maxDiscountCap) {
-        discountAmount = Decimal.min(discountAmount, new Decimal(rule.maxDiscountCap.toString()));
-      }
-    } else {
-      // FLAT
-      discountAmount = Decimal.min(new Decimal(rule.value.toString()), totalCharges);
-    }
-    discountAmount = discountAmount.toDecimalPlaces(2);
-
-    if (discountAmount.lte(0)) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Discount amount is zero — no charges to discount" });
-    }
-
+    // Full coupon check + amount (pre-GST rental base, GST reduced with it,
+    // capped at the rental/extension still owed — never the safety deposit)
+    let quoteView: ReturnType<typeof serializeCounterCouponQuote> | null = null;
     await prisma.$transaction(async (tx) => {
-      // Void any existing DISCOUNT entry
-      await (tx as any).ledgerEntry.updateMany({
-        where: { sessionId: session.id, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
-        data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Replaced by new discount" },
+      const quote = await quoteCounterCoupon(tx, booking.id, session.id, discountCode);
+      await writeCounterCouponEntry(tx, {
+        sessionId: session.id,
+        bookingId: booking.id,
+        quote,
+        actor: { id: actor.id, role: String(actor.role) },
       });
-
-      // Create new DISCOUNT entry (negative = reduces net payable)
-      await (tx as any).ledgerEntry.create({
-        data: {
-          publicId: createID(),
-          sessionId: session.id,
-          bookingId: booking.id,
-          entryType: LedgerEntryType.DISCOUNT,
-          classification: LedgerEntryClassification.DISCOUNT,
-          amount: discountAmount.negated().toFixed(2),
-          baseAmount: "0.00",
-          gstAmount: "0.00",
-          description: `Coupon discount (${rule.code})`,
-          referenceId: rule.publicId,
-          referenceType: "DISCOUNT_RULE",
-          idempotencyKey: `pickup:${booking.id}:discount:${session.id}:${rule.id}`,
-          actorId: actor.id,
-          actorRole: String(actor.role),
-        },
-      });
-
-      await paymentSessionService.recomputeTotals(session.id, tx as any);
-    });
+      quoteView = serializeCounterCouponQuote(quote);
+    }, { timeout: 15000 });
 
     const updatedSession = await paymentSessionService.getSession(session.publicId);
     return res.status(StatusCode.OK).json({
-      message: "Discount applied to session",
+      message: "Coupon applied to the pickup bill",
       data: serializePickupSession(updatedSession!),
+      coupon: quoteView,
     });
   } catch (err: any) {
+    if (err instanceof CounterCouponError) {
+      return res.status(err.status).json({ ...err.toJSON(), couponRejected: true });
+    }
     console.error("ApplyDiscountToPickupSession Error:", err);
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
   }
@@ -705,7 +697,12 @@ export const RemoveDiscountFromPickupSession = async (req: Request, res: Respons
 
     await prisma.$transaction(async (tx) => {
       await (tx as any).ledgerEntry.updateMany({
-        where: { sessionId: session.id, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
+        where: {
+          sessionId: session.id,
+          entryType: LedgerEntryType.DISCOUNT,
+          referenceType: COUNTER_COUPON_REF,
+          isVoided: false,
+        },
         data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Discount removed by employee" },
       });
       await paymentSessionService.recomputeTotals(session.id, tx as any);
@@ -917,6 +914,12 @@ export const RemoveDepositFromPickupSession = async (req: Request, res: Response
 
 // ── Serializer ────────────────────────────────────────────────────────────────
 
+/** A stored CGST/SGST part, signed like the line's gstAmount (a coupon's metadata keeps it positive). */
+function signedGstPart(part: unknown, gstAmount: unknown): string {
+  const value = new Decimal(String(part ?? "0")).abs();
+  return (new Decimal(String(gstAmount ?? "0")).lt(0) ? value.negated() : value).toFixed(2);
+}
+
 function serializePickupSession(session: any) {
   return {
     publicId: session.publicId,
@@ -935,8 +938,18 @@ function serializePickupSession(session: any) {
       entryType: e.entryType,
       classification: e.classification,
       amount: new Decimal(e.amount.toString()).toFixed(2),
+      // Stored per-line GST (#23): an extension line's amount is its taxable
+      // value with gstAmount on top; a counter coupon's amount is −(discount +
+      // GST) with baseAmount −discount; the remaining balance is GST-inclusive
+      // (referenceType BOOKING_REMAINING, gstAmount 0).
+      baseAmount: new Decimal(e.baseAmount?.toString() ?? "0").toFixed(2),
+      gstAmount: new Decimal(e.gstAmount?.toString() ?? "0").toFixed(2),
+      cgst: signedGstPart(e.metadata?.cgst ?? e.metadata?.cgstAmount, e.gstAmount),
+      sgst: signedGstPart(e.metadata?.sgst ?? e.metadata?.sgstAmount, e.gstAmount),
       description: e.description,
       referenceType: e.referenceType,
+      referenceId: e.referenceId ?? null,
+      isVoided: e.isVoided ?? false,
       createdAt: e.createdAt,
     })),
   };

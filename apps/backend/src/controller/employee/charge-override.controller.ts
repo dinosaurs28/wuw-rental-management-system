@@ -7,6 +7,7 @@ const chargeOverrideSchema = z.object({
   reason: z.string().min(1, "Reason is required for all overrides"),
 });
 import { createID } from "../../utils/nanoID.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 import type { FrozenChargeConfig } from "../../types/charge-engine.types.js";
 import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js";
 import {
@@ -107,7 +108,7 @@ export const SubmitChargeOverride = async (req: Request, res: Response) => {
       return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
     }
 
-    await prisma.$transaction(async (tx) => {
+    const createdOverride = await prisma.$transaction(async (tx) => {
       const override = await tx.chargeOverride.create({
         data: {
           publicId: createID(),
@@ -180,6 +181,19 @@ export const SubmitChargeOverride = async (req: Request, res: Response) => {
         reason,
       },
     });
+
+    if (needsApproval) {
+      void notifyEvents.approvalRequested({
+        kind: "CHARGE_OVERRIDE",
+        entity: "ChargeOverride",
+        entityPublicId: createdOverride.publicId,
+        branchId: booking.branchId,
+        bookingId: booking.id,
+        amount: waivedAmount.toFixed(2),
+        reason,
+        actorUserId: actor.id,
+      });
+    }
 
     return res.status(StatusCode.OK).json({
       message: needsApproval

@@ -13,15 +13,15 @@ import {
   type DiscountEvaluationResult,
 } from "../discount/discount-evaluation-engine.service.js";
 import { redis } from "../../lib/redisconfig.js";
+import { selectBasePrice, type BilledAsType } from "./base-price-rule.js";
 import {
   vehiclePricingConfigKey,
   branchPricingDefaultsKey,
-  gstRuleKey,
   depositSettingKey,
 } from "../../utils/cache/vehicleCacheKeys.js";
+import { getBranchGstRatesCached, computeLineGst } from "../tax/gst.service.js";
 
 const PRICING_TTL = 300; // 5 minutes
-const GST_TTL = 600;     // 10 minutes
 
 /**
  * Vehicle pricing configuration
@@ -60,6 +60,12 @@ export interface PricingResult {
   // Layer 1 — duration discount
   durationDiscountAmount: Decimal;
   durationDiscountPercent: Decimal;
+  durationSlabId: number | null;
+  durationDiscountLabel: string | null;
+  durationDiscountType: "PERCENTAGE" | "FLAT" | null;
+  durationDiscountValue: Decimal;
+  /** A duration slab matched but the coupon gave the bigger saving (no stacking). */
+  durationSuppressed: boolean;
 
   // Layer 2 — coupon discount
   couponDiscountAmount: Decimal;
@@ -82,6 +88,8 @@ export interface PricingResult {
   cgstAmount: Decimal;
   sgstAmount: Decimal;
   taxRate: Decimal;
+  cgstRate: Decimal;
+  sgstRate: Decimal;
 
   // Final amounts
   finalTotal: Decimal;
@@ -99,7 +107,26 @@ export interface PricingResult {
     duration: RentalDuration;
     applicablePrice: Decimal;
     priceSource: "vehicle_custom" | "branch_default" | "fallback";
+    /** What the price actually covers, e.g. "5 hours", "12 hours", "1 day", "2 days + 12 hours". */
+    billedAs: string;
+    billedAsType: BilledAsType;
   };
+}
+
+/** Coupon-evaluation context for calculateBookingPrice (all optional). */
+export interface PricingDiscountOptions {
+  /** Plan the coupon's applicablePaymentPlans / allowPartialPayment are checked against. */
+  paymentPlan?: "FULL" | "ADVANCE";
+  /** Booking being re-priced — its own CouponUsageLog row isn't counted against it. */
+  excludeBookingId?: number;
+  /** couponCode is the booking's own applied coupon: skip validity-window and usage-limit checks. */
+  couponLockedIn?: boolean;
+  /**
+   * Don't check the coupon's payment-plan rules here (paymentPlan is ignored for
+   * them): the plan charged depends on the post-coupon total, so the caller runs
+   * couponValidationService.checkPaymentPlan against it afterwards.
+   */
+  deferPaymentPlanCheck?: boolean;
 }
 
 /**
@@ -110,6 +137,8 @@ interface TaxResult {
   cgst: Decimal;
   sgst: Decimal;
   rate: Decimal;
+  cgstRate: Decimal;
+  sgstRate: Decimal;
 }
 
 /**
@@ -130,6 +159,9 @@ export class PricingEngineService {
    * @param manualDiscountId     - FK to ManualDiscount record
    * @param categoryId           - Optional: vehicle categoryId already in memory (skips DB lookup)
    * @param vehicleCustomPricing - Optional: already-fetched VehicleCustomPricing (skips DB/cache)
+   * @param discountOptions      - Optional: payment plan the coupon is checked against
+   *                               (default FULL), the booking being re-priced (its own
+   *                               coupon use is not counted) and coupon lock-in
    */
   async calculateBookingPrice(
     vehicleId: number,
@@ -142,6 +174,7 @@ export class PricingEngineService {
     manualDiscountId?: number,
     categoryId?: number,
     vehicleCustomPricing?: VehicleCustomPricing | null,
+    discountOptions?: PricingDiscountOptions,
   ): Promise<PricingResult> {
     console.time(`[perf] details:pricing:${vehicleId}`);
     try {
@@ -158,7 +191,7 @@ export class PricingEngineService {
       ]);
 
       // 4. Determine base price based on duration
-      const { basePrice, freeKmLimit, priceSource } =
+      const { basePrice, freeKmLimit, priceSource, billedAs, billedAsType } =
         await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
       // 5. Evaluate all discounts (duration + coupon + manual) in strict order.
@@ -173,7 +206,10 @@ export class PricingEngineService {
         rentalDays: duration.days,
         rentalHours: duration.actualDuration,
         vehicleCategoryId: resolvedCategoryId,
-        paymentPlan: "FULL",
+        paymentPlan: discountOptions?.paymentPlan ?? "FULL",
+        excludeBookingId: discountOptions?.excludeBookingId,
+        couponLockedIn: discountOptions?.couponLockedIn,
+        skipPaymentPlanCheck: discountOptions?.deferPaymentPlanCheck,
         // Only pass coupon/manual context when a real customer is known
         couponCode:           customerId != null ? couponCode           : undefined,
         manualDiscountAmount: customerId != null ? manualDiscountAmount : undefined,
@@ -202,6 +238,11 @@ export class PricingEngineService {
         basePrice,
         durationDiscountAmount,
         durationDiscountPercent,
+        durationSlabId: discountEvaluation.durationDiscount.slabId,
+        durationDiscountLabel: discountEvaluation.durationDiscount.label,
+        durationDiscountType: discountEvaluation.durationDiscount.discountType,
+        durationDiscountValue: discountEvaluation.durationDiscount.value,
+        durationSuppressed: discountEvaluation.durationSuppressed,
         couponDiscountAmount,
         couponDiscountPercent,
         appliedCouponCode: discountEvaluation.appliedCouponCode,
@@ -214,6 +255,8 @@ export class PricingEngineService {
         cgstAmount: taxResult.cgst,
         sgstAmount: taxResult.sgst,
         taxRate: taxResult.rate,
+        cgstRate: taxResult.cgstRate,
+        sgstRate: taxResult.sgstRate,
         finalTotal,
         freeKmLimit,
         extraKmRate: pricing.extraKmRate,
@@ -223,6 +266,8 @@ export class PricingEngineService {
           duration,
           applicablePrice: basePrice,
           priceSource: pricing.source as any,
+          billedAs,
+          billedAsType,
         },
       };
     } finally {
@@ -240,11 +285,18 @@ export class PricingEngineService {
     endAt: DateTime,
     branchId: number,
     categoryId?: number,
-  ): Promise<{ price: Decimal; finalPrice: Decimal; type: RentalPeriodType }> {
+  ): Promise<{
+    price: Decimal;
+    finalPrice: Decimal;
+    type: RentalPeriodType;
+    billedAs: string;
+    billedAsType: BilledAsType;
+  }> {
     const duration = DurationCalculatorService.calculate(startAt, endAt);
     const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
     const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
-    const { basePrice } = await this.determineBasePrice(pricing, duration, vehicleId, branchId);
+    const { basePrice, billedAs, billedAsType } =
+      await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
     // Apply duration discount only (no coupon on listing)
     const evalInput: DiscountEvaluationInput = {
@@ -263,6 +315,8 @@ export class PricingEngineService {
       price: basePrice,
       finalPrice: evaluation.finalAmount,
       type: duration.periodType,
+      billedAs,
+      billedAsType,
     };
   }
 
@@ -373,123 +427,30 @@ export class PricingEngineService {
     duration: RentalDuration,
     vehicleId: number,
     branchId: number,
-  ): Promise<{ basePrice: Decimal; freeKmLimit: number; priceSource: string }> {
-    let basePrice: Decimal;
-    let freeKmLimit: number;
-
+  ): Promise<{
+    basePrice: Decimal;
+    freeKmLimit: number;
+    priceSource: string;
+    billedAs: string;
+    billedAsType: BilledAsType;
+  }> {
     /**
-     * Hourly-first rule:
-     * If an hourlyRate is configured and > 0, use granular per-hour billing for
-     * ALL durations (including HALF_DAY, FULL_DAY, MULTI_DAY, MONTHLY).
-     * This is the intended behaviour when a business wants pure hourly billing.
+     * Slab billing, with an hourly rate (when configured) capped at the slab
+     * price per block of up to 24 h — see base-price-rule.ts. The listing batch
+     * pricer runs the same rule, so listed and booked prices always agree.
      *
-     * When hourlyRate is 0 or null, fall through to slab-based billing
-     * (HALF_DAY / FULL_DAY / MULTI_DAY / MONTHLY), rounding up to the
-     * nearest configured slab.
-     *
-     * Example: 29 hours, hourlyRate = ₹100 → 29 × 100 = ₹2900
-     * Example: 29 hours, hourlyRate = null → MULTI_DAY, 2 days × daily = ₹X
+     * Example: 5 hours, hourly ₹150, 12-hour ₹900 → 5 × 150 = ₹750 ("5 hours")
+     * Example: 8 hours, hourly ₹150, 12-hour ₹900 → ₹900 ("12 hours")
+     * Example: 29 hours, no hourly rate → 1 day + 12-hour slab ("1 day + 12 hours")
      */
-    if (pricing.hourlyRate && pricing.hourlyRate.gt(0)) {
-      const billableHours = Math.max(1, Math.ceil(duration.actualDuration));
-      return {
-        basePrice:   pricing.hourlyRate.mul(billableHours),
-        freeKmLimit: Math.floor(billableHours * 8),
-        priceSource: pricing.source,
-      };
-    }
-
-    // Hourly not configured — use slab-based billing
-    switch (duration.periodType) {
-      case RentalPeriodType.HOURLY:
-        // No hourlyRate configured — fall back to the 12-hour slab (cheapest available unit).
-        // Per business rule: any rental < 12 hr without a per-hour rate is billed as a half day.
-        if (pricing.price12Hour) {
-          basePrice = pricing.price12Hour;
-          freeKmLimit = pricing.freeKm12Hour;
-        } else {
-          basePrice = pricing.price24Hour;
-          freeKmLimit = pricing.freeKm24Hour;
-        }
-        break;
-
-      case RentalPeriodType.HALF_DAY:
-        // Same-day / short rentals: without a 12-hour rate, bill the 24-hour rate
-        // (the listing shows the same fallback).
-        if (pricing.price12Hour) {
-          basePrice = pricing.price12Hour;
-          freeKmLimit = pricing.freeKm12Hour;
-        } else {
-          basePrice = pricing.price24Hour;
-          freeKmLimit = pricing.freeKm24Hour;
-        }
-        break;
-
-      case RentalPeriodType.FULL_DAY:
-        basePrice = pricing.price24Hour;
-        freeKmLimit = pricing.freeKm24Hour;
-        break;
-
-      case RentalPeriodType.MULTI_DAY: {
-        // Split into complete 24hr periods + partial last day.
-        // Partial day slab logic (mirrors HALF_DAY / FULL_DAY behaviour):
-        //   remaining ≤ 12hrs AND price12Hour configured → half-day rate
-        //   remaining > 12hrs OR no price12Hour              → full-day rate
-        const fullDays = Math.floor(duration.actualDuration / 24);
-        const remainingHours = duration.actualDuration % 24;
-
-        if (remainingHours <= 0) {
-          // Exactly N complete days
-          basePrice = pricing.price24Hour.mul(fullDays);
-          freeKmLimit = pricing.freeKm24Hour * fullDays;
-        } else if (remainingHours <= 12 && pricing.price12Hour) {
-          // Partial day ≤ 12hrs + 12hr pricing exists → half-day rate for remainder
-          basePrice = pricing.price24Hour.mul(fullDays).add(pricing.price12Hour);
-          freeKmLimit = pricing.freeKm24Hour * fullDays + pricing.freeKm12Hour;
-        } else {
-          // Partial day > 12hrs, or no half-day pricing → round up to full day
-          basePrice = pricing.price24Hour.mul(fullDays + 1);
-          freeKmLimit = pricing.freeKm24Hour * (fullDays + 1);
-        }
-        break;
-      }
-
-      case RentalPeriodType.MONTHLY:
-        if (pricing.priceMonthly) {
-          const fullMonths    = Math.floor(duration.actualDuration / (30 * 24));
-          const afterMonths   = duration.actualDuration % (30 * 24);
-          const overflowDays  = Math.floor(afterMonths / 24);
-          const leftoverHours = afterMonths % 24;
-
-          basePrice   = pricing.priceMonthly.mul(fullMonths)
-                          .add(pricing.price24Hour.mul(overflowDays));
-          freeKmLimit = pricing.freeKmMonthly * fullMonths
-                          + pricing.freeKm24Hour * overflowDays;
-
-          if (leftoverHours > 0) {
-            if (pricing.hourlyRate && pricing.hourlyRate.gt(0)) {
-              basePrice   = basePrice.add(pricing.hourlyRate.mul(Math.ceil(leftoverHours)));
-              freeKmLimit += pricing.freeKm24Hour;
-            } else if (leftoverHours <= 12 && pricing.price12Hour) {
-              basePrice   = basePrice.add(pricing.price12Hour);
-              freeKmLimit += pricing.freeKm12Hour;
-            } else {
-              basePrice   = basePrice.add(pricing.price24Hour);
-              freeKmLimit += pricing.freeKm24Hour;
-            }
-          }
-        } else {
-          const actualDays = Math.ceil(duration.actualDuration / 24);
-          basePrice   = pricing.price24Hour.mul(actualDays);
-          freeKmLimit = pricing.freeKm24Hour * actualDays;
-        }
-        break;
-
-      default:
-        throw new Error("Invalid rental period type");
-    }
-
-    return { basePrice, freeKmLimit, priceSource: pricing.source };
+    const selection = selectBasePrice(pricing, duration);
+    return {
+      basePrice: selection.basePrice,
+      freeKmLimit: selection.freeKmLimit,
+      priceSource: pricing.source,
+      billedAs: selection.billedAs,
+      billedAsType: selection.billedAsType,
+    };
   }
 
   /**
@@ -526,35 +487,22 @@ export class PricingEngineService {
   }
 
   /**
-   * TASK-008: Calculate GST with Redis caching for the GST rule.
+   * GST on the post-discount base through the canonical gst.service rule:
+   * CGST and SGST each rounded half-up to 2 dp, GST = CGST + SGST, never IGST.
+   * The branch rule is read through the shared Redis cache; a branch without a
+   * GSTRule fails with GST_RULE_MISSING (no silent fallback rate).
    */
   private async calculateTax(amount: Decimal, branchId: number): Promise<TaxResult> {
-    const cacheKey = gstRuleKey(branchId);
-    let gstRule: any;
-
-    try {
-      const cached = await redis.get(cacheKey);
-      if (cached !== null) {
-        console.log(`[pricing-cache] hit: ${cacheKey}`);
-        gstRule = JSON.parse(cached);
-      } else {
-        console.warn(`[pricing-cache] miss: ${cacheKey}`);
-        gstRule = await prisma.gSTRule.findUnique({ where: { branchId } });
-        await redis.set(cacheKey, JSON.stringify(gstRule), "EX", GST_TTL);
-      }
-    } catch (err) {
-      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
-      gstRule = await prisma.gSTRule.findUnique({ where: { branchId } });
-    }
-
-    if (!gstRule) throw new Error("GST rules not configured for this branch");
-
-    const cgstRate = new Decimal(gstRule.cgstRate.toString());
-    const sgstRate = new Decimal(gstRule.sgstRate.toString());
-    const cgst = amount.mul(cgstRate).div(100);
-    const sgst = amount.mul(sgstRate).div(100);
-
-    return { totalTax: cgst.add(sgst), cgst, sgst, rate: cgstRate.add(sgstRate) };
+    const rates = await getBranchGstRatesCached(branchId);
+    const line = computeLineGst(amount, rates);
+    return {
+      totalTax: line.gst,
+      cgst: line.cgst,
+      sgst: line.sgst,
+      rate: new Decimal(rates.rate),
+      cgstRate: new Decimal(rates.cgstRate),
+      sgstRate: new Decimal(rates.sgstRate),
+    };
   }
 
   calculateExtraKmCharges(kmDriven: number, freeKmLimit: number, extraKmRate: Decimal): Decimal {

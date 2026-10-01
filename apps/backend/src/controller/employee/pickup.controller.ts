@@ -11,8 +11,15 @@ import {
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { createID } from "../../utils/nanoID.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 import { assertOpenShift, CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import {
+  resolvePickupDlStatus,
+  dlStatusUpdateData,
+  dlValidationError,
+  DlStatusError,
+} from "../../services/booking/dl-status.service.js";
 import { z } from "zod";
 const chargePickupDataSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
@@ -27,7 +34,21 @@ import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js
 export const PickupController = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const branchId = req.branch_Id;
-  const parsedVehicleDetails = pickUpVehicleSchema.parse(req.body);
+  const parsedBody = pickUpVehicleSchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    const dlError = dlValidationError(parsedBody.error);
+    if (dlError) return res.status(dlError.status).json(dlError.toJSON());
+    const firstIssue = parsedBody.error.issues[0];
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "VALIDATION_FAILED",
+      message: firstIssue
+        ? `Check the pickup details: ${firstIssue.path.join(".") || "request"} — ${firstIssue.message}`
+        : "Check the pickup details and try again.",
+      errors: parsedBody.error.format(),
+    });
+  }
+  const parsedVehicleDetails = parsedBody.data;
   try {
     const booking = await prisma.booking.findFirst({
       where: {
@@ -83,18 +104,11 @@ export const PickupController = async (req: Request, res: Response) => {
       });
     }
 
-    // The branch holds the customer's physical licence for the whole rental.
-    // Staff phones still on an app build from before the licence tick don't
-    // send the field at all; they are let through (nothing is recorded) so
-    // pickups keep working until every phone is updated. An explicit `false`
-    // is always refused.
-    const licenseTicked = parsedVehicleDetails.licenseCollected === true;
-    if (parsedVehicleDetails.licenseCollected === false) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Collect the customer's original driving licence before handing over the vehicle.",
-        code: "LICENSE_NOT_COLLECTED",
-      });
-    }
+    // Original licence custody (#3): COLLECTED / NOT_COLLECTED / DEPOSIT (+ note).
+    // Old builds send the boolean tick instead (true ⇒ COLLECTED, false ⇒
+    // refused); builds from before the tick send neither and are let through
+    // with nothing recorded, so pickups keep working until every phone updates.
+    const dlChoice = resolvePickupDlStatus(parsedVehicleDetails);
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
 
@@ -137,8 +151,10 @@ export const PickupController = async (req: Request, res: Response) => {
       await assertOpenShift(actingUser);
     }
 
-    const licenseCollected = licenseTicked
-      ? { licenseCollectedAt: new Date(), licenseCollectedById: actingUser.id }
+    // A re-sent pickup (e.g. after a manager-confirmation request) may change the
+    // choice; licenseCollectedAt keeps the first time the licence was taken.
+    const licenseCollected = dlChoice
+      ? dlStatusUpdateData(dlChoice, actingUser.id, booking)
       : {};
 
     await prisma.$transaction(async (tx) => {
@@ -293,6 +309,33 @@ export const PickupController = async (req: Request, res: Response) => {
               safetyDepositPaidAt: new Date(),
             },
           });
+
+          // The deposit is cash taken at the counter now: record it (purpose
+          // SAFETY_DEPOSIT — refundable, not revenue) on the staff member's open
+          // shift so the drawer expects it, awaiting the manager's cash
+          // confirmation like other counter cash. One per booking (the request is).
+          const depositShift = await tx.cashShift.findFirst({
+            where: { employeeId: actingUser.id, status: "OPEN" },
+            select: { id: true },
+          });
+          await tx.paymentTransaction.create({
+            data: {
+              publicId: createID(),
+              idempotencyKey: `safety-deposit:pickup:${booking.publicId}`,
+              bookingId: booking.id,
+              branchId: booking.branchId,
+              purpose: "SAFETY_DEPOSIT",
+              method: "CASH",
+              status: "COLLECTED",
+              totalAmount: requestedAmount.toFixed(2),
+              cashAmount: requestedAmount.toFixed(2),
+              onlineAmount: "0.00",
+              collectedById: actingUser.id,
+              collectedAt: new Date(),
+              cashShiftId: depositShift?.id ?? null,
+              notes: `Safety deposit: ${reason}`,
+            },
+          });
         }
       }
     });
@@ -307,6 +350,9 @@ export const PickupController = async (req: Request, res: Response) => {
       description: parsedVehicleDetails.requireManagerConfirmation
         ? `Pickup approval requested for booking ${booking.publicId}`
         : `Vehicle pickup confirmed for booking ${booking.publicId}`,
+      ...(dlChoice && {
+        metadata: { dlStatus: dlChoice.dlStatus, dlDepositNote: dlChoice.dlDepositNote },
+      }),
     });
 
     if (!parsedVehicleDetails.requireManagerConfirmation) {
@@ -322,15 +368,32 @@ export const PickupController = async (req: Request, res: Response) => {
         entityId: booking.publicId,
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
-        metadata: { odo: parsedVehicleDetails.odo, fuelLevel: parsedVehicleDetails.fuelLevel },
+        metadata: {
+          odo: parsedVehicleDetails.odo,
+          fuelLevel: parsedVehicleDetails.fuelLevel,
+          dlStatus: dlChoice?.dlStatus ?? null,
+          dlDepositNote: dlChoice?.dlDepositNote ?? null,
+        },
       });
     }
 
+    void (parsedVehicleDetails.requireManagerConfirmation
+      ? notifyEvents.pickupApprovalRequested({ bookingId: booking.id, actorUserId: actingUser.id })
+      : notifyEvents.pickupCompleted({ bookingId: booking.id, actorUserId: actingUser.id }));
+    void notifyEvents.safetyDepositRequested({ bookingId: booking.id, actorUserId: actingUser.id });
+
     return res.status(StatusCode.OK).json({
       message: parsedVehicleDetails.requireManagerConfirmation ? "Pickup sent to manager for confirmation." : "Vehicle Pickup Successful. Status updated to OUT_FOR_RENTAL.",
+      data: {
+        dlStatus: dlChoice?.dlStatus ?? booking.dlStatus ?? null,
+        dlDepositNote: dlChoice ? dlChoice.dlDepositNote : booking.dlDepositNote ?? null,
+      },
     });
   } catch (error) {
     if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
+    if (error instanceof DlStatusError) {
       return res.status(error.status).json(error.toJSON());
     }
     console.error("Pickup Error:", error);

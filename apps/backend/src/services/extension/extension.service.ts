@@ -7,6 +7,7 @@ import {
   Role,
   PaymentPurpose,
   VehicleStatus,
+  RentalPeriodType,
 } from "@repo/database/client";
 import type { BookingExtension } from "@repo/database/client";
 import Decimal from "decimal.js";
@@ -15,13 +16,29 @@ import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { AuditSeverity } from "@repo/database/client";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { extensionAvailabilityService } from "./extension-availability.service.js";
-import { extensionPricingService, type ExtensionPricingResult } from "./extension-pricing.service.js";
+import {
+  extensionPricingService,
+  extensionSplitData,
+  extensionSplitView,
+  type ExtensionPricingResult,
+} from "./extension-pricing.service.js";
+import { refreshInvoiceTotals } from "../invoice-totals.service.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
 import { extensionVehicleAllocatorService } from "./extension-vehicle-allocator.service.js";
 import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
+import { discountApplicationService } from "../discount/discount-application.service.js";
+import { assertExtensionWindow } from "../../utils/booking/bookingWindow.js";
+import {
+  loadBranchScheduleConfig,
+  validateReturnTime,
+  BranchScheduleError,
+} from "../../utils/booking/branchScheduleValidator.js";
+import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 
 export interface ActorContext {
   actorId: number;
@@ -54,6 +71,16 @@ export interface ExtensionEvaluation {
     originalTotalFinal: string;
     newTotalFinal: string;
     additionalAmount: string;
+    // GST split of additionalAmount (= taxableAmount + taxAmount)
+    baseAmount: string;
+    discountAmount: string;
+    taxableAmount: string;
+    taxAmount: string;
+    cgstAmount: string;
+    sgstAmount: string;
+    taxRate: string;
+    originalHours: number;
+    extensionHours: number;
   };
   resolutionOptions: EvaluationResolutionOption[];
   recommendedResolution: string;
@@ -100,6 +127,9 @@ const EXTENDABLE_STATUSES: BookingStatus[] = [
   BookingStatus.CONFIRMED,
   BookingStatus.PICKED_UP,
 ];
+
+/** collect() refused: the charge is already on an open pickup payment session (409). */
+export const EXTENSION_IN_SESSION = "EXTENSION_IN_SESSION";
 
 /**
  * Evaluate refused because the booking already has a committed (vehicle held)
@@ -165,6 +195,25 @@ class ExtensionService {
 
     if (newEndAt <= booking.endAt) {
       throw new Error("New end date must be after the current end date");
+    }
+
+    // 15-day booking window (#15), measured from the original start so chained
+    // extensions can't pass it. Monthly-plan bookings are only held to their
+    // own maximum length. Throws BookingWindowError (400).
+    assertExtensionWindow(booking.startAt, newEndAt, {
+      monthly: booking.rentalPeriodType === RentalPeriodType.MONTHLY,
+    });
+
+    // The new end must fall inside the branch's return window (#2) — an open
+    // day, from opening to closing + grace. Throws BranchScheduleError (400).
+    // Only the requested end is checked: a system-computed partial end
+    // (PARTIAL_EXTENSION / narrowQuote) is never refused for office hours.
+    const scheduleConfig = await loadBranchScheduleConfig(booking.branchId);
+    if (scheduleConfig) {
+      const returnVerdict = validateReturnTime(scheduleConfig, newEndAt);
+      if (returnVerdict.status === "RETURN_OUTSIDE_HOURS") {
+        throw new BranchScheduleError(returnVerdict);
+      }
     }
 
     // Prevent concurrent extensions
@@ -241,6 +290,7 @@ class ExtensionService {
         requestedEndAt: newEndAt,
         additionalAmount: pricing.additionalAmount,
         newTotalFinal: pricing.newTotalFinal,
+        ...extensionSplitData(pricing),
         actorId: actor.actorId,
         actorPublicId: actor.actorPublicId,
         actorRole: actor.actorRole,
@@ -313,6 +363,9 @@ class ExtensionService {
         originalTotalFinal: new Decimal(booking.totalFinal.toString()).toFixed(2),
         newTotalFinal: newTotalFinalStr,
         additionalAmount: additionalAmountStr,
+        ...extensionSplitView(pricing),
+        originalHours: pricing.originalHours,
+        extensionHours: pricing.extensionHours,
       },
       resolutionOptions: resolutionOptions.options.map(opt => ({
         type: opt.type,
@@ -454,6 +507,8 @@ class ExtensionService {
       // Determine final amount to charge (may differ from stored if partial)
       let finalAdditionalAmount = extension.additionalAmount;
       let finalNewTotalFinal = extension.newTotalFinal;
+      // GST split re-priced with the amount (left as stored when not partial)
+      let finalSplit: ReturnType<typeof extensionSplitData> | undefined;
 
       if (input.resolutionType === "PARTIAL_EXTENSION" && input.partialNewEndAt) {
         const partialPricing = await extensionPricingService.recalculate(
@@ -462,6 +517,7 @@ class ExtensionService {
         );
         finalAdditionalAmount = partialPricing.additionalAmount;
         finalNewTotalFinal = partialPricing.newTotalFinal;
+        finalSplit = extensionSplitData(partialPricing);
       }
 
       // Handle SWAP_CURRENT_TO_OTHER before the DB transaction
@@ -478,6 +534,7 @@ class ExtensionService {
           booking.publicId,
           newVehicle.id,
           actor,
+          effectiveNewEndAt,
         );
         vehicleSwapId = vehicleSwap.id;
       }
@@ -528,6 +585,7 @@ class ExtensionService {
           vehicleSwapId: vehicleSwapId,
           additionalAmount: finalAdditionalAmount,
           newTotalFinal: finalNewTotalFinal,
+          ...(finalSplit ?? {}),
         },
       });
 
@@ -561,6 +619,16 @@ class ExtensionService {
           description: `Extension committed for booking ${booking.publicId} — ₹${finalAdditionalAmount.toFixed(2)} pending collection`,
         }),
       ]);
+
+      if (input.resolutionType === "SWAP_FUTURE_BOOKING") {
+        for (const swap of input.affectedBookingSwaps ?? []) {
+          void notifyEvents.bookingDisplaced({
+            affectedBookingPublicId: swap.bookingPublicId,
+            extensionId: extension.id,
+            actorUserId: actor.actorId,
+          });
+        }
+      }
 
       return {
         extension: updatedExtension,
@@ -623,6 +691,7 @@ class ExtensionService {
         requestedEndAt: newEndAt,
         additionalAmount: pricing.additionalAmount,
         newTotalFinal: pricing.newTotalFinal,
+        ...extensionSplitData(pricing),
       },
     });
     return pricing;
@@ -655,6 +724,8 @@ class ExtensionService {
             extension.booking.extensionCount === 0 ? extension.oldEndAt : undefined,
         },
       });
+      // days / rentalPeriodType / hours follow the new end (#5/#17)
+      await refreshBookingPeriodFields(extension.bookingId, tx);
 
       await tx.bookingExtension.update({
         where: { id: extension.id },
@@ -677,6 +748,8 @@ class ExtensionService {
       entityId: extension.publicId,
       description: `Extension confirmed after cash payment verified. Booking extended to ${effectiveEndAt.toISOString()}`,
     });
+
+    void notifyEvents.extensionConfirmed({ extensionId: extension.id, actorUserId: actor.actorId });
   }
 
   /**
@@ -803,6 +876,24 @@ class ExtensionService {
       throw new Error(`Booking is already in ${booking.status} status — extension payment cannot be collected`);
     }
 
+    // Deferred to an open pickup payment session (EXTENSION ledger line): the
+    // session collects it, so collecting here too would charge the customer twice.
+    const inOpenSession = await prisma.ledgerEntry.findFirst({
+      where: {
+        referenceId: extension.publicId,
+        entryType: "EXTENSION",
+        isVoided: false,
+        session: { status: { in: ["OPEN", "COMPUTING", "AWAITING_PAYMENT", "PAYMENT_INITIATED"] } },
+      },
+      select: { id: true },
+    });
+    if (inOpenSession) {
+      throw Object.assign(
+        new Error("This extension's charge is on the open pickup payment session — collect it there."),
+        { code: EXTENSION_IN_SESSION },
+      );
+    }
+
     const additionalAmount = new Decimal(extension.additionalAmount.toString());
     const isUpi = method === "ONLINE" && options.onlineGateway === "UPI";
 
@@ -829,6 +920,7 @@ class ExtensionService {
             ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
           },
         });
+        await refreshBookingPeriodFields(booking.id, tx);
         return true;
       });
 
@@ -855,6 +947,14 @@ class ExtensionService {
         entityId: extension.publicId,
         description: `Extension ${extension.publicId} confirmed with no additional charge`,
       });
+
+      void notifyEvents.extensionConfirmed({ extensionId: extension.id, actorUserId: actor.actorId });
+
+      // The new return time belongs on the invoice: no amount moves, so force
+      // the fresh PDF (the cached one still shows the old period)
+      refreshInvoiceTotals(booking.id, { forceRegenerate: true }).catch((err) =>
+        console.error("[extension.collect] Invoice refresh error:", err),
+      );
 
       return { remainAmount: { extension: "0.00" }, payment: "confirmed" };
     }
@@ -925,6 +1025,7 @@ class ExtensionService {
             ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
           },
         });
+        await refreshBookingPeriodFields(booking.id, tx);
       }
     });
 
@@ -953,6 +1054,16 @@ class ExtensionService {
         description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI (UTR)" : method}`,
       }),
     ]);
+
+    if (isOnline) void notifyEvents.extensionConfirmed({ extensionId: extension.id, actorUserId: actor.actorId });
+
+    // Confirmed now (online / UPI): its taxable value and GST join the invoice.
+    // Cash waits for the manager's confirmation, which refreshes it then.
+    if (isOnline) {
+      refreshInvoiceTotals(booking.id).catch((err) =>
+        console.error("[extension.collect] Invoice refresh error:", err),
+      );
+    }
 
     return {
       remainAmount: { extension: additionalAmount.toFixed(2) },
@@ -1081,7 +1192,8 @@ class ExtensionService {
       customer: {
         name: b.customer.user.name,
         phone: b.customer.user.phone ?? null,
-        email: b.customer.user.email ?? null,
+        // Walk-in placeholder addresses are never shown (D1)
+        email: displayEmail(b.customer.user.email),
       },
       newVehicle: b.items[0]?.vehicle ?? null,
       displacingExtension: b.displacedByExtensionId
@@ -1152,6 +1264,9 @@ class ExtensionService {
         },
       });
 
+      // Cancelled for a business reason (vehicle displaced) — give the coupon use back
+      await discountApplicationService.releaseUsage(booking.id, tx);
+
       // Free up the vehicle
       const items = await tx.bookingItem.findMany({
         where: { bookingId: booking.id },
@@ -1193,6 +1308,15 @@ class ExtensionService {
       entity: "Booking",
       entityId: bookingPublicId,
       description: notes ?? "Customer declined vehicle swap",
+    });
+
+    void notifyEvents.bookingCancelled({
+      bookingId: booking.id,
+      actorUserId: actor.actorId,
+      reason:
+        action === "CANCEL_WITH_REFUND" && refundAmount && refundMethod
+          ? "the reserved car is no longer available. A refund has been approved."
+          : "the reserved car is no longer available.",
     });
   }
 }

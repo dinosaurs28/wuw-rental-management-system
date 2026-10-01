@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, Prisma } from "@repo/database/client";
+import { displayEmail } from "../../utils/customer/identity.js";
 import {
   resolveReportRange,
   parseCategoryIds,
@@ -228,7 +229,8 @@ export const GetCustomerReport = async (req: Request, res: Response) => {
         customerId: c.publicId,
         name: c.user.name,
         phone: c.user.phone,
-        email: c.user.email,
+        // Walk-in placeholder / tombstone emails are blank, never shown (#1).
+        email: displayEmail(c.user.email) ?? "",
         registeredAt: c.user.createdAt.toISOString(),
         isProfileCompleted: c.isProfileCompleted,
         // Spec column "Total Bookings" = all-time count.

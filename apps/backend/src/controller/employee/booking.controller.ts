@@ -13,6 +13,9 @@ import {
   type BranchScheduleConfig,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { parseGroupKey, normalizeStr } from "./vehicle.controller.js";
+import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { MONTHLY_MIN_DAYS } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -21,10 +24,28 @@ import { chargeConfigService } from "../../services/charges/charge-config.servic
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import {
   resolveKmAllowance,
-  wasVehicleSwappedAfterPickup,
+  getOdometerSegments,
   type KmAllowance,
+  type OdometerSegments,
 } from "../../services/charges/km-allowance.service.js";
+import { getRentalTimeline } from "../../services/charges/rental-timeline.service.js";
+import { getBranchGstRates, computeLineGst, GstRuleMissingError } from "../../services/tax/gst.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import {
+  getMissingProfileFields,
+  profileFieldsOf,
+  profileIncompleteMessage,
+} from "../../utils/customer/identity.js";
+import {
+  checkBookingQrPhotoId,
+  getBookingQrPhotoFields,
+} from "../../services/qr-photo/customer-qr-photo.service.js";
+import {
+  parseBookingListType,
+  bookingTypeWhere,
+  bookingListTypeOf,
+  INVALID_BOOKING_TYPE,
+} from "../../utils/booking/bookingTypeFilter.js";
 import { createRazorpayOrder } from "../../services/payment/razorpay.service.js";
 import {
   assertOpenShift,
@@ -36,13 +57,21 @@ const pricingEngine = new PricingEngineService();
 
 // ── Booking list (GET /bookings) ──────────────────────────────────────────────
 
+// Pickup queue. `?type=DAILY|MONTHLY` splits it into tabs (#17): Daily keeps the
+// per-day (IST) scope, Monthly lists every CONFIRMED monthly booking whatever the
+// date. No cache — a picked-up booking must leave the queue on the next fetch.
 export const BookingController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
     const { date } = req.query;
 
+    const parsedType = parseBookingListType(req.query.type);
+    if (!parsedType.ok) {
+      return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
+    }
+    const type = parsedType.type;
+
     let dateFilter: any = {};
-    let cacheKeySuffix = "";
 
     if (date) {
       const parsedDateDt = TimezoneService.parseISO(date as string);
@@ -54,7 +83,6 @@ export const BookingController = async (req: Request, res: Response) => {
           gte: TimezoneService.toPrisma(startOfDayDt),
           lte: TimezoneService.toPrisma(endOfDayDt),
         };
-        cacheKeySuffix = `date:${parsedDateDt.toFormat("yyyy-MM-dd")}`;
       }
     }
 
@@ -62,29 +90,42 @@ export const BookingController = async (req: Request, res: Response) => {
       const nowDt = TimezoneService.getCurrentTime();
       const startOfDayDt = TimezoneService.startOfDay(nowDt);
       dateFilter = { gte: TimezoneService.toPrisma(startOfDayDt) };
-      cacheKeySuffix = `upcoming:${nowDt.toFormat("yyyy-MM-dd")}`;
     }
 
-    const cacheKey = `bookings:${branchId}:${cacheKeySuffix}`;
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      return res.status(StatusCode.OK).json({
-        message: "Bookings fetched successfully",
-        data: JSON.parse(cachedData),
-      });
-    }
+    const dailyWhere = {
+      branchId,
+      startAt: dateFilter,
+      status: BookingStatus.CONFIRMED,
+      ...bookingTypeWhere("DAILY"),
+    };
+    const monthlyWhere = {
+      branchId,
+      status: BookingStatus.CONFIRMED,
+      ...bookingTypeWhere("MONTHLY"),
+    };
+    const listWhere =
+      type === "MONTHLY"
+        ? monthlyWhere
+        : type === "DAILY"
+          ? dailyWhere
+          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED };
 
-    const bookings = await prisma.booking.findMany({
-      where: {
-        branchId,
-        startAt: dateFilter,
-        status: BookingStatus.CONFIRMED,
-      },
+    const [dailyCount, monthlyCount] = await Promise.all([
+      prisma.booking.count({ where: dailyWhere }),
+      prisma.booking.count({ where: monthlyWhere }),
+    ]);
+
+    const rows = await prisma.booking.findMany({
+      where: listWhere,
       select: {
         publicId: true,
         startAt: true,
         endAt: true,
         status: true,
+        rentalPeriodType: true,
+        dlStatus: true,
+        dlDepositNote: true,
+        days: true,
         totalFinal: true,
         isAdvancePayment: true,
         advanceAmount: true,
@@ -119,17 +160,22 @@ export const BookingController = async (req: Request, res: Response) => {
       },
       orderBy: { startAt: "asc" },
     });
+    const bookings = rows.map((row) => ({ ...row, bookingType: bookingListTypeOf(row.rentalPeriodType) }));
+    const counts = { daily: dailyCount, monthly: monthlyCount };
 
-    if (bookings.length === 0) {
+    // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
+    if (bookings.length === 0 && !type) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "No Upcoming Bookings Found",
+        counts,
       });
     }
 
-    await redis.setex(cacheKey, 60, JSON.stringify(bookings));
     return res.status(StatusCode.OK).json({
       message: "Upcoming bookings fetched successfully",
       data: bookings,
+      type: type ?? null,
+      counts,
     });
   } catch (error) {
     console.error("Error fetching bookings:", error);
@@ -193,14 +239,47 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Customer not found" });
     }
 
+    // #1: DL + Aadhaar numbers (and the rest of the profile) are required before
+    // any counter booking. Derived from the stored values so the API can't skip
+    // the gate the staff UIs enforce.
+    const missingProfileFields = getMissingProfileFields(
+      profileFieldsOf(customer, customer.customerProfile),
+    );
+    if (missingProfileFields.length > 0) {
+      return res.status(StatusCode.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        code: "CUSTOMER_PROFILE_INCOMPLETE",
+        missingFields: missingProfileFields,
+        message: profileIncompleteMessage(missingProfileFields, "staff"),
+      });
+    }
+
+    // Customer QR code photo (#4): optional for old builds; when sent it must be
+    // the customer's current photo (409 QR_PHOTO_MISMATCH otherwise).
+    const qrPhotoProblem = await checkBookingQrPhotoId(
+      req.body.qr_photo_id,
+      customer.customerProfile.qrPhotoFileId,
+    );
+    if (qrPhotoProblem) {
+      return res.status(qrPhotoProblem.status).json(qrPhotoProblem.body);
+    }
+
     const kycRecord = await prisma.customerKyc.findUnique({
       where: { publicId: customer_kyc_id },
-      select: { fileId: true },
+      select: { fileId: true, customerId: true },
     });
     if (!kycRecord || !kycRecord.fileId) {
       return res
         .status(StatusCode.BAD_REQUEST)
         .json({ message: "Invalid KYC ID or Document missing" });
+    }
+    // The KYC document must belong to the customer being booked.
+    if (kycRecord.customerId !== customer.customerProfile.id) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "KYC_CUSTOMER_MISMATCH",
+        message: "This KYC document belongs to a different customer. Select one of this customer's documents.",
+      });
     }
 
     // Parse dates (IST) — used as Luxon DateTime for pricing engine
@@ -211,6 +290,49 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     }
     const startDate = TimezoneService.toPrisma(startDateDt);
     const endDate = TimezoneService.toPrisma(endDateDt);
+
+    // ── Rental plan + period rules (#15 / #17) ───────────────────────────────
+    // plan 'MONTHLY' is the counter-only monthly plan (30–180 days, pickup within
+    // the 15-day window). Omitted (old app builds) or 'STANDARD' = a normal
+    // booking, held to the 15-day window. No staff bypass.
+    const rawPlan: unknown = req.body.plan;
+    if (rawPlan != null && rawPlan !== "STANDARD" && rawPlan !== "MONTHLY") {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_PLAN",
+        message: "plan must be 'STANDARD' or 'MONTHLY'",
+      });
+    }
+    const isMonthlyPlan = rawPlan === "MONTHLY";
+
+    if (endDate <= startDate) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_DATES",
+        message: "Return must be after pickup",
+      });
+    }
+    if (TimezoneService.startOfDay(startDateDt) < TimezoneService.startOfDay(TimezoneService.getCurrentTime())) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_DATES",
+        message: "Pickup date cannot be in the past",
+      });
+    }
+    try {
+      assertBookingWindow(startDate, endDate, { monthly: isMonthlyPlan });
+    } catch (windowErr) {
+      if (windowErr instanceof BookingWindowError) {
+        const body = windowErr.toJSON();
+        const spanDays = (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000);
+        if (!isMonthlyPlan && spanDays >= MONTHLY_MIN_DAYS) {
+          body.message = `${body.message} For ${MONTHLY_MIN_DAYS} days or more, choose the Monthly rental plan.`;
+        }
+        return res.status(StatusCode.BAD_REQUEST).json(body);
+      }
+      throw windowErr;
+    }
+    const periodFields = bookingPeriodFields(startDate, endDate, { monthly: isMonthlyPlan });
 
     // ── Resolve vehicle list: explicit IDs or pick from group ────────────────
     let resolvedVehicleIds: string[] = hasVehicles ? vehicles : [];
@@ -291,9 +413,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     }
 
     // ── Branch schedule + restriction mode ───────────────────────────────────
-    const bypassSchedule =
-      req.body.bypassSchedule === true && ["ADMIN", "MANAGER"].includes(staff.role);
-
+    // Fleet Executives (the only role this route admits) are always bound by
+    // the branch's office hours — there is no bypass.
     let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
 
     {
@@ -310,30 +431,40 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       if (branchData) {
         branchRestrictionMode = branchData.bookingRestrictionMode as "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE";
 
-        if (!bypassSchedule) {
-          const scheduleConfig: BranchScheduleConfig = {
-            schedules: branchData.schedules,
-            graceMinutes: branchData.graceMinutes,
-            is24Hours: branchData.is24Hours,
-          };
+        const scheduleConfig: BranchScheduleConfig = {
+          schedules: branchData.schedules,
+          graceMinutes: branchData.graceMinutes,
+          is24Hours: branchData.is24Hours,
+        };
 
-          const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+        const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
 
-          if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
-            return res.status(StatusCode.BAD_REQUEST).json({
-              code: "BRANCH_SCHEDULE_VIOLATION",
-              message: buildScheduleErrorMessage(verdict),
-              verdict,
-            });
+        if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_VIOLATION",
+            message: buildScheduleErrorMessage(verdict),
+            verdict,
+          });
+        }
+
+        if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
+          // Never offer an adjusted return past the booking-period limit
+          try {
+            assertBookingWindow(startDate, verdict.adjustedReturn, { monthly: isMonthlyPlan });
+          } catch (windowErr) {
+            if (windowErr instanceof BookingWindowError) {
+              return res.status(StatusCode.BAD_REQUEST).json({
+                ...windowErr.toJSON(),
+                message: `The branch is closed at the chosen return time, and the next open return (${verdict.nextOpenLabel ?? "next available time"}) is past the booking-period limit. Please choose an earlier return.`,
+              });
+            }
+            throw windowErr;
           }
-
-          if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
-            return res.status(StatusCode.BAD_REQUEST).json({
-              code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
-              message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
-              verdict,
-            });
-          }
+          return res.status(StatusCode.BAD_REQUEST).json({
+            code: "BRANCH_SCHEDULE_RETURN_ADJUSTED",
+            message: `Return time adjusted to ${verdict.nextOpenLabel ?? "next available time"} due to branch operating hours.`,
+            verdict,
+          });
         }
       }
     }
@@ -413,12 +544,30 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         baseTotal,
         discountAmount,
         discountPercent,
+        // Duration-slab layer (walk-ins take no coupon — the whole discount is the slab)
+        durationDiscountAmount: Number(pricingResult.durationDiscountAmount.toFixed(2)),
+        durationDiscountLabel:  pricingResult.durationDiscountLabel,
+        durationSlabId:         pricingResult.durationSlabId,
         deposit,
         taxAmount,
         cgstAmount,
         sgstAmount,
         taxRate,
+        // Frozen CGST/SGST % (invoice, summaries, bookingGstRates)
+        cgstRate: Number(pricingResult.cgstRate.toString()),
+        sgstRate: Number(pricingResult.sgstRate.toString()),
         finalTotal,
+        // Same snapshot shape as the customer path — km-allowance falls back to
+        // freeKmLimit/extraKmRate here, and billedAs records the slab charged.
+        pricingBreakdown: {
+          periodType:    pricingResult.pricingBreakdown.periodType,
+          billedAs:      pricingResult.pricingBreakdown.billedAs,
+          billedAsType:  pricingResult.pricingBreakdown.billedAsType,
+          billableHours: pricingResult.pricingBreakdown.duration.billableDuration,
+          actualHours:   pricingResult.pricingBreakdown.duration.actualDuration,
+          freeKmLimit:   pricingResult.freeKmLimit,
+          extraKmRate:   Number(pricingResult.extraKmRate.toString()),
+        },
       });
 
       grandBaseTotal    += baseTotal;
@@ -530,15 +679,27 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         }
       }
 
+      // Snapshot the customer's current QR code photo (#4). Re-read inside the
+      // transaction so the id can't point at a file released by a replace.
+      const qrSnapshot = await tx.customer.findUnique({
+        where: { id: customer.customerProfile!.id },
+        select: { qrPhotoFileId: true },
+      });
+
       const newBooking = await tx.booking.create({
         data: {
           publicId:     createID(),
           customerId:   customer.customerProfile!.id,
           kycFileId:    kycRecord.fileId!,
+          qrPhotoFileId: qrSnapshot?.qrPhotoFileId ?? null,
           branchId:     vehiclesData[0]!.branchId,
           startAt:      startDate,
           endAt:        endDate,
           days:         items[0]!.days,
+          // Period columns (#5/#17) — MONTHLY for the counter monthly plan
+          rentalPeriodType: periodFields.rentalPeriodType,
+          actualHours:      periodFields.actualHours,
+          billableHours:    periodFields.billableHours,
           status:       BookingStatus.HOLD,
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           paymentStatus: "CREATED",
@@ -548,11 +709,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
               : payment_type === "UPI"
                 ? DepositMethod.UPI
                 : DepositMethod.ONLINE_RAZORPAY,
-          totalBase:    grandBaseTotal,
-          totalDiscount: grandDiscountTotal,
-          totalDeposit:  grandDeposit,
-          totalTax:      grandTaxTotal,
-          totalFinal:    grandFinalTotal,
+          // 2-dp strings: Prisma stores a JS number in these unscaled Decimal
+          // columns with float noise (8885.2 → 8885.200000000001)
+          totalBase:    grandBaseTotal.toFixed(2),
+          totalDiscount: grandDiscountTotal.toFixed(2),
+          totalDeposit:  grandDeposit.toFixed(2),
+          totalTax:      grandTaxTotal.toFixed(2),
+          totalFinal:    grandFinalTotal.toFixed(2),
           transactionId,
           frozenChargeConfig: frozenChargeConfig as any,
           pricingSnapshot: {
@@ -565,7 +728,15 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
               grandCGSTTotal,
               grandSGSTTotal,
               taxRate: totalTaxRate,
+              cgstRate: items[0]?.cgstRate ?? 0,
+              sgstRate: items[0]?.sgstRate ?? 0,
               grandFinalTotal,
+              // Discount layers (they add up to grandDiscountTotal)
+              grandDurationDiscountTotal: Number(
+                items.reduce((s, i) => s + (i.durationDiscountAmount ?? 0), 0).toFixed(2),
+              ),
+              grandCouponDiscountTotal: 0,
+              durationDiscountLabel: items.find((i) => i.durationDiscountLabel)?.durationDiscountLabel ?? null,
             },
             // Read back by confirmBookingPayment to record the UPI transaction
             ...(upiUtr && { upi: { utr: upiUtr } }),
@@ -579,17 +750,39 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           bookingId:       newBooking.id,
           vehicleId:       i.vehicleId,
           days:            i.days,
-          baseTotal:       i.baseTotal,
-          discountAmount:  i.discountAmount,
-          discountPercent: i.discountPercent,
-          deposit:         i.deposit,
-          taxAmount:       i.taxAmount,
-          cgstAmount:      i.cgstAmount,
-          sgstAmount:      i.sgstAmount,
-          taxRate:         i.taxRate,
-          finalTotal:      i.finalTotal,
+          // String(n) is the exact decimal the number prints as (no float noise)
+          baseTotal:       String(i.baseTotal),
+          discountAmount:  String(i.discountAmount),
+          discountPercent: String(i.discountPercent),
+          deposit:         String(i.deposit),
+          taxAmount:       String(i.taxAmount),
+          cgstAmount:      String(i.cgstAmount),
+          sgstAmount:      String(i.sgstAmount),
+          taxRate:         String(i.taxRate),
+          finalTotal:      String(i.finalTotal),
         })),
       });
+
+      // Duration-slab discount on record (summaries, reports, counter-coupon stacking)
+      if (grandDiscountTotal > 0) {
+        const durationTotal = items.reduce((s, i) => s + (i.durationDiscountAmount ?? 0), 0);
+        await tx.discountApplication.create({
+          data: {
+            publicId: createID(),
+            bookingId: newBooking.id,
+            originalAmount: grandBaseTotal.toFixed(2),
+            durationDiscountAmount: durationTotal.toFixed(2),
+            durationDiscountPercent: grandBaseTotal > 0
+              ? ((durationTotal / grandBaseTotal) * 100).toFixed(4)
+              : "0",
+            durationSlabId: items.find((i) => i.durationSlabId)?.durationSlabId ?? null,
+            couponDiscountAmount: "0.00",
+            totalDiscountAmount: grandDiscountTotal.toFixed(2),
+            finalAmount: (grandBaseTotal - grandDiscountTotal).toFixed(2),
+            paymentPlan: "FULL",
+          },
+        });
+      }
 
       return newBooking;
     }, { timeout: 10000 });
@@ -647,10 +840,15 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         items:         snapshot?.items,
         expiresAt:     new Date(Date.now() + holdExpiry * 1000).toISOString(),
         expiresIn:     holdExpiry,
+        rentalPeriodType: booking.rentalPeriodType,
+        plan:          isMonthlyPlan ? "MONTHLY" : "STANDARD",
       },
     });
   } catch (error: any) {
     if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
+    if (error instanceof BookingWindowError) {
       return res.status(error.status).json(error.toJSON());
     }
     if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
@@ -658,6 +856,14 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
         message: error.message,
         conflicts: error.conflicts ?? [],
+      });
+    }
+    // Branch has no GST rule — pricing refuses to guess a rate (#23)
+    if (error?.code === "GST_RULE_MISSING") {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "GST_RULE_MISSING",
+        message: "GST is not configured for this branch. Ask the branch manager to set the GST rule before continuing.",
       });
     }
     console.error("Create Employee Booking Error:", error);
@@ -684,6 +890,10 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         requiresManagerConfirmation: true,
         licenseCollectedAt: true,
         licenseReturnedAt: true,
+        // Original licence custody (#3) — null = not recorded (old pickups)
+        dlStatus: true,
+        dlDepositNote: true,
+        dlStatusUpdatedAt: true,
         isAdvancePayment: true,
         advanceAmount: true,
         advancePaidAt: true,
@@ -697,6 +907,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         days: true,
         freeKmLimit: true,
         branchId: true,
+        // Actual vehicle return time (set when the drop completes)
+        returnedAt: true,
         fuelRecord: { select: { pickupFuelLevel: true } },
         branch: {
           select: {
@@ -747,19 +959,68 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     } catch (allowanceErr) {
       console.warn(`[booking-details] Km allowance unavailable for ${booking.publicId}:`, allowanceErr);
     }
-    // After a mid-rental swap the drop doesn't charge extra km automatically — the preview mustn't either
-    const vehicleSwapped =
-      booking.status === BookingStatus.PICKED_UP && (await wasVehicleSwappedAfterPickup(booking.id));
+    // Km across mid-rental swaps: swaps with readings are measured segment by segment;
+    // a swap recorded without readings stops automatic extra km (staff enter it at drop)
+    const segments: OdometerSegments | null =
+      booking.status === BookingStatus.PICKED_UP ? await getOdometerSegments(booking.id) : null;
+    const vehicleSwapped = segments != null && !segments.complete;
     const effectiveFreeKmLimit: number | null = kmAllowance?.includedKm ?? booking.freeKmLimit ?? null;
     const extraKmRate: number | null = kmAllowance ? kmAllowance.extraKmRate.toNumber() : null;
+
+    // Original / extended / late rental time for the drop screen
+    const rentalTimeline = await getRentalTimeline(booking.id);
+
+    // Vehicle-swap differences staff chose to bill — added to the drop bill as taxable lines
+    const chargedSwaps = await prisma.vehicleSwap.findMany({
+      where: { bookingId: booking.id, chargeDifference: true, priceDifference: { gt: 0 } },
+      orderBy: { swappedAt: "asc" },
+      select: {
+        publicId: true,
+        swappedAt: true,
+        priceDifference: true,
+        originalVehicle: { select: { regNo: true } },
+        newVehicle: { select: { regNo: true } },
+      },
+    });
+    let swapRates: Awaited<ReturnType<typeof getBranchGstRates>> | null = null;
+    let swapGstUnavailableReason: string | null = null;
+    if (chargedSwaps.length > 0) {
+      try {
+        swapRates = await getBranchGstRates(booking.branchId);
+      } catch (ratesErr) {
+        if (!(ratesErr instanceof GstRuleMissingError)) throw ratesErr;
+        swapGstUnavailableReason = ratesErr.code;
+      }
+    }
+    const swapCharges = chargedSwaps.map((swap) => {
+      const gst = swapRates ? computeLineGst(swap.priceDifference.toString(), swapRates) : null;
+      return {
+        swapPublicId: swap.publicId,
+        swappedAt: swap.swappedAt.toISOString(),
+        label: `Vehicle upgrade: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo}`,
+        taxable: swap.priceDifference.toFixed(2),
+        cgst: gst ? gst.cgst.toFixed(2) : null,
+        sgst: gst ? gst.sgst.toFixed(2) : null,
+        gst: gst ? gst.gst.toFixed(2) : null,
+        total: gst ? gst.total.toFixed(2) : null,
+        gstUnavailableReason: swapGstUnavailableReason,
+      };
+    });
+
+    // Customer QR code photo (#4): booking snapshot, else the customer's current one.
+    const qrPhotoFields = await getBookingQrPhotoFields({ id: booking.id });
 
     const { id: _id, branch, fuelRecord, branchId, items, ...bookingData } = booking;
     return res.status(StatusCode.OK).json({
       message: "Booking details fetched successfully",
       data: {
+        ...qrPhotoFields,
         ...bookingData,
         items: items.map(({ vehicleId: _vid, ...rest }) => rest),
-        pickupFuelLevel: fuelRecord?.pickupFuelLevel ?? null,
+        // The fuel the vehicle being handed back started with: after a mid-rental swap
+        // with readings, the replacement's fuel at the swap
+        pickupFuelLevel: segments?.currentStartFuelLevel ?? fuelRecord?.pickupFuelLevel ?? null,
+        originalPickupFuelLevel: fuelRecord?.pickupFuelLevel ?? null,
         effectiveFreeKmLimit,
         extraKmRate,
         kmAllowance: kmAllowance
@@ -768,8 +1029,23 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
               extraKmRate: kmAllowance.extraKmRate.toFixed(2),
               extraKmEnabled: kmAllowance.extraKmEnabled,
               autoKmSkipped: vehicleSwapped ? "VEHICLE_SWAPPED" : null,
+              // Staff type the extra km at drop only when a swap left km unmeasurable
+              manualExtraKmAllowed: vehicleSwapped,
             }
           : null,
+        // Odometer segments across mid-rental swaps (null unless PICKED_UP)
+        kmSegments: segments
+          ? {
+              swapCount: segments.swapCount,
+              swapsMissingReadings: segments.swapsMissingReadings,
+              complete: segments.complete,
+              priorKm: segments.priorKm,
+              currentStartOdometer: segments.currentStartOdometer,
+              segments: segments.segments,
+            }
+          : null,
+        rentalTimeline,
+        swapCharges,
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
       },
     });

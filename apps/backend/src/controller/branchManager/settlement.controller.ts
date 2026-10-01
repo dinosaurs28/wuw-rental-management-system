@@ -4,6 +4,7 @@ import { prisma } from "@repo/database/client";
 import { listPendingSettlementsSchema, recordPaymentSchema } from "@repo/schemas";
 import { settlementEngineService, paymentTransactionService } from "../../services/payment/index.js";
 import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -81,6 +82,12 @@ export const RecordSettlementPayment = async (req: Request, res: Response): Prom
 
     const actor = await buildActorContext(req);
     const txn = await paymentTransactionService.record(validation.data, actor);
+
+    // Legacy drop: the return charges this settles go on the invoice, which turns
+    // PAID once nothing is owed or awaiting confirmation (no-op for a drop-bill return)
+    syncLegacyReturnInvoice(booking.id).catch((err) =>
+      console.error("[settlement] Invoice sync failed:", err),
+    );
 
     res.status(StatusCode.CREATED).json({
       message: txn.status === "COLLECTED" ? "Settlement cash collected — awaiting manager confirmation" : "Settlement payment recorded",

@@ -9,6 +9,8 @@ import {
   OpenShift,
   GetMyActiveShift,
   CloseShift,
+  ListMyShifts,
+  GetMyShiftDetails,
 } from "../../controller/branchManager/cash-shift.controller.js";
 
 const router: Router = Router();
@@ -25,6 +27,9 @@ router.post("/transactions", RecordPayment);
 // Cash shift lifecycle (employee-owned)
 router.post("/shifts", OpenShift);
 router.get("/shifts/me/active", GetMyActiveShift);
+// Own shift history (declared after /me/active so "active" never reads as a publicId)
+router.get("/shifts/me", ListMyShifts);
+router.get("/shifts/me/:publicId", GetMyShiftDetails);
 router.post("/shifts/:publicId/close", CloseShift);
 
 export default router;

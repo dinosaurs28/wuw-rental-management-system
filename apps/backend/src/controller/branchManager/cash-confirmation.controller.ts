@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { confirmCashPaymentSchema, rejectCashPaymentSchema } from "@repo/schemas";
-import { paymentTransactionService } from "../../services/payment/index.js";
+import { paymentTransactionService, PaymentTransactionBranchError } from "../../services/payment/index.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -32,6 +32,10 @@ export const ConfirmCashPayment = async (req: Request, res: Response): Promise<v
     res.status(StatusCode.OK).json({ message: "Cash payment confirmed", data: { publicId: txn.publicId, status: txn.status } });
   } catch (error: any) {
     console.error("ConfirmCashPayment Error:", error);
+    if (error instanceof PaymentTransactionBranchError) {
+      res.status(error.status).json({ success: false, code: error.code, message: error.message });
+      return;
+    }
     if (error.message?.includes("Only MANAGER") || error.message?.includes("Only ADMIN")) {
       res.status(StatusCode.FORBIDDEN).json({ message: error.message });
       return;
@@ -60,6 +64,10 @@ export const RejectCashPayment = async (req: Request, res: Response): Promise<vo
     res.status(StatusCode.OK).json({ message: "Cash payment rejected", data: { publicId: txn.publicId, status: txn.status } });
   } catch (error: any) {
     console.error("RejectCashPayment Error:", error);
+    if (error instanceof PaymentTransactionBranchError) {
+      res.status(error.status).json({ success: false, code: error.code, message: error.message });
+      return;
+    }
     if (error.message?.includes("Only MANAGER") || error.message?.includes("Only ADMIN")) {
       res.status(StatusCode.FORBIDDEN).json({ message: error.message });
       return;

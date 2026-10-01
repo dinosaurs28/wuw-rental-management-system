@@ -18,8 +18,9 @@ import {
   StaffActionType,
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
-import { generateReturnReceipt } from "../../services/receipt-generator.service.js";
+import { generateReturnReceipt, frozenChargeGst } from "../../services/receipt-generator.service.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 
 /**
  * Compute and return the settlement outcome for employee review.
@@ -50,7 +51,8 @@ export const InitiateSettlement = async (req: Request, res: Response) => {
     const depositPaid = new Decimal(booking.totalDeposit.toString())
       .add(new Decimal(booking.safetyDeposit.toString()));
 
-    const totalCharges = breakdown.finalTotal;
+    // Charges plus the GST frozen on the taxable lines (same total the receipt prints)
+    const totalCharges = breakdown.finalTotal.add(frozenChargeGst(breakdown.results).gst);
     const diff = totalCharges.sub(depositPaid);
 
     let outcomeType: SettlementOutcome["outcomeType"];
@@ -163,7 +165,8 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
     const breakdown = await chargeEngineService.loadBreakdown(booking.id);
     const depositPaid = new Decimal(booking.totalDeposit.toString())
       .add(new Decimal(booking.safetyDeposit.toString()));
-    const totalCharges = breakdown.finalTotal;
+    // Charges plus the GST frozen on the taxable lines (same total the receipt prints)
+    const totalCharges = breakdown.finalTotal.add(frozenChargeGst(breakdown.results).gst);
     const diff = totalCharges.sub(depositPaid);
 
     await prisma.$transaction(async (tx) => {
@@ -179,9 +182,18 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
         const cash = cashAmount != null ? new Decimal(cashAmount) : diff;
         const online = onlineAmount != null ? new Decimal(onlineAmount) : new Decimal(0);
 
+        // Counter cash lands in the collector's open shift drawer
+        const settleShift = method !== "ONLINE"
+          ? await tx.cashShift.findFirst({
+              where: { employeeId: actor.id, status: "OPEN" },
+              select: { id: true },
+            })
+          : null;
+
         await tx.paymentTransaction.create({
           data: {
             publicId: createID(),
+            cashShiftId: settleShift?.id ?? null,
             idempotencyKey: `SETTLE_${booking.publicId}_${Date.now()}`,
             bookingId: booking.id,
             branchId: booking.branchId,
@@ -244,6 +256,8 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
     }).catch((err) =>
       console.error("[ConfirmSettlement] Receipt generation error:", err),
     );
+
+    if (diff.lt(-0.009)) void notifyEvents.refundApprovalsPending({ bookingId: booking.id, actorUserId: actor.id });
 
     return res.status(StatusCode.OK).json({
       message: "Settlement confirmed",

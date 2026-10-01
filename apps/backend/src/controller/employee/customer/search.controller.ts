@@ -2,6 +2,12 @@ import { Request, Response } from "express";
 import { prisma, Role } from "@repo/database/client";
 import { StatusCode } from "../../../types/statusCode.js";
 import { redis } from "../../../lib/redisconfig.js";
+import { maskAadhaar } from "@repo/schemas";
+import {
+  displayEmail,
+  getMissingProfileFields,
+  profileFieldsOf,
+} from "../../../utils/customer/identity.js";
 
 export const SearchCustomer = async (req: Request, res: Response) => {
   try {
@@ -21,7 +27,8 @@ export const SearchCustomer = async (req: Request, res: Response) => {
     }
 
     const trimmedQuery = q.trim();
-    const cacheKey = `customer_search:${trimmedQuery.toLowerCase()}`;
+    // v2: entries carry missingFields / masked identity numbers (#1).
+    const cacheKey = `customer_search:v2:${trimmedQuery.toLowerCase()}`;
 
     // Check Cache
     const cachedResult = await redis.get(cacheKey);
@@ -35,9 +42,10 @@ export const SearchCustomer = async (req: Request, res: Response) => {
     // Search DB
     // We match Name (contains), Email (contains), or Phone (contains)
     // Only Role.CUSTOMER
-    const customers = await prisma.user.findMany({
+    const rows = await prisma.user.findMany({
       where: {
         role: Role.CUSTOMER,
+        deletedAt: null,
         OR: [
           { name: { contains: trimmedQuery, mode: "insensitive" } },
           { email: { contains: trimmedQuery, mode: "insensitive" } },
@@ -53,10 +61,40 @@ export const SearchCustomer = async (req: Request, res: Response) => {
           select: {
             isProfileCompleted: true,
             publicId: true,
+            addressLine1: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            country: true,
+            drivingLicenceNumber: true,
+            aadhaarNumber: true,
           },
         },
       },
       take: 20, // Limit results
+    });
+
+    // Lists never carry the full Aadhaar number (masked) or a placeholder
+    // email; completeness is derived from the stored values (#1). This runs
+    // before caching so Redis never holds the full number either.
+    const customers = rows.map((u) => {
+      const missingFields = getMissingProfileFields(profileFieldsOf(u, u.customerProfile));
+      const p = u.customerProfile;
+      return {
+        publicId: u.publicId,
+        name: u.name,
+        email: displayEmail(u.email),
+        phone: u.phone,
+        customerProfile: p
+          ? {
+              isProfileCompleted: missingFields.length === 0,
+              publicId: p.publicId,
+              missingFields,
+              drivingLicenceNumber: p.drivingLicenceNumber ?? null,
+              aadhaarNumberMasked: p.aadhaarNumber ? maskAadhaar(p.aadhaarNumber) : null,
+            }
+          : null,
+      };
     });
 
     if (customers.length === 0) {

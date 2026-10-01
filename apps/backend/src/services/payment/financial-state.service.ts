@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import type { PaymentTransaction } from "@repo/database/client";
+import { computeBookingOwed, summarizeBookingMoney } from "./booking-owed.service.js";
 
 export type PaymentLifecycleState =
   | "UNPAID"
@@ -24,12 +25,21 @@ export interface FinancialState {
   bookingId: number;
   bookingPublicId: string;
   totalFinal: Decimal;
+  /** Money in (refund rows excluded) */
   totalCollectedConfirmed: Decimal;
   totalCollectedPending: Decimal;
+  /** Refunds paid out (refund rows) + payments the gateway refunded */
   totalRefunded: Decimal;
+  /** max(0, totalOwed − (totalCollectedConfirmed − refunds paid out)) */
   amountDue: Decimal;
   lifecycleState: PaymentLifecycleState;
   transactions: PaymentTransactionSummary[];
+  /** Drop / return charges outside totalFinal (drop bill or legacy return charges, incl. GST, after the drop discount) */
+  returnCharges: Decimal;
+  /** Refundable safety deposit taken and not yet credited back on a drop bill */
+  safetyDepositHeld: Decimal;
+  /** What the booking owes: totalFinal + returnCharges + safety deposit taken − deposit credited at drop */
+  totalOwed: Decimal;
 }
 
 const ZERO = new Decimal(0);
@@ -38,38 +48,38 @@ class FinancialStateService {
   async getState(bookingId: number): Promise<FinancialState> {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      select: { publicId: true, totalFinal: true },
+      select: { publicId: true },
     });
     if (!booking) throw new Error("Booking not found.");
 
-    const txns = await prisma.paymentTransaction.findMany({
-      where: { bookingId },
-      orderBy: { createdAt: "asc" },
-    });
+    const [txns, owed] = await Promise.all([
+      prisma.paymentTransaction.findMany({
+        where: { bookingId },
+        orderBy: { createdAt: "asc" },
+      }),
+      // totalFinal (rounded to paise) + drop / return charges + safety deposit held —
+      // the same total the BM settlement and the over-payment guard use
+      computeBookingOwed(bookingId),
+    ]);
 
-    const totalFinal = new Decimal(booking.totalFinal.toString());
+    const { totalFinal, totalOwed } = owed;
+    // Refund rows are money paid back, not money in
+    const money = summarizeBookingMoney(txns);
+    const totalCollectedConfirmed = money.confirmed;
+    const totalCollectedPending = money.pending;
+    const totalRefunded = money.gatewayRefunded.add(money.refundedOut);
+    const netConfirmed = money.netConfirmed;
 
-    let totalCollectedConfirmed = ZERO;
-    let totalCollectedPending = ZERO;
-    let totalRefunded = ZERO;
-
-    for (const t of txns) {
-      const amt = new Decimal(t.totalAmount.toString());
-      if (t.status === "CONFIRMED") totalCollectedConfirmed = totalCollectedConfirmed.add(amt);
-      else if (t.status === "COLLECTED") totalCollectedPending = totalCollectedPending.add(amt);
-      else if (t.status === "REFUNDED") totalRefunded = totalRefunded.add(amt);
-    }
-
-    const amountDue = Decimal.max(ZERO, totalFinal.sub(totalCollectedConfirmed));
+    const amountDue = Decimal.max(ZERO, totalOwed.sub(netConfirmed));
 
     let lifecycleState: PaymentLifecycleState;
-    if (totalCollectedConfirmed.gte(totalFinal) && totalFinal.gt(ZERO)) {
-      lifecycleState = totalCollectedConfirmed.gt(totalFinal) ? "OVERPAID" : "FULLY_PAID";
-    } else if (totalRefunded.gt(ZERO) && totalCollectedConfirmed.eq(ZERO)) {
+    if (netConfirmed.gte(totalOwed) && totalOwed.gt(ZERO)) {
+      lifecycleState = netConfirmed.gt(totalOwed) ? "OVERPAID" : "FULLY_PAID";
+    } else if (totalRefunded.gt(ZERO) && netConfirmed.lte(ZERO)) {
       lifecycleState = "REFUNDED";
-    } else if (totalCollectedPending.gt(ZERO) && totalCollectedConfirmed.add(totalCollectedPending).gte(totalFinal)) {
+    } else if (totalCollectedPending.gt(ZERO) && netConfirmed.add(totalCollectedPending).gte(totalOwed)) {
       lifecycleState = "PAID_PENDING_CONFIRMATION";
-    } else if (totalCollectedConfirmed.gt(ZERO) || totalCollectedPending.gt(ZERO)) {
+    } else if (netConfirmed.gt(ZERO) || totalCollectedPending.gt(ZERO)) {
       lifecycleState = "PARTIALLY_PAID";
     } else {
       lifecycleState = "UNPAID";
@@ -95,6 +105,9 @@ class FinancialStateService {
       amountDue,
       lifecycleState,
       transactions,
+      returnCharges: owed.returnCharges,
+      safetyDepositHeld: owed.safetyDepositHeld,
+      totalOwed,
     };
   }
 }

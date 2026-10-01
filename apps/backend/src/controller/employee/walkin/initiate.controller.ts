@@ -7,6 +7,10 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../..
 import { hashpassword } from "../../../utils/PasswordCrypt/password.js";
 import { sendOTP } from "../../../services/otp/otpservice.js";
 import { rateLimit } from "../../../utils/rateLimiter.js";
+import {
+  isWalkinPlaceholderEmail,
+  walkinPlaceholderEmail,
+} from "../../../utils/customer/identity.js";
 
 export const InitiateWalkin = async (req: Request, res: Response) => {
   try {
@@ -32,9 +36,36 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
     let user = await prisma.user.findFirst({
       where: { phone: phone },
     });
-    if (user) {
+    // An abandoned walk-in (created here, OTP never verified, no password,
+    // placeholder email) is resumed: a fresh OTP is sent for the same user
+    // instead of dead-ending on "already exists".
+    let resumed = false;
+    if (
+      user &&
+      user.role === Role.CUSTOMER &&
+      !user.deletedAt &&
+      !user.emailVerifiedAt &&
+      !user.passwordHash &&
+      isWalkinPlaceholderEmail(user.email)
+    ) {
+      resumed = true;
+      // Move a legacy walkin_*@temp.com placeholder onto the reserved domain.
+      const placeholder = walkinPlaceholderEmail(user.publicId);
+      if (user.email !== placeholder) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { email: placeholder },
+        });
+      }
+    } else if (user) {
       return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "CUSTOMER_ALREADY_EXISTS",
         message: "User already exists with this phone number",
+        // Lets the UI jump straight to the existing customer.
+        ...(user.role === Role.CUSTOMER && !user.deletedAt
+          ? { customer_public_id: user.publicId }
+          : {}),
       });
     }
     // Create user if not exists
@@ -50,11 +81,13 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
 
       // Create a temporary user or real user?
       // "make an entry in the db in user"
+      const newPublicId = createID();
       user = await prisma.user.create({
         data: {
-          publicId: createID(),
+          publicId: newPublicId,
           name: "Walk-in Customer", // Placeholder
-          email: `walkin_${createID()}@temp.com`, // Placeholder, must be unique
+          // Reserved (RFC 2606) placeholder, unique per user; never shown or printed.
+          email: walkinPlaceholderEmail(newPublicId),
           phone: phone,
           role: Role.CUSTOMER,
           authProvider: AuthProvider.PASSWORD,
@@ -110,14 +143,18 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
       actionType: StaffActionType.INITIATED,
       entityType: StaffEntityType.CUSTOMER,
       entityRef: user.publicId,
-      description: `Walk-in initiated for customer phone ${phone}`,
-      metadata: { phone },
+      description: resumed
+        ? `Walk-in resumed (OTP re-sent) for customer phone ${phone}`
+        : `Walk-in initiated for customer phone ${phone}`,
+      metadata: { phone, resumed },
     });
 
     return res.status(StatusCode.OK).json({
       message: "OTP sent successfully",
       otp: otp,
       customer_public_id: user.publicId,
+      // true when an earlier, unverified walk-in for this phone was resumed.
+      resumed,
     });
   } catch (e: any) {
     console.error("Error in InitiateWalkin:", e);

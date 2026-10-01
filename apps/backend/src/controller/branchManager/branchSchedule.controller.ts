@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma, BookingRestrictionMode } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
+import { validateScheduleRows } from "../../utils/booking/branchScheduleValidator.js";
 
 /**
  * GET /branchManager/dashboard/branch/schedule
@@ -39,11 +40,11 @@ export const getManagerBranchSchedule = async (req: Request, res: Response) => {
   }
 };
 
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-
 /**
  * PATCH /branchManager/dashboard/branch/schedule
  * Body: { days: [{ dayOfWeek, isOpen, openTime, closeTime }] }
+ * An open day must close after it opens (overnight hours aren't supported —
+ * use 23:59, or the 24-hour switch on PATCH /branch/grace).
  */
 export const upsertManagerBranchSchedule = async (req: Request, res: Response) => {
   try {
@@ -52,17 +53,9 @@ export const upsertManagerBranchSchedule = async (req: Request, res: Response) =
       days: { dayOfWeek: number; isOpen: boolean; openTime: string; closeTime: string }[];
     };
 
-    if (!Array.isArray(days) || days.length === 0) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "days array required" });
-    }
-
-    for (const s of days) {
-      if (s.dayOfWeek < 0 || s.dayOfWeek > 6) {
-        return res.status(StatusCode.BAD_REQUEST).json({ message: `Invalid dayOfWeek: ${s.dayOfWeek}` });
-      }
-      if (!TIME_RE.test(s.openTime) || !TIME_RE.test(s.closeTime)) {
-        return res.status(StatusCode.BAD_REQUEST).json({ message: `Invalid time format for day ${s.dayOfWeek} — use HH:mm` });
-      }
+    const invalid = validateScheduleRows(days);
+    if (invalid) {
+      return res.status(StatusCode.BAD_REQUEST).json({ success: false, code: "INVALID_SCHEDULE", message: invalid });
     }
 
     await prisma.$transaction(
@@ -140,23 +133,44 @@ export const updateBookingRestrictionMode = async (req: Request, res: Response) 
 
 /**
  * PATCH /branchManager/dashboard/branch/grace
- * Body: { graceMinutes: number (0-120) }
+ * Body: { graceMinutes?: number (0-120), is24Hours?: boolean } — at least one.
+ * is24Hours=true switches office-hours checks off for the branch (the weekly
+ * rows are kept and apply again when it is switched back off).
  */
 export const updateManagerBranchGrace = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
-    const { graceMinutes } = req.body as { graceMinutes: number };
+    const { graceMinutes, is24Hours } = req.body as { graceMinutes?: unknown; is24Hours?: unknown };
 
-    if (typeof graceMinutes !== "number" || graceMinutes < 0 || graceMinutes > 120) {
+    if (graceMinutes === undefined && is24Hours === undefined) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Send graceMinutes and/or is24Hours" });
+    }
+    if (
+      graceMinutes !== undefined &&
+      (typeof graceMinutes !== "number" || !Number.isInteger(graceMinutes) || graceMinutes < 0 || graceMinutes > 120)
+    ) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "graceMinutes must be 0–120" });
     }
+    if (is24Hours !== undefined && typeof is24Hours !== "boolean") {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "is24Hours must be true or false" });
+    }
 
-    await prisma.branch.update({ where: { id: branchId }, data: { graceMinutes } });
+    const updated = await prisma.branch.update({
+      where: { id: branchId },
+      data: {
+        ...(graceMinutes !== undefined ? { graceMinutes: graceMinutes as number } : {}),
+        ...(is24Hours !== undefined ? { is24Hours: is24Hours as boolean } : {}),
+      },
+      select: { publicId: true, graceMinutes: true, is24Hours: true },
+    });
 
-    const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { publicId: true } });
-    if (branch) await redis.del(`branch:schedule:${branch.publicId}`);
+    await redis.del(`branch:schedule:${updated.publicId}`);
 
-    return res.status(StatusCode.OK).json({ message: "Grace period updated" });
+    return res.status(StatusCode.OK).json({
+      message: is24Hours !== undefined && graceMinutes === undefined ? "Opening hours mode updated" : "Grace period updated",
+      graceMinutes: updated.graceMinutes,
+      is24Hours: updated.is24Hours,
+    });
   } catch (error) {
     console.error("[updateManagerBranchGrace] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

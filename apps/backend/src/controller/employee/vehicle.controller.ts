@@ -15,6 +15,7 @@ import {
   type ListingPrice,
 } from "../../utils/pricing/batchListingPrice.js";
 import { DateTime } from "luxon";
+import { isGstRuleMissing } from "../../services/tax/gst.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -156,7 +157,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
       availableCount: number;
       imageUrl: any[];
       pricing: { daily: number; hourly?: number; halfDay?: number };
-      pricingDetails?: { price: number; finalPrice: number; type: string };
+      pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string };
       minDailyPrice: number;
     }
 
@@ -173,7 +174,12 @@ export const searchVehicles = async (req: Request, res: Response) => {
       if (durationPriceMap && durationInfo) {
         const lp = durationPriceMap.get(v.id);
         daily = lp?.finalPrice ?? 0;
-        pricingDetails = { price: lp?.price ?? 0, finalPrice: daily, type: durationInfo.periodType };
+        pricingDetails = {
+          price: lp?.price ?? 0,
+          finalPrice: daily,
+          type: durationInfo.periodType,
+          ...(lp?.billedAs && { billedAs: lp.billedAs, billedAsType: lp.billedAsType }),
+        };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
         daily = fp?.daily ?? 0;
@@ -358,11 +364,17 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
             basePrice:        Number(pr.basePrice),
             discountAmount:   Number(pr.discountAmount),
             discountPercent:  Number(pr.discountPercent),
+            // Duration-slab layer, named (walk-ins take no coupon)
+            durationDiscountAmount:  Number(pr.durationDiscountAmount),
+            durationDiscountPercent: Math.round(Number(pr.durationDiscountPercent) * 100) / 100,
+            durationDiscountLabel:   pr.durationDiscountLabel,
             deposit:          Number(pr.deposit),
             taxAmount:        Number(pr.taxAmount),
             cgstAmount:       Number(pr.cgstAmount),
             sgstAmount:       Number(pr.sgstAmount),
             taxRate:          Number(pr.taxRate),
+            cgstRate:         Number(pr.cgstRate),
+            sgstRate:         Number(pr.sgstRate),
             finalTotal:       Number(pr.finalTotal),
             freeKmLimit:      pr.freeKmLimit,
             extraKmRate:      Number(pr.extraKmRate),
@@ -371,6 +383,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
               duration:        pr.pricingBreakdown.duration,
               applicablePrice: Number(pr.pricingBreakdown.applicablePrice),
               priceSource:     pr.pricingBreakdown.priceSource,
+              billedAs:        pr.pricingBreakdown.billedAs,
+              billedAsType:    pr.pricingBreakdown.billedAsType,
             },
           };
         } catch { /* pricing failure is non-fatal */ }
@@ -439,6 +453,7 @@ export const getEmployeeVehicleDetails = async (
       where: {
         publicId: id,
         branchId: req.branch_Id,
+        deletedAt: null,
       },
       include: {
         category: true,
@@ -480,22 +495,35 @@ export const getEmployeeVehicleDetails = async (
       }
 
       // Calculate pricing via Phase 2 Pricing Engine
-      const pricingResult = await pricingEngine.calculateBookingPrice(
-        vehicleData.id,
-        startDate,
-        endDate,
-        vehicleData.branchId,
-      );
+      let pricingResult: Awaited<ReturnType<typeof pricingEngine.calculateBookingPrice>> | null = null;
+      try {
+        pricingResult = await pricingEngine.calculateBookingPrice(
+          vehicleData.id,
+          startDate,
+          endDate,
+          vehicleData.branchId,
+        );
+      } catch (err) {
+        // Branch without a GSTRule: no quote (pricingDetails null → fallback list
+        // prices), like the group endpoint — the vehicle detail still loads.
+        if (!isGstRuleMissing(err)) throw err;
+      }
 
-      pricingDetails = {
+      if (pricingResult) pricingDetails = {
         basePrice: Number(pricingResult.basePrice),
         discountAmount: Number(pricingResult.discountAmount),
         discountPercent: Number(pricingResult.discountPercent),
+        // Duration-slab layer, named (walk-ins take no coupon)
+        durationDiscountAmount: Number(pricingResult.durationDiscountAmount),
+        durationDiscountPercent: Math.round(Number(pricingResult.durationDiscountPercent) * 100) / 100,
+        durationDiscountLabel: pricingResult.durationDiscountLabel,
         deposit: Number(pricingResult.deposit),
         taxAmount: Number(pricingResult.taxAmount),
         cgstAmount: Number(pricingResult.cgstAmount),
         sgstAmount: Number(pricingResult.sgstAmount),
         taxRate: Number(pricingResult.taxRate),
+        cgstRate: Number(pricingResult.cgstRate),
+        sgstRate: Number(pricingResult.sgstRate),
         finalTotal: Number(pricingResult.finalTotal),
         freeKmLimit: pricingResult.freeKmLimit,
         extraKmRate: Number(pricingResult.extraKmRate),
@@ -506,10 +534,12 @@ export const getEmployeeVehicleDetails = async (
             pricingResult.pricingBreakdown.applicablePrice,
           ),
           priceSource: pricingResult.pricingBreakdown.priceSource,
+          billedAs: pricingResult.pricingBreakdown.billedAs,
+          billedAsType: pricingResult.pricingBreakdown.billedAsType,
         },
       };
 
-      deposit = pricingDetails.deposit;
+      if (pricingDetails) deposit = pricingDetails.deposit;
     } else if (!isInsuranceValid) {
       // If no dates provided but insurance expired, mark as explicitly unavailable
       availability = false;

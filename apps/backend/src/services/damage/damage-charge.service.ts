@@ -1,5 +1,7 @@
 import { prisma, DamageChargeType, DamageReport } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { getBranchGstRates, computeLineGst } from "../tax/gst.service.js";
+import { computeInvoiceGstTotals, INVOICE_SOURCE } from "../invoice-totals.service.js";
 
 export class DamageChargeService {
   /**
@@ -15,25 +17,22 @@ export class DamageChargeService {
       return {
         isTaxable: false,
         taxAmount: 0,
+        cgstAmount: 0,
+        sgstAmount: 0,
       };
     }
 
-    // Penalty is taxable
-    const gstRule = await prisma.gSTRule.findUnique({
-      where: { branchId },
-    });
-
-    const cgstRate = gstRule ? Number(gstRule.cgstRate) : 9;
-    const sgstRate = gstRule ? Number(gstRule.sgstRate) : 9;
-    const igstRate = gstRule ? Number(gstRule.igstRate) : 0;
-    
-    // In India, usually intra-state applies CGST+SGST = 18% total.
-    const totalTaxRate = cgstRate + sgstRate + igstRate;
-    const taxAmount = amount * (totalTaxRate / 100);
+    // A penalty the manager marked in review is taxable: CGST + SGST only (an
+    // intra-state supply — IGST is never added), each rounded half-up to 2 dp.
+    // A branch without a GST rule fails with GST_RULE_MISSING.
+    const rates = await getBranchGstRates(branchId);
+    const gst = computeLineGst(amount, rates);
 
     return {
       isTaxable: true,
-      taxAmount: taxAmount,
+      taxAmount: gst.gst.toNumber(),
+      cgstAmount: gst.cgst.toNumber(),
+      sgstAmount: gst.sgst.toNumber(),
     };
   }
 
@@ -47,12 +46,14 @@ export class DamageChargeService {
     amount: number,
     chargeType: DamageChargeType,
     label: string,
-    taxAmount: number
+    taxAmount: number,
+    damageReportPublicId?: string,
   ) {
     const isTaxable = chargeType === "PENALTY";
     const chargeEnum = isTaxable ? "DAMAGE_PENALTY" : "DAMAGE_COMPENSATION";
 
-    // 1. Create the Invoice Item
+    // 1. Create the Invoice Item — its GST is stored on the line, and the
+    // DAMAGE_REVIEW source keeps it through a later invoice finalization.
     const invoiceItem = await tx.invoiceItem.create({
       data: {
         publicId: createID(),
@@ -61,20 +62,35 @@ export class DamageChargeService {
         amount,
         isTaxable,
         chargeType: chargeEnum,
+        taxAmount: isTaxable ? taxAmount.toFixed(2) : "0.00",
+        sourceRef: damageReportPublicId ? `${INVOICE_SOURCE.DAMAGE_REVIEW}${damageReportPublicId}` : null,
       },
     });
 
     // 2. Update the Invoice totals and invalidate cached PDF
     const finalAmountInclTax = amount + taxAmount;
 
-    await tx.invoice.update({
+    const invoice = await tx.invoice.update({
       where: { id: invoiceId },
       data: {
         damageCharges: { increment: amount },
-        tax: { increment: taxAmount },
         total: { increment: finalAmountInclTax },
         invoicePdfFileId: null,
         generatedAt: null,
+      },
+      select: { bookingId: true },
+    });
+
+    // GST columns re-read from the stored lines (rental + extensions + this one)
+    const totals = await computeInvoiceGstTotals(invoice.bookingId, tx);
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        tax: totals.tax.toFixed(2),
+        taxableAmount: totals.taxableAmount.toFixed(2),
+        cgstAmount: totals.cgstAmount.toFixed(2),
+        sgstAmount: totals.sgstAmount.toFixed(2),
+        depositAmount: totals.depositAmount.toFixed(2),
       },
     });
 

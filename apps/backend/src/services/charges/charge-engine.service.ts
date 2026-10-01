@@ -118,6 +118,11 @@ export class ChargeEngineService {
         unitRate: result.unitRate ? result.unitRate.toFixed(2) : null,
         notes: result.notes ?? null,
         isOverridden: result.isOverridden ?? false,
+        // Recomputed without GST — a legacy drop's frozen GST must not outlive its amount
+        gstAmount: result.gstAmount?.toFixed(2) ?? "0.00",
+        cgstAmount: result.cgstAmount?.toFixed(2) ?? "0.00",
+        sgstAmount: result.sgstAmount?.toFixed(2) ?? "0.00",
+        taxRate: result.taxRate?.toFixed(2) ?? "0.00",
         createdById: actorId,
       };
 
@@ -159,6 +164,10 @@ export class ChargeEngineService {
       unitRate: e.unitRate ? new Decimal(e.unitRate.toString()) : undefined,
       isOverridden: e.isOverridden,
       notes: e.notes ?? undefined,
+      gstAmount: new Decimal(e.gstAmount.toString()),
+      cgstAmount: new Decimal(e.cgstAmount.toString()),
+      sgstAmount: new Decimal(e.sgstAmount.toString()),
+      taxRate: new Decimal(e.taxRate.toString()),
     }));
 
     const subtotal = results.reduce((s, r) => s.add(r.originalAmount), new Decimal(0));

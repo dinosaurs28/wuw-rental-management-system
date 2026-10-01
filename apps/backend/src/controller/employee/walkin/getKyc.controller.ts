@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
+import { generatePresignedUrl } from "../../../services/r2-upload.js";
 
 export const GetCustomerKyc = async (req: Request, res: Response) => {
   const { customerPublicId } = req.params;
@@ -51,9 +52,10 @@ export const GetCustomerKyc = async (req: Request, res: Response) => {
       });
     }
 
-    return res.status(StatusCode.OK).json({
-      message: "Customer KYC fetched successfully",
-      data: actingUser.customerProfile.kycs.map((kyc) => ({
+    // KYC files live in the private bucket and FileObject.url holds the R2 key,
+    // so hand out a 15-minute presigned URL (same window as GetBookingKyc).
+    const data = await Promise.all(
+      actingUser.customerProfile.kycs.map(async (kyc) => ({
         id: kyc.id,
         publicId: kyc.publicId,
         customerId: kyc.customerId,
@@ -66,11 +68,16 @@ export const GetCustomerKyc = async (req: Request, res: Response) => {
           id: kyc.file.id,
           publicId: kyc.file.publicId,
           key: kyc.file.key,
-          url: kyc.file.url,
+          url: await generatePresignedUrl(kyc.file.key, 900),
           mime: kyc.file.mime,
           size: kyc.file.size,
         },
       })),
+    );
+
+    return res.status(StatusCode.OK).json({
+      message: "Customer KYC fetched successfully",
+      data,
     });
   } catch (error) {
     console.error("Error fetching Customer KYC:", error);

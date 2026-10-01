@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
+import { discountApplicationService } from "../../services/discount/discount-application.service.js";
 
 export const cancelEmployeeHold = async (req: Request, res: Response) => {
   try {
@@ -33,13 +34,17 @@ export const cancelEmployeeHold = async (req: Request, res: Response) => {
       });
     }
 
-    // Update booking status in DB (same pattern as bookingExpiry.worker.ts)
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: BookingStatus.HOLD_EXPIRED,
-        holdExpiresAt: null,
-      },
+    // Update booking status in DB (same pattern as bookingExpiry.worker.ts) and
+    // give the hold's coupon use back in the same transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: BookingStatus.HOLD_EXPIRED,
+          holdExpiresAt: null,
+        },
+      });
+      await discountApplicationService.releaseUsage(booking.id, tx);
     });
 
     // Clear Redis hold key and vehicle holds (mirror bookingExpiry.worker.ts logic)

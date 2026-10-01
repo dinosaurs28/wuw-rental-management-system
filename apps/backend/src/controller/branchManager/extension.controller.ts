@@ -3,6 +3,19 @@ import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, ExtensionTrigger as ET } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
+import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import {
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+} from "../../services/tax/gst.service.js";
+import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import {
+  buildExtensionLimits,
+  maxPeriodReachedMessage,
+  EXTENDABLE_BOOKING_STATUSES,
+} from "../../services/extension/extension-limits.service.js";
 import {
   evaluateExtensionSchema,
   commitExtensionSchema,
@@ -67,6 +80,15 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       data: evaluation,
     });
   } catch (error: any) {
+    // 15-day limit (BOOKING_MAX_PERIOD_EXCEEDED) / office hours (BRANCH_SCHEDULE_VIOLATION)
+    if (error instanceof BookingWindowError || error instanceof BranchScheduleError) {
+      res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
+      return;
+    }
+    if (isGstRuleMissing(error)) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
+      return;
+    }
     console.error("Manager EvaluateExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -109,10 +131,16 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         extensionStatus: extension.extensionStatus,
         resolutionType: extension.resolutionType,
         additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
+        // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
+        ...extensionSplitView(extension),
         remainAmount,
       },
     });
   } catch (error: any) {
+    if (isGstRuleMissing(error)) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
+      return;
+    }
     console.error("Manager CommitExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -309,6 +337,45 @@ export const ResolveDisplacedBooking = async (req: Request, res: Response): Prom
       res.status(StatusCode.FORBIDDEN).json({ message: error.message });
       return;
     }
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/branchManager/extensions/eligibility/:bookingPublicId
+ * Same contract as the employee endpoint: the extension cap (maxEndAt) and the
+ * branch's office hours for a booking of the manager's branch.
+ */
+export const GetExtensionEligibility = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingPublicId } = req.params;
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingPublicId, branchId: req.branch_Id },
+      select: { status: true, startAt: true, endAt: true, rentalPeriodType: true, branchId: true },
+    });
+    if (!booking) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
+      return;
+    }
+
+    const limits = await buildExtensionLimits(booking);
+    const extendable = EXTENDABLE_BOOKING_STATUSES.includes(booking.status);
+    const eligible = extendable && !limits.atCap;
+
+    res.status(StatusCode.OK).json({
+      message: "Extension eligibility fetched",
+      data: {
+        eligible,
+        reason: !extendable
+          ? `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`
+          : limits.atCap
+            ? maxPeriodReachedMessage(limits)
+            : null,
+        ...limits,
+      },
+    });
+  } catch (error: any) {
+    console.error("GetExtensionEligibility (manager) Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

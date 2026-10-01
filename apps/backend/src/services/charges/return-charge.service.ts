@@ -6,6 +6,7 @@ import type { ChargeBreakdown, ChargeContext, FrozenChargeConfig } from "../../t
 import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js";
 import type { ChargeReturnDataInput } from "../../types/charge-return.types.js";
 import { createID } from "../../utils/nanoID.js";
+import { getOdometerSegments, resolveKmAllowance } from "./km-allowance.service.js";
 
 /**
  * Orchestrates all charge computation at vehicle return:
@@ -61,17 +62,22 @@ export class ReturnChargeService {
       .diff(DateTime.fromJSDate(startAt), "hours").hours;
     const actualHours = Math.max(0, actualHoursDecimal);
 
-    // Compute distance
-    const startOdometer = booking.startOdometer ?? 0;
-    const totalKmDriven = Math.max(0, endOdometer - startOdometer);
+    // Compute distance — summed across mid-rental swaps that recorded readings (the drop
+    // bill's rule); a swap without readings leaves km unmeasurable, so nothing is billed
+    const segments = await getOdometerSegments(booking.id);
+    const totalKmDriven = segments.complete
+      ? segments.priorKm + Math.max(0, endOdometer - (segments.currentStartOdometer ?? endOdometer))
+      : 0;
 
     // Get vehicle pricing snapshot
     const vehicleItem = booking.items[0];
     if (!vehicleItem) throw new Error("No vehicle found on booking");
 
-    const vehiclePricingDb = await prisma.vehicleCustomPricing.findUnique({
+    // Custom pricing only counts when it is switched on (as in the pricing engine)
+    const customPricingRow = await prisma.vehicleCustomPricing.findUnique({
       where: { vehicleId: vehicleItem.vehicleId },
     });
+    const vehiclePricingDb = customPricingRow?.enabled ? customPricingRow : null;
 
     const branchDefaults = vehiclePricingDb
       ? null
@@ -89,13 +95,16 @@ export class ReturnChargeService {
     const pricing = vehiclePricingDb ?? branchDefaults;
     if (!pricing) throw new Error("No pricing configured for this vehicle");
 
-    const freeKmLimit = booking.freeKmLimit ?? (pricing as any).freeKm24Hour ?? 150;
+    // Free km + rate for the whole booked period (not a single day's freeKm24Hour) — the
+    // same allowance the drop bill uses
+    const allowance = await resolveKmAllowance(booking.id);
+    const freeKmLimit = allowance.includedKm;
 
     const vehiclePricingSnapshot = {
       vehicleId: vehicleItem.vehicleId,
       hasFastag: vehicle?.hasFastag ?? false,
       fastagNumber: vehicle?.fastagNumber ?? null,
-      extraKmRate: new Decimal(pricing.extraKmRate.toString()),
+      extraKmRate: allowance.extraKmRate,
       extraHourRate: new Decimal(pricing.extraHourRate.toString()),
       freeKmLimit,
     };
@@ -113,7 +122,7 @@ export class ReturnChargeService {
       actualReturnAt,
       actualHours,
       billableHours: Number(booking.billableHours ?? 0),
-      startOdometer,
+      startOdometer: booking.startOdometer ?? 0,
       endOdometer,
       totalKmDriven,
       applyGrace: returnInput.applyGrace,

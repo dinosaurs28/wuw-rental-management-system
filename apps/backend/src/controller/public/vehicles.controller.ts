@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { getVehicleDetailsSchema } from "@repo/schemas";
+import { getVehicleDetailsSchema, parseUseCasesFilter } from "@repo/schemas";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
@@ -15,10 +15,33 @@ import {
   getBatchFallbackPrices,
   ListingPrice,
 } from "../../utils/pricing/batchListingPrice.js";
+import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
+import {
+  getCustomerPaymentMode,
+  resolvePaymentOptions,
+} from "../../services/payment/payment-flow.service.js";
+import { isGstRuleMissing } from "../../services/tax/gst.service.js";
 
 const pricingEngine = new PricingEngineService();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Duration-slab layer of a PricingResult (or its cached JSON) for the details
+ * responses. discountAmount/discountPercent stay the combined totals; these
+ * name the slab so clients can show e.g. "Weekly discount (10%)". Fields are
+ * null/0 on a pricing result cached before they existed (60 s).
+ */
+function durationDiscountFields(pr: any) {
+  const percent = Number(pr.durationDiscountPercent ?? 0);
+  return {
+    durationDiscountAmount:  Number(pr.durationDiscountAmount ?? 0),
+    durationDiscountPercent: Math.round(percent * 100) / 100,
+    durationDiscountLabel:   (pr.durationDiscountLabel as string | null | undefined) ?? null,
+    durationDiscountType:    (pr.durationDiscountType as "PERCENTAGE" | "FLAT" | null | undefined) ?? null,
+    couponDiscountAmount:    Number(pr.couponDiscountAmount ?? 0),
+  };
+}
 
 function normalizeStr(s: string): string {
   return s.trim().replace(/\s+/g, " ").toUpperCase();
@@ -61,6 +84,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       limit = "50",
       offset = "0",
     } = req.query as any;
+    // Trip-type tags: comma list or repeated key; unknown values are ignored. OR semantics.
+    const useCaseFilter = parseUseCasesFilter((req.query as any).useCases).sort();
 
     // Parse and validate dates
     let startDate: DateTime | null = null;
@@ -88,7 +113,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     const cacheKey = `public:vehicles:grouped:${category || "all"}:${branch || "all"}:${
       search || "all"
-    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
+    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}:uc=${useCaseFilter.join(",") || "all"}`;
 
     try {
       const cachedData = await redis.get(cacheKey);
@@ -128,6 +153,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     }
     if (categoryObj) filters.categoryId = categoryObj.id;
     if (branchObj) filters.branchId = branchObj.id;
+    if (useCaseFilter.length > 0) filters.useCases = { hasSome: useCaseFilter };
 
     // ── Fetch vehicles (single query, no skip/take — pagination applied after grouping) ───
 
@@ -136,7 +162,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       where: filters,
       include: {
         category: { select: { id: true, name: true, typeClass: true } },
-        branch:   { select: { id: true, name: true } },
+        branch:   { select: { id: true, name: true, publicId: true } },
         images: {
           where: { isThumbnail: true },
           select: { file: { select: { url: true } } },
@@ -232,11 +258,16 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       category: string;
       typeClass: string;
       branch: string;
+      branchPublicId: string;
       availableCount: number;
       imageUrl: any[];
       pricing: { daily: number; hourly?: number; halfDay?: number };
-      pricingDetails?: { price: number; finalPrice: number; type: string };
+      pricingDetails?: {
+        price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string;
+        discountAmount?: number; discountPercent?: number; discountLabel?: string | null;
+      };
       minDailyPrice: number;
+      useCases: Set<string>;
     }
 
     const groupMap = new Map<string, GroupEntry>();
@@ -252,7 +283,18 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       if (durationPriceMap && durationInfo) {
         const lp = durationPriceMap.get(v.id);
         daily = lp?.finalPrice ?? 0;
-        pricingDetails = { price: lp?.price ?? 0, finalPrice: daily, type: durationInfo.periodType };
+        pricingDetails = {
+          price: lp?.price ?? 0,
+          finalPrice: daily,
+          type: durationInfo.periodType,
+          ...(lp?.billedAs && { billedAs: lp.billedAs, billedAsType: lp.billedAsType }),
+          // Duration-slab saving already inside finalPrice (absent when none)
+          ...(lp?.discountAmount != null && {
+            discountAmount: lp.discountAmount,
+            discountPercent: lp.discountPercent,
+            discountLabel: lp.discountLabel ?? null,
+          }),
+        };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
         daily   = fp?.daily   ?? 0;
@@ -269,14 +311,17 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           category: v.category.name,
           typeClass: v.category.typeClass,
           branch: v.branch.name,
+          branchPublicId: v.branch.publicId,
           availableCount: 1,
           imageUrl: v.images,
           pricing: { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) },
           pricingDetails,
           minDailyPrice: daily,
+          useCases: new Set(v.useCases),
         });
       } else {
         existing.availableCount++;
+        for (const uc of v.useCases) existing.useCases.add(uc);
         // Keep the lowest-priced vehicle as the representative
         if (daily < existing.minDailyPrice) {
           existing.minDailyPrice = daily;
@@ -296,10 +341,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       category:       g.category,
       typeClass:      g.typeClass,
       branch:         g.branch,
+      branchPublicId: g.branchPublicId,
       availableCount: g.availableCount,
       imageUrl:       g.imageUrl,
       pricing:        g.pricing,
       pricingDetails: g.pricingDetails,
+      useCases:       Array.from(g.useCases).sort(),
     }));
 
     if (sort === "price_low_to_high") {
@@ -374,10 +421,11 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
         status: true,
         fastagNumber: true,
         hasFastag: true,
+        useCases: true,
         branchId: true,
         categoryId: true,
         category: { select: { id: true, name: true } },
-        branch:   { select: { id: true, name: true } },
+        branch:   { select: { id: true, name: true, publicId: true } },
         images:   { where: { isThumbnail: false }, include: { file: true } },
         customPricing: true,
         pricingOverride: true,
@@ -401,18 +449,15 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     let representativeVehicle = bookableVehicles[0] ?? groupVehicles[0]!;
 
     if (startDate && endDate) {
-      const startPrisma = TimezoneService.toPrisma(startDate);
-      const endPrisma   = TimezoneService.toPrisma(endDate);
-      const vehicleIdToPublicId = new Map(bookableVehicles.map((v) => [v.id, v.publicId]));
-      const unavailableIds = await getUnavailableVehicleIds(
-        bookableVehicles.map((v) => v.id),
-        startPrisma,
-        endPrisma,
-        vehicleIdToPublicId,
+      // Same rule as booking creation (pickGroupRepresentative), so the price and
+      // advance quoted here come from the unit the booking will price and charge
+      const { representative, available } = await pickGroupRepresentative(
+        groupVehicles,
+        TimezoneService.toPrisma(startDate),
+        TimezoneService.toPrisma(endDate),
       );
-      availableCount = bookableVehicles.filter((v) => !unavailableIds.has(v.id)).length;
-      const firstAvailable = bookableVehicles.find((v) => !unavailableIds.has(v.id));
-      if (firstAvailable) representativeVehicle = firstAvailable;
+      availableCount = available.length;
+      if (representative) representativeVehicle = representative;
     } else {
       availableCount = bookableVehicles.length;
     }
@@ -447,11 +492,14 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
             basePrice:        Number(pricingDetails.basePrice),
             discountAmount:   Number(pricingDetails.discountAmount),
             discountPercent:  Number(pricingDetails.discountPercent),
+            ...durationDiscountFields(pricingDetails),
             deposit:          Number(pricingDetails.deposit),
             taxAmount:        Number(pricingDetails.taxAmount),
             cgstAmount:       Number(pricingDetails.cgstAmount),
             sgstAmount:       Number(pricingDetails.sgstAmount),
             taxRate:          Number(pricingDetails.taxRate),
+            cgstRate:         Number(pricingDetails.cgstRate),
+            sgstRate:         Number(pricingDetails.sgstRate),
             finalTotal:       Number(pricingDetails.finalTotal),
             freeKmLimit:      pricingDetails.freeKmLimit,
             extraKmRate:      Number(pricingDetails.extraKmRate),
@@ -460,6 +508,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
               duration:        pricingDetails.pricingBreakdown.duration,
               applicablePrice: Number(pricingDetails.pricingBreakdown.applicablePrice),
               priceSource:     pricingDetails.pricingBreakdown.priceSource,
+              billedAs:        pricingDetails.pricingBreakdown.billedAs,
+              billedAsType:    pricingDetails.pricingBreakdown.billedAsType,
             },
           };
         } catch {
@@ -471,14 +521,13 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     const firstCat = groupVehicles[0]!.category;
     const firstBranch = groupVehicles[0]!.branch;
 
-    let groupCustomerPaymentMode = 'ADVANCE_ONLY';
-    try {
-      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
-        where: { branchId: firstBranch.id },
-        select: { customerPaymentMode: true },
-      });
-      groupCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
-    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+    const groupCustomerPaymentMode = await getCustomerPaymentMode(firstBranch.id);
+    // Which plans the customer can pick here (null payableTotal until dates are chosen)
+    const groupPaymentOptions = resolvePaymentOptions({
+      mode: groupCustomerPaymentMode,
+      advanceAmount: representativeVehicle.advancePayAmount?.toString() ?? "0",
+      payableTotal: pricingDetails ? pricingDetails.finalTotal + pricingDetails.deposit : null,
+    });
 
     const response = {
       groupKey,
@@ -486,6 +535,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       model,
       category:       firstCat.name,
       branch:         firstBranch.name,
+      branchPublicId: firstBranch.publicId,
       availableCount,
       totalCount:     groupVehicles.length,
       images:         allImages,
@@ -495,6 +545,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       pricingDetails,
       advancePayAmount: Number(representativeVehicle.advancePayAmount ?? 0),
       customerPaymentMode: groupCustomerPaymentMode,
+      paymentOptions: groupPaymentOptions,
+      useCases: Array.from(new Set(groupVehicles.flatMap((v) => v.useCases))).sort(),
     };
 
     try {
@@ -544,8 +596,10 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       }
     }
 
-    const vehicleData = await prisma.vehicle.findUnique({
-      where: { publicId: parsedData.data.id },
+    // A removed (soft-deleted) vehicle 404s like an unknown id, so a stale shared
+    // link shows "Vehicle Not Found" instead of a priced car that cannot be booked.
+    const vehicleData = await prisma.vehicle.findFirst({
+      where: { publicId: parsedData.data.id, deletedAt: null },
       select: {
         id: true,
         publicId: true,
@@ -559,12 +613,13 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         status: true,
         fastagNumber: true,
         hasFastag: true,
+        useCases: true,
         branchId: true,
         categoryId: true,
         createdAt: true,
         updatedAt: true,
         category: { select: { id: true, name: true } },  // TASK-015: only name needed
-        branch:   { select: { id: true, name: true } },  // TASK-015: drop pricingSetting (unused)
+        branch:   { select: { id: true, name: true, publicId: true } },  // TASK-015: drop pricingSetting (unused)
         images: { where: { isThumbnail: false }, include: { file: true } },
         pricingOverride: true,
         customPricing: true,
@@ -573,6 +628,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
 
     if (!vehicleData) {
       return res.status(StatusCode.NOT_FOUND).json({
+        success: false,
+        code: "VEHICLE_NOT_FOUND",
         message: "Vehicle details could not be found for the provided ID.",
       });
     }
@@ -613,34 +670,46 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
 
       if (!pricingResult) {
         // TASK-001 + TASK-016: pass categoryId and customPricing to skip redundant DB lookups
-        pricingResult = await pricingEngine.calculateBookingPrice(
-          vehicleData.id,
-          startDate,
-          endDate,
-          vehicleData.branchId,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          vehicleData.categoryId,
-          vehicleData.customPricing,
-        );
         try {
-          await redis.set(pricingCacheKey, JSON.stringify(pricingResult), "EX", 60);
+          pricingResult = await pricingEngine.calculateBookingPrice(
+            vehicleData.id,
+            startDate,
+            endDate,
+            vehicleData.branchId,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            vehicleData.categoryId,
+            vehicleData.customPricing,
+          );
         } catch (err) {
-          console.warn("[pricing-cache] Redis set error:", err);
+          // Branch without a GSTRule: no server price (pricingDetails null, clients show
+          // "price unavailable"), like the group endpoint — the vehicle page still loads.
+          if (!isGstRuleMissing(err)) throw err;
+        }
+        if (pricingResult) {
+          try {
+            await redis.set(pricingCacheKey, JSON.stringify(pricingResult), "EX", 60);
+          } catch (err) {
+            console.warn("[pricing-cache] Redis set error:", err);
+          }
         }
       }
 
-      pricingDetails = {
+      if (pricingResult) pricingDetails = {
         basePrice:       Number(pricingResult.basePrice),
         discountAmount:  Number(pricingResult.discountAmount),
         discountPercent: Number(pricingResult.discountPercent),
+        ...durationDiscountFields(pricingResult),
         deposit:         Number(pricingResult.deposit),
         taxAmount:       Number(pricingResult.taxAmount),
         cgstAmount:      Number(pricingResult.cgstAmount),
         sgstAmount:      Number(pricingResult.sgstAmount),
         taxRate:         Number(pricingResult.taxRate),
+        // null only for a pricing result cached before these fields existed (60 s)
+        cgstRate:        pricingResult.cgstRate != null ? Number(pricingResult.cgstRate) : null,
+        sgstRate:        pricingResult.sgstRate != null ? Number(pricingResult.sgstRate) : null,
         finalTotal:      Number(pricingResult.finalTotal),
         freeKmLimit:     pricingResult.freeKmLimit,
         extraKmRate:     Number(pricingResult.extraKmRate),
@@ -649,23 +718,25 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
           duration:        pricingResult.pricingBreakdown.duration,
           applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
           priceSource:     pricingResult.pricingBreakdown.priceSource,
+          // absent only on a pricing result cached before these fields existed (60 s)
+          billedAs:        pricingResult.pricingBreakdown.billedAs,
+          billedAsType:    pricingResult.pricingBreakdown.billedAsType,
         },
       };
 
       // TASK-005: read deposit from pricingResult — eliminates duplicate DB fetch
-      deposit = pricingDetails.deposit;
+      deposit = pricingDetails?.deposit ?? 0;
     } else if (!isInsuranceValid) {
       availability = false;
     }
 
-    let singleCustomerPaymentMode = 'ADVANCE_ONLY';
-    try {
-      const paymentConfig = await (prisma as any).branchPaymentConfig.findUnique({
-        where: { branchId: vehicleData.branchId },
-        select: { customerPaymentMode: true },
-      });
-      singleCustomerPaymentMode = paymentConfig?.customerPaymentMode ?? 'ADVANCE_ONLY';
-    } catch { /* field not yet in DB — default to ADVANCE_ONLY */ }
+    const singleCustomerPaymentMode = await getCustomerPaymentMode(vehicleData.branchId);
+    // Which plans the customer can pick here (null payableTotal until dates are chosen)
+    const singlePaymentOptions = resolvePaymentOptions({
+      mode: singleCustomerPaymentMode,
+      advanceAmount: vehicleData.advancePayAmount?.toString() ?? "0",
+      payableTotal: pricingDetails ? pricingDetails.finalTotal + pricingDetails.deposit : null,
+    });
 
     const imageUrls = vehicleData.images.map((img: any) => img.file.url);
     const response = {
@@ -675,10 +746,13 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       status:           vehicleData.status,
       fastagNumber:     vehicleData.fastagNumber,
       hasFastag:       vehicleData.hasFastag,
+      useCases:         vehicleData.useCases,
       category:         vehicleData.category.name,
       branch:           vehicleData.branch.name,
-      advancePayAmount: vehicleData.advancePayAmount,
+      branchPublicId:   vehicleData.branch.publicId,
+      advancePayAmount: Number(vehicleData.advancePayAmount ?? 0),
       customerPaymentMode: singleCustomerPaymentMode,
+      paymentOptions:   singlePaymentOptions,
       images:           imageUrls,
       pricing:          { daily: pricingDetails?.pricingBreakdown?.applicablePrice },
       deposit,

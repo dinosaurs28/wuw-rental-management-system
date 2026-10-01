@@ -4,7 +4,7 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import type { DiscountEvaluationResult } from "./discount-evaluation-engine.service.js";
-import type { AdjustmentType, DiscountApplication, DiscountRule, ManualDiscount, Role } from "@repo/database/client";
+import type { AdjustmentType, DiscountApplication, DiscountRule, ManualDiscount, Prisma, Role } from "@repo/database/client";
 
 interface ActorContext {
   actorId: number;
@@ -17,10 +17,30 @@ interface ActorContext {
 
 class DiscountApplicationService {
   /**
-   * Immutably record a discount application for a booking.
-   * Called once after pricing is finalized and booking is created.
-   * Will overwrite an existing DiscountApplication for the same booking
-   * only if it is a recalculation (same booking, booking still in HOLD).
+   * Give a booking's coupon use back: deletes its CouponUsageLog rows so the
+   * coupon's total / per-user / per-branch / per-day limits no longer count it.
+   * Called with the status change when a booking ends without the customer
+   * getting the rental — HOLD_EXPIRED (expiry worker and both cancel-hold
+   * endpoints), payment failure, and a business-caused (extension displacement)
+   * cancellation. A no-show or a CONFIRMED/completed booking keeps its use.
+   * booking.couponCode stays as the record of what was applied.
+   */
+  async releaseUsage(
+    bookingId: number,
+    db: Pick<typeof prisma, "couponUsageLog"> = prisma,
+  ): Promise<number> {
+    const { count } = await db.couponUsageLog.deleteMany({ where: { bookingId } });
+    if (count > 0) {
+      console.log(`[coupon] released ${count} coupon use(s) for booking ${bookingId}`);
+    }
+    return count;
+  }
+
+  /**
+   * Record (or replace) a booking's DiscountApplication, its coupon usage log
+   * and the booking's couponCode/discountRuleId — used when a coupon is added
+   * to or removed from a confirmed booking. Pass `tx` to make it part of the
+   * caller's transaction (the caller locks the rule and re-checks usage first).
    */
   async record(
     bookingId: number,
@@ -28,10 +48,12 @@ class DiscountApplicationService {
     result: DiscountEvaluationResult,
     paymentPlan: string,
     actor: ActorContext,
+    tx?: Prisma.TransactionClient,
   ): Promise<DiscountApplication> {
     const adjustmentType: AdjustmentType = "NONE";
+    const db = tx ?? prisma;
 
-    const application = await prisma.discountApplication.upsert({
+    const application = await db.discountApplication.upsert({
       where: { bookingId },
       create: {
         publicId: createID(),
@@ -68,13 +90,13 @@ class DiscountApplicationService {
 
     // Record coupon usage log — delete any stale log first (handles recalculation)
     if (result.couponValid && result.couponRule && result.appliedCouponCode) {
-      const booking = await prisma.booking.findUnique({
+      const booking = await db.booking.findUnique({
         where: { id: bookingId },
         select: { customerId: true, branchId: true },
       });
       if (booking) {
-        await prisma.couponUsageLog.deleteMany({ where: { bookingId } });
-        await prisma.couponUsageLog.create({
+        await db.couponUsageLog.deleteMany({ where: { bookingId } });
+        await db.couponUsageLog.create({
           data: {
             discountRuleId: result.couponRule.id,
             bookingId,
@@ -86,11 +108,11 @@ class DiscountApplicationService {
       }
     } else {
       // Coupon was removed/invalidated on recalculation — clean up any existing log
-      await prisma.couponUsageLog.deleteMany({ where: { bookingId } });
+      await db.couponUsageLog.deleteMany({ where: { bookingId } });
     }
 
     // Update booking with coupon code and discountRuleId for quick lookup
-    await prisma.booking.update({
+    await db.booking.update({
       where: { id: bookingId },
       data: {
         couponCode: result.appliedCouponCode ?? null,
@@ -117,7 +139,7 @@ class DiscountApplicationService {
         totalDiscount: result.totalDiscountAmount.toFixed(2),
         finalAmount: result.finalAmount.toFixed(2),
       },
-    });
+    }, tx);
 
     await staffActivityService.log({
       actorPublicId: actor.actorPublicId,
@@ -133,7 +155,7 @@ class DiscountApplicationService {
         couponCode: result.appliedCouponCode,
         totalDiscount: result.totalDiscountAmount.toFixed(2),
       },
-    });
+    }, tx);
 
     return application;
   }

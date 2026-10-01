@@ -8,6 +8,7 @@ import type { PrismaClient } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { paymentSessionService } from "./paymentSession.service.js";
 import type { TxClient } from "./paymentSession.service.js";
+import { computeLineGst } from "../tax/gst.service.js";
 
 export interface AddEntryOptions {
   baseAmount?: Decimal | number;
@@ -33,7 +34,8 @@ const CHARGE_TYPE_MAP: Record<string, { entryType: LedgerEntryType; classificati
   extra_time:       { entryType: LedgerEntryType.EXTRA_TIME,       classification: LedgerEntryClassification.TAXABLE },
   fuel_deficit:     { entryType: LedgerEntryType.FUEL,             classification: LedgerEntryClassification.TAXABLE },
   fastag:           { entryType: LedgerEntryType.FASTAG,           classification: LedgerEntryClassification.NON_TAXABLE },
-  damage:           { entryType: LedgerEntryType.DAMAGE,           classification: LedgerEntryClassification.TAXABLE },
+  // Damage recovered from the customer is compensation, not a taxable supply (#23)
+  damage:           { entryType: LedgerEntryType.DAMAGE,           classification: LedgerEntryClassification.NON_TAXABLE },
   grace_adjustment: { entryType: LedgerEntryType.GRACE_ADJUSTMENT, classification: LedgerEntryClassification.NON_TAXABLE },
   base:             { entryType: LedgerEntryType.BOOKING_BASE,     classification: LedgerEntryClassification.TAXABLE },
 };
@@ -177,7 +179,8 @@ export class LedgerService {
   }
 
   /**
-   * Helper: computes gst on a base amount using branch GST rates.
+   * Helper: computes gst on a base amount using branch GST rates — through the
+   * canonical gst.service rule (CGST and SGST each rounded half-up to 2 dp).
    * Returns structured result for building a TAXABLE entry.
    */
   buildTaxableEntry(
@@ -185,15 +188,12 @@ export class LedgerService {
     cgstRate: number,
     sgstRate: number,
   ): TaxableEntryResult {
-    const base = new Decimal(baseAmount.toString());
-    const rate = new Decimal(cgstRate).add(sgstRate).div(100);
-    const gst = base.mul(rate).toDecimalPlaces(2);
-    const total = base.add(gst);
+    const line = computeLineGst(new Decimal(baseAmount.toString()), { cgstRate, sgstRate });
 
     return {
-      baseAmount: base,
-      gstAmount: gst,
-      totalAmount: total,
+      baseAmount: line.taxable,
+      gstAmount: line.gst,
+      totalAmount: line.total,
       classification: LedgerEntryClassification.TAXABLE,
     };
   }

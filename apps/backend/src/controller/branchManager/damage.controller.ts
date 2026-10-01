@@ -15,9 +15,16 @@ import {
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { damageChargeService } from "../../services/damage/damage-charge.service.js";
+import {
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+} from "../../services/tax/gst.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 import { closeDamageReportSchema } from "@repo/schemas";
+import { notifyEvents } from "../../services/notification/notification.events.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 import {
   createRazorpayOrder,
   fetchOrderStatus,
@@ -128,7 +135,17 @@ export const GetDamageReports = async (req: Request, res: Response) => {
     });
 
     const responseData = {
-      reports,
+      // Walk-in placeholder emails never leave the server (#1): null instead.
+      reports: reports.map((r) => ({
+        ...r,
+        booking: {
+          ...r.booking,
+          customer: {
+            ...r.booking.customer,
+            user: { ...r.booking.customer.user, email: displayEmail(r.booking.customer.user.email) },
+          },
+        },
+      })),
       pagination: {
         total: totalCount,
         page: page,
@@ -339,9 +356,12 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
       });
     }
 
+    // The branch's GST rule, never a guessed rate: without one, the rates are
+    // null and gstRuleMissing tells the page that a PENALTY cannot be settled
+    // (the settlement answers 409 GST_RULE_MISSING).
     const gstRule = report.booking.branch.gstRule;
-    const cgstRate = gstRule ? Number(gstRule.cgstRate) : 9;
-    const sgstRate = gstRule ? Number(gstRule.sgstRate) : 9;
+    const cgstRate = gstRule ? Number(gstRule.cgstRate) : null;
+    const sgstRate = gstRule ? Number(gstRule.sgstRate) : null;
 
     // Fetch return session to get additional charges (extra km, fuel, etc.)
     const returnSession = await prisma.paymentSession.findFirst({
@@ -387,7 +407,11 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         additionalCharges,
         estimatedCost: Number(report.estimatedCost),
         finalCost: report.finalCost != null ? Number(report.finalCost) : null,
-        gstRate: cgstRate + sgstRate,
+        // CGST + SGST only (IGST is never applied); null when the branch has no GST rule
+        gstRate: cgstRate != null && sgstRate != null ? cgstRate + sgstRate : null,
+        cgstRate,
+        sgstRate,
+        gstRuleMissing: !gstRule,
       },
     };
 
@@ -575,15 +599,27 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
     // chargeType is authoritative from what staff set during damage report creation
     const activeChargeType = damageReport.chargeType ?? "PENALTY";
 
-    // Calculate the tax
-    const taxCalculation = await damageChargeService.calculateDamageTax(
-      finalCost,
-      activeChargeType,
-      branchId
-    );
+    // Calculate the tax (PENALTY only: CGST + SGST at the branch rule)
+    let taxCalculation: Awaited<ReturnType<typeof damageChargeService.calculateDamageTax>>;
+    try {
+      taxCalculation = await damageChargeService.calculateDamageTax(
+        finalCost,
+        activeChargeType,
+        branchId
+      );
+    } catch (err) {
+      if (isGstRuleMissing(err)) {
+        return res.status(StatusCode.CONFLICT).json({
+          success: false,
+          code: GST_RULE_MISSING,
+          message: GST_RULE_MISSING_MESSAGE,
+        });
+      }
+      throw err;
+    }
 
-    // Total fine includes tax
-    const fineAmountInclTax = finalCost + taxCalculation.taxAmount;
+    // Total fine includes tax (2 dp — the GST is already rounded per tax)
+    const fineAmountInclTax = Math.round((finalCost + taxCalculation.taxAmount) * 100) / 100;
     // net = additionalCharges + damageCharge - safetyDeposit (positive = customer pays, negative = refund)
     const balance = safetyDepositAmount - additionalCharges - fineAmountInclTax;
 
@@ -826,7 +862,8 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           finalCost,
           activeChargeType,
           `Damage Charge: ${damageReport.publicId}`,
-          taxCalculation.taxAmount
+          taxCalculation.taxAmount,
+          damageReport.publicId,
         );
       }
 
@@ -853,6 +890,8 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.RETURNED,
+            // Keep the drop's actual return time; set it if the drop never recorded one
+            returnedAt: booking.returnedAt ?? new Date(),
           },
         });
 
@@ -900,6 +939,8 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       userAgent: req.headers["user-agent"],
       metadata: { damageDescription: damageReport.notes, amount: finalCost, disposition, chargeType: activeChargeType },
     });
+
+    void notifyEvents.damageCharged({ damageReportId: damageReport.id, amount: fineAmountInclTax, actorUserId: managerUser.id });
 
     if (isFullySettled) {
       return res.status(StatusCode.OK).json({
@@ -1013,6 +1054,8 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.RETURNED,
+            // Keep the drop's actual return time; set it if the drop never recorded one
+            returnedAt: booking.returnedAt ?? new Date(),
           },
         });
 

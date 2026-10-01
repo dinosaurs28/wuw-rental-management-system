@@ -3,6 +3,7 @@ import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
 import type { ManualDiscount, Role } from "@repo/database/client";
 
 type ManualDiscountWithRelations = ManualDiscount & {
@@ -115,6 +116,19 @@ class ManualDiscountService {
       metadata: { requiresApproval, reason },
     });
 
+    if (requiresApproval) {
+      void notifyEvents.approvalRequested({
+        kind: "MANUAL_DISCOUNT",
+        entity: "ManualDiscount",
+        entityPublicId: discount.publicId,
+        branchId: booking.branchId,
+        bookingId,
+        amount,
+        reason,
+        actorUserId: actor.actorId,
+      });
+    }
+
     return discount;
   }
 
@@ -168,6 +182,18 @@ class ManualDiscountService {
       description: `Manual discount approved`,
     });
 
+    void notifyEvents.approvalResolved({
+      kind: "MANUAL_DISCOUNT",
+      entity: "ManualDiscount",
+      entityPublicId: discount.publicId,
+      branchId: actor.actorBranchId,
+      approved: true,
+      recipientUserId: discount.issuedById,
+      bookingId: discount.bookingId,
+      amount: discount.amount,
+      actorUserId: actor.actorId,
+    });
+
     return updated;
   }
 
@@ -215,6 +241,19 @@ class ManualDiscountService {
       entityType: StaffEntityType.MANUAL_DISCOUNT,
       entityRef: discount.publicId,
       description: `Manual discount rejected: ${rejectionReason}`,
+    });
+
+    void notifyEvents.approvalResolved({
+      kind: "MANUAL_DISCOUNT",
+      entity: "ManualDiscount",
+      entityPublicId: discount.publicId,
+      branchId: actor.actorBranchId,
+      approved: false,
+      recipientUserId: discount.issuedById,
+      bookingId: discount.bookingId,
+      amount: discount.amount,
+      reason: rejectionReason,
+      actorUserId: actor.actorId,
     });
 
     return updated;

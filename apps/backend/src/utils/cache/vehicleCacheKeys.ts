@@ -59,14 +59,31 @@ export async function invalidateVehicleAvailability(
 /**
  * Delete pricing cache for a set of vehicles.
  * Call after pricing config updates (branchPricingDefaults or vehicleCustomPricing changes).
+ * Clears every vehicle-scoped pricing key — including the VehicleCustomPricing record the
+ * pricing engine caches (pricing-config:vehicle:{id}) and, when the client can SCAN, the
+ * cached PricingResults (pricing-result:vehicle:{id}:*) — so an edited rate (e.g. extra km)
+ * applies to the very next price or drop bill instead of after the cache TTL.
  */
 export async function invalidateVehiclePricing(
-  redis: { del: (...keys: string[]) => Promise<any> },
+  redis: {
+    del: (...keys: string[]) => Promise<any>;
+    scan?: (...args: any[]) => Promise<any>;
+  },
   vehicleIds: number[],
 ): Promise<void> {
   if (vehicleIds.length === 0) return;
-  const keys = vehicleIds.map(vehiclePricingKey);
+  const keys = vehicleIds.flatMap((id) => [vehiclePricingKey(id), vehiclePricingConfigKey(id)]);
   await redis.del(...keys);
+
+  if (!redis.scan) return;
+  for (const id of vehicleIds) {
+    let cursor = "0";
+    do {
+      const [nextCursor, found] = await redis.scan(cursor, "MATCH", `pricing-result:vehicle:${id}:*`, "COUNT", 100);
+      cursor = nextCursor;
+      if (found.length > 0) await redis.del(...found);
+    } while (cursor !== "0");
+  }
 }
 
 /**

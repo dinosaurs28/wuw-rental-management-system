@@ -13,6 +13,7 @@ import {
   StaffActionType,
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 
 export const ListPendingSafetyDepositRequests = async (req: Request, res: Response) => {
   try {
@@ -24,7 +25,18 @@ export const ListPendingSafetyDepositRequests = async (req: Request, res: Respon
         booking: { branchId },
       },
       include: {
-        booking: { select: { publicId: true } },
+        booking: {
+          select: {
+            publicId: true,
+            status: true,
+            customer: { select: { user: { select: { name: true } } } },
+            items: {
+              take: 1,
+              orderBy: { id: "asc" },
+              select: { vehicle: { select: { make: true, model: true, regNo: true } } },
+            },
+          },
+        },
         requestedBy: { select: { publicId: true, name: true, role: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -98,6 +110,18 @@ export const ApproveSafetyDepositRequest = async (req: Request, res: Response) =
       },
     });
 
+    void notifyEvents.approvalResolved({
+      kind: "SAFETY_DEPOSIT",
+      entity: "SafetyDepositRequest",
+      entityPublicId: depositReq.publicId,
+      branchId,
+      approved: true,
+      recipientUserId: depositReq.requestedById,
+      bookingId: depositReq.bookingId,
+      amount: approvedAmount,
+      actorPublicId: req.public_Id,
+    });
+
     return res.status(StatusCode.OK).json({ message: "Safety deposit request approved" });
   } catch (error) {
     console.error("ApproveSafetyDepositRequest Error:", error);
@@ -145,6 +169,19 @@ export const RejectSafetyDepositRequest = async (req: Request, res: Response) =>
       entityRef: depositReq.publicId,
       description: `Safety deposit request rejected for booking ${depositReq.booking.publicId}`,
       metadata: { rejectionReason: validation.data.rejectionReason },
+    });
+
+    void notifyEvents.approvalResolved({
+      kind: "SAFETY_DEPOSIT",
+      entity: "SafetyDepositRequest",
+      entityPublicId: depositReq.publicId,
+      branchId,
+      approved: false,
+      recipientUserId: depositReq.requestedById,
+      bookingId: depositReq.bookingId,
+      amount: depositReq.requestedAmount,
+      reason: validation.data.rejectionReason,
+      actorPublicId: req.public_Id,
     });
 
     return res.status(StatusCode.OK).json({ message: "Safety deposit request rejected" });

@@ -16,6 +16,40 @@ import { createID } from "../../utils/nanoID.js";
 const advanceDepositService = new AdvanceDepositService();
 
 /**
+ * Record a captured counter Razorpay remaining payment (booking, invoice
+ * payment and its REMAINING_BALANCE PaymentTransaction), verified by the staff
+ * member polling the status. Returns false when a concurrent status check
+ * recorded it first.
+ */
+async function recordOnlineRemaining(
+  req: Request,
+  bookingPublicId: string,
+  orderId: string,
+  paidDuring: "PICKUP" | "RETURN",
+  gatewayPaymentId: string | null,
+): Promise<boolean> {
+  const verifier = await prisma.user.findUnique({
+    where: { publicId: req.public_Id },
+    select: { id: true },
+  });
+  try {
+    await advanceDepositService.recordRemainingPayment(
+      bookingPublicId,
+      DepositMethod.ONLINE_RAZORPAY,
+      orderId,
+      paidDuring,
+      undefined,
+      undefined,
+      { collectedById: verifier?.id ?? null, gatewayPaymentId },
+    );
+    return true;
+  } catch (error: any) {
+    if (error?.code === "P2002" || error?.message?.includes("already collected")) return false;
+    throw error;
+  }
+}
+
+/**
  * POST /employee/pickup/:bookingId/initiate-remaining-payment
  * POST /employee/return/:bookingId/initiate-remaining-payment
  *
@@ -93,6 +127,8 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
         cleanUtr ? { utr: cleanUtr, collectedById: actor.id } : undefined,
+        // Counter cash lands in the collector's open shift (asserted above)
+        isUpi ? undefined : { collectedById: actor.id },
       );
 
       return res.status(StatusCode.OK).json({
@@ -206,12 +242,15 @@ export const CheckRemainingPaymentByTransaction = async (req: Request, res: Resp
     if (paymentStatus.state === "SUCCESS") {
       const paidDuring: "PICKUP" | "RETURN" = context === "pickup" ? "PICKUP" : "RETURN";
 
-      await advanceDepositService.recordRemainingPayment(
-        bookingPublicId,
-        DepositMethod.ONLINE_RAZORPAY,
-        transactionId,
-        paidDuring,
-      );
+      const recorded = await recordOnlineRemaining(req, bookingPublicId, transactionId, paidDuring, paymentStatus.paymentId);
+      if (!recorded) {
+        return res.status(StatusCode.OK).json({
+          status: "SUCCESS",
+          message: "Remaining payment already collected.",
+          bookingPublicId,
+          context,
+        });
+      }
 
       return res.status(StatusCode.OK).json({
         status: "SUCCESS",
@@ -320,12 +359,16 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
     }
 
     if (paymentStatus.state === "SUCCESS") {
-      await advanceDepositService.recordRemainingPayment(
+      const recorded = await recordOnlineRemaining(
+        req,
         bookingId as string,
-        DepositMethod.ONLINE_RAZORPAY,
         booking.remainingPaymentId,
         paidDuring as "PICKUP" | "RETURN",
+        paymentStatus.paymentId,
       );
+      if (!recorded) {
+        return res.status(StatusCode.OK).json({ status: "SUCCESS", message: "Remaining payment already collected." });
+      }
 
       return res.status(StatusCode.OK).json({
         status: "SUCCESS",

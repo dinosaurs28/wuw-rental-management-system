@@ -9,6 +9,8 @@ export const GetAllCategories = async (req: Request, res: Response) => {
   try {
     const categories = await prisma.vehicleCategory.findMany({
       select: {
+        // Numeric id: DiscountRule.applicableVehicleCategoryIds stores category ids
+        id: true,
         publicId: true,
         name: true,
       },

@@ -24,8 +24,10 @@ import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
 import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
 import { initNoShowAutoCancelWorker } from "./jobs/noShowAutoCancel.worker.js";
+import { initNotificationWorker } from "./jobs/notification.worker.js";
 import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
 import fs from "fs";
+import { getRedis } from "./lib/redisconfig.js";
 
 // Ensure uploads directory exists at project root (where server is typically started)
 const uploadsDir = join(process.cwd(), "uploads");
@@ -46,8 +48,14 @@ initInvoiceWorker();
 initDelayedCashAlertWorker();
 initInsuranceAlertWorker();
 initNoShowAutoCancelWorker();
+initNotificationWorker();
 
 const app = express();
+
+// nginx on the same host forwards every request, so trust X-Forwarded-For only
+// from loopback: req.ip becomes the address nginx saw instead of 127.0.0.1 for
+// everyone. Behind Cloudflare that is still an edge IP; see utils/clientIp.ts.
+app.set("trust proxy", "loopback");
 
 app.use(
   cors({
@@ -90,6 +98,13 @@ app.get("/health", (req: Request, res: Response) => {
     date: new Date(),
   });
 });
+
+// Connect the shared Redis client eagerly so the first request does not race it.
+try {
+  getRedis();
+} catch (e) {
+  console.warn("[Redis] eager connect skipped:", (e as Error).message);
+}
 
 app.listen(process.env._PORT, () => {
   console.log(`The Server is Running on ${process.env._PORT}`);

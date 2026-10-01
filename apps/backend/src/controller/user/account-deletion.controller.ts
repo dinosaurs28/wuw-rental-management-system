@@ -4,6 +4,7 @@ import { prisma, Role, BookingStatus } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { comparehash } from "../../utils/PasswordCrypt/password.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
+import { PRIVATE_BUCKET } from "../../lib/r2.client.js";
 import {
   auditService,
   AuditCategory,
@@ -118,6 +119,22 @@ export const deleteAccount = async (req: Request, res: Response) => {
       .map((k) => k.file?.id)
       .filter((id): id is number => typeof id === "number");
 
+    // Customer QR code photos (#4): the current one plus every booking snapshot.
+    // Bookings are retained; their qrPhotoFileId is SET NULL when the file goes.
+    const qrFiles = customerId
+      ? await prisma.fileObject.findMany({
+          where: {
+            OR: [
+              { customerQrPhotos: { some: { id: customerId } } },
+              { bookingQrPhotos: { some: { customerId } } },
+            ],
+          },
+          select: { id: true, key: true },
+        })
+      : [];
+    const qrFileIds = qrFiles.map((f) => f.id);
+    const qrFileKeys = qrFiles.map((f) => f.key);
+
     // Tombstone the email so the unique index still holds and the address is
     // freed for re-registration. `.invalid` is reserved by RFC 2606 and can
     // never route to a real inbox.
@@ -133,6 +150,14 @@ export const deleteAccount = async (req: Request, res: Response) => {
 
         await tx.customer.update({
           where: { id: customerId },
+          data: { qrPhotoFileId: null, qrPhotoCapturedAt: null, qrPhotoCapturedById: null },
+        });
+        if (qrFileIds.length > 0) {
+          await tx.fileObject.deleteMany({ where: { id: { in: qrFileIds } } });
+        }
+
+        await tx.customer.update({
+          where: { id: customerId },
           data: {
             alternatePhone: null,
             dob: null,
@@ -140,15 +165,22 @@ export const deleteAccount = async (req: Request, res: Response) => {
             city: "",
             state: "",
             zipCode: "",
+            // Government ID numbers (#1) go with the account.
+            drivingLicenceNumber: null,
+            aadhaarNumber: null,
             isProfileCompleted: false,
             deletedAt: now,
           },
         });
       }
 
-      // Sever OAuth links and invalidate any outstanding OTP.
+      // Sever OAuth links and invalidate any outstanding OTP or reset link.
       await tx.userProvider.deleteMany({ where: { userId: user.id } });
       await tx.emailVerificationOtp.deleteMany({ where: { userId: user.id } });
+      await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
+      // A deleted account must never receive another push or keep its inbox.
+      await tx.pushToken.deleteMany({ where: { userId: user.id } });
+      await tx.notification.deleteMany({ where: { userId: user.id } });
 
       await tx.user.update({
         where: { id: user.id },
@@ -165,9 +197,11 @@ export const deleteAccount = async (req: Request, res: Response) => {
 
     // R2 objects are removed out-of-band; a failure here must not roll back the
     // deletion, but it is logged loudly because these are government ID scans.
-    for (const key of fileKeys) {
+    // KYC scans and QR photos live in the PRIVATE bucket; without `bucket` the
+    // cleanup worker defaults to the public one and the objects would survive.
+    for (const key of [...fileKeys, ...qrFileKeys]) {
       try {
-        await fileCleanupQueue.add("delete-account-kyc-file", { key });
+        await fileCleanupQueue.add("delete-account-kyc-file", { key, bucket: PRIVATE_BUCKET });
       } catch (queueError) {
         console.error(
           `Account deletion: failed to queue R2 cleanup for key ${key}`,

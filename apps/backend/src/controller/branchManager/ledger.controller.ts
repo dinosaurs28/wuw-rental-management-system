@@ -9,6 +9,7 @@ import {
   clearCreditSchema,
 } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -157,7 +158,8 @@ export const GetCustomerCreditSummary = async (req: Request, res: Response): Pro
           publicId: customer.publicId,
           name: customer.user.name,
           phone: customer.user.phone,
-          email: customer.user.email,
+          // Walk-in placeholder / tombstone emails are blank, never shown (#1).
+          email: displayEmail(customer.user.email) ?? "",
         },
         stats: {
           totalEntries: agg._count.id,

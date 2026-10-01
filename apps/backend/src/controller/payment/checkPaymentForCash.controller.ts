@@ -13,6 +13,7 @@ import {
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
+import { initialInvoiceGstData } from "../../services/invoice-totals.service.js";
 import jwt from "jsonwebtoken";
 import { auditService } from "../../services/audit/audit.service.js";
 import { AuditCategory } from "@repo/database/client";
@@ -142,10 +143,11 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
           bookingId: booking.id,
           subtotal: booking.totalBase,
           discount: booking.totalDiscount,
-          tax: 0,
           damageCharges: 0,
           total: booking.totalFinal,
           status: invoiceStatus,
+          // GST stored on the booking items (tax, taxable, CGST/SGST, deposit)
+          ...(await initialInvoiceGstData(booking.id, tx)),
         },
       });
 

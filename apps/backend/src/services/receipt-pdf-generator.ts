@@ -2,8 +2,13 @@ import PDFDocument from "pdfkit";
 
 export interface ReceiptLineItem {
   label: string;
+  /** Before GST for a taxable line */
   amount: number;
   chargeType?: string;
+  /** GST frozen on the line when it was written (taxable lines only) */
+  isTaxable?: boolean;
+  cgstAmount?: number;
+  sgstAmount?: number;
 }
 
 export interface ReceiptData {
@@ -30,6 +35,11 @@ export interface ReceiptData {
 
   // Line items (all charges at return)
   lineItems: ReceiptLineItem[];
+
+  // GST split of the taxable lines (CGST + SGST only)
+  taxableValue?: number;
+  cgstAmount?: number;
+  sgstAmount?: number;
 
   // Totals
   totalCharges: number;
@@ -91,7 +101,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
 
     doc.fontSize(9).font("Helvetica");
     for (const item of data.lineItems) {
-      doc.text(item.label, 50, y, { width: 380 });
+      doc.text(item.isTaxable ? `${item.label} (before GST)` : item.label, 50, y, { width: 380 });
       doc.text(item.amount.toFixed(2), 450, y, { width: 95, align: "right" });
       y += 18;
 
@@ -113,6 +123,13 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
       y += 16;
     };
 
+    // GST on the taxable lines (stored when each line was written)
+    const gst = (data.cgstAmount ?? 0) + (data.sgstAmount ?? 0);
+    if (gst > 0) {
+      addTotalRow("Taxable Value:", `₹${(data.taxableValue ?? 0).toFixed(2)}`);
+      addTotalRow("CGST:", `₹${(data.cgstAmount ?? 0).toFixed(2)}`);
+      addTotalRow("SGST:", `₹${(data.sgstAmount ?? 0).toFixed(2)}`);
+    }
     addTotalRow("Total Charges:", `₹${data.totalCharges.toFixed(2)}`);
     addTotalRow("Deposit / Advance Paid:", `₹${data.depositPaid.toFixed(2)}`);
 

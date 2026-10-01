@@ -12,9 +12,46 @@ import { financialStateService, branchPaymentConfigService, refundService } from
 import type { PaymentMethod } from "@repo/database/client";
 import { runNoShowAutoCancel } from "../../jobs/noShowAutoCancel.worker.js";
 import { vehicleStatusAfterDrop } from "../../services/damage/drop-damage.service.js";
+import { getBookingQrPhotoFields } from "../../services/qr-photo/customer-qr-photo.service.js";
+import type { Prisma } from "@repo/database/client";
+import {
+  parseBookingListType,
+  bookingTypeWhere,
+  bookingListTypeOf,
+  INVALID_BOOKING_TYPE,
+  type BookingListType,
+} from "../../utils/booking/bookingTypeFilter.js";
+import { listOverdueReturns, parseOverduePaging } from "../../services/booking/overdue-returns.service.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
+/** A selected customer with a walk-in placeholder email hidden (#1): `email: null`. */
+function withCustomerDisplayEmail<C extends { user: { email: string } }>(customer: C) {
+  return { ...customer, user: { ...customer.user, email: displayEmail(customer.user.email) } };
+}
+
+/**
+ * Where-clauses for a BM list split into Daily / Monthly tabs (#17). Daily keeps
+ * the optional per-day (IST) filter; Monthly ignores the date and lists every
+ * booking of that status. No type = the old, unsplit list.
+ */
+const managerTabWheres = (
+  branchId: number,
+  status: BookingStatus,
+  dateFilter: Prisma.BookingWhereInput,
+  type: BookingListType | undefined,
+) => {
+  const dailyWhere: Prisma.BookingWhereInput = { branchId, status, ...dateFilter, ...bookingTypeWhere("DAILY") };
+  const monthlyWhere: Prisma.BookingWhereInput = { branchId, status, ...bookingTypeWhere("MONTHLY") };
+  const listWhere: Prisma.BookingWhereInput =
+    type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : { branchId, status, ...dateFilter };
+  return { dailyWhere, monthlyWhere, listWhere };
+};
+
+// Upcoming pickups (CONFIRMED). `?type=DAILY|MONTHLY` splits the list into tabs.
+// No cache — a picked-up or cancelled booking must leave the list on the next fetch.
 export const GetActiveBookings = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
   const page = parseInt(req.query.page as string) || 1;
@@ -23,8 +60,13 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
 
   const { date } = req.query;
 
+  const parsedType = parseBookingListType(req.query.type);
+  if (!parsedType.ok) {
+    return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
+  }
+  const type = parsedType.type;
+
   let dateFilter: any = {};
-  let dateKey: string | undefined = "all";
 
   if (date) {
     const targetDateDt = TimezoneService.parseISO(date as string);
@@ -38,42 +80,37 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
           lte: TimezoneService.toPrisma(endOfDayDt),
         },
       };
-      dateKey = targetDateDt.toFormat("yyyy-MM-dd");
     }
   }
 
   try {
-    const cacheKey = `branch:${branchId}:active_bookings:${dateKey}:${page}:${limit}`;
-    const cachedData = await redis.get(cacheKey);
+    const { dailyWhere, monthlyWhere, listWhere } = managerTabWheres(
+      branchId,
+      BookingStatus.CONFIRMED,
+      dateFilter,
+      type,
+    );
 
-    if (cachedData) {
-      return res.status(StatusCode.OK).json({
-        message: "Active bookings fetched successfully (cached)",
-        data: JSON.parse(cachedData),
-      });
-    }
+    const [totalCount, dailyCount, monthlyCount] = await Promise.all([
+      prisma.booking.count({ where: listWhere }),
+      prisma.booking.count({ where: dailyWhere }),
+      prisma.booking.count({ where: monthlyWhere }),
+    ]);
 
-    const totalCount = await prisma.booking.count({
-      where: {
-        branchId: branchId,
-        status: BookingStatus.CONFIRMED,
-        ...dateFilter,
-      },
-    });
-
-    const bookings = await prisma.booking.findMany({
-      where: {
-        branchId: branchId,
-        status: BookingStatus.CONFIRMED,
-        ...dateFilter,
-      },
+    const rows = await prisma.booking.findMany({
+      where: listWhere,
       select: {
         id: true,
         publicId: true,
         startAt: true,
         endAt: true,
+        rentalPeriodType: true,
+        days: true,
         totalFinal: true,
         status: true,
+        dlStatus: true,
+        dlDepositNote: true,
+        dlStatusUpdatedAt: true,
         isAdvancePayment: true,
         advanceAmount: true,
         remainingBalance: true,
@@ -83,10 +120,12 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
           select: {
             id: true,
             publicId: true,
+            alternatePhone: true,
             user: {
               select: {
                 name: true,
                 email: true,
+                phone: true,
               },
             },
           },
@@ -122,6 +161,11 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
       take: limit,
       skip: skip,
     });
+    const bookings = rows.map((row) => ({
+      ...row,
+      customer: withCustomerDisplayEmail(row.customer),
+      bookingType: bookingListTypeOf(row.rentalPeriodType),
+    }));
 
     const responseData = {
       bookings,
@@ -131,9 +175,9 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
         limit: limit,
         totalPages: Math.ceil(totalCount / limit),
       },
+      type: type ?? null,
+      counts: { daily: dailyCount, monthly: monthlyCount },
     };
-
-    await redis.setex(cacheKey, 60, JSON.stringify(responseData));
 
     return res.status(StatusCode.OK).json({
       message: "Active bookings fetched successfully",
@@ -147,6 +191,9 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
   }
 };
 
+// Vehicles out on the road (PICKED_UP) — feeds the BM Fleet page. `?type=DAILY|MONTHLY`
+// splits the list into tabs. No cache — a returned booking must leave the list on
+// the next fetch.
 export const GetPendingApprovals = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
   const page = parseInt(req.query.page as string) || 1;
@@ -155,8 +202,13 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
 
   const { date } = req.query;
 
+  const parsedType = parseBookingListType(req.query.type);
+  if (!parsedType.ok) {
+    return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
+  }
+  const type = parsedType.type;
+
   let dateFilter: any = {};
-  let dateKey: string | undefined = "all";
 
   if (date) {
     const targetDateDt = TimezoneService.parseISO(date as string);
@@ -170,42 +222,37 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
           lte: TimezoneService.toPrisma(endOfDayDt),
         },
       };
-      dateKey = targetDateDt.toFormat("yyyy-MM-dd");
     }
   }
 
   try {
-    const cacheKey = `branch:${branchId}:pending_approvals:${dateKey}:${page}:${limit}`;
-    const cachedData = await redis.get(cacheKey);
+    const { dailyWhere, monthlyWhere, listWhere } = managerTabWheres(
+      branchId,
+      BookingStatus.PICKED_UP,
+      dateFilter,
+      type,
+    );
 
-    if (cachedData) {
-      return res.status(StatusCode.OK).json({
-        message: "Pending approvals fetched successfully (cached)",
-        data: JSON.parse(cachedData),
-      });
-    }
+    const [totalCount, dailyCount, monthlyCount] = await Promise.all([
+      prisma.booking.count({ where: listWhere }),
+      prisma.booking.count({ where: dailyWhere }),
+      prisma.booking.count({ where: monthlyWhere }),
+    ]);
 
-    const totalCount = await prisma.booking.count({
-      where: {
-        branchId: branchId,
-        status: BookingStatus.PICKED_UP,
-        ...dateFilter,
-      },
-    });
-
-    const bookings = await prisma.booking.findMany({
-      where: {
-        branchId: branchId,
-        status: BookingStatus.PICKED_UP,
-        ...dateFilter,
-      },
+    const rows = await prisma.booking.findMany({
+      where: listWhere,
       select: {
         id: true,
         publicId: true,
         startAt: true,
         endAt: true,
+        rentalPeriodType: true,
+        days: true,
         totalFinal: true,
         status: true,
+        dlStatus: true,
+        dlDepositNote: true,
+        dlStatusUpdatedAt: true,
         isAdvancePayment: true,
         advanceAmount: true,
         remainingBalance: true,
@@ -215,10 +262,12 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
           select: {
             id: true,
             publicId: true,
+            alternatePhone: true,
             user: {
               select: {
                 name: true,
                 email: true,
+                phone: true,
               },
             },
           },
@@ -254,6 +303,11 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
       take: limit,
       skip: skip,
     });
+    const bookings = rows.map((row) => ({
+      ...row,
+      customer: withCustomerDisplayEmail(row.customer),
+      bookingType: bookingListTypeOf(row.rentalPeriodType),
+    }));
 
     const responseData = {
       bookings,
@@ -263,9 +317,9 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
         limit: limit,
         totalPages: Math.ceil(totalCount / limit),
       },
+      type: type ?? null,
+      counts: { daily: dailyCount, monthly: monthlyCount },
     };
-
-    await redis.setex(cacheKey, 60, JSON.stringify(responseData));
 
     return res.status(StatusCode.OK).json({
       message: "Pending approvals fetched successfully",
@@ -275,6 +329,35 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
     console.error("Pending Approvals Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Server Error fetching pending approvals",
+    });
+  }
+};
+
+/**
+ * GET /api/branchManager/dashboard/bookings/overdue?page&limit&type
+ * Overdue / no-show returns for the manager's branch, most overdue first.
+ * Same rows as the Fleet endpoint. Always 200 — empty list is `data: []`.
+ */
+export const GetOverdueReturns = async (req: Request, res: Response) => {
+  try {
+    const parsedType = parseBookingListType(req.query.type);
+    if (!parsedType.ok) {
+      return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
+    }
+
+    const { page, limit } = parseOverduePaging(req.query.page, req.query.limit);
+    const result = await listOverdueReturns(req.branch_Id, { page, limit, type: parsedType.type });
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: "Overdue returns fetched successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Overdue Returns Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Internal Server Error fetching overdue returns",
     });
   }
 };
@@ -608,6 +691,17 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       }, tx);
     });
 
+    void notifyEvents.pickupCompleted({ bookingId: booking.id, actorUserId: actingUser.id });
+    void notifyEvents.approvalResolved({
+      kind: "PICKUP",
+      entity: "Booking",
+      entityPublicId: booking.publicId,
+      branchId,
+      approved: true,
+      bookingId: booking.id,
+      actorUserId: actingUser.id,
+    });
+
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Pickup confirmed successfully. Vehicle is now OUT_FOR_RENTAL.",
@@ -677,6 +771,8 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
         data: {
           status: BookingStatus.RETURNED,
           requiresManagerConfirmation: false,
+          // The drop recorded the actual return time; returns sent before that field existed get now
+          returnedAt: booking.returnedAt ?? new Date(),
         },
       });
 
@@ -705,6 +801,17 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
     } catch (redisErr) {
       console.warn("[manager] Cache invalidation failed (non-fatal):", redisErr);
     }
+
+    void notifyEvents.returnCompleted({ bookingId: booking.id, actorUserId: actingUser.id });
+    void notifyEvents.approvalResolved({
+      kind: "RETURN",
+      entity: "Booking",
+      entityPublicId: booking.publicId,
+      branchId,
+      approved: true,
+      bookingId: booking.id,
+      actorUserId: actingUser.id,
+    });
 
     return res.status(StatusCode.OK).json({
       success: true,
@@ -738,6 +845,9 @@ export const GetManagerConfirmations = async (req: Request, res: Response) => {
         totalFinal: true,
         requiresManagerConfirmation: true,
         safetyDeposit: true,
+        dlStatus: true,
+        dlDepositNote: true,
+        dlStatusUpdatedAt: true,
         customer: {
           select: {
             user: {
@@ -768,7 +878,7 @@ export const GetManagerConfirmations = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       success: true,
-      data: bookings,
+      data: bookings.map((b) => ({ ...b, customer: withCustomerDisplayEmail(b.customer) })),
     });
   } catch (error: any) {
     console.error("Manager Confirmations fetch error:", error);
@@ -854,6 +964,9 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         remainingPaidDuring: true,
         safetyDeposit: true,
         safetyDepositMethod: true,
+        dlStatus: true,
+        dlDepositNote: true,
+        dlStatusUpdatedAt: true,
         customer: {
           select: {
             user: {
@@ -880,9 +993,12 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         photos: {
           select: {
             id: true,
+            type: true,
+            captureLabel: true,
             file: {
               select: {
                 url: true,
+                mime: true,
               },
             },
           },
@@ -897,9 +1013,20 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         .json({ message: "Booking not found" });
     }
 
+    // Customer QR code photo (#4): booking snapshot, else the customer's current one.
+    const qrPhotoFields = await getBookingQrPhotoFields({ publicId: bookingId as string, branchId });
+
+    // A pickup confirmation (booking still CONFIRMED) shows the handover photos
+    // only; a return confirmation keeps every photo (pickup, return, damage),
+    // each carrying its type / captureLabel so the dialog can label it.
+    const photos =
+      booking.status === BookingStatus.CONFIRMED
+        ? booking.photos.filter((photo) => photo.type === "PRE_DELIVERY")
+        : booking.photos;
+
     return res.status(StatusCode.OK).json({
       success: true,
-      data: booking,
+      data: { ...booking, photos, ...qrPhotoFields },
     });
   } catch (error: any) {
     console.error("Manager Confirmation details error:", error);
@@ -975,7 +1102,7 @@ export const GetNoShowEligibleBookings = async (req: Request, res: Response) => 
 
     return res.status(StatusCode.OK).json({
       success: true,
-      data: bookings,
+      data: bookings.map((b) => ({ ...b, customer: withCustomerDisplayEmail(b.customer) })),
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
       graceHours,
     });
@@ -1087,7 +1214,7 @@ export const GetCancellationHistory = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       success: true,
-      data: bookings,
+      data: bookings.map((b) => ({ ...b, customer: withCustomerDisplayEmail(b.customer) })),
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {

@@ -11,10 +11,22 @@ import {
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
 import { confirmExtensionPayment } from "../../services/payment/bookingConfirmation.service.js";
+import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import {
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+} from "../../services/tax/gst.service.js";
 import {
   customerEvaluateExtensionSchema,
   cancelExtensionSchema,
 } from "@repo/schemas";
+import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import {
+  buildExtensionLimits,
+  maxPeriodReachedMessage,
+} from "../../services/extension/extension-limits.service.js";
 
 /**
  * POST /api/user/bookings/:bookingPublicId/extensions/evaluate
@@ -112,6 +124,9 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       newDays: evaluation.pricing.newDays,
       additionalAmount: evaluation.pricing.additionalAmount,
       newTotalFinal: evaluation.pricing.newTotalFinal,
+      // GST split of additionalAmount (taxableAmount + taxAmount)
+      ...extensionSplitView(evaluation.pricing),
+      extensionHours: evaluation.pricing.extensionHours,
     };
     let options: Array<{ type: string; description: string; partialNewEndAt?: string }>;
 
@@ -127,6 +142,8 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         newDays: narrowed.newDays,
         additionalAmount: narrowed.additionalAmount.toFixed(2),
         newTotalFinal: narrowed.newTotalFinal.toFixed(2),
+        ...extensionSplitView(narrowed),
+        extensionHours: narrowed.extensionHours,
       };
       options = [partial];
     } else {
@@ -153,6 +170,16 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
           originalTotalFinal: evaluation.pricing.originalTotalFinal,
           additionalAmount: pricing.additionalAmount,
           newTotalFinal: pricing.newTotalFinal,
+          // additionalAmount = taxableAmount + taxAmount (CGST + SGST)
+          baseAmount: pricing.baseAmount,
+          discountAmount: pricing.discountAmount,
+          taxableAmount: pricing.taxableAmount,
+          taxAmount: pricing.taxAmount,
+          cgstAmount: pricing.cgstAmount,
+          sgstAmount: pricing.sgstAmount,
+          taxRate: pricing.taxRate,
+          originalHours: evaluation.pricing.originalHours,
+          extensionHours: pricing.extensionHours,
         },
         resolutionOptions: options.map((o) => ({
           type: o.type,
@@ -165,6 +192,15 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
   } catch (error: any) {
     if (error instanceof ExtensionPendingError) {
       res.status(StatusCode.CONFLICT).json(error.toJSON());
+      return;
+    }
+    if (isGstRuleMissing(error)) {
+      res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
+      return;
+    }
+    // 15-day limit (BOOKING_MAX_PERIOD_EXCEEDED) / office hours (BRANCH_SCHEDULE_VIOLATION)
+    if (error instanceof BookingWindowError || error instanceof BranchScheduleError) {
+      res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
       return;
     }
     console.error("Customer EvaluateExtension Error:", error);
@@ -290,6 +326,7 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
         endAt: true,
         branchId: true,
         activeExtensionId: true,
+        rentalPeriodType: true,
       },
     });
 
@@ -332,14 +369,24 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     const hoursUntilEnd =
       (booking.endAt.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    // Button is visible for any active booking that hasn't ended yet.
-    const eligible = hoursUntilEnd > 0;
+    // 15-day cap (#15) and branch office hours (#2) for the extension pickers
+    const limits = await buildExtensionLimits(booking, now);
+
+    // Button is visible for any active booking that hasn't ended yet and still
+    // has room under the maximum rental period.
+    const ended = hoursUntilEnd <= 0;
+    const eligible = !ended && !limits.atCap;
 
     res.status(StatusCode.OK).json({
       data: {
         eligible,
         hoursUntilEnd: Math.max(0, Math.round(hoursUntilEnd * 10) / 10),
-        reason: eligible ? null : "Rental has already ended",
+        reason: ended
+          ? "Rental has already ended"
+          : limits.atCap
+            ? maxPeriodReachedMessage(limits)
+            : null,
+        ...limits,
       },
     });
   } catch (error: any) {

@@ -12,6 +12,7 @@ const chargeReturnDataSchema = z.object({
 });
 import { returnChargeService } from "../../services/charges/return-charge.service.js";
 import { chargeEngineService } from "../../services/charges/charge-engine.service.js";
+import { chargeEntryGst } from "../../services/charges/legacy-return-charges.service.js";
 import {
   staffActivityService,
   StaffActionType,
@@ -122,17 +123,25 @@ export const GetChargeBreakdown = async (req: Request, res: Response) => {
         subtotal: breakdown.subtotal.toFixed(2),
         waivedTotal: breakdown.waivedTotal.toFixed(2),
         finalTotal: breakdown.finalTotal.toFixed(2),
-        charges: breakdown.results.map((r) => ({
-          chargeType: r.chargeType,
-          moduleKey: r.moduleKey,
-          label: r.label,
-          originalAmount: r.originalAmount.toFixed(2),
-          finalAmount: r.finalAmount.toFixed(2),
-          quantity: r.quantity?.toFixed(4) ?? null,
-          unitRate: r.unitRate?.toFixed(2) ?? null,
-          isOverridden: r.isOverridden ?? false,
-          notes: r.notes ?? null,
-        })),
+        charges: breakdown.results.map((r) => {
+          const gst = chargeEntryGst(r);
+          return {
+            chargeType: r.chargeType,
+            moduleKey: r.moduleKey,
+            label: r.label,
+            originalAmount: r.originalAmount.toFixed(2),
+            finalAmount: r.finalAmount.toFixed(2),
+            quantity: r.quantity?.toFixed(4) ?? null,
+            unitRate: r.unitRate?.toFixed(2) ?? null,
+            isOverridden: r.isOverridden ?? false,
+            notes: r.notes ?? null,
+            // GST frozen on the line (legacy drop charges); 0.00 when not taxed
+            gstAmount: gst ? gst.gst.toFixed(2) : "0.00",
+            cgstAmount: gst ? gst.cgst.toFixed(2) : "0.00",
+            sgstAmount: gst ? gst.sgst.toFixed(2) : "0.00",
+            taxRate: gst ? gst.taxRate.toFixed(2) : "0.00",
+          };
+        }),
       },
     });
   } catch (error) {

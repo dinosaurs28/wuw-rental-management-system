@@ -32,8 +32,20 @@ export const UploadPickupImage = async (req: Request, res: Response) => {
     const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const key = `pickup/${date}/${createID()}${ext}`;
 
-    // Process image with Sharp
-    const processed = await processImage(fileContent);
+    // Process image with Sharp. Bytes it can't decode (a PDF, HEVC-HEIC, a
+    // truncated upload) are the client's problem: 400, not a 500.
+    let processed: Awaited<ReturnType<typeof processImage>>;
+    try {
+      processed = await processImage(fileContent);
+    } catch {
+      await fs.unlink(file.path).catch(() => {});
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_IMAGE",
+        message:
+          "This photo could not be read. Please upload a JPG, PNG or WebP photo (HEIC and PDF files are not supported).",
+      });
+    }
 
     await r2.send(
       new PutObjectCommand({

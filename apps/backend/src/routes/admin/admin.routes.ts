@@ -38,7 +38,7 @@ import { GetReceiptReport } from "../../controller/admin/receiptReportController
 import { GetCustomerReport } from "../../controller/admin/customerReportController.js";
 import { GetAllCategories } from "../../controller/admin/category.controller.js";
 import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.js";
-import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
+import { GetAllVehicles, UpdateVehicleUseCases } from "../../controller/admin/vehicle.controller.js";
 import featureFlagRouter from "./feature-flag.routes.js";
 import auditRouter from "./audit.routes.js";
 import staffActivityRouter from "./staffActivity.routes.js";
@@ -49,6 +49,7 @@ import userTransferRouter from "./userTransfer.routes.js";
 import {
   upsertBranchSchedule,
   updateBranchGrace,
+  getAdminBranchSchedule,
 } from "../../controller/admin/branchSchedule.controller.js";
 
 const router: Router = Router();
@@ -62,6 +63,7 @@ router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);
 router.delete("/dashboard/branches/delete/:branchId", AdminCheck, DeleteBranch);
 
 // Branch schedule configuration
+router.get("/dashboard/branches/:branchPublicId/schedule", AdminCheck, getAdminBranchSchedule);
 router.patch("/dashboard/branches/:branchPublicId/schedule", AdminCheck, upsertBranchSchedule);
 router.patch("/dashboard/branches/:branchPublicId/grace", AdminCheck, updateBranchGrace);
 
@@ -117,6 +119,7 @@ router.get("/dashboard/reports/customers", AdminCheck, GetCustomerReport);
 
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 router.get("/dashboard/vehicles", AdminCheck, GetAllVehicles);
+router.patch("/dashboard/vehicles/:publicId/use-cases", AdminCheck, UpdateVehicleUseCases);
 
 // Feature Flags
 router.use("/feature-flags", featureFlagRouter);

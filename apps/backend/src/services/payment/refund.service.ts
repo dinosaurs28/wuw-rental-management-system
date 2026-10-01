@@ -3,6 +3,7 @@ import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
 import type { RefundRequest, PaymentMethod, Role } from "@repo/database/client";
 
 interface ActorContext {
@@ -108,6 +109,8 @@ class RefundService {
       metadata: { method, reason },
     });
 
+    if (needsApproval) void notifyEvents.refundApprovalsPending({ bookingId: booking.id, actorUserId: actor.actorId });
+
     return refund;
   }
 
@@ -150,6 +153,18 @@ class RefundService {
       entityType: StaffEntityType.REFUND_REQUEST,
       entityRef: refund.publicId,
       description: `Refund ₹${refund.amount} approved`,
+    });
+
+    void notifyEvents.approvalResolved({
+      kind: "REFUND",
+      entity: "RefundRequest",
+      entityPublicId: refund.publicId,
+      branchId: refund.branchId,
+      approved: true,
+      recipientUserId: refund.requestedById,
+      bookingId: refund.bookingId,
+      amount: refund.amount,
+      actorUserId: actor.actorId,
     });
 
     return updated;
@@ -198,6 +213,8 @@ class RefundService {
       description: `Refund ₹${refund.amount} completed`,
     });
 
+    void notifyEvents.refundCompleted({ refundRequestId: refund.id, actorUserId: actor.actorId });
+
     return updated;
   }
 
@@ -239,6 +256,19 @@ class RefundService {
       entityType: StaffEntityType.REFUND_REQUEST,
       entityRef: refund.publicId,
       description: `Refund ₹${refund.amount} rejected: ${rejectionReason}`,
+    });
+
+    void notifyEvents.approvalResolved({
+      kind: "REFUND",
+      entity: "RefundRequest",
+      entityPublicId: refund.publicId,
+      branchId: refund.branchId,
+      approved: false,
+      recipientUserId: refund.requestedById,
+      bookingId: refund.bookingId,
+      amount: refund.amount,
+      reason: rejectionReason,
+      actorUserId: actor.actorId,
     });
 
     return updated;

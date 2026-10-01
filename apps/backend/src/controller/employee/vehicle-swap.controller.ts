@@ -1,20 +1,31 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, SwapReason } from "@repo/database/client";
-import { VehicleSwapService } from "../../services/vehicle-swap/vehicle-swap.service.js";
+import {
+  VehicleSwapService,
+  swapErrorResponse,
+} from "../../services/vehicle-swap/vehicle-swap.service.js";
 import { vehicleSwapSchema } from "@repo/schemas";
+import { z } from "zod";
 import {
   staffActivityService,
   StaffActionType,
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
 import Decimal from "decimal.js";
+import {
+  resolveKmAllowance,
+  type KmAllowance,
+} from "../../services/charges/km-allowance.service.js";
 
 const vehicleSwapService = new VehicleSwapService();
 
 /**
  * Get available vehicles for swap (employee context)
  * GET /api/employee/bookings/:bookingId/available-vehicles
+ *
+ * data: candidates (same category first, upgrades flagged) with the per-car
+ * price-difference preview; swapContext: stage, readings rule, current car.
  */
 export const GetAvailableVehiclesForEmployee = async (
   req: Request,
@@ -26,28 +37,31 @@ export const GetAvailableVehiclesForEmployee = async (
   if (!bookingId) {
     return res
       .status(StatusCode.BAD_REQUEST)
-      .json({ message: "Booking ID is required" });
+      .json({ success: false, code: "VALIDATION_ERROR", message: "Booking ID is required" });
   }
 
   try {
-    const availableVehicles =
+    const { vehicles, context } =
       await vehicleSwapService.getAvailableVehiclesForSwap(bookingId, branchId);
 
     return res.status(StatusCode.OK).json({
+      success: true,
       message: "Available vehicles fetched successfully",
-      data: availableVehicles,
+      data: vehicles,
+      swapContext: context,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching available vehicles for swap:", error);
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "Failed to fetch available vehicles",
-    });
+    const { status, body } = swapErrorResponse(error, "Failed to fetch available vehicles");
+    return res.status(status).json(body);
   }
 };
 
 /**
  * Perform vehicle swap (employee context)
  * POST /api/employee/bookings/:bookingId/swap-vehicle
+ *
+ * A PICKED_UP booking needs all four readings (READINGS_REQUIRED otherwise).
  */
 export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -55,13 +69,15 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
   if (!bookingId) {
     return res
       .status(StatusCode.BAD_REQUEST)
-      .json({ message: "Booking ID is required" });
+      .json({ success: false, code: "VALIDATION_ERROR", message: "Booking ID is required" });
   }
 
   const validation = vehicleSwapSchema.safeParse(req.body);
   if (!validation.success) {
     return res.status(StatusCode.BAD_REQUEST).json({
-      message: "Validation failed",
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: validation.error.errors[0]?.message ?? "Validation failed",
       errors: validation.error.errors.map((err) => ({
         field: err.path.join("."),
         message: err.message,
@@ -69,13 +85,7 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
     });
   }
 
-  const {
-    newVehicleId,
-    reason,
-    reasonNotes,
-    markOriginalForMaintenance,
-    originalVehicleNotes,
-  } = validation.data;
+  const body = validation.data;
 
   try {
     const user = await prisma.user.findUnique({
@@ -86,53 +96,148 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
     if (!user) {
       return res
         .status(StatusCode.UNAUTHORIZED)
-        .json({ message: "Staff user not found" });
+        .json({ success: false, message: "Staff user not found" });
     }
 
-    const swap = await vehicleSwapService.performVehicleSwap(
-      bookingId,
-      newVehicleId,
-      user.id,
-      reason as SwapReason,
-      reasonNotes,
-      markOriginalForMaintenance === true,
-      originalVehicleNotes,
-    );
+    const swap = await vehicleSwapService.swapVehicle({
+      bookingPublicId: bookingId,
+      newVehicleId: body.newVehicleId,
+      swappedById: user.id,
+      reason: body.reason as SwapReason,
+      reasonNotes: body.reasonNotes,
+      markOriginalForMaintenance: body.markOriginalForMaintenance === true,
+      originalVehicleNotes: body.originalVehicleNotes,
+      originalVehicleEndOdometer: body.originalVehicleEndOdometer,
+      originalVehicleFuelLevel: body.originalVehicleFuelLevel,
+      newVehicleStartOdometer: body.newVehicleStartOdometer,
+      newVehicleFuelLevel: body.newVehicleFuelLevel,
+      chargeDifference: body.chargeDifference,
+      branchId: req.branch_Id,
+      source: "STAFF",
+    });
 
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.SWAPPED,
       entityType: StaffEntityType.VEHICLE,
       entityRef: bookingId,
-      description: `Vehicle swapped in booking ${bookingId} — reason: ${reason}`,
-      metadata: { newVehicleId, reason, reasonNotes },
+      description:
+        `Vehicle swapped in booking ${bookingId}: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo} — reason: ${body.reason}`,
+      metadata: {
+        swapPublicId: swap.publicId,
+        bookingStatusAtSwap: swap.bookingStatusAtSwap,
+        originalVehicle: swap.originalVehicle.regNo,
+        newVehicle: swap.newVehicle.regNo,
+        reason: body.reason,
+        reasonNotes: body.reasonNotes,
+        priceDifference: swap.priceDifference.toString(),
+        chargeDifference: swap.chargeDifference,
+      },
     });
 
     return res.status(StatusCode.OK).json({
+      success: true,
       message: "Vehicle swapped successfully",
       data: swap,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error performing vehicle swap:", error);
+    const { status, body: errorBody } = swapErrorResponse(error, "Failed to perform vehicle swap");
+    return res.status(status).json(errorBody);
+  }
+};
 
-    if (error.message.includes("not found")) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: error.message });
-    }
+/**
+ * Swap history of one booking of this branch (newest first)
+ * GET /api/employee/bookings/:bookingId/swap-history
+ */
+export const GetBookingSwapHistoryForEmployee = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
 
-    if (
-      error.message.includes("not eligible") ||
-      error.message.includes("not available") ||
-      error.message.includes("Cannot swap")
-    ) {
-      return res
-        .status(StatusCode.BAD_REQUEST)
-        .json({ message: error.message });
-    }
+  if (!bookingId) {
+    return res
+      .status(StatusCode.BAD_REQUEST)
+      .json({ success: false, code: "VALIDATION_ERROR", message: "Booking ID is required" });
+  }
 
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "Failed to perform vehicle swap",
+  try {
+    const history = await vehicleSwapService.getBookingSwapHistory(bookingId, req.branch_Id);
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: "Booking swap history fetched successfully",
+      data: history,
     });
+  } catch (error: unknown) {
+    console.error("Error fetching booking swap history:", error);
+    const { status, body } = swapErrorResponse(error, "Failed to fetch booking swap history");
+    return res.status(status).json(body);
+  }
+};
+
+const recentSwapsQuerySchema = z.object({
+  startDate: z.string().datetime({ offset: true }).optional(),
+  endDate: z.string().datetime({ offset: true }).optional(),
+  vehicleId: z.coerce.number().int().positive().optional(),
+  reason: z.nativeEnum(SwapReason).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+
+const RECENT_SWAPS_DEFAULT_DAYS = 30;
+
+/**
+ * Recent swaps across this branch (newest first)
+ * GET /api/employee/swap-history?startDate&endDate&vehicleId&reason&limit
+ * Defaults: the last 30 days, at most 50 rows.
+ */
+export const GetRecentSwapsForEmployee = async (req: Request, res: Response) => {
+  const validation = recentSwapsQuerySchema.safeParse(req.query);
+  if (!validation.success) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: validation.error.issues[0]?.message ?? "Validation failed",
+      errors: validation.error.issues.map((err) => ({
+        field: err.path.join("."),
+        message: err.message,
+      })),
+    });
+  }
+
+  const { startDate, endDate, vehicleId, reason, limit } = validation.data;
+  const end = endDate ? new Date(endDate) : new Date();
+  const start = startDate
+    ? new Date(startDate)
+    : new Date(end.getTime() - RECENT_SWAPS_DEFAULT_DAYS * 24 * 60 * 60 * 1000);
+  if (start > end) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: "Start date must be before end date",
+    });
+  }
+
+  try {
+    const history = await vehicleSwapService.getSwapsByDateRange(
+      req.branch_Id,
+      start,
+      end,
+      { vehicleId, reason },
+      limit ?? 50,
+    );
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: "Swap history fetched successfully",
+      data: history,
+      filters: {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        vehicleId: vehicleId ?? null,
+        reason: reason ?? null,
+      },
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching swap history:", error);
+    const { status, body } = swapErrorResponse(error, "Failed to fetch swap history");
+    return res.status(status).json(body);
   }
 };
 
@@ -153,10 +258,14 @@ export const GetPickupPricingRules = async (req: Request, res: Response) => {
     const booking = await prisma.booking.findFirst({
       where: { publicId: bookingId, branchId: req.branch_Id },
       select: {
+        id: true,
+        branchId: true,
         startAt: true,
         endAt: true,
         frozenChargeConfig: true,
+        branch: { select: { chargeConfig: { select: { extraKmEnabled: true } } } },
         items: {
+          orderBy: { id: "asc" },
           take: 1,
           select: {
             vehicle: {
@@ -164,10 +273,15 @@ export const GetPickupPricingRules = async (req: Request, res: Response) => {
                 make: true,
                 model: true,
                 regNo: true,
-                pricingOverride: true,
-                branch: {
+                categoryId: true,
+                customPricing: {
                   select: {
-                    pricingSetting: true,
+                    enabled: true,
+                    freeKm24Hour: true,
+                    freeKmMonthly: true,
+                    extraKmRate: true,
+                    extraHourRate: true,
+                    price24Hour: true,
                   },
                 },
               },
@@ -190,8 +304,35 @@ export const GetPickupPricingRules = async (req: Request, res: Response) => {
         .json({ message: "Vehicle not found for booking" });
     }
 
-    // Use vehicle custom pricing if available, otherwise fall back to branch defaults
-    const pricing = vehicle.pricingOverride ?? vehicle.branch.pricingSetting;
+    // The rates the pricing engine bills with: the vehicle's custom pricing when
+    // enabled, else the branch default for its category. (VehiclePricingOverride
+    // and BranchPricingSetting carry no km/hour rates — reading them gave ₹0/km.)
+    const usesCustomPricing = vehicle.customPricing?.enabled === true;
+    const config = usesCustomPricing
+      ? vehicle.customPricing
+      : await prisma.branchPricingDefaults.findUnique({
+          where: {
+            branchId_categoryId: { branchId: booking.branchId, categoryId: vehicle.categoryId },
+          },
+          select: {
+            freeKm24Hour: true,
+            freeKmMonthly: true,
+            extraKmRate: true,
+            extraHourRate: true,
+            price24Hour: true,
+          },
+        });
+
+    // This booking's own allowance — the plan-based free km and rate the drop
+    // bills with. If it can't be worked out, report none rather than a guess.
+    let allowance: KmAllowance | null = null;
+    try {
+      allowance = await resolveKmAllowance(booking.id);
+    } catch (allowanceErr) {
+      console.warn(`[pickup-pricing-rules] Km allowance unavailable for ${bookingId}:`, allowanceErr);
+    }
+    const extraKmEnabled =
+      allowance?.extraKmEnabled ?? booking.branch.chargeConfig?.extraKmEnabled ?? true;
 
     const rules = {
       vehicle: {
@@ -199,19 +340,24 @@ export const GetPickupPricingRules = async (req: Request, res: Response) => {
         model: vehicle.model,
         regNo: vehicle.regNo,
       },
-      pricing: pricing
+      pricing: config
         ? {
-            freeKm24Hour: (pricing as any).freeKm24Hour ?? 0,
-            freeKmMonthly: (pricing as any).freeKmMonthly ?? 0,
-            extraKmRate: (pricing as any).extraKmRate
-              ? new Decimal((pricing as any).extraKmRate.toString()).toFixed(2)
-              : "0",
-            extraHourRate: (pricing as any).extraHourRate
-              ? new Decimal((pricing as any).extraHourRate.toString()).toFixed(2)
-              : "0",
-            price24Hour: (pricing as any).price24Hour
-              ? new Decimal((pricing as any).price24Hour.toString()).toFixed(2)
-              : "0",
+            freeKm24Hour: config.freeKm24Hour,
+            freeKmMonthly: config.freeKmMonthly,
+            extraKmRate: (allowance?.extraKmRate ?? new Decimal(config.extraKmRate.toString())).toFixed(2),
+            extraHourRate: new Decimal(config.extraHourRate.toString()).toFixed(2),
+            price24Hour: new Decimal(config.price24Hour.toString()).toFixed(2),
+            // Free km for this booking's whole period (null when it can't be worked out)
+            includedKm: allowance?.includedKm ?? null,
+            extraKmEnabled,
+            source: usesCustomPricing ? "vehicle_custom" : "branch_default",
+          }
+        : null,
+      kmAllowance: allowance
+        ? {
+            includedKm: allowance.includedKm,
+            extraKmRate: allowance.extraKmRate.toFixed(2),
+            extraKmEnabled: allowance.extraKmEnabled,
           }
         : null,
       frozenChargeConfig: booking.frozenChargeConfig,

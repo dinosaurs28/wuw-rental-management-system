@@ -271,7 +271,8 @@ export function drawSectionHeader(
   textColor: string,
   subLabel?: string,
 ): void {
-  if (ctx.willOverflow(36)) ctx.addPage();
+  // Keep the header with its table header and first row (no orphaned header)
+  if (ctx.willOverflow(90)) ctx.addPage();
 
   filledRect(ctx, L, ctx.y, W, 24, bgColor);
   ctx.doc
@@ -369,8 +370,8 @@ export function drawExtensionTableHeader(ctx: PDFRenderContext): void {
 
   const y = ctx.y + 6;
   ctx.doc.text("Description", EXTENSION_COLS.desc.x, y, { width: EXTENSION_COLS.desc.w });
-  ctx.doc.text("Extra Days", EXTENSION_COLS.days.x, y, { width: EXTENSION_COLS.days.w, align: "center" });
-  ctx.doc.text("Amount", EXTENSION_COLS.amount.x, y, { width: EXTENSION_COLS.amount.w, align: "right" });
+  ctx.doc.text("Extra Time", EXTENSION_COLS.days.x, y, { width: EXTENSION_COLS.days.w, align: "center" });
+  ctx.doc.text("Amount (before GST)", EXTENSION_COLS.amount.x, y, { width: EXTENSION_COLS.amount.w, align: "right" });
 
   ctx.advance(20);
   rule(ctx, C.border);
@@ -379,7 +380,7 @@ export function drawExtensionTableHeader(ctx: PDFRenderContext): void {
 
 export function drawExtensionTableRow(
   ctx: PDFRenderContext,
-  item: { description: string; quantity?: number; amount: number },
+  item: { description: string; quantity?: number; quantityLabel?: string; amount: number },
 ): void {
   if (ctx.willOverflow(30)) ctx.addPage();
 
@@ -388,7 +389,7 @@ export function drawExtensionTableRow(
 
   ctx.doc.text(item.description, EXTENSION_COLS.desc.x, y, { width: EXTENSION_COLS.desc.w });
   ctx.doc.text(
-    String(item.quantity ?? 1),
+    item.quantityLabel ?? String(item.quantity ?? 1),
     EXTENSION_COLS.days.x,
     y,
     { width: EXTENSION_COLS.days.w, align: "center" },
@@ -547,6 +548,7 @@ export function drawSummaryTable(ctx: PDFRenderContext): void {
     color: string = C.black,
     labelColor: string = C.gray,
   ): void => {
+    if (ctx.willOverflow(20)) ctx.addPage();
     doc
       .font(bold ? "Helvetica-Bold" : "Helvetica")
       .fontSize(9)
@@ -570,42 +572,69 @@ export function drawSummaryTable(ctx: PDFRenderContext): void {
 
   // ── Charges breakdown ───────────────────────────────────────────────────────
 
-  doc.font("Helvetica-Bold").fontSize(9).fillColor(C.gray).text("CHARGES BREAKDOWN", xLabel, ctx.y);
+  // Taxable supplies at their gross value, then every discount once, then the
+  // taxable value GST is charged on. Non-taxable lines and the refundable
+  // deposit follow, so the rows add up to the grand total.
+  doc.font("Helvetica-Bold").fontSize(9).fillColor(C.gray).text("TAXABLE CHARGES", xLabel, ctx.y);
   ctx.advance(18);
 
   for (const sec of d.taxableSections) {
     const label =
-      sec.type === "VEHICLE_RENTAL"   ? "Vehicle Rental (before GST)"  :
-      sec.type === "EXTENSION_CHARGES" ? "Extension Charges (before GST)" :
-      sec.type === "DAMAGE_PENALTY"    ? "Damage Penalty (before GST)"  :
+      sec.type === "VEHICLE_RENTAL"          ? "Vehicle Rental (before GST)"  :
+      sec.type === "EXTENSION_CHARGES"       ? "Rental Extensions (before GST)" :
+      sec.type === "TAXABLE_RETURN_CHARGES"  ? "Return Charges (before GST)" :
+      sec.type === "DAMAGE_PENALTY"          ? "Damage Penalty (before GST)"  :
       `${sec.title} (before GST)`;
-    row(label, fmt(sec.subtotalBeforeTax - sec.discount));
-  }
-
-  for (const sec of d.nonTaxableSections) {
-    const label =
-      sec.type === "DAMAGE_COMPENSATION" ? "Damage Compensation" : sec.title;
     row(label, fmt(sec.subtotalBeforeTax));
   }
 
-  thinRule();
-
-  if (d.totalDiscount > 0) {
-    row("Total Discount Applied", `-${fmt(d.totalDiscount)}`, false, C.gray);
-    thinRule();
+  const taxableDiscount = d.taxableSections.reduce((s, sec) => s + sec.discount, 0);
+  if (taxableDiscount > 0) {
+    const label = d.couponCode ? `Discounts (incl. coupon ${d.couponCode})` : "Discounts";
+    row(label, `-${fmt(taxableDiscount)}`, false, C.gray);
   }
+
+  thinRule();
+  row("Taxable Value", fmt(d.taxableAmount), true);
+  thinRule();
 
   // ── Tax breakdown ───────────────────────────────────────────────────────────
 
   doc.font("Helvetica-Bold").fontSize(9).fillColor(C.gray).text("TAX BREAKDOWN", xLabel, ctx.y);
   ctx.advance(18);
 
-  row(`CGST (${d.cgstRate}%)`, fmt(d.totalCgst));
-  row(`SGST (${d.sgstRate}%)`, fmt(d.totalSgst));
+  const rateOf = (r: number | null | undefined, name: string) => (r != null ? `${name} (${r}%)` : name);
+  const sectionRates = d.taxableSections.filter((s) => s.taxTotal !== 0);
+  const mixedRates = sectionRates.some((s) => s.cgstRate !== d.cgstRate || s.sgstRate !== d.sgstRate);
+  row(mixedRates ? "CGST" : rateOf(d.cgstRate, "CGST"), fmt(d.totalCgst));
+  row(mixedRates ? "SGST" : rateOf(d.sgstRate, "SGST"), fmt(d.totalSgst));
 
   thinRule();
   row("Total GST", fmt(d.totalCgst + d.totalSgst));
   thickRule();
+
+  // ── Non-taxable ─────────────────────────────────────────────────────────────
+
+  if (d.nonTaxableSections.length > 0 || d.depositAmount > 0 || d.roundingAdjustment !== 0) {
+    doc.font("Helvetica-Bold").fontSize(9).fillColor(C.gray).text("NOT SUBJECT TO GST", xLabel, ctx.y);
+    ctx.advance(18);
+
+    for (const sec of d.nonTaxableSections) {
+      const label =
+        sec.type === "DAMAGE_COMPENSATION" ? "Damage Compensation" : sec.title;
+      row(sec.discount > 0 ? `${label} (after discount)` : label, fmt(sec.subtotalBeforeTax - sec.discount));
+    }
+
+    if (d.depositAmount > 0) {
+      row("Refundable security deposit (not a taxable supply)", fmt(d.depositAmount));
+    }
+
+    if (d.roundingAdjustment !== 0) {
+      row("Rounding adjustment", fmt(d.roundingAdjustment), false, C.gray);
+    }
+
+    thickRule();
+  }
 
   // ── Grand total ─────────────────────────────────────────────────────────────
 

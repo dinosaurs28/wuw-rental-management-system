@@ -2,6 +2,40 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
+import { validateScheduleRows } from "../../utils/booking/branchScheduleValidator.js";
+
+/**
+ * GET /admin/dashboard/branches/:branchPublicId/schedule
+ * The branch's weekly office hours, grace and 24-hour flag (same shape as the
+ * public schedule endpoint). Empty schedules = hours not set (open 24/7).
+ */
+export const getAdminBranchSchedule = async (req: Request, res: Response) => {
+  try {
+    const { branchPublicId } = req.params;
+    const branch = await prisma.branch.findUnique({
+      where: { publicId: branchPublicId },
+      select: {
+        graceMinutes: true,
+        is24Hours: true,
+        schedules: {
+          select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true },
+          orderBy: { dayOfWeek: "asc" },
+        },
+      },
+    });
+    if (!branch) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
+    }
+    return res.status(StatusCode.OK).json({
+      schedules: branch.schedules,
+      graceMinutes: branch.graceMinutes,
+      is24Hours: branch.is24Hours,
+    });
+  } catch (error) {
+    console.error("[getAdminBranchSchedule] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
 
 /**
  * PATCH /admin/branch/:branchPublicId/schedule
@@ -17,18 +51,10 @@ export const upsertBranchSchedule = async (req: Request, res: Response) => {
       schedules: { dayOfWeek: number; isOpen: boolean; openTime: string; closeTime: string }[];
     };
 
-    if (!Array.isArray(schedules) || schedules.length === 0) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "schedules array required" });
-    }
-
-    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
-    for (const s of schedules) {
-      if (s.dayOfWeek < 0 || s.dayOfWeek > 6) {
-        return res.status(StatusCode.BAD_REQUEST).json({ message: `Invalid dayOfWeek: ${s.dayOfWeek}` });
-      }
-      if (!timeRe.test(s.openTime) || !timeRe.test(s.closeTime)) {
-        return res.status(StatusCode.BAD_REQUEST).json({ message: `Invalid time format for day ${s.dayOfWeek} — use HH:mm` });
-      }
+    // An open day must close after it opens (no overnight hours)
+    const invalid = validateScheduleRows(schedules);
+    if (invalid) {
+      return res.status(StatusCode.BAD_REQUEST).json({ success: false, code: "INVALID_SCHEDULE", message: invalid });
     }
 
     const branch = await prisma.branch.findUnique({
@@ -71,6 +97,9 @@ export const updateBranchGrace = async (req: Request, res: Response) => {
 
     if (graceMinutes !== undefined && (typeof graceMinutes !== "number" || graceMinutes < 0 || graceMinutes > 120)) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "graceMinutes must be 0–120" });
+    }
+    if (is24Hours !== undefined && typeof is24Hours !== "boolean") {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "is24Hours must be true or false" });
     }
 
     const branch = await prisma.branch.findUnique({

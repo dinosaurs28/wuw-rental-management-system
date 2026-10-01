@@ -3,7 +3,12 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createManagerCouponSchema, updateManagerCouponSchema } from "@repo/schemas";
 import { discountRuleService } from "../../services/discount/index.js";
+import { istEndOfDay } from "../../services/discount/discount-rule.service.js";
 import Decimal from "decimal.js";
+import { DateTime } from "luxon";
+
+/** Creator roles of the coupons a branch manager may edit (matches ListManagerCoupons). */
+const MANAGER_COUPON_CREATOR_ROLES: string[] = ["MANAGER", "STAFF"];
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -130,12 +135,22 @@ export const UpdateManagerCoupon = async (req: Request, res: Response) => {
 
     const rule = await prisma.discountRule.findUnique({
       where: { publicId },
-      select: { id: true, applicableBranchIds: true, isActive: true, discountType: true, endDate: true, totalUsageLimit: true },
+      select: {
+        id: true, applicableBranchIds: true, isActive: true, discountType: true, endDate: true, totalUsageLimit: true,
+        createdBy: { select: { role: true } },
+      },
     });
 
     if (!rule) return res.status(StatusCode.NOT_FOUND).json({ message: "Coupon not found" });
     if (!rule.applicableBranchIds.includes(branchId)) {
       return res.status(StatusCode.FORBIDDEN).json({ message: "You can only edit coupons for your own branch" });
+    }
+    // Only branch-created coupons (the ones ListManagerCoupons shows) — not admin coupons
+    if (!MANAGER_COUPON_CREATOR_ROLES.includes(rule.createdBy.role)) {
+      return res.status(StatusCode.FORBIDDEN).json({
+        code: "NOT_A_MANAGER_COUPON",
+        message: "This coupon was created by an admin and can only be changed by an admin.",
+      });
     }
 
     const config = await prisma.branchDiscountConfig.findUnique({ where: { branchId } });
@@ -169,12 +184,15 @@ export const UpdateManagerCoupon = async (req: Request, res: Response) => {
       }
     }
 
-    // Compute new endDate if extendDays provided
+    // Compute new endDate if extendDays provided — never past today + the branch's
+    // maximum manager-coupon validity (repeated extensions can't stretch it further)
     let newEndDate: Date | undefined;
     if (input.extendDays !== undefined) {
       const base = new Date(rule.endDate) > new Date() ? new Date(rule.endDate) : new Date();
-      newEndDate = new Date(base);
-      newEndDate.setDate(newEndDate.getDate() + input.extendDays);
+      const requested = istEndOfDay(DateTime.fromJSDate(base).setZone("Asia/Kolkata").plus({ days: input.extendDays }).toJSDate());
+      const maxValidityDays = config?.maxManagerCouponValidityDays ?? 7;
+      const latest = istEndOfDay(DateTime.now().setZone("Asia/Kolkata").plus({ days: maxValidityDays }).toJSDate());
+      newEndDate = requested > latest ? latest : requested;
     }
 
     const updateData: any = {
@@ -210,7 +228,7 @@ export const DeactivateManagerCoupon = async (req: Request, res: Response) => {
 
     const rule = await prisma.discountRule.findUnique({
       where: { publicId },
-      select: { id: true, isActive: true, applicableBranchIds: true },
+      select: { id: true, isActive: true, applicableBranchIds: true, createdBy: { select: { role: true } } },
     });
 
     if (!rule) {
@@ -218,6 +236,12 @@ export const DeactivateManagerCoupon = async (req: Request, res: Response) => {
     }
     if (!rule.applicableBranchIds.includes(branchId)) {
       return res.status(StatusCode.FORBIDDEN).json({ message: "You can only deactivate coupons for your own branch" });
+    }
+    if (!MANAGER_COUPON_CREATOR_ROLES.includes(rule.createdBy.role)) {
+      return res.status(StatusCode.FORBIDDEN).json({
+        code: "NOT_A_MANAGER_COUPON",
+        message: "This coupon was created by an admin and can only be deactivated by an admin.",
+      });
     }
     if (!rule.isActive) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Coupon is already inactive" });

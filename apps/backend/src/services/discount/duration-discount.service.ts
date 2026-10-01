@@ -18,17 +18,28 @@ export interface DurationDiscountResult {
 
 const ZERO = new Decimal(0);
 
+/**
+ * Number of FULL 24-hour periods in a rental — the day count a duration slab is
+ * matched on. 167h59m → 6, 168h → 7. (The epsilon absorbs float noise from
+ * minute-level durations, e.g. 168h expressed as 167.99999999.)
+ */
+export const slabDaysFor = (actualHours: number): number =>
+  Math.max(0, Math.floor(actualHours / 24 + 1e-9));
+
 class DurationDiscountService {
   /**
    * Evaluate the best-matching duration slab for a branch + actual hours.
-   * Uses actual hours (not ceiling days) so that e.g. 6d22h (166hr) does NOT
-   * qualify for a 7-day (168hr) slab — preventing over-qualification.
+   * Matches on full 24-hour periods (slabDaysFor), not billed days, so that
+   * e.g. 6d22h (166hr) does NOT qualify for a 7-day (168hr) slab.
    *
-   * Slab comparison: slab.minDays * 24 ≤ actualHours ≤ (slab.maxDays ?? ∞) * 24
+   * Slab match: slab.minDays ≤ slabDays ≤ (slab.maxDays ?? ∞); when ranges
+   * overlap the slab with the highest minDays wins — only one slab applies.
+   * A FLAT slab is a fixed ₹ amount per vehicle (the engine prices per vehicle).
    *
    * Returns zero-discount result when:
    *   - branch has durationDiscountEnabled = false
    *   - no slab matches the booking duration
+   *   - the base amount is zero
    */
   async evaluate(
     branchId: number,
@@ -69,14 +80,20 @@ class DurationDiscountService {
     }
 
     if (!config || !config.durationDiscountEnabled) return noDiscount;
+    if (baseAmount.lte(0)) return noDiscount;
 
-    // Convert actualHours to a float day value for slab comparison.
-    // e.g. 168hr → 7.0, 166hr → 6.917, 52hr → 2.167
-    // Prisma compares int column (minDays) against the float — safe for lte/gte.
-    const effectiveDays = actualHours / 24;
+    // Whole 24-hour periods, e.g. 168hr → 7, 166hr → 6, 52hr → 2
+    const slabDays = slabDaysFor(actualHours);
+    if (slabDays < 1) return noDiscount;
 
-    // Cache key bucketed by floored hours so adjacent durations share the cache slot
-    const slabCacheKey = durationDiscountSlabKey(branchId, Math.floor(actualHours));
+    // Cache key bucketed by full days (":fd" keeps it apart from the old
+    // hour-bucketed keys still in Redis; the invalidation pattern covers both)
+    const slabCacheKey = `${durationDiscountSlabKey(branchId, slabDays)}:fd`;
+    const slabWhere = {
+      branchId,
+      minDays: { lte: slabDays },
+      OR: [{ maxDays: null }, { maxDays: { gte: slabDays } }],
+    };
     let slab: any;
     try {
       const cached = await redis.get(slabCacheKey);
@@ -84,11 +101,7 @@ class DurationDiscountService {
         slab = JSON.parse(cached); // null or slab object
       } else {
         slab = await prisma.durationDiscountSlab.findFirst({
-          where: {
-            branchId,
-            minDays: { lte: effectiveDays },
-            OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
-          },
+          where: slabWhere,
           orderBy: { minDays: "desc" },
         });
         await redis.set(slabCacheKey, JSON.stringify(slab), "EX", SLAB_TTL);
@@ -96,11 +109,7 @@ class DurationDiscountService {
     } catch (err) {
       console.warn("[pricing-cache] Redis error, falling back to DB:", err);
       slab = await prisma.durationDiscountSlab.findFirst({
-        where: {
-          branchId,
-          minDays: { lte: effectiveDays },
-          OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
-        },
+        where: slabWhere,
         orderBy: { minDays: "desc" },
       });
     }

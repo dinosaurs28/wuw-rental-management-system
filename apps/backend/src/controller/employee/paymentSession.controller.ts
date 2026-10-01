@@ -32,9 +32,16 @@ import {
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
 import { createID } from "../../utils/nanoID.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
+import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
+import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import {
+  applyCounterCouponOnSessionCompletion,
+  CounterCouponError,
+} from "../../services/discount/counter-coupon.service.js";
 import {
   CounterGuardError,
   assertOpenShift,
@@ -387,19 +394,20 @@ export const RecordPayment = async (req: Request, res: Response) => {
           select: { id: true },
         });
 
-        // Create backward-compat PaymentTransaction (COLLECTED — awaits manager cash confirmation)
-        await tx.paymentTransaction.create({
+        // Create backward-compat PaymentTransaction (COLLECTED — awaits manager cash confirmation);
+        // a safety deposit on the bill gets its own SAFETY_DEPOSIT row
+        await createSessionPaymentTransactions(tx, {
+          sessionId: session.id,
+          sessionType: session.sessionType as PaymentSessionType,
+          idempotencyKey,
+          amount: new Decimal(amount),
+          cash: new Decimal(amount),
+          online: new Decimal(0),
           data: {
-            publicId: createID(),
-            idempotencyKey: `pt:${idempotencyKey}`,
             bookingId: session.bookingId,
             branchId: session.branchId,
-            purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
             method: "CASH",
             status: "COLLECTED",
-            totalAmount: amount.toFixed(2),
-            cashAmount: amount.toFixed(2),
-            onlineAmount: "0.00",
             collectedById: actor.id,
             collectedAt: new Date(),
             cashShiftId: activeShift?.id ?? null,
@@ -436,24 +444,33 @@ export const RecordPayment = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        await tx.paymentTransaction.create({
+        // A counter UPI (UTR) payment counts toward the shift's UPI-collected figure
+        const upiShift = isUpiGateway(gateway)
+          ? await tx.cashShift.findFirst({
+              where: { employeeId: actor.id, status: "OPEN" },
+              select: { id: true },
+            })
+          : null;
+
+        await createSessionPaymentTransactions(tx, {
+          sessionId: session.id,
+          sessionType: session.sessionType as PaymentSessionType,
+          idempotencyKey,
+          amount: new Decimal(amount),
+          cash: new Decimal(0),
+          online: new Decimal(amount),
           data: {
-            publicId: createID(),
-            idempotencyKey: `pt:${idempotencyKey}`,
             bookingId: session.bookingId,
             branchId: session.branchId,
-            purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
             method: "ONLINE",
             status: "CONFIRMED",
-            totalAmount: amount.toFixed(2),
-            cashAmount: "0.00",
-            onlineAmount: amount.toFixed(2),
             onlineTransactionRef: onlineRef,
             onlineGateway: gateway,
             collectedById: actor.id,
             collectedAt: new Date(),
             confirmedById: actor.id,
             confirmedAt: new Date(),
+            cashShiftId: upiShift?.id ?? null,
             notes: notes ?? null,
           },
         });
@@ -492,18 +509,18 @@ export const RecordPayment = async (req: Request, res: Response) => {
           select: { id: true },
         });
 
-        await tx.paymentTransaction.create({
+        await createSessionPaymentTransactions(tx, {
+          sessionId: session.id,
+          sessionType: session.sessionType as PaymentSessionType,
+          idempotencyKey,
+          amount: new Decimal(amount),
+          cash: new Decimal(cash),
+          online: new Decimal(online),
           data: {
-            publicId: createID(),
-            idempotencyKey: `pt:${idempotencyKey}`,
             bookingId: session.bookingId,
             branchId: session.branchId,
-            purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
-            method: "SPLIT" as any,
+            method: "SPLIT",
             status: "COLLECTED",
-            totalAmount: amount.toFixed(2),
-            cashAmount: cash.toFixed(2),
-            onlineAmount: online.toFixed(2),
             onlineTransactionRef: onlineRef,
             onlineGateway: gateway,
             collectedById: actor.id,
@@ -537,6 +554,11 @@ export const RecordPayment = async (req: Request, res: Response) => {
       finalizeInvoice(session.bookingId).catch((err) =>
         console.error("[record-payment] Invoice finalization error:", err),
       );
+    } else {
+      // An extension confirmed by this session changes the invoice totals
+      refreshInvoiceTotals(session.bookingId).catch((err) =>
+        console.error("[record-payment] Invoice refresh error:", err),
+      );
     }
 
     // Audit + activity outside transaction
@@ -560,6 +582,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
       description: `Payment ₹${amount} (${method}) recorded on ${session.sessionType} session`,
       metadata: { amount, method },
     });
+
+    void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
 
     const updatedSession = await paymentSessionService.getSession(session.publicId);
     return res.status(StatusCode.OK).json({
@@ -629,6 +653,14 @@ export const RecordRefund = async (req: Request, res: Response) => {
         tx as any,
       );
 
+      // Cash paid out of the drawer comes off the open shift's expected cash
+      const refundShift = method === "CASH"
+        ? await tx.cashShift.findFirst({
+            where: { employeeId: actor.id, status: "OPEN" },
+            select: { id: true },
+          })
+        : null;
+
       await tx.paymentTransaction.create({
         data: {
           publicId: createID(),
@@ -645,6 +677,7 @@ export const RecordRefund = async (req: Request, res: Response) => {
           collectedAt: new Date(),
           confirmedById: actor.id,
           confirmedAt: new Date(),
+          cashShiftId: refundShift?.id ?? null,
           notes: notes ?? null,
         },
       });
@@ -703,6 +736,8 @@ export const RecordRefund = async (req: Request, res: Response) => {
       metadata: { method, amount },
     });
 
+    void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
+
     const updatedSession = await paymentSessionService.getSession(session.publicId);
     return res.status(StatusCode.OK).json({
       message: "Refund recorded successfully",
@@ -758,33 +793,15 @@ async function runPostCompletionHooks(
       data: { status: VehicleStatus.OUT_FOR_RENTAL },
     });
 
-    // Case 1: Extension was paid directly (PAYMENT_COLLECTED) before this session
-    const pendingExtension = await tx.bookingExtension.findFirst({
-      where: { bookingId, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
-      orderBy: { createdAt: "desc" },
-    });
-    if (pendingExtension) {
-      await tx.bookingExtension.update({
-        where: { id: pendingExtension.id },
-        data: {
-          extensionStatus: ExtensionStatus.CONFIRMED,
-          actualNewEndAt: pendingExtension.requestedEndAt,
-        },
-      });
-      await tx.booking.update({
-        where: { id: bookingId },
-        data: {
-          endAt: pendingExtension.requestedEndAt,
-          activeExtensionId: null,
-          extensionCount: { increment: 1 },
-          lastExtendedAt: new Date(),
-        },
-      });
-    }
+    // An extension paid in cash before this session (PAYMENT_COLLECTED) is NOT
+    // confirmed here: it waits for the manager's cash confirmation, which adds
+    // it to totalFinal (paymentTransactionService.confirmCash) — or for a
+    // rejection, which releases it. Confirming it here skipped totalFinal and
+    // left a rejected cash payment with a free extension.
 
-    // Case 2: Extension was added to this pickup session via an EXTENSION ledger entry
+    // Extension added to this pickup session via an EXTENSION ledger entry
     // (extension status is PENDING_PAYMENT — payment deferred to this session)
-    if (!pendingExtension) {
+    {
       const extLedgerEntry = await tx.ledgerEntry.findFirst({
         where: { sessionId, entryType: LedgerEntryType.EXTENSION, isVoided: false },
       });
@@ -815,58 +832,23 @@ async function runPostCompletionHooks(
                 : {}),
             },
           });
+          // days / rentalPeriodType / hours follow the extended end (#5/#17)
+          await refreshBookingPeriodFields(bookingId, tx);
         }
       }
     }
 
-    // Case 3: Discount ledger entry — apply to booking record
-    const discountLedgerEntry = await tx.ledgerEntry.findFirst({
-      where: { sessionId, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
-    });
-    if (discountLedgerEntry?.referenceId) {
-      const rule = await tx.discountRule.findUnique({
-        where: { publicId: discountLedgerEntry.referenceId },
-        select: { id: true, code: true },
-      });
-      if (rule) {
-        const discountedAmount = new Decimal(discountLedgerEntry.amount.toString()).abs();
-        const fullBooking = await tx.booking.findUniqueOrThrow({
-          where: { id: bookingId },
-          select: { customerId: true, branchId: true, totalFinal: true },
-        });
-
-        // Upsert DiscountApplication
-        await (tx as any).discountApplication.upsert({
-          where: { bookingId },
-          update: {
-            couponDiscountAmount: discountedAmount.toFixed(2),
-            discountRuleId: rule.id,
-            totalDiscountAmount: discountedAmount.toFixed(2),
-            finalAmount: new Decimal(fullBooking.totalFinal?.toString() ?? "0").minus(discountedAmount).toFixed(2),
-          },
-          create: {
-            publicId: createID(),
-            bookingId,
-            originalAmount: fullBooking.totalFinal?.toString() ?? "0",
-            couponDiscountAmount: discountedAmount.toFixed(2),
-            discountRuleId: rule.id,
-            totalDiscountAmount: discountedAmount.toFixed(2),
-            finalAmount: new Decimal(fullBooking.totalFinal?.toString() ?? "0").minus(discountedAmount).toFixed(2),
-            paymentPlan: "FULL",
-          },
-        });
-
-        // Append usage log
-        await (tx as any).couponUsageLog.create({
-          data: {
-            discountRuleId: rule.id,
-            bookingId,
-            customerId: fullBooking.customerId,
-            branchId: fullBooking.branchId,
-            discountedAmount: discountedAmount.toFixed(2),
-          },
-        });
+    // Case 3: Counter coupon on the pickup bill — re-checked under a rule lock,
+    // then folded into the booking (totals, item, invoice, DiscountApplication)
+    // and its usage recorded. A coupon that stopped being valid fails the
+    // settlement so staff remove it and collect the full amount.
+    try {
+      await applyCounterCouponOnSessionCompletion(tx, bookingId, sessionId);
+    } catch (err) {
+      if (err instanceof CounterCouponError) {
+        throw new SettlementConflict(err.status, { ...err.toJSON(), couponRejected: true });
       }
+      throw err;
     }
 
     return [];
@@ -874,6 +856,7 @@ async function runPostCompletionHooks(
     const extension = await tx.bookingExtension.findFirst({
       where: { bookingId, extensionStatus: ExtensionStatus.PENDING_PAYMENT },
       orderBy: { createdAt: "desc" },
+      include: { booking: { select: { extensionCount: true, originalEndAt: true } } },
     });
     if (extension) {
       await tx.bookingExtension.update({
@@ -883,6 +866,8 @@ async function runPostCompletionHooks(
           actualNewEndAt: extension.requestedEndAt,
         },
       });
+      // Same booking effects as every other extension finalizer: the paid
+      // amount (taxable + GST) joins totalFinal.
       await tx.booking.update({
         where: { id: bookingId },
         data: {
@@ -890,8 +875,14 @@ async function runPostCompletionHooks(
           activeExtensionId: null,
           extensionCount: { increment: 1 },
           lastExtendedAt: new Date(),
+          totalFinal: { increment: extension.additionalAmount },
+          ...(extension.booking.extensionCount === 0 && !extension.booking.originalEndAt
+            ? { originalEndAt: extension.oldEndAt }
+            : {}),
         },
       });
+      // days / rentalPeriodType / hours follow the extended end (#5/#17)
+      await refreshBookingPeriodFields(bookingId, tx);
     }
     return [];
   } else if (sessionType === PaymentSessionType.RETURN) {
@@ -901,9 +892,19 @@ async function runPostCompletionHooks(
     });
     const vehicleIds = booking.items.map((i: any) => i.vehicleId);
 
+    // Actual return time = the moment the drop bill froze it (first compute), else now
+    const returnSession = await tx.paymentSession.findUnique({
+      where: { id: sessionId },
+      select: { metadata: true },
+    });
+    const frozenReturnedAt = (returnSession?.metadata as any)?.returnedAt;
+    const returnedAt = frozenReturnedAt && !Number.isNaN(Date.parse(frozenReturnedAt))
+      ? new Date(frozenReturnedAt)
+      : new Date();
+
     await tx.booking.update({
       where: { id: bookingId },
-      data: { status: BookingStatus.RETURNED },
+      data: { status: BookingStatus.RETURNED, returnedAt },
     });
 
     // Damage recorded at drop holds that vehicle for the manager's disposition
@@ -940,7 +941,81 @@ function sessionTypeToPurpose(sessionType: PaymentSessionType): PaymentPurpose {
   }
 }
 
+/**
+ * Writes the PaymentTransaction(s) behind a session payment. The ledger keeps one
+ * PAYMENT line for the whole amount; the transactions split it by what it paid for:
+ *  - the rental part, with the session's purpose (key `pt:<key>`)
+ *  - the refundable safety deposit on the bill (non-voided DEPOSIT lines) as purpose
+ *    SAFETY_DEPOSIT (key `pt:<key>:deposit`), so revenue reports leave it out.
+ * Both rows share the method, status, UTR / reference, collector and cash shift, so
+ * the shift's cash / UPI totals are unchanged; the deposit takes the cash first, then
+ * the online part. A part of ₹0 gets no row. Runs inside the settlement transaction.
+ */
+async function createSessionPaymentTransactions(
+  tx: any,
+  p: {
+    sessionId: number;
+    sessionType: PaymentSessionType;
+    idempotencyKey: string;
+    amount: Decimal;
+    cash: Decimal;
+    online: Decimal;
+    data: Record<string, unknown> & { bookingId: number; branchId: number };
+  },
+): Promise<void> {
+  const depositLines = await tx.ledgerEntry.aggregate({
+    where: {
+      sessionId: p.sessionId,
+      isVoided: false,
+      entryType: LedgerEntryType.DEPOSIT,
+      classification: LedgerEntryClassification.NON_TAXABLE,
+    },
+    _sum: { amount: true },
+  });
+  const onBill = new Decimal((depositLines._sum.amount ?? 0).toString());
+  const deposit = Decimal.max(0, Decimal.min(onBill, p.amount));
+  const depositCash = Decimal.min(deposit, p.cash);
+  const depositOnline = Decimal.min(deposit.sub(depositCash), p.online);
+
+  const parts = [
+    {
+      idempotencyKey: `pt:${p.idempotencyKey}`,
+      purpose: sessionTypeToPurpose(p.sessionType),
+      total: p.amount.sub(deposit),
+      cash: p.cash.sub(depositCash),
+      online: p.online.sub(depositOnline),
+    },
+    {
+      idempotencyKey: `pt:${p.idempotencyKey}:deposit`,
+      purpose: PaymentPurpose.SAFETY_DEPOSIT,
+      total: deposit,
+      cash: depositCash,
+      online: depositOnline,
+    },
+  ];
+  for (const part of parts) {
+    if (part.total.lte(0)) continue;
+    await tx.paymentTransaction.create({
+      data: {
+        ...p.data,
+        publicId: createID(),
+        idempotencyKey: part.idempotencyKey,
+        purpose: part.purpose,
+        totalAmount: part.total.toFixed(2),
+        cashAmount: part.cash.toFixed(2),
+        onlineAmount: part.online.toFixed(2),
+      },
+    });
+  }
+}
+
 // ── Serializer ────────────────────────────────────────────────────────────────
+
+/** A stored CGST/SGST part, signed like the line's gstAmount (a coupon's metadata keeps it positive). */
+function signedGstPart(part: unknown, gstAmount: unknown): string {
+  const value = new Decimal(String(part ?? "0")).abs();
+  return (new Decimal(String(gstAmount ?? "0")).lt(0) ? value.negated() : value).toFixed(2);
+}
 
 function serializeSession(session: any) {
   return {
@@ -961,6 +1036,10 @@ function serializeSession(session: any) {
       classification: e.classification,
       amount: new Decimal(e.amount.toString()).toFixed(2),
       gstAmount: new Decimal(e.gstAmount?.toString() ?? "0").toFixed(2),
+      // Same per-line GST fields as the pickup / return session serializers (#23)
+      baseAmount: new Decimal(e.baseAmount?.toString() ?? "0").toFixed(2),
+      cgst: signedGstPart(e.metadata?.cgst ?? e.metadata?.cgstAmount, e.gstAmount),
+      sgst: signedGstPart(e.metadata?.sgst ?? e.metadata?.sgstAmount, e.gstAmount),
       description: e.description,
       referenceId: e.referenceId,
       referenceType: e.referenceType,

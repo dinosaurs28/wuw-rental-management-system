@@ -19,9 +19,11 @@ export const CreateBranch = async (req: Request, res: Response) => {
         }
 
         const data = validation.data;
+        // Stored lowercased: sign-in and password reset look emails up that way.
+        const managerEmail = data.managerEmail.toLowerCase().trim();
 
         const existingUser = await prisma.user.findUnique({
-            where: { email: data.managerEmail }
+            where: { email: managerEmail }
         });
 
         if (existingUser) {
@@ -45,7 +47,7 @@ export const CreateBranch = async (req: Request, res: Response) => {
             const newManager = await tx.user.create({
                 data: {
                     name: data.managerName,
-                    email: data.managerEmail,
+                    email: managerEmail,
                     passwordHash: passwordHash,
                     role: Role.MANAGER,
                     branchId: newBranch.id,
@@ -108,6 +110,8 @@ export const GetAllBranches = async (req: Request, res: Response) => {
                 deletedAt: null
             },
             select: {
+                // Numeric id: DiscountRule.applicableBranchIds stores branch ids
+                id: true,
                 publicId: true,
                 name: true,
                 address: true,
@@ -191,7 +195,7 @@ export const EditBranch = async (req: Request, res: Response) => {
             if ((data.managerName || data.managerEmail || data.managerPassword) && manager) {
                 const updateData: any = {};
                 if (data.managerName) updateData.name = data.managerName;
-                if (data.managerEmail) updateData.email = data.managerEmail;
+                if (data.managerEmail) updateData.email = data.managerEmail.toLowerCase().trim();
                 if (data.managerPassword) {
                     updateData.passwordHash = await hashpassword(data.managerPassword);
                 }

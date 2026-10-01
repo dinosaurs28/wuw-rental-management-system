@@ -1,5 +1,6 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
+import { computeBookingOwed, getBookingMoney } from "./booking-owed.service.js";
 
 const ZERO = new Decimal(0);
 
@@ -12,10 +13,21 @@ export interface SettlementSummary {
   rentalBalanceRemaining: string; // was remainingRentalBalance
   damageCharges: string;          // was damageChargesTotal
   extensionCharges: string;      // Added
-  alreadyPaid: string;           // was totalCollectedConfirmed
+  /**
+   * Return charges outside totalFinal (incl. GST): a legacy drop's extra km + late return +
+   * vehicle-swap difference collected here, or the Unified Payments drop bill (after its discount)
+   */
+  returnCharges: string;
+  alreadyPaid: string;           // was totalCollectedConfirmed; refunds paid out are taken off
   totalCollectedPending: string;
   netPayable: string;
   isSettled: boolean;
+  /** Refundable safety deposit taken and not yet credited back on a drop bill */
+  safetyDepositHeld: string;
+  /** Refunds paid out (OVERPAYMENT_REFUND / CANCELLATION_REFUND) */
+  refunded: string;
+  /** totalFinal + returnCharges + safety deposit held — what netPayable is measured against */
+  totalOwed: string;
 }
 
 export interface PaginatedSettlements {
@@ -46,48 +58,44 @@ class SettlementEngineService {
         },
         damages: {
           where: { status: "APPROVED" },
-          select: { finalCost: true, estimatedCost: true },
+          select: { finalCost: true, estimatedCost: true, chargedAtDrop: true },
+        },
+        extensions: {
+          where: { extensionStatus: "CONFIRMED" },
+          select: { additionalAmount: true },
         },
       },
     });
     if (!booking) throw new Error("Booking not found.");
 
-    const totalFinal = new Decimal(booking.totalFinal.toString());
-
     // Sum approved damage charges (use finalCost if set, else estimatedCost)
-    const damageChargesTotal = booking.damages.reduce((acc, d) => {
-      const cost = d.finalCost ?? d.estimatedCost;
-      return acc.add(new Decimal(cost.toString()));
-    }, ZERO);
+    const damageCost = (d: { finalCost: unknown; estimatedCost: unknown }) =>
+      new Decimal(String(d.finalCost ?? d.estimatedCost));
+    const damageChargesTotal = booking.damages.reduce((acc, d) => acc.add(damageCost(d)), ZERO);
 
-    const totalOwed = totalFinal.add(damageChargesTotal);
+    // What the booking owes — shared with the financial state and the over-payment
+    // guard: totalFinal (rounded to paise) + return charges outside it (a legacy drop's
+    // ChargeEntry rows with their frozen GST, or the Unified Payments drop bill after
+    // its discount; damage billed at drop is on that bill — a damage the manager
+    // charged in review is already inside totalFinal) + safety deposit held.
+    // Money: refund rows are paid back, so they come off what was paid.
+    const [owed, money] = await Promise.all([computeBookingOwed(bookingId), getBookingMoney(bookingId)]);
+    const { totalFinal, totalOwed } = owed;
+    const totalCollectedConfirmed = money.netConfirmed;
+    const totalCollectedPending = money.pending;
 
-    // Aggregate confirmed and collected (pending) payments
-    const agg = await prisma.paymentTransaction.groupBy({
-      by: ["status"],
-      where: {
-        bookingId,
-        status: { in: ["CONFIRMED", "COLLECTED"] },
-        purpose: { notIn: ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"] },
-      },
-      _sum: { totalAmount: true },
-    });
-
-    let totalCollectedConfirmed = ZERO;
-    let totalCollectedPending = ZERO;
-    for (const row of agg) {
-      const amt = new Decimal((row._sum.totalAmount ?? ZERO).toString());
-      if (row.status === "CONFIRMED") totalCollectedConfirmed = totalCollectedConfirmed.add(amt);
-      else if (row.status === "COLLECTED") totalCollectedPending = totalCollectedPending.add(amt);
-    }
-
-    const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(totalCollectedConfirmed));
+    // Rental money paid = what was paid less the deposit still held / credited back
+    const rentalPaid = totalCollectedConfirmed.sub(owed.safetyDepositCharged.sub(owed.safetyDepositCredited));
+    const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(rentalPaid));
     const netPayable = totalOwed.sub(totalCollectedConfirmed);
     const isSettled = netPayable.lte(ZERO) && totalCollectedPending.eq(ZERO);
 
-    // Extension charges: for now we can derive it from the total owed vs (base + damage)
-    // but totalFinal already includes base. For simplicity, we'll return 0 if not tracked.
-    const extensionCharges = ZERO; 
+    // Confirmed extension charges (taxable + GST). Informational: every
+    // extension finalizer already added them to totalFinal.
+    const extensionCharges = booking.extensions.reduce(
+      (acc, e) => acc.add(new Decimal(e.additionalAmount.toString())),
+      ZERO,
+    );
 
     return {
       bookingId,
@@ -98,10 +106,14 @@ class SettlementEngineService {
       rentalBalanceRemaining: rentalBalanceRemaining.toString(),
       damageCharges: damageChargesTotal.toString(),
       extensionCharges: extensionCharges.toString(),
+      returnCharges: owed.returnCharges.toString(),
       alreadyPaid: totalCollectedConfirmed.toString(),
       totalCollectedPending: totalCollectedPending.toString(),
       netPayable: netPayable.toString(),
       isSettled,
+      safetyDepositHeld: owed.safetyDepositHeld.toString(),
+      refunded: money.refundedOut.toString(),
+      totalOwed: totalOwed.toString(),
     };
   }
 

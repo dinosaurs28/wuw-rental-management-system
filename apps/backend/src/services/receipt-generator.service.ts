@@ -3,6 +3,8 @@ import { generateReceiptNumber } from "./receipt-number-generator.js";
 import { generateReceiptPDF, ReceiptData, ReceiptLineItem } from "./receipt-pdf-generator.js";
 import { uploadReceiptPDFToR2 } from "./r2-upload.js";
 import { createID } from "../utils/nanoID.js";
+import { displayEmail } from "../utils/customer/identity.js";
+import { chargeEntryGst } from "./charges/legacy-return-charges.service.js";
 import Decimal from "decimal.js";
 
 interface ChargeResult {
@@ -10,6 +12,30 @@ interface ChargeResult {
   label: string;
   finalAmount: Decimal;
   skip?: boolean;
+  /** GST a legacy drop froze on the ChargeEntry (columns; older rows: JSON in notes) */
+  gstAmount?: Decimal;
+  cgstAmount?: Decimal;
+  sgstAmount?: Decimal;
+  taxRate?: Decimal;
+  notes?: string;
+}
+
+/**
+ * GST frozen on the charge lines when they were written (canonical rule #23):
+ * a legacy drop stores it on the ChargeEntry; nothing is re-taxed here, and a
+ * line without stored GST is not taxed.
+ */
+export function frozenChargeGst(charges: ChargeResult[]): { cgst: Decimal; sgst: Decimal; gst: Decimal } {
+  let cgst = new Decimal(0);
+  let sgst = new Decimal(0);
+  for (const c of charges) {
+    if (c.skip || c.finalAmount.lte(0)) continue;
+    const g = chargeEntryGst(c);
+    if (!g) continue;
+    cgst = cgst.add(g.cgst);
+    sgst = sgst.add(g.sgst);
+  }
+  return { cgst, sgst, gst: cgst.add(sgst) };
 }
 
 interface SettlementOutcomeInput {
@@ -31,14 +57,24 @@ export async function generateReturnReceipt(
   try {
     console.log(`[Receipt Generator] Starting for booking ${bookingId}`);
 
-    // Build line items from charge breakdown
+    // Build line items from charge breakdown — amount before GST, with the GST
+    // frozen on the line (taxable lines only)
     const lineItems: ReceiptLineItem[] = outcome.charges
       .filter((c) => !c.skip && c.finalAmount.gt(0))
-      .map((c) => ({
-        label: c.label,
-        amount: Number(c.finalAmount.toFixed(2)),
-        chargeType: c.chargeType,
-      }));
+      .map((c) => {
+        const g = chargeEntryGst(c);
+        const taxable = !!g && g.gst.gt(0);
+        return {
+          label: c.label,
+          amount: Number(c.finalAmount.toFixed(2)),
+          chargeType: c.chargeType,
+          isTaxable: taxable,
+          cgstAmount: taxable ? Number(g!.cgst.toFixed(2)) : 0,
+          sgstAmount: taxable ? Number(g!.sgst.toFixed(2)) : 0,
+        };
+      });
+    const lineGst = frozenChargeGst(outcome.charges);
+    const taxableValue = lineItems.filter((l) => l.isTaxable).reduce((s, l) => s + l.amount, 0);
 
     const receiptNumber = generateReceiptNumber(bookingId);
 
@@ -87,7 +123,8 @@ export async function generateReturnReceipt(
       companyEmail: process.env.COMPANY_EMAIL ?? "info@company.com",
       gstNumber: booking.branch.gstRule?.gstNumber ?? "N/A",
       customerName: booking.customer.user?.name ?? "Guest",
-      customerEmail: booking.customer.user?.email ?? "N/A",
+      // Walk-in placeholder / tombstone emails are never printed (#1).
+      customerEmail: displayEmail(booking.customer.user?.email) ?? "N/A",
       customerPhone:
         booking.customer.user?.phone ?? booking.customer.alternatePhone ?? "N/A",
       bookingPublicId: booking.publicId,
@@ -95,6 +132,9 @@ export async function generateReturnReceipt(
       endDate: booking.endAt,
       days: booking.days,
       lineItems,
+      taxableValue: Math.round(taxableValue * 100) / 100,
+      cgstAmount: Number(lineGst.cgst.toFixed(2)),
+      sgstAmount: Number(lineGst.sgst.toFixed(2)),
       totalCharges: Number(outcome.totalCharges.toFixed(2)),
       depositPaid: Number(outcome.depositPaid.toFixed(2)),
       amountDue: Number(outcome.amountDue.toFixed(2)),

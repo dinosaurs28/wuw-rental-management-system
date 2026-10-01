@@ -10,6 +10,7 @@ import {
   StaffActionType,
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 
 export const ListPendingOverrides = async (req: Request, res: Response) => {
   try {
@@ -94,6 +95,18 @@ export const ApproveOverride = async (req: Request, res: Response) => {
       },
     });
 
+    void notifyEvents.approvalResolved({
+      kind: "CHARGE_OVERRIDE",
+      entity: "ChargeOverride",
+      entityPublicId: override.publicId,
+      branchId,
+      approved: true,
+      recipientUserId: override.actorId,
+      bookingId: override.booking.id,
+      amount: override.waivedAmount,
+      actorPublicId: req.public_Id,
+    });
+
     return res.status(StatusCode.OK).json({ message: "Override approved" });
   } catch (error) {
     console.error("ApproveOverride Error:", error);
@@ -141,6 +154,19 @@ export const RejectOverride = async (req: Request, res: Response) => {
       entityRef: override.publicId,
       description: `Charge override rejected for booking ${override.booking.publicId}`,
       metadata: { rejectionReason: validation.data.rejectionReason },
+    });
+
+    void notifyEvents.approvalResolved({
+      kind: "CHARGE_OVERRIDE",
+      entity: "ChargeOverride",
+      entityPublicId: override.publicId,
+      branchId,
+      approved: false,
+      recipientUserId: override.actorId,
+      bookingId: override.booking.id,
+      amount: override.waivedAmount,
+      reason: validation.data.rejectionReason,
+      actorPublicId: req.public_Id,
     });
 
     return res.status(StatusCode.OK).json({ message: "Override rejected" });

@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
+import { customerPaymentSummary } from "../../services/payment/payment-flow.service.js";
+import { rentalGstSplitView } from "../../services/invoice-totals.service.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -75,7 +77,12 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
         startAt: true,
         endAt: true,
         days: true,
+        totalBase: true,
+        totalDiscount: true,
+        totalTax: true,
         totalFinal: true,
+        pricingSnapshot: true,
+        couponCode: true,
         isAdvancePayment: true,
         advanceAmount: true,
         remainingBalance: true,
@@ -104,7 +111,9 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
       where,
     });
 
-    const data = bookings.map((booking) => ({
+    const data = bookings.map((booking) => {
+      const payment = customerPaymentSummary(booking);
+      return {
       id: booking.id, // Numeric ID for backend operations (e.g., invoice generation)
       bookingId: booking.publicId,
       status: booking.status,
@@ -116,9 +125,19 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
       isAdvancePayment: booking.isAdvancePayment,
       advanceAmount: Number(booking.advanceAmount),
       remainingBalance: booking.remainingPaidAt ? 0 : Number(booking.remainingBalance),
-      amountPaid: !booking.isAdvancePayment || booking.remainingPaidAt
-        ? Number(booking.totalFinal)
-        : Number(booking.advanceAmount),
+      // Only money actually received (0 for an unpaid HOLD / expired / failed booking)
+      amountPaid: payment.paid,
+      paid: payment.paid,
+      balanceDue: payment.balanceDue,
+      balanceDueAt: payment.balanceDueAt,
+      dueAtPickup: payment.dueAtPickup,
+      dueAtDrop: payment.dueAtDrop,
+      couponCode: booking.couponCode,
+      totalBase: Number(booking.totalBase),
+      totalDiscount: Number(booking.totalDiscount),
+      totalTax: Number(booking.totalTax),
+      // CGST / SGST of totalTax (null when the booking stored no split or rate)
+      ...rentalGstSplitView(booking),
       createdAt: booking.createdAt,
       vehicles: booking.items.map((item) => ({
         publicId: item.vehicle.publicId,
@@ -127,7 +146,8 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
         thumbnail: item.vehicle.images[0]?.file.url || null,
         finalTotal: item.finalTotal,
       })),
-    }));
+      };
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Booking history fetched successfully",

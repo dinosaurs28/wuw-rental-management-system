@@ -18,6 +18,31 @@ export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
     const { gstNumber, cgstRate, sgstRate, igstRate } = parsed.data;
     const branchId = req.branch_Id; // Assuming managerCheck middleware populates this
 
+    // Canonical GST rule (#23): rentals are intra-state supplies — CGST and
+    // SGST are charged in equal halves and IGST is never added. IGST may be
+    // recorded for reference only (0, or equal to CGST + SGST).
+    if (cgstRate !== sgstRate) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "GST_RATE_INVALID",
+        message: "CGST and SGST must be equal (intra-state supply).",
+      });
+    }
+    if (cgstRate + sgstRate <= 0 || cgstRate + sgstRate > 28) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "GST_RATE_INVALID",
+        message: "CGST + SGST must be more than 0% and at most 28%.",
+      });
+    }
+    if (igstRate && igstRate !== cgstRate + sgstRate) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "GST_RATE_INVALID",
+        message: "IGST is never charged on rentals; leave it 0 or set it equal to CGST + SGST for reference.",
+      });
+    }
+
     if (!branchId) {
       return res.status(StatusCode.UNAUTHORIZED).json({
         message: "Branch ID not found in request",

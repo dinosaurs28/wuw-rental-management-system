@@ -4,7 +4,8 @@ import {
   queueInvoiceGeneration,
   getInvoiceJobStatus,
 } from "../utils/invoice-generation.queue.js";
-import { finalizeInvoice } from "../services/invoice-finalization.service.js";
+import { finalizeInvoice, syncLegacyReturnInvoice } from "../services/invoice-finalization.service.js";
+import { refreshInvoiceTotals } from "../services/invoice-totals.service.js";
 import { generatePresignedUrl } from "../services/r2-upload.js";
 
 /**
@@ -127,6 +128,15 @@ export async function downloadInvoice(req: Request, res: Response) {
     // ✅ CASE 3: PDF doesn't exist and no job in progress - Queue generation
     console.log(
       `[Invoice Controller] Queuing generation - Invoice ${booking.invoice.id}`,
+    );
+
+    // Bring the stored totals (GST split, deposit, confirmed extensions) in
+    // line with the booking before the PDF is built — invoices issued before
+    // the GST columns existed, or a booking extended while the car is out
+    // (downloads are allowed from CONFIRMED through PICKED_UP to RETURNED).
+    // Not fatal: the PDF itself reads the stored line values.
+    await refreshInvoiceTotals(booking.id, { queue: false }).catch((err) =>
+      console.error("[Invoice Controller] Invoice totals refresh failed:", err),
     );
 
     const job = await queueInvoiceGeneration(booking.id, booking.invoice.id);
@@ -296,9 +306,20 @@ export async function regenerateInvoice(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "No invoice exists for this booking" });
     }
 
-    // Rebuild InvoiceItem rows from LedgerEntry/ChargeEntry, update invoice
-    // totals, null the cached PDF, and queue fresh PDF generation — all in one call.
-    await finalizeInvoice(booking.id);
+    // After the drop: rebuild InvoiceItem rows from LedgerEntry/ChargeEntry,
+    // update invoice totals, null the cached PDF, and queue fresh PDF
+    // generation — all in one call. Before it (CONFIRMED / PICKED_UP, e.g.
+    // after an extension): re-sync the totals and regenerate, keeping the
+    // invoice status (an advance booking stays PENDING until fully paid).
+    if (booking.status === "RETURNED") {
+      // Legacy drop: PAID only once the manager's settlement clears the return
+      // charges; a drop-bill (payment session) return was settled at the counter.
+      if (!(await syncLegacyReturnInvoice(booking.id))) {
+        await finalizeInvoice(booking.id);
+      }
+    } else {
+      await refreshInvoiceTotals(booking.id, { forceRegenerate: true });
+    }
 
     console.log(
       `[Invoice Controller] Regeneration queued - Invoice ${booking.invoice.id} for booking ${booking.id}`,

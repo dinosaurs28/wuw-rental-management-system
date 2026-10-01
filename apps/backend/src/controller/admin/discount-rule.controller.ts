@@ -9,6 +9,9 @@ import {
   updateBranchDiscountConfigAdminSchema,
 } from "@repo/schemas";
 import { discountRuleService, couponCodeGeneratorService } from "../../services/discount/index.js";
+import { DiscountRuleValidationError } from "../../services/discount/discount-rule.service.js";
+import { redis } from "../../lib/redisconfig.js";
+import { branchDiscountConfigKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import Decimal from "decimal.js";
 
@@ -71,8 +74,11 @@ export const CreateDiscountRule = async (req: Request, res: Response) => {
     return res.status(StatusCode.CREATED).json({ message: "Discount rule created", data: { publicId: rule.publicId, code: rule.code } });
   } catch (error: any) {
     console.error("CreateDiscountRule Error:", error);
+    if (error instanceof DiscountRuleValidationError) {
+      return res.status(StatusCode.BAD_REQUEST).json({ code: "INVALID_DISCOUNT_RULE", message: error.message, errors: error.issues });
+    }
     if (error.message?.includes("already exists")) {
-      return res.status(StatusCode.CONFLICT).json({ message: error.message });
+      return res.status(StatusCode.CONFLICT).json({ code: "COUPON_CODE_EXISTS", message: error.message });
     }
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
@@ -92,8 +98,11 @@ export const UpdateDiscountRule = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({ message: "Discount rule updated", data: rule });
   } catch (error: any) {
     console.error("UpdateDiscountRule Error:", error);
+    if (error instanceof DiscountRuleValidationError) {
+      return res.status(StatusCode.BAD_REQUEST).json({ code: "INVALID_DISCOUNT_RULE", message: error.message, errors: error.issues });
+    }
     if (error.message?.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message?.includes("already exists")) return res.status(StatusCode.CONFLICT).json({ message: error.message });
+    if (error.message?.includes("already exists")) return res.status(StatusCode.CONFLICT).json({ code: "COUPON_CODE_EXISTS", message: error.message });
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
@@ -224,6 +233,13 @@ export const AdminUpdateBranchDiscountConfig = async (req: Request, res: Respons
       create: { branchId: targetBranchId, ...data },
       update: data,
     });
+
+    // Pricing reads this config through Redis — drop the cached copy (as the manager path does)
+    try {
+      await redis.del(branchDiscountConfigKey(targetBranchId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate discount config cache (non-fatal):", err);
+    }
 
     const actor = await buildActorContext(req);
     await staffActivityService.log({

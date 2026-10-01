@@ -14,6 +14,10 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
 import { claimUtr, CounterGuardError, normalizeUtr } from "./counter-guard.service.js";
+import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { discountApplicationService } from "../discount/discount-application.service.js";
+import { initialInvoiceGstData, refreshInvoiceTotals } from "../invoice-totals.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
 
 interface ConfirmBookingPaymentParams {
   /** Internal Booking.id (not publicId). */
@@ -103,6 +107,7 @@ export async function confirmBookingPayment(
         : `[confirmBookingPayment] REFUND REQUIRED booking=${booking.publicId} txn=${transactionId} ` +
             `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured against a ${booking.status} booking, not confirming`,
     );
+    if (!isUpi && !isCash) void notifyEvents.paymentNeedsRefund({ bookingId: booking.id, transactionId });
     return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
 
@@ -152,6 +157,24 @@ export async function confirmBookingPayment(
           data: bookingUpdateData,
         });
 
+        // A late capture can confirm a hold whose coupon use was given back when
+        // it expired — the coupon is used after all, so record the use again
+        if (booking.discountRuleId) {
+          const usage = await tx.couponUsageLog.findFirst({ where: { bookingId: booking.id }, select: { id: true } });
+          if (!usage) {
+            const snapshotTotals = (booking.pricingSnapshot as { totals?: { grandCouponDiscountTotal?: number } } | null)?.totals;
+            await tx.couponUsageLog.create({
+              data: {
+                discountRuleId: booking.discountRuleId,
+                bookingId: booking.id,
+                customerId: booking.customerId,
+                branchId: booking.branchId,
+                discountedAmount: Number(snapshotTotals?.grandCouponDiscountTotal ?? 0).toFixed(2),
+              },
+            });
+          }
+        }
+
         await tx.vehicle.updateMany({
           where: {
             id: { in: booking.items.map((i) => i.vehicleId) },
@@ -184,10 +207,11 @@ export async function confirmBookingPayment(
             bookingId: booking.id,
             subtotal: booking.totalBase,
             discount: booking.totalDiscount,
-            tax: 0,
             damageCharges: 0,
             total: booking.totalFinal,
             status: invoiceStatus,
+            // GST stored on the booking items (tax, taxable, CGST/SGST, deposit)
+            ...(await initialInvoiceGstData(booking.id, tx)),
           },
         });
 
@@ -306,6 +330,8 @@ export async function confirmBookingPayment(
     },
   });
 
+  void notifyEvents.bookingConfirmed({ bookingId: booking.id, actorUserId: booking.createdById });
+
   console.log(`[confirmBookingPayment] SUCCESS booking=${booking.publicId} confirmed`);
   return { alreadyConfirmed: false };
 }
@@ -367,6 +393,7 @@ export async function confirmExtensionPayment(
       `[confirmExtensionPayment] REFUND REQUIRED extension=${extensionRecord.publicId} txn=${transactionId} ` +
         `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured on a ${extensionRecord.extensionStatus} extension, not confirming`,
     );
+    void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
     return { alreadyConfirmed: false, skipped: "EXTENSION_CLOSED" };
   }
 
@@ -378,6 +405,7 @@ export async function confirmExtensionPayment(
       `[confirmExtensionPayment] REFUND REQUIRED extension=${extensionRecord.publicId} txn=${transactionId} ` +
         `gatewayPaymentId=${gatewayPaymentId ?? "none"} — parent booking ${extensionRecord.booking.publicId} is CANCELLED, not confirming`,
     );
+    void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
     return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
 
@@ -420,6 +448,8 @@ export async function confirmExtensionPayment(
           }),
         },
       });
+      // days / rentalPeriodType / hours follow the extended end (#5/#17)
+      await refreshBookingPeriodFields(extensionRecord.booking.id, tx);
 
       // Confirm extension
       await tx.bookingExtension.update({
@@ -459,6 +489,13 @@ export async function confirmExtensionPayment(
     },
   });
 
+  // The confirmed extension (taxable + GST) now belongs on the invoice
+  refreshInvoiceTotals(extensionRecord.booking.id).catch((err) =>
+    console.error("[confirmExtensionPayment] Invoice refresh error:", err),
+  );
+
+  void notifyEvents.extensionConfirmed({ extensionId: extensionRecord.id, notifyBranch: true });
+
   console.log(`[confirmExtensionPayment] extension=${extensionRecord.publicId} confirmed`);
   return { alreadyConfirmed: false };
 }
@@ -489,12 +526,16 @@ export async function failBookingPayment(bookingId: number): Promise<void> {
     return;
   }
 
-  await prisma.booking.update({
-    where: { id: booking.id },
-    data: {
-      paymentStatus: PaymentStatus.FAILED,
-      status: BookingStatus.CANCELLED,
-    },
+  // Cancel and give the coupon use back together — the customer never paid
+  await prisma.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: PaymentStatus.FAILED,
+        status: BookingStatus.CANCELLED,
+      },
+    });
+    await discountApplicationService.releaseUsage(booking.id, tx);
   });
 
   await clearHolds(

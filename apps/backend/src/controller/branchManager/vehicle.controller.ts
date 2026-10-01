@@ -5,9 +5,9 @@ import { createID } from "../../utils/nanoID.js";
 import { imageQueue } from "../../lib/queue.client.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { redis } from "../../lib/redisconfig.js";
-import { invalidateVehicleAvailability, invalidateVehiclePricing } from "../../utils/cache/vehicleCacheKeys.js";
+import { invalidateVehicleAvailability, invalidateVehiclePricing, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { VehicleStatus } from "@repo/database/client";
-import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
+import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS } from "@repo/schemas";
 import { z } from "zod";
 const updateVehicleFastagSchema = z.object({
   fastagNumber: z.string().min(1).nullable(),
@@ -73,8 +73,13 @@ export const AddVehicle = async (req: Request, res: Response) => {
     const validation = createVehicleSchema.safeParse(req.body);
 
     if (!validation.success) {
+      // A blank extra km / extra hour rate gets its own message instead of the generic one
+      const rateIssue = validation.error.issues.find((i) =>
+        (CHARGE_RATE_FIELDS as readonly string[]).includes(String(i.path[0])),
+      );
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid vehicle data",
+        ...(rateIssue && { code: "INVALID_CHARGE_RATE" }),
+        message: rateIssue?.message ?? "Invalid vehicle data",
         error: validation.error.format(),
       });
     }
@@ -102,6 +107,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
       fuelBar,
       fastagNumber,
       hasFastag,
+      useCases,
     } = validation.data;
 
     const existingVehicle = await prisma.vehicle.findUnique({
@@ -128,6 +134,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
         fuelBar: fuelBar ?? null,
         fastagNumber: fastagNumber ?? null,
         hasFastag: hasFastag ?? false,
+        useCases: useCases ?? [],
         insuranceExpiry: new Date(insuranceExpiry),
         status: VehicleStatus.AVAILABLE,
         customPricing: price24Hour !== undefined ? {
@@ -179,6 +186,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
       await Promise.all([
         invalidateVehicleAvailability(redis, [vehicle.id]),
         invalidateVehiclePricing(redis, [vehicle.id]),
+        invalidateGroupListingCache(redis),
       ]);
     } catch (redisErr) {
       console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);
@@ -217,8 +225,13 @@ export const EditVehicle = async (req: Request, res: Response) => {
     const validation = editVehicleSchema.safeParse(req.body);
 
     if (!validation.success) {
+      // A blank extra km / extra hour rate gets its own message instead of the generic one
+      const rateIssue = validation.error.issues.find((i) =>
+        (CHARGE_RATE_FIELDS as readonly string[]).includes(String(i.path[0])),
+      );
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid update data",
+        ...(rateIssue && { code: "INVALID_CHARGE_RATE" }),
+        message: rateIssue?.message ?? "Invalid update data",
         errors: validation.error.format(),
       });
     }
@@ -446,6 +459,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
       await Promise.all([
         invalidateVehicleAvailability(redis, [vehicle.id]),
         invalidateVehiclePricing(redis, [vehicle.id]),
+        invalidateGroupListingCache(redis),
       ]);
     } catch (redisErr) {
       console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);

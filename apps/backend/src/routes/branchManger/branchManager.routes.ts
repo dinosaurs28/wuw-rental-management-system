@@ -8,8 +8,14 @@ import {
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller.js";
 import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller.js";
 import {
+  GetPeriodReport,
+  GetPeriodBookings,
+  ExportPeriodReport,
+} from "../../controller/branchManager/period-report.controller.js";
+import {
   GetActiveBookings,
   GetPendingApprovals,
+  GetOverdueReturns,
   CollectSafetyDeposit,
   CancelNoShow,
   CalculateFinalBilling,
@@ -81,12 +87,18 @@ import {
   UpdateCaptureConfig,
   DeleteCaptureConfig,
 } from "../../controller/branchManager/captureConfig.controller.js";
-import { upload } from "../../middlewares/upload.middleware.js";
+import { upload, handleImageUpload } from "../../middlewares/upload.middleware.js";
+import {
+  GetBookingQrPhoto,
+  UploadBookingQrPhoto,
+} from "../../controller/employee/customer/qrPhoto.controller.js";
+import { QR_PHOTO_MAX_BYTES } from "../../services/qr-photo/customer-qr-photo.service.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import extensionRouter from "./extension.routes.js";
 import ledgerRouter from "./ledger.routes.js";
 import creditNoteRouter from "./creditNote.routes.js";
+import { makeNotificationRouter } from "../notification/notification.routes.js";
 import {
   GetBranchChargeConfig,
   UpsertBranchChargeConfig,
@@ -109,6 +121,7 @@ import {
   getBookingRestrictionConfig,
   updateBookingRestrictionMode,
 } from "../../controller/branchManager/branchSchedule.controller.js";
+import { UpdateBookingDlStatusByManager } from "../../controller/branchManager/dlStatus.controller.js";
 
 const router: Router = Router();
 
@@ -122,8 +135,13 @@ router.get("/dashboard/branch/booking-restriction", ManagerCheck, getBookingRest
 router.patch("/dashboard/branch/booking-restriction", ManagerCheck, updateBookingRestrictionMode);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
+// Period tab (#14): own-branch report for an IST date range.
+router.get("/reports/period", ManagerCheck, GetPeriodReport);
+router.get("/reports/period/bookings", ManagerCheck, GetPeriodBookings);
+router.get("/reports/period/export", ManagerCheck, ExportPeriodReport);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
+router.get("/dashboard/bookings/overdue", ManagerCheck, GetOverdueReturns);
 router.get("/dashboard/bookings/no-show-eligible", ManagerCheck, GetNoShowEligibleBookings);
 router.get("/dashboard/cancellations/stats", ManagerCheck, GetCancellationStats);
 router.get("/dashboard/cancellations", ManagerCheck, GetCancellationHistory);
@@ -187,6 +205,14 @@ router.get(
   "/dashboard/bookings/:bookingId/swap-history",
   ManagerCheck,
   GetBookingSwapHistory,
+);
+// Customer QR code photo (#4) — booking-level view/replace for the branch.
+router.get("/dashboard/bookings/:bookingId/qr-photo", ManagerCheck, GetBookingQrPhoto);
+router.post(
+  "/dashboard/bookings/:bookingId/qr-photo",
+  ManagerCheck,
+  handleImageUpload("file", { maxBytes: QR_PHOTO_MAX_BYTES }),
+  UploadBookingQrPhoto,
 );
 router.get("/dashboard/swap-history", ManagerCheck, GetSwapHistory);
 router.get("/dashboard/damage-reports", ManagerCheck, GetDamageReports);
@@ -286,10 +312,16 @@ router.post("/safety-deposit-requests/:publicId/reject", ManagerCheck, RejectSaf
 // Vehicle FASTag configuration
 router.patch("/vehicles/:vehicleId/fastag", ManagerCheck, UpdateVehicleFastag);
 
+// Original driving licence status (#3) — any booking at the branch, any status
+router.patch("/bookings/:publicId/dl-status", ManagerCheck, UpdateBookingDlStatusByManager);
+
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);
 
 // ── Credit Notes ──────────────────────────────────────────────────────────────
 router.use("/credit-notes", creditNoteRouter);
+
+// ── Notifications (bell) ──────────────────────────────────────────────────────
+router.use("/notifications", makeNotificationRouter(ManagerCheck));
 
 export default router;

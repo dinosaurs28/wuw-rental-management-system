@@ -11,6 +11,7 @@ import {
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { createDamageReportSchema } from "@repo/schemas";
+import { notifyEvents } from "../../services/notification/notification.events.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -240,6 +241,8 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.RETURNED,
+            // Actual return time (Period report "Returns") — the vehicle is back now
+            returnedAt: booking.returnedAt ?? new Date(),
           },
         });
       }
@@ -271,6 +274,9 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
       description: `Damage report ${result.publicId} created for booking ${booking.publicId}`,
       metadata: { bookingRef: booking.publicId },
     });
+
+    void notifyEvents.damageReported({ bookingId: booking.id, actorUserId: staffUser.id });
+    void notifyEvents.returnCompleted({ bookingId: booking.id, actorUserId: staffUser.id });
 
     return res.status(StatusCode.CREATED).json({
       message: "Damage Report Created Successfully",

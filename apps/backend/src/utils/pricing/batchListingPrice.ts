@@ -7,10 +7,14 @@
  */
 
 import { prisma } from "@repo/database/client";
+import Decimal from "decimal.js";
+import { type RentalDuration } from "../../services/pricing/duration-calculator.service.js";
+import { slabDaysFor } from "../../services/discount/duration-discount.service.js";
 import {
-  RentalPeriodType,
-  type RentalDuration,
-} from "../../services/pricing/duration-calculator.service.js";
+  selectBasePrice,
+  type BasePriceSelection,
+  type BilledAsType,
+} from "../../services/pricing/base-price-rule.js";
 
 interface VehicleRef {
   id: number;
@@ -35,72 +39,37 @@ function toPositiveOrNull(val: { toNumber?: () => number } | null | undefined): 
 }
 
 /**
- * Mirrors PricingEngineService.determineBasePrice hourly-first rule:
- * if hourlyRate > 0 → hourlyRate × ceil(actualDuration) for ALL slab types.
- * Otherwise fall through to slab-based pricing.
+ * Same slab rule as PricingEngineService.determineBasePrice (shared
+ * base-price-rule.ts): an hourly rate is capped at the 12 h / 24 h slab price,
+ * so listing and booking prices always agree. Free km are not needed here.
  */
-function selectPrice(pricing: PricingRow, duration: RentalDuration): number {
-  if (pricing.hourlyRate && pricing.hourlyRate > 0) {
-    const billableHours = Math.max(1, Math.ceil(duration.actualDuration));
-    return pricing.hourlyRate * billableHours;
-  }
-
-  switch (duration.periodType) {
-    // Under 12 hours without an hourly rate: the 12-hour slab, else the 24-hour rate
-    case RentalPeriodType.HOURLY:
-    case RentalPeriodType.HALF_DAY:
-      return pricing.price12Hour ?? pricing.price24Hour;
-    case RentalPeriodType.FULL_DAY:
-      return pricing.price24Hour;
-    case RentalPeriodType.MULTI_DAY: {
-      // Split complete 24hr periods from partial last day and apply slab rounding,
-      // matching PricingEngineService.determineBasePrice behaviour.
-      const fullDays = Math.floor(duration.actualDuration / 24);
-      const remainingHours = duration.actualDuration % 24;
-
-      if (remainingHours <= 0) {
-        return pricing.price24Hour * fullDays;
-      } else if (remainingHours <= 12 && pricing.price12Hour) {
-        // Partial day ≤ 12hrs → half-day rate for remainder
-        return pricing.price24Hour * fullDays + pricing.price12Hour;
-      } else {
-        // Partial day > 12hrs or no half-day pricing → round up to full day
-        return pricing.price24Hour * (fullDays + 1);
-      }
-    }
-    case RentalPeriodType.MONTHLY: {
-      if (pricing.priceMonthly) {
-        // Full months + overflow days + leftover hours
-        const fullMonths     = Math.floor(duration.actualDuration / (30 * 24));
-        const afterMonths    = duration.actualDuration % (30 * 24);
-        const overflowDays   = Math.floor(afterMonths / 24);
-        const leftoverHours  = afterMonths % 24;
-
-        let price = pricing.priceMonthly * fullMonths;
-        price += pricing.price24Hour * overflowDays;
-        if (leftoverHours > 0) {
-          if (pricing.hourlyRate && pricing.hourlyRate > 0) {
-            price += pricing.hourlyRate * Math.ceil(leftoverHours);
-          } else if (leftoverHours <= 12 && pricing.price12Hour) {
-            price += pricing.price12Hour;
-          } else {
-            price += pricing.price24Hour;
-          }
-        }
-        return price;
-      }
-      // No monthly rate — bill per actual day
-      const actualDays = Math.ceil(duration.actualDuration / 24);
-      return pricing.price24Hour * actualDays;
-    }
-    default:
-      return pricing.price24Hour;
-  }
+function selectPrice(pricing: PricingRow, duration: RentalDuration): BasePriceSelection {
+  const toDecimal = (n: number | null) => (n != null && n > 0 ? new Decimal(n) : null);
+  return selectBasePrice(
+    {
+      hourlyRate: toDecimal(pricing.hourlyRate),
+      price12Hour: toDecimal(pricing.price12Hour),
+      price24Hour: new Decimal(pricing.price24Hour),
+      priceMonthly: toDecimal(pricing.priceMonthly),
+      freeKm12Hour: 0,
+      freeKm24Hour: 0,
+      freeKmMonthly: 0,
+    },
+    duration,
+  );
 }
 
 export interface ListingPrice {
   price: number;      // base price before discount
   finalPrice: number; // price after duration discount
+  /** What the price covers, e.g. "5 hours", "12 hours", "1 day" (absent when unpriced). */
+  billedAs?: string;
+  billedAsType?: BilledAsType;
+  /** Duration-slab discount included in finalPrice (absent when none applies). */
+  discountAmount?: number;
+  discountPercent?: number;
+  /** The slab's manager-set label, e.g. "Weekly" (null when the slab has none). */
+  discountLabel?: string | null;
 }
 
 /**
@@ -181,14 +150,22 @@ export async function getBatchListingPrices(
 
   // Build base price map
   const basePriceMap = new Map<number, number>();
+  const billedAsMap = new Map<number, { billedAs: string; billedAsType: BilledAsType }>();
   for (const v of vehicles) {
     const pricing = customMap.get(v.id) ?? defaultMap.get(`${v.branchId}:${v.categoryId}`);
-    basePriceMap.set(v.id, pricing ? selectPrice(pricing, duration) : 0);
+    if (!pricing) {
+      basePriceMap.set(v.id, 0);
+      continue;
+    }
+    const selection = selectPrice(pricing, duration);
+    basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));
+    billedAsMap.set(v.id, { billedAs: selection.billedAs, billedAsType: selection.billedAsType });
   }
 
   // ── Apply duration discounts (2 extra queries for all branches) ────────────
   const uniqueBranchIds = [...new Set(vehicles.map((v) => v.branchId))];
-  const effectiveDays = duration.actualDuration / 24;
+  // Full 24-hour periods — the same day count the booking engine matches slabs on
+  const slabDays = slabDaysFor(duration.actualDuration);
 
   // Query 3: which branches have duration discounts enabled
   const discountConfigs = await prisma.branchDiscountConfig.findMany({
@@ -200,23 +177,23 @@ export async function getBatchListingPrices(
   const configByBranch = new Map(discountConfigs.map((c) => [c.branchId, c]));
 
   // Query 4: best-matching slab per enabled branch for this duration
-  const branchSlabMap = new Map<number, { discountType: string; value: number }>();
+  const branchSlabMap = new Map<number, { discountType: string; value: number; label: string | null }>();
 
-  if (enabledBranchIds.size > 0) {
+  if (enabledBranchIds.size > 0 && slabDays >= 1) {
     const slabs = await prisma.durationDiscountSlab.findMany({
       where: {
         branchId: { in: [...enabledBranchIds] },
-        minDays: { lte: effectiveDays },
-        OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
+        minDays: { lte: slabDays },
+        OR: [{ maxDays: null }, { maxDays: { gte: slabDays } }],
       },
       orderBy: [{ branchId: "asc" }, { minDays: "desc" }],
-      select: { branchId: true, discountType: true, value: true },
+      select: { branchId: true, discountType: true, value: true, label: true },
     });
 
     // First result per branch = highest matching minDays slab
     for (const s of slabs) {
       if (!branchSlabMap.has(s.branchId)) {
-        branchSlabMap.set(s.branchId, { discountType: s.discountType, value: Number(s.value) });
+        branchSlabMap.set(s.branchId, { discountType: s.discountType, value: Number(s.value), label: s.label });
       }
     }
   }
@@ -227,8 +204,10 @@ export async function getBatchListingPrices(
     const basePrice = basePriceMap.get(v.id) ?? 0;
     const slab = branchSlabMap.get(v.branchId);
 
+    const billed = billedAsMap.get(v.id);
+
     if (!slab || basePrice === 0) {
-      result.set(v.id, { price: basePrice, finalPrice: basePrice });
+      result.set(v.id, { price: basePrice, finalPrice: basePrice, ...billed });
       continue;
     }
 
@@ -243,9 +222,16 @@ export async function getBatchListingPrices(
       discount = Math.min(discount, maxDiscount);
     }
 
+    const finalPrice = Math.max(0, Math.round(basePrice - discount));
     result.set(v.id, {
       price: basePrice,
-      finalPrice: Math.max(0, Math.round(basePrice - discount)),
+      finalPrice,
+      ...billed,
+      ...(discount > 0 && {
+        discountAmount: Math.round((basePrice - finalPrice) * 100) / 100,
+        discountPercent: Math.round(((basePrice - finalPrice) / basePrice) * 10000) / 100,
+        discountLabel: slab.label,
+      }),
     });
   }
 

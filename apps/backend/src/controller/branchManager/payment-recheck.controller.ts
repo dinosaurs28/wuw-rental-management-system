@@ -18,6 +18,7 @@ import {
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
+import { initialInvoiceGstData } from "../../services/invoice-totals.service.js";
 import { auditService } from "../../services/audit/audit.service.js";
 import {
   staffActivityService,
@@ -25,6 +26,8 @@ import {
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { notifyEvents } from "../../services/notification/notification.events.js";
+import { displayEmail } from "../../utils/customer/identity.js";
 
 const RECHECKABLE_STATUSES: BookingStatus[] = [BookingStatus.HOLD];
 
@@ -168,7 +171,15 @@ export const GetRecheckInfo = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       success: true,
-      data: { ...booking, isRecheckable: recheckable },
+      data: {
+        ...booking,
+        // Walk-in placeholder emails never leave the server (#1).
+        customer: {
+          ...booking.customer,
+          user: { ...booking.customer.user, email: displayEmail(booking.customer.user.email) },
+        },
+        isRecheckable: recheckable,
+      },
     });
   } catch (error) {
     console.error("[GetRecheckInfo] error:", error);
@@ -268,10 +279,11 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
             bookingId: booking.id,
             subtotal: booking.totalBase,
             discount: booking.totalDiscount,
-            tax: 0,
             damageCharges: 0,
             total: booking.totalFinal,
             status: booking.isAdvancePayment ? InvoiceStatus.PENDING : InvoiceStatus.PAID,
+            // GST stored on the booking items (tax, taxable, CGST/SGST, deposit)
+            ...(await initialInvoiceGstData(booking.id, tx)),
           },
         });
 
@@ -338,6 +350,8 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
         before: { status: BookingStatus.HOLD, paymentStatus: PaymentStatus.CREATED },
         after: { status: BookingStatus.CONFIRMED, paymentStatus: PaymentStatus.SUCCESS },
       });
+
+      void notifyEvents.bookingConfirmed({ bookingId: booking.id, actorUserId: manager?.id });
 
       return res.status(StatusCode.OK).json({
         gatewayResult: "SUCCESS",
@@ -439,10 +453,11 @@ export const ManualConfirmPayment = async (req: Request, res: Response) => {
           bookingId: booking.id,
           subtotal: booking.totalBase,
           discount: booking.totalDiscount,
-          tax: 0,
           damageCharges: 0,
           total: booking.totalFinal,
           status: booking.isAdvancePayment ? InvoiceStatus.PENDING : InvoiceStatus.PAID,
+          // GST stored on the booking items (tax, taxable, CGST/SGST, deposit)
+          ...(await initialInvoiceGstData(booking.id, tx)),
         },
       });
 
@@ -521,6 +536,8 @@ export const ManualConfirmPayment = async (req: Request, res: Response) => {
       after: { status: BookingStatus.CONFIRMED, paymentStatus: PaymentStatus.SUCCESS },
       metadata: { managerNote, override: "MANUAL_MANAGER_OVERRIDE" },
     });
+
+    void notifyEvents.bookingConfirmed({ bookingId: booking.id, actorUserId: manager.id });
 
     return res.status(StatusCode.OK).json({
       success: true,

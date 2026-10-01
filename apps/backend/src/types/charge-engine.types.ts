@@ -112,6 +112,12 @@ export interface ChargeResult {
   isOverridden?: boolean;
   notes?: string;
   skip?: boolean;      // when true, engine does not persist a ChargeEntry
+  // GST frozen on a persisted ChargeEntry (legacy drop lines); the engine's own
+  // modules never tax, so a result they compute carries none
+  gstAmount?: Decimal;
+  cgstAmount?: Decimal;
+  sgstAmount?: Decimal;
+  taxRate?: Decimal;
 }
 
 // ── Engine output ─────────────────────────────────────────────────────────────

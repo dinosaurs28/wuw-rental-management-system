@@ -188,18 +188,55 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
         });
       }
     } else {
-      if (customer_public_id && kycRecord.customer?.user?.publicId !== customer_public_id) {
+      // Staff must name the customer they are serving, and the document must be theirs.
+      // Old staff builds never sent customer_public_id: tolerate that only for
+      // documents that were never approved (an approved DL may back live rentals).
+      if (customer_public_id === undefined || customer_public_id === null || customer_public_id === "") {
+        if (kycRecord.status === KycStatus.APPROVED) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            success: false,
+            code: "CUSTOMER_REQUIRED",
+            message: "Update the app to remove an approved KYC document.",
+          });
+        }
+        // With no customer to check against, ownership is proven by the upload:
+        // only a document this staff member uploaded (the walk-in they are
+        // serving) can be removed — never another customer's document.
+        const uploadedByActor = await prisma.staffActivityLog.findFirst({
+          where: {
+            actorPublicId: actingUserPublicId,
+            actionType: StaffActionType.UPLOADED,
+            entityType: StaffEntityType.KYC,
+            entityRef: kycRecord.publicId,
+          },
+          select: { id: true },
+        });
+        if (!uploadedByActor) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            success: false,
+            code: "CUSTOMER_REQUIRED",
+            message: "Update the app to remove a KYC document you didn't upload.",
+          });
+        }
+      } else if (typeof customer_public_id !== "string" || kycRecord.customer?.user?.publicId !== customer_public_id) {
         return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "KYC_CUSTOMER_MISMATCH",
           message: "KYC document does not belong to the specified customer",
         });
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    // A booking that snapshotted this file (Booking.kycFileId) keeps it as KYC evidence:
+    // deleting the FileObject would SET NULL every such booking. Only detach the
+    // document from the customer then, and keep the stored file.
+    const keepFile = await prisma.$transaction(async (tx) => {
       await tx.customerKyc.delete({ where: { id: kycRecord.id } });
-      if (kycRecord.fileId) {
-        await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
-      }
+      if (!kycRecord.fileId) return false;
+      const usedByBookings = await tx.booking.count({ where: { kycFileId: kycRecord.fileId } });
+      if (usedByBookings > 0) return true;
+      await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
+      return false;
     });
 
     if (isStaff) {
@@ -211,7 +248,7 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
       });
     }
 
-    if (kycRecord.file?.key) {
+    if (kycRecord.file?.key && !keepFile) {
       // Pass the private bucket name so the cleanup worker targets the right bucket
       await fileCleanupQueue.add("delete-kyc-file", {
         key: kycRecord.file.key,

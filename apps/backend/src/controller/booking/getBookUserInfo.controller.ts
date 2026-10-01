@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
+import { customerPaymentSummary } from "../../services/payment/payment-flow.service.js";
+import { rentalGstSplitView } from "../../services/invoice-totals.service.js";
 
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
@@ -81,7 +83,9 @@ export const getUserBookings = async (req: Request, res: Response) => {
     console.log(`[getUserBookings] customerId=${customerId} found ${bookings.length} bookings (totalCount=${totalCount})`);
     bookings.forEach(b => console.log(`  booking publicId=${b.publicId} status=${b.status} paymentStatus=${b.paymentStatus}`));
 
-    const data = bookings.map((booking) => ({
+    const data = bookings.map((booking) => {
+      const payment = customerPaymentSummary(booking);
+      return {
       id: booking.id,
       bookingId: booking.publicId,
       status: booking.status,
@@ -90,6 +94,22 @@ export const getUserBookings = async (req: Request, res: Response) => {
       endAt: booking.endAt,
       days: booking.days,
       total: booking.totalFinal,
+      // Partial payment: what was paid and what is still due (at pickup / at drop)
+      isAdvancePayment: booking.isAdvancePayment,
+      advanceAmount: Number(booking.advanceAmount),
+      remainingBalance: booking.remainingPaidAt ? 0 : Number(booking.remainingBalance),
+      amountPaid: payment.paid,
+      paid: payment.paid,
+      balanceDue: payment.balanceDue,
+      balanceDueAt: payment.balanceDueAt,
+      dueAtPickup: payment.dueAtPickup,
+      dueAtDrop: payment.dueAtDrop,
+      couponCode: booking.couponCode,
+      totalBase: Number(booking.totalBase),
+      totalDiscount: Number(booking.totalDiscount),
+      totalTax: Number(booking.totalTax),
+      // CGST / SGST of totalTax (null when the booking stored no split or rate)
+      ...rentalGstSplitView(booking),
       createdAt: booking.createdAt,
       vehicles: booking.items.map((item) => ({
         publicId: item.vehicle.publicId,
@@ -98,7 +118,8 @@ export const getUserBookings = async (req: Request, res: Response) => {
         thumbnail: item.vehicle.images[0]?.file.url || null,
         finalTotal: item.finalTotal,
       })),
-    }));
+      };
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Bookings fetched successfully",

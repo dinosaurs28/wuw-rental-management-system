@@ -8,12 +8,27 @@ import {
 import { createID } from "../utils/nanoID.js";
 import { queueInvoiceGeneration } from "../utils/invoice-generation.queue.js";
 import { DROP_DAMAGE_REF, DROP_DISCOUNT_REF } from "./damage/drop-damage.service.js";
+import { computeLineGst } from "./tax/gst.service.js";
+import { chargeEntryGst } from "./charges/legacy-return-charges.service.js";
+import { settlementEngineService } from "./payment/settlement-engine.service.js";
+import {
+  bookingGstRates,
+  computeInvoiceGstTotals,
+  invoiceTotalsData,
+  isDamageReviewItem,
+  INVOICE_SOURCE,
+} from "./invoice-totals.service.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-// Only DAMAGE_PENALTY attracts GST — all other return charges are non-taxable.
-// (DAMAGE_PENALTY is checked inline via `chargeType === "DAMAGE_PENALTY"`.)
-const TAXABLE_CHARGE_TYPES = new Set<string>([]);
+// GST on return charges follows the canonical rule (#23) and is never
+// recomputed here:
+//  - Session flow: a ledger line is taxable when it was booked TAXABLE, and its
+//    GST is the gstAmount stored on it when the drop bill was computed.
+//  - Legacy ChargeEntry flow: the GST a legacy drop froze on the row (GST
+//    columns, else JSON in notes — chargeEntryGst). Older rows have none:
+//    only DAMAGE_PENALTY was ever taxed, so it alone is taxed (once, here, at
+//    the booking's frozen rate); other old charges are not re-taxed.
 
 // LedgerEntry types to skip — these are not billable line items in the invoice
 const SKIP_LEDGER_TYPES = new Set([
@@ -34,6 +49,7 @@ function ledgerTypeToChargeType(entryType: string): string {
     case "FUEL":             return "FUEL_DEFICIT";
     case "FASTAG":           return "FASTAG";
     case "GRACE_ADJUSTMENT": return "GRACE_ADJUSTMENT";
+    case "VEHICLE_SWAP":     return "VEHICLE_SWAP";
     case "DAMAGE":           return "DAMAGE_PENALTY"; // refined below if DamageReport exists
     default:                 return "ADDITIONAL_CHARGES";
   }
@@ -55,9 +71,60 @@ async function resolveLegacyChargeType(chargeType: string, bookingId: number): P
 
 interface ChargeItem {
   label: string;
+  /** Taxable value for a taxable line; negative for a discount */
   amount: string;
   isTaxable: boolean;
   chargeType: string;
+  /** Stored GST of the line (negative for a discount's GST reversal) */
+  taxAmount: string;
+  sourceRef: string;
+}
+
+const abs2 = (v: unknown) => new Decimal(String(v ?? 0)).abs();
+
+/**
+ * A drop discount ledger line becomes up to two invoice lines: the share that
+ * reduced taxable charges (with the GST it reversed) and the share that reduced
+ * non-taxable charges. The drop bill stores the taxable share as a negative
+ * baseAmount and the reversed GST as a negative gstAmount; like the counter
+ * coupon, the line's amount is the whole effect on the bill (discount before GST
+ * + the GST it reversed), so the discount itself is |amount| − |gstAmount|.
+ * An older line (no split) is wholly non-taxable — the drop discount used to be
+ * capped at the non-taxable charges.
+ */
+function dropDiscountItems(entry: any): ChargeItem[] {
+  const meta = (entry.metadata ?? {}) as Record<string, unknown>;
+  const gstReversal = abs2(entry.gstAmount).gt(0) ? abs2(entry.gstAmount) : abs2(meta.gst);
+  const discount = abs2(entry.amount).sub(gstReversal);
+  const taxableShare = Decimal.min(
+    discount,
+    abs2(entry.baseAmount).gt(0) ? abs2(entry.baseAmount) : abs2(meta.taxableShare),
+  );
+  const nonTaxableShare = discount.sub(taxableShare);
+  const label = String(entry.description);
+  const ref = `${INVOICE_SOURCE.LEDGER}${entry.publicId}`;
+  const items: ChargeItem[] = [];
+  if (taxableShare.gt(0)) {
+    items.push({
+      label,
+      amount: taxableShare.negated().toFixed(2),
+      isTaxable: true,
+      chargeType: "DROP_DISCOUNT",
+      taxAmount: gstReversal.negated().toFixed(2),
+      sourceRef: ref,
+    });
+  }
+  if (nonTaxableShare.gt(0)) {
+    items.push({
+      label,
+      amount: nonTaxableShare.negated().toFixed(2),
+      isTaxable: false,
+      chargeType: "DROP_DISCOUNT", // rendered as the return-charge sections' discount on the PDF
+      taxAmount: "0.00",
+      sourceRef: ref,
+    });
+  }
+  return items;
 }
 
 /**
@@ -69,7 +136,10 @@ interface ChargeItem {
  * The session flow is detected by the presence of a completed RETURN
  * PaymentSession. Legacy is the fallback.
  */
-async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
+async function buildChargeItems(
+  bookingId: number,
+  rates: { cgstRate: number; sgstRate: number },
+): Promise<ChargeItem[]> {
   // ── 1. Session-based return flow ──────────────────────────────────────────
   const returnSession = await prisma.paymentSession.findFirst({
     where: {
@@ -118,22 +188,21 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
               : "ADDITIONAL_CHARGES"
             : ledgerTypeToChargeType(String(entry.entryType));
 
-        const isTaxable = chargeType === "DAMAGE_PENALTY";
+        // Taxable exactly when the drop bill booked it TAXABLE; its GST is the
+        // amount stored on the ledger line (never recomputed here).
+        const isTaxable = entry.classification === LedgerEntryClassification.TAXABLE;
 
         return {
           label: String(entry.description),
           amount: new Decimal(entry.amount.toString()).toFixed(2),
           isTaxable,
           chargeType,
+          taxAmount: isTaxable ? new Decimal(entry.gstAmount.toString()).toFixed(2) : "0.00",
+          sourceRef: `${INVOICE_SOURCE.LEDGER}${entry.publicId}`,
         };
       });
 
-      const discountItems: ChargeItem[] = dropDiscountEntries.map((entry: any) => ({
-        label: String(entry.description),
-        amount: new Decimal(entry.amount.toString()).toFixed(2), // negative
-        isTaxable: false,
-        chargeType: "DROP_DISCOUNT", // rendered as the return-charge sections' discount on the PDF
-      }));
+      const discountItems: ChargeItem[] = dropDiscountEntries.flatMap(dropDiscountItems);
 
       return [...chargeItems, ...discountItems];
     }
@@ -165,13 +234,32 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
 
   return chargeEntries.map((entry, i) => {
     const chargeType = resolved[i] ?? "ADDITIONAL_CHARGES";
-    const isTaxable = chargeType === "DAMAGE_PENALTY";
+    const amount = new Decimal(entry.finalAmount.toString());
 
+    // A legacy drop froze the line's GST on the ChargeEntry when it wrote it
+    const frozen = chargeEntryGst(entry);
+    if (frozen) {
+      const isTaxable = frozen.gst.gt(0);
+      return {
+        label: entry.label,
+        amount: amount.toFixed(2),
+        isTaxable,
+        chargeType,
+        taxAmount: isTaxable ? frozen.gst.toFixed(2) : "0.00",
+        sourceRef: `${INVOICE_SOURCE.CHARGE_ENTRY}${entry.publicId}`,
+      };
+    }
+
+    // Older rows carry no GST: only a damage penalty was ever taxed (once,
+    // here, CGST+SGST rounded per line); other old charges are not re-taxed.
+    const isTaxable = chargeType === "DAMAGE_PENALTY";
     return {
       label: entry.label,
-      amount: new Decimal(entry.finalAmount.toString()).toFixed(2),
+      amount: amount.toFixed(2),
       isTaxable,
       chargeType,
+      taxAmount: isTaxable && amount.gt(0) ? computeLineGst(amount, rates).gst.toFixed(2) : "0.00",
+      sourceRef: `${INVOICE_SOURCE.CHARGE_ENTRY}${entry.publicId}`,
     };
   });
 }
@@ -182,24 +270,37 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
  * Idempotently rebuilds Invoice data after return settlement.
  *
  * - Detects session vs legacy return flow automatically.
- * - Rebuilds InvoiceItem rows from the authoritative source.
- * - Recomputes invoice.total = booking.totalFinal + return charges (+ GST where applicable)
- *   − any discount given at drop.
+ * - Rebuilds the return-charge InvoiceItem rows from the authoritative source,
+ *   with the GST stored on each line. A damage charged in the manager's review
+ *   (sourceRef DAMAGE_REVIEW:…) is kept — it is not a return charge.
+ * - Recomputes the invoice from stored values (invoice-totals.service):
+ *   total = booking.totalFinal + return charges (+ their GST) − drop discount;
+ *   tax / taxable / CGST / SGST = rental + confirmed extensions + taxable lines;
+ *   depositAmount = the refundable deposit (inside total, not taxable).
  * - Nulls invoicePdfFileId to discard any stale cached PDF.
  * - Queues a new PDF generation job.
+ * - Marks the invoice PAID (the default — callers that run once the return is
+ *   settled). `markPaid: false` rebuilds the lines while money is still owed
+ *   and leaves the invoice PENDING (see syncLegacyReturnInvoice).
  */
-export async function finalizeInvoice(bookingId: number): Promise<void> {
-  console.log(`[finalizeInvoice] Starting for booking ${bookingId}`);
+export async function finalizeInvoice(
+  bookingId: number,
+  opts: { markPaid?: boolean } = {},
+): Promise<void> {
+  const markPaid = opts.markPaid !== false;
+  console.log(`[finalizeInvoice] Starting for booking ${bookingId}${markPaid ? "" : " (balance still owed)"}`);
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
       id: true,
-      totalFinal: true,
-      invoice: { select: { id: true, invoicePdfFileId: true } },
-      branch: {
+      branchId: true,
+      pricingSnapshot: true,
+      items: { select: { taxRate: true } },
+      invoice: {
         select: {
-          gstRule: { select: { cgstRate: true, sgstRate: true } },
+          id: true,
+          invoicePdfFileId: true,
         },
       },
     },
@@ -214,31 +315,25 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
   // Capture the old file ID before nulling it — passed to the worker so it can
   // delete the stale R2 object and FileObject row after the new PDF is uploaded.
   const previousFileObjectId = booking.invoice.invoicePdfFileId ?? undefined;
-  const cgstRate = booking.branch.gstRule ? Number(booking.branch.gstRule.cgstRate) : 9;
-  const sgstRate = booking.branch.gstRule ? Number(booking.branch.gstRule.sgstRate) : 9;
-  const totalGstRate = cgstRate + sgstRate;
+  // Frozen booking rates — used only to tax legacy ChargeEntry lines (no stored GST)
+  const rates = await bookingGstRates(booking);
 
-  const chargeItems = await buildChargeItems(bookingId);
+  const chargeItems = await buildChargeItems(bookingId, rates);
 
-  // Aggregate totals
-  let extraBase = new Decimal(0);
-  let extraTax = new Decimal(0);
-  let damageBase = new Decimal(0);
-
-  for (const item of chargeItems) {
-    const base = new Decimal(item.amount);
-    const tax = item.isTaxable ? base.mul(totalGstRate).div(100) : new Decimal(0);
-    extraBase = extraBase.add(base);
-    extraTax = extraTax.add(tax);
-    if (item.chargeType === "DAMAGE_PENALTY" || item.chargeType === "DAMAGE_COMPENSATION") {
-      damageBase = damageBase.add(base);
+  const newTotal = await prisma.$transaction(async (tx) => {
+    // One rebuild at a time per invoice: a legacy drop, the manager's settlement
+    // and a regenerate can each trigger one, and two interleaved rebuilds would
+    // both delete the old rows and both insert — every return charge twice.
+    await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${invoiceId} FOR UPDATE`;
+    // Return-charge rows are rebuilt; the manager's damage-review rows stay
+    const currentItems = await tx.invoiceItem.findMany({
+      where: { invoiceId },
+      select: { id: true, label: true, sourceRef: true },
+    });
+    const staleItemIds = currentItems.filter((i) => !isDamageReviewItem(i)).map((i) => i.id);
+    if (staleItemIds.length > 0) {
+      await tx.invoiceItem.deleteMany({ where: { id: { in: staleItemIds } } });
     }
-  }
-
-  const newTotal = new Decimal(booking.totalFinal.toString()).add(extraBase).add(extraTax);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.invoiceItem.deleteMany({ where: { invoiceId } });
 
     for (const item of chargeItems) {
       await tx.invoiceItem.create({
@@ -249,21 +344,23 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
           amount: item.amount,
           isTaxable: item.isTaxable,
           chargeType: item.chargeType,
+          taxAmount: item.taxAmount,
+          sourceRef: item.sourceRef,
         },
       });
     }
 
+    const totals = await computeInvoiceGstTotals(bookingId, tx);
     await tx.invoice.update({
       where: { id: invoiceId },
       data: {
-        damageCharges: damageBase.toFixed(2),
-        tax: extraTax.toFixed(2),
-        total: newTotal.toFixed(2),
-        status: "PAID",
+        ...invoiceTotalsData(totals),
+        status: markPaid ? "PAID" : "PENDING",
         invoicePdfFileId: null,
         generatedAt: null,
       },
     });
+    return totals.total;
   });
 
   await queueInvoiceGeneration(bookingId, invoiceId, true, previousFileObjectId);
@@ -272,4 +369,28 @@ export async function finalizeInvoice(bookingId: number): Promise<void> {
     `[finalizeInvoice] Done — booking ${bookingId}: total ₹${newTotal.toFixed(2)}, ` +
       `${chargeItems.length} charge item(s), PDF queued.`,
   );
+}
+
+/**
+ * Legacy (non-Unified-Payments) drop: the return charges it recorded as
+ * ChargeEntry rows (extra km, late return — GST frozen on each) are collected
+ * by the branch manager in Settlements, and no payment session finalizes the
+ * invoice. Rebuild its return-charge lines after the drop and after each
+ * settlement payment, and mark it PAID only once the settlement shows nothing
+ * owed or awaiting confirmation.
+ *
+ * Returns false (and does nothing) for a booking whose return went through a
+ * RETURN payment session — that flow finalizes the invoice when it completes.
+ * Safe to run repeatedly; callers run it fire-and-forget.
+ */
+export async function syncLegacyReturnInvoice(bookingId: number): Promise<boolean> {
+  const returnSession = await prisma.paymentSession.findFirst({
+    where: { bookingId, sessionType: PaymentSessionType.RETURN, status: PaymentSessionStatus.COMPLETED },
+    select: { id: true },
+  });
+  if (returnSession) return false;
+
+  const { isSettled } = await settlementEngineService.calculateSettlement(bookingId);
+  await finalizeInvoice(bookingId, { markPaid: isSettled });
+  return true;
 }

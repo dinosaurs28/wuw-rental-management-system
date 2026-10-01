@@ -3,7 +3,10 @@ import { Login } from "../../controller/employee/login.controller.js";
 import {
   makeForgotPasswordController,
   resetPasswordController,
+  makeForgotPasswordCodeController,
+  makeResetPasswordCodeController,
 } from "../../services/passwordReset/passwordReset.controller.js";
+import { Role } from "@repo/database/client";
 import {
   searchVehicles,
   getEmployeeVehicleDetails,
@@ -40,7 +43,15 @@ import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete
 import { SearchCustomer } from "../../controller/employee/customer/search.controller.js";
 import { GetCustomerDetails } from "../../controller/employee/customer/get.controller.js";
 import { getEmployeeCustomerBookingLimits } from "../../controller/employee/customerLimits.controller.js";
-import { upload } from "../../middlewares/upload.middleware.js";
+import { upload, handleImageUpload, handleFileUpload } from "../../middlewares/upload.middleware.js";
+import {
+  GetCustomerQrPhoto,
+  UploadCustomerQrPhoto,
+  DeleteCustomerQrPhoto,
+  GetBookingQrPhoto,
+  UploadBookingQrPhoto,
+} from "../../controller/employee/customer/qrPhoto.controller.js";
+import { QR_PHOTO_MAX_BYTES } from "../../services/qr-photo/customer-qr-photo.service.js";
 import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware.js";
 import {
   UpdateWalkinKycStatus,
@@ -76,16 +87,24 @@ import {
 import {
   GetAvailableVehiclesForEmployee,
   SwapVehicleByEmployee,
+  GetBookingSwapHistoryForEmployee,
+  GetRecentSwapsForEmployee,
   GetPickupPricingRules,
 } from "../../controller/employee/vehicle-swap.controller.js";
 import sessionRouter from "./session.routes.js";
 import dashboardRouter from "./dashboard.routes.js";
+import { makeNotificationRouter } from "../notification/notification.routes.js";
+import { UpdateBookingDlStatus } from "../../controller/employee/dlStatus.controller.js";
 
 const router: Router = Router();
 
 router.post("/auth/login", Login);
 router.post("/auth/forgot-password", makeForgotPasswordController("employee"));
 router.post("/auth/reset-password", resetPasswordController);
+// Fleet Executive reset from the mobile app: 6-digit emailed code, public,
+// STAFF accounts only (same request/response shapes as /api/auth/email/*).
+router.post("/auth/email/forgot-password", makeForgotPasswordCodeController([Role.STAFF]));
+router.post("/auth/email/reset-password", makeResetPasswordCodeController([Role.STAFF]));
 router.get("/booking", EmployeeCheck, BookingController);
 router.get("/booking/:bookingId/scan", EmployeeCheck, ScanBooking);
 router.get("/return", EmployeeCheck, returnController);
@@ -97,7 +116,8 @@ router.get("/return/:bookingId/pickup-captures", EmployeeCheck, GetPickupCapture
 router.post(
   "/pickup/upload",
   EmployeeCheck,
-  upload.single("file"),
+  // JSON 413/400 on an oversized photo / bad multipart (was an HTML 500)
+  handleFileUpload("file"),
   UploadPickupImage,
 );
 router.delete("/pickup/image/:publicId", EmployeeCheck, DeletePickupImage);
@@ -108,7 +128,7 @@ router.post("/pickup/:bookingId", EmployeeCheck, PickupController);
 router.post(
   "/return/upload",
   EmployeeCheck,
-  upload.single("file"),
+  handleFileUpload("file"),
   UploadReturnImage,
 );
 router.delete("/return/image/:publicId", EmployeeCheck, DeleteReturnImage);
@@ -122,7 +142,8 @@ router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile);
 router.post(
   "/walkin/kyc/upload",
   EmployeeCheck,
-  upload.single("file"),
+  // Images only, JSON 400/413 on bad type/size (sharp re-encodes every KYC file).
+  handleImageUpload("file", { maxBytes: 15 * 1024 * 1024 }),
   CheckCustomerPublicId,
   UploadWalkinKyc,
 );
@@ -139,10 +160,26 @@ router.delete("/booking/hold/:holdId", EmployeeCheck, cancelEmployeeHold);
 router.get("/customer/search", EmployeeCheck, SearchCustomer);
 router.get("/customer/:customerPublicId/booking-limits", EmployeeCheck, getEmployeeCustomerBookingLimits);
 router.get("/customer/:publicId", EmployeeCheck, GetCustomerDetails);
+// Customer QR code photo (#4)
+router.get("/customer/:publicId/qr-photo", EmployeeCheck, GetCustomerQrPhoto);
+router.post(
+  "/customer/:publicId/qr-photo",
+  EmployeeCheck,
+  handleImageUpload("file", { maxBytes: QR_PHOTO_MAX_BYTES }),
+  UploadCustomerQrPhoto,
+);
+router.delete("/customer/:publicId/qr-photo", EmployeeCheck, DeleteCustomerQrPhoto);
+router.get("/bookings/:bookingId/qr-photo", EmployeeCheck, GetBookingQrPhoto);
+router.post(
+  "/bookings/:bookingId/qr-photo",
+  EmployeeCheck,
+  handleImageUpload("file", { maxBytes: QR_PHOTO_MAX_BYTES }),
+  UploadBookingQrPhoto,
+);
 router.post(
   "/damage/upload",
   EmployeeCheck,
-  upload.single("file"),
+  handleFileUpload("file"),
   UploadDamageImage,
 );
 router.post("/damage/report", EmployeeCheck, CreateDamageReport);
@@ -150,12 +187,18 @@ router.use("/extensions", extensionRouter);
 router.use("/payment", paymentRouter);
 router.use("/discount", discountRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/notifications", makeNotificationRouter(EmployeeCheck));
 router.use("/", sessionRouter);
 
 // ── Vehicle Swap (Employee) ────────────────────────────────────────────────────
 router.get("/bookings/:bookingId/available-vehicles", EmployeeCheck, GetAvailableVehiclesForEmployee);
 router.post("/bookings/:bookingId/swap-vehicle", EmployeeCheck, SwapVehicleByEmployee);
+router.get("/bookings/:bookingId/swap-history", EmployeeCheck, GetBookingSwapHistoryForEmployee);
+router.get("/swap-history", EmployeeCheck, GetRecentSwapsForEmployee);
 router.get("/pickup/:bookingId/pricing-rules", EmployeeCheck, GetPickupPricingRules);
+
+// ── Original driving licence status (#3) ──────────────────────────────────────
+router.patch("/bookings/:publicId/dl-status", EmployeeCheck, UpdateBookingDlStatus);
 
 // ── Charge Engine ─────────────────────────────────────────────────────────────
 

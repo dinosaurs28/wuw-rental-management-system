@@ -10,9 +10,13 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { fraudDetectionService } from "./fraud-detection.service.js";
+import { notifyEvents } from "../notification/notification.events.js";
 import { assertOpenShift, claimUtr, normalizeUtr } from "./counter-guard.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { refreshInvoiceTotals } from "../invoice-totals.service.js";
+import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
+import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -44,6 +48,28 @@ export interface PaginatedTransactions {
 }
 
 const ZERO = new Decimal(0);
+
+/** A manager acting on another branch's payment (cash confirm / reject). */
+export class PaymentTransactionBranchError extends Error {
+  readonly code = "TRANSACTION_OTHER_BRANCH";
+  readonly status = 403;
+}
+
+/**
+ * Cash confirm / reject are branch-scoped for managers: another branch's
+ * COLLECTED cash sits in that branch's open shift drawer.
+ */
+function assertSameBranch(
+  txn: { branchId: number },
+  actor: ActorContext,
+  action: "confirm" | "reject",
+): void {
+  if (actor.actorRole === "MANAGER" && txn.branchId !== actor.actorBranchId) {
+    throw new PaymentTransactionBranchError(
+      `This payment belongs to another branch — only that branch's manager can ${action} it.`,
+    );
+  }
+}
 
 class PaymentTransactionService {
   /**
@@ -105,7 +131,7 @@ class PaymentTransactionService {
     }
 
     // Fraud checks
-    await fraudDetectionService.checkExcessPayment(bookingId, totalAmount);
+    await fraudDetectionService.checkExcessPayment(bookingId, totalAmount, input.purpose);
     if (cashAmount.gt(ZERO)) {
       await fraudDetectionService.checkEmployeeCashLimit(actor.actorId, branchId, cashAmount);
     }
@@ -126,9 +152,10 @@ class PaymentTransactionService {
 
     const now = new Date();
 
-    // Link to active cash shift for cash/split methods
+    // Link to the active cash shift: cash/split for the drawer, UPI (UTR) for
+    // the shift's UPI-collected figure
     let cashShiftId: number | null = null;
-    if (input.method !== "ONLINE" && cashAmount.gt(ZERO)) {
+    if ((input.method !== "ONLINE" && cashAmount.gt(ZERO)) || (onlineRef && onlineGateway === "UPI")) {
       const activeShift = await prisma.cashShift.findFirst({
         where: { employeeId: actor.actorId, status: "OPEN" },
         select: { id: true },
@@ -162,13 +189,8 @@ class PaymentTransactionService {
       });
     });
 
-    // If immediately confirmed and has cash, update shift expectedTotal
-    if (status === "CONFIRMED" && cashAmount.gt(ZERO) && cashShiftId) {
-      await prisma.cashShift.update({
-        where: { id: cashShiftId },
-        data: { expectedTotal: { increment: cashAmount.toNumber() } },
-      });
-    }
+    // No shift counter to bump: a shift's expected drawer is computed from its
+    // linked transactions (and snapshotted at close).
 
     const actionType = status === "COLLECTED" ? StaffActionType.COLLECTED : StaffActionType.CONFIRMED;
 
@@ -208,78 +230,104 @@ class PaymentTransactionService {
   async confirmCash(publicId: string, notes: string | undefined, actor: ActorContext): Promise<PaymentTransaction> {
     const txn = await prisma.paymentTransaction.findUnique({ where: { publicId } });
     if (!txn) throw new Error("Payment transaction not found.");
-    if (txn.status !== "COLLECTED") {
-      throw new Error(`Cannot confirm: transaction is in ${txn.status} state. Only COLLECTED transactions can be confirmed.`);
-    }
     if (actor.actorRole !== "MANAGER" && actor.actorRole !== "ADMIN") {
       throw new Error("Only MANAGER or ADMIN can confirm cash payments.");
     }
-
-    const confirmed = await prisma.paymentTransaction.update({
-      where: { publicId },
-      data: {
-        status: "CONFIRMED",
-        confirmedById: actor.actorId,
-        confirmedAt: new Date(),
-        notes: notes ?? txn.notes,
-      },
-    });
-
-    // Update shift expected total
-    if (txn.cashShiftId) {
-      await prisma.cashShift.update({
-        where: { id: txn.cashShiftId },
-        data: { expectedTotal: { increment: new Decimal(txn.cashAmount.toString()).toNumber() } },
-      });
+    assertSameBranch(txn, actor, "confirm");
+    if (txn.status !== "COLLECTED") {
+      throw new Error(`Cannot confirm: transaction is in ${txn.status} state. Only COLLECTED transactions can be confirmed.`);
     }
 
-    // Extension finalization hook: if this cash payment was for an extension,
-    // finalize the booking date update now that cash is confirmed.
-    if (txn.purpose === PaymentPurpose.EXTENSION) {
-      const linkedExtension = await prisma.bookingExtension.findFirst({
+    // Conditional flips, all in one transaction: two managers (or a retried
+    // request) racing past the COLLECTED check confirm — and finalize the
+    // linked extension, raising totalFinal / extensionCount — only once.
+    const linkedExtension = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.paymentTransaction.updateMany({
+        where: { id: txn.id, status: "COLLECTED" },
+        data: {
+          status: "CONFIRMED",
+          confirmedById: actor.actorId,
+          confirmedAt: new Date(),
+          notes: notes ?? txn.notes,
+        },
+      });
+      if (count === 0) {
+        throw new Error("Cannot confirm: this payment was already confirmed or rejected.");
+      }
+
+      // Extension finalization hook: if this cash payment was for an extension,
+      // finalize the booking date update now that cash is confirmed.
+      if (txn.purpose !== PaymentPurpose.EXTENSION) return null;
+      const ext = await tx.bookingExtension.findFirst({
         where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
-        include: { booking: true },
+      });
+      if (!ext) return null;
+      const flipped = await tx.bookingExtension.updateMany({
+        where: { id: ext.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+        data: {
+          extensionStatus: ExtensionStatus.CONFIRMED,
+          actualNewEndAt: ext.requestedEndAt,
+        },
+      });
+      if (flipped.count === 0) return null;
+
+      const current = await tx.booking.findUniqueOrThrow({
+        where: { id: ext.bookingId },
+        select: { extensionCount: true },
+      });
+      await tx.booking.update({
+        where: { id: ext.bookingId },
+        data: {
+          endAt: ext.requestedEndAt,
+          extensionCount: { increment: 1 },
+          lastExtendedAt: new Date(),
+          totalFinal: { increment: ext.additionalAmount },
+          activeExtensionId: null,
+          ...(current.extensionCount === 0 ? { originalEndAt: ext.oldEndAt } : {}),
+        },
+      });
+      // days / rentalPeriodType / hours follow the extended end (#5/#17)
+      await refreshBookingPeriodFields(ext.bookingId, tx);
+      return ext;
+    });
+
+    const confirmed = await prisma.paymentTransaction.findUniqueOrThrow({ where: { id: txn.id } });
+
+    // Confirmation is verification only: the cash already counted in its
+    // shift's drawer when it was COLLECTED, and a closed shift's snapshot
+    // never changes.
+
+    if (linkedExtension) {
+      const effectiveEndAt = linkedExtension.requestedEndAt;
+      await auditService.log({
+        actorId: actor.actorId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        actorBranchId: txn.branchId,
+        action: "Extension finalized after cash confirmation",
+        category: AuditCategory.BOOKING,
+        description: `Extension ${linkedExtension.publicId} confirmed. Booking extended to ${effectiveEndAt.toISOString()}`,
+        entity: "BookingExtension",
+        entityId: linkedExtension.publicId,
+        before: { extensionStatus: "PAYMENT_COLLECTED" },
+        after: { extensionStatus: "CONFIRMED", actualNewEndAt: effectiveEndAt },
       });
 
-      if (linkedExtension) {
-        const effectiveEndAt = linkedExtension.requestedEndAt;
-        const isFirstExtension = linkedExtension.booking.extensionCount === 0;
+      // The confirmed extension (taxable + GST) and the new return time belong
+      // on the invoice — a fresh PDF even when the totals did not move
+      refreshInvoiceTotals(linkedExtension.bookingId, { forceRegenerate: true }).catch((err) =>
+        console.error("[confirmCash] Invoice refresh error:", err),
+      );
 
-        await prisma.$transaction(async (finalizeTx) => {
-          await finalizeTx.booking.update({
-            where: { id: linkedExtension.bookingId },
-            data: {
-              endAt: effectiveEndAt,
-              extensionCount: { increment: 1 },
-              lastExtendedAt: new Date(),
-              totalFinal: { increment: linkedExtension.additionalAmount },
-              activeExtensionId: null,
-              ...(isFirstExtension ? { originalEndAt: linkedExtension.oldEndAt } : {}),
-            },
-          });
-
-          await finalizeTx.bookingExtension.update({
-            where: { id: linkedExtension.id },
-            data: {
-              extensionStatus: ExtensionStatus.CONFIRMED,
-              actualNewEndAt: effectiveEndAt,
-            },
-          });
-        });
-
-        await auditService.log({
-          actorId: actor.actorId,
-          actorName: actor.actorName,
-          actorRole: actor.actorRole,
-          actorBranchId: txn.branchId,
-          action: "Extension finalized after cash confirmation",
-          category: AuditCategory.BOOKING,
-          description: `Extension ${linkedExtension.publicId} confirmed. Booking extended to ${effectiveEndAt.toISOString()}`,
-          entity: "BookingExtension",
-          entityId: linkedExtension.publicId,
-          before: { extensionStatus: "PAYMENT_COLLECTED" },
-          after: { extensionStatus: "CONFIRMED", actualNewEndAt: effectiveEndAt },
-        });
+      void notifyEvents.extensionConfirmed({ extensionId: linkedExtension.id, actorUserId: actor.actorId });
+    } else {
+      // A legacy drop's settlement cash: the invoice turns PAID once the
+      // manager's settlement shows nothing owed (no-op for other bookings)
+      const booking = await prisma.booking.findUnique({ where: { id: txn.bookingId }, select: { status: true } });
+      if (booking?.status === "RETURNED") {
+        syncLegacyReturnInvoice(txn.bookingId).catch((err) =>
+          console.error("[confirmCash] Invoice sync error:", err),
+        );
       }
     }
 
@@ -309,6 +357,20 @@ class PaymentTransactionService {
       description: `Cash payment ₹${txn.totalAmount} confirmed`,
     });
 
+    if (txn.collectedById) {
+      void notifyEvents.approvalResolved({
+        kind: "CASH_PAYMENT",
+        entity: "PaymentTransaction",
+        entityPublicId: txn.publicId,
+        branchId: txn.branchId,
+        approved: true,
+        recipientUserId: txn.collectedById,
+        bookingId: txn.bookingId,
+        amount: txn.totalAmount,
+        actorUserId: actor.actorId,
+      });
+    }
+
     return confirmed;
   }
 
@@ -318,27 +380,34 @@ class PaymentTransactionService {
   async rejectCash(publicId: string, rejectionReason: string, actor: ActorContext): Promise<PaymentTransaction> {
     const txn = await prisma.paymentTransaction.findUnique({ where: { publicId } });
     if (!txn) throw new Error("Payment transaction not found.");
-    if (txn.status !== "COLLECTED") {
-      throw new Error(`Cannot reject: transaction is in ${txn.status} state.`);
-    }
     if (actor.actorRole !== "MANAGER" && actor.actorRole !== "ADMIN") {
       throw new Error("Only MANAGER or ADMIN can reject cash payments.");
     }
+    assertSameBranch(txn, actor, "reject");
+    if (txn.status !== "COLLECTED") {
+      throw new Error(`Cannot reject: transaction is in ${txn.status} state.`);
+    }
 
-    const rejected = await prisma.paymentTransaction.update({
-      where: { publicId },
-      data: {
-        status: "REJECTED",
-        rejectedById: actor.actorId,
-        rejectedAt: new Date(),
-        rejectionReason,
-      },
-    });
+    // Conditional flips in one transaction, so a concurrent confirm/reject of
+    // the same payment can't both win (see confirmCash).
+    const linkedExtension = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.paymentTransaction.updateMany({
+        where: { id: txn.id, status: "COLLECTED" },
+        data: {
+          status: "REJECTED",
+          rejectedById: actor.actorId,
+          rejectedAt: new Date(),
+          rejectionReason,
+        },
+      });
+      if (count === 0) {
+        throw new Error("Cannot reject: this payment was already confirmed or rejected.");
+      }
 
-    // A rejected extension payment means the extension was never paid for:
-    // reject it and release the vehicle hold that commit placed.
-    if (txn.purpose === PaymentPurpose.EXTENSION) {
-      const linkedExtension = await prisma.bookingExtension.findFirst({
+      // A rejected extension payment means the extension was never paid for:
+      // reject it and release the vehicle hold that commit placed.
+      if (txn.purpose !== PaymentPurpose.EXTENSION) return null;
+      const ext = await tx.bookingExtension.findFirst({
         where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
         select: {
           id: true,
@@ -347,30 +416,34 @@ class PaymentTransactionService {
           booking: { select: { activeExtensionId: true, items: { select: { vehicleId: true } } } },
         },
       });
-
-      if (linkedExtension) {
-        await prisma.$transaction(async (tx) => {
-          await tx.bookingExtension.update({
-            where: { id: linkedExtension.id },
-            data: { extensionStatus: ExtensionStatus.REJECTED, rejectionReason },
-          });
-          if (linkedExtension.booking.activeExtensionId === linkedExtension.id) {
-            await tx.booking.update({
-              where: { id: linkedExtension.bookingId },
-              data: { activeExtensionId: null, endAt: linkedExtension.oldEndAt },
-            });
-          }
+      if (!ext) return null;
+      const flipped = await tx.bookingExtension.updateMany({
+        where: { id: ext.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+        data: { extensionStatus: ExtensionStatus.REJECTED, rejectionReason },
+      });
+      if (flipped.count === 0) return null;
+      if (ext.booking.activeExtensionId === ext.id) {
+        await tx.booking.update({
+          where: { id: ext.bookingId },
+          data: { activeExtensionId: null, endAt: ext.oldEndAt },
         });
-
-        try {
-          await invalidateVehicleAvailability(
-            redis,
-            linkedExtension.booking.items.map((i) => i.vehicleId),
-          );
-        } catch {
-          // non-fatal
-        }
       }
+      return ext;
+    });
+
+    const rejected = await prisma.paymentTransaction.findUniqueOrThrow({ where: { id: txn.id } });
+
+    if (linkedExtension) {
+      try {
+        await invalidateVehicleAvailability(
+          redis,
+          linkedExtension.booking.items.map((i) => i.vehicleId),
+        );
+      } catch {
+        // non-fatal
+      }
+
+      void notifyEvents.extensionRejected({ extensionId: linkedExtension.id, actorUserId: actor.actorId });
     }
 
     await auditService.log({
@@ -399,6 +472,21 @@ class PaymentTransactionService {
       entityRef: txn.publicId,
       description: `Cash payment ₹${txn.totalAmount} rejected: ${rejectionReason}`,
     });
+
+    if (txn.collectedById) {
+      void notifyEvents.approvalResolved({
+        kind: "CASH_PAYMENT",
+        entity: "PaymentTransaction",
+        entityPublicId: txn.publicId,
+        branchId: txn.branchId,
+        approved: false,
+        recipientUserId: txn.collectedById,
+        bookingId: txn.bookingId,
+        amount: txn.totalAmount,
+        reason: rejectionReason,
+        actorUserId: actor.actorId,
+      });
+    }
 
     return rejected;
   }

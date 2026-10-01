@@ -2,6 +2,7 @@ import Redis from "ioredis";
 import { prisma, BookingStatus, Role } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 import { auditService } from "../services/audit/audit.service.js";
+import { discountApplicationService } from "../services/discount/discount-application.service.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Lazy initialization - connections created when needed, after env vars are loaded
@@ -176,6 +177,9 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
           holdExpiresAt: null,
         },
       });
+
+      // The hold never became a booking — give its coupon use back
+      await discountApplicationService.releaseUsage(booking.id, tx);
 
       // Create audit log
       await auditService.log({

@@ -1,6 +1,7 @@
-import { prisma } from "@repo/database/client";
+import { prisma, PaymentPurpose } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
+import { computeBookingOwed, getBookingMoney, REFUND_PAYMENT_PURPOSES } from "./booking-owed.service.js";
 
 const ZERO = new Decimal(0);
 
@@ -29,7 +30,24 @@ class FraudDetectionService {
       },
     });
 
+    // One alert per transaction — this runs hourly and on every start.
+    const alreadyAlerted = stale.length
+      ? new Set(
+          (
+            await prisma.auditLog.findMany({
+              where: {
+                action: "DELAYED_CASH_ALERT",
+                entity: "PaymentTransaction",
+                entityId: { in: stale.map((t) => t.publicId) },
+              },
+              select: { entityId: true },
+            })
+          ).map((a) => a.entityId),
+        )
+      : new Set<string>();
+
     for (const txn of stale) {
+      if (alreadyAlerted.has(txn.publicId)) continue;
       await auditService.log({
         actorName: "System",
         actorRole: "ADMIN",
@@ -46,30 +64,35 @@ class FraudDetectionService {
   }
 
   /**
-   * Throws if the incoming amount would push the booking's total collected
-   * past its totalFinal (prevents overpayment beyond what is owed).
+   * Throws if the incoming amount would push what was paid on the booking past
+   * what it owes (prevents overpayment beyond what is owed).
+   *
+   * Owed is the settlement engine's / financial state's total (computeBookingOwed):
+   * totalFinal + return charges outside it (the legacy drop's extra km / late return /
+   * swap difference with their GST, collected by the branch manager in Settlements,
+   * or the Unified Payments drop bill) + the refundable safety deposit held. Paid is
+   * money in less refunds paid out — refund rows are never money in. A safety deposit
+   * taken counts on both sides, so it never uses up room meant for rental money.
+   * A refundable deposit or a refund being recorded isn't a payment against what is
+   * owed, so it is not checked.
    */
-  async checkExcessPayment(bookingId: number, incomingAmount: Decimal): Promise<void> {
+  async checkExcessPayment(bookingId: number, incomingAmount: Decimal, purpose?: PaymentPurpose): Promise<void> {
+    if (purpose && (purpose === PaymentPurpose.SAFETY_DEPOSIT || REFUND_PAYMENT_PURPOSES.includes(purpose))) return;
+
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      select: { totalFinal: true, publicId: true },
+      select: { publicId: true },
     });
     if (!booking) throw new Error("Booking not found.");
 
-    const totalFinal = new Decimal(booking.totalFinal.toString());
+    const [owed, money] = await Promise.all([computeBookingOwed(bookingId), getBookingMoney(bookingId)]);
+    const totalOwed = owed.totalOwed;
 
-    const existing = await prisma.paymentTransaction.aggregate({
-      where: {
-        bookingId,
-        status: { in: ["CONFIRMED", "COLLECTED"] },
-      },
-      _sum: { totalAmount: true },
-    });
-
-    const alreadyCollected = new Decimal((existing._sum.totalAmount ?? ZERO).toString());
-    if (alreadyCollected.add(incomingAmount).gt(totalFinal)) {
+    // CONFIRMED + COLLECTED money in, less refunds paid out
+    const alreadyCollected = money.netConfirmed.add(money.pending);
+    if (alreadyCollected.add(incomingAmount).gt(totalOwed)) {
       throw new Error(
-        `Payment of ₹${incomingAmount.toFixed(2)} would exceed the booking total of ₹${totalFinal.toFixed(2)}. Already collected: ₹${alreadyCollected.toFixed(2)}.`,
+        `Payment of ₹${incomingAmount.toFixed(2)} would exceed the booking total of ₹${totalOwed.toFixed(2)}. Already collected: ₹${alreadyCollected.toFixed(2)}.`,
       );
     }
   }
@@ -98,6 +121,8 @@ class FraudDetectionService {
         cashShiftId: shift.id,
         method: { in: ["CASH", "SPLIT"] },
         status: { in: ["COLLECTED", "CONFIRMED"] },
+        // Cash refunds paid out are linked to the shift too — they aren't cash held
+        purpose: { notIn: ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"] },
       },
       _sum: { cashAmount: true },
     });

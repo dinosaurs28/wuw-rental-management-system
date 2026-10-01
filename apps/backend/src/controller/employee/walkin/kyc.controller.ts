@@ -22,26 +22,37 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     });
   }
 
+  // Early returns below must not leave the multer temp file behind.
+  const discardTemp = () => fs.unlink(file.path).catch(() => {});
+
   if (!actingUserPublicId) {
+    await discardTemp();
     return res.status(StatusCode.UNAUTHORIZED).json({
       message: "Unauthorized: Missing user context",
     });
   }
 
   if (!customerId) {
+    await discardTemp();
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Error: Customer context missing after validation",
     });
   }
 
   if (!kyc_type || !Object.values(KycType).includes(kyc_type as KycType)) {
+    await discardTemp();
     return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "INVALID_KYC_TYPE",
       message: `Invalid or missing kyc_type. Allowed: ${Object.values(KycType).join(", ")}`,
     });
   }
 
   if (!side || !Object.values(KycSide).includes(side as KycSide)) {
+    await discardTemp();
     return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "INVALID_KYC_SIDE",
       message: `Invalid or missing side. Allowed: ${Object.values(KycSide).join(", ")}`,
     });
   }
@@ -53,6 +64,7 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     });
 
     if (!actingUser) {
+      await discardTemp();
       return res.status(StatusCode.UNAUTHORIZED).json({
         message: "Unauthorized: User not found",
       });
@@ -65,7 +77,19 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     const date = new Date().toISOString().split("T")[0];
     const key = `kyc/${date}/${createID()}${ext}`;
 
-    const processed = await processImage(rawContent);
+    // A file sharp can't decode (PDF renamed as an image, HEIC without an HEVC
+    // decoder, a truncated upload) is the client's problem, not a 500.
+    let processed: Awaited<ReturnType<typeof processImage>>;
+    try {
+      processed = await processImage(rawContent);
+    } catch {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_IMAGE",
+        message:
+          "This photo could not be read. Please upload a JPG, PNG or WebP photo (HEIC and PDF files are not supported).",
+      });
+    }
 
     const { fileId: uploadedFileId } = await uploadKycToR2(
       processed.buffer,

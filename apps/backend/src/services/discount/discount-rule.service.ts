@@ -4,6 +4,8 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import type { DiscountRule, DiscountScope, DiscountType, Role } from "@repo/database/client";
+import { DateTime } from "luxon";
+import { discountRuleIssues } from "@repo/schemas";
 
 type DiscountRuleWithMeta = DiscountRule & {
   createdBy: { name: string; publicId: string };
@@ -43,7 +45,10 @@ export interface CreateDiscountRuleInput {
   endDate: Date;
 }
 
-export interface UpdateDiscountRuleInput extends Partial<CreateDiscountRuleInput> {}
+export interface UpdateDiscountRuleInput extends Partial<CreateDiscountRuleInput> {
+  /** true reactivates a deactivated rule (deactivation stays on deactivateRule). */
+  isActive?: boolean;
+}
 
 interface ActorContext {
   actorId: number;
@@ -54,19 +59,82 @@ interface ActorContext {
   branchName: string;
 }
 
+/** Thrown for a rule that fails cross-field validation (answered as 400). */
+export class DiscountRuleValidationError extends Error {
+  constructor(message: string, public readonly issues: { path: string; message: string }[] = []) {
+    super(message);
+    this.name = "DiscountRuleValidationError";
+  }
+}
+
+const IST = "Asia/Kolkata";
+
+/** Validity starts at 00:00 IST of the day the given instant falls on in IST. */
+export const istStartOfDay = (d: Date): Date => DateTime.fromJSDate(d).setZone(IST).startOf("day").toJSDate();
+/** Validity ends at 23:59:59.999 IST of the day the given instant falls on in IST. */
+export const istEndOfDay = (d: Date): Date => DateTime.fromJSDate(d).setZone(IST).endOf("day").toJSDate();
+
+const isUniqueViolation = (err: unknown) => (err as { code?: string } | null)?.code === "P2002";
+
+const num = (v: { toString(): string } | number | null | undefined): number | undefined =>
+  v == null ? undefined : Number(v.toString());
+
+/** Cross-field rules (shared with the request schema) on a complete rule. */
+function assertRuleIsValid(r: {
+  discountType: string;
+  value: { toString(): string } | number;
+  scope: string;
+  applicableBranchIds: number[];
+  targetCustomerIds: number[];
+  startDate: Date;
+  endDate: Date;
+  minBookingAmount?: { toString(): string } | number | null;
+  maxBookingAmount?: { toString(): string } | number | null;
+  minRentalDays?: number | null;
+  maxRentalDays?: number | null;
+  minBookingCount?: number | null;
+  maxBookingCount?: number | null;
+}): void {
+  const issues = discountRuleIssues({
+    discountType: r.discountType as "PERCENTAGE" | "FLAT",
+    value: Number(r.value.toString()),
+    scope: r.scope as "GLOBAL" | "BRANCH" | "USER",
+    applicableBranchIds: r.applicableBranchIds,
+    targetCustomerIds: r.targetCustomerIds,
+    startDate: r.startDate.toISOString(),
+    endDate: r.endDate.toISOString(),
+    minBookingAmount: num(r.minBookingAmount),
+    maxBookingAmount: num(r.maxBookingAmount),
+    minRentalDays: r.minRentalDays ?? undefined,
+    maxRentalDays: r.maxRentalDays ?? undefined,
+    minBookingCount: r.minBookingCount ?? undefined,
+    maxBookingCount: r.maxBookingCount ?? undefined,
+  });
+  if (issues.length > 0) {
+    throw new DiscountRuleValidationError(issues.map((i) => i.message).join("; "), issues);
+  }
+}
+
 class DiscountRuleService {
   async createRule(input: CreateDiscountRuleInput, actor: ActorContext): Promise<DiscountRule> {
+    const code = input.code.toUpperCase().trim();
     const existing = await prisma.discountRule.findUnique({
-      where: { code: input.code },
+      where: { code },
     });
     if (existing) {
-      throw new Error(`Coupon code "${input.code}" already exists.`);
+      throw new Error(`Coupon code "${code}" already exists.`);
     }
+
+    assertRuleIsValid({
+      ...input,
+      applicableBranchIds: input.applicableBranchIds ?? [],
+      targetCustomerIds: input.targetCustomerIds ?? [],
+    });
 
     const rule = await prisma.discountRule.create({
       data: {
         publicId: createID(),
-        code: input.code.toUpperCase().trim(),
+        code,
         name: input.name,
         description: input.description ?? null,
         discountType: input.discountType,
@@ -94,11 +162,15 @@ class DiscountRuleService {
         perDayLimit: input.perDayLimit ?? null,
         stackable: input.stackable ?? false,
         priority: input.priority ?? 0,
-        startDate: input.startDate,
-        endDate: input.endDate,
+        // Whole IST calendar days: 00:00 IST on the start day → 23:59:59.999 IST on the end day
+        startDate: istStartOfDay(input.startDate),
+        endDate: istEndOfDay(input.endDate),
         isActive: true,
         createdById: actor.actorId,
       },
+    }).catch((err) => {
+      if (isUniqueViolation(err)) throw new Error(`Coupon code "${code}" already exists.`);
+      throw err;
     });
 
     await auditService.log({
@@ -145,6 +217,28 @@ class DiscountRuleService {
       if (codeConflict) throw new Error(`Coupon code "${input.code}" already exists.`);
     }
 
+    // Validate the rule as it will be after the patch, not just the fields sent
+    // (e.g. value 500 on a PERCENTAGE rule, or Valid To moved before Valid From)
+    const startDate = input.startDate ? istStartOfDay(input.startDate) : existing.startDate;
+    const endDate = input.endDate ? istEndOfDay(input.endDate) : existing.endDate;
+    const pick = <K extends keyof UpdateDiscountRuleInput>(k: K, fallback: unknown) =>
+      input[k] !== undefined ? input[k] : fallback;
+    assertRuleIsValid({
+      discountType: (input.discountType ?? existing.discountType) as string,
+      value: input.value ?? existing.value,
+      scope: (input.scope ?? existing.scope) as string,
+      applicableBranchIds: input.applicableBranchIds ?? existing.applicableBranchIds,
+      targetCustomerIds: input.targetCustomerIds ?? existing.targetCustomerIds,
+      startDate,
+      endDate,
+      minBookingAmount: pick("minBookingAmount", existing.minBookingAmount) as any,
+      maxBookingAmount: pick("maxBookingAmount", existing.maxBookingAmount) as any,
+      minRentalDays: pick("minRentalDays", existing.minRentalDays) as any,
+      maxRentalDays: pick("maxRentalDays", existing.maxRentalDays) as any,
+      minBookingCount: pick("minBookingCount", existing.minBookingCount) as any,
+      maxBookingCount: pick("maxBookingCount", existing.maxBookingCount) as any,
+    });
+
     const updated = await prisma.discountRule.update({
       where: { publicId },
       data: {
@@ -184,9 +278,14 @@ class DiscountRuleService {
         ...(input.perDayLimit !== undefined && { perDayLimit: input.perDayLimit }),
         ...(input.stackable !== undefined && { stackable: input.stackable }),
         ...(input.priority !== undefined && { priority: input.priority }),
-        ...(input.startDate && { startDate: input.startDate }),
-        ...(input.endDate && { endDate: input.endDate }),
+        ...(input.startDate && { startDate }),
+        ...(input.endDate && { endDate }),
+        // Reactivation only — deactivating goes through deactivateRule
+        ...(input.isActive === true && { isActive: true }),
       },
+    }).catch((err) => {
+      if (isUniqueViolation(err)) throw new Error(`Coupon code "${input.code}" already exists.`);
+      throw err;
     });
 
     await auditService.log({
@@ -324,11 +423,9 @@ class DiscountRuleService {
     // 3. Usage limit cap
     const clampedUsageLimit = Math.min(input.usageLimit, config.maxManagerCouponUsageLimit);
 
-    // 4. Per-day creation limit for this manager
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setUTCHours(23, 59, 59, 999);
+    // 4. Per-day creation limit for this manager (IST business day)
+    const todayStart = istStartOfDay(new Date());
+    const todayEnd = istEndOfDay(new Date());
 
     const todayCount = await prisma.discountRule.count({
       where: {
@@ -357,9 +454,9 @@ class DiscountRuleService {
       length: 6,
     });
 
+    // Valid from now through the end (23:59:59.999 IST) of the last validity day
     const now = new Date();
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + clampedValidityDays);
+    const endDate = istEndOfDay(DateTime.fromJSDate(now).setZone(IST).plus({ days: clampedValidityDays }).toJSDate());
 
     const rule = await prisma.discountRule.create({
       data: {

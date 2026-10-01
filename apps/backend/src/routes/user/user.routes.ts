@@ -23,6 +23,7 @@ import {
   VerifyExtensionPayment,
 } from "../../controller/customer/extension.controller.js";
 import { ValidateCustomerCoupon } from "../../controller/user/coupon-validate.controller.js";
+import { makeNotificationRouter } from "../notification/notification.routes.js";
 const router: Router = Router();
 
 router.get("/booking", authCheckJwt, getUserBookings);
@@ -41,6 +42,9 @@ router.delete("/booking/hold/:holdId", authCheckJwt, cancelHold);
 
 // Self-service account deletion (Google Play data-deletion policy).
 router.delete("/account", authCheckJwt, deleteAccount);
+
+// In-app notifications + Expo push token registration (web + mobile)
+router.use("/notifications", makeNotificationRouter(authCheckJwt));
 
 // Customer coupon validation (authenticated — enforces per-user limits)
 router.post("/discount/validate", authCheckJwt, ValidateCustomerCoupon);
