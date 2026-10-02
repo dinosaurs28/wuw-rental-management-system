@@ -52,6 +52,11 @@ import {
   validateNewUtr,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
+import {
+  assertDlFree,
+  lockAndAssertDlFree,
+  DlInUseError,
+} from "../../services/booking/dl-in-use.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -206,7 +211,6 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     if (
       (!hasVehicles && !hasGroupKey) ||
       !customer_public_id ||
-      !customer_kyc_id ||
       !start ||
       !end ||
       !["CASH", "ONLINE", "UPI"].includes(payment_type)
@@ -264,22 +268,34 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(qrPhotoProblem.status).json(qrPhotoProblem.body);
     }
 
-    const kycRecord = await prisma.customerKyc.findUnique({
-      where: { publicId: customer_kyc_id },
-      select: { fileId: true, customerId: true },
-    });
-    if (!kycRecord || !kycRecord.fileId) {
-      return res
-        .status(StatusCode.BAD_REQUEST)
-        .json({ message: "Invalid KYC ID or Document missing" });
-    }
-    // The KYC document must belong to the customer being booked.
-    if (kycRecord.customerId !== customer.customerProfile.id) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        success: false,
-        code: "KYC_CUSTOMER_MISMATCH",
-        message: "This KYC document belongs to a different customer. Select one of this customer's documents.",
-      });
+    // KYC picture (X2): optional — the DL + Aadhaar NUMBERS above gate the
+    // booking. Omitted / blank / null ⇒ no KYC document on the booking; when
+    // sent it must be one of this customer's documents.
+    const kycIdInput: unknown =
+      typeof customer_kyc_id === "string" ? customer_kyc_id.trim() : customer_kyc_id;
+    let kycFileId: number | null = null;
+    if (kycIdInput != null && kycIdInput !== "") {
+      const kycRecord =
+        typeof kycIdInput === "string"
+          ? await prisma.customerKyc.findUnique({
+              where: { publicId: kycIdInput },
+              select: { fileId: true, customerId: true },
+            })
+          : null;
+      if (!kycRecord || !kycRecord.fileId) {
+        return res
+          .status(StatusCode.BAD_REQUEST)
+          .json({ message: "Invalid KYC ID or Document missing" });
+      }
+      // The KYC document must belong to the customer being booked.
+      if (kycRecord.customerId !== customer.customerProfile.id) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "KYC_CUSTOMER_MISMATCH",
+          message: "This KYC document belongs to a different customer. Select one of this customer's documents.",
+        });
+      }
+      kycFileId = kycRecord.fileId;
     }
 
     // Parse dates (IST) — used as Luxon DateTime for pricing engine
@@ -333,6 +349,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       throw windowErr;
     }
     const periodFields = bookingPeriodFields(startDate, endDate, { monthly: isMonthlyPlan });
+
+    // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
+    await assertDlFree({
+      dlNumber: customer.customerProfile.drivingLicenceNumber,
+      mode: "create",
+      window: { startAt: startDate, endAt: endDate },
+    });
 
     // ── Resolve vehicle list: explicit IDs or pick from group ────────────────
     let resolvedVehicleIds: string[] = hasVehicles ? vehicles : [];
@@ -656,6 +679,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const totalTaxRate = items[0]?.taxRate ?? 0;
 
     const booking = await prisma.$transaction(async (tx) => {
+      // Same driving licence on two concurrent bookings: serialised here, one wins (X3)
+      await lockAndAssertDlFree(
+        { customerId: customer.customerProfile!.id, mode: "create", window: { startAt: startDate, endAt: endDate } },
+        tx,
+      );
+
       // Race-condition guard: re-check inside transaction before committing
       if (!bypassLimit) {
         const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
@@ -690,7 +719,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         data: {
           publicId:     createID(),
           customerId:   customer.customerProfile!.id,
-          kycFileId:    kycRecord.fileId!,
+          kycFileId,
           qrPhotoFileId: qrSnapshot?.qrPhotoFileId ?? null,
           branchId:     vehiclesData[0]!.branchId,
           startAt:      startDate,
@@ -851,6 +880,10 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     if (error instanceof BookingWindowError) {
       return res.status(error.status).json(error.toJSON());
     }
+    // Staff see which booking holds the licence (conflictingBooking)
+    if (error instanceof DlInUseError) {
+      return res.status(error.status).json(error.toJSON("staff"));
+    }
     if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
       return res.status(StatusCode.CONFLICT).json({
         code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
@@ -917,6 +950,9 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         },
         customer: {
           select: {
+            // Full DL number (staff only, X2): checked against the card at
+            // pickup; null ⇒ staff must enter it before the handover.
+            drivingLicenceNumber: true,
             user: {
               select: { publicId: true, name: true, phone: true },
             },

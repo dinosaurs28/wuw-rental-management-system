@@ -1,11 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
+import { buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
 
 /**
  * GET /public/branch/:branchPublicId/schedule
  * No auth required. Returns schedule rows, graceMinutes, and is24Hours for
- * the requested branch so the frontend can validate booking times client-side.
+ * the requested branch so the frontend can validate booking times client-side,
+ * plus defaultHours / pickupCutoffMinutes / effectiveSchedules (days without a
+ * saved row use the default 8 AM – 11 PM).
  */
 export const getBranchSchedule = async (req: Request, res: Response) => {
   try {
@@ -32,11 +35,7 @@ export const getBranchSchedule = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
     }
 
-    return res.status(StatusCode.OK).json({
-      schedules: branch.schedules,
-      graceMinutes: branch.graceMinutes,
-      is24Hours: branch.is24Hours,
-    });
+    return res.status(StatusCode.OK).json(buildScheduleResponse(branch));
   } catch (error) {
     console.error("[getBranchSchedule] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

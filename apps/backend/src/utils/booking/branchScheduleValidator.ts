@@ -6,6 +6,18 @@
 // mobile/lib/branchSchedule.ts (same rules, same verdicts).
 import { prisma } from "@repo/database/client";
 
+/**
+ * Hours that apply to any day a branch has no saved row for (including a branch
+ * with no rows at all), unless the branch is switched to 24 hours.
+ */
+export const DEFAULT_BRANCH_HOURS = { openTime: "08:00", closeTime: "23:00" } as const;
+
+/**
+ * A booking's pickup time must be at least this many minutes before closing
+ * (default hours → last pickup 10:30 PM). Returns keep [open, close + grace].
+ */
+export const PICKUP_CUTOFF_MINUTES = 30;
+
 export interface BranchScheduleRow {
   dayOfWeek: number; // 0 = Sunday … 6 = Saturday
   isOpen: boolean;
@@ -35,7 +47,7 @@ export type ReturnScheduleReason = "CLOSED_DAY" | "AFTER_CLOSE" | "BEFORE_OPEN";
 
 export interface ScheduleVerdict {
   status: ScheduleVerdictStatus;
-  /** Effective closing time display string (e.g. "10:00 PM") — set on RETURN_GRACE / RETURN_BUMPED / RETURN_OUTSIDE_HOURS */
+  /** Effective closing time display string (e.g. "10:00 PM") — set on PICKUP_AT_OR_AFTER_CLOSE / RETURN_GRACE / RETURN_BUMPED / RETURN_OUTSIDE_HOURS */
   closingTime?: string;
   /** Grace window end as display string — set on RETURN_GRACE / RETURN_OUTSIDE_HOURS */
   gracePeriodEnd?: string;
@@ -49,6 +61,8 @@ export interface ScheduleVerdict {
   closedDayName?: string;
   /** Why the return was moved or refused — set on RETURN_BUMPED / RETURN_OUTSIDE_HOURS */
   reason?: ReturnScheduleReason;
+  /** Latest allowed pickup that day (closing − PICKUP_CUTOFF_MINUTES), e.g. "10:30 PM" — set on PICKUP_AT_OR_AFTER_CLOSE */
+  lastPickupTime?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -75,14 +89,16 @@ function getScheduleForDay(
   config: BranchScheduleConfig,
   dayOfWeek: number,
 ): { isOpen: boolean; openMinutes: number; closeMinutes: number; openTime: string; closeTime: string } {
-  // No schedule rows → treat branch as 24/7 (RISK-001 guard)
-  if (config.schedules.length === 0) {
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: "00:00", closeTime: "24:00" };
-  }
   const row = config.schedules.find((s) => s.dayOfWeek === dayOfWeek);
   if (!row) {
-    // Missing day row → treat as open 24hr for that day
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: "00:00", closeTime: "24:00" };
+    // No saved row for this day (or no rows at all) → default hours, 8 AM – 11 PM
+    return {
+      isOpen: true,
+      openMinutes: timeToMinutes(DEFAULT_BRANCH_HOURS.openTime),
+      closeMinutes: timeToMinutes(DEFAULT_BRANCH_HOURS.closeTime),
+      openTime: DEFAULT_BRANCH_HOURS.openTime,
+      closeTime: DEFAULT_BRANCH_HOURS.closeTime,
+    };
   }
   return {
     isOpen: row.isOpen,
@@ -178,14 +194,15 @@ function bumpVerdict(
 
 /**
  * Opening window of one branch-local day, for pickers and checks.
- * null = no restriction that day (24-hour branch, or no hours configured).
- * Minutes are since local midnight; returns are allowed up to graceEndMin.
+ * null = no restriction that day (24-hour branch only — a day without saved
+ * hours uses DEFAULT_BRANCH_HOURS). Minutes are since local midnight; pickups
+ * are allowed in [openMin, lastPickupMin], returns in [openMin, graceEndMin].
  */
 export function getDayWindow(
   config: BranchScheduleConfig,
   date: Date,
-): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number } | null {
-  if (config.is24Hours || config.schedules.length === 0) return null;
+): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number; lastPickupMin: number } | null {
+  if (config.is24Hours) return null;
   const { dayOfWeek } = getBranchLocalTime(date);
   const day = getScheduleForDay(config, dayOfWeek);
   return {
@@ -193,6 +210,58 @@ export function getDayWindow(
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
     graceEndMin: day.closeMinutes + config.graceMinutes,
+    lastPickupMin: day.closeMinutes - PICKUP_CUTOFF_MINUTES,
+  };
+}
+
+export interface EffectiveScheduleRow extends BranchScheduleRow {
+  /** True when the branch has no saved row for this day and DEFAULT_BRANCH_HOURS fill it. */
+  isDefault: boolean;
+  /** Latest pickup "HH:mm" (closeTime − PICKUP_CUTOFF_MINUTES); null on a closed day. */
+  lastPickupTime: string | null;
+}
+
+/** "HH:mm" for minutes since midnight (wraps within the day). */
+function minutesToHHmm(mins: number): string {
+  const normalised = ((mins % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalised / 60)).padStart(2, "0")}:${String(normalised % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The seven weekly rows (Sunday first) the rules actually use: saved rows as
+ * they are, days without a row filled with DEFAULT_BRANCH_HOURS. A 24-hour
+ * branch ignores these entirely (is24Hours wins).
+ */
+export function getEffectiveSchedules(schedules: BranchScheduleRow[]): EffectiveScheduleRow[] {
+  return DAY_NAMES.map((_, dayOfWeek) => {
+    const row = schedules.find((s) => s.dayOfWeek === dayOfWeek);
+    const isOpen = row ? row.isOpen : true;
+    const openTime = row ? row.openTime : DEFAULT_BRANCH_HOURS.openTime;
+    const closeTime = row ? row.closeTime : DEFAULT_BRANCH_HOURS.closeTime;
+    return {
+      dayOfWeek,
+      isOpen,
+      openTime,
+      closeTime,
+      isDefault: !row,
+      lastPickupTime: isOpen ? minutesToHHmm(timeToMinutes(closeTime) - PICKUP_CUTOFF_MINUTES) : null,
+    };
+  });
+}
+
+/**
+ * Body of the branch-hours endpoints (public, BM, admin) and the extension
+ * eligibility `officeHours`: the saved rows unchanged, plus the effective week.
+ * defaultHours = the branch has no saved rows, so every day uses the defaults.
+ */
+export function buildScheduleResponse(branch: BranchScheduleConfig) {
+  return {
+    schedules: branch.schedules,
+    graceMinutes: branch.graceMinutes,
+    is24Hours: branch.is24Hours,
+    defaultHours: branch.schedules.length === 0,
+    pickupCutoffMinutes: PICKUP_CUTOFF_MINUTES,
+    effectiveSchedules: getEffectiveSchedules(branch.schedules),
   };
 }
 
@@ -211,8 +280,8 @@ export function validateBookingSchedule(
   pickupLocal: Date,
   returnLocal: Date,
 ): ScheduleVerdict {
-  // 24/7 branch — no restrictions
-  if (config.is24Hours || config.schedules.length === 0) {
+  // 24-hour branch — no restrictions (no saved rows = default hours, not 24/7)
+  if (config.is24Hours) {
     return { status: "OK" };
   }
 
@@ -236,10 +305,13 @@ export function validateBookingSchedule(
     };
   }
 
-  if (pickupMins >= pickupDay.closeMinutes) {
+  // Last pickup is PICKUP_CUTOFF_MINUTES before closing (status name kept for old clients)
+  const lastPickupMins = pickupDay.closeMinutes - PICKUP_CUTOFF_MINUTES;
+  if (pickupMins > lastPickupMins) {
     return {
       status: "PICKUP_AT_OR_AFTER_CLOSE",
       closingTime: minutesToDisplay(pickupDay.closeMinutes),
+      lastPickupTime: minutesToDisplay(lastPickupMins),
     };
   }
 
@@ -293,7 +365,8 @@ export function validateBookingSchedule(
  * Returns OK / RETURN_GRACE, or RETURN_OUTSIDE_HOURS with a reason.
  */
 export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
-  if (config.is24Hours || config.schedules.length === 0) {
+  // 24-hour branch only — no saved rows means default hours apply
+  if (config.is24Hours) {
     return { status: "OK" };
   }
   const { dayOfWeek, hours, minutes } = getBranchLocalTime(returnLocal);
@@ -404,6 +477,9 @@ export function buildScheduleErrorMessage(verdict: ScheduleVerdict): string {
     case "PICKUP_BEFORE_OPEN":
       return `Branch opens at ${verdict.openingTime ?? "opening time"}. Please select a later pickup time.`;
     case "PICKUP_AT_OR_AFTER_CLOSE":
+      if (verdict.lastPickupTime) {
+        return `Last pickup is ${verdict.lastPickupTime} (${PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an earlier pickup time.`;
+      }
       return `Pickup cannot be at or after closing time (${verdict.closingTime ?? "closing time"}). Please select an earlier time.`;
     case "NO_OPEN_DAY_IN_WINDOW":
       return "No available return window in the next 7 days. Please contact the branch directly.";

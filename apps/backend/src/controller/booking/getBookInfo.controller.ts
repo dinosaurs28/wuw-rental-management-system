@@ -39,6 +39,11 @@ import {
   type PaymentFlow,
 } from "../../services/payment/payment-flow.service.js";
 import { couponValidationService, normalizeCouponCode } from "../../services/discount/coupon-validation.service.js";
+import {
+  assertDlFree,
+  lockAndAssertDlFree,
+  DlInUseError,
+} from "../../services/booking/dl-in-use.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -169,31 +174,37 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     const { vehicles, groupKeys, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
     const customerId = userData.customerProfile.id;
-    const kycFile = await prisma.fileObject.findUnique({
-      where: { publicId: file_public_id },
-      select: { id: true, customerKycs: { select: { customer: { select: { userId: true } } } } },
-    });
-
-    if (!kycFile) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC document" });
-    }
-
-    // The file must be one of the caller's own KYC documents: a file that isn't
-    // linked to any KYC row (e.g. a pickup photo) is rejected too.
-    const kycOwners = (kycFile.customerKycs ?? []).map((k) => k.customer?.userId);
-    if (kycOwners.length === 0) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        success: false,
-        code: "KYC_DOCUMENT_INVALID",
-        message: "Invalid KYC document. Select one of your uploaded KYC documents.",
+    // KYC picture (X2): optional — the profile gate (DL + Aadhaar NUMBERS) already
+    // ran. Omitted ⇒ Booking.kycFileId stays null; when sent it must be valid.
+    let kycFile: { id: number } | null = null;
+    if (file_public_id) {
+      const sentKycFile = await prisma.fileObject.findUnique({
+        where: { publicId: file_public_id },
+        select: { id: true, customerKycs: { select: { customer: { select: { userId: true } } } } },
       });
-    }
-    if (!kycOwners.includes(userData.id)) {
-      return res.status(StatusCode.FORBIDDEN).json({
-        success: false,
-        code: "KYC_NOT_OWNED",
-        message: "KYC document does not belong to your account",
-      });
+
+      if (!sentKycFile) {
+        return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC document" });
+      }
+
+      // The file must be one of the caller's own KYC documents: a file that isn't
+      // linked to any KYC row (e.g. a pickup photo) is rejected too.
+      const kycOwners = (sentKycFile.customerKycs ?? []).map((k) => k.customer?.userId);
+      if (kycOwners.length === 0) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "KYC_DOCUMENT_INVALID",
+          message: "Invalid KYC document. Select one of your uploaded KYC documents.",
+        });
+      }
+      if (!kycOwners.includes(userData.id)) {
+        return res.status(StatusCode.FORBIDDEN).json({
+          success: false,
+          code: "KYC_NOT_OWNED",
+          message: "KYC document does not belong to your account",
+        });
+      }
+      kycFile = { id: sentKycFile.id };
     }
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -234,6 +245,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       }
       throw windowErr;
     }
+
+    // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
+    await assertDlFree({ customerId, mode: "create", window: { startAt: startDate, endAt: endDate } });
 
     // ── Resolve groupKeys to specific vehicles (atomic within the DB transaction below) ──
     // We pre-check here (outside tx) to return early on obvious mismatches.
@@ -705,6 +719,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       : null;
 
     const booking = await prisma.$transaction(async (tx) => {
+      // Same driving licence on two concurrent holds: serialised here, one wins (X3)
+      await lockAndAssertDlFree(
+        { customerId, mode: "create", window: { startAt: startDate, endAt: endDate } },
+        tx,
+      );
+
       // Atomically resolve each groupKey to a specific vehicle within the transaction
       for (const [gkIndex, gk] of resolvedGroupKeys.entries()) {
         try {
@@ -812,7 +832,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         data: {
           publicId: createID(),
           customerId: customerId,
-          kycFileId: kycFile.id,
+          kycFileId: kycFile?.id ?? null,
           branchId: (vehiclesData[0]?.branchId ?? resolvedGroupVehicles[0]?.branchId)!,
           startAt: startDate,
           endAt: endDate,
@@ -1042,6 +1062,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: e.message,
         couponRejected: true,
       });
+    }
+    if (e instanceof DlInUseError) {
+      // Customer-safe: never names the other booking
+      return res.status(e.status).json(e.toJSON("customer"));
     }
     if (e?.code === "NO_VEHICLE_AVAILABLE") {
       return res.status(409).json({ code: "NO_VEHICLE_AVAILABLE", message: e.message });

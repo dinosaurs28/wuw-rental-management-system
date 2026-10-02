@@ -24,6 +24,7 @@ import {
 } from "../../services/tax/gst.service.js";
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import { DlInUseError } from "../../services/booking/dl-in-use.service.js";
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
@@ -102,6 +103,11 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
     // 15-day limit (BOOKING_MAX_PERIOD_EXCEEDED) / office hours (BRANCH_SCHEDULE_VIOLATION)
     if (error instanceof BookingWindowError || error instanceof BranchScheduleError) {
       res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
+      return;
+    }
+    // The added time overlaps another booking on the same driving licence (X3)
+    if (error instanceof DlInUseError) {
+      res.status(error.status).json(error.toJSON("staff"));
       return;
     }
     if (isGstRuleMissing(error)) {
@@ -190,6 +196,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
   } catch (error: any) {
     if (error instanceof CounterGuardError) {
       res.status(error.status).json(error.toJSON());
+      return;
+    }
+    if (error instanceof DlInUseError) {
+      res.status(error.status).json(error.toJSON("staff"));
       return;
     }
     if (isGstRuleMissing(error)) {

@@ -2,12 +2,13 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { validateScheduleRows } from "../../utils/booking/branchScheduleValidator.js";
+import { validateScheduleRows, buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
 
 /**
  * GET /admin/dashboard/branches/:branchPublicId/schedule
  * The branch's weekly office hours, grace and 24-hour flag (same shape as the
- * public schedule endpoint). Empty schedules = hours not set (open 24/7).
+ * public schedule endpoint). Empty schedules = default hours (8 AM – 11 PM
+ * every day, defaultHours: true); effectiveSchedules has the week filled in.
  */
 export const getAdminBranchSchedule = async (req: Request, res: Response) => {
   try {
@@ -26,11 +27,7 @@ export const getAdminBranchSchedule = async (req: Request, res: Response) => {
     if (!branch) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
     }
-    return res.status(StatusCode.OK).json({
-      schedules: branch.schedules,
-      graceMinutes: branch.graceMinutes,
-      is24Hours: branch.is24Hours,
-    });
+    return res.status(StatusCode.OK).json(buildScheduleResponse(branch));
   } catch (error) {
     console.error("[getAdminBranchSchedule] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

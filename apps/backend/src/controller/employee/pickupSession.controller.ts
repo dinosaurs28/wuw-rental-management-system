@@ -47,6 +47,14 @@ import {
   dlValidationError,
   DlStatusError,
 } from "../../services/booking/dl-status.service.js";
+import {
+  parsePickupDlNumber,
+  resolvePickupDlNumber,
+  savePickupDlNumber,
+  logPickupDlNumber,
+  PickupDlNumberError,
+} from "../../services/booking/pickup-dl-number.service.js";
+import { assertDlFree, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -64,9 +72,10 @@ const initiatePickupSessionSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
-  // Original licence custody (#3): COLLECTED / NOT_COLLECTED / DEPOSIT (+ note).
-  // licenseCollected is the old builds' tick: true ⇒ COLLECTED, false ⇒ refused.
-  dlStatus: z.enum(DL_COLLECTION_STATUSES).optional(),
+  // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED /
+  // DEPOSIT (+ note); omitted or null ⇒ left unset. licenseCollected is the old
+  // builds' tick: true ⇒ COLLECTED, false ⇒ NOT_COLLECTED.
+  dlStatus: z.enum(DL_COLLECTION_STATUSES).nullish(),
   dlDepositNote: z.string().trim().max(DL_DEPOSIT_NOTE_MAX).nullish(),
   licenseCollected: z.boolean().optional(),
 });
@@ -149,14 +158,35 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       });
     }
 
-    // Original licence custody (#3). Old builds send the boolean tick instead
-    // (true ⇒ COLLECTED, false ⇒ refused); sending neither records nothing.
-    // Throws DlStatusError (LICENSE_NOT_COLLECTED / DL_DEPOSIT_NOTE_REQUIRED).
+    // X2: the customer's DL NUMBER is required (the DL picture is optional) —
+    // sent now (400 INVALID_DL_NUMBER when invalid) or already on file;
+    // 422 DL_NUMBER_REQUIRED otherwise.
+    const pickupDl = await resolvePickupDlNumber(
+      booking.customerId,
+      parsePickupDlNumber(req.body?.drivingLicenceNumber),
+    );
+
+    // Original licence custody (#3), optional (X1). Old builds send the boolean
+    // tick instead (true ⇒ COLLECTED, false ⇒ NOT_COLLECTED); sending neither
+    // records nothing. Throws DlStatusError (DL_DEPOSIT_NOTE_REQUIRED).
     const dlChoice = resolvePickupDlStatus({ dlStatus, dlDepositNote, licenseCollected });
 
     // A re-initiated session may change the choice; licenseCollectedAt is only
     // written while unset, so it keeps the first collection time.
     const licenseCollectedData = dlChoice ? dlStatusUpdateData(dlChoice, actor.id, booking) : null;
+
+    // One vehicle per driving licence (X3): no session while another booking on
+    // this DL is out. Re-checked under a lock when the session completes.
+    await assertDlFree({
+      dlNumber: pickupDl.drivingLicenceNumber,
+      mode: "pickup",
+      excludeBookingId: booking.id,
+    });
+
+    // A DL number sent with the request is saved to the customer (X2) once the
+    // request is known to be valid, so a retry finds it on file.
+    await savePickupDlNumber(pickupDl);
+    await logPickupDlNumber(req, pickupDl, booking.publicId);
 
     // Create or return existing PICKUP session
     const session = await paymentSessionService.createSession(
@@ -475,6 +505,12 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
   } catch (err: any) {
     if (err instanceof DlStatusError) {
       return res.status(err.status).json(err.toJSON());
+    }
+    if (err instanceof PickupDlNumberError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    if (err instanceof DlInUseError) {
+      return res.status(err.status).json(err.toJSON("staff"));
     }
     if (err instanceof CounterCouponError) {
       return res.status(err.status).json({ ...err.toJSON(), couponRejected: true });

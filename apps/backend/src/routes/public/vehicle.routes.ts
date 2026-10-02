@@ -4,7 +4,6 @@ import {
   getPublicVehiclesDetails,
   getVehicleGroupDetails,
 } from "../../controller/public/vehicles.controller.js";
-import { kycCheck } from "../../middlewares/kycCheck.middlewares.js";
 import { createBookingSummary } from "../../controller/booking/getBookInfo.controller.js";
 import { getCustomerBookingLimits } from "../../controller/booking/customerLimits.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
@@ -22,9 +21,10 @@ router.get("/vehicles", getPublicVehicles);
 router.get("/vehicles/group/:groupKey", getVehicleGroupDetails);
 router.get("/vehicles/:id", getPublicVehiclesDetails);
 router.get("/customer/booking-limits", authCheckJwt, checkProfileCompletion, getCustomerBookingLimits);
+// The KYC picture is optional (X2): the profile gate (DL + Aadhaar numbers) decides.
 router
   .route("/vehicles/booking")
-  .all(authCheckJwt, checkProfileCompletion, kycCheck)
+  .all(authCheckJwt, checkProfileCompletion)
   .post(createBookingSummary);
 
 export default router;

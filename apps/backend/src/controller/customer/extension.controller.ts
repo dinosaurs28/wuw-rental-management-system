@@ -27,6 +27,7 @@ import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
 } from "../../services/extension/extension-limits.service.js";
+import { findDlConflict, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 
 /**
  * POST /api/user/bookings/:bookingPublicId/extensions/evaluate
@@ -201,6 +202,12 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
     // 15-day limit (BOOKING_MAX_PERIOD_EXCEEDED) / office hours (BRANCH_SCHEDULE_VIOLATION)
     if (error instanceof BookingWindowError || error instanceof BranchScheduleError) {
       res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
+      return;
+    }
+    // The added time overlaps another booking on the same driving licence (X3) —
+    // customer-safe message, the other booking is never named
+    if (error instanceof DlInUseError) {
+      res.status(error.status).json(error.toJSON("customer"));
       return;
     }
     console.error("Customer EvaluateExtension Error:", error);
@@ -473,6 +480,19 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
       res.status(StatusCode.CONFLICT).json({
         message: "Your vehicle is no longer free for the new return time. Please check the extension again.",
       });
+      return;
+    }
+
+    // Same for the driving licence (X3): no other booking on it may have taken
+    // the added time since the quote
+    const dlConflict = await findDlConflict({
+      customerId: booking.customerId,
+      mode: "extend",
+      window: { startAt: booking.endAt, endAt: extensionRecord.requestedEndAt },
+      excludeBookingId: booking.id,
+    });
+    if (dlConflict) {
+      res.status(dlConflict.status).json(dlConflict.toJSON("customer"));
       return;
     }
 

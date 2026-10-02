@@ -92,11 +92,12 @@ export function dlValidationError(error: {
 }
 
 /**
- * What a pickup request says about the licence. Throws DlStatusError.
+ * What a pickup request says about the licence. Recording it is OPTIONAL (X1):
+ * it never blocks the handover. Throws DlStatusError only for a DEPOSIT without a note.
  *  - dlStatus sent           → that status (DEPOSIT needs a note); licenseCollected is ignored
  *  - licenseCollected: true  → COLLECTED (old builds' tick)
- *  - licenseCollected: false → refused, LICENSE_NOT_COLLECTED (old builds' unticked box)
- *  - neither sent            → null: an old build — let through, nothing recorded
+ *  - licenseCollected: false → NOT_COLLECTED (old builds' unticked box)
+ *  - neither sent (or null)  → null: left unset, nothing recorded (can be set later)
  */
 export function resolvePickupDlStatus(input: {
   dlStatus?: DlCollectionStatus | null;
@@ -121,11 +122,7 @@ export function resolvePickupDlStatus(input: {
     return { dlStatus: "COLLECTED", dlDepositNote: null };
   }
   if (input.licenseCollected === false) {
-    throw new DlStatusError(
-      StatusCode.BAD_REQUEST,
-      "LICENSE_NOT_COLLECTED",
-      "Collect the customer's original driving licence before handing over the vehicle.",
-    );
+    return { dlStatus: "NOT_COLLECTED", dlDepositNote: null };
   }
   return null;
 }

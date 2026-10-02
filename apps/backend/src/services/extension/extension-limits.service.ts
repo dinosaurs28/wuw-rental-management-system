@@ -7,7 +7,7 @@
 import { prisma, BookingStatus, RentalPeriodType } from "@repo/database/client";
 import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS } from "@repo/schemas";
 import { extensionMaxEndAt } from "../../utils/booking/bookingWindow.js";
-import type { BranchScheduleRow } from "../../utils/booking/branchScheduleValidator.js";
+import { buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
 
 export interface ExtensionLimits {
   /** Latest end an extension may request (ISO). */
@@ -21,8 +21,11 @@ export interface ExtensionLimits {
   bookingStartAt: string;
   currentEndAt: string;
   branchPublicId: string;
-  /** Branch office hours — same shape as GET /api/public/branch/:branchPublicId/schedule. */
-  officeHours: { schedules: BranchScheduleRow[]; graceMinutes: number; is24Hours: boolean };
+  /**
+   * Branch office hours — same shape as GET /api/public/branch/:branchPublicId/schedule
+   * (incl. defaultHours, pickupCutoffMinutes and effectiveSchedules).
+   */
+  officeHours: ReturnType<typeof buildScheduleResponse>;
 }
 
 export const EXTENDABLE_BOOKING_STATUSES: BookingStatus[] = [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP];
@@ -60,10 +63,10 @@ export async function buildExtensionLimits(
     bookingStartAt: booking.startAt.toISOString(),
     currentEndAt: booking.endAt.toISOString(),
     branchPublicId: branch?.publicId ?? "",
-    officeHours: {
+    officeHours: buildScheduleResponse({
       schedules: branch?.schedules ?? [],
       graceMinutes: branch?.graceMinutes ?? 0,
       is24Hours: branch?.is24Hours ?? false,
-    },
+    }),
   };
 }

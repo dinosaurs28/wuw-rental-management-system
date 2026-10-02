@@ -55,6 +55,7 @@ import {
   lockBookingForDrop,
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
+import { lockAndAssertDlFreeForPickup, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -769,6 +770,17 @@ async function runPostCompletionHooks(
   tx: any,
 ): Promise<number[]> {
   if (sessionType === PaymentSessionType.PICKUP) {
+    // One vehicle per driving licence (X3): the handover is refused (and the
+    // payment rolled back) while another booking on this DL is out.
+    try {
+      await lockAndAssertDlFreeForPickup(bookingId, tx);
+    } catch (err) {
+      if (err instanceof DlInUseError) {
+        throw new SettlementConflict(err.status, err.toJSON("staff"));
+      }
+      throw err;
+    }
+
     const booking = await tx.booking.findUniqueOrThrow({
       where: { id: bookingId },
       include: { items: { select: { vehicleId: true } } },

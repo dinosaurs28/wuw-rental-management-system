@@ -39,6 +39,7 @@ import {
   BranchScheduleError,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.js";
 
 export interface ActorContext {
   actorId: number;
@@ -215,6 +216,15 @@ class ExtensionService {
         throw new BranchScheduleError(returnVerdict);
       }
     }
+
+    // One vehicle per driving licence (X3): the added time must not overlap
+    // another active booking on the same DL. Throws DlInUseError (409).
+    await assertDlFree({
+      customerId: booking.customerId,
+      mode: "extend",
+      window: { startAt: booking.endAt, endAt: newEndAt },
+      excludeBookingId: booking.id,
+    });
 
     // Prevent concurrent extensions
     if (booking.activeExtensionId !== null) {
@@ -487,6 +497,14 @@ class ExtensionService {
           ? new Date(input.partialNewEndAt)
           : extension.requestedEndAt;
 
+      // Driving licence still free for the added time (X3) — before any swap runs
+      await assertDlFree({
+        customerId: booking.customerId,
+        mode: "extend",
+        window: { startAt: booking.endAt, endAt: effectiveNewEndAt },
+        excludeBookingId: booking.id,
+      });
+
       if (
         input.resolutionType === "SAME_VEHICLE" ||
         input.resolutionType === "PARTIAL_EXTENSION"
@@ -566,10 +584,22 @@ class ExtensionService {
       // ── Vehicle hold ──────────────────────────────────────────────────────
       // Update booking.endAt immediately so the vehicle slot is blocked for
       // other bookings while payment is pending. Reverted in the catch block
-      // if the commit rolls back.
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: { endAt: effectiveNewEndAt },
+      // if the commit rolls back. The driving licence is re-checked under its
+      // lock (X3) so a booking made since the quote can't end up overlapping.
+      await prisma.$transaction(async (tx) => {
+        await lockAndAssertDlFree(
+          {
+            customerId: booking.customerId,
+            mode: "extend",
+            window: { startAt: booking.endAt, endAt: effectiveNewEndAt },
+            excludeBookingId: booking.id,
+          },
+          tx,
+        );
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { endAt: effectiveNewEndAt },
+        });
       });
 
       // Persist extension resolution details. requestedEndAt becomes the end

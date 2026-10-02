@@ -2,11 +2,13 @@ import { Request, Response } from "express";
 import { prisma, BookingRestrictionMode } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { validateScheduleRows } from "../../utils/booking/branchScheduleValidator.js";
+import { validateScheduleRows, buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
 
 /**
  * GET /branchManager/dashboard/branch/schedule
  * Returns the schedule for the manager's own branch (branch resolved from JWT).
+ * Same body as the public schedule endpoint (defaultHours: true when no rows
+ * are saved — every day then uses 8 AM – 11 PM).
  */
 export const getManagerBranchSchedule = async (req: Request, res: Response) => {
   try {
@@ -29,11 +31,7 @@ export const getManagerBranchSchedule = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
     }
 
-    return res.status(StatusCode.OK).json({
-      schedules: branch.schedules,
-      graceMinutes: branch.graceMinutes,
-      is24Hours: branch.is24Hours,
-    });
+    return res.status(StatusCode.OK).json(buildScheduleResponse(branch));
   } catch (error) {
     console.error("[getManagerBranchSchedule] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

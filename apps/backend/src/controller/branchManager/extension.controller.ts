@@ -11,6 +11,7 @@ import {
 } from "../../services/tax/gst.service.js";
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import { DlInUseError } from "../../services/booking/dl-in-use.service.js";
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
@@ -85,6 +86,11 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
       return;
     }
+    // The added time overlaps another booking on the same driving licence (X3)
+    if (error instanceof DlInUseError) {
+      res.status(error.status).json(error.toJSON("staff"));
+      return;
+    }
     if (isGstRuleMissing(error)) {
       res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
       return;
@@ -137,6 +143,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       },
     });
   } catch (error: any) {
+    if (error instanceof DlInUseError) {
+      res.status(error.status).json(error.toJSON("staff"));
+      return;
+    }
     if (isGstRuleMissing(error)) {
       res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
       return;

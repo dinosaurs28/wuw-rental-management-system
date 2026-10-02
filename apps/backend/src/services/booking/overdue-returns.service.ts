@@ -90,6 +90,8 @@ export interface OverdueReturnRow {
     name: string | null;
     phone: string | null;
     alternatePhone: string | null;
+    /** Staff-only: full DL number on file, to check against the licence held. */
+    drivingLicenceNumber: string | null;
   };
   vehicles: Array<{
     publicId: string;
@@ -286,6 +288,7 @@ export const listOverdueReturns = async (
             select: {
               publicId: true,
               alternatePhone: true,
+              drivingLicenceNumber: true,
               user: { select: { name: true, phone: true } },
             },
           },
@@ -353,6 +356,7 @@ export const listOverdueReturns = async (
         name: booking.customer?.user?.name ?? null,
         phone: booking.customer?.user?.phone ?? null,
         alternatePhone: booking.customer?.alternatePhone || null,
+        drivingLicenceNumber: booking.customer?.drivingLicenceNumber || null,
       },
       vehicles: booking.items.map((item) => ({
         publicId: item.vehicle.publicId,

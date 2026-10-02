@@ -11,7 +11,12 @@ export const bookingSummarySchema = z
     groupKeys: z.array(z.string().min(1)).optional().default([]),
     start: z.string().min(1),
     end: z.string().min(1),
-    file_public_id: z.string().min(1),
+    // KYC picture (X2): optional — the DL + Aadhaar NUMBERS gate the booking.
+    // Blank / null is the same as omitted.
+    file_public_id: z
+      .string()
+      .nullish()
+      .transform((v) => v?.trim() || undefined),
     payment_type: z.enum(["CASH", "ONLINE"]),
     payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
     couponCode: z.string().min(1).max(50).optional(),
@@ -130,10 +135,10 @@ export const pickUpVehicleSchema = z.object({
     .optional(),
   requireManagerConfirmation: z.boolean().optional(),
   payRemainingAtPickup: z.boolean().optional(),
-  // Licence custody (#3). New clients send dlStatus (+ dlDepositNote for DEPOSIT).
-  // Deprecated alias for old builds: licenseCollected true ⇒ COLLECTED; false
-  // without dlStatus is refused (LICENSE_NOT_COLLECTED); both omitted ⇒ nothing recorded.
-  dlStatus: dlCollectionStatusSchema.optional(),
+  // Licence custody (#3) is OPTIONAL (X1): dlStatus (+ dlDepositNote for DEPOSIT)
+  // when staff record it; omitted or null ⇒ nothing recorded. Deprecated alias for
+  // old builds: licenseCollected true ⇒ COLLECTED, false ⇒ NOT_COLLECTED.
+  dlStatus: dlCollectionStatusSchema.nullish(),
   dlDepositNote: dlDepositNoteSchema.nullish(),
   licenseCollected: z.boolean().optional(),
 });

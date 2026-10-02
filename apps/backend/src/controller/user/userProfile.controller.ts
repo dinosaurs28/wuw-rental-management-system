@@ -95,7 +95,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       where: { publicId },
       include: {
         customerProfile: {
-          select: { drivingLicenceNumber: true, aadhaarNumber: true },
+          select: { id: true, drivingLicenceNumber: true, aadhaarNumber: true },
         },
       },
     });
@@ -103,6 +103,33 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       return res
         .status(StatusCode.NOT_FOUND)
         .json({ message: "User not found" });
+    }
+
+    // One vehicle per DL (X3): a customer can't swap the DL number on file
+    // while a booking is live, or a new number would slip past DL_IN_USE.
+    // Adding a number for the first time is always allowed; staff correct
+    // mistakes at the counter or at pickup.
+    const storedDl = user.customerProfile?.drivingLicenceNumber ?? null;
+    if (storedDl && data.drivingLicenceNumber && data.drivingLicenceNumber !== storedDl) {
+      const liveBooking = await prisma.booking.findFirst({
+        where: {
+          customerId: user.customerProfile!.id,
+          deletedAt: null,
+          OR: [
+            { status: { in: ["CONFIRMED", "PICKED_UP"] } },
+            { status: "HOLD", holdExpiresAt: { gt: new Date() } },
+          ],
+        },
+        select: { id: true },
+      });
+      if (liveBooking) {
+        return res.status(StatusCode.CONFLICT).json({
+          success: false,
+          code: "DL_NUMBER_LOCKED",
+          message:
+            "You can change your driving licence number once your current booking is completed. If it's wrong, ask the branch to correct it.",
+        });
+      }
     }
 
     // Numbers omitted by an old client keep their stored values.
