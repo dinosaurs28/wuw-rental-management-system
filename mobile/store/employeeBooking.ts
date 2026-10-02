@@ -27,6 +27,7 @@ interface EmployeeBookingState {
   start: string | null; // ISO datetime
   end: string | null; // ISO datetime
   vehicle: EmployeeBookingVehicle | null;
+  // CustomerKyc.publicId to attach, sent as customer_kyc_id. Optional (X2): null = none.
   customerKycId: string | null;
   // QrPhoto.publicId of the customer's current QR code photo (#4); required
   // before the summary, sent as qr_photo_id on create.

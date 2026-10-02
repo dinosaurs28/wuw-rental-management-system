@@ -79,7 +79,9 @@ export const vehiclesApi = {
   categories: () => api.get('/api/public/categories'),
   branches: () => api.get('/api/public/branches'),
   // Office hours (#2), no auth: { schedules: [{ dayOfWeek, isOpen, openTime, closeTime }],
-  // graceMinutes, is24Hours } at the top level. is24Hours or no rows = open 24/7.
+  // graceMinutes, is24Hours } at the top level; newer servers add defaultHours,
+  // pickupCutoffMinutes and effectiveSchedules. is24Hours = open 24/7; a day
+  // without a row = default 8 AM – 11 PM (lib/branchSchedule.ts).
   branchSchedule: (branchPublicId: string) =>
     api.get(`/api/public/branch/${encodeURIComponent(branchPublicId)}/schedule`),
   // Coupon preview (stateless): { data: CouponValidateResult }, HTTP 200 for a
@@ -93,7 +95,8 @@ export const vehiclesApi = {
     groupKeys: string[];
     start: string;
     end: string;
-    file_public_id: string;
+    // X2: optional — the KYC document the customer chose to attach, if any.
+    file_public_id?: string;
     payment_type: 'CASH' | 'ONLINE';
     payment_flow: 'FULL' | 'ADVANCE';
     couponCode?: string;
@@ -334,12 +337,15 @@ export const employeeApi = {
     payRemainingAtPickup?: boolean;
     // gated by booking.frozenChargeConfig.safetyDepositEnabled
     safetyDepositRequest?: { requestedAmount: number; reason: string };
-    // Original driving licence status (#3) — required by the UI, no default.
-    // DEPOSIT needs dlDepositNote (≤200 chars); the server clears it otherwise.
-    dlStatus?: DlCollectionStatus;
+    // Original driving licence status (#3) — optional (X1): omitted / null leaves
+    // it unset. DEPOSIT needs dlDepositNote (≤200 chars); the server clears it otherwise.
+    dlStatus?: DlCollectionStatus | null;
     dlDepositNote?: string | null;
     // Deprecated alias kept for old builds (dlStatus wins). Never send false.
     licenseCollected?: boolean;
+    // X2: the customer's DL number typed at the counter (saved to the customer).
+    // Required when none is on file: 422 DL_NUMBER_REQUIRED, 400 INVALID_DL_NUMBER.
+    drivingLicenceNumber?: string;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
@@ -516,7 +522,8 @@ export const employeeApi = {
     vehicles?: string[];
     group_key?: string;
     customer_public_id: string;
-    customer_kyc_id: string;
+    // X2: optional — omitted when staff attach no KYC document.
+    customer_kyc_id?: string;
     start: string;
     end: string;
     payment_type: 'CASH' | 'ONLINE' | 'UPI';
@@ -693,11 +700,13 @@ export const employeeApi = {
       pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
-      // Original driving licence status (#3); re-initiating applies a changed choice.
-      dlStatus?: DlCollectionStatus;
+      // Original driving licence status (#3), optional (X1); re-initiating applies a changed choice.
+      dlStatus?: DlCollectionStatus | null;
       dlDepositNote?: string | null;
       // Deprecated alias kept for old builds (dlStatus wins). Never send false.
       licenseCollected?: boolean;
+      // X2: DL number typed at the counter — same rules as completePickup.
+      drivingLicenceNumber?: string;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
   // Fleet changes the original-licence status (#3) — CONFIRMED / PICKED_UP only

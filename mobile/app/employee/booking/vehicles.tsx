@@ -29,6 +29,7 @@ import {
   closedDayText,
   fitBookingRange,
   isClosedDay,
+  noPickupTimesLeft,
   rangeHoursLine,
   rangeScheduleIssue,
   slotsWithinHours,
@@ -545,6 +546,7 @@ export default function WalkinVehiclesScreen() {
         maxStartDay={bookingWindowLastDay()}
         endDayBounds={monthly ? (p) => ({ min: monthlyReturnMin(p), max: monthlyReturnMax(p) }) : undefined}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
+        noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
         note={
           monthly
             ? `Monthly rental: return ${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days after pickup`

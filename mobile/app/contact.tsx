@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../constants/colors';
 import { CONTACT, whatsappUrl } from '../constants/links';
 import { vehiclesApi } from '../lib/api';
-import { hasOfficeHours, toScheduleConfig, weeklyHours } from '../lib/branchSchedule';
+import { hasOfficeHours, pickupCutoffOf, toScheduleConfig, weeklyHours } from '../lib/branchSchedule';
 import WhatsAppSupportButton from '../components/ui/WhatsAppSupportButton';
 import { useWhatsAppConfig } from '../hooks/useWhatsAppConfig';
 
@@ -140,9 +140,8 @@ export default function Contact() {
                         <Text style={styles.hoursMuted}>Loading hours…</Text>
                       ) : q?.isError || !config ? (
                         <Text style={styles.hoursMuted}>Hours unavailable right now</Text>
-                      ) : rows.length === 0 ? (
-                        <Text style={styles.hoursMuted}>Bookings accepted at any time</Text>
                       ) : (
+                        // Effective hours: days without saved hours show the default 8 AM – 11 PM.
                         rows.map((r) => (
                           <View key={r.days} style={styles.hoursRow}>
                             <Text style={styles.hoursDays}>{r.days}</Text>
@@ -150,9 +149,10 @@ export default function Contact() {
                           </View>
                         ))
                       )}
-                      {hasOfficeHours(config) && config.graceMinutes > 0 ? (
+                      {hasOfficeHours(config) ? (
                         <Text style={styles.hoursMuted}>
-                          Returns accepted up to {config.graceMinutes} min after closing
+                          Last pickup {pickupCutoffOf(config)} min before closing
+                          {config.graceMinutes > 0 ? ` · returns accepted up to ${config.graceMinutes} min after closing` : ''}
                         </Text>
                       ) : null}
                     </View>

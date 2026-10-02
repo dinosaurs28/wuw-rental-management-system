@@ -295,20 +295,27 @@ export default function Profile() {
         </View>
 
         {/* KYC documents */}
+        {/* X2 — document photos are optional; the DL + Aadhaar NUMBERS are what booking needs */}
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Identity Documents</Text>
+          <View style={styles.sectionTitleGroup}>
+            <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Identity Documents</Text>
+            <Text style={styles.optionalTag}>Optional</Text>
+          </View>
           {kycLoading && <ActivityIndicator size="small" color={Colors.orange} />}
         </View>
+        <Text style={styles.docsHint}>
+          Not needed to book — your Driving Licence and Aadhaar numbers are. Upload photos if you want them on file.
+        </Text>
 
         {!isProfileComplete && (
           <TouchableOpacity style={styles.incompleteBanner} onPress={() => router.push('/profile/edit')} activeOpacity={0.85}>
             <Ionicons name="alert-circle-outline" size={18} color="#d97706" />
             <View style={styles.incompleteBannerText}>
-              <Text style={styles.incompleteBannerTitle}>Complete your profile first</Text>
+              <Text style={styles.incompleteBannerTitle}>Complete your profile to book</Text>
               <Text style={styles.incompleteBannerSub}>
                 {missingText
-                  ? `Add your ${missingText} to upload KYC documents and book.`
-                  : 'Name, phone, address, Driving Licence and Aadhaar number required to upload KYC and book.'}
+                  ? `Add your ${missingText} to book a car and upload documents.`
+                  : 'Name, phone, address, Driving Licence and Aadhaar number are required to book a car and upload documents.'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#d97706" />
@@ -584,6 +591,19 @@ const styles = StyleSheet.create({
 
   /* Sections */
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 24 },
+  sectionTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  sectionTitleInline: { marginBottom: 0 },
+  optionalTag: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    color: Colors.ink3,
+    backgroundColor: '#0a0a0a0d',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  docsHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17, marginTop: -8, marginBottom: 12 },
   sectionTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,

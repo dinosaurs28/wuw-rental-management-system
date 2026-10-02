@@ -36,6 +36,7 @@ import {
   closedDayText,
   fitBookingRange,
   isClosedDay,
+  noPickupTimesLeft,
   rangeHoursLine,
   rangeScheduleIssue,
   slotsWithinHours,
@@ -238,6 +239,7 @@ export default function SearchCard({
         onClose={() => setDateOpen(false)}
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
+        noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
         note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
       />
       <TimeFieldPicker

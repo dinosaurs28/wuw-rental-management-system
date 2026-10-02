@@ -35,6 +35,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { couponRejection, employeeApi } from '../../../lib/api';
+import { dlInUseErrorText } from '../../../lib/dlInUse';
+import { drivingLicenceError, normalizeDrivingLicence } from '../../../lib/identity';
 import { counterCouponCapNote } from '../../../lib/discounts';
 import { rangeLengthLabel } from '../../../lib/dates';
 import {
@@ -78,7 +80,9 @@ interface BookingDetail extends DlStatusFields {
     fastagModuleEnabled?: boolean;
   } | null;
   days: number;
-  customer: { user: { name: string; phone: string | null } };
+  // drivingLicenceNumber (X2): the full number on file, null when none —
+  // absent (undefined) on servers older than the DL-number gate.
+  customer: { drivingLicenceNumber?: string | null; user: { name: string; phone: string | null } };
   items: Array<{
     vehicle: {
       make: string;
@@ -223,11 +227,18 @@ export default function PickupScreen() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   // Shots still uploading (or failed) — they aren't in `photos` yet.
   const [pendingPhotos, setPendingPhotos] = useState(0);
-  // Original driving licence status (#3): a required choice, nothing pre-selected.
+  // Original driving licence status (#3): optional (X1), nothing pre-selected.
   const [dlStatus, setDlStatus] = useState<DlCollectionStatus | null>(null);
   const [dlDepositNote, setDlDepositNote] = useState('');
   // The server refused the DL choice — highlight the section.
   const [dlRejected, setDlRejected] = useState(false);
+  // Driving licence NUMBER (X2): required for the handover. Typed here when none
+  // is on file, or to correct the one on file after checking the card.
+  const [dlNumberEditing, setDlNumberEditing] = useState(false);
+  const [dlNumberInput, setDlNumberInput] = useState('');
+  const [dlNumberTouched, setDlNumberTouched] = useState(false);
+  // 422 DL_NUMBER_REQUIRED / 400 INVALID_DL_NUMBER from the server.
+  const [dlNumberError, setDlNumberError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   // What was settled on the pickup session, for the success screen.
   const [paid, setPaid] = useState<{ amount: number; method: string } | null>(null);
@@ -268,6 +279,7 @@ export default function PickupScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const contentRef = useRef<View>(null);
   const odoRef = useRef<View>(null);
+  const dlNumberRef = useRef<View>(null);
   const mountedRef = useRef(true);
   const initiateBusyRef = useRef(false);
   const settleBusyRef = useRef(false);
@@ -374,9 +386,39 @@ export default function PickupScreen() {
     };
   };
 
-  // dlStatus (+ dlDepositNote for DEPOSIT). The handover gate guarantees a choice;
-  // licenseCollected is no longer sent (the server keeps it for old builds only).
+  // dlStatus (+ dlDepositNote for DEPOSIT) only when one was chosen — it's
+  // optional (X1) and left unset otherwise. licenseCollected is no longer sent
+  // (the server keeps it for old builds only).
   const dlBody = () => (dlStatus ? dlChoiceBody(dlStatus, dlDepositNote) : {});
+
+  // The typed DL number (X2), normalised, when it's valid and differs from the
+  // one on file; the server saves it to the customer. Nothing otherwise.
+  const dlNumberBody = (): { drivingLicenceNumber?: string } => {
+    const onFile = booking?.customer?.drivingLicenceNumber ?? null;
+    if ((onFile && !dlNumberEditing) || !dlNumberInput.trim() || drivingLicenceError(dlNumberInput)) return {};
+    const value = normalizeDrivingLicence(dlNumberInput);
+    return value === onFile ? {} : { drivingLicenceNumber: value };
+  };
+
+  // 422 DL_NUMBER_REQUIRED / 400 INVALID_DL_NUMBER: open the DL number field,
+  // show why under it and bring it into view. True when handled.
+  const noteDlNumberError = (err: any): boolean => {
+    const code = err?.response?.data?.code;
+    if (code !== 'DL_NUMBER_REQUIRED' && code !== 'INVALID_DL_NUMBER') return false;
+    setDlNumberEditing(true);
+    setDlNumberTouched(true);
+    setDlNumberError(apiErrorMessage(err, "Enter the customer's driving licence number."));
+    // The number on file may have changed elsewhere — reload it.
+    if (code === 'DL_NUMBER_REQUIRED') refetch();
+    setTimeout(() => {
+      dlNumberRef.current?.measureLayout(
+        contentRef.current as any,
+        (_x, y) => { scrollRef.current?.scrollTo({ y: Math.max(0, y - 40), animated: true }); },
+        () => {},
+      );
+    }, 150);
+    return true;
+  };
 
   const onPickupDone = (settled: { amount: number; method: string } | null) => {
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
@@ -401,8 +443,10 @@ export default function PickupScreen() {
           : {}),
         // Re-arms the backend's 402 remaining-balance guard as defense-in-depth behind the UI gate.
         payRemainingAtPickup: true,
-        // Original driving licence status — required choice below.
+        // Original driving licence status — optional choice below.
         ...dlBody(),
+        // DL number typed at the counter (X2) — saved to the customer.
+        ...dlNumberBody(),
       }),
     onSuccess: () => onPickupDone(null),
     onError: (err: any) => {
@@ -410,9 +454,11 @@ export default function PickupScreen() {
       // An auto-approved safety deposit is counter money — it needs an open shift.
       if (handleShiftRequired(err)) return;
       if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
+      noteDlNumberError(err);
       // 409: the branch switched to payment sessions — reload so the screen follows.
       if (err?.response?.status === 409) refetch();
-      setErrorMsg(apiErrorMessage(err, 'Something went wrong.'));
+      // X3 DL_IN_USE also names the booking holding this driving licence
+      setErrorMsg(dlInUseErrorText(err) ?? apiErrorMessage(err, 'Something went wrong.'));
     },
   });
 
@@ -434,10 +480,12 @@ export default function PickupScreen() {
     setInitiating(true);
     setErrorMsg(null);
     setDlRejected(false);
+    setDlNumberError(null);
     try {
       const res = await employeeApi.initiatePickupSession(bookingId as string, {
         ...handoverBody(),
         ...dlBody(),
+        ...dlNumberBody(),
       });
       const s = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
@@ -448,9 +496,10 @@ export default function PickupScreen() {
     } catch (err: any) {
       if (!mountedRef.current) return;
       if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
+      noteDlNumberError(err);
       // 409: payment sessions were switched off for the branch — reload into the legacy flow.
       if (err?.response?.status === 409) refetch();
-      setErrorMsg(apiErrorMessage(err, 'Could not start the payment.'));
+      setErrorMsg(dlInUseErrorText(err) ?? apiErrorMessage(err, 'Could not start the payment.'));
     } finally {
       initiateBusyRef.current = false;
       if (mountedRef.current) setInitiating(false);
@@ -693,7 +742,8 @@ export default function PickupScreen() {
       }
       // 409 amount mismatch / 400 not awaiting payment: the bill moved on — reload it.
       if (err?.response?.status === 409 || err?.response?.status === 400) void reloadSession();
-      setErrorMsg(apiErrorMessage(err, 'Could not record the payment.'));
+      // X3 DL_IN_USE: another booking on this licence is out — nothing was recorded
+      setErrorMsg(dlInUseErrorText(err) ?? apiErrorMessage(err, 'Could not record the payment.'));
     } finally {
       settleBusyRef.current = false;
       if (mountedRef.current) setSettling(false);
@@ -740,10 +790,19 @@ export default function PickupScreen() {
     Number(booking.remainingBalance) > 0 &&
     !booking.remainingPaidAt;
 
-  // #54 — backend hard-blocks pickup unless an APPROVED Driving License (DL) exists.
-  const hasApprovedDL = !!kycData?.kyc?.some((d) => d.type === 'DL' && d.status === 'APPROVED');
-  // Block while KYC is still loading (unknown state) and when no APPROVED DL exists.
-  const dlBlocked = kycLoading || !hasApprovedDL;
+  // X2 — the handover needs the customer's DL NUMBER (not a document photo).
+  // undefined = an older server that doesn't report it: the server decides.
+  const dlOnFile = booking.customer.drivingLicenceNumber;
+  const dlNumberReported = dlOnFile !== undefined;
+  const dlNumberMissing = dlNumberReported && !dlOnFile;
+  // The field is open when there's no number on file, or staff chose to correct it.
+  const dlNumberOpen = dlNumberMissing || dlNumberEditing;
+  const dlNumberTyped = dlNumberInput.trim();
+  const dlNumberInvalid = dlNumberTyped ? drivingLicenceError(dlNumberInput) : null;
+  // The number this handover goes ahead with: a valid typed one, else the one on file.
+  const handoverDlNumber =
+    dlNumberOpen && dlNumberTyped && !dlNumberInvalid ? normalizeDrivingLicence(dlNumberInput) : dlOnFile || null;
+  const dlNumberFieldError = dlNumberError ?? (dlNumberTouched ? dlNumberInvalid : null);
   // #49 — safety deposit request only when the branch charge config enables it.
   const depositEnabled = !!booking.frozenChargeConfig?.safetyDepositEnabled;
   const depositInvalid =
@@ -759,12 +818,13 @@ export default function PickupScreen() {
     : null;
 
   // First thing still missing before the handover can go ahead (shown above the button).
+  // The DL status (X1) and document photos (X2) are optional; the DL number isn't.
   const handoverBlocker: string | null = hasRemainingBalance
     ? 'Collect the balance due above to continue.'
-    : kycLoading
-      ? 'Checking the customer\'s documents…'
-      : dlBlocked
-        ? 'Approve the customer\'s driving licence to continue.'
+    : dlNumberMissing && !dlNumberTyped
+      ? 'Enter the customer\'s driving licence number.'
+      : dlNumberOpen && dlNumberInvalid
+        ? dlNumberInvalid
         : !odoValid
           ? 'Enter the odometer reading.'
           : fuelLevel == null
@@ -775,13 +835,11 @@ export default function PickupScreen() {
                 ? 'Wait for the photos to upload (retry or remove failed ones).'
                 : !sessionMode && depositInvalid
                   ? 'Enter the deposit amount and reason, or turn the request off.'
-                  : !dlStatus
-                    ? 'Choose the driving licence status.'
-                    : dlStatus === 'DEPOSIT' && !dlDepositNote.trim()
-                      ? 'Note what the customer left as the DL deposit.'
-                      : sessionMode && restoring
-                        ? 'Checking for an open payment…'
-                        : null;
+                  : dlStatus === 'DEPOSIT' && !dlDepositNote.trim()
+                    ? 'Note what the customer left as the DL deposit.'
+                    : sessionMode && restoring
+                      ? 'Checking for an open payment…'
+                      : null;
 
   // What was recorded for the licence: the choice sent from this screen, else the
   // server's value (a pickup session reopened after an app restart).
@@ -789,9 +847,10 @@ export default function PickupScreen() {
   const recordedDlNote = dlStatus
     ? dlStatus === 'DEPOSIT' ? dlDepositNote.trim() || null : null
     : booking.dlDepositNote ?? null;
-  const dlSummary = `${dlStatusLabel(recordedDlStatus)}${
-    recordedDlStatus === 'DEPOSIT' && recordedDlNote ? ` · ${recordedDlNote}` : ''
-  }`;
+  // Unset is allowed (X1) — say what it is about rather than a bare "Not recorded".
+  const dlSummary = recordedDlStatus
+    ? `${dlStatusLabel(recordedDlStatus)}${recordedDlStatus === 'DEPOSIT' && recordedDlNote ? ` · ${recordedDlNote}` : ''}`
+    : `DL status: ${dlStatusLabel(null).toLowerCase()}`;
 
   const recordedOdo = booking.startOdometer ?? (odoValid ? Number(odo) : null);
   const recordedFuel = booking.pickupFuelLevel ? Number(booking.pickupFuelLevel) : fuelLevel;
@@ -823,6 +882,12 @@ export default function PickupScreen() {
               <View style={styles.successRow}>
                 <Ionicons name="water-outline" size={15} color={Colors.ink3} />
                 <Text style={styles.successRowText}>Fuel level: {recordedFuel}/10</Text>
+              </View>
+            )}
+            {handoverDlNumber && (
+              <View style={styles.successRow}>
+                <Ionicons name="card-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.successRowText}>DL number: {handoverDlNumber}</Text>
               </View>
             )}
             <View style={styles.successRow}>
@@ -998,8 +1063,97 @@ export default function PickupScreen() {
           </View>
         </View>
 
-        {/* KYC Document */}
-        <SectionHeader title="Identity Document" />
+        {/* Driving licence NUMBER (X2) — required for the handover. Shown in full so
+            staff can check it against the card; typed here when none is on file. */}
+        {dlNumberReported && (
+          <>
+            <SectionHeader title="Driving Licence Number" />
+            <View
+              ref={dlNumberRef}
+              collapsable={false}
+              style={[styles.card, !session && !!dlNumberFieldError && styles.cardError]}
+            >
+              {session || !dlNumberOpen ? (
+                <View style={styles.dlNumberRow}>
+                  <View style={[styles.dlNumberIcon, !handoverDlNumber && styles.dlNumberIconMissing]}>
+                    <Ionicons name="card-outline" size={20} color={handoverDlNumber ? Colors.orange : '#d97706'} />
+                  </View>
+                  <View style={styles.customerInfo}>
+                    <Text style={[styles.dlNumberValue, !handoverDlNumber && styles.dlNumberValueMissing]} selectable>
+                      {handoverDlNumber ?? 'Not on file'}
+                    </Text>
+                    <Text style={styles.toggleSub}>
+                      {handoverDlNumber
+                        ? "Check it against the customer's licence card."
+                        : 'No driving licence number was recorded for this customer.'}
+                    </Text>
+                  </View>
+                  {!session && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setDlNumberEditing(true);
+                        setDlNumberInput(dlOnFile ?? '');
+                        setDlNumberTouched(false);
+                        setDlNumberError(null);
+                      }}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.link}>Correct</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <>
+                  <View style={styles.toggleTitleRow}>
+                    <Text style={styles.toggleTitle}>
+                      {dlNumberMissing ? 'No driving licence number on file' : 'Correct the driving licence number'}
+                    </Text>
+                    {dlNumberMissing && !handoverDlNumber && <Text style={styles.requiredTag}>Required</Text>}
+                  </View>
+                  <Text style={[styles.toggleSub, styles.dlSub]}>
+                    {dlNumberMissing
+                      ? "Enter it from the customer's licence card before handing over the vehicle. It's saved to their profile."
+                      : "Type it exactly as it is on the card. It replaces the number on the customer's profile."}
+                  </Text>
+                  <TextInput
+                    style={[styles.odoInput, styles.dlNumberInput, !!dlNumberFieldError && styles.inputError]}
+                    value={dlNumberInput}
+                    onChangeText={(t) => { setDlNumberInput(t.toUpperCase()); setDlNumberError(null); }}
+                    onBlur={() => setDlNumberTouched(true)}
+                    placeholder="e.g. KA01 20110012345"
+                    placeholderTextColor={Colors.ink4}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    maxLength={30}
+                    returnKeyType="done"
+                  />
+                  {dlNumberFieldError && <Text style={styles.fieldError}>{dlNumberFieldError}</Text>}
+                  {!dlNumberMissing && (
+                    <TouchableOpacity
+                      style={styles.dlNumberKeep}
+                      onPress={() => {
+                        setDlNumberEditing(false);
+                        setDlNumberInput('');
+                        setDlNumberTouched(false);
+                        setDlNumberError(null);
+                      }}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.link}>Keep {dlOnFile}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* KYC document photos — optional (X2); still viewable and verifiable */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionHeader, styles.sectionHeaderInline]}>Identity Documents</Text>
+          <Text style={styles.optionalTag}>Optional</Text>
+        </View>
         <View style={styles.card}>
           {kycLoading ? (
             <ActivityIndicator size="small" color={Colors.orange} />
@@ -1104,23 +1258,14 @@ export default function PickupScreen() {
           ) : (
             <View style={styles.kycEmpty}>
               <Ionicons name="document-outline" size={20} color={Colors.ink4} />
-              <Text style={styles.kycEmptyText}>No document linked to this booking</Text>
+              <Text style={styles.kycEmptyText}>
+                {dlNumberReported
+                  ? "No document photos uploaded. They aren't needed for the handover."
+                  : 'No document linked to this booking'}
+              </Text>
             </View>
           )}
         </View>
-
-        {/* DL requirement gate (#54) */}
-        {dlBlocked && !kycLoading && (
-          <View style={styles.warningCard}>
-            <Ionicons name="alert-circle-outline" size={20} color="#d97706" />
-            <View style={styles.warningTextWrap}>
-              <Text style={styles.warningTitle}>Approved Driving License required</Text>
-              <Text style={styles.warningBody}>
-                Pickup is blocked until an APPROVED Driving License (DL) is on file. Approve the customer's DL above (or have them upload one) to continue.
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Customer QR code photo (#4) — informational, not part of the DL gate */}
         <SectionHeader title={QR_PHOTO_LABEL} />
@@ -1675,14 +1820,27 @@ export default function PickupScreen() {
               </>
             )}
 
-            {/* Original driving licence (#3) — a required choice, nothing pre-selected */}
-            <SectionHeader title="Driving Licence" />
+            {/* Original driving licence (#3) — optional (X1): nothing pre-selected, and
+                the handover goes ahead without it. DEPOSIT still needs its note. */}
+            <SectionHeader title="Original Licence" />
             <View style={[styles.card, dlRejected && styles.cardError]}>
-              <View style={styles.toggleTitleRow}>
-                <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
-                {!dlStatus && <Text style={styles.requiredTag}>Required</Text>}
+              <View style={styles.toggleRow}>
+                <View style={[styles.toggleTitleRow, styles.toggleTextWrap]}>
+                  <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
+                  <Text style={styles.optionalTag}>Optional</Text>
+                </View>
+                {dlStatus && (
+                  <TouchableOpacity
+                    onPress={() => { setDlStatus(null); setDlDepositNote(''); setDlRejected(false); }}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.link}>Clear</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              <Text style={[styles.toggleSub, styles.dlSub]}>Record it before handing over the keys.</Text>
+              <Text style={[styles.toggleSub, styles.dlSub]}>
+                Leave it unset if it doesn't apply. It can also be recorded after the handover.
+              </Text>
               <DlStatusSelector
                 value={dlStatus}
                 note={dlDepositNote}
@@ -1790,7 +1948,7 @@ export default function PickupScreen() {
       icon="car-outline"
       iconColor={Colors.orange}
       title="Confirm Pickup"
-      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}${dlSummary}\n\nHand over the vehicle to ${customer.name}?`}
+      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}${handoverDlNumber ? `DL number: ${handoverDlNumber}\n` : ''}${dlSummary}\n\nHand over the vehicle to ${customer.name}?`}
       confirmLabel="Confirm Pickup"
       confirmColor={Colors.orange}
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
@@ -1839,20 +1997,34 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  warningCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: '#f59e0b10',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#f59e0b30',
-    marginBottom: 8,
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 4 },
+  sectionHeaderInline: { marginTop: 0, marginBottom: 0 },
+  optionalTag: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    color: Colors.ink3,
+    backgroundColor: '#0a0a0a0d',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
-  warningTextWrap: { flex: 1 },
-  warningTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#d97706' },
-  warningBody: { fontFamily: Fonts.body, fontSize: 13, color: '#b45309', marginTop: 2, lineHeight: 18 },
+
+  // Driving licence number (X2)
+  dlNumberRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dlNumberIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#ff6a1f12',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dlNumberIconMissing: { backgroundColor: '#f59e0b15' },
+  dlNumberValue: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: 0.6 },
+  dlNumberValueMissing: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: '#d97706', letterSpacing: 0 },
+  dlNumberInput: { letterSpacing: 1 },
+  dlNumberKeep: { alignSelf: 'flex-start', marginTop: 12 },
 
   customerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {

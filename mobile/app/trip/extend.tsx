@@ -596,7 +596,7 @@ export default function ExtendTrip() {
               <Text style={styles.timeValue}>{timeLabel(timeOf(newEnd))}</Text>
               <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
             </TouchableOpacity>
-            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd)} />
+            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd, { returnOnly: true })} />
             <TimesNotice notice={graceNotice} />
 
             <View style={[styles.card, styles.summaryCard]}>

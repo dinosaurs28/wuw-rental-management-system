@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
+import { dlInUseErrorText } from '../../lib/dlInUse';
 import {
   apiErrorMessage,
   cleanUtr,
@@ -366,7 +367,8 @@ export default function ExtensionScreen() {
       setPhase('resolve');
     } catch (err: any) {
       const message = apiErrorMessage(err, 'Could not evaluate the extension.');
-      setError(message);
+      // X3 DL_IN_USE also names the booking holding this driving licence
+      setError(dlInUseErrorText(err) ?? message);
       // The limit moved on since this screen loaded — refresh it so the
       // pickers stop at the server's maxEndAt.
       if (err?.response?.data?.code === 'BOOKING_MAX_PERIOD_EXCEEDED') void refetchEligibility();
@@ -471,7 +473,7 @@ export default function ExtensionScreen() {
       setPhase('collect');
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
-      setError(apiErrorMessage(err, 'Could not confirm the extension.'));
+      setError(dlInUseErrorText(err) ?? apiErrorMessage(err, 'Could not confirm the extension.'));
     } finally {
       setBusy(false);
     }
@@ -650,7 +652,7 @@ export default function ExtensionScreen() {
               <Text style={styles.timeValue}>{timeLabel(timeOf(newEnd))}</Text>
               <Ionicons name="chevron-down" size={16} color={Colors.ink3} />
             </TouchableOpacity>
-            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd)} />
+            <BranchHoursLine text={rangeHoursLine(schedule, newEnd, newEnd, { returnOnly: true })} />
             <TimesNotice notice={graceNotice} />
 
             <View style={styles.card}>

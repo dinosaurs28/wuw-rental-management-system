@@ -40,11 +40,12 @@ import { rangeLengthLabel, startOfDay } from '../../lib/dates';
 import { useAuthStore } from '../../store/auth';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import { profileIncompleteMessage } from '../../lib/identity';
+import { handleDlInUse } from '../../lib/dlInUse';
 import { gstLabel, gstNumber, inrExact, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
-import { rangeHoursLine } from '../../lib/branchSchedule';
+import { bookingTimesNotice, rangeHoursLine } from '../../lib/branchSchedule';
 import RazorpayPayOptions from '../../components/payments/RazorpayPayOptions';
 import Button from '../../components/ui/Button';
 import { LEGAL_URLS } from '../../constants/links';
@@ -115,6 +116,16 @@ function askToContinue(title: string, message: string, okText: string): Promise<
   });
 }
 
+// X2 — KYC photos are optional at checkout. NO_KYC = "don't attach a document".
+const NO_KYC = '__none__';
+
+/** The KYC document to attach: the chosen one, else the first uploaded; null for none. */
+function pickKyc(docs: KycDocument[] | undefined, selectedId: string | null): KycDocument | null {
+  if (selectedId === NO_KYC) return null;
+  const usable = (docs ?? []).filter((d) => !!d.file?.publicId);
+  return usable.find((d) => d.publicId === selectedId) ?? usable[0] ?? null;
+}
+
 function DateInput({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.dateInput}>
@@ -159,8 +170,9 @@ export default function Checkout() {
   const { vehicleId, start, end, branch: branchParam, adjusted } = useLocalSearchParams<{
     vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string;
   }>();
-  // Booking is account-based (the API requires a token, KYC and a complete
-  // profile). Normally requireAuth on the vehicle CTA stops a guest before
+  // Booking is account-based (the API requires a token and a complete profile,
+  // incl. the DL + Aadhaar numbers; KYC photos are optional — X2). Normally
+  // requireAuth on the vehicle CTA stops a guest before
   // they get here; this guards a deep link or a restored navigation state.
   const isGuest = useIsGuest();
 
@@ -175,7 +187,8 @@ export default function Checkout() {
   const [checkingPayment, setCheckingPayment] = useState(false);
   // The pay footer grows with the QR option / no-UPI note; keep content clear of it.
   const [ctaHeight, setCtaHeight] = useState(0);
-  // #36 — which uploaded KYC doc to submit (defaults to the first)
+  // #36 — which uploaded KYC doc to attach (defaults to the first). Optional
+  // (X2): NO_KYC = the customer chose not to attach one.
   const [selectedKycId, setSelectedKycId] = useState<string | null>(null);
 
   // Coupon
@@ -232,6 +245,12 @@ export default function Checkout() {
   // Branch office hours (#2) for the itinerary line.
   const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
   const { data: schedule } = useBranchSchedule(branchPublicId);
+  // Times the branch won't take (e.g. a pickup after the last pickup, 30 min
+  // before closing) — said on the page, before the server refuses them.
+  const timesIssue = (() => {
+    const n = bookingTimesNotice(schedule, startDate, endDate);
+    return n?.tone === 'error' ? n : null;
+  })();
 
   // Back to the vehicle page to pick new times.
   const changeTimes = () => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`));
@@ -344,17 +363,6 @@ export default function Checkout() {
         return;
       }
     }
-    if (!kyc || kyc.length === 0) {
-      Alert.alert(
-        'KYC required',
-        'You need to upload a driving license or ID document before booking. Please go to Profile → Documents.',
-        [
-          { text: 'Go to Profile', onPress: () => router.push('/(tabs)/profile') },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-      );
-      return;
-    }
     if (!terms) {
       Alert.alert('Accept terms', 'Please accept the Terms & Conditions to continue.');
       return;
@@ -387,8 +395,8 @@ export default function Checkout() {
     // The server re-decides and converts (never rejects) a plan it won't take.
     const sendFlow: PaymentFlow = pickFlow(flow, checkoutPaymentOptions(vehicle, appliedCoupon, totalNow));
 
-    // #36 — submit the customer-chosen KYC doc (default: first).
-    const chosenKyc = kyc.find((k) => k.publicId === selectedKycId) ?? kyc[0]!;
+    // #36 — attach the customer-chosen KYC doc (default: first), if any (X2: optional).
+    const chosenKyc = pickKyc(kyc, selectedKycId);
 
     setPayMode(mode);
     setLoading(true);
@@ -398,7 +406,8 @@ export default function Checkout() {
         groupKeys: isGroupKey ? [vehicle.publicId] : [],
         start: startDate.toISOString(),
         end: endDate.toISOString(),
-        file_public_id: chosenKyc.file.publicId,
+        // Only when a document is attached — omitted = no KYC file on the booking.
+        ...(chosenKyc ? { file_public_id: chosenKyc.file.publicId } : {}),
         payment_type: 'ONLINE',
         payment_flow: sendFlow,
         ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
@@ -588,6 +597,8 @@ export default function Checkout() {
         );
         return;
       }
+      // X3 — this driving licence has a vehicle out / a booking for these dates
+      if (handleDlInUse(err)) return;
       Alert.alert('Booking failed', err.response?.data?.message ?? 'Unable to complete booking. Please try again.');
     } finally {
       setLoading(false);
@@ -652,7 +663,9 @@ export default function Checkout() {
         }
       : null);
 
-  const chosenKyc = kyc?.find((k) => k.publicId === selectedKycId) ?? kyc?.[0] ?? null;
+  // Uploaded documents that can be attached (X2: optional), and the one that will be.
+  const kycDocs = (kyc ?? []).filter((d) => !!d.file?.publicId);
+  const chosenKyc = pickKyc(kyc, selectedKycId);
   // Payment plan (#6): only what the branch allows for this total — a chooser
   // only when it offers both (FULL preselected); handleBook sends the same plan.
   const payOptions = checkoutPaymentOptions(vehicle, appliedCoupon, pd ? total : null);
@@ -707,6 +720,7 @@ export default function Checkout() {
               notice={{ tone: 'warn', text: `Return moved to ${adjusted} to fit branch hours. The price below is for the new return time.` }}
             />
           ) : null}
+          <TimesNotice notice={timesIssue} />
         </View>
 
         {/* #1 — profile incomplete (e.g. no DL / Aadhaar number): booking is refused until it is fixed */}
@@ -722,21 +736,28 @@ export default function Checkout() {
           </TouchableOpacity>
         )}
 
-        {/* KYC status */}
-        <View style={[styles.kycBanner, kyc && kyc.length > 0 ? styles.kycOk : styles.kycMissing]}>
-          <Text style={[styles.kycText, kyc && kyc.length > 0 ? styles.kycTextOk : styles.kycTextMissing]}>
-            {kyc && kyc.length > 0
-              ? `Identity verified (${kyc.length} doc${kyc.length > 1 ? 's' : ''})`
-              : 'Upload a driving license to continue'}
-          </Text>
+        {/* X2 — licence / ID photos are optional: the DL number on the profile is
+            what's required. #36 — pick which uploaded document to attach, or none. */}
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Licence / ID document</Text>
+          <Text style={styles.optionalTag}>Optional</Text>
         </View>
-
-        {/* #36 — pick which KYC doc to submit when more than one is on file */}
-        {kyc && kyc.length > 1 && (
+        {kycDocs.length === 0 ? (
+          <View style={styles.kycNote}>
+            <Ionicons name="document-outline" size={18} color={Colors.ink3} />
+            <View style={styles.kycNoteBody}>
+              <Text style={styles.kycNoteText}>
+                No document uploaded. You can book without one — bring your original driving licence to pickup.
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
+                <Text style={styles.editLink}>Upload in Profile</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
           <>
-            <Text style={styles.sectionTitle}>Document to submit</Text>
             <View style={{ gap: 8 }}>
-              {kyc.map((doc) => {
+              {kycDocs.map((doc) => {
                 const selected = doc.publicId === (chosenKyc?.publicId ?? null);
                 return (
                   <TouchableOpacity
@@ -760,6 +781,23 @@ export default function Checkout() {
                   </TouchableOpacity>
                 );
               })}
+              <TouchableOpacity
+                style={[styles.kycPick, !chosenKyc && styles.kycPickActive]}
+                onPress={() => setSelectedKycId(NO_KYC)}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.kycPickThumb, styles.kycPickNone]}>
+                  <Ionicons name="remove-circle-outline" size={18} color={Colors.ink3} />
+                </View>
+                <View style={styles.kycPickInfo}>
+                  <Text style={styles.kycPickType}>Don&apos;t attach a document</Text>
+                </View>
+                <Ionicons
+                  name={!chosenKyc ? 'radio-button-on' : 'radio-button-off'}
+                  size={20}
+                  color={!chosenKyc ? Colors.orange : Colors.ink4}
+                />
+              </TouchableOpacity>
             </View>
           </>
         )}
@@ -1013,11 +1051,36 @@ const styles = StyleSheet.create({
   dateValue: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink },
   dateSep: { paddingTop: 10 },
   kycBanner: { borderRadius: 12, padding: 12, marginTop: 16, borderWidth: 1 },
-  kycOk: { backgroundColor: '#d4edda', borderColor: '#c3e6cb' },
   kycMissing: { backgroundColor: '#fff3cd', borderColor: '#ffc107' },
   kycText: { fontFamily: Fonts.bodyMedium, fontSize: 13 },
-  kycTextOk: { color: '#1a7035' },
   kycTextMissing: { color: '#856404' },
+
+  // Licence / ID document (X2: optional)
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 10 },
+  sectionTitleInline: { marginTop: 0, marginBottom: 0 },
+  optionalTag: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.ink3,
+    backgroundColor: '#0a0a0a0d',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  kycNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    padding: 12,
+  },
+  kycNoteBody: { flex: 1, gap: 6 },
+  kycNoteText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 18 },
+  kycPickNone: { alignItems: 'center', justifyContent: 'center' },
 
   kycPick: {
     flexDirection: 'row',

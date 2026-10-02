@@ -11,29 +11,27 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
-import { fmtDurationMinutes, fmtIstDateTime } from '../../lib/dates';
+import { callPhone } from '../../components/employee/recovery/recoveryUtils';
+import { useRecoveryCount } from '../../components/employee/recovery/useRecovery';
 import { DlStatusLine } from '../../components/employee/DlStatus';
 import type {
   BookingListType,
-  OverdueReturn,
-  OverdueReturnsResponse,
   QueueBooking,
   QueueCounts,
   QueueListResponse,
-  ReturnState,
 } from '../../types/queue';
 
-type Tab = 'pickups' | 'returns' | 'overdue';
-type ListTab = Exclude<Tab, 'overdue'>;
+type Tab = 'pickups' | 'returns';
+type ListTab = Tab;
 
-const isTab = (t?: string): t is Tab => t === 'pickups' || t === 'returns' || t === 'overdue';
+const isTab = (t?: string): t is Tab => t === 'pickups' || t === 'returns';
 
 // Local YYYY-MM-DD (the employee list endpoints filter by calendar day).
 function ymd(d: Date) {
@@ -44,41 +42,6 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface QueueResult {
   rows: QueueBooking[];
   counts: QueueCounts | null; // null on servers older than #17
-}
-
-type OverdueRow = OverdueReturn & { fetchedAt: number };
-type OverduePage = OverdueReturnsResponse & { fetchedAt: number };
-
-const OVERDUE_PAGE_SIZE = 50;
-const OVERDUE_REFETCH_MS = 60_000;
-// Re-renders the running "late by" durations between refetches.
-const OVERDUE_TICK_MS = 30_000;
-
-// Badge per return state: red overdue, amber within the branch grace period,
-// grey once the vehicle is back and only the paperwork is still open.
-const STATE_LOOK: Record<ReturnState, { label: string; color: string; bg: string }> = {
-  OVERDUE: { label: 'Overdue', color: Colors.availNone, bg: Colors.availNoneSoft },
-  IN_GRACE: { label: 'In grace', color: Colors.availLow, bg: Colors.availLowSoft },
-  RETURN_IN_PROGRESS: { label: 'Return in progress', color: Colors.ink2, bg: '#0a0a0a0d' },
-  AWAITING_MANAGER_CONFIRMATION: { label: 'Awaiting manager', color: Colors.ink2, bg: '#0a0a0a0d' },
-};
-
-// Minutes late right now: the server's figure at serverNow plus the time since
-// the response arrived, so the duration keeps running between refetches.
-function liveOverdueMinutes(row: OverdueRow, now: number) {
-  return row.overdueMinutes + Math.max(0, Math.floor((now - row.fetchedAt) / 60_000));
-}
-
-// A grace period can run out between refetches; show the row as overdue then.
-function liveReturnState(row: OverdueRow, minutes: number): ReturnState {
-  if (row.returnState === 'IN_GRACE' && row.graceMinutes != null && minutes > row.graceMinutes) return 'OVERDUE';
-  return row.returnState;
-}
-
-function callPhone(phone: string) {
-  Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() =>
-    Alert.alert('Could not start the call', `Dial ${phone} from the phone app.`),
-  );
 }
 
 function PhoneLink({ phone, label }: { phone: string; label?: string }) {
@@ -172,126 +135,6 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
   );
 }
 
-const EXTENSION_STATUS_LABEL: Record<'PENDING_PAYMENT' | 'PAYMENT_COLLECTED', string> = {
-  PENDING_PAYMENT: 'awaiting payment',
-  PAYMENT_COLLECTED: 'awaiting manager',
-};
-
-function OverdueCard({ row, now }: { row: OverdueRow; now: number }) {
-  const router = useRouter();
-  const minutes = liveOverdueMinutes(row, now);
-  const state = liveReturnState(row, minutes);
-  const look = STATE_LOOK[state];
-  // Vehicle already back: lateness stopped, so the clock only says how long ago it was due.
-  const vehicleBack = state === 'RETURN_IN_PROGRESS' || state === 'AWAITING_MANAGER_CONFIRMATION';
-  // The legacy drop is already done and waits for the manager's confirmation;
-  // opening the drop again would restart it, so the row is read-only.
-  const canOpen = state !== 'AWAITING_MANAGER_CONFIRMATION';
-  const [first, ...more] = row.vehicles;
-  const { name, phone, alternatePhone } = row.customer;
-
-  return (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.85}
-      disabled={!canOpen}
-      onPress={() => router.push(`/employee/return/${row.publicId}`)}
-    >
-      <View style={styles.cardTop}>
-        <View style={styles.cardVehicle}>
-          <Text style={styles.vehicleName} numberOfLines={2}>
-            {first ? `${first.make} ${first.model}` : 'Vehicle'}
-          </Text>
-          {first?.regNo ? <Text style={styles.regNo} numberOfLines={1}>{first.regNo}</Text> : null}
-          {more.map((v) => (
-            <Text key={v.publicId} style={styles.regNo} numberOfLines={1}>
-              + {v.make} {v.model} · {v.regNo}
-            </Text>
-          ))}
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: look.bg }]}>
-          <Text style={[styles.statusText, { color: look.color }]}>{look.label}</Text>
-        </View>
-      </View>
-
-      <View style={[styles.lateRow, { backgroundColor: look.bg }]}>
-        <Ionicons name="alarm-outline" size={15} color={look.color} />
-        <Text style={[styles.lateText, { color: look.color }]}>
-          {vehicleBack ? `Was due ${fmtDurationMinutes(minutes)} ago` : `Late by ${fmtDurationMinutes(minutes)}`}
-        </Text>
-        {state === 'IN_GRACE' && row.graceMinutes != null ? (
-          <Text style={styles.lateSub}>
-            · grace ends in {fmtDurationMinutes(Math.max(1, row.graceMinutes - minutes))}
-          </Text>
-        ) : null}
-      </View>
-
-      <View style={styles.cardMeta}>
-        <View style={styles.metaRow}>
-          <Ionicons name="person-outline" size={13} color={Colors.ink3} />
-          <Text style={styles.metaText}>{name ?? '—'}</Text>
-        </View>
-        {phone || alternatePhone ? (
-          <View style={[styles.metaRow, styles.phoneRow]}>
-            {phone ? <PhoneLink phone={phone} /> : null}
-            {alternatePhone ? <PhoneLink phone={alternatePhone} label="Alt" /> : null}
-          </View>
-        ) : null}
-        <View style={styles.metaRow}>
-          <Ionicons name="time-outline" size={13} color={Colors.ink3} />
-          <Text style={styles.metaText}>
-            Expected return: {row.endAtDisplay || fmtIstDateTime(row.endAt)}
-          </Text>
-        </View>
-        {/* Original driving licence status (#3) — what to hand back when the car comes in */}
-        <DlStatusLine status={row.dlStatus} note={row.dlDepositNote} />
-        {row.originalEndAt ? (
-          <View style={styles.metaRow}>
-            <Ionicons name="refresh-outline" size={13} color={Colors.ink3} />
-            <Text style={styles.metaSub}>
-              Extended {row.extensionCount > 1 ? `${row.extensionCount} times ` : ''}from {fmtIstDateTime(row.originalEndAt)}
-            </Text>
-          </View>
-        ) : null}
-        {row.pendingExtension ? (
-          <View style={styles.extTag}>
-            <Ionicons name="hourglass-outline" size={12} color={Colors.availLow} />
-            <Text style={styles.extTagText}>
-              Extension to {fmtIstDateTime(row.pendingExtension.requestedEndAt)} ·{' '}
-              {EXTENSION_STATUS_LABEL[row.pendingExtension.status] ?? 'pending'}
-            </Text>
-          </View>
-        ) : row.extensionPending ? (
-          <View style={styles.extTag}>
-            <Ionicons name="hourglass-outline" size={12} color={Colors.availLow} />
-            <Text style={styles.extTagText}>Extension pending</Text>
-          </View>
-        ) : null}
-        {state === 'RETURN_IN_PROGRESS' ? (
-          <Text style={styles.metaSub}>The vehicle is back. The drop bill is being settled.</Text>
-        ) : state === 'AWAITING_MANAGER_CONFIRMATION' ? (
-          <Text style={styles.metaSub}>The vehicle is back. Waiting for the branch manager to confirm the return.</Text>
-        ) : null}
-      </View>
-
-      <View style={styles.cardFooter}>
-        <View style={styles.footerLeft}>
-          <Text style={styles.bookingId}>#{row.publicId.slice(-8).toUpperCase()}</Text>
-          {row.bookingType === 'MONTHLY' ? <MonthlyPill days={row.days} /> : null}
-        </View>
-        {canOpen ? (
-          <View style={styles.amountRow}>
-            <Text style={styles.actionText}>
-              {state === 'RETURN_IN_PROGRESS' ? 'Continue return' : 'Process return'}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.orange} />
-          </View>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 export default function BookingsQueue() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -301,10 +144,16 @@ export default function BookingsQueue() {
   // Daily / Monthly split of the Pickups and Returns queues (#17).
   const [listType, setListType] = useState<BookingListType>('DAILY');
 
-  // This tab screen stays mounted, so apply the dashboard's Pickup / Return /
-  // Overdue choice whenever it arrives, then clear it — the next shortcut tap
-  // applies again, and a plain tab-bar visit keeps the last-used tab.
+  // This tab screen stays mounted, so apply the dashboard's Pickup / Return
+  // choice whenever it arrives, then clear it — the next shortcut tap applies
+  // again, and a plain tab-bar visit keeps the last-used tab. The old
+  // `?tab=overdue` deep link now opens the Recovery tab.
   useEffect(() => {
+    if (tab === 'overdue') {
+      router.setParams({ tab: undefined });
+      router.navigate('/(employee)/recovery' as Href);
+      return;
+    }
     if (!isTab(tab)) return;
     setActiveTab(tab);
     router.setParams({ tab: undefined });
@@ -317,7 +166,7 @@ export default function BookingsQueue() {
   const dateParam = ymd(selectedDate);
 
   // Date strip: 3 days back → 13 days ahead (Daily tab). Rentals still out
-  // from any earlier day are on the Overdue tab.
+  // from any earlier day are on the Recovery tab.
   const dateOptions = useMemo(() => {
     const base = new Date();
     base.setHours(0, 0, 0, 0);
@@ -368,57 +217,8 @@ export default function BookingsQueue() {
     retry: false,
   });
 
-  // Overdue / no-show returns (#8): every PICKED_UP rental past its return
-  // time, whatever the day, most overdue first. The key sits under
-  // ['employee', 'returns'], so finishing a drop refreshes it too.
-  const {
-    data: overdue,
-    isLoading: overdueLoading,
-    refetch: refetchOverdue,
-    isError: overdueError,
-    fetchNextPage: fetchMoreOverdue,
-    hasNextPage: hasMoreOverdue,
-    isFetchingNextPage: loadingMoreOverdue,
-  } = useInfiniteQuery({
-    queryKey: ['employee', 'returns', 'overdue'],
-    queryFn: async ({ pageParam }): Promise<OverduePage> => {
-      const res = await employeeApi.listOverdueReturns({ page: pageParam, limit: OVERDUE_PAGE_SIZE });
-      return { ...(res.data as OverdueReturnsResponse), fetchedAt: Date.now() };
-    },
-    initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.pagination && last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
-    refetchInterval: isFocused ? OVERDUE_REFETCH_MS : false,
-    staleTime: 30_000,
-    retry: false,
-  });
-
-  // Pages can overlap when rows shift between fetches; keep the first copy.
-  const overdueRows = useMemo(() => {
-    const seen = new Set<string>();
-    const out: OverdueRow[] = [];
-    for (const page of overdue?.pages ?? []) {
-      for (const row of page.data ?? []) {
-        if (seen.has(row.publicId)) continue;
-        seen.add(row.publicId);
-        out.push({ ...row, fetchedAt: page.fetchedAt });
-      }
-    }
-    return out;
-  }, [overdue]);
-  const overdueHead = overdue?.pages[0];
-  const overdueCount = overdueHead?.overdueCount ?? 0;
-  const vehiclesBack =
-    (overdueHead?.counts?.RETURN_IN_PROGRESS ?? 0) + (overdueHead?.counts?.AWAITING_MANAGER_CONFIRMATION ?? 0);
-
-  // Clock for the running "late by" durations, only while they are on screen.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!isFocused || activeTab !== 'overdue') return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), OVERDUE_TICK_MS);
-    return () => clearInterval(id);
-  }, [isFocused, activeTab]);
+  // Overdue rentals live on the Recovery tab; the count feeds the Returns banner.
+  const overdueCount = useRecoveryCount();
 
   // Back from a pickup, drop or extension: reload the queues. The first focus
   // is the initial load.
@@ -431,21 +231,18 @@ export default function BookingsQueue() {
       }
       refetchPickups();
       refetchReturns();
-      refetchOverdue();
-    }, [refetchPickups, refetchReturns, refetchOverdue]),
+    }, [refetchPickups, refetchReturns]),
   );
 
-  const isLoading =
-    activeTab === 'pickups' ? pickupsLoading : activeTab === 'returns' ? returnsLoading : overdueLoading;
-  const isError = activeTab === 'pickups' ? pickupsError : activeTab === 'returns' ? returnsError : overdueError;
+  const isLoading = activeTab === 'pickups' ? pickupsLoading : returnsLoading;
+  const isError = activeTab === 'pickups' ? pickupsError : returnsError;
   const data = activeTab === 'pickups' ? (pickups?.rows ?? []) : (returns?.rows ?? []);
-  const counts = activeTab === 'pickups' ? pickups?.counts : activeTab === 'returns' ? returns?.counts : null;
+  const counts = activeTab === 'pickups' ? pickups?.counts : returns?.counts;
   const monthly = listType === 'MONTHLY';
 
   const onRefresh = () => {
     if (activeTab === 'pickups') refetchPickups();
-    else if (activeTab === 'returns') refetchReturns();
-    refetchOverdue();
+    else refetchReturns();
   };
 
   const emptyTitle =
@@ -490,42 +287,9 @@ export default function BookingsQueue() {
             </View>
           ) : null}
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'overdue' && styles.tabOverdueActive]}
-          onPress={() => setActiveTab('overdue')}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              (activeTab === 'overdue' || overdueCount > 0) && styles.tabTextOverdue,
-            ]}
-          >
-            Overdue
-          </Text>
-          {overdueCount > 0 ? (
-            <View style={[styles.tabCount, styles.tabCountOverdue]}>
-              <Text style={[styles.tabCountText, styles.tabCountTextActive]}>{overdueCount}</Text>
-            </View>
-          ) : null}
-        </TouchableOpacity>
       </View>
 
-      {activeTab === 'overdue' ? (
-        /* Overdue summary — counts cover the whole list, not just this page */
-        <View style={styles.scopeRow}>
-          <Ionicons name="alarm-outline" size={14} color={Colors.ink3} />
-          <Text style={styles.scopeText}>
-            {overdueHead
-              ? [
-                  `${overdueHead.counts?.OVERDUE ?? 0} overdue`,
-                  `${overdueHead.counts?.IN_GRACE ?? 0} in grace`,
-                  ...(vehiclesBack ? [`${vehiclesBack} back, paperwork open`] : []),
-                ].join(' · ') + ' · most overdue first'
-              : 'Rentals past their return time, most overdue first'}
-          </Text>
-        </View>
-      ) : (
+      {(
         <>
           {/* Daily / Monthly */}
           <View style={styles.segment}>
@@ -600,31 +364,6 @@ export default function BookingsQueue() {
             <Text style={styles.retryText}>Tap to retry</Text>
           </TouchableOpacity>
         </View>
-      ) : activeTab === 'overdue' ? (
-        <FlatList
-          data={overdueRows}
-          keyExtractor={(item) => item.publicId}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={Colors.orange} />
-          }
-          onEndReachedThreshold={0.4}
-          onEndReached={() => {
-            if (hasMoreOverdue && !loadingMoreOverdue) fetchMoreOverdue();
-          }}
-          ListFooterComponent={
-            loadingMoreOverdue ? <ActivityIndicator style={styles.footerLoader} color={Colors.orange} /> : null
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="checkmark-circle-outline" size={44} color={Colors.ink4} />
-              <Text style={styles.emptyTitle}>No overdue returns</Text>
-              <Text style={styles.emptySub}>Every rental past its return time is back.</Text>
-            </View>
-          }
-          renderItem={({ item }) => <OverdueCard row={item} now={now} />}
-        />
       ) : (
         <FlatList
           data={data}
@@ -636,14 +375,14 @@ export default function BookingsQueue() {
           }
           ListHeaderComponent={
             // The Daily return list covers one day; rentals still out from
-            // earlier days live on the Overdue tab.
+            // earlier days live on the Recovery tab.
             activeTab === 'returns' && overdueCount > 0 ? (
-              <TouchableOpacity style={styles.overdueBanner} onPress={() => setActiveTab('overdue')} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.overdueBanner} onPress={() => router.navigate('/(employee)/recovery' as Href)} activeOpacity={0.85}>
                 <Ionicons name="alarm-outline" size={16} color={Colors.availNone} />
                 <Text style={styles.overdueBannerText}>
                   {overdueCount} rental{overdueCount === 1 ? ' is' : 's are'} overdue
                 </Text>
-                <Text style={styles.overdueBannerLink}>View</Text>
+                <Text style={styles.overdueBannerLink}>Recovery</Text>
                 <Ionicons name="chevron-forward" size={14} color={Colors.availNone} />
               </TouchableOpacity>
             ) : null
@@ -700,10 +439,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
   },
   tabActive: { borderColor: Colors.orange, backgroundColor: '#ff6a1f0d' },
-  tabOverdueActive: { borderColor: Colors.availNone, backgroundColor: Colors.availNoneSoft },
   tabText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.ink3 },
   tabTextActive: { color: Colors.orange },
-  tabTextOverdue: { color: Colors.availNone },
   tabCount: {
     minWidth: 20,
     paddingHorizontal: 6,
@@ -713,7 +450,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabCountActive: { backgroundColor: Colors.orange },
-  tabCountOverdue: { backgroundColor: Colors.availNone },
   tabCountText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3 },
   tabCountTextActive: { color: Colors.white },
 

@@ -112,6 +112,11 @@ function openStaffBookingsTab() {
 }
 
 async function openForStaff(type: string, data: NotificationData): Promise<boolean> {
+  // An overdue return opens the Recovery tab (call / WhatsApp the customer).
+  if (type === 'RETURN_OVERDUE') {
+    router.navigate('/(employee)/recovery' as Href);
+    return true;
+  }
   const bookingPublicId = data.bookingPublicId;
   if (!bookingPublicId) {
     openStaffBookingsTab();

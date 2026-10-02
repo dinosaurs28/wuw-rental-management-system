@@ -41,6 +41,9 @@ interface Props {
   endDayBounds?: (pickupDay: Date) => { min?: Date; max?: Date | null };
   // Days the branch is closed: greyed out for both pickup and return.
   isDayClosed?: (day: Date) => boolean;
+  // Open days with no pickup time left (e.g. today after the last pickup,
+  // 30 min before closing): greyed out for pickup only.
+  noPickupTimes?: (day: Date) => boolean;
   // Extra line under the range hint, e.g. "Bookings open up to 15 days ahead".
   note?: string;
 }
@@ -54,13 +57,15 @@ export default function DateRangePicker({
   maxStartDay,
   endDayBounds,
   isDayClosed,
+  noPickupTimes,
   note,
 }: Props) {
   // Earliest pickable day: today, or tomorrow once today has no pickup times left.
   const minDay = sod(nextFiveMinuteMark());
   const lastStartDay = maxStartDay ? sod(maxStartDay) : null;
   const closed = (d: Date) => !!isDayClosed?.(d);
-  const startAllowed = (d: Date) => d >= minDay && (!lastStartDay || d <= lastStartDay) && !closed(d);
+  const startAllowed = (d: Date) =>
+    d >= minDay && (!lastStartDay || d <= lastStartDay) && !closed(d) && !noPickupTimes?.(d);
   const endRange = (pickup: Date) => {
     const b = endDayBounds?.(pickup);
     const max = b?.max === undefined ? lastStartDay : b.max ? sod(b.max) : null;

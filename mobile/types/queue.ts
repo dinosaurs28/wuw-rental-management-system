@@ -73,6 +73,7 @@ export interface OverdueReturn {
     name: string | null;
     phone: string | null;
     alternatePhone: string | null;
+    drivingLicenceNumber?: string | null; // full DL number on file; absent on older servers
   };
   vehicles: Array<{
     publicId: string;

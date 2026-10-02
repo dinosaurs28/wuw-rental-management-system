@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useCallback, useRef, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -275,7 +275,7 @@ export default function EmployeeDashboard() {
       {overdueReturns > 0 && (
         <TouchableOpacity
           style={styles.overdueAlert}
-          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'overdue' } })}
+          onPress={() => router.navigate('/(employee)/recovery' as Href)}
           activeOpacity={0.85}
         >
           <View style={styles.overdueAlertIcon}>
@@ -283,9 +283,9 @@ export default function EmployeeDashboard() {
           </View>
           <View style={styles.overdueAlertBody}>
             <Text style={styles.overdueAlertTitle}>
-              {overdueReturns} overdue return{overdueReturns === 1 ? '' : 's'}
+              {overdueReturns} not back after the rental period
             </Text>
-            <Text style={styles.overdueAlertSub}>Past the return time and not back yet</Text>
+            <Text style={styles.overdueAlertSub}>Open Recovery to call or message them</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={Colors.availNone} />
         </TouchableOpacity>
@@ -340,9 +340,9 @@ export default function EmployeeDashboard() {
           onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns' } })}
         />
         <QuickAction
-          label={overdueReturns > 0 ? `Overdue Returns (${overdueReturns})` : 'Overdue Returns'}
+          label={overdueReturns > 0 ? `Recovery (${overdueReturns})` : 'Recovery'}
           icon="alarm-outline"
-          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'overdue' } })}
+          onPress={() => router.navigate('/(employee)/recovery' as Href)}
         />
         <QuickAction
           label="Scan Booking"

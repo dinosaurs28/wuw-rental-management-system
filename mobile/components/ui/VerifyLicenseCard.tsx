@@ -20,17 +20,19 @@ const CONFIG: Record<DLStatus, {
     eyebrow: 'UNDER REVIEW', eyebrowColor: Colors.availLow, icon: 'time-outline',
     title: 'Licence under review', sub: 'We’ll verify your driving licence shortly.',
   },
+  // X2 — a licence PHOTO is optional (pickup needs the DL number on the profile
+  // and the original card), so these two never read as a blocker.
   none: {
-    eyebrow: 'ACTION NEEDED', eyebrowColor: Colors.orange, icon: 'shield-outline',
-    title: 'Add your driving licence', sub: 'Add your driving licence ahead of your pickup day.', cta: 'Verify now',
+    eyebrow: 'OPTIONAL', eyebrowColor: Colors.ink3, icon: 'card-outline',
+    title: 'Licence photo', sub: 'Uploading a photo of your driving licence is optional. Bring the original licence to pickup.', cta: 'Upload photo',
   },
   rejected: {
-    eyebrow: 'ACTION NEEDED', eyebrowColor: Colors.availNone, icon: 'alert-circle-outline',
-    title: 'Licence needs attention', sub: 'Your licence couldn’t be verified — please re-upload it.', cta: 'Re-upload',
+    eyebrow: 'OPTIONAL', eyebrowColor: Colors.availLow, icon: 'alert-circle-outline',
+    title: 'Licence photo not accepted', sub: 'Your licence photo couldn’t be verified. You can re-upload it — it isn’t needed for pickup. Bring the original licence.', cta: 'Re-upload',
   },
 };
 
-// "Verify your driver's licence" card, driven by real KYC DL status.
+// Licence photo card for upcoming trips, driven by real KYC DL status.
 export default function VerifyLicenseCard({ status, onVerify }: Props) {
   const c = CONFIG[status];
   return (

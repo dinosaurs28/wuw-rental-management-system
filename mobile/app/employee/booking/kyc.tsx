@@ -36,8 +36,9 @@ const TYPES: { type: KycType; label: string }[] = [
   { type: 'STUDENT_ID', label: 'Student' },
 ];
 const SIDES: KycSide[] = ['FRONT', 'BACK'];
-// A booking needs BOTH sides of one of these (same rule as the web); a
-// student ID can be uploaded but doesn't count.
+// Documents are optional (X2) — the customer's DL number is what's required.
+// To attach one to the booking it needs BOTH sides of one of these (same rule
+// as the web); a student ID can be uploaded but can't be attached.
 const BOOKABLE_TYPES: KycType[] = ['DL', 'AADHAAR', 'PAN'];
 const TYPE_LABEL: Record<string, string> = { DL: 'Licence', AADHAAR: 'Aadhaar', PAN: 'PAN' };
 const STATUS_COLOR: Record<string, string> = { PENDING: '#d97706', APPROVED: '#059669', REJECTED: '#dc2626' };
@@ -76,15 +77,17 @@ export default function WalkinKycScreen() {
     const back = docs.find((d) => d.type === type && d.side === 'BACK');
     if (front && back) completeFronts.set(type, front.publicId);
   }
-  // Staff pick a document; the booking is tied to its type's FRONT.
+  // Staff may pick a document; the booking is tied to its type's FRONT.
   const selectedType = docs.find((d) => d.publicId === customerKycId)?.type;
   const bookingKycId = selectedType ? completeFronts.get(selectedType) : undefined;
 
-  const canContinue = !!bookingKycId && !!qrPhotoId;
+  // Only the QR code photo is required (#4); a document is optional (X2).
+  const canContinue = !!qrPhotoId;
 
   const continueToSummary = () => {
-    if (!bookingKycId || !qrPhotoId) return;
-    setCustomerKycId(bookingKycId);
+    if (!qrPhotoId) return;
+    // A document with only one side uploaded isn't attached.
+    setCustomerKycId(bookingKycId ?? null);
     router.push('/employee/booking/summary');
   };
 
@@ -176,7 +179,7 @@ export default function WalkinKycScreen() {
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.title}>KYC Documents</Text>
+          <Text style={styles.title}>Documents</Text>
           <Text style={styles.subtitle}>{customer.name}</Text>
         </View>
       </View>
@@ -193,8 +196,11 @@ export default function WalkinKycScreen() {
           required
         />
 
-        {/* Add a document */}
-        <Text style={styles.sectionLabel}>Add a document</Text>
+        {/* Add a document — optional (X2) */}
+        <View style={styles.sectionLabelRow}>
+          <Text style={[styles.sectionLabel, styles.sectionLabelInline]}>Add a document</Text>
+          <Text style={styles.optionalTag}>Optional</Text>
+        </View>
         <View style={styles.card}>
           <Text style={styles.miniLabel}>Type</Text>
           <View style={styles.pillRow}>
@@ -241,7 +247,7 @@ export default function WalkinKycScreen() {
         </View>
 
         {/* Uploaded docs */}
-        <Text style={styles.sectionLabel}>Uploaded — tap to attach to booking</Text>
+        <Text style={styles.sectionLabel}>Uploaded — tap to attach, tap again to remove</Text>
         {docs.length > 0 && (
           <View style={styles.sidesRow}>
             {BOOKABLE_TYPES.map((type) => {
@@ -267,7 +273,9 @@ export default function WalkinKycScreen() {
         ) : docs.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="document-outline" size={22} color={Colors.ink4} />
-            <Text style={styles.emptyCardText}>No documents yet. Add the front and back of a licence, Aadhaar or PAN.</Text>
+            <Text style={styles.emptyCardText}>
+              No documents yet. They&apos;re optional — to attach one, add the front and back of a licence, Aadhaar or PAN.
+            </Text>
           </View>
         ) : (
           docs.map((doc) => {
@@ -277,7 +285,8 @@ export default function WalkinKycScreen() {
               <TouchableOpacity
                 key={doc.publicId}
                 style={[styles.docRow, selected && styles.docRowSelected]}
-                onPress={() => setCustomerKycId(doc.publicId)}
+                // Tapping the attached document again detaches it (optional, X2).
+                onPress={() => setCustomerKycId(selected ? null : doc.publicId)}
                 activeOpacity={0.85}
               >
                 {doc.file?.url ? (
@@ -306,13 +315,18 @@ export default function WalkinKycScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {!bookingKycId && (
+        {/* Documents are optional (X2): these only say what will be attached. */}
+        {selectedType && !bookingKycId ? (
           <Text style={styles.footerHint}>
-            {selectedType && BOOKABLE_TYPES.includes(selectedType)
-              ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to continue.`
-              : completeFronts.size > 0
-                ? 'Select a document with both sides uploaded.'
-                : 'Upload the front and back of a driving licence, Aadhaar or PAN.'}
+            {BOOKABLE_TYPES.includes(selectedType)
+              ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to attach it, or continue without a document.`
+              : 'A student ID can\'t be attached. Select a licence, Aadhaar or PAN, or continue without a document.'}
+          </Text>
+        ) : (
+          <Text style={styles.footerNote}>
+            {bookingKycId && selectedType
+              ? `${TYPE_LABEL[selectedType]} will be attached to the booking.`
+              : 'No document attached — that\'s fine, it\'s optional.'}
           </Text>
         )}
         {!qrPhotoId && (
@@ -380,6 +394,13 @@ const styles = StyleSheet.create({
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
   footerHint: { fontFamily: Fonts.body, fontSize: 12, color: '#b45309', textAlign: 'center' },
+  footerNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'center' },
+  sectionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  sectionLabelInline: { marginTop: 0 },
+  optionalTag: {
+    fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.ink3,
+    backgroundColor: '#0a0a0a0d', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden',
+  },
 
   sidesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sidesChip: {

@@ -33,6 +33,7 @@ import {
   isValidUtr,
 } from '../../../lib/counterErrors';
 import { durationLabel } from '../../../lib/pricing';
+import { handleDlInUse } from '../../../lib/dlInUse';
 import { rangeLengthLabel, toLocalMinuteIso } from '../../../lib/dates';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import { profileIncompleteMessage } from '../../../lib/identity';
@@ -181,7 +182,8 @@ export default function WalkinSummaryScreen() {
     return () => clearInterval(t);
   }, [secondsLeft]);
 
-  if (!customer || !vehicle || !start || !end || !customerKycId) {
+  // customerKycId may be null: a KYC document is optional (X2).
+  if (!customer || !vehicle || !start || !end) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.header}>
@@ -310,7 +312,8 @@ export default function WalkinSummaryScreen() {
       const res = await employeeApi.createBooking({
         group_key: vehicle.groupKey,
         customer_public_id: customer.publicId,
-        customer_kyc_id: customerKycId,
+        // Omitted when no document was attached (X2).
+        ...(customerKycId ? { customer_kyc_id: customerKycId } : {}),
         start,
         end,
         payment_type: payMethod,
@@ -422,6 +425,8 @@ export default function WalkinSummaryScreen() {
         setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
         return;
       }
+      // X3 — this DL has a vehicle out / an overlapping booking: name that booking
+      if (handleDlInUse(err)) return;
       if (err?.response?.data?.code === 'QR_PHOTO_MISMATCH') {
         // Replaced or removed elsewhere: recheck it on the documents step,
         // which reloads the customer's current photo.

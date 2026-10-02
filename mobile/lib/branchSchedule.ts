@@ -10,6 +10,18 @@
 import { validateBookingWindow } from './bookingWindow';
 import { startOfDay, timeLabel, timeSlotsFor, withTime, type TimeSlot } from './dates';
 
+/**
+ * Hours that apply to any day a branch has no saved row for (including a branch
+ * with no rows at all), unless the branch is switched to 24 hours.
+ */
+export const DEFAULT_BRANCH_HOURS = { openTime: '08:00', closeTime: '23:00' } as const;
+
+/**
+ * A booking's pickup time must be at least this many minutes before closing
+ * (default hours → last pickup 10:30 PM). Returns keep [open, close + grace].
+ */
+export const PICKUP_CUTOFF_MINUTES = 30;
+
 export interface BranchScheduleRow {
   dayOfWeek: number; // 0 = Sunday … 6 = Saturday
   isOpen: boolean;
@@ -21,6 +33,16 @@ export interface BranchScheduleConfig {
   schedules: BranchScheduleRow[];
   graceMinutes: number;
   is24Hours: boolean;
+  /**
+   * Mobile only (set by toScheduleConfig): the server's `pickupCutoffMinutes`
+   * when it sends one; PICKUP_CUTOFF_MINUTES otherwise.
+   */
+  pickupCutoffMinutes?: number;
+}
+
+/** Minutes before closing of the last pickup for this branch. */
+export function pickupCutoffOf(config: BranchScheduleConfig): number {
+  return config.pickupCutoffMinutes ?? PICKUP_CUTOFF_MINUTES;
 }
 
 export type ScheduleVerdictStatus =
@@ -53,6 +75,8 @@ export interface ScheduleVerdict {
   closedDayName?: string;
   /** Why the return was moved or refused — set on RETURN_BUMPED / RETURN_OUTSIDE_HOURS */
   reason?: ReturnScheduleReason;
+  /** Latest allowed pickup that day (closing − PICKUP_CUTOFF_MINUTES), e.g. "10:30 PM" — set on PICKUP_AT_OR_AFTER_CLOSE */
+  lastPickupTime?: string;
 }
 
 /** A verdict as it arrives in a 400 body — dates are ISO strings on the wire. */
@@ -84,14 +108,16 @@ function getScheduleForDay(
   config: BranchScheduleConfig,
   dayOfWeek: number,
 ): { isOpen: boolean; openMinutes: number; closeMinutes: number; openTime: string; closeTime: string } {
-  // No schedule rows → treat branch as 24/7 (RISK-001 guard)
-  if (config.schedules.length === 0) {
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: '00:00', closeTime: '24:00' };
-  }
   const row = config.schedules.find((s) => s.dayOfWeek === dayOfWeek);
   if (!row) {
-    // Missing day row → treat as open 24hr for that day
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: '00:00', closeTime: '24:00' };
+    // No saved row for this day (or no rows at all) → default hours, 8 AM – 11 PM
+    return {
+      isOpen: true,
+      openMinutes: timeToMinutes(DEFAULT_BRANCH_HOURS.openTime),
+      closeMinutes: timeToMinutes(DEFAULT_BRANCH_HOURS.closeTime),
+      openTime: DEFAULT_BRANCH_HOURS.openTime,
+      closeTime: DEFAULT_BRANCH_HOURS.closeTime,
+    };
   }
   return {
     isOpen: row.isOpen,
@@ -167,14 +193,15 @@ function bumpVerdict(
 
 /**
  * Opening window of one branch-local day, for pickers and checks.
- * null = no restriction that day (24-hour branch, or no hours configured).
- * Minutes are since local midnight; returns are allowed up to graceEndMin.
+ * null = no restriction that day (24-hour branch only — a day without saved
+ * hours uses DEFAULT_BRANCH_HOURS). Minutes are since local midnight; pickups
+ * are allowed in [openMin, lastPickupMin], returns in [openMin, graceEndMin].
  */
 export function getDayWindow(
   config: BranchScheduleConfig,
   date: Date,
-): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number } | null {
-  if (config.is24Hours || config.schedules.length === 0) return null;
+): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number; lastPickupMin: number } | null {
+  if (config.is24Hours) return null;
   const { dayOfWeek } = getBranchLocalTime(date);
   const day = getScheduleForDay(config, dayOfWeek);
   return {
@@ -182,7 +209,43 @@ export function getDayWindow(
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
     graceEndMin: day.closeMinutes + config.graceMinutes,
+    lastPickupMin: day.closeMinutes - pickupCutoffOf(config),
   };
+}
+
+export interface EffectiveScheduleRow extends BranchScheduleRow {
+  /** True when the branch has no saved row for this day and DEFAULT_BRANCH_HOURS fill it. */
+  isDefault: boolean;
+  /** Latest pickup "HH:mm" (closeTime − PICKUP_CUTOFF_MINUTES); null on a closed day. */
+  lastPickupTime: string | null;
+}
+
+/** "HH:mm" for minutes since midnight (wraps within the day). */
+function minutesToHHmm(mins: number): string {
+  const normalised = ((mins % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalised / 60)).padStart(2, '0')}:${String(normalised % 60).padStart(2, '0')}`;
+}
+
+/**
+ * The seven weekly rows (Sunday first) the rules actually use: saved rows as
+ * they are, days without a row filled with DEFAULT_BRANCH_HOURS. A 24-hour
+ * branch ignores these entirely (is24Hours wins).
+ */
+export function getEffectiveSchedules(schedules: BranchScheduleRow[]): EffectiveScheduleRow[] {
+  return DAY_NAMES.map((_, dayOfWeek) => {
+    const row = schedules.find((s) => s.dayOfWeek === dayOfWeek);
+    const isOpen = row ? row.isOpen : true;
+    const openTime = row ? row.openTime : DEFAULT_BRANCH_HOURS.openTime;
+    const closeTime = row ? row.closeTime : DEFAULT_BRANCH_HOURS.closeTime;
+    return {
+      dayOfWeek,
+      isOpen,
+      openTime,
+      closeTime,
+      isDefault: !row,
+      lastPickupTime: isOpen ? minutesToHHmm(timeToMinutes(closeTime) - PICKUP_CUTOFF_MINUTES) : null,
+    };
+  });
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -196,8 +259,8 @@ export function validateBookingSchedule(
   pickupLocal: Date,
   returnLocal: Date,
 ): ScheduleVerdict {
-  // 24/7 branch — no restrictions
-  if (config.is24Hours || config.schedules.length === 0) {
+  // 24-hour branch — no restrictions (no saved rows = default hours, not 24/7)
+  if (config.is24Hours) {
     return { status: 'OK' };
   }
 
@@ -215,8 +278,14 @@ export function validateBookingSchedule(
     return { status: 'PICKUP_BEFORE_OPEN', openingTime: minutesToDisplay(pickupDay.openMinutes) };
   }
 
-  if (pickupMins >= pickupDay.closeMinutes) {
-    return { status: 'PICKUP_AT_OR_AFTER_CLOSE', closingTime: minutesToDisplay(pickupDay.closeMinutes) };
+  // Last pickup is PICKUP_CUTOFF_MINUTES before closing (status name kept for old clients)
+  const lastPickupMins = pickupDay.closeMinutes - pickupCutoffOf(config);
+  if (pickupMins > lastPickupMins) {
+    return {
+      status: 'PICKUP_AT_OR_AFTER_CLOSE',
+      closingTime: minutesToDisplay(pickupDay.closeMinutes),
+      lastPickupTime: minutesToDisplay(lastPickupMins),
+    };
   }
 
   // ── Return checks ────────────────────────────────────────────────────────
@@ -269,7 +338,8 @@ export function validateBookingSchedule(
  * Returns OK / RETURN_GRACE, or RETURN_OUTSIDE_HOURS with a reason.
  */
 export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
-  if (config.is24Hours || config.schedules.length === 0) {
+  // 24-hour branch only — no saved rows means default hours apply
+  if (config.is24Hours) {
     return { status: 'OK' };
   }
   const { dayOfWeek, hours, minutes } = getBranchLocalTime(returnLocal);
@@ -315,6 +385,9 @@ export function buildScheduleErrorMessage(verdict: Pick<ScheduleVerdict, Exclude
     case 'PICKUP_BEFORE_OPEN':
       return `Branch opens at ${verdict.openingTime ?? 'opening time'}. Please select a later pickup time.`;
     case 'PICKUP_AT_OR_AFTER_CLOSE':
+      if (verdict.lastPickupTime) {
+        return `Last pickup is ${verdict.lastPickupTime} (${PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an earlier pickup time.`;
+      }
       return `Pickup cannot be at or after closing time (${verdict.closingTime ?? 'closing time'}). Please select an earlier time.`;
     case 'NO_OPEN_DAY_IN_WINDOW':
       return 'No available return window in the next 7 days. Please contact the branch directly.';
@@ -341,26 +414,42 @@ export function buildScheduleErrorMessage(verdict: Pick<ScheduleVerdict, Exclude
 // Booking screens build slots in device-local time (IST in practice); every
 // check below reads the slot's instant in IST, exactly as the server will.
 
-/** Hours as the API sends them (public schedule, eligibility officeHours) → a validator config. */
+/**
+ * Hours as the API sends them (public schedule, eligibility officeHours) → a
+ * validator config. Newer servers add `effectiveSchedules` (all seven days,
+ * DEFAULT_BRANCH_HOURS filled in) and `pickupCutoffMinutes`; they are used when
+ * present. Without them the saved rows are taken as they are and the rules
+ * above fill in the defaults — the same hours either way. (`defaultHours` only
+ * says whether the branch saved hours of its own; nothing here needs it.)
+ */
 export function toScheduleConfig(raw: any): BranchScheduleConfig | null {
   if (!raw || typeof raw !== 'object') return null;
-  return {
-    schedules: Array.isArray(raw.schedules)
-      ? raw.schedules.map((s: any) => ({
+  const toRows = (rows: unknown): BranchScheduleRow[] =>
+    Array.isArray(rows)
+      ? rows.map((s: any) => ({
           dayOfWeek: Number(s.dayOfWeek),
           isOpen: s.isOpen === true,
           openTime: String(s.openTime ?? '00:00'),
           closeTime: String(s.closeTime ?? '23:59'),
         }))
-      : [],
+      : [];
+  const saved = toRows(raw.schedules);
+  const effective = toRows(raw.effectiveSchedules);
+  const cutoff = raw.pickupCutoffMinutes;
+  return {
+    schedules: effective.length > 0 ? effective : saved,
     graceMinutes: Number(raw.graceMinutes) || 0,
     is24Hours: raw.is24Hours === true,
+    pickupCutoffMinutes: typeof cutoff === 'number' && Number.isFinite(cutoff) && cutoff >= 0 ? cutoff : undefined,
   };
 }
 
-/** True when the branch limits times at all (hours set and not open 24 hours). */
+/**
+ * True when the branch limits times at all — every branch except one open 24
+ * hours (a branch without saved hours keeps DEFAULT_BRANCH_HOURS).
+ */
 export function hasOfficeHours(config?: BranchScheduleConfig | null): config is BranchScheduleConfig {
-  return !!config && !config.is24Hours && config.schedules.length > 0;
+  return !!config && !config.is24Hours;
 }
 
 function minutesOf(at: Date): number {
@@ -368,12 +457,12 @@ function minutesOf(at: Date): number {
   return hours * 60 + minutes;
 }
 
-/** Pickup allowed at this instant: open day, open ≤ time < close. */
+/** Pickup allowed at this instant: open day, open ≤ time ≤ close − PICKUP_CUTOFF_MINUTES. */
 export function isPickupTimeAllowed(config: BranchScheduleConfig, at: Date): boolean {
   const w = getDayWindow(config, at);
   if (!w) return true;
   const m = minutesOf(at);
-  return w.isOpen && m >= w.openMin && m < w.closeMin;
+  return w.isOpen && m >= w.openMin && m <= w.lastPickupMin;
 }
 
 /** Return allowed at this instant: open day, open ≤ time ≤ close + grace. */
@@ -404,9 +493,11 @@ const hhmm = (mins: number) => `${pad2(Math.floor(mins / 60))}:${pad2(mins % 60)
 
 /**
  * Time choices for `day` that the branch accepts: timeSlotsFor() (future
- * times, after `after`) plus the exact opening / closing / grace-end times
- * when they fall off the 30-minute grid, minus anything outside office hours
- * or later than `before`. Without hours it is timeSlotsFor() capped at `before`.
+ * times, after `after`) plus the exact opening / last-pickup (pickups) or
+ * opening / closing / grace-end (returns) times when they fall off the
+ * 30-minute grid, minus anything outside office hours or later than `before`.
+ * Pickup slots therefore end at closing − PICKUP_CUTOFF_MINUTES. Without hours
+ * (24-hour branch, or hours not loaded yet) it is timeSlotsFor() capped at `before`.
  */
 export function slotsWithinHours(
   day: Date,
@@ -418,9 +509,9 @@ export function slotsWithinHours(
   let slots = timeSlotsFor(day, { after: opts.after, now });
   const w = hasOfficeHours(config) ? getDayWindow(config, withTime(day, '12:00')) : null;
   if (w && w.isOpen) {
-    const edges = kind === 'pickup' ? [w.openMin] : [w.openMin, w.closeMin, w.graceEndMin];
+    const edges = kind === 'pickup' ? [w.openMin, w.lastPickupMin] : [w.openMin, w.closeMin, w.graceEndMin];
     for (const mins of edges) {
-      if (mins >= 1440) continue;
+      if (mins < 0 || mins >= 1440) continue;
       const value = hhmm(mins);
       const at = withTime(day, value);
       if (at.getTime() <= now.getTime() || (opts.after && at.getTime() <= opts.after.getTime())) continue;
@@ -435,6 +526,16 @@ export function slotsWithinHours(
     if (!hasOfficeHours(config)) return true;
     return kind === 'pickup' ? isPickupTimeAllowed(config, at) : isReturnTimeAllowed(config, at);
   });
+}
+
+/**
+ * An open day with no pickup time left — today after the last pickup (closing
+ * − PICKUP_CUTOFF_MINUTES), or a day whose hours leave no pickup at all.
+ * Calendars grey these out for pickup; closed days are isClosedDay's job.
+ */
+export function noPickupTimesLeft(config: BranchScheduleConfig | null | undefined, day: Date, now?: Date): boolean {
+  if (!hasOfficeHours(config) || isClosedDay(config, day)) return false;
+  return slotsWithinHours(day, config, 'pickup', { now }).length === 0;
 }
 
 const SEARCH_DAYS = 14;
@@ -607,11 +708,13 @@ export function bookingTimesNotice(
   }
 }
 
-/** "9:00 AM – 10:00 PM", "Closed" or "Open 24 hours" for one calendar day; null when the branch has no hours set. */
+/**
+ * "9:00 AM – 10:00 PM", "Closed" or "Open 24 hours" for one calendar day (a day
+ * without saved hours shows DEFAULT_BRANCH_HOURS); null while the hours are unknown.
+ */
 export function dayHoursLabel(config: BranchScheduleConfig | null | undefined, day: Date): string | null {
   if (!config) return null;
   if (config.is24Hours) return 'Open 24 hours';
-  if (config.schedules.length === 0) return null;
   const w = getDayWindow(config, withTime(day, '12:00'));
   if (!w) return null;
   if (!w.isOpen) return 'Closed';
@@ -619,20 +722,48 @@ export function dayHoursLabel(config: BranchScheduleConfig | null | undefined, d
   return `${minutesToDisplay(w.openMin)} – ${minutesToDisplay(w.closeMin)}`;
 }
 
+/** Last pickup time on this calendar day, e.g. "10:30 PM"; null when there is none (closed, 24 hours, unknown). */
+export function lastPickupTimeLabel(config: BranchScheduleConfig | null | undefined, day: Date): string | null {
+  if (!hasOfficeHours(config)) return null;
+  const w = getDayWindow(config, withTime(day, '12:00'));
+  if (!w || !w.isOpen || w.lastPickupMin < w.openMin) return null;
+  return minutesToDisplay(w.lastPickupMin);
+}
+
+/** Latest accepted return on this calendar day when the branch gives grace after closing, e.g. "11:30 PM". */
+function returnsUntilLabel(config: BranchScheduleConfig, day: Date): string | null {
+  if (config.graceMinutes <= 0) return null;
+  const w = getDayWindow(config, withTime(day, '12:00'));
+  if (!w || !w.isOpen) return null;
+  // The return window ends with the day (a grace past midnight isn't carried over).
+  return minutesToDisplay(Math.min(w.graceEndMin, 1439));
+}
+
 /**
  * One line of branch hours for a pickup/return pair, e.g.
- * "Branch hours 9:00 AM – 10:00 PM · returns until 10:30 PM", or one part per
- * day when they differ. null when the branch has no hours set.
+ * "Branch hours 8:00 AM – 11:00 PM · last pickup 10:30 PM · returns until 11:30 PM",
+ * or one part per day when they differ. `returnOnly` (extension screens, which
+ * pick only a return) leaves the pickup out. null while the hours are unknown.
  */
-export function rangeHoursLine(config: BranchScheduleConfig | null | undefined, start: Date, end: Date): string | null {
+export function rangeHoursLine(
+  config: BranchScheduleConfig | null | undefined,
+  start: Date,
+  end: Date,
+  opts: { returnOnly?: boolean } = {},
+): string | null {
   if (!config) return null;
   if (config.is24Hours) return 'Branch open 24 hours';
   const pickup = dayHoursLabel(config, start);
   const ret = dayHoursLabel(config, end);
   if (!pickup || !ret) return null;
-  const grace = config.graceMinutes > 0 ? ` (returns up to ${config.graceMinutes} min after closing)` : '';
-  if (pickup === ret) return `Branch hours ${pickup}${grace}`;
-  return `Pickup day ${pickup} · Return day ${ret}${grace}`;
+  const lastPickup = lastPickupTimeLabel(config, start);
+  const returnsUntil = returnsUntilLabel(config, end);
+  const returnPart = returnsUntil ? ` · returns until ${returnsUntil}` : '';
+  if (opts.returnOnly) return `Branch hours ${ret}${returnPart}`;
+  if (pickup === ret) return `Branch hours ${pickup}${lastPickup ? ` · last pickup ${lastPickup}` : ''}${returnPart}`;
+  return `Pickup day ${pickup}${lastPickup ? ` (last pickup ${lastPickup})` : ''} · Return day ${ret}${
+    returnsUntil ? ` (returns until ${returnsUntil})` : ''
+  }`;
 }
 
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -640,12 +771,11 @@ const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /**
  * Weekly hours, Monday first, with neighbouring days that share hours grouped:
  * [{ days: 'Mon – Sat', hours: '9:00 AM – 10:00 PM' }, { days: 'Sun', hours: 'Closed' }].
- * Empty when the branch has no hours set.
+ * Days without saved hours show DEFAULT_BRANCH_HOURS. Empty while the hours are unknown.
  */
 export function weeklyHours(config: BranchScheduleConfig | null | undefined): { days: string; hours: string }[] {
   if (!config) return [];
   if (config.is24Hours) return [{ days: 'Every day', hours: 'Open 24 hours' }];
-  if (config.schedules.length === 0) return [];
   const order = [1, 2, 3, 4, 5, 6, 0];
   const labelFor = (dow: number) => {
     const d = getScheduleForDay(config, dow);
