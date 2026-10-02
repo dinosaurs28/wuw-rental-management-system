@@ -38,6 +38,7 @@ import {
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { refreshActiveShift, useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { apiErrorMessage, cleanUtr, counterErrorCode, isValidUtr } from "@/lib/counterErrors";
+import { dlInUseToastOptions } from "@/lib/dlInUse";
 import { cn } from "@/lib/utils";
 import {
   formatExtensionHours,
@@ -292,7 +293,8 @@ export function ExtendBookingModal({
       }
       setStep(2);
     } catch (err) {
-      toast.error(apiErrorMessage(err, "Failed to evaluate extension."));
+      // DL_IN_USE (X3) adds the booking holding this driving licence
+      toast.error(apiErrorMessage(err, "Failed to evaluate extension."), dlInUseToastOptions(err));
     } finally {
       setEvaluating(false);
     }
@@ -358,7 +360,7 @@ export function ExtendBookingModal({
       setCommitError(err);
       // No open shift is shown inline in Step 2.
       if (counterErrorCode(err) === "SHIFT_REQUIRED") void refreshActiveShift();
-      else toast.error(apiErrorMessage(err, "Failed to commit extension."));
+      else toast.error(apiErrorMessage(err, "Failed to commit extension."), dlInUseToastOptions(err));
     } finally {
       setCommitting(false);
     }

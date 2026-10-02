@@ -21,6 +21,7 @@ import {
   isValidUtr,
 } from "@/lib/counterErrors";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
+import { dlConflictLabel } from "@/lib/dlInUse";
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { usePaymentStore } from "@/store/payment.store";
 
@@ -245,6 +246,9 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
           {!!zeroMutation.error && (
             <p className="text-sm text-destructive">
               {apiErrorMessage(zeroMutation.error, "Something went wrong. Try again.")}
+              {dlConflictLabel(zeroMutation.error) && (
+                <span className="mt-1 block font-medium">{dlConflictLabel(zeroMutation.error)}</span>
+              )}
             </p>
           )}
           <Button
@@ -396,6 +400,10 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
           !!error && !utrServerError && errorCode !== "SHIFT_REQUIRED" && (
             <p className="text-sm text-destructive">
               {apiErrorMessage(error, "Something went wrong. Try again.")}
+              {/* DL_IN_USE (X3): the booking holding this driving licence */}
+              {dlConflictLabel(error) && (
+                <span className="mt-1 block font-medium">{dlConflictLabel(error)}</span>
+              )}
             </p>
           )
         )}

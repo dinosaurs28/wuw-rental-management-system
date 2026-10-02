@@ -59,7 +59,6 @@ export const ReviewConfirmPage = () => {
     endDate,
     startTime,
     endTime,
-    selectedKycFilePublicId,
     paymentType,
     apiBasePrice,
     apiDurationDiscountAmount,
@@ -196,9 +195,9 @@ export const ReviewConfirmPage = () => {
     navigate("/profile/personal-information");
   };
 
-  // Check if form is valid for submission
-  const isFormValid =
-    selectedKycFilePublicId && paymentType && termsAccepted && !profileIncomplete;
+  // Check if form is valid for submission. The KYC document is optional (X2):
+  // the DL + Aadhaar numbers on the profile are what the booking needs.
+  const isFormValid = paymentType && termsAccepted && !profileIncomplete;
 
   // Handle Confirm & Pay click - validate, check type-class limits, then navigate
   const handleConfirmAndPay = () => {
@@ -216,7 +215,6 @@ export const ReviewConfirmPage = () => {
       (!selectedVehicleId && !selectedGroupKey) ||
       !startDate ||
       !endDate ||
-      !selectedKycFilePublicId ||
       !paymentType
     ) {
       toast.error("Please complete all required fields");
@@ -535,7 +533,6 @@ export const ReviewConfirmPage = () => {
                   {!isFormValid && (
                     <p className="text-xs text-muted-foreground text-center mt-3">
                       {profileIncomplete && "Complete your profile • "}
-                      {!selectedKycFilePublicId && "Upload both sides of a document • "}
                       {!paymentType && "Select payment method • "}
                       {!termsAccepted && "Accept terms & conditions"}
                     </p>

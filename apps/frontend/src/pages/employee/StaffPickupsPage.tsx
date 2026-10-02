@@ -71,7 +71,13 @@ import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
 import type { DlStatus } from "@/services/dlStatus.service";
 import { DlStatusPanel, DlStatusSelector } from "@/components/booking/DlStatus";
-import { dlChoiceError, dlChoicePayload } from "@/lib/dlStatus";
+import { dlChoicePayload, pickupDlChoiceError } from "@/lib/dlStatus";
+import { PickupDlNumberCard } from "@/components/employee/PickupDlNumberCard";
+import {
+  formatDlNumber,
+  isPickupDlNumberError,
+  pickupDlNumberState,
+} from "@/lib/pickupDlNumber";
 import type { AvailableVehicle } from "@/types/vehicleSwap";
 import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
 import {
@@ -82,6 +88,7 @@ import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
 import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
+import { isDlInUse, dlInUseToastOptions } from "@/lib/dlInUse";
 
 interface CaptureField {
   name: string;
@@ -301,8 +308,12 @@ export default function StaffPickupsPage() {
   /** Last counter-coupon refusal (server message), shown under the coupon field. */
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  // --- STEP 3: KYC ---
+  // --- STEP 3: DL number (required, X2) + KYC documents (optional) ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+  const [dlNumberInput, setDlNumberInput] = useState("");
+  const [dlNumberEditing, setDlNumberEditing] = useState(false);
+  /** Last DL_NUMBER_REQUIRED / INVALID_DL_NUMBER refusal, shown at the input. */
+  const [dlNumberServerError, setDlNumberServerError] = useState<string | null>(null);
 
   // --- STEP 4: Inspection ---
   const [requestSafetyDeposit, setRequestSafetyDeposit] = useState(false);
@@ -317,7 +328,7 @@ export default function StaffPickupsPage() {
   const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
-  // --- ORIGINAL LICENCE (#3): required choice, nothing pre-selected ---
+  // --- ORIGINAL LICENCE (#3): optional choice (X1), nothing pre-selected ---
   const [dlStatus, setDlStatus] = useState<DlStatus>(null);
   const [dlDepositNote, setDlDepositNote] = useState("");
   const [dlError, setDlError] = useState<string | null>(null);
@@ -450,8 +461,9 @@ export default function StaffPickupsPage() {
       fuelLevel: number;
       pickupImageIds?: string[];
       requireManagerConfirmation?: boolean;
-      dlStatus: NonNullable<DlStatus>;
+      dlStatus?: NonNullable<DlStatus>;
       dlDepositNote?: string | null;
+      drivingLicenceNumber?: string;
     }) => bookingService.approvePickup(bookingId!, data),
     onSuccess: (response: any) => {
       toast.success(response?.message || "Vehicle Handover Confirmed!");
@@ -463,7 +475,13 @@ export default function StaffPickupsPage() {
       if (DL_ERROR_CODES.includes(error.response?.data?.code)) {
         setDlError(error.response.data.message);
       }
-      toast.error(error.response?.data?.message || "Failed to confirm handover");
+      // X2: no DL number on file / an invalid one typed — show it at the input
+      if (isPickupDlNumberError(error)) showDlNumberError(error.response.data.message);
+      toast.error(
+        error.response?.data?.message || "Failed to confirm handover",
+        // DL_IN_USE (X3): name the booking holding this driving licence
+        dlInUseToastOptions(error),
+      );
       setIsConfirmOpen(false);
     },
   });
@@ -503,6 +521,11 @@ export default function StaffPickupsPage() {
       paymentSessionService.initiatePickupSession(bookingId!, payload),
     onSuccess: (session) => {
       setPickupSession(session);
+      // A DL number sent with the initiate is now on file (X2) — show it as stored
+      setDlNumberInput("");
+      setDlNumberEditing(false);
+      setDlNumberServerError(null);
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       setTimeout(() => {
         document.getElementById("pickup-payment-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
@@ -520,6 +543,14 @@ export default function StaffPickupsPage() {
         const message = error.response.data.message;
         setDlError(message);
         toast.error(message);
+      } else if (isPickupDlNumberError(error)) {
+        // X2: 422 DL_NUMBER_REQUIRED / 400 INVALID_DL_NUMBER — fix it at the input
+        showDlNumberError(error.response.data.message);
+        toast.error(error.response.data.message);
+      } else if (isDlInUse(error)) {
+        // X3: another booking on this driving licence is out — not the
+        // "sessions off" 409, so don't fall back to the legacy handover
+        toast.error(error.response.data.message, dlInUseToastOptions(error));
       } else if (status === 409) {
         setIsConfirmOpen(true);
       } else {
@@ -601,10 +632,18 @@ export default function StaffPickupsPage() {
   });
 
   // --- DERIVED STATE ---
+  // KYC documents are optional (X2): shown for review, never a handover gate
   const kycDocs = kycData?.kyc || [];
-  const areAllDocsApproved =
-    kycDocs.length > 0 && kycDocs.every((doc) => doc.status === "APPROVED");
   const isPickedUp = booking?.status === "PICKED_UP";
+  // The DL NUMBER is the gate (X2): on file, or typed here and sent with the pickup
+  const dlOnFile = booking?.customer?.drivingLicenceNumber ?? null;
+  const dlNumber = pickupDlNumberState(dlOnFile, dlNumberInput, dlNumberEditing);
+  // Once a pickup session exists the number was settled when it was initiated
+  // (the server refuses an initiate without one), so it no longer gates payment.
+  const dlNumberReady = !!pickupSession || dlNumber.problem === null;
+  // Live format check once something is typed; the "required" case has its own copy
+  const dlNumberError =
+    dlNumberServerError ?? (dlNumberInput.trim() ? dlNumber.problem : null);
   // useSessionFlow is true whenever the branch has usePaymentSessions enabled —
   // regardless of whether this is an advance-payment booking. Extension-only and
   // deposit-only pickups also use the session flow.
@@ -629,11 +668,11 @@ export default function StaffPickupsPage() {
   const canProceedFromStep2 = canProceedFromStep1;
   const isHandoverReady =
     canProceedFromStep2 &&
-    areAllDocsApproved &&
+    dlNumberReady &&
     (watch("odo") ?? 0) > 0 &&
     watch("fuelLevel") !== "";
-  // DL choice is required (and a note for DEPOSIT) before the handover can be sent.
-  const dlChoiceReady = dlChoiceError(dlStatus, dlDepositNote) === null;
+  // The DL status may be left unset (X1); a chosen DEPOSIT still needs its note.
+  const dlChoiceReady = pickupDlChoiceError(dlStatus, dlDepositNote) === null;
 
   // --- HANDLERS ---
   const handleFileSelect = async (file: File) => {
@@ -657,11 +696,49 @@ export default function StaffPickupsPage() {
     setDlError(null);
   };
 
-  /** Blocks the handover until a DL status (and a deposit note for DEPOSIT) is chosen. */
+  /** Leave the DL status unrecorded (X1) — it can be set later from the booking. */
+  const handleDlStatusClear = () => {
+    setDlStatus(null);
+    setDlDepositNote("");
+    setDlError(null);
+  };
+
+  /** Blocks the handover only for a DEPOSIT without its note — the status itself is optional (X1). */
   const checkDlChoice = (): boolean => {
-    const problem = dlChoiceError(dlStatus, dlDepositNote);
+    const problem = pickupDlChoiceError(dlStatus, dlDepositNote);
     setDlError(problem);
     return problem === null;
+  };
+
+  const handleDlNumberChange = (value: string) => {
+    setDlNumberInput(value);
+    setDlNumberServerError(null);
+  };
+
+  /** Open (prefilled) or close the input that corrects the stored DL number. */
+  const handleDlNumberEditingChange = (editing: boolean) => {
+    setDlNumberEditing(editing);
+    setDlNumberInput(editing && dlOnFile ? formatDlNumber(dlOnFile) : "");
+    setDlNumberServerError(null);
+  };
+
+  /** Server refused the DL number (X2): show it at the input and bring the step into view. */
+  const showDlNumberError = (message: string) => {
+    setDlNumberServerError(message);
+    // A number the page thought was on file — open the input so it can be entered
+    if (dlOnFile) setDlNumberEditing(true);
+    queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    document.getElementById("pickup-dl-number")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  /** Blocks the handover until the customer's DL number is on file or validly typed (X2). */
+  const checkDlNumber = (): boolean => {
+    if (dlNumber.problem) {
+      setDlNumberServerError(dlNumber.problem);
+      document.getElementById("pickup-dl-number")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+    return true;
   };
 
   const handleDeleteImage = (fileId: string) => {
@@ -726,8 +803,11 @@ export default function StaffPickupsPage() {
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
-      // dlStatus (+ dlDepositNote for DEPOSIT); the deprecated licenseCollected is no longer sent.
+      // dlStatus (+ dlDepositNote for DEPOSIT) only when chosen (optional, X1);
+      // the deprecated licenseCollected is no longer sent.
       ...(dlStatus ? dlChoicePayload(dlStatus, dlDepositNote) : {}),
+      // DL number typed at the counter (X2) — omitted to keep the stored one
+      ...(dlNumber.toSend ? { drivingLicenceNumber: dlNumber.toSend } : {}),
     };
 
     if (captureConfig) {
@@ -744,6 +824,7 @@ export default function StaffPickupsPage() {
   const onConfirmHandover = (data: HandoverFormValues) => {
     // const chargeConfig = booking?.frozenChargeConfig;
 
+    if (!checkDlNumber()) return;
     if (!checkDlChoice()) return;
 
     // Validate required capture photos
@@ -776,6 +857,7 @@ export default function StaffPickupsPage() {
         discountCode: pendingDiscountCode ?? undefined,
         dlStatus: payload.dlStatus,
         dlDepositNote: payload.dlDepositNote,
+        drivingLicenceNumber: payload.drivingLicenceNumber,
       });
     } else {
       setIsConfirmOpen(true);
@@ -783,6 +865,7 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandoverLegacy = (data: HandoverFormValues) => {
+    if (!checkDlNumber()) return;
     if (!checkDlChoice()) return;
     const payload = buildHandoverPayload(data);
     handoverMutation.mutate(payload as any);
@@ -878,6 +961,14 @@ export default function StaffPickupsPage() {
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   {customer.name}
                 </p>
+                {/* DL number (X2) — required for the handover; entered in step 3 when missing */}
+                {dlOnFile ? (
+                  <p className="text-xs font-mono font-semibold text-gray-700 mt-0.5 break-all">
+                    DL {formatDlNumber(dlOnFile)}
+                  </p>
+                ) : (
+                  <p className="text-xs font-semibold text-amber-700 mt-0.5">DL number missing</p>
+                )}
               </div>
               <div>
                 <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
@@ -1096,19 +1187,44 @@ export default function StaffPickupsPage() {
         {/* STEPS 3–7: only shown/unlocked when step 2 is resolved      */}
         {/* ─────────────────────────────────────────────────────────── */}
 
-        {/* STEP 3: KYC VERIFICATION */}
+        {/* STEP 3: DRIVING LICENCE NUMBER (required) + KYC DOCUMENTS (optional) — X2 */}
         <StepCard
           stepNum={3}
-          title="KYC Verification"
-          subtitle="Approve all customer documents before handover"
-          isCompleted={areAllDocsApproved}
+          title="Driving Licence & KYC"
+          subtitle="DL number required · document photos optional"
+          isCompleted={dlNumberReady}
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4">
+            <div id="pickup-dl-number" className="mb-5">
+              <PickupDlNumberCard
+                id="pickup-dl-number-input"
+                onFile={dlOnFile}
+                value={dlNumberInput}
+                onValueChange={handleDlNumberChange}
+                editing={dlNumberEditing}
+                onEditingChange={handleDlNumberEditingChange}
+                error={dlNumberError}
+                disabled={
+                  isPickedUp ||
+                  !!pickupSession ||
+                  handoverMutation.isPending ||
+                  initiatePickupSessionMutation.isPending
+                }
+              />
+            </div>
+
+            <p className="text-sm font-medium text-gray-900 mb-3">
+              KYC documents{" "}
+              <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+            </p>
             {kycDocs.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No documents uploaded yet.</p>
+                <p className="text-sm">No documents uploaded.</p>
+                <p className="text-xs mt-1">
+                  Not required — the handover can go ahead without them.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1742,6 +1858,8 @@ export default function StaffPickupsPage() {
                         onNoteChange={handleDlNoteChange}
                         error={dlError}
                         disabled={initiatePickupSessionMutation.isPending}
+                        optional
+                        onClear={handleDlStatusClear}
                       />
                     </div>
 
@@ -1763,11 +1881,13 @@ export default function StaffPickupsPage() {
                     </Button>
                     {!isHandoverReady ? (
                       <p className="text-xs text-center text-muted-foreground">
-                        Complete all steps above to proceed
+                        {dlNumberReady
+                          ? "Complete all steps above to proceed"
+                          : "Enter the customer's driving licence number (step 3) to proceed"}
                       </p>
                     ) : !dlChoiceReady && (
                       <p className="text-xs text-center text-muted-foreground">
-                        Choose the driving licence status to proceed
+                        Note what the customer left as the DL deposit to proceed
                       </p>
                     )}
                   </>
@@ -1819,6 +1939,8 @@ export default function StaffPickupsPage() {
                   onNoteChange={handleDlNoteChange}
                   error={dlError}
                   disabled={handoverMutation.isPending}
+                  optional
+                  onClear={handleDlStatusClear}
                 />
               </div>
             )}
@@ -1839,11 +1961,13 @@ export default function StaffPickupsPage() {
             </Button>
             {!isHandoverReady ? (
               <p className="text-xs text-center text-muted-foreground">
-                Complete all steps above to enable handover
+                {dlNumberReady
+                  ? "Complete all steps above to enable handover"
+                  : "Enter the customer's driving licence number (step 3) to enable handover"}
               </p>
             ) : !dlChoiceReady && (
               <p className="text-xs text-center text-muted-foreground">
-                Choose the driving licence status to enable handover
+                Note what the customer left as the DL deposit to enable handover
               </p>
             )}
           </div>
@@ -1947,6 +2071,23 @@ export default function StaffPickupsPage() {
             {/* Rental terms (also shown on the inspection step) */}
             <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} />
 
+            {/* DL number the handover goes ahead with (X2) */}
+            <div
+              className={cn(
+                "flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs",
+                dlNumberReady ? "border-gray-200 bg-gray-50" : "border-amber-300 bg-amber-50",
+              )}
+            >
+              <span className="text-muted-foreground">Driving licence number</span>
+              {dlNumber.toSend || dlOnFile ? (
+                <span className="font-mono font-semibold text-gray-900 break-all text-right">
+                  {formatDlNumber(dlNumber.toSend ?? dlOnFile!)}
+                </span>
+              ) : (
+                <span className="font-semibold text-amber-800">Missing — enter it in step 3</span>
+              )}
+            </div>
+
             <DlStatusSelector
               id="dl-status-confirm"
               value={dlStatus}
@@ -1955,6 +2096,8 @@ export default function StaffPickupsPage() {
               onNoteChange={handleDlNoteChange}
               error={dlError}
               disabled={handoverMutation.isPending}
+              optional
+              onClear={handleDlStatusClear}
             />
 
             <p className="text-xs text-muted-foreground text-center">
@@ -1974,7 +2117,7 @@ export default function StaffPickupsPage() {
             <Button
               className="bg-[#FF5F00] hover:bg-[#e65600]"
               onClick={handleSubmit(onConfirmHandoverLegacy)}
-              disabled={!dlChoiceReady || handoverMutation.isPending}
+              disabled={!dlNumberReady || !dlChoiceReady || handoverMutation.isPending}
             >
               {handoverMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

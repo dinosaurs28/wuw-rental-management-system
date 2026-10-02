@@ -21,7 +21,8 @@ export interface CreateBookingSummaryRequest {
   groupKeys?: string[];  // Group keys for atomic vehicle assignment (public flow)
   start: string;
   end: string;
-  file_public_id: string;
+  /** KYC picture (X2) — optional; sent only when the customer picked a document. */
+  file_public_id?: string;
   payment_type: "CASH" | "ONLINE";
   payment_flow?: "FULL" | "ADVANCE";
   couponCode?: string;
@@ -234,6 +235,12 @@ export interface EmployeeBooking {
     chargeConfig?: { usePaymentSessions: boolean } | null;
   };
   customer: {
+    /**
+     * Pickup / return details only (X2, staff): the customer's full normalised
+     * DL number to check against the card; null = none on file — the pickup
+     * must send one (422 DL_NUMBER_REQUIRED otherwise).
+     */
+    drivingLicenceNumber?: string | null;
     user: {
       publicId: string;
       name: string;
@@ -444,10 +451,15 @@ export const bookingService = {
       odo: number;
       fuelLevel: number;
       pickupImageIds?: string[];
-      /** Original licence custody (#3) — always sent; there is no default. */
-      dlStatus: UpdateDlStatusBody["dlStatus"];
+      /** Original licence custody (#3) — optional (X1): omitted / null = not recorded. */
+      dlStatus?: UpdateDlStatusBody["dlStatus"] | null;
       /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
       dlDepositNote?: string | null;
+      /**
+       * Customer's DL number typed at the counter (X2) — saved to the customer.
+       * Required when none is on file (422 DL_NUMBER_REQUIRED); 400 INVALID_DL_NUMBER.
+       */
+      drivingLicenceNumber?: string;
     },
   ) => {
     const response = await apiClient.post(
@@ -665,7 +677,8 @@ export const bookingService = {
   createEmployeeBooking: async (data: {
     vehicles: string[];
     customer_public_id: string;
-    customer_kyc_id: string;
+    /** KYC picture (X2) — optional; omitted when staff attach no document. */
+    customer_kyc_id?: string;
     start: string;
     end: string;
     payment_type: "CASH" | "ONLINE" | "UPI";

@@ -87,12 +87,8 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Auto-open inline upload when loading is done and no complete document exists
-  useEffect(() => {
-    if (!isFetching && !error && !profileNotFound && completeGroups.length === 0 && uploadedDocuments.length >= 0) {
-      setShowInlineKycUpload(true);
-    }
-  }, [isFetching, error, profileNotFound, completeGroups.length, uploadedDocuments.length]);
+  // The KYC document is optional (X2): the upload panel opens only on request,
+  // and the customer can book without attaching a document.
 
   // Clear selection if the selected file no longer belongs to a complete type
   useEffect(() => {
@@ -105,8 +101,10 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
 
   const handleSelectGroup = (group: DocGroup) => {
     if (!group.isComplete) return;
-    // Use the FRONT file's publicId as the booking KYC reference
-    setSelectedKyc(group.front!.file.publicId);
+    const filePublicId = group.front!.file.publicId;
+    // Tapping the attached document again detaches it (the document is optional).
+    // Otherwise the FRONT file's publicId is the booking KYC reference.
+    setSelectedKyc(selectedKycFilePublicId === filePublicId ? null : filePublicId);
   };
 
   const handleViewDoc = (e: React.MouseEvent, doc: KycDocument, label: string) => {
@@ -119,7 +117,9 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
     return (
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {[1, 2].map((i) => (
@@ -135,7 +135,9 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
     return (
       <Card className={cn("bg-white border border-orange-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -144,7 +146,8 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
             </div>
             <p className="text-base font-medium text-orange-800 mb-1">Complete Your Profile First</p>
             <p className="text-sm text-orange-700 mb-6 max-w-xs">
-              Please complete your profile before uploading KYC documents and proceeding with booking.
+              Add your details, including your Driving Licence and Aadhaar numbers, to book.
+              Uploading a KYC document is optional.
             </p>
             <Button
               className="bg-orange-600 hover:bg-orange-700"
@@ -167,7 +170,9 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
     return (
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-destructive">{error}</p>
@@ -194,9 +199,12 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
 
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Both front and back sides are required for a valid document
+            You can book without one. To attach a government ID, upload both front and
+            back sides, then tap it to select (tap again to remove).
           </p>
         </CardHeader>
 
@@ -307,7 +315,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-zinc-800">{label}</p>
                       <p className="text-xs text-amber-700 mt-0.5">
-                        {missingSide} side missing — upload to use for booking
+                        {missingSide} side missing — upload it to attach this document
                       </p>
                     </div>
                     <Button
@@ -326,9 +334,9 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
               {docGroups.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <FileText className="size-14 text-zinc-300 mb-4" />
-                  <p className="text-base font-medium text-foreground mb-1">No documents found</p>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                    Upload both front and back of a government ID to proceed with booking.
+                  <p className="text-base font-medium text-foreground mb-1">No documents uploaded</p>
+                  <p className="text-sm text-muted-foreground mb-2 max-w-xs">
+                    Not required — you can continue with your booking.
                   </p>
                 </div>
               )}

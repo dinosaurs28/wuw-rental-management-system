@@ -144,11 +144,11 @@ export const BookingConfirmationPage = () => {
   useEffect(() => {
     const createBooking = async () => {
       // Validate required data
+      // The KYC document is optional (X2) — sent only when one was picked.
       if (
         (!selectedVehicleId && !selectedGroupKey) ||
         !startDate ||
         !endDate ||
-        !selectedKycFilePublicId ||
         !paymentType
       ) {
         setError("Missing booking information. Please go back and try again.");
@@ -181,7 +181,7 @@ export const BookingConfirmationPage = () => {
             : { vehicles: [selectedVehicleId!] }),
           start: startDateTime,
           end: endDateTime,
-          file_public_id: selectedKycFilePublicId!,
+          ...(selectedKycFilePublicId ? { file_public_id: selectedKycFilePublicId } : {}),
           payment_type: paymentType!,
           payment_flow: paymentFlow,
           ...(couponCode ? { couponCode } : {}),
@@ -297,7 +297,7 @@ export const BookingConfirmationPage = () => {
         setError(message);
         toast.error(message);
 
-        // Handle auth errors (the KYC gate also answers 403 — not an auth issue)
+        // Handle auth errors (other 403s, e.g. KYC_NOT_OWNED, are not auth issues)
         if (
           err?.response?.status === 401 ||
           (err?.response?.status === 403 &&
@@ -692,7 +692,9 @@ export const BookingConfirmationPage = () => {
                   KYC Document
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  •••• {selectedKycFilePublicId?.slice(-4)}
+                  {selectedKycFilePublicId
+                    ? `•••• ${selectedKycFilePublicId.slice(-4)}`
+                    : "Not attached"}
                 </span>
               </div>
 

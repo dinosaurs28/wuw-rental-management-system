@@ -36,6 +36,7 @@ import {
   isValidUtr,
 } from "@/lib/counterErrors";
 import { CUSTOMER_PROFILE_INCOMPLETE } from "@/lib/customerProfile";
+import { dlInUseToastOptions } from "@/lib/dlInUse";
 import { gstLabel } from "@/lib/gst";
 import { round2 } from "@repo/schemas";
 import { durationDiscountTitle } from "@/lib/paymentPlan";
@@ -182,6 +183,8 @@ export const EmployeeBookingSummaryPage = () => {
       } else {
         toast.error(
           error.response?.data?.message || "Failed to create booking",
+          // DL_IN_USE (X3): name the booking holding this driving licence
+          dlInUseToastOptions(error),
         );
       }
 

@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import apiClient from "@/lib/axios";
-import { formatScheduleTime, scheduleRowError } from "@/utils/branchScheduleValidator";
+import {
+  DEFAULT_BRANCH_HOURS,
+  formatScheduleTime,
+  minutesToDisplay,
+  PICKUP_CUTOFF_MINUTES,
+  scheduleRowError,
+  timeToMinutes,
+} from "@/utils/branchScheduleValidator";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
@@ -42,14 +49,22 @@ interface BranchScheduleResponse {
   is24Hours: boolean;
 }
 
-// Starting point for the editor when no hours have been saved yet. Not in
-// force until saved — until then the branch accepts bookings at any time.
+// The default hours (8:00 AM – 11:00 PM every day). They are in force for any
+// day without saved hours — every day until a schedule is saved — so the
+// editor starts from them.
 const DEFAULT_SCHEDULE: DayScheduleRow[] = DAY_NAMES.map((_, i) => ({
   dayOfWeek: i,
-  isOpen: i !== 0, // Sun closed by default
-  openTime: "09:00",
-  closeTime: "22:00",
+  isOpen: true,
+  openTime: DEFAULT_BRANCH_HOURS.openTime,
+  closeTime: DEFAULT_BRANCH_HOURS.closeTime,
 }));
+
+const DEFAULT_HOURS_LABEL = `${formatScheduleTime(DEFAULT_BRANCH_HOURS.openTime)} – ${formatScheduleTime(
+  DEFAULT_BRANCH_HOURS.closeTime,
+)}`;
+
+/** Latest pickup on an open day ("HH:mm" closing − PICKUP_CUTOFF_MINUTES), for display. */
+const lastPickupLabel = (closeTime: string) => minutesToDisplay(timeToMinutes(closeTime) - PICKUP_CUTOFF_MINUTES);
 
 async function fetchSchedule(): Promise<BranchScheduleResponse> {
   const res = await apiClient.get("/branchManager/dashboard/branch/schedule");
@@ -94,13 +109,18 @@ function PreviewPanel({ rows, graceMinutes }: { rows: DayScheduleRow[]; graceMin
               {isToday && <span className="ml-1.5 text-[10px] text-primary font-bold">TODAY</span>}
             </span>
             {row.isOpen ? (
-              <span className="text-zinc-600">
+              <span className="text-right text-zinc-600">
                 {formatScheduleTime(row.openTime)}{" "}
                 <span className="text-zinc-400 mx-1">–</span>{" "}
                 {formatScheduleTime(row.closeTime)}
                 {graceMinutes > 0 && (
                   <span className="ml-1.5 text-[11px] text-amber-600 font-medium">
                     +{graceMinutes}m grace
+                  </span>
+                )}
+                {!scheduleRowError(row) && (
+                  <span className="block text-[11px] text-zinc-400">
+                    Last pickup {lastPickupLabel(row.closeTime)}
                   </span>
                 )}
               </span>
@@ -192,7 +212,7 @@ export default function BranchSchedulePage() {
   });
 
   const is24Hours = !!data?.is24Hours;
-  // No saved rows = hours not set: the backend accepts bookings at any time
+  // No saved rows = the default hours (8:00 AM – 11:00 PM every day) are in force
   const hoursNotSet = !!data && data.schedules.length === 0;
   const rowErrors = Object.fromEntries(rows.map((r) => [r.dayOfWeek, scheduleRowError(r)]));
   const hasRowErrors = Object.values(rowErrors).some(Boolean);
@@ -251,10 +271,10 @@ export default function BranchSchedulePage() {
             Branch Operating Hours
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Set the opening and closing times for each day. Pickups must be within
-            these hours; a return after closing (beyond the grace period) or on a
-            closed day is moved to the next time the branch is open. Extensions must
-            end within these hours.
+            Set the opening and closing times for each day. Pickups must be between
+            opening time and {PICKUP_CUTOFF_MINUTES} minutes before closing; a return
+            after closing (beyond the grace period) or on a closed day is moved to the
+            next time the branch is open. Extensions must end within these hours.
           </p>
         </div>
 
@@ -262,10 +282,11 @@ export default function BranchSchedulePage() {
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-900">
             <Info className="size-4 shrink-0 mt-0.5 text-amber-600" />
             <div>
-              <p className="font-semibold">Hours not set: bookings are accepted at any time</p>
+              <p className="font-semibold">Default hours apply: {DEFAULT_HOURS_LABEL} every day</p>
               <p className="mt-0.5 text-amber-800">
-                The times below are only a starting point. Save the schedule to start
-                limiting pickups and returns to your opening hours.
+                The last pickup is {PICKUP_CUTOFF_MINUTES} minutes before closing (
+                {lastPickupLabel(DEFAULT_BRANCH_HOURS.closeTime)}). Change the times below
+                and save to set your branch's own hours.
               </p>
             </div>
           </div>
@@ -535,16 +556,18 @@ export default function BranchSchedulePage() {
                   <>
                     {hoursNotSet && (
                       <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        Hours not set — customers can book any time. After you save:
+                        Default hours apply ({DEFAULT_HOURS_LABEL} every day) until you save
+                        your own schedule.
                       </p>
                     )}
                     <PreviewPanel rows={rows} graceMinutes={graceMinutes} />
                   </>
                 )}
                 <p className="mt-4 text-[11px] text-zinc-400 leading-relaxed">
-                  A return after closing (beyond grace), before opening or on a closed
-                  day is moved to the next open day at the pickup time. Pickup on closed
-                  days is blocked.
+                  The last pickup is {PICKUP_CUTOFF_MINUTES} minutes before closing. A
+                  return after closing (beyond grace), before opening or on a closed day
+                  is moved to the next open day at the pickup time. Pickup on closed days
+                  is blocked.
                 </p>
               </CardContent>
             </Card>

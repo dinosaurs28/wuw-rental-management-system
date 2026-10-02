@@ -70,7 +70,7 @@ export function OverdueReturnsTable({
     return (
       <div className="text-center py-16 bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2">
         <CheckCircle2 className="h-10 w-10 text-green-500/60" />
-        <p className="text-muted-foreground text-lg font-medium">No overdue returns</p>
+        <p className="text-muted-foreground text-lg font-medium">Nothing to recover</p>
         <p className="text-sm text-muted-foreground">
           Every rental out on the road is still within its booked time.
         </p>

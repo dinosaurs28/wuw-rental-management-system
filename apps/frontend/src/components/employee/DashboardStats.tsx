@@ -142,7 +142,7 @@ export function DashboardStats({
         isLoading={isLoading}
       />
       <StatsCard
-        title="Overdue Returns"
+        title="Recovery"
         value={overdueReturns}
         icon={AlertTriangle}
         alert={overdueReturns > 0}

@@ -199,10 +199,12 @@ export const EmployeeVehicleDetailsPage = () => {
   };
 
   const handleKycSelect = (doc: KycDocument) => {
+    // The KYC document is optional (X2): selecting the attached one again detaches it.
+    const next = selectedKycId === doc.publicId ? null : doc.publicId;
     // UI uses CustomerKyc Public ID now
-    setSelectedKycId(doc.publicId);
+    setSelectedKycId(next);
     // Store uses CustomerKyc Public ID
-    setCustomerKycId(doc.publicId);
+    setCustomerKycId(next);
   };
 
   const handleDeleteKyc = async (doc: KycDocument) => {
@@ -253,14 +255,7 @@ export const EmployeeVehicleDetailsPage = () => {
       return;
     }
 
-    if (!customerKycId) {
-      toast.error("Please select a KYC document");
-      document
-        .getElementById("kyc-section")
-        ?.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
+    // The KYC document is optional (X2); the QR code photo is still required.
     if (!qrPhotoId) {
       toast.error("Capture the customer's QR code photo before booking");
       document
@@ -272,7 +267,7 @@ export const EmployeeVehicleDetailsPage = () => {
     const payload = {
       vehicles: [vehicle.publicId],
       customer_public_id: customerSession.publicId,
-      customer_kyc_id: customerKycId,
+      ...(customerKycId ? { customer_kyc_id: customerKycId } : {}),
       qr_photo_id: qrPhotoId,
       start: startDateTime || format(new Date(startDate!), "yyyy-MM-dd"),
       end: endDateTime || format(new Date(endDate!), "yyyy-MM-dd"),
@@ -473,6 +468,7 @@ export const EmployeeVehicleDetailsPage = () => {
                 <h2 className="text-xl font-semibold text-zinc-900 flex items-center gap-2">
                   <Shield className="size-5 text-orange-600" />
                   Employee Verified KYC
+                  <span className="text-sm font-normal text-zinc-500">(Optional)</span>
                 </h2>
                 <Button
                   variant="outline"
@@ -497,8 +493,9 @@ export const EmployeeVehicleDetailsPage = () => {
                       Profile Incomplete
                     </h3>
                     <p className="text-amber-700 max-w-sm mx-auto mt-1">
-                      Customer profile details are missing. Please complete the
-                      profile to proceed with KYC document upload.
+                      Customer profile details are missing (such as the Driving
+                      Licence or Aadhaar number). Complete the profile to book —
+                      uploading KYC documents is optional.
                     </p>
                   </div>
                   <Button onClick={() => setShowCompleteProfile(true)}>

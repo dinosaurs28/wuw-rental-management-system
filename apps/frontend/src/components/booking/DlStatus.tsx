@@ -100,9 +100,15 @@ interface DlStatusSelectorProps {
   onNoteChange: (note: string) => void;
   error?: string | null;
   disabled?: boolean;
+  /**
+   * Pickup (X1): the choice may be left unset. Labels it "Optional" and, with
+   * onClear, offers to undo a choice.
+   */
+  optional?: boolean;
+  onClear?: () => void;
 }
 
-/** Required three-way choice; nothing is pre-selected. DEPOSIT asks what was left. */
+/** Three-way choice; nothing is pre-selected. DEPOSIT asks what was left. */
 export function DlStatusSelector({
   id,
   value,
@@ -111,13 +117,37 @@ export function DlStatusSelector({
   onNoteChange,
   error,
   disabled = false,
+  optional = false,
+  onClear,
 }: DlStatusSelectorProps) {
   const noteId = `${id}-note`;
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium" id={`${id}-label`}>
-        Original driving licence <span className="text-red-500">*</span>
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium" id={`${id}-label`}>
+          Original driving licence{" "}
+          {optional ? (
+            <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+          ) : (
+            <span className="text-red-500">*</span>
+          )}
+        </p>
+        {optional && onClear && value && (
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={disabled}
+            className="text-xs font-medium text-muted-foreground hover:text-gray-900 disabled:opacity-50"
+          >
+            Clear choice
+          </button>
+        )}
+      </div>
+      {optional && (
+        <p className="text-xs text-muted-foreground -mt-1">
+          You can leave this unset and record it later from the booking.
+        </p>
+      )}
       <RadioGroup
         aria-labelledby={`${id}-label`}
         value={value ?? ""}

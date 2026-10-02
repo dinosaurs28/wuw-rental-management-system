@@ -6,7 +6,7 @@ import { useBranches } from "@/hooks/useBranches";
 import { fetchBranchSchedule } from "@/services/branch.service";
 import { BranchWeeklyHours } from "@/components/branch/BranchWeeklyHours";
 
-/** Each branch's weekly office hours, as saved by the branch (#2). */
+/** Each branch's weekly office hours in force: saved by the branch, else the default 8:00 AM – 11:00 PM. */
 const BranchHoursList = () => {
   const { data: branches = [], isLoading: branchesLoading, isError: branchesError } = useBranches();
   const schedules = useQueries({
@@ -36,7 +36,7 @@ const BranchHoursList = () => {
             {q?.isLoading ? (
               <p className="text-sm text-zinc-400">Loading hours…</p>
             ) : q?.data ? (
-              <BranchWeeklyHours schedule={q.data} />
+              <BranchWeeklyHours schedule={q.data} showPickupCutoff />
             ) : (
               <p className="text-sm text-zinc-500">Please call the branch for opening hours.</p>
             )}

@@ -423,7 +423,7 @@ export const FleetStatusPage = () => {
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-semibold text-[#1a1917]">
                   {tab === "overdue"
-                    ? "Not returned on time"
+                    ? "Recovery — customers not back after the rental period"
                     : tab === "picked_up"
                     ? bookingType === "MONTHLY"
                       ? "Monthly rentals currently out"
@@ -468,7 +468,7 @@ export const FleetStatusPage = () => {
                   },
                   {
                     key: "overdue",
-                    label: "Overdue",
+                    label: "Recovery",
                     count: overdueQuery.data ? overdueCount : null,
                   },
                 ] as { key: Tab; label: string; count: number | null }[]
@@ -543,7 +543,7 @@ export const FleetStatusPage = () => {
                 overdueRows.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                     <CheckCircle2 className="w-9 h-9 mb-3" style={{ color: "#bbf7d0" }} />
-                    <p className="text-sm font-medium text-[#6b6860]">No overdue returns</p>
+                    <p className="text-sm font-medium text-[#6b6860]">Nothing to recover</p>
                     <p className="text-xs text-[#9ca3af] mt-1">
                       Every vehicle out on the road is within its booked time
                     </p>

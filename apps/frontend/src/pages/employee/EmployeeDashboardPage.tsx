@@ -382,7 +382,7 @@ export default function EmployeeDashboardPage() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    Overdue
+                    Recovery
                     {overdueCount !== null && (
                       <span
                         className={cn(
@@ -449,7 +449,7 @@ export default function EmployeeDashboardPage() {
 
             <p className="text-xs text-muted-foreground">
               {filter === "OVERDUE"
-                ? "Rentals still out after their expected return time, most overdue first. Updates every minute."
+                ? "Recovery — customers not back after the rental period, most overdue first. Updates every minute."
                 : bookingType === "MONTHLY"
                   ? filter === "PICKUP"
                     ? "Every monthly rental waiting for pickup, whatever the date."

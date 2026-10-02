@@ -4,6 +4,15 @@
 
 import type { BranchScheduleConfig, BranchScheduleRow } from "@/services/branch.service";
 
+/**
+ * Hours a branch keeps on any day it has no saved row for — including every
+ * day when it has saved no hours at all — unless it is open 24 hours.
+ */
+export const DEFAULT_BRANCH_HOURS = { openTime: "08:00", closeTime: "23:00" } as const;
+
+/** A booking's pickup time must be at least this long before closing (last pickup 10:30 PM on default hours). */
+export const PICKUP_CUTOFF_MINUTES = 30;
+
 export type ScheduleVerdictStatus =
   | "OK"
   | "PICKUP_CLOSED_DAY"
@@ -29,6 +38,8 @@ export interface ScheduleVerdict {
   openingTime?: string;
   closedDayName?: string;
   reason?: ReturnScheduleReason;
+  /** Latest pickup that day (closing − PICKUP_CUTOFF_MINUTES) — set on PICKUP_AT_OR_AFTER_CLOSE. */
+  lastPickupTime?: string;
 }
 
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
@@ -52,17 +63,44 @@ export function formatScheduleTime(hhmm: string): string {
   return minutesToDisplay(timeToMinutes(hhmm));
 }
 
+/**
+ * The hours in force on one weekday (ignores is24Hours): the saved row, else
+ * the server's filled-in row (`effectiveSchedules` on the schedule endpoints
+ * and extension officeHours), else DEFAULT_BRANCH_HOURS.
+ */
+export function scheduleRowForDay(config: BranchScheduleConfig, dayOfWeek: number): BranchScheduleRow {
+  return (
+    config.schedules.find((s) => s.dayOfWeek === dayOfWeek) ??
+    config.effectiveSchedules?.find((s) => s.dayOfWeek === dayOfWeek) ?? {
+      dayOfWeek,
+      isOpen: true,
+      openTime: DEFAULT_BRANCH_HOURS.openTime,
+      closeTime: DEFAULT_BRANCH_HOURS.closeTime,
+    }
+  );
+}
+
+/** All seven days (Sunday first) with the hours in force — for hours lists and editors. */
+export function effectiveScheduleRows(config: BranchScheduleConfig): BranchScheduleRow[] {
+  return DAY_NAMES.map((_, dayOfWeek) => scheduleRowForDay(config, dayOfWeek));
+}
+
+/** True when the branch has saved no hours, so DEFAULT_BRANCH_HOURS apply every day. */
+export function usesDefaultHours(config: BranchScheduleConfig): boolean {
+  return !config.is24Hours && config.schedules.length === 0;
+}
+
+/** Minutes before closing that the last pickup falls (the server's value when it sends one). */
+export function pickupCutoffMinutes(config: BranchScheduleConfig | undefined): number {
+  const sent = config?.pickupCutoffMinutes;
+  return typeof sent === "number" && Number.isFinite(sent) && sent >= 0 ? sent : PICKUP_CUTOFF_MINUTES;
+}
+
 function getScheduleForDay(
   config: BranchScheduleConfig,
   dayOfWeek: number,
 ) {
-  if (config.schedules.length === 0) {
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: "00:00", closeTime: "24:00" };
-  }
-  const row = config.schedules.find((s) => s.dayOfWeek === dayOfWeek);
-  if (!row) {
-    return { isOpen: true, openMinutes: 0, closeMinutes: 1440, openTime: "00:00", closeTime: "24:00" };
-  }
+  const row = scheduleRowForDay(config, dayOfWeek);
   return {
     isOpen: row.isOpen,
     openMinutes: timeToMinutes(row.openTime),
@@ -152,19 +190,20 @@ function bumpVerdict(
 
 /**
  * Opening window of one branch-local day (the instant's IST day).
- * null = no restriction (24-hour branch, or no hours configured).
+ * null = no restriction (24-hour branch). Pickups run to lastPickupMin.
  */
 export function getDayWindow(
   config: BranchScheduleConfig,
   date: Date,
-): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number } | null {
-  if (config.is24Hours || config.schedules.length === 0) return null;
+): { isOpen: boolean; openMin: number; closeMin: number; lastPickupMin: number; graceEndMin: number } | null {
+  if (config.is24Hours) return null;
   const { dayOfWeek } = getBranchLocalTime(date);
   const day = getScheduleForDay(config, dayOfWeek);
   return {
     isOpen: day.isOpen,
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
+    lastPickupMin: day.closeMinutes - pickupCutoffMinutes(config),
     graceEndMin: day.closeMinutes + config.graceMinutes,
   };
 }
@@ -174,7 +213,7 @@ export function validateBookingSchedule(
   pickupLocal: Date,
   returnLocal: Date,
 ): ScheduleVerdict {
-  if (config.is24Hours || config.schedules.length === 0) return { status: "OK" };
+  if (config.is24Hours) return { status: "OK" };
 
   // Pickup checks
   const { dayOfWeek: pickupDow, hours: pickupHours, minutes: pickupMinsVal } = getBranchLocalTime(pickupLocal);
@@ -190,8 +229,14 @@ export function validateBookingSchedule(
     return { status: "PICKUP_BEFORE_OPEN", openingTime: minutesToDisplay(pickupDay.openMinutes) };
   }
 
-  if (pickupMins >= pickupDay.closeMinutes) {
-    return { status: "PICKUP_AT_OR_AFTER_CLOSE", closingTime: minutesToDisplay(pickupDay.closeMinutes) };
+  // Last pickup is PICKUP_CUTOFF_MINUTES before closing (status name kept for old clients)
+  const lastPickupMins = pickupDay.closeMinutes - pickupCutoffMinutes(config);
+  if (pickupMins > lastPickupMins) {
+    return {
+      status: "PICKUP_AT_OR_AFTER_CLOSE",
+      closingTime: minutesToDisplay(pickupDay.closeMinutes),
+      lastPickupTime: minutesToDisplay(lastPickupMins),
+    };
   }
 
   // Return checks
@@ -239,7 +284,7 @@ export function validateBookingSchedule(
  * day, at or after opening and no later than closing + grace? No adjustment.
  */
 export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
-  if (config.is24Hours || config.schedules.length === 0) return { status: "OK" };
+  if (config.is24Hours) return { status: "OK" };
   const { dayOfWeek, hours, minutes } = getBranchLocalTime(returnLocal);
   const day = getScheduleForDay(config, dayOfWeek);
 
@@ -282,7 +327,10 @@ export function buildScheduleUserMessage(verdict: ScheduleVerdict): string {
     case "PICKUP_BEFORE_OPEN":
       return `Branch opens at ${verdict.openingTime}. Please select a later pickup time.`;
     case "PICKUP_AT_OR_AFTER_CLOSE":
-      return `Pickup cannot be at or after closing time (${verdict.closingTime}). Please select an earlier time.`;
+      // Verdicts from an older server carry only the closing time
+      return verdict.lastPickupTime
+        ? `Last pickup is ${verdict.lastPickupTime} (${PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an earlier pickup time.`
+        : `Pickup cannot be at or after closing time (${verdict.closingTime}). Please select an earlier time.`;
     case "NO_OPEN_DAY_IN_WINDOW":
       return "No return window available in the next 7 days. Please contact the branch.";
     case "RETURN_OUTSIDE_HOURS":
@@ -310,17 +358,26 @@ export function buildScheduleUserMessage(verdict: ScheduleVerdict): string {
 // calendar day's weekday directly, so they agree with the server whatever the
 // browser's timezone.
 
-/** Opening window of a picked calendar day; null = no restriction that day. */
+/**
+ * Opening window of a picked calendar day; null = no restriction (a 24-hour
+ * branch, or hours not loaded yet). A day without a saved row keeps
+ * DEFAULT_BRANCH_HOURS. Pickups run from openMin to lastPickupMin.
+ */
 export function calendarDayWindow(
   config: BranchScheduleConfig | undefined,
   day: Date,
-): { isOpen: boolean; openMin: number; closeMin: number; graceEndMin: number } | null {
-  if (!config || config.is24Hours || config.schedules.length === 0) return null;
-  const row = config.schedules.find((s) => s.dayOfWeek === day.getDay());
-  if (!row) return null; // missing day row = open 24 h that day
+): { isOpen: boolean; openMin: number; closeMin: number; lastPickupMin: number; graceEndMin: number } | null {
+  if (!config || config.is24Hours) return null;
+  const row = scheduleRowForDay(config, day.getDay());
   const openMin = timeToMinutes(row.openTime);
   const closeMin = timeToMinutes(row.closeTime);
-  return { isOpen: row.isOpen, openMin, closeMin, graceEndMin: closeMin + config.graceMinutes };
+  return {
+    isOpen: row.isOpen,
+    openMin,
+    closeMin,
+    lastPickupMin: closeMin - pickupCutoffMinutes(config),
+    graceEndMin: closeMin + config.graceMinutes,
+  };
 }
 
 /** True when the branch is closed all day on this calendar day. */
@@ -329,7 +386,7 @@ export function isClosedCalendarDay(config: BranchScheduleConfig | undefined, da
   return !!w && !w.isOpen;
 }
 
-/** Pickup allowed at `minutes` past midnight: open day, open ≤ t < close. */
+/** Pickup allowed at `minutes` past midnight: open day, open ≤ t ≤ close − PICKUP_CUTOFF_MINUTES. */
 export function isPickupSlotAllowed(
   config: BranchScheduleConfig | undefined,
   day: Date,
@@ -337,7 +394,7 @@ export function isPickupSlotAllowed(
 ): boolean {
   const w = calendarDayWindow(config, day);
   if (!w) return true;
-  return w.isOpen && minutes >= w.openMin && minutes < w.closeMin;
+  return w.isOpen && minutes >= w.openMin && minutes <= w.lastPickupMin;
 }
 
 /** Return allowed at `minutes` past midnight: open day, open ≤ t ≤ close + grace. */
@@ -359,21 +416,25 @@ export function istTodayCalendarDay(now: Date = new Date()): Date {
 
 /**
  * When the branch is closed for the rest of `day` (a closed day, or `day` is
- * today and closing time has passed): "Tuesday 9:00 AM" / "tomorrow 9:00 AM",
- * the next time it opens. null when it is open (or opens later) that day, or
- * when nothing opens in the next week.
+ * today and closing time has passed — with `pickup`, once the last pickup
+ * time has passed): "Tuesday 9:00 AM" / "tomorrow 9:00 AM", the next time it
+ * opens. null when it is open (or opens later) that day, or when nothing
+ * opens in the next week.
  */
 export function nextOpeningAfterClosedDay(
   config: BranchScheduleConfig | undefined,
   day: Date,
   now: Date = new Date(),
+  opts: { pickup?: boolean } = {},
 ): string | null {
   const w = calendarDayWindow(config, day);
   if (!w) return null;
   const today = istTodayCalendarDay(now);
   const isToday = day.getTime() === today.getTime();
   const { hours, minutes } = getBranchLocalTime(now);
-  const closedForRestOfDay = !w.isOpen || (isToday && hours * 60 + minutes >= w.closeMin);
+  const nowMin = hours * 60 + minutes;
+  const closedForRestOfDay =
+    !w.isOpen || (isToday && (opts.pickup ? nowMin > w.lastPickupMin : nowMin >= w.closeMin));
   if (!closedForRestOfDay) return null;
 
   for (let i = 1; i <= 7; i++) {
@@ -396,8 +457,9 @@ function firstQuarterFromNow(now: Date): number {
 
 /**
  * True when today (IST) has no 15-minute pickup slot left: the branch is
- * closed today, or every slot from now on is at or after closing (for an
- * unrestricted branch: past the last slot of the day).
+ * closed today, or every slot from now on is after the last pickup time
+ * (closing − PICKUP_CUTOFF_MINUTES; for an unrestricted branch: past the last
+ * slot of the day).
  */
 export function noPickupSlotLeftToday(
   config: BranchScheduleConfig | undefined,
@@ -407,15 +469,14 @@ export function noPickupSlotLeftToday(
   const w = calendarDayWindow(config, istTodayCalendarDay(now));
   if (!w) return first >= 1440;
   if (!w.isOpen) return true;
-  return Math.max(first, Math.ceil(w.openMin / 15) * 15) >= w.closeMin;
+  return Math.max(first, Math.ceil(w.openMin / 15) * 15) > w.lastPickupMin;
 }
 
 /**
- * When today has no pickup slot left (closed day, past closing time, or the
- * last slot before closing has gone by), the first pickup slot on the next
- * open day: its calendar day and the opening time rounded up to the pickers'
- * 15-minute steps. null when today still has a pickup slot, or nothing opens
- * within a week.
+ * When today has no pickup slot left (closed day, or the last pickup time
+ * has gone by), the first pickup slot on the next open day: its calendar day
+ * and the opening time rounded up to the pickers' 15-minute steps. null when
+ * today still has a pickup slot, or nothing opens within a week.
  */
 export function nextPickupDayIfClosedToday(
   config: BranchScheduleConfig | undefined,
@@ -423,15 +484,14 @@ export function nextPickupDayIfClosedToday(
 ): { day: Date; time: string } | null {
   const today = istTodayCalendarDay(now);
   if (!noPickupSlotLeftToday(config, now)) return null;
-  // Unrestricted branch late at night: the next slot is midnight
-  const unrestricted = !config || config.is24Hours || config.schedules.length === 0;
   for (let i = 1; i <= 7; i++) {
     const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
     const w = calendarDayWindow(config, day);
-    if (!w) return { day, time: unrestricted ? "00:00" : "10:00" };
+    // Unrestricted branch late at night: the next slot is midnight
+    if (!w) return { day, time: "00:00" };
     if (!w.isOpen) continue;
     const start = Math.ceil(w.openMin / 15) * 15;
-    if (start >= w.closeMin) continue;
+    if (start > w.lastPickupMin) continue;
     return { day, time: `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}` };
   }
   return null;

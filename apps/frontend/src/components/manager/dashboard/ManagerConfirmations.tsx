@@ -32,6 +32,7 @@ import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/Pho
 import { managerDashboardService } from "@/services/managerDashboard.service";
 import { DlStatusBadge, DlStatusPanel } from "@/components/booking/DlStatus";
 import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
+import { dlInUseToastOptions } from "@/lib/dlInUse";
 
 // Booking photo types from confirmation-details (pickup confirmations only carry PRE_DELIVERY)
 const PHOTO_TYPE_LABELS: Record<string, string> = {
@@ -147,7 +148,11 @@ export const ManagerConfirmations = ({
       loadConfirmations();
       onChanged?.();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to confirm pickup");
+      toast.error(
+        error.response?.data?.message || "Failed to confirm pickup",
+        // DL_IN_USE (X3): name the booking holding this driving licence
+        dlInUseToastOptions(error),
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -50,6 +50,22 @@ export interface BranchScheduleConfig {
   schedules: BranchScheduleRow[];
   graceMinutes: number;
   is24Hours: boolean;
+  // Sent by the schedule endpoints (public, BM, admin) and extension
+  // `officeHours`; missing from an older server, so the validator falls back
+  // to DEFAULT_BRANCH_HOURS / PICKUP_CUTOFF_MINUTES.
+  /** True when no hours are saved, so the default 8:00 AM – 11:00 PM applies every day. */
+  defaultHours?: boolean;
+  /** Last pickup is this many minutes before closing. */
+  pickupCutoffMinutes?: number;
+  /** The 7 day rows in force (Sunday first), with the default hours filled in for days not saved. */
+  effectiveSchedules?: EffectiveScheduleRow[];
+}
+
+export interface EffectiveScheduleRow extends BranchScheduleRow {
+  /** No saved row for this day — the default hours fill it. */
+  isDefault?: boolean;
+  /** Latest pickup "HH:mm" (closing − cutoff); null on a closed day. */
+  lastPickupTime?: string | null;
 }
 
 export async function fetchBranchSchedule(branchPublicId: string): Promise<BranchScheduleConfig> {

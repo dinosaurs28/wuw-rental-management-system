@@ -1,16 +1,22 @@
 import type { BranchScheduleConfig } from "@/services/branch.service";
-import { formatScheduleTime } from "@/utils/branchScheduleValidator";
+import {
+  formatScheduleTime,
+  pickupCutoffMinutes,
+  scheduleRowForDay,
+} from "@/utils/branchScheduleValidator";
 import { cn } from "@/lib/utils";
 
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 // Week shown Monday first
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-/** One line per run of consecutive days with the same hours, e.g. "Mon – Sat · 9:00 AM – 10:00 PM". */
+/**
+ * One line per run of consecutive days with the same hours, e.g. "Mon – Sat ·
+ * 9:00 AM – 10:00 PM". Days without saved hours show the default hours.
+ */
 function weeklyHoursLines(schedule: BranchScheduleConfig): { days: string; hours: string; closed: boolean }[] {
   const labelFor = (dow: number) => {
-    const row = schedule.schedules.find((s) => s.dayOfWeek === dow);
-    if (!row) return { hours: "Open 24 hours", closed: false };
+    const row = scheduleRowForDay(schedule, dow);
     if (!row.isOpen) return { hours: "Closed", closed: true };
     return { hours: `${formatScheduleTime(row.openTime)} – ${formatScheduleTime(row.closeTime)}`, closed: false };
   };
@@ -34,22 +40,23 @@ interface BranchWeeklyHoursProps {
   className?: string;
   /** Show the return grace period under the hours. */
   showGrace?: boolean;
+  /** Say that the last pickup is 30 minutes before closing. */
+  showPickupCutoff?: boolean;
 }
 
 /**
- * Weekly office hours from the branch's saved schedule. A 24-hour branch, or
- * one with no hours saved (bookings accepted at any time), says so instead.
+ * Weekly office hours in force: the branch's saved schedule, with the default
+ * 8:00 AM – 11:00 PM for any day it hasn't saved (every day when it has saved
+ * none). A 24-hour branch says so instead.
  */
-export function BranchWeeklyHours({ schedule, className, showGrace = false }: BranchWeeklyHoursProps) {
+export function BranchWeeklyHours({
+  schedule,
+  className,
+  showGrace = false,
+  showPickupCutoff = false,
+}: BranchWeeklyHoursProps) {
   if (schedule.is24Hours) {
     return <p className={cn("text-sm font-semibold text-zinc-900", className)}>Open 24 hours, every day</p>;
-  }
-  if (schedule.schedules.length === 0) {
-    return (
-      <p className={cn("text-sm font-medium text-zinc-600", className)}>
-        No fixed hours — bookings are accepted at any time
-      </p>
-    );
   }
   return (
     <div className={cn("space-y-1.5", className)}>
@@ -61,6 +68,11 @@ export function BranchWeeklyHours({ schedule, className, showGrace = false }: Br
           </span>
         </div>
       ))}
+      {showPickupCutoff && (
+        <p className="text-xs text-zinc-500">
+          Last pickup {pickupCutoffMinutes(schedule)} minutes before closing
+        </p>
+      )}
       {showGrace && schedule.graceMinutes > 0 && (
         <p className="text-xs text-zinc-500">
           Returns accepted up to {schedule.graceMinutes} min after closing

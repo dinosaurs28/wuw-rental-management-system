@@ -1,5 +1,6 @@
-// Limits for booking date/time pickers: branch office hours (#2) and the
-// 15-day booking window (#15). Pickers hold a calendar day (local-midnight
+// Limits for booking date/time pickers: branch office hours (#2 — pickups from
+// opening to 30 minutes before closing, default 8:00 AM – 11:00 PM when the
+// branch saved none) and the 15-day booking window (#15). Pickers hold a calendar day (local-midnight
 // Date) plus an "HH:mm" wall-clock time that the server reads as IST, so all
 // instants here are built as IST regardless of the browser's timezone.
 import {
@@ -68,10 +69,10 @@ export function maxReturnFor(startAt: Date, opts: { monthly?: boolean; now?: Dat
 
 /**
  * Default-range fix-up: when the pickup is today but no pickup slot is left
- * today (closed, or the last slot before closing has gone by — e.g. 21:50 with
- * a 22:00 close), the pickup moves to the next opening and the return to
- * one day later (or stays, if it is already after the new pickup). null = no
- * change needed.
+ * today (closed, or the last pickup — 30 minutes before closing — has gone
+ * by, e.g. 22:35 with a 23:00 close), the pickup moves to the next opening
+ * and the return to one day later (or stays, if it is already after the new
+ * pickup). null = no change needed.
  */
 export function snapPickupPastClosedToday(input: {
   schedule?: BranchScheduleConfig;

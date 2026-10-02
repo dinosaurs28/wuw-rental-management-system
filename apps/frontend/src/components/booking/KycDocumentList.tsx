@@ -90,7 +90,9 @@ export const KycDocumentList = ({
     return (
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {[1, 2].map((i) => (
@@ -106,7 +108,9 @@ export const KycDocumentList = ({
     return (
       <Card className={cn("bg-white border border-orange-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -115,7 +119,7 @@ export const KycDocumentList = ({
             </div>
             <p className="text-base font-medium text-orange-800 mb-1">Complete Profile First</p>
             <p className="text-sm text-orange-700 mb-6 max-w-xs">
-              Profile completion is required before uploading KYC documents.
+              Profile completion is required before uploading KYC documents (uploading is optional).
             </p>
             <Button className="bg-orange-600 hover:bg-orange-700" asChild>
               <Link to="/profile">
@@ -139,7 +143,9 @@ export const KycDocumentList = ({
     return (
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {errorAlert}
@@ -154,9 +160,10 @@ export const KycDocumentList = ({
               </>
             ) : (
               <>
-                <p className="text-base font-medium text-foreground mb-1">No documents found</p>
+                <p className="text-base font-medium text-foreground mb-1">No documents uploaded</p>
                 <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                  Upload both front and back of a government ID to proceed.
+                  Not required — the booking can go ahead without one. Upload both sides
+                  of a government ID to attach it.
                 </p>
               </>
             )}
@@ -199,9 +206,12 @@ export const KycDocumentList = ({
 
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Both front and back sides required to proceed with booking
+            Optional. A document with both sides can be attached — tap to select, tap
+            again to remove.
           </p>
         </CardHeader>
 
@@ -335,7 +345,7 @@ export const KycDocumentList = ({
                   <div>
                     <p className="text-sm font-medium text-zinc-800">{label}</p>
                     <p className="text-xs text-amber-700">
-                      {missingSide} side missing — required for booking
+                      {missingSide} side missing — upload it to attach this document
                     </p>
                   </div>
                 </div>

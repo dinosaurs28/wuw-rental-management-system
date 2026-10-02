@@ -202,8 +202,10 @@ export const EmployeeVehicleGroupDetailsPage = () => {
   }, [customerSession?.publicId]);
 
   const handleKycSelect = (doc: KycDocument) => {
-    setSelectedKycId(doc.publicId);
-    setCustomerKycId(doc.publicId);
+    // The KYC document is optional (X2): selecting the attached one again detaches it.
+    const next = selectedKycId === doc.publicId ? null : doc.publicId;
+    setSelectedKycId(next);
+    setCustomerKycId(next);
   };
 
   const handleDeleteKyc = async (doc: KycDocument) => {
@@ -222,7 +224,8 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     }
   };
 
-  // A type is complete when both FRONT and BACK sides exist
+  // The KYC document is optional (X2). One is attached only when the selection
+  // is the FRONT of a type with both sides uploaded.
   const hasCompleteKyc = (() => {
     if (!selectedKycId) return false;
     return ["DL", "AADHAAR", "PAN"].some((type) => {
@@ -241,12 +244,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       toast.error("Please select booking dates");
       return;
     }
-    if (!customerKycId || !hasCompleteKyc) {
-      toast.error("Please upload both front and back sides of a KYC document");
-      document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
-      setShowUploadKyc(true);
-      return;
-    }
+    // The KYC document is optional (X2); the QR code photo is still required.
     if (!qrPhotoId) {
       toast.error("Capture the customer's QR code photo before booking");
       document.getElementById("qr-photo-section")?.scrollIntoView({ behavior: "smooth" });
@@ -256,7 +254,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     const payload = {
       group_key: groupKey,
       customer_public_id: customerSession.publicId,
-      customer_kyc_id: customerKycId,
+      ...(customerKycId && hasCompleteKyc ? { customer_kyc_id: customerKycId } : {}),
       qr_photo_id: qrPhotoId,
       start: startDateTime || format(new Date(startDate!), "yyyy-MM-dd"),
       end: endDateTime || format(new Date(endDate!), "yyyy-MM-dd"),
@@ -449,6 +447,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                 <h2 className="font-semibold text-black flex items-center gap-2">
                   <Shield className="size-4" style={{ color: "#FF5F00" }} />
                   KYC Document
+                  <span className="text-xs font-normal text-[#666666]">(Optional)</span>
                 </h2>
                 <button
                   onClick={() => fetchKycDocuments()}
@@ -470,7 +469,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     <div>
                       <h3 className="font-semibold text-amber-900">Profile Incomplete</h3>
                       <p className="text-amber-700 text-sm mt-1 max-w-sm mx-auto">
-                        Customer profile is missing required details. Complete the profile to upload KYC documents.
+                        Customer profile is missing required details (such as the Driving Licence or Aadhaar number). Complete the profile to book — uploading KYC documents is optional.
                       </p>
                     </div>
                     <Button
@@ -528,7 +527,6 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     (customerSession ? !customerSession.profileCompleted : true) ||
                     scheduleBlocks
                   }
-                  hasCompleteKyc={hasCompleteKyc}
                   hasQrPhoto={!!qrPhotoId}
                   schedule={schedule}
                 />

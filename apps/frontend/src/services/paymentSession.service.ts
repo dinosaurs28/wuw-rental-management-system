@@ -148,10 +148,15 @@ export const paymentSessionService = {
       pickupFuelLevel?: string;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
-      /** Original licence custody (#3) — new clients always send it; re-initiating applies the new choice. */
-      dlStatus?: "COLLECTED" | "NOT_COLLECTED" | "DEPOSIT";
+      /** Original licence custody (#3) — optional (X1); re-initiating applies the new choice. */
+      dlStatus?: "COLLECTED" | "NOT_COLLECTED" | "DEPOSIT" | null;
       /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
       dlDepositNote?: string | null;
+      /**
+       * Customer's DL number typed at the counter (X2) — saved to the customer.
+       * Required when none is on file (422 DL_NUMBER_REQUIRED); 400 INVALID_DL_NUMBER.
+       */
+      drivingLicenceNumber?: string;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(

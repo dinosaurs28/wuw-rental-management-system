@@ -1,6 +1,7 @@
 import { AlertTriangle, Clock, XCircle, RefreshCw } from "lucide-react";
 import {
   buildScheduleUserMessage,
+  PICKUP_CUTOFF_MINUTES,
   type ScheduleVerdict,
 } from "@/utils/branchScheduleValidator";
 
@@ -46,9 +47,20 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
         <XCircle className="size-4 shrink-0 mt-0.5 text-red-500" />
         <div className="text-sm">
           <span className="font-semibold">Too late — </span>
-          Pickup cannot be at or after closing time (
-          <span className="font-semibold">{verdict.closingTime}</span>). Please
-          select an earlier time.
+          {verdict.lastPickupTime ? (
+            <>
+              Last pickup is{" "}
+              <span className="font-semibold">{verdict.lastPickupTime}</span> (
+              {PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an
+              earlier time.
+            </>
+          ) : (
+            <>
+              Pickup cannot be at or after closing time (
+              <span className="font-semibold">{verdict.closingTime}</span>). Please
+              select an earlier time.
+            </>
+          )}
         </div>
       </div>
     );

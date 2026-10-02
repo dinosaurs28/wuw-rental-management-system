@@ -36,8 +36,7 @@ interface EmployeeVehiclePricingCardProps {
   onBookVehicle: () => void;
   isRefetching?: boolean;
   disabled?: boolean;
-  hasCompleteKyc?: boolean;
-  /** Customer QR code photo captured (#4). Omitted = not gated. */
+  /** Customer QR code photo captured (#4). Omitted = not gated. The KYC document is optional (X2). */
   hasQrPhoto?: boolean;
   /** Branch office hours — limits the pickers and shows the hours line. */
   schedule?: BranchScheduleConfig;
@@ -56,7 +55,6 @@ export const EmployeeVehiclePricingCard = ({
   onBookVehicle,
   isRefetching = false,
   disabled = false,
-  hasCompleteKyc = false,
   hasQrPhoto = true,
   schedule,
 }: EmployeeVehiclePricingCardProps) => {
@@ -158,7 +156,6 @@ export const EmployeeVehiclePricingCard = ({
     !limits.windowError &&
     !isRefetching &&
     !disabled &&
-    hasCompleteKyc &&
     hasQrPhoto &&
     !needsShift &&
     (!isUpi || utrValid);
@@ -525,8 +522,6 @@ export const EmployeeVehiclePricingCard = ({
               </span>
             ) : !isAvailable ? (
               "Currently Unavailable"
-            ) : !hasCompleteKyc ? (
-              "Select KYC Document"
             ) : !hasQrPhoto ? (
               "Capture QR Code Photo"
             ) : needsShift ? (

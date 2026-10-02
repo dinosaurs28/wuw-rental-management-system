@@ -9,20 +9,31 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { adminBranchHours, type BranchScheduleRow } from "@/services/branch.service";
-import { scheduleRowError } from "@/utils/branchScheduleValidator";
+import {
+  DEFAULT_BRANCH_HOURS,
+  formatScheduleTime,
+  PICKUP_CUTOFF_MINUTES,
+  scheduleRowError,
+  usesDefaultHours,
+} from "@/utils/branchScheduleValidator";
 import { BranchWeeklyHours } from "@/components/branch/BranchWeeklyHours";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 // Editor shows Monday first
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-// Starting rows when the branch has no saved hours (not in force until saved)
-const STARTER_ROWS: BranchScheduleRow[] = WEEK_ORDER.map((dayOfWeek) => ({
+// A day with no saved row keeps the default hours, so the editor starts from them
+const defaultRow = (dayOfWeek: number): BranchScheduleRow => ({
   dayOfWeek,
   isOpen: true,
-  openTime: "09:00",
-  closeTime: "21:00",
-}));
+  openTime: DEFAULT_BRANCH_HOURS.openTime,
+  closeTime: DEFAULT_BRANCH_HOURS.closeTime,
+});
+const STARTER_ROWS: BranchScheduleRow[] = WEEK_ORDER.map(defaultRow);
+
+const DEFAULT_HOURS_LABEL = `${formatScheduleTime(DEFAULT_BRANCH_HOURS.openTime)} – ${formatScheduleTime(
+  DEFAULT_BRANCH_HOURS.closeTime,
+)}`;
 
 function apiMessage(err: unknown, fallback: string): string {
   const e = err as { response?: { data?: { message?: string } } };
@@ -31,8 +42,9 @@ function apiMessage(err: unknown, fallback: string): string {
 
 /**
  * Admin view + edit of a branch's office hours (#2): weekly schedule, return
- * grace and the "Open 24 hours" switch. Empty schedule = hours not set, so the
- * branch accepts bookings at any time.
+ * grace and the "Open 24 hours" switch. Empty schedule = the default hours
+ * (8:00 AM – 11:00 PM every day) apply; the last pickup is 30 minutes before
+ * closing.
  */
 export function AdminBranchHoursCard({ branchPublicId }: { branchPublicId: string }) {
   const queryClient = useQueryClient();
@@ -53,15 +65,7 @@ export function AdminBranchHoursCard({ branchPublicId }: { branchPublicId: strin
     if (!data) return;
     setRows(
       data.schedules.length > 0
-        ? WEEK_ORDER.map(
-            (dow) =>
-              data.schedules.find((s) => s.dayOfWeek === dow) ?? {
-                dayOfWeek: dow,
-                isOpen: true,
-                openTime: "00:00",
-                closeTime: "23:59",
-              },
-          )
+        ? WEEK_ORDER.map((dow) => data.schedules.find((s) => s.dayOfWeek === dow) ?? defaultRow(dow))
         : STARTER_ROWS,
     );
     setGraceInput(String(data.graceMinutes ?? 0));
@@ -124,13 +128,12 @@ export function AdminBranchHoursCard({ branchPublicId }: { branchPublicId: strin
           <p className="text-sm text-red-600">Couldn't load this branch's hours.</p>
         ) : !isEditing ? (
           <>
-            {data.schedules.length === 0 && !data.is24Hours ? (
+            {usesDefaultHours(data) && (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Hours not set: bookings are accepted at any time.
+                Default hours apply: {DEFAULT_HOURS_LABEL} every day.
               </p>
-            ) : (
-              <BranchWeeklyHours schedule={data} showGrace />
             )}
+            <BranchWeeklyHours schedule={data} showGrace showPickupCutoff />
           </>
         ) : (
           <>
@@ -163,9 +166,13 @@ export function AdminBranchHoursCard({ branchPublicId }: { branchPublicId: strin
 
             {data.schedules.length === 0 && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Hours not set yet — these times are a starting point and apply once saved.
+                Default hours apply: {DEFAULT_HOURS_LABEL} every day. Save to set this branch's own hours.
               </p>
             )}
+            <p className="text-xs text-neutral-500">
+              The last pickup is {PICKUP_CUTOFF_MINUTES} minutes before closing; returns are accepted
+              until closing plus the grace below.
+            </p>
 
             <div className={cn("space-y-2.5", is24Hours && "opacity-60")}>
               {rows.map((row, i) => (

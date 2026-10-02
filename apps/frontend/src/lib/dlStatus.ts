@@ -22,6 +22,14 @@ export function dlChoiceError(status: DlStatus, note: string): string | null {
   return null;
 }
 
+/**
+ * Pickup variant (X1): the DL status is optional at handover — leaving it unset
+ * is fine (recorded later from the booking). A chosen DEPOSIT still needs its note.
+ */
+export function pickupDlChoiceError(status: DlStatus, note: string): string | null {
+  return status ? dlChoiceError(status, note) : null;
+}
+
 /** Request fields for a complete choice; the note is sent for DEPOSIT only. */
 export function dlChoicePayload(status: DlCollectionStatusValue, note: string): UpdateDlStatusBody {
   return dlStatusNeedsNote(status)
