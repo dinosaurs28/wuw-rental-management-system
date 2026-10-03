@@ -77,6 +77,16 @@ jobs:
           # ── Add every VITE_* var your frontend needs ──
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           # VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          # Shared vehicle links (#16). All optional: repository variables
+          # (or secrets) of the same name. Empty store URLs fall back to the
+          # Play listing / the website page; an empty ANDROID_CERT_SHA256 or
+          # APPLE_TEAM_ID skips that /.well-known file.
+          VITE_PLAY_STORE_URL: ${{ vars.VITE_PLAY_STORE_URL || secrets.VITE_PLAY_STORE_URL }}
+          VITE_APP_STORE_URL: ${{ vars.VITE_APP_STORE_URL || secrets.VITE_APP_STORE_URL }}
+          ANDROID_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 || secrets.ANDROID_CERT_SHA256 }}
+          ANDROID_PACKAGE_NAME: ${{ vars.ANDROID_PACKAGE_NAME || secrets.ANDROID_PACKAGE_NAME }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || secrets.IOS_BUNDLE_ID }}
 
       # Wrangler reads CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID from env.
       # Replace <YOUR_CF_PROJECT_NAME> with your Cloudflare Pages project name.
@@ -160,7 +170,8 @@ jobs:
             [ -f "$DB_ENV_FILE" ] || DB_ENV_FILE=/var/www/vrms/apps/backend/.env
             for migration in \
               20260927090000_licence_drop_damage_utr \
-              20261001090000_client_batch_oct
+              20261001090000_client_batch_oct \
+              20261003090000_todo17_batch
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \
@@ -184,5 +195,20 @@ jobs:
                   --env staging
 
             pm2 save
+
+            # Item 8 (Oct 3 2026): drop / recovery charges carry no GST. Legacy
+            # drops completed before that release but not settled yet still hold
+            # GST on their ChargeEntry rows (and PENDING invoice); restate them.
+            # Runs after the restart so the old build can't write new GST rows
+            # meanwhile. Idempotent: a no-op once nothing open carries GST. Open
+            # Unified drop bills need no write (they report billStale and are
+            # recomputed by staff) and are only listed.
+            # Same env as the running backend: apps/backend/.env first, then the
+            # database .env for anything it leaves unset (e.g. DATABASE_URL).
+            echo "==> Restating open legacy drop charges without GST..."
+            (cd packages/db && pnpm exec dotenv \
+              -e /var/www/vrms/apps/backend/.env \
+              -e /var/www/vrms/packages/db/.env -- \
+              node /var/www/vrms/apps/backend/dist/scripts/restateOpenDropGst.js --apply)
             echo "==> Done."
           ENDSSH
