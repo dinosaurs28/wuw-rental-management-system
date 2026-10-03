@@ -9,16 +9,20 @@ import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone
 import { UploadedDocumentsGrid } from "@/components/verification/UploadedDocumentsGrid";
 import { compressImage } from "@/lib/utils";
 import { useKycStore } from "@/store/kyc.store";
+import { dlPairCompletedByUpload } from "@/components/booking/DlPhotosAlertDialog";
 import { useAuthStore } from "@/store/auth.store";
 import { kycService, type KycDocumentType, type KycSide } from "@/services/kyc.service";
 
 interface InlineKycUploadProps {
   onUploadSuccess: () => void;
+  /** Called when this upload leaves both DL sides present (the parent shows the alert). */
+  onDlPhotosComplete?: () => void;
   onCancel: () => void;
 }
 
 export const InlineKycUpload = ({
   onUploadSuccess,
+  onDlPhotosComplete,
   onCancel,
 }: InlineKycUploadProps) => {
   const {
@@ -63,8 +67,14 @@ export const InlineKycUpload = ({
           selectedDocumentType,
           side,
         );
+        const completesDlPair = dlPairCompletedByUpload(
+          useKycStore.getState().uploadedDocuments,
+          selectedDocumentType,
+          side,
+        );
         addDocument(response.data);
         toast.success(`${side === "FRONT" ? "Front" : "Back"} side uploaded`);
+        if (completesDlPair) onDlPhotosComplete?.();
         setSelectedSide(null);
 
         const allDocs = useKycStore.getState().uploadedDocuments;
@@ -102,6 +112,7 @@ export const InlineKycUpload = ({
       setIsUploading,
       setSelectedDocumentType,
       onUploadSuccess,
+      onDlPhotosComplete,
     ],
   );
 

@@ -5,11 +5,14 @@ import { AlertCircle, ArrowRight, Lock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
 import { describeMissingProfileFields } from "@/lib/customerProfile";
-import { gstLabel, gstSplitText } from "@/lib/gst";
+import { gstLabel, rentGstPartsText, rentInclGstView, type RentInclGstView } from "@/lib/gst";
 import { CouponInput } from "@/components/discount/CouponInput";
 import {
   clampPaymentFlow,
   durationDiscountTitle,
+  payNowLine,
+  payNowSplit,
+  resolvePaymentOptionsLocal,
   roundMoney,
   type PaymentFlow,
 } from "@/lib/paymentPlan";
@@ -17,7 +20,11 @@ import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
-import { validateBookingWindow } from "@repo/schemas";
+import {
+  BOOKING_PACKAGE_REQUIRED_MESSAGE,
+  isCustomerPackageDuration,
+  validateBookingWindow,
+} from "@repo/schemas";
 import { formatRentalLength } from "@/utils/formatters";
 import {
   BookingTypeLimitModal,
@@ -82,53 +89,57 @@ export const ReviewConfirmPage = () => {
   } = useVehicleRentalStore();
   const [couponChecking, setCouponChecking] = useState(false);
 
+  // The rent is GST-inclusive (item 17): the price, its discounts and the GST
+  // inside what is left, from the server — the coupon's re-priced breakdown when
+  // a coupon is applied, otherwise the vehicle quote (a session stored before the
+  // inclusive fields falls back to the classic ones).
+  const rentView: RentInclGstView = couponPricing
+    ? rentInclGstView(couponPricing)
+    : apiGst?.rent ??
+      rentInclGstView({
+        basePrice: apiBasePrice,
+        discountAmount: apiDurationDiscountAmount,
+        durationDiscountAmount: apiDurationDiscountAmount,
+        taxAmount: apiTaxAmount,
+        cgstAmount: apiGst?.cgstAmount,
+        sgstAmount: apiGst?.sgstAmount,
+        finalTotal: apiFinalTotal,
+      });
+
   // Discounts and totals are the server's numbers: with a coupon, its re-priced
   // breakdown (a suppressed slab is hidden — the coupon replaced it); otherwise
   // the vehicle quote. The refundable deposit is part of what the customer pays.
   const shownDurationDiscount = couponPricing
-    ? couponPricing.durationSuppressed ? 0 : couponPricing.durationDiscountAmount
-    : apiDurationDiscountAmount;
+    ? couponPricing.durationSuppressed ? 0 : rentView.durationDiscount
+    : rentView.durationDiscount;
   const shownDurationTitle = durationDiscountTitle(
     couponPricing?.durationDiscountLabel ?? apiDurationDiscountLabel,
     couponPricing ? couponPricing.durationDiscountPercent : apiDurationDiscountPercent,
     apiDurationDiscountType,
   );
   // Without the server breakdown (old session, mid re-check) no coupon line is shown
-  const shownCouponDiscount = couponPricing?.couponDiscountAmount ?? 0;
+  const shownCouponDiscount = couponPricing ? rentView.couponDiscount : 0;
   const shownDeposit = couponPricing ? couponPricing.deposit : deposit;
   const payableTotal = couponPricing
     ? couponPricing.payableTotal
     : paymentOptions?.payableTotal ?? roundMoney(apiFinalTotal + deposit);
 
-  // Payment plan (#6): the server's options, re-computed with the coupon total
-  const planOptions = couponPaymentOptions ?? paymentOptions;
+  // Advance only (item 18): the server's one plan, re-computed with the coupon
+  // total — shown as "Pay ₹X now · ₹Y at pickup", never a choice. A session
+  // stored before the options were loaded falls back to the same rule locally.
+  const planOptions =
+    couponPaymentOptions ??
+    paymentOptions ??
+    resolvePaymentOptionsLocal({ advanceAmount: advancePayAmount, payableTotal });
   const shownFlow: PaymentFlow = clampPaymentFlow(paymentFlow, planOptions);
-  const advanceNow = planOptions?.advanceAmount ?? advancePayAmount;
-  const showAdvancePlan = shownFlow === "ADVANCE" && advanceNow > 0 && advanceNow < payableTotal;
+  const paySplit = payNowSplit(planOptions, couponPricing && !couponPaymentOptions ? payableTotal : undefined);
   // Book with the plan shown (the server converts a plan it doesn't allow anyway)
   useEffect(() => {
     if (shownFlow !== paymentFlow) setPaymentFlow(shownFlow);
   }, [shownFlow, paymentFlow, setPaymentFlow]);
 
-  // GST lines (display only, server figures). The coupon is pre-GST, so with a
-  // coupon the server's post-coupon pricing carries the GST actually charged.
-  const gstView = couponPricing
-    ? {
-        showTaxable: couponPricing.discountAmount > 0,
-        taxable: couponPricing.taxableAmount,
-        tax: couponPricing.taxAmount,
-        taxRate: couponPricing.taxRate,
-        cgst: couponPricing.cgstAmount,
-        sgst: couponPricing.sgstAmount,
-      }
-    : {
-        showTaxable: apiDurationDiscountAmount > 0,
-        taxable: apiFinalTotal - apiTaxAmount,
-        tax: apiTaxAmount,
-        taxRate: apiGst?.taxRate ?? null,
-        cgst: apiGst?.cgstAmount ?? 0,
-        sgst: apiGst?.sgstAmount ?? 0,
-      };
+  // GST rate for the label (display only, server figure)
+  const gstRate = couponPricing ? couponPricing.taxRate : apiGst?.taxRate ?? null;
 
   // Build ISO strings for the booking limit pre-flight check
   const startISO = useMemo(() => {
@@ -164,6 +175,19 @@ export const ReviewConfirmPage = () => {
     const res = validateBookingWindow({ startAt: startISO, endAt: endISO });
     return res.ok ? null : res.message;
   }, [startISO, endISO]);
+
+  // Customers book packages only — 12 hours or whole days (same rule and
+  // message as the server's BOOKING_PACKAGE_REQUIRED). A range from before the
+  // package pickers goes back to the vehicle page to pick one.
+  const packageError =
+    startISO && endISO && !windowError && !isCustomerPackageDuration(startISO, endISO)
+      ? BOOKING_PACKAGE_REQUIRED_MESSAGE
+      : null;
+  const vehiclePagePath = selectedGroupKey
+    ? `/vehicle/group/${encodeURIComponent(selectedGroupKey)}`
+    : selectedVehicleId
+      ? `/vehicle/${selectedVehicleId}`
+      : "/vehicles";
 
   // Clear any stale booking intent when the user lands here — prevents a
   // subsequent unrelated sign-in from incorrectly redirecting to review.
@@ -230,6 +254,12 @@ export const ReviewConfirmPage = () => {
     // Pre-flight: 15-day booking window
     if (windowError) {
       toast.error(windowError);
+      return;
+    }
+
+    // Pre-flight: 12 hours or whole days only
+    if (packageError) {
+      toast.error(packageError);
       return;
     }
 
@@ -375,10 +405,10 @@ export const ReviewConfirmPage = () => {
                     <h3 className="text-base font-semibold text-zinc-800">Price Summary</h3>
 
                     <div className="space-y-2.5">
-                      {/* Base rental — API total for the period */}
+                      {/* Rent for the period — GST-inclusive (item 17) */}
                       <div className="flex justify-between text-sm text-zinc-600">
-                        <span>Base Rental ({formatRentalLength(startISO, endISO)})</span>
-                        <span className="font-medium text-zinc-900">₹{apiBasePrice.toFixed(2)}</span>
+                        <span>Rent incl. GST ({formatRentalLength(startISO, endISO)})</span>
+                        <span className="font-medium text-zinc-900">₹{rentView.rent.toFixed(2)}</span>
                       </div>
 
                       {/* Duration discount (slab) — hidden when the coupon replaced it */}
@@ -389,7 +419,7 @@ export const ReviewConfirmPage = () => {
                         </div>
                       )}
 
-                      {/* Coupon discount (pre-GST) */}
+                      {/* Coupon discount — off the GST-inclusive rent */}
                       {shownCouponDiscount > 0 && (
                         <div className="flex justify-between text-sm text-green-600 font-medium">
                           <span>Coupon {couponCode}</span>
@@ -402,26 +432,29 @@ export const ReviewConfirmPage = () => {
                         </p>
                       )}
 
-                      {/* Tax */}
-                      {/* Taxable value (GST base) — rental after all discounts */}
-                      {gstView.showTaxable && (
+                      {/* Rent after discounts, and the GST inside it (not added on top) */}
+                      {rentView.discount > 0 && (
                         <div className="flex justify-between text-sm text-zinc-600">
-                          <span>Taxable value</span>
+                          <span>Rent after discount</span>
                           <span className="font-medium text-zinc-900">
-                            ₹{gstView.taxable.toFixed(2)}
+                            ₹{rentView.rentAfterDiscount.toFixed(2)}
                           </span>
                         </div>
                       )}
 
-                      {gstView.tax > 0 && (
-                        <div className="space-y-0.5">
-                          <div className="flex justify-between text-sm text-zinc-500">
-                            <span>{gstLabel("GST", gstView.taxRate || null)}</span>
-                            <span>+₹{gstView.tax.toFixed(2)}</span>
+                      {rentView.gst > 0 && (
+                        <div className="space-y-0.5 rounded-lg bg-zinc-50 px-3 py-2">
+                          <div className="flex justify-between text-xs text-zinc-500">
+                            <span>Rent without GST</span>
+                            <span>₹{rentView.rentWithoutGst.toFixed(2)}</span>
                           </div>
-                          {(gstView.cgst > 0 || gstView.sgst > 0) && (
+                          <div className="flex justify-between text-xs text-zinc-500">
+                            <span>{gstLabel("GST", gstRate || null)} (included)</span>
+                            <span>₹{rentView.gst.toFixed(2)}</span>
+                          </div>
+                          {(rentView.cgst > 0 || rentView.sgst > 0) && (
                             <p className="text-xs text-zinc-400 text-right">
-                              {gstSplitText(gstView.cgst, gstView.sgst, apiGst?.cgstRate, apiGst?.sgstRate)}
+                              {rentGstPartsText(rentView.cgst, rentView.sgst, apiGst?.cgstRate, apiGst?.sgstRate)}
                             </p>
                           )}
                         </div>
@@ -442,57 +475,18 @@ export const ReviewConfirmPage = () => {
                         </span>
                       </div>
 
-                      {/* Payment plan — a chooser only when the branch offers both */}
-                      {planOptions && planOptions.allowedFlows.length === 2 && (
-                        <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment plan">
-                          {(["FULL", "ADVANCE"] as const).map((flow) => (
-                            <button
-                              key={flow}
-                              type="button"
-                              role="radio"
-                              aria-checked={shownFlow === flow}
-                              disabled={couponChecking}
-                              onClick={() => setPaymentFlow(flow)}
-                              className={`rounded-lg border-2 px-3 py-2 text-left transition-colors ${
-                                shownFlow === flow
-                                  ? "border-primary bg-primary/5"
-                                  : "border-zinc-200 hover:border-zinc-300"
-                              }`}
-                            >
-                              <span className="block text-xs font-semibold text-zinc-700">
-                                {flow === "FULL" ? "Pay in full" : "Pay advance"}
-                              </span>
-                              <span className="block text-sm font-bold text-zinc-900">
-                                ₹{(flow === "FULL" ? payableTotal : advanceNow).toFixed(2)}
-                                {flow === "ADVANCE" && <span className="font-normal text-zinc-500"> now</span>}
-                              </span>
-                            </button>
-                          ))}
+                      {/* Payment — advance only (item 18): the one plan, no picker */}
+                      {paySplit.payNow != null && (
+                        <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-1">
+                          <p className="text-sm font-semibold text-orange-800">
+                            {payNowLine(paySplit, (n) => `₹${n.toFixed(2)}`)}
+                          </p>
+                          <p className="text-xs text-zinc-600">
+                            {paySplit.flow === "ADVANCE"
+                              ? "The advance is paid online now; the balance is collected at pickup."
+                              : paySplit.fullReason}
+                          </p>
                         </div>
-                      )}
-
-                      {showAdvancePlan ? (
-                        <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-2">
-                          <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Advance Payment Plan</p>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-orange-600">Pay Now (Advance)</span>
-                            <span className="font-bold text-orange-700">₹{advanceNow.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-500">Due at pickup</span>
-                            <span className="font-medium text-zinc-700">
-                              ₹{roundMoney(payableTotal - advanceNow).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-3 flex justify-between text-sm">
-                          <span className="text-zinc-500">Pay now (full amount)</span>
-                          <span className="font-semibold text-zinc-900">₹{payableTotal.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {planOptions?.reasonMessage && (
-                        <p className="text-xs text-zinc-500">{planOptions.reasonMessage}</p>
                       )}
                     </div>
                   </div>
@@ -513,6 +507,18 @@ export const ReviewConfirmPage = () => {
                     </div>
                   )}
 
+                  {packageError && (
+                    <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      <AlertCircle className="size-4 shrink-0 mt-0.5 text-red-500" />
+                      <span>
+                        {packageError}{" "}
+                        <Link to={vehiclePagePath} className="font-semibold underline">
+                          Change the rental length
+                        </Link>
+                      </span>
+                    </div>
+                  )}
+
                   {scheduleVerdict && scheduleVerdict.status !== "OK" && (
                     <div className="mt-4">
                       <ScheduleWarningBanner verdict={scheduleVerdict} />
@@ -522,7 +528,7 @@ export const ReviewConfirmPage = () => {
                   {/* Confirm & Pay Button */}
                   <Button
                     onClick={handleConfirmAndPay}
-                    disabled={!isFormValid || blockedAll || scheduleBlocks || !!windowError || couponChecking}
+                    disabled={!isFormValid || blockedAll || scheduleBlocks || !!windowError || !!packageError || couponChecking}
                     className="w-full mt-6 h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all duration-200"
                   >
                     <Lock className="mr-2 size-5" />

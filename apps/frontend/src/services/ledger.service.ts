@@ -12,6 +12,52 @@ export interface CreditSection {
   clearedAt?: string | null;
   clearedRef?: string | null;
   isCustom?: boolean;
+  // Fleet credit at the counter (#11) — absent on sections the BM added by hand
+  source?: "FLEET_CREDIT";
+  purpose?: "REMAINING_BALANCE" | "EXTENSION" | "FULL_PAYMENT";
+  /** What was taken from the customer until it is cleared. */
+  collateral?: string;
+  reference?: { type: "PAYMENT_SESSION" | "EXTENSION" | "WALKIN" | "REMAINING_PAYMENT"; publicId: string };
+  createdAt?: string;
+  createdByName?: string;
+  clearedPaymentPublicIds?: string[];
+  /** Closed without payment because the booking was cancelled (also isCleared; not in the totals). */
+  voided?: boolean;
+  voidReason?: string;
+}
+
+/** A payment a clearance recorded (#11), with the UPI photo when there is one (#3). */
+export interface ClearancePayment {
+  publicId: string;
+  purpose: string;
+  method: "CASH" | "ONLINE" | "SPLIT";
+  status: string;
+  totalAmount: string;
+  cashAmount: string;
+  onlineAmount: string;
+  onlineGateway: string | null;
+  onlineTransactionRef: string | null;
+  createdAt: string;
+  proofPhoto?: {
+    proofFileId: string;
+    publicId: string;
+    url: string;
+    mime: string;
+    size: number;
+    capturedAt: string;
+    expiresIn: number;
+  } | null;
+  proofPhotoUrl?: string | null;
+}
+
+/** POST /ledger/entry/:id/clear (#11): Cash, UPI (photo) or Split. */
+export interface ClearCreditPayload {
+  sectionKeys: string[];
+  paymentMethod: "CASH" | "UPI" | "SPLIT";
+  proof_file_id?: string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  notes?: string;
 }
 
 export interface ChargeSection {
@@ -41,9 +87,13 @@ export interface CreditClearance {
   publicId: string;
   clearedSectionKeys: string[];
   amountCleared: string | number;
-  paymentMethod: "CASH" | "ONLINE";
+  /** "ONLINE" on clearances recorded before UPI / split (#11). */
+  /** ALREADY_PAID: a hand-added section the booking's payments already covered — no payment recorded */
+  paymentMethod: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "ALREADY_PAID";
   transactionRef: string | null;
   clearedAt: string;
+  /** The payments this clearance recorded (absent on older servers). */
+  payments?: ClearancePayment[];
 }
 
 export interface EligibleBookingVehicle {
@@ -178,6 +228,18 @@ export const ledgerService = {
       paymentMethod,
       transactionRef,
     });
+    return res.data.data;
+  },
+
+  /**
+   * Clears sections with the money that arrived (#11): records CONFIRMED payments.
+   * Errors: 400 SPLIT_AMOUNT_MISMATCH, 409 CREDIT_EXCEEDS_DUE { due }, photo codes (#3).
+   */
+  clearCreditWithPayment: async (
+    creditPublicId: string,
+    payload: ClearCreditPayload
+  ): Promise<CustomerCreditEntry> => {
+    const res = await apiClient.post(`/branchManager/ledger/entry/${creditPublicId}/clear`, payload);
     return res.data.data;
   },
 };

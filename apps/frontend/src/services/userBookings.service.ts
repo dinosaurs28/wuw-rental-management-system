@@ -31,6 +31,11 @@ export interface Booking {
   balanceDueAt?: "PICKUP" | "DROP" | null;
   dueAtPickup?: number;
   dueAtDrop?: number;
+  /**
+   * Part of balanceDue left on credit at the branch counter (#11): still owed — the
+   * branch collects it against the collateral it holds. Absent on older servers.
+   */
+  balanceOnCredit?: number;
   /** Applied coupon (online or at the counter). */
   couponCode?: string | null;
   /** Original booking (extensions excluded). */
@@ -42,6 +47,12 @@ export interface Booking {
   totalSgst?: number | null;
   cgstRate?: number | null;
   sgstRate?: number | null;
+  // The original rent GST-inclusive (item 17; absent from older servers):
+  // rentWithoutGst + totalTax = rentAfterDiscountInclGst = rentInclGst − discountInclGst
+  rentInclGst?: number;
+  discountInclGst?: number;
+  rentAfterDiscountInclGst?: number;
+  rentWithoutGst?: number;
   createdAt: string;
   vehicles: BookingVehicle[];
 }

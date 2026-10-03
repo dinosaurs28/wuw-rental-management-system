@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Car, Clock, User, AlertTriangle, Calendar, Filter, Phone, CheckCircle2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2 } from "lucide-react";
+import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,7 +72,16 @@ function getPickupStatus(startAt: string): { label: string; color: string; bg: s
 
 // ── Row ────────────────────────────────────────────────────────────────────────
 
-function BookingRow({ booking, mode }: { booking: FleetBooking; mode: "picked_up" | "upcoming" }) {
+function BookingRow({
+  booking,
+  mode,
+  onReschedule,
+}: {
+  booking: FleetBooking;
+  mode: "picked_up" | "upcoming";
+  /** Upcoming (CONFIRMED) rows: open the reschedule sheet (P4c). */
+  onReschedule?: (booking: FleetBooking) => void;
+}) {
   const vehicle = booking.items[0]?.vehicle;
   const thumbUrl = vehicle?.images?.[0]?.file?.url;
   const vehicleName = vehicle ? `${vehicle.make} ${vehicle.model}` : "—";
@@ -142,6 +152,20 @@ function BookingRow({ booking, mode }: { booking: FleetBooking; mode: "picked_up
           to={managerSwapPath(booking.publicId)}
           className="h-7 px-2 text-xs flex-shrink-0 border-[#e8e6e1] text-[#6b6860] hover:text-[#1a1917]"
         />
+      )}
+
+      {/* Move a confirmed booking's pickup (and return) — same length and price */}
+      {mode === "upcoming" && booking.status === "CONFIRMED" && onReschedule && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onReschedule(booking)}
+          className="h-7 px-2 gap-1 text-xs flex-shrink-0 border-[#e8e6e1] text-[#6b6860] hover:text-[#1a1917]"
+        >
+          <CalendarClock className="w-3.5 h-3.5" />
+          Reschedule
+        </Button>
       )}
     </div>
   );
@@ -288,6 +312,9 @@ export const FleetStatusPage = () => {
   const bookingType: BookingListType =
     searchParams.get("type")?.toUpperCase() === "MONTHLY" ? "MONTHLY" : "DAILY";
   const [selectedDate, setSelectedDate] = useState(today);
+  // Upcoming booking being rescheduled (P4c)
+  const [rescheduleFor, setRescheduleFor] = useState<FleetBooking | null>(null);
+  const queryClient = useQueryClient();
 
   const updateParams = (patch: Record<string, string>) => {
     setSearchParams(
@@ -590,13 +617,32 @@ export const FleetStatusPage = () => {
                 </div>
               ) : (
                 sorted.map((b) => (
-                  <BookingRow key={b.publicId} booking={b} mode={tab === "picked_up" ? "picked_up" : "upcoming"} />
+                  <BookingRow
+                    key={b.publicId}
+                    booking={b}
+                    mode={tab === "picked_up" ? "picked_up" : "upcoming"}
+                    onReschedule={setRescheduleFor}
+                  />
                 ))
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {rescheduleFor && (
+        <RescheduleBookingSheet
+          open={!!rescheduleFor}
+          onOpenChange={(open) => {
+            if (!open) setRescheduleFor(null);
+          }}
+          bookingPublicId={rescheduleFor.publicId}
+          role="manager"
+          onRescheduled={() => {
+            queryClient.invalidateQueries({ queryKey: ["manager-fleet-status"] });
+          }}
+        />
+      )}
     </ManagerLayout>
   );
 };

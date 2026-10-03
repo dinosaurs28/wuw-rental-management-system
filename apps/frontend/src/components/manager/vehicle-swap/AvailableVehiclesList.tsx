@@ -4,7 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatSwapRupees, swapAmount } from "./swapFormat";
 
-/** Per-candidate price difference preview (pro-rated, before GST). */
+/**
+ * Per-candidate price difference preview (pro-rated): the difference of the
+ * GST-inclusive rents (item 17), charged as is — no GST is added (item 8).
+ */
 export const SwapPriceLine: React.FC<{
   priceDifference: string | null | undefined;
   /** Amount on its own line (right-aligned list column) */
@@ -24,14 +27,14 @@ export const SwapPriceLine: React.FC<{
     return (
       <div className={className}>
         <p className="text-sm font-semibold text-orange-700">+{formatSwapRupees(amount)}</p>
-        <p className="text-[11px] text-gray-500">rest of rental, before GST</p>
+        <p className="text-[11px] text-gray-500">rest of rental, no GST added</p>
       </div>
     );
   }
   return (
     <p className={`text-xs text-gray-700 ${className}`}>
       <span className="font-semibold text-orange-700">+{formatSwapRupees(amount)}</span>{" "}
-      rest of rental, before GST
+      rest of rental, no GST added
     </p>
   );
 };

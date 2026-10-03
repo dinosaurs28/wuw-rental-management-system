@@ -6,7 +6,7 @@ export interface KmChargeFigures {
   includedKm: number;
   extraKm: number;
   extraKmRate: number;
-  /** Before GST (GST is added on the drop bill). */
+  /** Face value — drop charges carry no GST (item 8). */
   extraKmCharge: number;
   extraKmEnabled: boolean;
   /** km can't be measured (a mid-rental swap was recorded without readings). */
@@ -18,6 +18,9 @@ export interface KmChargeFigures {
   /** Extra km typed by staff (swap without readings). */
   manualExtraKm?: number | null;
   kmSource?: "ODOMETER" | "STAFF_ENTERED" | "NONE";
+  /** includedKm = freeKmOriginal + freeKmExtensions (#7); absent from older servers. */
+  freeKmOriginal?: number | null;
+  freeKmExtensions?: number | null;
 }
 
 /**
@@ -25,7 +28,7 @@ export interface KmChargeFigures {
  *   kmDriven = priorKm (vehicles handed back at swaps) + (end − current vehicle's start)
  *   extraKm  = max(0, kmDriven − includedKm), or the staff-entered km after a swap
  *              recorded without readings
- *   charge   = enabled ? ceil(extraKm × rate) : 0   (before GST)
+ *   charge   = enabled ? ceil(extraKm × rate) : 0   (no GST)
  */
 export function previewKmCharge(
   startOdometer: number | null,
@@ -35,6 +38,8 @@ export function previewKmCharge(
     extraKmRate: string;
     extraKmEnabled: boolean;
     autoKmSkipped?: "VEHICLE_SWAPPED" | null;
+    freeKmOriginal?: number | null;
+    freeKmExtensions?: number | null;
   },
   opts: { priorKm?: number; segments?: OdometerSegment[]; manualExtraKm?: number | null } = {},
 ): KmChargeFigures {
@@ -56,5 +61,7 @@ export function previewKmCharge(
     segments: skipped ? [] : opts.segments ?? [],
     manualExtraKm,
     kmSource: !skipped ? "ODOMETER" : manualExtraKm != null ? "STAFF_ENTERED" : "NONE",
+    freeKmOriginal: allowance.freeKmOriginal ?? null,
+    freeKmExtensions: allowance.freeKmExtensions ?? null,
   };
 }

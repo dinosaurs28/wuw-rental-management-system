@@ -8,15 +8,13 @@ import {
 import { IdCard, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
-  DL_COLLECTION_STATUSES,
-  DL_DEPOSIT_NOTE_MAX,
+  DL_SELECTABLE_STATUSES,
   DL_STATUS_LABELS,
   type DlCollectionStatusValue,
 } from "@repo/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
@@ -41,7 +39,7 @@ import {
 const OPTION_HELP: Record<DlCollectionStatusValue, string> = {
   COLLECTED: "The branch keeps the original licence until the car is back.",
   NOT_COLLECTED: "The customer keeps their licence.",
-  DEPOSIT: "The customer leaves something else instead.",
+  DEPOSIT: "Legacy record: the customer left something else instead.",
 };
 
 const BADGE_STYLE: Record<DlCollectionStatusValue | "NONE", string> = {
@@ -71,7 +69,7 @@ export function DlStatusBadge({
   className,
 }: {
   status: DlStatus | undefined;
-  /** DEPOSIT note, shown as the tooltip. */
+  /** Legacy DEPOSIT note, shown as the tooltip. */
   note?: string | null;
   className?: string;
 }) {
@@ -82,7 +80,7 @@ export function DlStatusBadge({
         BADGE_STYLE[status ?? "NONE"],
         className,
       )}
-      title={status === "DEPOSIT" && note ? `DL deposit: ${note}` : undefined}
+      title={status === "DEPOSIT" && note ? `DL Deposit (old): ${note}` : undefined}
     >
       <IdCard className="h-3 w-3 shrink-0" />
       {dlStatusLabel(status)}
@@ -95,9 +93,7 @@ export function DlStatusBadge({
 interface DlStatusSelectorProps {
   id: string;
   value: DlStatus;
-  note: string;
   onValueChange: (value: DlCollectionStatusValue) => void;
-  onNoteChange: (note: string) => void;
   error?: string | null;
   disabled?: boolean;
   /**
@@ -108,19 +104,16 @@ interface DlStatusSelectorProps {
   onClear?: () => void;
 }
 
-/** Three-way choice; nothing is pre-selected. DEPOSIT asks what was left. */
+/** Two-way choice (Collected / Not collected); nothing is pre-selected. */
 export function DlStatusSelector({
   id,
   value,
-  note,
   onValueChange,
-  onNoteChange,
   error,
   disabled = false,
   optional = false,
   onClear,
 }: DlStatusSelectorProps) {
-  const noteId = `${id}-note`;
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -153,9 +146,9 @@ export function DlStatusSelector({
         value={value ?? ""}
         onValueChange={(v) => onValueChange(v as DlCollectionStatusValue)}
         disabled={disabled}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-2"
       >
-        {DL_COLLECTION_STATUSES.map((option) => {
+        {DL_SELECTABLE_STATUSES.map((option) => {
           const optionId = `${id}-${option}`;
           const selected = value === option;
           return (
@@ -183,27 +176,6 @@ export function DlStatusSelector({
           );
         })}
       </RadioGroup>
-
-      {value === "DEPOSIT" && (
-        <div className="space-y-1.5">
-          <Label htmlFor={noteId} className="text-xs font-medium text-gray-700">
-            What did the customer leave? <span className="text-red-500">*</span>
-          </Label>
-          <Textarea
-            id={noteId}
-            value={note}
-            maxLength={DL_DEPOSIT_NOTE_MAX}
-            rows={2}
-            placeholder="e.g. Aadhaar card kept, ₹2,000 cash"
-            onChange={(e) => onNoteChange(e.target.value)}
-            disabled={disabled}
-            className="min-h-0 bg-white"
-          />
-          <p className="text-[11px] text-right text-muted-foreground tabular-nums">
-            {note.length}/{DL_DEPOSIT_NOTE_MAX}
-          </p>
-        </div>
-      )}
 
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
@@ -289,18 +261,18 @@ function DlStatusEditForm({
   mutation: DlStatusMutation;
   onCancel: () => void;
 }) {
-  const [value, setValue] = useState<DlStatus>(dlStatus ?? null);
-  const [note, setNote] = useState(dlStatus === "DEPOSIT" ? dlDepositNote ?? "" : "");
+  // An old DEPOSIT row starts unselected: the BM must pick Collected / Not collected.
+  const [value, setValue] = useState<DlStatus>(dlStatus === "DEPOSIT" ? null : dlStatus ?? null);
   const [error, setError] = useState<string | null>(null);
 
-  const choiceError = dlChoiceError(value, note);
+  const choiceError = dlChoiceError(value);
 
   const handleSave = () => {
     if (!value || choiceError) {
       setError(choiceError);
       return;
     }
-    mutation.mutate(dlChoicePayload(value, note), {
+    mutation.mutate(dlChoicePayload(value), {
       onError: (err) => setError(apiErrorMessage(err, UPDATE_FAILED_MESSAGE)),
     });
   };
@@ -318,13 +290,8 @@ function DlStatusEditForm({
       <DlStatusSelector
         id={`dl-edit-${publicId}`}
         value={value}
-        note={note}
         onValueChange={(v) => {
           setValue(v);
-          setError(null);
-        }}
-        onNoteChange={(n) => {
-          setNote(n);
           setError(null);
         }}
         error={error}
@@ -434,7 +401,7 @@ export function DlStatusPanel({
     : dlStatus === "COLLECTED"
       ? "Hand the original licence back to the customer."
       : dlStatus === "DEPOSIT"
-        ? `Return the deposit: ${dlDepositNote || "see the pickup record"}`
+        ? `Old record: DL Deposit${dlDepositNote ? ` (${dlDepositNote})` : ""} — return what was left.`
         : dlStatus === "NOT_COLLECTED"
           ? "The customer kept their licence — nothing to hand back."
           : null;

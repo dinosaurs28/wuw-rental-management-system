@@ -4,9 +4,9 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { validateExtensionWindow } from "@repo/schemas";
-import { Banknote, CalendarIcon, Car, QrCode } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
+import { ExtensionVehiclePicker } from "@/components/swap/ExtensionVehiclePicker";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -37,7 +37,17 @@ import {
 } from "@/services/extension.service";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { refreshActiveShift, useActiveShift } from "@/components/employee/counter/useActiveShift";
-import { apiErrorMessage, cleanUtr, counterErrorCode, isValidUtr } from "@/lib/counterErrors";
+import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
+import {
+  counterFieldErrors,
+  counterMethodTakesMoney,
+  counterPaymentErrorField,
+  counterPaymentProblem,
+  emptyCounterPayment,
+  extensionCollectFields,
+  type CounterPaymentValue,
+} from "@/lib/counterPayment";
+import { CounterPaymentFields } from "@/components/payment/counter/CounterPaymentFields";
 import { dlInUseToastOptions } from "@/lib/dlInUse";
 import { cn } from "@/lib/utils";
 import {
@@ -47,6 +57,7 @@ import {
   gstSplitText,
 } from "@/lib/gst";
 import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
+import { ExtensionFreeKmLine } from "@/components/extension/ExtensionFreeKmLine";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import {
   buildScheduleUserMessage,
@@ -80,7 +91,6 @@ interface ExtendBookingModalProps {
 }
 
 type Step = 1 | 2 | 3;
-type CollectMethod = "CASH" | "UPI";
 
 const resolutionLabels: Record<ExtensionResolutionType, string> = {
   SAME_VEHICLE: "Same vehicle (no conflict)",
@@ -125,30 +135,34 @@ export function ExtendBookingModal({
   const [committedExtension, setCommittedExtension] = useState<CommitExtensionResult | null>(null);
   const [collecting, setCollecting] = useState(false);
   const [collected, setCollected] = useState(false);
-  const [collectMethod, setCollectMethod] = useState<CollectMethod>("CASH");
-  const [utr, setUtr] = useState("");
-  const [utrTouched, setUtrTouched] = useState(false);
+  // Cash / UPI (photo) / Split / Credit (#12)
+  const [payment, setPayment] = useState<CounterPaymentValue>(() => emptyCounterPayment());
   const [collectError, setCollectError] = useState<unknown>(null);
 
   const idempotencyKey = useRef(crypto.randomUUID());
 
-  // Managers aren't shift-gated; staff need an open cash shift to commit-and-collect.
+  // Managers aren't shift-gated; staff need an open cash shift to collect cash / UPI / split.
   // A SHIFT_REQUIRED error stops blocking as soon as a shift is open (here or via
   // the shift banner); the store is re-read on that error so a stale shift can't hide it.
   const { activeShift, needsShift } = useActiveShift();
   const blockedByShift = (err: unknown) => counterErrorCode(err) === "SHIFT_REQUIRED" && !activeShift;
   const collectErrorCode = counterErrorCode(collectError);
-  const shiftRequired = role === "employee" && (needsShift || blockedByShift(collectError));
-  // A pickup-session commit defers the money, so only a collect-now commit is gated.
+  // Credit takes no money, so only cash / UPI / split need the open shift (#11)
+  const shiftRequired =
+    role === "employee" &&
+    counterMethodTakesMoney(payment.method) &&
+    (needsShift || blockedByShift(collectError));
+  // The commit takes no money — the method is chosen in Step 3, where cash / UPI /
+  // split need the shift and Credit doesn't (#11). Only a server that still refuses
+  // the commit for a closed shift blocks here.
   const commitShiftRequired =
-    role === "employee" && mode === "standalone" && (needsShift || blockedByShift(commitError));
-  const utrValid = isValidUtr(utr);
-  const utrServerError =
-    collectErrorCode === "INVALID_UTR" || collectErrorCode === "DUPLICATE_UTR"
-      ? apiErrorMessage(collectError, "Check the UTR number and try again.")
-      : null;
-  const utrError =
-    utrServerError ?? (utrTouched && !utrValid ? "Enter the 12-digit UTR number." : null);
+    role === "employee" && mode === "standalone" && blockedByShift(commitError);
+  // Photo / collateral / split problems the server reported are shown at their field
+  const collectFieldErrors = counterFieldErrors(collectError);
+  const collectGeneralError =
+    !!collectError && !counterPaymentErrorField(collectError) && collectErrorCode !== "SHIFT_REQUIRED";
+  const collectAmount = committedExtension ? parseFloat(committedExtension.remainAmount.extension) || 0 : 0;
+  const collectProblem = counterPaymentProblem(payment, collectAmount);
 
   // 15-day cap (#15) and office hours (#2) for the new end
   const { data: eligibility } = useQuery({
@@ -232,9 +246,7 @@ export function ExtendBookingModal({
     setCommittedExtension(null);
     setCollecting(false);
     setCollected(false);
-    setCollectMethod("CASH");
-    setUtr("");
-    setUtrTouched(false);
+    setPayment(emptyCounterPayment());
     setCollectError(null);
     idempotencyKey.current = crypto.randomUUID();
   }, []);
@@ -370,34 +382,33 @@ export function ExtendBookingModal({
 
   const handleCollect = async () => {
     if (!committedExtension) return;
-    if (collectMethod === "UPI" && !utrValid) {
-      setUtrTouched(true);
-      return;
-    }
+    if (collectAmount > 0 && collectProblem) return;
     setCollecting(true);
     setCollectError(null);
     try {
       const result = await extensionService.employeeCollect(
         committedExtension.publicId,
-        collectMethod === "UPI"
-          ? { method: "ONLINE", onlineTransactionRef: cleanUtr(utr) }
-          : { method: "CASH" },
+        extensionCollectFields(payment, collectAmount),
       );
       setCollected(true);
-      if (result.data.payment === "confirmed") {
+      if (result.data.credit) {
+        toast.success(
+          `Extension confirmed — ₹${result.data.credit.amount} on credit (collateral: ${result.data.credit.collateral}).`,
+        );
+      } else if (result.data.payment === "confirmed") {
         toast.success("Extension confirmed and booking updated.");
       } else {
-        toast.success("Payment collected. Awaiting manager confirmation.");
+        // Cash, UPI and split wait for the branch manager's confirmation (#12)
+        toast.success("Payment collected — awaiting manager confirmation.");
       }
       onSuccess();
       reset();
       onClose();
     } catch (err) {
       setCollectError(err);
-      // Shift and UTR problems are shown inline in Step 3.
+      // Shift, photo, split and collateral problems are shown inline in Step 3.
       const code = counterErrorCode(err);
       if (code === "SHIFT_REQUIRED") void refreshActiveShift();
-      else if (!code) toast.error(apiErrorMessage(err, "Failed to collect payment."));
     } finally {
       setCollecting(false);
     }
@@ -629,6 +640,7 @@ export function ExtendBookingModal({
                   <span>New end date</span>
                   <span className="font-medium">{fmt(evaluation.requestedEndAt)}</span>
                 </div>
+                <ExtensionFreeKmLine freeKm={evaluation.pricing.extensionFreeKm} />
                 <ExtensionChargeBreakdown
                   split={evaluation.pricing}
                   total={evaluation.pricing.additionalAmount}
@@ -689,6 +701,14 @@ export function ExtendBookingModal({
                                 Until: {fmt(opt.partialNewEndAt)}
                               </p>
                             )}
+                            {opt.type === "PARTIAL_EXTENSION" && opt.extensionFreeKm && (
+                              <p className="text-xs text-neutral-500 mt-0.5">
+                                Free km for this time:{" "}
+                                {opt.extensionFreeKm.km > 0
+                                  ? `+${opt.extensionFreeKm.km.toLocaleString("en-IN")} km`
+                                  : "none"}
+                              </p>
+                            )}
                             {opt.type === "SWAP_FUTURE_BOOKING" && opt.affectedBookings?.map((ab) => (
                               <p key={ab.bookingPublicId} className="text-xs text-neutral-500 mt-0.5">
                                 Booking {ab.bookingPublicId} → {ab.newVehicle.regNo}
@@ -701,21 +721,11 @@ export function ExtendBookingModal({
                       {/* Vehicle selector for SWAP_CURRENT */}
                       {isSelected && opt.type === "SWAP_CURRENT_TO_OTHER" && opt.availableVehicles && (
                         <div className="mt-2 ml-7">
-                          <Select value={selectedVehiclePublicId} onValueChange={setSelectedVehiclePublicId}>
-                            <SelectTrigger className="h-10 text-sm">
-                              <SelectValue placeholder="Select alternative vehicle…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {opt.availableVehicles.map((v) => (
-                                <SelectItem key={v.publicId} value={v.publicId}>
-                                  <span className="flex items-center gap-2">
-                                    <Car className="w-3.5 h-3.5 text-neutral-400" />
-                                    {v.make} {v.model} — {v.regNo}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <ExtensionVehiclePicker
+                            vehicles={opt.availableVehicles}
+                            value={selectedVehiclePublicId}
+                            onChange={setSelectedVehiclePublicId}
+                          />
                         </div>
                       )}
                     </div>
@@ -764,79 +774,46 @@ export function ExtendBookingModal({
                 </div>
                 {committedExtension.taxableAmount != null && committedExtension.taxAmount != null && (
                   <p className="text-xs text-neutral-500">
-                    {formatInrExact(committedExtension.taxableAmount)} extension charge +{" "}
-                    {formatInrExact(committedExtension.taxAmount)} GST
-                    {committedExtension.taxRate ? ` (${Number(committedExtension.taxRate)}%)` : ""}
+                    {/* Extension rent is GST-inclusive (item 17): GST is inside the amount */}
+                    Rent without GST {formatInrExact(committedExtension.taxableAmount)} + GST{" "}
+                    {formatInrExact(committedExtension.taxAmount)}
+                    {committedExtension.taxRate ? ` (${Number(committedExtension.taxRate)}%)` : ""} included
                     {" · "}
                     {gstSplitText(committedExtension.cgstAmount, committedExtension.sgstAmount)}
                   </p>
                 )}
+                <ExtensionFreeKmLine freeKm={committedExtension.extensionFreeKm} className="pt-1" />
                 <p className="text-xs text-neutral-400">
                   Vehicle is on hold until payment is collected or this window is closed.
                 </p>
               </div>
 
-              {/* Collection method */}
-              <div className="space-y-2">
-                <Label className="text-sm text-neutral-600">Collected by</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { value: "CASH", label: "Cash", icon: <Banknote className="h-4 w-4" /> },
-                    { value: "UPI", label: "UPI (UTR)", icon: <QrCode className="h-4 w-4" /> },
-                  ] as const).map((m) => (
-                    <button
-                      key={m.value}
-                      type="button"
-                      onClick={() => {
-                        setCollectMethod(m.value);
-                        setCollectError(null);
-                      }}
-                      className={cn(
-                        "flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all",
-                        collectMethod === m.value
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-neutral-200 text-neutral-600 hover:border-neutral-300",
-                      )}
-                    >
-                      {m.icon}
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {collectMethod === "UPI" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="extUtr">
-                    UTR number <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="extUtr"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    maxLength={20}
-                    placeholder="12-digit UTR"
-                    value={utr}
-                    onChange={(e) => {
-                      setUtr(e.target.value);
-                      // A server UTR error refers to the old value.
-                      if (utrServerError) setCollectError(null);
-                    }}
-                    onBlur={() => setUtrTouched(true)}
-                    aria-invalid={!!utrError}
-                    className="h-10 font-mono tracking-wide"
-                  />
-                  {utrError ? (
-                    <p className="text-xs text-red-600">{utrError}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      From the customer's UPI app after paying the shop's QR.
+              {/* Cash / UPI (photo) / Split / Credit (#12) — a ₹0 extension takes no payment */}
+              {collectAmount > 0 && (
+                <CounterPaymentFields
+                  idPrefix="ext-collect"
+                  label="Collected by"
+                  value={payment}
+                  onChange={setPayment}
+                  amount={collectAmount}
+                  proofRole="staff"
+                  errors={collectFieldErrors}
+                  onEdit={() => {
+                    if (collectError) setCollectError(null);
+                  }}
+                  disabled={collecting}
+                  cashNote={
+                    <p className="text-xs text-neutral-500">
+                      Cash, UPI and split payments wait for the branch manager's confirmation; the vehicle is held until the new return time. If the payment is rejected, the booking goes back to its original return time.
                     </p>
-                  )}
-                </div>
+                  }
+                />
               )}
 
               {shiftRequired && <ShiftRequiredNotice onShiftOpened={() => setCollectError(null)} />}
+              {collectGeneralError && (
+                <p className="text-sm text-destructive">{apiErrorMessage(collectError, "Failed to collect payment.")}</p>
+              )}
 
               <div className="flex gap-2 pt-1">
                 <Button variant="outline" className="flex-1" onClick={handleClose} disabled={collecting}>
@@ -845,9 +822,15 @@ export function ExtendBookingModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleCollect}
-                  disabled={collecting || shiftRequired || (collectMethod === "UPI" && !utrValid)}
+                  disabled={collecting || shiftRequired || (collectAmount > 0 && !!collectProblem)}
                 >
-                  {collecting ? "Processing…" : "Mark as Collected"}
+                  {collecting
+                    ? "Processing…"
+                    : collectAmount <= 0
+                      ? "Confirm Extension"
+                      : payment.method === "CREDIT"
+                        ? "Confirm on Credit"
+                        : "Mark as Collected"}
                 </Button>
               </div>
             </motion.div>

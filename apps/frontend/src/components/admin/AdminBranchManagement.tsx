@@ -335,14 +335,16 @@ function CreateBranchDialog({ onClose, onSuccess }: { onClose: () => void; onSuc
         phone: "",
         managerName: "",
         managerEmail: "",
-        managerPassword: ""
+        managerPassword: "",
+        managerPhone: ""
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setIsLoading(true);
-            await adminService.createBranch(formData);
+            const { managerPhone, ...rest } = formData;
+            await adminService.createBranch(managerPhone?.trim() ? { ...rest, managerPhone: managerPhone.trim() } : rest);
             toast.success("Branch created successfully");
             onSuccess();
         } catch (error: any) {
@@ -422,6 +424,17 @@ function CreateBranchDialog({ onClose, onSuccess }: { onClose: () => void; onSuc
                                 onChange={e => setFormData({ ...formData, managerEmail: e.target.value })}
                                 className="h-12"
                                 required
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="managerPhone" className="text-neutral-700">Manager Mobile Number <span className="text-neutral-400 font-normal">(optional, for password reset by SMS)</span></Label>
+                            <Input
+                                id="managerPhone"
+                                inputMode="tel"
+                                placeholder="98765 43210"
+                                value={formData.managerPhone}
+                                onChange={e => setFormData({ ...formData, managerPhone: e.target.value })}
+                                className="h-12"
                             />
                         </div>
                         <div className="grid gap-2">

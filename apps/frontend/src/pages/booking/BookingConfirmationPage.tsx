@@ -44,12 +44,14 @@ import { Footer } from "@/components/landing/Footer";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useAuthStore } from "@/store/auth.store";
-import { bookingService } from "@/services/booking.service";
+import { bookingService, bookingTotalsInclGst } from "@/services/booking.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { useUpiQrAvailability } from "@/hooks/useUpiQrPayment";
+import { BookingUpiQrDialog, UpiQrPayButton } from "@/components/payment/UpiQrDialog";
+import { apiErrorCode, UPI_QR_ALREADY_PAID } from "@/services/upiQr.service";
 import type { RazorpayOrder } from "@/lib/razorpay";
 import { gstLabel } from "@/lib/gst";
 import { durationDiscountTitle } from "@/lib/paymentPlan";
-import { round2 } from "@repo/schemas";
 import { format } from "date-fns";
 import { formatRentalLength } from "@/utils/formatters";
 import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
@@ -83,11 +85,15 @@ interface BookingResponse {
   appliedCouponCode?: string | null;
   /** Set when the server charged a different plan than the one picked. */
   paymentFlowAdjustMessage?: string | null;
+  /** Why this booking is paid in full (no advance applies) — item 18; null on the advance plan. */
+  fullPaymentReason?: string | null;
   startDate: string;
   endDate: string;
   rentalDays?: number;
   /** What the base price covers, e.g. "12 hours" (#5). */
   billedAs?: string;
+  /** The rent incl. GST, its discounts and the GST inside it (item 17). */
+  rentIncl: ReturnType<typeof bookingTotalsInclGst>;
 }
 
 export const BookingConfirmationPage = () => {
@@ -105,6 +111,9 @@ export const BookingConfirmationPage = () => {
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const [limitConflicts, setLimitConflicts] = useState<TypeClassConflict[]>([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  // Pay by scanning a UPI QR from another phone (#2) — offered beside Checkout
+  const [showUpiQr, setShowUpiQr] = useState(false);
+  const upiQrUsedRef = useRef(false);
 
   // Block browser back button while booking hold is active
   useEffect(() => {
@@ -139,6 +148,7 @@ export const BookingConfirmationPage = () => {
     holdId,
     clearBookingState,
   } = useVehicleRentalStore();
+  const upiQrAvailable = useUpiQrAvailability(paymentType === "ONLINE");
 
   // Make API call on page load
   useEffect(() => {
@@ -183,7 +193,9 @@ export const BookingConfirmationPage = () => {
           end: endDateTime,
           ...(selectedKycFilePublicId ? { file_public_id: selectedKycFilePublicId } : {}),
           payment_type: paymentType!,
-          payment_flow: paymentFlow,
+          // Advance only (item 18): the plan shown on review (the server's
+          // options). Without options it's left to the server — never a guess.
+          ...(useVehicleRentalStore.getState().paymentOptions ? { payment_flow: paymentFlow } : {}),
           ...(couponCode ? { couponCode } : {}),
         });
 
@@ -219,10 +231,12 @@ export const BookingConfirmationPage = () => {
           paymentFlowAdjustMessage: response.paymentFlowAdjusted
             ? response.paymentFlowAdjustMessage ?? "Your payment plan was changed to what this booking allows."
             : null,
+          fullPaymentReason: response.isAdvancePayment ? null : response.paymentOptions?.reasonMessage ?? null,
           startDate: response.data.startDate,
           endDate: response.data.endDate,
           rentalDays: response.data.items[0]?.days,
           billedAs: response.data.items[0]?.pricingBreakdown?.billedAs,
+          rentIncl: bookingTotalsInclGst(response.data.totals),
         });
         // Keep the plan actually charged (the server may have converted it)
         if (response.payment_flow && response.payment_flow !== paymentFlow) {
@@ -292,6 +306,20 @@ export const BookingConfirmationPage = () => {
           }
         }
 
+        // Customers book 12 hours or whole days only (BOOKING_PACKAGE_REQUIRED):
+        // back to the vehicle page, whose length picker snaps the return to a package.
+        if (errorCode === "BOOKING_PACKAGE_REQUIRED") {
+          toast.error(message, { duration: 8000 });
+          const params = new URLSearchParams({ start: `${startDate}T${startTime}` });
+          navigate(
+            selectedGroupKey
+              ? `/vehicle/group/${encodeURIComponent(selectedGroupKey)}?${params}`
+              : `/vehicle/${selectedVehicleId}?${params}`,
+            { replace: true },
+          );
+          return;
+        }
+
         // BRANCH_SCHEDULE_VIOLATION / BOOKING_MAX_PERIOD_EXCEEDED carry a
         // customer-readable message — shown below like any other refusal.
         setError(message);
@@ -329,6 +357,17 @@ export const BookingConfirmationPage = () => {
     }).format(price);
   };
 
+  // Advance only (item 18): what is charged now and what stays due at pickup
+  const payNowShown = bookingData
+    ? bookingData.payNowAmount ??
+      (bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined
+        ? bookingData.advanceAmount
+        : bookingData.grandFinalTotal)
+    : 0;
+  const dueAtPickupShown = bookingData
+    ? bookingData.dueAtPickup ?? (bookingData.isAdvancePayment ? bookingData.remainingBalance ?? 0 : 0)
+    : 0;
+
   const formattedStartDate = bookingData?.startDate
     ? format(new Date(bookingData.startDate), "EEE, MMM d, yyyy, h:mm a")
     : startDate && startTime
@@ -360,7 +399,14 @@ export const BookingConfirmationPage = () => {
       toast.info("Booking hold cancelled.");
       allowNavigationRef.current = true;
       navigate("/booking/review-confirm");
-    } catch {
+    } catch (err) {
+      // A UPI QR paid this hold before it could be cancelled (#2): it is confirmed
+      if (apiErrorCode(err) === UPI_QR_ALREADY_PAID) {
+        const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+        toast.success(message || "This booking was already paid by UPI QR and is confirmed.");
+        goToStatus("success");
+        return;
+      }
       toast.error("Failed to cancel hold. Please try again.");
     } finally {
       setIsCancelling(false);
@@ -369,11 +415,69 @@ export const BookingConfirmationPage = () => {
   };
 
   // Handle hold expiry (auto-redirect)
-  const handleHoldExpired = () => {
+  const handleHoldExpired = async () => {
+    // A UPI QR paid in its last seconds confirms the booking instead of
+    // letting it expire (#2) — ask once before sending the customer back.
+    if (upiQrUsedRef.current && bookingData?.transactionId) {
+      try {
+        const res = await bookingService.verifyOnlinePayment(bookingData.transactionId);
+        if (res.status === "Success") {
+          setShowUpiQr(false);
+          goToStatus("success");
+          return;
+        }
+      } catch {
+        // fall through to the expiry below
+      }
+    }
+    setShowUpiQr(false);
     clearBookingState();
     toast.error("Your booking hold has expired. Please start again.", { duration: 6000 });
     allowNavigationRef.current = true;
     navigate("/booking/review-confirm");
+  };
+
+  // "Start the booking again" from the UPI QR (#2). The QR closes ~45 s before
+  // the hold does, so the hold is still live here: release it first, or an
+  // immediate re-book runs into the customer's own hold (vehicle-type / DL limits).
+  const handleRestartFromUpiQr = async () => {
+    setShowUpiQr(false);
+    const id = holdId ?? bookingData?.holdId;
+    setIsCancelling(true);
+    try {
+      // Paid at the last second (QR or checkout): confirmed, not restarted
+      if (bookingData?.transactionId) {
+        try {
+          const res = await bookingService.verifyOnlinePayment(bookingData.transactionId);
+          if (res.status === "Success") {
+            goToStatus("success");
+            return;
+          }
+        } catch {
+          // fall through to releasing the hold
+        }
+      }
+      if (id) {
+        try {
+          await bookingService.cancelHold(id);
+        } catch (err) {
+          // Cancelling closes the QR first; a payment that had landed confirmed it
+          if (apiErrorCode(err) === UPI_QR_ALREADY_PAID) {
+            const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+            toast.success(message || "This booking was already paid by UPI QR and is confirmed.");
+            goToStatus("success");
+            return;
+          }
+          // Already released (expired / failed) or unreachable — it lapses on its own
+        }
+      }
+      clearBookingState();
+      toast.info("Your booking hold has ended. Please start again.");
+      allowNavigationRef.current = true;
+      navigate("/booking/review-confirm");
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   // Navigate to the status screen with an outcome the modal already resolved,
@@ -675,13 +779,11 @@ export const BookingConfirmationPage = () => {
                   Duration
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {formatRentalLength(
-                    bookingData?.startDate ?? (startDate && startTime ? `${startDate}T${startTime}` : null),
-                    bookingData?.endDate ?? (endDate && endTime ? `${endDate}T${endTime}` : null),
-                  )}
-                  {bookingData?.billedAs && (
-                    <span className="text-muted-foreground font-normal"> · billed as {bookingData.billedAs}</span>
-                  )}
+                  {bookingData?.billedAs ||
+                    formatRentalLength(
+                      bookingData?.startDate ?? (startDate && startTime ? `${startDate}T${startTime}` : null),
+                      bookingData?.endDate ?? (endDate && endTime ? `${endDate}T${endTime}` : null),
+                    )}
                 </span>
               </div>
 
@@ -726,35 +828,36 @@ export const BookingConfirmationPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Rent is GST-inclusive (item 17): discounts come off it, GST is inside it */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Base Price</span>
+                <span className="text-muted-foreground">Rent (incl. GST)</span>
                 <span className="font-medium text-foreground">
-                  {formatPrice(bookingData.grandBaseTotal)}
+                  {formatPrice(bookingData.rentIncl.rent)}
                 </span>
               </div>
 
-              {bookingData.grandDiscountTotal > 0 &&
+              {bookingData.rentIncl.discount > 0 &&
                 (bookingData.grandDurationDiscountTotal !== undefined &&
                 bookingData.grandCouponDiscountTotal !== undefined ? (
-                  // Duration slab and coupon as separate lines (pre-GST layers)
+                  // Duration slab and coupon as separate lines
                   <>
-                    {bookingData.grandDurationDiscountTotal > 0 && (
+                    {bookingData.rentIncl.durationDiscount > 0 && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-green-600">
                           {durationDiscountTitle(bookingData.durationDiscountLabel)}
                         </span>
                         <span className="font-medium text-green-600">
-                          -{formatPrice(bookingData.grandDurationDiscountTotal)}
+                          -{formatPrice(bookingData.rentIncl.durationDiscount)}
                         </span>
                       </div>
                     )}
-                    {bookingData.grandCouponDiscountTotal > 0 && (
+                    {bookingData.rentIncl.couponDiscount > 0 && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-green-600">
                           {bookingData.appliedCouponCode ? `Coupon ${bookingData.appliedCouponCode}` : "Coupon"}
                         </span>
                         <span className="font-medium text-green-600">
-                          -{formatPrice(bookingData.grandCouponDiscountTotal)}
+                          -{formatPrice(bookingData.rentIncl.couponDiscount)}
                         </span>
                       </div>
                     )}
@@ -763,18 +866,16 @@ export const BookingConfirmationPage = () => {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-green-600">Discount</span>
                     <span className="font-medium text-green-600">
-                      -{formatPrice(bookingData.grandDiscountTotal)}
+                      -{formatPrice(bookingData.rentIncl.discount)}
                     </span>
                   </div>
                 ))}
 
-              {bookingData.grandDiscountTotal > 0 && (
+              {bookingData.rentIncl.discount > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Taxable value</span>
+                  <span className="text-muted-foreground">Rent after discount</span>
                   <span className="font-medium text-foreground">
-                    {formatPrice(
-                      round2(bookingData.grandBaseTotal - bookingData.grandDiscountTotal),
-                    )}
+                    {formatPrice(bookingData.rentIncl.rentAfterDiscount)}
                   </span>
                 </div>
               )}
@@ -782,8 +883,14 @@ export const BookingConfirmationPage = () => {
               {bookingData.grandTaxTotal > 0 && (
                 <>
                   <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Rent without GST</span>
+                    <span className="font-medium text-foreground">
+                      {formatPrice(bookingData.rentIncl.rentWithoutGst)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {gstLabel("GST", bookingData.taxRate)}
+                      {gstLabel("GST", bookingData.taxRate)} (included)
                     </span>
                     <span className="font-medium text-foreground">
                       {formatPrice(bookingData.grandTaxTotal)}
@@ -826,25 +933,22 @@ export const BookingConfirmationPage = () => {
                 </div>
               </div>
 
-              {bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined && bookingData.remainingBalance !== undefined && (
-                <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-2">
-                  <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">
-                    Advance Payment Plan
+              {/* Advance only (item 18): one plan — "Pay ₹X now · ₹Y at pickup" */}
+              <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-1">
+                <p className="text-sm font-semibold text-orange-800">
+                  Pay {formatPrice(payNowShown)} now · {formatPrice(dueAtPickupShown)} at pickup
+                </p>
+                {bookingData.isAdvancePayment ? (
+                  <p className="text-xs text-muted-foreground">
+                    The advance is paid online now; the balance is collected at pickup.
                   </p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-orange-600">Pay Now (Advance)</span>
-                    <span className="font-bold text-orange-700">
-                      {formatPrice(bookingData.payNowAmount ?? bookingData.advanceAmount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Due at pickup</span>
-                    <span className="font-medium text-foreground">
-                      {formatPrice(bookingData.dueAtPickup ?? bookingData.remainingBalance)}
-                    </span>
-                  </div>
-                </div>
-              )}
+                ) : (
+                  bookingData.fullPaymentReason &&
+                  !bookingData.paymentFlowAdjustMessage && (
+                    <p className="text-xs text-muted-foreground">{bookingData.fullPaymentReason}</p>
+                  )
+                )}
+              </div>
 
               {/* The server charged a different plan than the one picked (#6) */}
               {bookingData.paymentFlowAdjustMessage && (
@@ -882,6 +986,17 @@ export const BookingConfirmationPage = () => {
                       ? "Opening secure payment…"
                       : `Pay ${formatPrice(bookingData.payNowAmount ?? (bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal))} Now`}
                   </Button>
+                  {/* Same amount, same order — scanned from another phone (#2) */}
+                  {upiQrAvailable && bookingData.transactionId && (
+                    <UpiQrPayButton
+                      className="mt-3"
+                      onClick={() => {
+                        upiQrUsedRef.current = true;
+                        setShowUpiQr(true);
+                      }}
+                      disabled={isPaying || isOpening}
+                    />
+                  )}
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <Shield className="size-3" />
                     256-bit SSL encrypted payment
@@ -991,6 +1106,19 @@ export const BookingConfirmationPage = () => {
         onClose={() => setShowLimitModal(false)}
         conflicts={limitConflicts}
       />
+
+      {upiQrAvailable && bookingData.transactionId && (
+        <BookingUpiQrDialog
+          open={showUpiQr}
+          onOpenChange={setShowUpiQr}
+          bookingId={bookingData.holdId}
+          holdExpiresAt={holdExpiresAt}
+          onConfirmed={() => goToStatus("success")}
+          // Paid by another channel: the status page confirms it with the gateway
+          onAlreadyPaid={() => goToStatus()}
+          onRestart={() => void handleRestartFromUpiQr()}
+        />
+      )}
     </div>
   );
 };

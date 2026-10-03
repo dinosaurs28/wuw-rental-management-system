@@ -49,9 +49,11 @@ function GstTag({ taxable, rates }: { taxable: boolean; rates: DropBillGstRates 
 }
 
 /**
- * The drop bill with GST (server figures): each charge with its own GST, then the
- * subtotal, the pre-tax discount, taxable value, CGST / SGST and the total. The
- * safety-deposit credit and payments are in the payment breakdown.
+ * The drop bill (server figures). Drop / recovery charges carry no GST (item 8):
+ * each charge at face value, the subtotal, the discount and the total. A bill
+ * computed before that (still carrying GST) shows its GST rows until it is
+ * recomputed — the server refuses payment on it meanwhile. The safety-deposit
+ * credit and payments are in the payment breakdown.
  */
 export function DropBillSummary({ bill, className }: { bill: DropBill; className?: string }) {
   if (bill.lines.length === 0) {
@@ -62,7 +64,7 @@ export function DropBillSummary({ bill, className }: { bill: DropBill; className
     );
   }
   const rates = bill.gstRates;
-  const hasGst = Number(bill.gst) !== 0 || bill.lines.some((l) => l.taxable);
+  const hasGst = Number(bill.gst) !== 0 || bill.lines.some((l) => l.taxable && Number(l.gst) !== 0);
   const nonTaxable = Number(bill.nonTaxableValue);
 
   return (
@@ -78,7 +80,7 @@ export function DropBillSummary({ bill, className }: { bill: DropBill; className
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span className="text-gray-800 min-w-0 break-words">
                 {line.label}
-                <GstTag taxable={line.taxable} rates={rates} />
+                {hasGst && <GstTag taxable={line.taxable} rates={rates} />}
               </span>
               <span className="shrink-0 tabular-nums">{inr(line.amount)}</span>
             </div>
@@ -91,10 +93,14 @@ export function DropBillSummary({ bill, className }: { bill: DropBill; className
         ))}
 
         <Separator className="my-1" />
-        <Row label="Subtotal (before GST)" value={inr(bill.subtotal)} />
+        <Row label={hasGst ? "Subtotal (before GST)" : "Subtotal"} value={inr(bill.subtotal)} />
         {bill.discount && (
           <>
-            <Row label="Discount (before GST)" value={`−${inr(bill.discount.amount)}`} credit />
+            <Row
+              label={hasGst ? "Discount (before GST)" : "Discount"}
+              value={`−${inr(bill.discount.amount)}`}
+              credit
+            />
             {Number(bill.discount.gst) > 0 && (
               <p className="text-xs text-green-700">
                 Takes {inr(bill.discount.taxableShare)} off the taxable charges, so the customer also saves{" "}
@@ -110,13 +116,16 @@ export function DropBillSummary({ bill, className }: { bill: DropBill; className
             <Row label={`SGST${rates ? ` (${formatRate(rates.sgstRate)})` : ""}`} value={inr(bill.sgst)} muted />
           </>
         )}
-        {nonTaxable > 0 && <Row label="Charges without GST" value={inr(bill.nonTaxableValue)} muted />}
+        {hasGst && nonTaxable > 0 && <Row label="Charges without GST" value={inr(bill.nonTaxableValue)} muted />}
       </div>
 
       <div className="px-4 py-3 border-t">
         <Row label="Total drop charges" value={inr(bill.total)} strong />
         <p className="mt-1 text-xs text-muted-foreground">
-          Damage and FASTag tolls carry no GST. The safety deposit credit and payments are in the payment breakdown.
+          {hasGst
+            ? "This bill was computed with GST on drop charges — compute it again to remove it. "
+            : "Drop charges carry no GST. "}
+          The safety deposit credit and payments are in the payment breakdown.
         </p>
       </div>
     </div>
@@ -126,6 +135,8 @@ export function DropBillSummary({ bill, className }: { bill: DropBill; className
 /** Legacy drop (no drop bill): extra km / late return / swap difference recorded for the branch manager to collect. */
 export function LegacyReturnChargesSummary({ charges }: { charges: LegacyReturnCharges }) {
   if (charges.lines.length === 0) return null;
+  // No GST on drop charges (item 8); an older server's response may still carry it
+  const hasGst = charges.lines.some((l) => Number(l.gst) > 0);
   return (
     <div className="rounded-lg border bg-white text-left">
       <div className="px-4 py-3 border-b flex items-center gap-2">
@@ -138,7 +149,7 @@ export function LegacyReturnChargesSummary({ charges }: { charges: LegacyReturnC
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span className="text-gray-800 min-w-0 break-words">
                 {line.label}
-                <GstTag taxable={line.taxable} rates={charges.gstRates} />
+                {hasGst && <GstTag taxable={line.taxable} rates={charges.gstRates} />}
               </span>
               <span className="shrink-0 tabular-nums">{inr(line.amount)}</span>
             </div>
@@ -151,8 +162,9 @@ export function LegacyReturnChargesSummary({ charges }: { charges: LegacyReturnC
         ))}
       </div>
       <div className="px-4 py-3 border-t">
-        <Row label="Total (incl. GST)" value={inr(charges.total)} strong />
+        <Row label={hasGst ? "Total (incl. GST)" : "Total"} value={inr(charges.total)} strong />
         <p className="mt-1 text-xs text-muted-foreground">
+          {hasGst ? "" : "No GST on drop charges. "}
           The branch manager collects this from the customer at settlement.
         </p>
       </div>

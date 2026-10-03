@@ -143,7 +143,7 @@ export const RecentVehicleSwaps = ({ limit = 5 }: RecentVehicleSwapsProps) => {
                 <div className="text-sm font-semibold text-[#1a1917]">
                   {formatSwapRupees(billedTotal)}
                 </div>
-                <div className="text-xs text-[#9ca3af]">Price differences charged, before GST</div>
+                <div className="text-xs text-[#9ca3af]">Price differences charged (no GST)</div>
               </div>
             </>
           )}

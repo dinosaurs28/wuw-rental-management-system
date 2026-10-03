@@ -30,6 +30,24 @@ export interface AffectedBookingSwap {
   newVehicle: AlternativeVehicle;
 }
 
+/**
+ * Free km an extension adds to the drop allowance (#7): each whole 24 h →
+ * freeKm24Hour, a remaining block of 12 h or more → freeKm12Hour, other hours →
+ * 0 km (an extension under 12 h adds none). Server-computed; absent on older
+ * responses, null when the vehicle's free km can't be read.
+ */
+export interface ExtensionFreeKm {
+  km: number;
+  minutes: number;
+  fullDays: number;
+  halfDay: boolean;
+  minutesWithoutKm: number;
+  freeKm24Hour: number;
+  freeKm12Hour: number;
+  /** e.g. "150 km for 1 day; no km for the other 2 h". */
+  label: string;
+}
+
 export interface ResolutionOption {
   type: ExtensionResolutionType;
   label: string;
@@ -39,6 +57,8 @@ export interface ResolutionOption {
   partialNewEndAt?: string;
   additionalAmount: string;
   newTotalFinal: string;
+  /** Free km this option adds (a partial option: up to partialNewEndAt). */
+  extensionFreeKm?: ExtensionFreeKm | null;
 }
 
 /**
@@ -68,6 +88,8 @@ export interface ExtensionPricing extends ExtensionGstSplit {
   originalHours?: number;
   /** Hours this quote adds. */
   extensionHours?: number;
+  /** Free km this quote adds to the drop allowance. */
+  extensionFreeKm?: ExtensionFreeKm | null;
 }
 
 export interface ExtensionEvaluation {
@@ -130,13 +152,23 @@ export interface CommitExtensionResult extends ExtensionGstSplit {
   };
   /** True when the charge was deferred to the booking's pickup payment session. */
   usePaymentSession?: boolean;
+  /** Free km the committed extension adds to the drop allowance. */
+  extensionFreeKm?: ExtensionFreeKm | null;
 }
 
 export interface CollectExtensionResult {
   remainAmount: {
     extension: string;
   };
+  /** Cash / UPI / split: "pending" until the BM confirms; Credit: "confirmed". */
   payment: "pending" | "confirmed";
+  /** Credit (#11): what was left owed and the collateral held. */
+  credit?: {
+    creditEntryPublicId: string;
+    sectionKey: string;
+    amount: string;
+    collateral: string;
+  } | null;
 }
 
 /**
@@ -162,6 +194,22 @@ export interface ExtensionEligibility {
   branchPublicId?: string;
   /** Same shape as GET /public/branch/:id/schedule. */
   officeHours?: BranchScheduleConfig;
+  /**
+   * Customer endpoint only: what a customer may add — +12 hours, +1 day …
+   * up to maxEndAt. insideHours:false = that end is outside the branch's
+   * return hours (show it disabled). Absent on the early answers.
+   */
+  packageOptions?: ExtensionPackageOption[];
+}
+
+/** A customer self-extension length (+12 h or + N × 24 h). */
+export interface ExtensionPackageOption {
+  hours: number;
+  /** "12 hours", "1 day", "2 days" … */
+  label: string;
+  /** ISO. */
+  newEndAt: string;
+  insideHours: boolean;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -187,7 +235,15 @@ export const extensionService = {
 
   employeeCollect: (
     extensionPublicId: string,
-    payload: { method: "CASH" | "ONLINE"; onlineTransactionRef?: string }
+    payload: {
+      /** UPI = counter UPI backed by proof_file_id; SPLIT = cashAmount + onlineAmount; CREDIT needs collateral (#12). */
+      method: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
+      onlineTransactionRef?: string;
+      proof_file_id?: string;
+      cashAmount?: number;
+      onlineAmount?: number;
+      collateral?: string;
+    }
   ) =>
     apiClient
       .post<{ data: CollectExtensionResult; message: string }>(

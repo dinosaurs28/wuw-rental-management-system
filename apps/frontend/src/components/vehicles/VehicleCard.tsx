@@ -74,6 +74,18 @@ export const VehicleCard = ({
     return `${durationDiscountTitle(vehicle.pricingDetails.discountLabel)} −₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} included`;
   })();
 
+  // Listed rents are GST-inclusive (item 17); with dates the server also sends
+  // the GST inside the price (absent when the branch has no GST rule).
+  const gstNote = (() => {
+    if (!("pricing" in vehicle)) return null;
+    const pd = "pricingDetails" in vehicle ? vehicle.pricingDetails : undefined;
+    if (pd && pd.gst != null && pd.rentWithoutGst != null && pd.gst > 0) {
+      const inr = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+      return `Incl. GST ₹${inr(pd.gst)} · rent without GST ₹${inr(pd.rentWithoutGst)}`;
+    }
+    return "Incl. GST";
+  })();
+
   const getDurationLabel = () => {
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
       if (vehicle.pricingDetails.billedAs) return `Billed as ${vehicle.pricingDetails.billedAs}`;
@@ -226,6 +238,9 @@ export const VehicleCard = ({
                 {getPriceLabel()}
               </span>
             </div>
+            {gstNote && (
+              <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{gstNote}</p>
+            )}
             {slabNote && (
               <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
             )}
@@ -343,6 +358,9 @@ export const VehicleCard = ({
                   {getPriceLabel()}
                </span>
             </div>
+            {gstNote && (
+              <p className="mt-1 text-[11px] font-medium text-gray-500">{gstNote}</p>
+            )}
             {slabNote && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">{slabNote}</p>
             )}

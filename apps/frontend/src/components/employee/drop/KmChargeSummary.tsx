@@ -28,9 +28,9 @@ export function KmChargeSummary({ figures, source }: KmChargeSummaryProps) {
   const currentVehicleKm = figures.kmDriven - (figures.priorKm ?? 0);
   const billingNote =
     source === "preview"
-      ? "Charged automatically when you compute the charges — GST is added on the drop bill."
+      ? "Charged automatically when you compute the charges (no GST on drop charges)."
       : source === "billed-later"
-        ? "Recorded when you complete the return; the branch manager collects it (plus GST) at settlement."
+        ? "Recorded when you complete the return; the branch manager collects it at settlement (no GST)."
         : null;
   return (
     <div
@@ -57,7 +57,7 @@ export function KmChargeSummary({ figures, source }: KmChargeSummaryProps) {
             <p className={cn("font-medium", over ? "text-orange-900" : "text-green-900")}>
               Extra km entered by staff {inr(figures.extraKm)} km × ₹{inr(figures.extraKmRate)} = ₹
               {inr(figures.extraKmCharge)}
-              {figures.extraKmCharge > 0 && <span className="font-normal"> before GST</span>}
+              {figures.extraKmCharge > 0 && <span className="font-normal"> (no GST)</span>}
             </p>
           ) : (
             <p className="font-medium text-neutral-800">Extra km can't be measured</p>
@@ -72,8 +72,14 @@ export function KmChargeSummary({ figures, source }: KmChargeSummaryProps) {
           <p className={cn("font-medium", over ? "text-orange-900" : "text-green-900")}>
             Km driven {inr(figures.kmDriven)} · Included {inr(figures.includedKm)} · Extra {inr(figures.extraKm)} km × ₹
             {inr(figures.extraKmRate)} = ₹{inr(figures.extraKmCharge)}
-            {figures.extraKmCharge > 0 && <span className="font-normal"> before GST</span>}
+            {figures.extraKmCharge > 0 && <span className="font-normal"> (no GST)</span>}
           </p>
+          {figures.freeKmOriginal != null && figures.freeKmExtensions != null && figures.freeKmExtensions > 0 && (
+            <p className="text-xs text-neutral-600 mt-1">
+              Included {inr(figures.includedKm)} km = original {inr(figures.freeKmOriginal)} km + extensions{" "}
+              {inr(figures.freeKmExtensions)} km
+            </p>
+          )}
           {segments.length > 0 && (
             <p className="text-xs text-neutral-600 mt-1">
               Across {segments.length + 1} vehicles:{" "}

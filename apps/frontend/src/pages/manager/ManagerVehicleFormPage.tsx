@@ -69,6 +69,37 @@ import {
   VEHICLE_USE_CASE_LABELS,
 } from "@/services/vehicle.service";
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
+import { fetchGSTRule } from "@/services/gst.service";
+import { splitRentTotal, type GstRates } from "@repo/schemas";
+import { formatInrExact, formatGstRate } from "@/lib/gst";
+
+/**
+ * Live preview of a GST-inclusive rent (item 17): "Rent without GST ₹1,066 +
+ * GST ₹234 (CGST 9% + SGST 9%)" with the branch GST rule, the same split the
+ * server stores (splitRentTotal). rates: undefined = loading, null = no rule.
+ */
+function RentGstPreview({ total, rates }: { total: unknown; rates: GstRates | null | undefined }) {
+  const n = Number(total);
+  if (!Number.isFinite(n) || n <= 0 || rates === undefined) return null;
+  if (rates === null) {
+    return (
+      <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+        No GST rule for this branch yet — set it on the GST page to see the rent without GST.
+      </p>
+    );
+  }
+  const split = splitRentTotal(n, rates);
+  return (
+    <p className="mt-1.5 text-[11px] leading-snug text-neutral-600">
+      Rent without GST <span className="font-semibold">{formatInrExact(split.taxable)}</span> + GST{" "}
+      <span className="font-semibold">{formatInrExact(split.gst)}</span>{" "}
+      <span className="text-neutral-400">
+        (CGST {formatGstRate(rates.cgstRate)} {formatInrExact(split.cgst)} + SGST {formatGstRate(rates.sgstRate)}{" "}
+        {formatInrExact(split.sgst)})
+      </span>
+    </p>
+  );
+}
 
 const vehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),
@@ -81,7 +112,6 @@ const vehicleSchema = z.object({
   odo: z.coerce.number().min(0, "Odometer reading is required"),
   category: z.string().min(1, "Category is required"),
   status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]),
-  hourlyRate: z.coerce.number().min(0, "Hourly rate must be non-negative").optional(),
   price12Hour: z.coerce.number().min(0, "12-hour price must be non-negative").optional(),
   freeKm12Hour: z.coerce.number().min(0, "Free KM for 12 hours must be non-negative").optional(),
   price24Hour: z.coerce.number().min(0, "24-hour price must be non-negative"),
@@ -116,6 +146,8 @@ export const ManagerVehicleFormPage = () => {
   const [isFetching, setIsFetching] = useState(isEditMode);
   const [categories, setCategories] = useState<Category[]>([]);
   const [originalImages, setOriginalImages] = useState<any[]>([]);
+  // Branch GST rule for the rent preview (item 17): undefined while loading, null = none
+  const [gstRates, setGstRates] = useState<GstRates | null | undefined>(undefined);
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema) as any,
@@ -127,7 +159,6 @@ export const ManagerVehicleFormPage = () => {
       odo: 0,
       category: "",
       status: "AVAILABLE",
-      hourlyRate: 0,
       price12Hour: 0,
       freeKm12Hour: 100,
       price24Hour: 0,
@@ -161,6 +192,16 @@ export const ManagerVehicleFormPage = () => {
     loadCategories();
   }, []);
 
+  // New vehicle: the branch GST rule for the preview (edit mode gets it with the vehicle)
+  useEffect(() => {
+    if (isEditMode) return;
+    fetchGSTRule()
+      .then((rule) =>
+        setGstRates(rule ? { cgstRate: Number(rule.cgstRate), sgstRate: Number(rule.sgstRate) } : null),
+      )
+      .catch(() => setGstRates(undefined));
+  }, [isEditMode]);
+
   useEffect(() => {
     if (isEditMode && vehicleId) {
       const loadVehicle = async () => {
@@ -169,6 +210,17 @@ export const ManagerVehicleFormPage = () => {
           const vehicle = response.data;
 
           setOriginalImages(vehicle.images || []);
+          setGstRates(
+            vehicle.gstRates
+              ? { cgstRate: Number(vehicle.gstRates.cgstRate), sgstRate: Number(vehicle.gstRates.sgstRate) }
+              : vehicle.gstRates === null
+                ? null
+                : undefined,
+          );
+          // GST-inclusive totals (item 17); price* hold the same totals on older rows
+          const cp = vehicle.customPricing;
+          const total12 = cp?.totalRent12Hour ?? cp?.price12Hour;
+          const total24 = cp?.totalRent24Hour ?? cp?.price24Hour;
 
           const latestInsurance = vehicle.insuranceRecords?.[0];
 
@@ -180,10 +232,9 @@ export const ManagerVehicleFormPage = () => {
             odo: vehicle.odo || 0,
             category: String(vehicle.categoryId || ""),
             status: vehicle.status as "AVAILABLE" | "MAINTENANCE" | "INACTIVE",
-            hourlyRate: vehicle.customPricing?.hourlyRate ? Number(vehicle.customPricing.hourlyRate) : 0,
-            price12Hour: vehicle.customPricing?.price12Hour ? Number(vehicle.customPricing.price12Hour) : 0,
+            price12Hour: total12 ? Number(total12) : 0,
             freeKm12Hour: vehicle.customPricing?.freeKm12Hour ?? 100,
-            price24Hour: vehicle.customPricing?.price24Hour ? Number(vehicle.customPricing.price24Hour) : 0,
+            price24Hour: total24 ? Number(total24) : 0,
             freeKm24Hour: vehicle.customPricing?.freeKm24Hour ?? 150,
             priceMonthly: vehicle.customPricing?.priceMonthly ? Number(vehicle.customPricing.priceMonthly) : 0,
             freeKmMonthly: vehicle.customPricing?.freeKmMonthly ?? 1500,
@@ -245,10 +296,14 @@ export const ManagerVehicleFormPage = () => {
         tripTypes.forEach((tag) => formData.append("useCases", tag));
       }
 
-      formData.append("hourlyRate", data.hourlyRate?.toString() || "0");
       formData.append("price12Hour", data.price12Hour?.toString() || "0");
       formData.append("freeKm12Hour", data.freeKm12Hour?.toString() || "100");
       formData.append("price24Hour", data.price24Hour.toString());
+      // Item 17: the 12 h / 24 h prices are the GST-inclusive totals ("Total rent
+      // incl. GST"); the server stores them as totalRent* + price* and derives
+      // rentWithoutGst* from the branch GST rule.
+      formData.append("totalRent12Hour", data.price12Hour?.toString() || "0");
+      formData.append("totalRent24Hour", data.price24Hour.toString());
       formData.append("freeKm24Hour", data.freeKm24Hour?.toString() || "150");
       formData.append("priceMonthly", data.priceMonthly?.toString() || "0");
       formData.append("freeKmMonthly", data.freeKmMonthly?.toString() || "1500");
@@ -621,40 +676,16 @@ export const ManagerVehicleFormPage = () => {
                     </div>
                     <div>
                       <h2 className="font-semibold text-neutral-900 text-[15px]">Pricing</h2>
-                      <p className="text-xs text-neutral-500">Set rental rates per time period</p>
+                      <p className="text-xs text-neutral-500">
+                        Rents are the totals the customer pays, GST included. Extra km and extra hours
+                        at drop carry no GST.
+                      </p>
                     </div>
                   </div>
                   <div className="p-6 space-y-6">
 
                     {/* Pricing tiers grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                      {/* Hourly */}
-                      <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Clock className="w-4 h-4 text-neutral-500" />
-                          <span className="text-sm font-medium text-neutral-700">Hourly</span>
-                        </div>
-                        <FormField
-                          control={form.control}
-                          name="hourlyRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-neutral-500">Rate (₹/hr)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" className="h-10" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <p className="mt-2 text-[11px] leading-snug text-neutral-500">
-                          Hourly billing never costs more than the slab: up to 12 h it is capped at
-                          the 12-hour price (the daily price if none is set), up to 24 h at the daily
-                          price. Hours billed hourly get free km = hours × (24-hour free km ÷ 24).
-                          Leave 0 to bill by slab only.
-                        </p>
-                      </div>
 
                       {/* 12-Hour */}
                       <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
@@ -668,7 +699,7 @@ export const ManagerVehicleFormPage = () => {
                             name="price12Hour"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormLabel className="text-xs text-neutral-500">Total rent incl. GST (₹)</FormLabel>
                                 <FormControl>
                                   <Input type="number" min="0" className="h-10" {...field} />
                                 </FormControl>
@@ -690,6 +721,7 @@ export const ManagerVehicleFormPage = () => {
                             )}
                           />
                         </div>
+                        <RentGstPreview total={form.watch("price12Hour")} rates={gstRates} />
                         <p className="mt-2 text-[11px] leading-snug text-neutral-500">
                           Used for trips up to 12 hours (the "12 hours" option). Leave 0 to bill
                           short trips at the daily price.
@@ -709,7 +741,7 @@ export const ManagerVehicleFormPage = () => {
                             name="price24Hour"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormLabel className="text-xs text-neutral-500">Total rent incl. GST (₹)</FormLabel>
                                 <FormControl>
                                   <Input type="number" min="0" className="h-10" {...field} />
                                 </FormControl>
@@ -731,6 +763,7 @@ export const ManagerVehicleFormPage = () => {
                             )}
                           />
                         </div>
+                        <RentGstPreview total={form.watch("price24Hour")} rates={gstRates} />
                       </div>
 
                       {/* Monthly */}
@@ -745,7 +778,7 @@ export const ManagerVehicleFormPage = () => {
                             name="priceMonthly"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs text-neutral-500">Price (₹)</FormLabel>
+                                <FormLabel className="text-xs text-neutral-500">Total rent incl. GST (₹)</FormLabel>
                                 <FormControl>
                                   <Input type="number" min="0" className="h-10" {...field} />
                                 </FormControl>
@@ -767,6 +800,7 @@ export const ManagerVehicleFormPage = () => {
                             )}
                           />
                         </div>
+                        <RentGstPreview total={form.watch("priceMonthly")} rates={gstRates} />
                       </div>
                     </div>
 
@@ -793,6 +827,7 @@ export const ManagerVehicleFormPage = () => {
                       <div className="flex items-center gap-2 mb-4">
                         <Zap className="w-4 h-4 text-neutral-500" />
                         <h3 className="text-sm font-medium text-neutral-700">Extra Charges</h3>
+                        <span className="text-xs text-neutral-400">charged at drop, no GST</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <FormField
@@ -827,6 +862,11 @@ export const ManagerVehicleFormPage = () => {
                               <FormControl>
                                 <Input type="number" min="0" className="h-11" {...field} />
                               </FormControl>
+                              <p className="text-[11px] leading-snug text-neutral-500">
+                                The one hourly rate: charged for the hours beyond full days or the
+                                12-hour slab when booking or extending (never more than the 12-hour /
+                                daily price), and per hour for late returns.
+                              </p>
                               <FormMessage />
                             </FormItem>
                           )}

@@ -7,28 +7,57 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
+import { apiErrorMessage } from "@/lib/counterErrors";
+import {
+  counterFieldErrors,
+  counterPaymentErrorField,
+  counterPaymentProblem,
+  emptyCounterPayment,
+  type CounterPaymentValue,
+} from "@/lib/counterPayment";
+import { CounterPaymentFields } from "@/components/payment/counter/CounterPaymentFields";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onConfirm: (method: "CASH" | "ONLINE", transactionRef?: string) => void;
+  /** Cash, UPI (photo of the customer's payment screen) or Split (#3 / #11). */
+  onConfirm: (payment: CounterPaymentValue) => void;
   loading: boolean;
   totalAmount: number;
+  /** The last clearance attempt's error — shown at its field or below. */
+  error?: unknown;
+  /** Staff changed the payment — clear an error that referred to the old input. */
+  onEdit?: () => void;
 }
 
-export function PaymentConfirmModal({ open, onClose, onConfirm, loading, totalAmount }: Props) {
-  const [method, setMethod] = useState<"CASH" | "ONLINE">("CASH");
-  const [transactionRef, setTransactionRef] = useState("");
+export function PaymentConfirmModal({ open, onClose, ...formProps }: Props) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Mounted only while open, so each opening starts with a fresh form */}
+        <PaymentConfirmForm onClose={onClose} {...formProps} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  const canSubmit = method === "CASH" || (method === "ONLINE" && transactionRef.trim().length > 0);
+function PaymentConfirmForm({
+  onClose,
+  onConfirm,
+  loading,
+  totalAmount,
+  error,
+  onEdit,
+}: Omit<Props, "open">) {
+  const [payment, setPayment] = useState<CounterPaymentValue>(() => emptyCounterPayment());
+
+  const problem = counterPaymentProblem(payment, totalAmount);
+  const generalError = !!error && !counterPaymentErrorField(error);
 
   function handleConfirm() {
-    if (!canSubmit) return;
-    onConfirm(method, method === "ONLINE" ? transactionRef.trim() : undefined);
+    if (problem) return;
+    onConfirm(payment);
   }
 
   function formatAmount(val: number) {
@@ -36,8 +65,7 @@ export function PaymentConfirmModal({ open, onClose, onConfirm, loading, totalAm
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-sm">
+    <>
         <DialogHeader>
           <DialogTitle>Confirm Payment</DialogTitle>
         </DialogHeader>
@@ -48,37 +76,26 @@ export function PaymentConfirmModal({ open, onClose, onConfirm, loading, totalAm
             <p className="text-2xl font-bold text-orange-700">{formatAmount(totalAmount)}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Payment Method</Label>
-            <RadioGroup
-              value={method}
-              onValueChange={(v) => setMethod(v as "CASH" | "ONLINE")}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="CASH" id="pay-cash" />
-                <Label htmlFor="pay-cash" className="cursor-pointer">Cash</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="ONLINE" id="pay-online" />
-                <Label htmlFor="pay-online" className="cursor-pointer">Online (UPI / QR)</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {method === "ONLINE" && (
-            <div className="space-y-1">
-              <Label htmlFor="txn-ref" className="text-sm">Transaction Reference *</Label>
-              <Input
-                id="txn-ref"
-                placeholder="Enter transaction / UTR ID"
-                value={transactionRef}
-                onChange={(e) => setTransactionRef(e.target.value)}
-              />
+          {/* Clearing records the payment, so a credit can't be cleared on credit */}
+          <CounterPaymentFields
+            idPrefix="clear-credit"
+            value={payment}
+            onChange={setPayment}
+            amount={totalAmount}
+            proofRole="manager"
+            methods={["CASH", "UPI", "SPLIT"]}
+            errors={counterFieldErrors(error)}
+            onEdit={onEdit}
+            disabled={loading}
+            cashNote={
               <p className="text-xs text-zinc-500">
-                Ask the customer for the UPI transaction ID after they complete the payment via QR code.
+                Recorded on your open cash shift, if you have one.
               </p>
-            </div>
+            }
+          />
+
+          {generalError && (
+            <p className="text-sm text-destructive">{apiErrorMessage(error, "Failed to clear credit")}</p>
           )}
         </div>
 
@@ -88,14 +105,13 @@ export function PaymentConfirmModal({ open, onClose, onConfirm, loading, totalAm
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!canSubmit || loading}
+            disabled={!!problem || loading}
             className="bg-orange-500 hover:bg-orange-600 text-white"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Confirm & Clear
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }

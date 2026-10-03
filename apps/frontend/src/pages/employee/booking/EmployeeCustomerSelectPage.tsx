@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, Plus, QrCode, User, AlertCircle } from "lucide-react";
+import { Search, Plus, QrCode, User, AlertCircle, Ban } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,10 @@ interface SearchResult {
   /** null for a walk-in placeholder email. */
   email: string | null;
   phone: string;
+  /** Blacklisted by a branch manager — new bookings are refused. */
+  isBlacklisted?: boolean;
+  blacklistReason?: string | null;
+  blacklistedAt?: string | null;
   customerProfile: {
     isProfileCompleted: boolean;
     publicId: string;
@@ -44,7 +48,7 @@ interface SearchResult {
 export default function EmployeeCustomerSelectPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useEmployeeAuthStore();
-  const { setUtr } = useEmployeeBookingStore();
+  const { clearCounterPayment } = useEmployeeBookingStore();
   // Walk-in bookings need an open cash shift; block starting one without it.
   const { needsShift } = useActiveShift();
 
@@ -72,7 +76,7 @@ export default function EmployeeCustomerSelectPage() {
 
   const handleClearSession = () => {
     customerSession.clear();
-    setUtr("");
+    clearCounterPayment();
     setShowSessionWarning(false);
     setHasActiveSession(false);
     toast.info("Previous customer session cleared");
@@ -102,6 +106,10 @@ export default function EmployeeCustomerSelectPage() {
   }, [searchQuery]);
 
   const handleSelectCustomer = (customer: SearchResult) => {
+    if (customer.isBlacklisted) {
+      toast.error("This customer is blacklisted and can't make new bookings.");
+      return;
+    }
     const session: CustomerSession = {
       publicId: customer.publicId,
       name: customer.name,
@@ -111,7 +119,7 @@ export default function EmployeeCustomerSelectPage() {
     };
 
     customerSession.set(session);
-    setUtr("");
+    clearCounterPayment();
     setHasActiveSession(true);
     toast.success(`Selected customer: ${customer.name}`);
     navigate("/employee/vehicles");
@@ -229,8 +237,13 @@ export default function EmployeeCustomerSelectPage() {
                         {customer.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
                           {customer.name}
+                          {customer.isBlacklisted && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                              <Ban className="h-3 w-3" /> Blacklisted
+                            </span>
+                          )}
                         </h3>
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span>{customer.phone}</span>
@@ -256,12 +269,22 @@ export default function EmployeeCustomerSelectPage() {
                       </div>
                     </div>
                     <Button
-                      disabled={needsShift}
+                      disabled={needsShift || !!customer.isBlacklisted}
                       onClick={() => handleSelectCustomer(customer)}
                     >
                       Select User
                     </Button>
                   </div>
+                  {customer.isBlacklisted && (
+                    <div className="bg-red-50 px-4 py-2 text-xs flex items-start gap-2 text-red-700">
+                      <Ban className="h-3.5 w-3.5 shrink-0 mt-px" />
+                      <span>
+                        <span className="font-semibold uppercase tracking-wide">Blacklisted</span>
+                        {customer.blacklistReason ? ` — ${customer.blacklistReason}` : ""}
+                        . Booking is blocked; a branch manager can remove the blacklist from the Customers tab.
+                      </span>
+                    </div>
+                  )}
                   {!customer.customerProfile?.isProfileCompleted && (
                     <div className="bg-yellow-50 px-4 py-2 text-xs flex items-center gap-2 text-yellow-700">
                       <AlertCircle className="h-3 w-3 shrink-0" />

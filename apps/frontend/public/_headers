@@ -1,0 +1,11 @@
+# Cloudflare Pages response headers.
+# App Links / Universal Links verification files (#16), generated at build
+# time by vite-plugins/well-known.ts. apple-app-site-association has no file
+# extension, so its JSON content type must be set here.
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600

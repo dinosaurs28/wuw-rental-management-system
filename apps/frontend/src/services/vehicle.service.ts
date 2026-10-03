@@ -61,7 +61,33 @@ export interface PublicVehicle {
     discountAmount?: number;
     discountPercent?: number;
     discountLabel?: string | null;
+    // GST inside finalPrice (item 17: price and finalPrice are GST-inclusive).
+    // Absent when the branch has no GST rule.
+    rentWithoutGst?: number;
+    gst?: number;
+    cgst?: number;
+    sgst?: number;
   };
+}
+
+/**
+ * GST-inclusive rent fields on a pricing result (item 17). Absent only on a
+ * quote cached before they existed; `rentInclGstView` in lib/gst falls back.
+ */
+export interface PricingInclGstFields {
+  /** Rent incl. GST before discounts — the price. */
+  rentInclGst?: number;
+  durationDiscountInclGst?: number;
+  couponDiscountInclGst?: number;
+  manualDiscountInclGst?: number;
+  discountInclGst?: number;
+  /** Rent incl. GST after discounts (= finalTotal). */
+  rentAfterDiscountInclGst?: number;
+  /** Rent without GST after discounts. */
+  rentWithoutGst?: number;
+  gst?: number;
+  cgst?: number;
+  sgst?: number;
 }
 
 /** How a price was actually worked out (may differ from the duration's period type). */
@@ -87,9 +113,10 @@ export interface VehicleGroupDetails {
   customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
   /** Plans the customer may pick (server). Optional: cached payloads may lack it for ~30 s after a deploy. */
   paymentOptions?: PaymentOptions;
-  pricingDetails: {
+  pricingDetails: (PricingInclGstFields & {
+    /** Rent WITHOUT GST before discounts (taxable terms). */
     basePrice: number;
-    /** Combined discount (duration slab + coupon). */
+    /** Combined discount (duration slab + coupon), taxable terms. */
     discountAmount: number;
     discountPercent: number;
     // Duration-slab layer (absent on quotes cached before they existed)
@@ -106,6 +133,7 @@ export interface VehicleGroupDetails {
     // Server GST rates; null for up to 60 s on a pricing result cached before they existed.
     cgstRate?: number | null;
     sgstRate?: number | null;
+    /** Rent incl. GST after discounts. */
     finalTotal: number;
     freeKmLimit: number;
     extraKmRate: number;
@@ -118,7 +146,7 @@ export interface VehicleGroupDetails {
       billedAs?: string;
       billedAsType?: BilledAsType;
     };
-  } | null;
+  }) | null;
 }
 
 export interface VehicleGroupDetailsResponse {
@@ -140,6 +168,9 @@ export interface ManagerVehicle {
   images: VehicleImage[];
   customPricing?: {
     price24Hour: string | number;
+    /** GST-inclusive daily total and its rent without GST (item 17; absent from older servers). */
+    totalRent24Hour?: string | number | null;
+    rentWithoutGst24Hour?: string | number | null;
   };
 }
 
@@ -271,7 +302,15 @@ export interface VehicleDetails {
     extraKmRate?: number;
     extraHourRate?: number;
     enabled?: boolean;
+    // GST-inclusive totals and their rent without GST (item 17; BM GET vehicle).
+    // Decimal strings from the server; null when not set / no branch GST rule.
+    totalRent12Hour?: number | string | null;
+    totalRent24Hour?: number | string | null;
+    rentWithoutGst12Hour?: number | string | null;
+    rentWithoutGst24Hour?: number | string | null;
   } | null;
+  /** BM GET vehicle: the branch GST rule for the form's live preview (null = no rule). */
+  gstRates?: { cgstRate: number; sgstRate: number } | null;
   advancePayAmount?: number;
   fuelBar?: number | null;
   customerPaymentMode?: 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
@@ -284,9 +323,10 @@ export interface VehicleDetails {
     daily: number;
   };
   deposit: number;
-  pricingDetails: {
+  pricingDetails: (PricingInclGstFields & {
+    /** Rent WITHOUT GST before discounts (taxable terms). */
     basePrice: number;
-    /** Combined discount (duration slab + coupon). */
+    /** Combined discount (duration slab + coupon), taxable terms. */
     discountAmount: number;
     discountPercent: number;
     // Duration-slab layer (absent on quotes cached before they existed)
@@ -320,7 +360,7 @@ export interface VehicleDetails {
       billedAs?: string;
       billedAsType?: BilledAsType;
     };
-  } | null;
+  }) | null;
 }
 
 export interface VehicleDetailsResponse {

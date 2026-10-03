@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 
 import {
   loadRazorpayCheckout,
@@ -169,6 +170,11 @@ export const useRazorpayCheckout = () => {
               // Verification did not confirm — the webhook still might have.
               await resolveFromStatus("Payment could not be confirmed.");
               return;
+            }
+            // Paid twice (a UPI QR got there first): confirmed, and this
+            // payment is refunded — the customer must be told (#2)
+            if (result.duplicatePayment && result.message) {
+              toast.info(result.message, { duration: 12_000 });
             }
             await onSuccess(response);
           } catch (err) {

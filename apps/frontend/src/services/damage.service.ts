@@ -42,6 +42,12 @@ export interface DamageReport {
     sgstRate?: number | null;
     /** True when the branch has no GST rule: a PENALTY close is refused (409 GST_RULE_MISSING). */
     gstRuleMissing?: boolean;
+    /**
+     * Item 8: false = damage (penalty or compensation) carries no GST and closes
+     * without a GST rule; the rates above are informational. Absent from older
+     * servers (a penalty was taxed there).
+     */
+    damageGstApplies?: boolean;
   };
 }
 

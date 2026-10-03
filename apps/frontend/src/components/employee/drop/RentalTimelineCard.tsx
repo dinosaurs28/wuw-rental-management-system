@@ -120,10 +120,24 @@ export function RentalTimelineCard({ timeline, lateBasis, extensionHint, classNa
                       </span>
                       <span className="font-medium text-gray-800">+{formatDuration(ext.minutes)}</span>
                       <span className="text-muted-foreground">{inr(ext.additionalAmount)} incl. GST</span>
+                      {ext.freeKm && (
+                        <span className="text-muted-foreground" title={ext.freeKm.label}>
+                          {ext.freeKm.km > 0 ? `+${ext.freeKm.km.toLocaleString("en-IN")} free km` : "no extra free km"}
+                        </span>
+                      )}
                       <ExtensionTags ext={ext} />
                     </li>
                   ))}
                 </ul>
+              )}
+              {timeline.extensionFreeKmTotal != null && timeline.extensions.length > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Free km added by extensions:{" "}
+                  <span className="font-medium text-gray-800">
+                    +{timeline.extensionFreeKmTotal.toLocaleString("en-IN")} km
+                  </span>{" "}
+                  · whole days and 12-hour blocks only — extra hours add none
+                </p>
               )}
             </div>
           )}

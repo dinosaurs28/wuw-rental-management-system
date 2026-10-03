@@ -486,7 +486,10 @@ function ManagerRow({
                     <span className="font-medium text-neutral-900 text-sm">{manager.name}</span>
                 </div>
             </TableCell>
-            <TableCell className="text-neutral-600 text-sm">{manager.email}</TableCell>
+            <TableCell className="text-neutral-600 text-sm">
+                {manager.email}
+                {manager.phone ? <span className="block text-xs text-neutral-400">{manager.phone}</span> : null}
+            </TableCell>
             <TableCell>
                 <StatusBadge status={manager.isActive ? "ACTIVE" : "INACTIVE"} />
             </TableCell>
@@ -553,6 +556,7 @@ function ManagerCard({
                         <StatusBadge status={manager.isActive ? "ACTIVE" : "INACTIVE"} />
                     </div>
                     <p className="text-neutral-500 text-xs truncate">{manager.email}</p>
+                    {manager.phone ? <p className="text-neutral-500 text-xs truncate">{manager.phone}</p> : null}
                     <p className="text-neutral-400 text-xs mt-0.5">
                         Added {new Date(manager.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
@@ -627,13 +631,15 @@ function AddManagerDialog({
         name: "",
         email: "",
         password: "",
+        phone: "",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setIsLoading(true);
-            await adminService.createBranchManager(branchId, formData);
+            const { phone, ...rest } = formData;
+            await adminService.createBranchManager(branchId, phone?.trim() ? { ...rest, phone: phone.trim() } : rest);
             toast.success("Manager account created successfully");
             onSuccess();
         } catch (error: any) {
@@ -680,6 +686,20 @@ function AddManagerDialog({
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             className="h-11"
                             required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="mgr-phone" className="text-sm font-medium text-neutral-700">
+                            Mobile Number
+                            <span className="text-neutral-400 font-normal ml-1">(optional, for password reset by SMS)</span>
+                        </Label>
+                        <Input
+                            id="mgr-phone"
+                            inputMode="tel"
+                            placeholder="98765 43210"
+                            value={formData.phone ?? ""}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="h-11"
                         />
                     </div>
                     <div className="space-y-2">
@@ -739,6 +759,7 @@ function EditManagerDialog({
         name: manager.name,
         email: manager.email,
         password: "",
+        phone: manager.phone ?? "",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -748,6 +769,8 @@ function EditManagerDialog({
             const payload: UpdateManagerInput = {
                 name: formData.name,
                 email: formData.email,
+                // "" clears the number
+                phone: (formData.phone ?? "").trim(),
             };
             if (formData.password) {
                 payload.password = formData.password;
@@ -797,6 +820,20 @@ function EditManagerDialog({
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             className="h-11"
                             required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-mgr-phone" className="text-sm font-medium text-neutral-700">
+                            Mobile Number
+                            <span className="text-neutral-400 font-normal ml-1">(for password reset by SMS)</span>
+                        </Label>
+                        <Input
+                            id="edit-mgr-phone"
+                            inputMode="tel"
+                            placeholder="98765 43210"
+                            value={formData.phone ?? ""}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="h-11"
                         />
                     </div>
                     <div className="space-y-2">

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { format, addDays } from "date-fns";
-import { validateExtensionWindow } from "@repo/schemas";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { extensionPackageOptions, validateExtensionWindow } from "@repo/schemas";
 import { toast } from "sonner";
-import { Calendar, Clock, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard } from "lucide-react";
+import { Calendar, Loader2, ArrowRight, Check, AlertCircle, Info, CreditCard, QrCode } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,34 +12,29 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Calendar as CalendarPicker,
-} from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
 import {
   extensionService,
   type ExtensionEvaluation,
 } from "@/services/extension.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { useUpiQrAvailability, useUpiQrPayment } from "@/hooks/useUpiQrPayment";
+import { UpiQrPanel } from "@/components/payment/UpiQrPanel";
+import { apiErrorCode, UPI_QR_ALREADY_PAID } from "@/services/upiQr.service";
 import { useAuthStore } from "@/store/auth.store";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import { formatExtensionHours, formatInrExact } from "@/lib/gst";
 import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
-import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
+import { ExtensionFreeKmLine } from "@/components/extension/ExtensionFreeKmLine";
+import { formatPackageReturn } from "@/components/booking/PackagePicker";
 import {
   buildScheduleUserMessage,
-  isClosedCalendarDay,
-  isReturnSlotAllowed,
   validateReturnTime,
 } from "@/utils/branchScheduleValidator";
+import { packageReturnProblem } from "@/utils/bookingPackages";
 
-type Step ="date" | "result" | "pay" | "paying" | "failed";
+// "qr": paying by scanning a UPI QR from another phone (#2)
+type Step ="date" | "result" | "pay" | "paying" | "failed" | "qr";
 
 interface CustomerExtensionModalProps {
   open: boolean;
@@ -49,33 +44,14 @@ interface CustomerExtensionModalProps {
   onSuccess?: () => void;
 }
 
-// Bookings run on IST, so the picked day + time is read as IST whatever the
-// browser's timezone.
-const IST_OFFSET_MS = 330 * 60_000;
-const pad = (n: number) => String(n).padStart(2, "0");
-
-/** Calendar day (local midnight, for the date picker) and "HH:mm" of an instant, in IST. */
-function istParts(iso: string) {
-  const d = new Date(new Date(iso).getTime() + IST_OFFSET_MS);
-  return {
-    day: new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-    time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,
-  };
-}
-
-/** A picked calendar day + "HH:mm" (IST) → ISO instant. */
-function istToIso(day: Date, time: string) {
-  const [h, m] = time.split(":").map(Number);
-  return new Date(
-    Date.UTC(day.getFullYear(), day.getMonth(), day.getDate(), h, m) - IST_OFFSET_MS,
-  ).toISOString();
-}
-
-/** Rounds "HH:mm" up to the 15-minute steps TimeSelect offers (capped at 23:45). */
-function roundUpToQuarter(time: string) {
-  const [h, m] = time.split(":").map(Number);
-  const total = Math.min(Math.ceil((h * 60 + m) / 15) * 15, 23 * 60 + 45);
-  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+/** A customer extension length: +12 hours or + N days (P3), with its new return. */
+interface ExtensionChoice {
+  hours: number;
+  label: string;
+  /** ISO. */
+  newEndAt: string;
+  /** Outside the branch's return hours (or past the limit) — shown greyed with this. */
+  disabledReason: string | null;
 }
 
 /** "5 hours", "1 day", "2 days 3 hours". */
@@ -106,12 +82,9 @@ export function CustomerExtensionModal({
   // Set once the extension is paid for, so closing does not cancel it.
   const paidRef = useRef(false);
   const [step, setStep] = useState<Step>("date");
-  const currentEnd = istParts(currentEndAt);
-  // Defaults to the same time one day later; any time after the current
-  // return can be picked, including later the same day.
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => addDays(currentEnd.day, 1));
-  const [selectedTime, setSelectedTime] = useState(() => roundUpToQuarter(currentEnd.time));
-  const [calOpen, setCalOpen] = useState(false);
+  // Customers extend by +12 hours or whole days only (P3) — the new return is
+  // the current return + that length. null = the default (+1 day) once loaded.
+  const [selectedHours, setSelectedHours] = useState<number | null>(null);
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isInitiating, setIsInitiating] = useState(false);
@@ -119,35 +92,73 @@ export function CustomerExtensionModal({
   const [initError, setInitError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
-  const newEndAt = selectedDate ? istToIso(selectedDate, selectedTime) : null;
-  const isAfterCurrentEnd = !!newEndAt && new Date(newEndAt) > new Date(currentEndAt);
+  // Pay by scanning a UPI QR from another phone (#2): pays the extension's own
+  // Razorpay order, so it is never a second charge
+  const upiQrAvailable = useUpiQrAvailability(open);
+  const upiQr = useUpiQrPayment({
+    target: evaluation ? { extensionId: evaluation.extensionPublicId } : null,
+    onConfirmed: () => finishPaidByQr("Booking extended successfully!"),
+  });
 
-  // 15-day cap (#15) and office hours (#2) — same query as the booking card's Extend button
-  const { data: eligibility } = useQuery({
+  // Already paid (any channel) — same as a confirmed QR
+  useEffect(() => {
+    if (upiQr.error?.code === "EXTENSION_ALREADY_PAID") {
+      finishPaidByQr("This extension is already paid — booking extended.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upiQr.error]);
+
+  // 15-day cap (#15), office hours (#2) and the lengths a customer may add (P3) —
+  // same query as the booking card's Extend button
+  const queryClient = useQueryClient();
+  const { data: eligibility, isLoading: eligibilityLoading } = useQuery({
     queryKey: ["extension-eligibility", bookingPublicId],
     queryFn: () => extensionService.customerCheckEligibility(bookingPublicId),
     enabled: open,
     staleTime: 60_000,
   });
+  // A refetch while our own quote was open answers "A pending extension already
+  // exists" (no lengths) — once that quote is released, ask again so neither
+  // this picker nor the booking card's Extend button stays blocked by it.
+  const refreshEligibility = () =>
+    void queryClient.invalidateQueries({ queryKey: ["extension-eligibility", bookingPublicId] });
   const officeHours = eligibility?.officeHours;
   const maxEndAt = eligibility?.maxEndAt ?? null;
-  const maxEndDay = maxEndAt ? istParts(maxEndAt).day : null;
-  const capReached = eligibility?.eligible === false && !!eligibility.atCap;
+  // Not extendable (15-day limit reached, or less than 12 hours left before it)
+  const capReached = eligibility?.eligible === false && (!!eligibility.atCap || !!eligibility.reason);
 
-  // Keep the default (current end + 1 day) inside the cap and off closed days
-  // once the limits are known
-  useEffect(() => {
-    if (!selectedDate) return;
-    let day = selectedDate;
-    if (maxEndDay && day > maxEndDay && maxEndDay >= currentEnd.day) day = maxEndDay;
-    for (let i = 0; i < 7 && isClosedCalendarDay(officeHours, day); i++) {
-      const next = addDays(day, 1);
-      if (maxEndDay && next > maxEndDay) break;
-      day = next;
+  // +12 hours, +1 day … up to the cap: the server's list, else the same rule
+  // worked out here (an older server). Out-of-hours ends are shown greyed.
+  const choices = useMemo<ExtensionChoice[]>(() => {
+    if (eligibility?.packageOptions) {
+      return eligibility.packageOptions.map((o) => ({
+        hours: o.hours,
+        label: o.label,
+        newEndAt: o.newEndAt,
+        disabledReason: o.insideHours
+          ? null
+          : packageReturnProblem(officeHours, new Date(o.newEndAt), null) ??
+            "The branch doesn't take returns at that time",
+      }));
     }
-    if (day.getTime() !== selectedDate.getTime()) setSelectedDate(day);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [maxEndAt, officeHours]);
+    if (!maxEndAt || eligibility?.eligible === false) return [];
+    return extensionPackageOptions(currentEndAt, maxEndAt).map((o) => ({
+      hours: o.hours,
+      label: o.label,
+      newEndAt: o.newEndAt.toISOString(),
+      disabledReason: packageReturnProblem(officeHours, o.newEndAt, null),
+    }));
+  }, [eligibility, officeHours, maxEndAt, currentEndAt]);
+  const enabledChoices = choices.filter((c) => !c.disabledReason);
+  // The picked length, else +1 day, else the shortest one the branch accepts
+  const selected =
+    enabledChoices.find((c) => c.hours === selectedHours) ??
+    enabledChoices.find((c) => c.hours === 24) ??
+    enabledChoices[0] ??
+    null;
+
+  const newEndAt = selected?.newEndAt ?? null;
+  const isAfterCurrentEnd = !!newEndAt && new Date(newEndAt) > new Date(currentEndAt);
 
   // Message for a new end past the cap (server wording)
   const windowMessage = (() => {
@@ -170,42 +181,46 @@ export function CustomerExtensionModal({
   const hoursMessage =
     hoursVerdict?.status === "RETURN_OUTSIDE_HOURS" ? buildScheduleUserMessage(hoursVerdict) : null;
 
-  const isReturnSlotDisabled = selectedDate
-    ? (hour: number, minute: number) => {
-        if (!isReturnSlotAllowed(officeHours, selectedDate, hour * 60 + minute)) return true;
-        return !!maxEndAt && istToIso(selectedDate, `${pad(hour)}:${pad(minute)}`) > maxEndAt;
-      }
-    : undefined;
-
-  // "+12 hours" / "+1 day" from the current return, when allowed
-  const quickOptions = [12, 24].map((hours) => {
-    const iso = new Date(new Date(currentEndAt).getTime() + hours * 3_600_000).toISOString();
-    const parts = istParts(iso);
-    const time = roundUpToQuarter(parts.time);
-    const target = istToIso(parts.day, time);
-    const verdict = officeHours ? validateReturnTime(officeHours, new Date(target)) : null;
-    const blocked =
-      (!!maxEndAt && target > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
-    return { hours, day: parts.day, time, target, blocked };
-  });
-
-  async function cancelPendingExtension(pubId: string) {
+  /**
+   * Releases the unpaid extension (#2). "paid": a UPI QR had already paid it,
+   * which is then kept. "open": its UPI QR couldn't be closed (502
+   * GATEWAY_UNAVAILABLE), so the server kept it pending — `message` says why.
+   */
+  async function cancelPendingExtension(
+    pubId: string,
+  ): Promise<{ outcome: "released" | "paid" | "open"; message?: string }> {
     try {
       await extensionService.customerCancelExtension(pubId);
-    } catch {
+    } catch (err) {
+      if (apiErrorCode(err) === UPI_QR_ALREADY_PAID) return { outcome: "paid" };
+      if (apiErrorCode(err) === "GATEWAY_UNAVAILABLE") {
+        return { outcome: "open", message: apiErrorMessage(err, "We couldn't close the UPI QR code. Please try again.") };
+      }
       // best-effort — ignore errors (e.g. already cancelled)
     }
+    return { outcome: "released" };
   }
 
   async function handleClose() {
     // If we evaluated but never paid, cancel the pending extension so the
-    // booking is unlocked and the customer can try again later.
+    // booking is unlocked and the customer can try again later. Cancelling
+    // also closes an open UPI QR — unless it was paid, which keeps the extension.
     if (evaluation && !paidRef.current) {
-      await cancelPendingExtension(evaluation.extensionPublicId);
+      const released = await cancelPendingExtension(evaluation.extensionPublicId);
+      if (released.outcome === "paid") {
+        paidRef.current = true;
+        toast.success("Your UPI QR payment was received — booking extended.");
+        onSuccess?.();
+      } else if (released.outcome === "open") {
+        // Still payable for a few minutes: if it is paid, the extension is confirmed
+        toast.error(released.message);
+      } else {
+        refreshEligibility();
+      }
     }
+    upiQr.reset();
     setStep("date");
-    setSelectedDate(addDays(currentEnd.day, 1));
-    setSelectedTime(roundUpToQuarter(currentEnd.time));
+    setSelectedHours(null);
     setEvaluation(null);
     setEvalError(null);
     setInitError(null);
@@ -229,6 +244,36 @@ export function CustomerExtensionModal({
     } finally {
       setIsEvaluating(false);
     }
+  }
+
+  /** The UPI QR payment confirmed the extension — same ending as Checkout's success. */
+  function finishPaidByQr(message: string) {
+    if (paidRef.current) return;
+    paidRef.current = true;
+    toast.success(message);
+    onSuccess?.();
+    void handleClose();
+  }
+
+  function openUpiQr() {
+    setInitError(null);
+    setStep("qr");
+    upiQr.reset();
+    void upiQr.start();
+  }
+
+  /** Back to the normal Pay button: close the QR first so it can't take money. */
+  async function leaveUpiQr() {
+    const result = await upiQr.close();
+    if (!result.ok) {
+      // Still open on the gateway: stay, so a second payment isn't started beside it
+      toast.error(result.message);
+      return;
+    }
+    // A payment had landed: stay to show it (CONFIRMED moves on by itself)
+    if (result.view?.outcome === "CONFIRMED" || result.view?.outcome === "REFUND_REQUIRED") return;
+    upiQr.reset();
+    setStep("result");
   }
 
   /**
@@ -329,22 +374,36 @@ export function CustomerExtensionModal({
     );
     const partial = opts.find((o) => o.type === "PARTIAL_EXTENSION");
     if (hasFullAvail) return { type: "available" as const };
-    if (partial) return { type: "partial" as const, partialNewEndAt: partial.partialNewEndAt };
-    return { type: "none" as const };
+    // The server snaps a partial extension to the longest +12 h / + N days that fits
+    if (partial) {
+      return {
+        type: "partial" as const,
+        partialNewEndAt: partial.partialNewEndAt,
+        description: partial.description,
+      };
+    }
+    const none = opts.find((o) => o.type === "NO_RESOLUTION");
+    return { type: "none" as const, description: none?.description ?? null };
   })();
 
   const additionalAmount = evaluation?.pricing.additionalAmount ?? "0";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md max-h-[92vh] overflow-y-auto"
+        // A stray tap outside must not cancel an extension whose QR may be being paid
+        onInteractOutside={(e) => {
+          if (step === "qr") e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
             Extend Your Booking
           </DialogTitle>
         </DialogHeader>
 
-        {/* ── Step 1: Pick a date ── */}
+        {/* ── Step 1: Pick a length (+12 hours / + N days) ── */}
         {step === "date" && (
           <div className="space-y-5 pt-2">
             <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-sm text-gray-600">
@@ -358,65 +417,72 @@ export function CustomerExtensionModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label>New return date &amp; time</Label>
-              <div className="flex gap-2">
-                <Popover open={calOpen} onOpenChange={setCalOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "flex-1 justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground",
-                      )}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "dd MMM yyyy") : "Select a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarPicker
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(d) => { setSelectedDate(d); setCalOpen(false); }}
-                      disabled={(d) =>
-                        d < currentEnd.day ||
-                        (!!maxEndDay && d > maxEndDay) ||
-                        isClosedCalendarDay(officeHours, d)
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <div className="flex items-center gap-1.5 rounded-md border border-input px-3">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <TimeSelect value={selectedTime} onChange={setSelectedTime} isDisabled={isReturnSlotDisabled} />
+              <Label id="extend-by-label">Extend by</Label>
+              <p className="text-xs text-gray-500">
+                Extensions are 12 hours or whole days (24 hours each), from your current return.
+              </p>
+              {eligibilityLoading ? (
+                <div className="flex items-center gap-2 py-3 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking how far this booking can be extended…
                 </div>
-              </div>
-              <BranchHoursBadge schedule={officeHours} date={selectedDate ?? null} kind="return" />
+              ) : choices.length > 0 ? (
+                <div
+                  role="radiogroup"
+                  aria-labelledby="extend-by-label"
+                  className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1"
+                >
+                  {choices.map((opt) => {
+                    const active = selected?.hours === opt.hours;
+                    return (
+                      <button
+                        key={opt.hours}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        disabled={!!opt.disabledReason}
+                        title={opt.disabledReason ?? undefined}
+                        onClick={() => setSelectedHours(opt.hours)}
+                        className={cn(
+                          "rounded-lg border px-3 py-2 text-left transition-colors",
+                          active
+                            ? "bg-orange-500 border-orange-500 text-white"
+                            : "bg-white border-gray-200 text-gray-800 hover:border-gray-400",
+                          "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200",
+                        )}
+                      >
+                        <span className="block text-sm font-semibold">+{opt.label}</span>
+                        <span className={cn("block text-[11px] leading-tight", active ? "text-orange-50" : "text-gray-500")}>
+                          {opt.disabledReason ? "Branch closed then" : formatPackageReturn(new Date(opt.newEndAt))}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
 
-              {/* Quick picks from the current return */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {quickOptions.map((opt) => (
-                  <button
-                    key={opt.hours}
-                    type="button"
-                    disabled={opt.blocked}
-                    onClick={() => {
-                      setSelectedDate(opt.day);
-                      setSelectedTime(opt.time);
-                    }}
-                    className={cn(
-                      "h-8 px-3 rounded-full border text-xs font-semibold transition-colors",
-                      newEndAt === opt.target
-                        ? "bg-orange-500 border-orange-500 text-white"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-gray-400",
-                      "disabled:opacity-45 disabled:cursor-not-allowed",
-                    )}
-                  >
-                    +{opt.hours === 12 ? "12 hours" : "1 day"}
-                  </button>
+              {selected && (
+                <p className="text-sm text-gray-700 pt-1">
+                  New return:{" "}
+                  <span className="font-semibold text-gray-900">
+                    {formatPackageReturn(new Date(selected.newEndAt))}
+                  </span>
+                </p>
+              )}
+              {/* Why a length is greyed out (outside the branch's return hours) */}
+              {choices
+                .filter((c) => c.disabledReason)
+                .slice(0, 3)
+                .map((c) => (
+                  <p key={c.hours} className="text-[11px] text-gray-500">
+                    +{c.label}: {c.disabledReason}.
+                  </p>
                 ))}
-              </div>
+              {!eligibilityLoading && !capReached && choices.length > 0 && enabledChoices.length === 0 && (
+                <p className="text-xs text-red-600">
+                  The branch doesn't take returns at any of these times. Please contact the branch.
+                </p>
+              )}
 
               {newEndAt && !isAfterCurrentEnd && (
                 <p className="text-xs text-red-600">Pick a time after the current return time.</p>
@@ -497,11 +563,14 @@ export function CustomerExtensionModal({
                   <Info className="h-4 w-4" />
                   Partial extension only
                 </div>
+                {resultView.description && (
+                  <p className="text-xs text-yellow-700 mb-1">{resultView.description}</p>
+                )}
                 <p className="text-xs text-yellow-700">
-                  Full extension not available. We can extend until{" "}
+                  We can extend until{" "}
                   <span className="font-semibold">
                     {resultView.partialNewEndAt
-                      ? format(new Date(resultView.partialNewEndAt), "dd MMM yyyy, h:mm a")
+                      ? formatPackageReturn(new Date(resultView.partialNewEndAt))
                       : "a limited date"}
                   </span>
                   .
@@ -517,7 +586,8 @@ export function CustomerExtensionModal({
                     No extension available
                   </div>
                   <p className="text-xs text-red-700">
-                    Sorry, no extension is available for the requested dates.
+                    {resultView.description ??
+                      "Sorry, no extension is available for the requested dates."}{" "}
                     Please contact the branch for assistance.
                   </p>
                 </div>
@@ -543,6 +613,7 @@ export function CustomerExtensionModal({
                         `+${formatExtraTime(currentEndAt, evaluation.requestedEndAt)}`}
                     </span>
                   </div>
+                  <ExtensionFreeKmLine freeKm={evaluation.pricing.extensionFreeKm} />
                   <div className="flex justify-between">
                     <span className="text-gray-500">Original total</span>
                     <span className="font-medium">{formatCurrency(evaluation.pricing.originalTotalFinal)}</span>
@@ -568,10 +639,23 @@ export function CustomerExtensionModal({
                     variant="outline"
                     className="flex-1"
                     onClick={async () => {
-                      if (evaluation) await cancelPendingExtension(evaluation.extensionPublicId);
+                      const released = evaluation
+                        ? await cancelPendingExtension(evaluation.extensionPublicId)
+                        : null;
+                      if (released?.outcome === "paid") {
+                        // A UPI QR had already paid it — the extension stands
+                        finishPaidByQr("Your UPI QR payment was received — booking extended.");
+                        return;
+                      }
+                      if (released?.outcome === "open") {
+                        // Its QR is still payable — stay on this quote rather than start another
+                        setInitError(released.message ?? null);
+                        return;
+                      }
                       setEvaluation(null);
                       setInitError(null);
                       setStep("date");
+                      if (released) refreshEligibility();
                     }}
                   >
                     ← Back
@@ -590,8 +674,39 @@ export function CustomerExtensionModal({
                     )}
                   </Button>
                 </div>
+
+                {/* Same amount, same order — scanned from another phone (#2) */}
+                {upiQrAvailable && parseFloat(additionalAmount) > 0 && (
+                  <div>
+                    <Button
+                      variant="outline"
+                      className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-700"
+                      onClick={openUpiQr}
+                      disabled={isInitiating}
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Pay by scanning a UPI QR
+                    </Button>
+                    <p className="mt-1.5 text-center text-xs text-muted-foreground">
+                      No UPI app on this device? Scan the QR with any UPI app on another phone.
+                    </p>
+                  </div>
+                )}
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Paying by UPI QR (#2) ── */}
+        {step === "qr" && evaluation && (
+          <div className="pt-1">
+            <UpiQrPanel
+              qr={upiQr}
+              kind="extension"
+              onPayAnotherWay={() => void leaveUpiQr()}
+              onDone={() => void handleClose()}
+              onViewConfirmed={() => finishPaidByQr("Booking extended successfully!")}
+            />
           </div>
         )}
 

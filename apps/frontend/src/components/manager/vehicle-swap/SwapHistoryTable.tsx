@@ -178,7 +178,7 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                           {formatSwapRupees(difference)}
                         </span>
                         <span className={swap.chargeDifference ? "text-orange-700" : "text-gray-500"}>
-                          {swap.chargeDifference ? "Billed at drop (+GST)" : "Waived"}
+                          {swap.chargeDifference ? "Billed at drop" : "Waived"}
                         </span>
                       </div>
                     ) : (

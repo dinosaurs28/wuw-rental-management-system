@@ -470,6 +470,7 @@ export const VehiclesPage = () => {
             scheduleVerdict={scheduleVerdict}
             useCases={useCases}
             onUseCasesChange={handleUseCasesChange}
+            packageMode="customer"
           />
         </div>
 

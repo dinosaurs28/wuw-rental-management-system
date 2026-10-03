@@ -34,6 +34,7 @@ export type BranchManager = {
     publicId: string;
     name: string;
     email: string;
+    phone?: string;
     isActive: boolean;
     createdAt: string;
 };
@@ -113,12 +114,14 @@ export type CreateManagerInput = {
     name: string;
     email: string;
     password: string;
+    phone?: string;
 };
 
 export type UpdateManagerInput = {
     name?: string;
     email?: string;
     password?: string;
+    phone?: string | null;
 };
 
 export type CreateBranchInput = {
@@ -128,6 +131,7 @@ export type CreateBranchInput = {
     managerName: string;
     managerEmail: string;
     managerPassword: string;
+    managerPhone?: string;
 };
 
 export type UpdateBranchInput = Partial<CreateBranchInput> & {

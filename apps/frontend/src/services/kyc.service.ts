@@ -117,6 +117,8 @@ export const kycService = {
       kyc: {
         publicId: string;
         type: KycDocumentType;
+        /** Present once the booking KYC endpoint returns it */
+        side?: KycSide;
         status: "PENDING" | "APPROVED" | "REJECTED";
         file: {
           url: string;

@@ -1,16 +1,17 @@
 import { toast } from "sonner";
+import { SHARE_LINK_ORIGIN, buildVehicleShareMessage } from "@repo/schemas";
 
-// Canonical public vehicle URL: origin + path only. No dates, no auth params,
-// so the recipient picks their own dates and nothing private leaks.
-export function buildVehicleShareUrl(target: {
-  groupKey?: string;
-  vehicleId?: string;
-}): string {
-  const origin = window.location.origin;
-  if (target.groupKey) {
-    return `${origin}/vehicle/group/${encodeURIComponent(target.groupKey)}`;
-  }
-  return `${origin}/vehicle/${encodeURIComponent(target.vehicleId ?? "")}`;
+// Share links (#16) are https://whatuwantrentals.com/app/vehicle/<id>, where
+// <id> is the group key the public listing returns (group page) or the vehicle
+// publicId (single vehicle). Origin + path only: no dates, no auth params, so
+// nothing private leaks. They always point at the live site so Android App
+// Links / iOS Universal Links can open the app; only local development keeps
+// its own origin so the /app/vehicle/:id hand-off can be tried end to end.
+function shareOrigin(): string {
+  const { hostname, origin } = window.location;
+  return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(hostname)
+    ? origin
+    : SHARE_LINK_ORIGIN;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -38,20 +39,29 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export async function shareVehicle(title: string, url: string): Promise<void> {
-  const text = `Check out ${title} at What U Want Rentals`;
+/**
+ * Shares "Check out this vehicle I found! You can view the details and book it
+ * here: <link>" through the device share sheet, or copies that message when
+ * the browser has no share sheet. Never a bare link.
+ */
+export async function shareVehicle(id: string, title: string): Promise<void> {
+  const message = buildVehicleShareMessage(id, shareOrigin());
   if (typeof navigator.share === "function") {
     try {
-      await navigator.share({ title, text, url });
+      // The message already ends with the link: passing `url` as well makes
+      // most apps (WhatsApp, Messages) paste the link twice.
+      await navigator.share({ title, text: message });
       return;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
-      // any other failure: fall back to copying the link
+      // any other failure: fall back to copying the message
     }
   }
-  if (await copyToClipboard(url)) {
-    toast.success("Link copied");
+  if (await copyToClipboard(message)) {
+    toast.success("Share message copied", {
+      description: "Paste it into any chat to share this vehicle.",
+    });
   } else {
-    toast.error("Could not copy the link", { description: url });
+    toast.error("Could not copy the link", { description: message });
   }
 }

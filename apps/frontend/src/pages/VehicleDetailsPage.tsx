@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { gstSplitFromPricing } from "@/lib/gst";
 import { paymentOptionsFor } from "@/lib/paymentPlan";
 import { Share2 } from "lucide-react";
-import { buildVehicleShareUrl, shareVehicle } from "@/lib/share";
+import { shareVehicle } from "@/lib/share";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
@@ -416,7 +416,7 @@ export const VehicleDetailsPage = () => {
             </h1>
             <button
               type="button"
-              onClick={() => shareVehicle(vehicleName, buildVehicleShareUrl({ vehicleId: vehicle.publicId ?? vehicleId }))}
+              onClick={() => shareVehicle(vehicle.publicId || vehicleId || "", vehicleName)}
               aria-label="Share this vehicle"
               className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-white text-zinc-900 rounded-full uppercase border border-zinc-200 hover:bg-zinc-100 transition-colors"
             >

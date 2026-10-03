@@ -17,6 +17,7 @@ import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import VehicleGroupDetailsPage from "./pages/VehicleGroupDetailsPage";
+import AppVehicleLinkPage from "./pages/AppVehicleLinkPage";
 import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
 import { PersonalInformationPage } from "./pages/profile/PersonalInformationPage";
 import { ReviewConfirmPage } from "./pages/booking/ReviewConfirmPage";
@@ -84,6 +85,7 @@ import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
 import { AdminDiscountRulesPage } from "./pages/admin/AdminDiscountRulesPage";
 import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
+import { AdminDeliveryPage } from "./pages/admin/AdminDeliveryPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
 import { AdminUserTransferPage } from "./pages/admin/AdminUserTransferPage";
@@ -93,8 +95,11 @@ import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
+import { CustomersPage } from "./pages/manager/CustomersPage";
+import { CustomerDetailPage } from "./pages/manager/CustomerDetailPage";
 import { PeriodReportPage } from "./pages/manager/PeriodReportPage";
 import { ConfirmationsPage } from "./pages/manager/ConfirmationsPage";
+import { ManagerOffersPage } from "./pages/manager/ManagerOffersPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
 
 const ExternalRedirect = ({ to }: { to: string }) => {
@@ -121,6 +126,8 @@ function App() {
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/group/:groupKey" element={<VehicleGroupDetailsPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
+        {/* Shared vehicle links (#16): app / store / website hand-off */}
+        <Route path="/app/vehicle/:id" element={<AppVehicleLinkPage />} />
         <Route path="/terms" element={<ExternalRedirect to="/legal/terms.html" />} />
         <Route path="/privacy" element={<ExternalRedirect to="/legal/privacy.html" />} />
         <Route path="/faq" element={<ExternalRedirect to="/legal/faq.html" />} />
@@ -240,6 +247,7 @@ function App() {
           <Route path="/manager/fleet" element={<FleetStatusPage />} />
           <Route path="/manager/period" element={<PeriodReportPage />} />
           <Route path="/manager/confirmations" element={<ConfirmationsPage />} />
+          <Route path="/manager/offers" element={<ManagerOffersPage />} />
           <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"
@@ -297,6 +305,8 @@ function App() {
             path="/manager/ledger/:customerId"
             element={<CustomerCreditPage />}
           />
+          <Route path="/manager/customers" element={<CustomersPage />} />
+          <Route path="/manager/customers/:customerId" element={<CustomerDetailPage />} />
         </Route>
 
         {/* Admin Protected Routes */}
@@ -348,6 +358,7 @@ function App() {
               element={<AdminDiscountRulesPage />}
             />
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
+            <Route path="/admin/delivery" element={<AdminDeliveryPage />} />
             <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
             <Route path="/admin/staff-activity" element={<AdminStaffActivityPage />} />
             <Route path="/admin/user-transfer" element={<AdminUserTransferPage />} />

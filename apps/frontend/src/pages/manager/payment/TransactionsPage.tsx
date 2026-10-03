@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { paymentService, type BranchTransaction, type TransactionStatus } from "@/services/payment.service";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 
 const purposeLabels: Record<string, string> = {
   FULL_PAYMENT: "Full Payment",
@@ -153,7 +154,20 @@ export function TransactionsTab() {
                       <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm whitespace-nowrap">{txn.customerName}</td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600">{purposeLabels[txn.purpose] ?? txn.purpose}</td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600">{methodLabels[txn.method] ?? txn.method}</td>
-                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-400">{txn.onlineTransactionRef ?? <span className="text-neutral-200">—</span>}</td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-neutral-400">
+                        {/* Counter UPI is backed by a photo of the customer's payment screen (#3) */}
+                        {txn.proofPhoto || txn.proofPhotoUrl ? (
+                          <span className="inline-flex items-center gap-2">
+                            <ProofPhotoThumb
+                              photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
+                              caption={`${txn.bookingPublicId} · ${txn.customerName}`}
+                            />
+                            {txn.onlineTransactionRef ?? <span className="font-sans text-neutral-500">UPI photo</span>}
+                          </span>
+                        ) : (
+                          txn.onlineTransactionRef ?? <span className="text-neutral-200">—</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm whitespace-nowrap">
                         ₹ {parseFloat(txn.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>

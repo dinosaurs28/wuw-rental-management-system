@@ -61,7 +61,8 @@ function billedAsPreview(late: ReturnLateSummary): LateChargePreview {
 
 /**
  * Automatic late-return charge at drop: vehicle extra-hour rate × hours late after
- * the branch grace, taxable at the branch GST. Staff can tick "Apply grace" on
+ * the branch grace, charged at face value with no GST (item 8; a bill computed
+ * before that may still show its GST). Staff can tick "Apply grace" on
  * MANUAL-grace branches and waive the charge with a reason.
  */
 export function LateReturnPanel({
@@ -170,7 +171,7 @@ export function LateReturnPanel({
                 ? collection === "drop-bill"
                   ? "Will be waived when you compute the charges"
                   : "Will be waived when you complete the return"
-                : `Late charge of ${inr(billed?.waivedAmount ?? "0")} (before GST) waived`}
+                : `Late charge of ${inr(billed?.waivedAmount ?? "0")} waived`}
             </p>
             {waiverReason && <p className="text-xs text-gray-600 break-words">Reason: {waiverReason}</p>}
           </div>
@@ -205,17 +206,13 @@ export function LateReturnPanel({
               </>
             )}
           </p>
-          {preview.gstUnavailableReason === "GST_RULE_MISSING" && (
-            <p className="text-xs text-amber-700">
-              GST rates aren't set up for this branch — ask the branch manager to set the GST rule before billing.
-            </p>
-          )}
           <p className="text-xs text-gray-600">
+            {/* Late return carries no GST (item 8) */}
             {collection === "drop-bill"
               ? billed
-                ? "On the drop bill."
-                : "Added to the drop bill when you compute the charges — the return time is fixed at the first compute."
-              : "Recorded when you complete the return (measured to that moment) — the branch manager collects it at settlement."}
+                ? "On the drop bill (no GST)."
+                : "Added to the drop bill when you compute the charges (no GST) — the return time is fixed at the first compute."
+              : "Recorded when you complete the return (measured to that moment, no GST) — the branch manager collects it at settlement."}
           </p>
         </div>
       ) : status === "WITHIN_GRACE" ? (

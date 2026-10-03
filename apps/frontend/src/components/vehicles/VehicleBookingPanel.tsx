@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -17,14 +17,14 @@ import {
 } from "@/components/ui/popover";
 import { TimeSelect } from "@/components/ui/TimeSelect";
 import { cn } from "@/lib/utils";
-import { formatInrExact, gstLabel } from "@/lib/gst";
-import { round2 } from "@repo/schemas";
+import { formatInrExact, gstLabel, rentGstSplitText, rentInclGstView } from "@/lib/gst";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import type { VehicleGroupDetails } from "@/services/vehicle.service";
 import {
-  clampPaymentFlow,
   durationDiscountTitle,
   paymentOptionsFor,
+  payNowLine,
+  payNowSplit,
   roundMoney,
 } from "@/lib/paymentPlan";
 
@@ -55,7 +55,6 @@ export const VehicleBookingPanel = ({
     setEndDate,
     setStartTime,
     setEndTime,
-    paymentFlow,
     setPaymentFlow,
   } = useVehicleRentalStore();
 
@@ -64,6 +63,8 @@ export const VehicleBookingPanel = ({
   const pickupDate = getStartDate();
   const returnDate = getEndDate();
   const pd = group.pricingDetails;
+  // The rent incl. GST, its discounts and the GST inside it (item 17)
+  const rent = rentInclGstView(pd ?? {});
   const isAvailable = group.availability;
 
   // Paise are shown when present: GST is rounded to the paisa, not the rupee.
@@ -84,27 +85,15 @@ export const VehicleBookingPanel = ({
 
   const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
 
-  // Payment plan (#6) from the server's paymentOptions (branch mode + amounts):
-  // the default plan on a new group, then kept inside the allowed plans.
+  // Advance only (item 18): the server's one plan for these amounts — shown as
+  // "Pay ₹X now · ₹Y at pickup", never a choice. The store follows it so
+  // booking create sends the plan shown.
   const paymentOptions = paymentOptionsFor(group);
-  const optionsKey = `${paymentOptions.allowedFlows.join(",")}|${paymentOptions.defaultFlow}`;
-  const planGroupRef = useRef<string | null>(null);
+  const fixedFlow = paymentOptions.defaultFlow;
   useEffect(() => {
-    const isNewGroup = planGroupRef.current !== group.groupKey;
-    planGroupRef.current = group.groupKey;
-    const current = useVehicleRentalStore.getState().paymentFlow;
-    const next = isNewGroup ? paymentOptions.defaultFlow : clampPaymentFlow(current, paymentOptions);
-    if (next !== current) setPaymentFlow(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [group.groupKey, optionsKey]);
-  const shownFlow = clampPaymentFlow(paymentFlow, paymentOptions);
-  const canChoosePlan = paymentOptions.allowedFlows.length === 2;
-  const advanceOnly = !canChoosePlan && paymentOptions.allowedFlows[0] === "ADVANCE";
-  // Full amount: rental + GST + refundable deposit (server's figure)
-  const payableTotal =
-    paymentOptions.payableTotal ?? (pd ? roundMoney(pd.finalTotal + (group.deposit ?? 0)) : 0);
-  const dueAtPickup =
-    paymentOptions.remainingAfterAdvance ?? roundMoney(payableTotal - paymentOptions.advanceAmount);
+    if (useVehicleRentalStore.getState().paymentFlow !== fixedFlow) setPaymentFlow(fixedFlow);
+  }, [fixedFlow, setPaymentFlow]);
+  const paySplit = payNowSplit(paymentOptions);
 
   const sectionTitle =
     "text-base font-black text-zinc-900 tracking-tight mb-4";
@@ -205,112 +194,21 @@ export const VehicleBookingPanel = ({
           </section>
         )}
 
-        {/* Payment plan */}
-        {pd && (
+        {/* Payment — advance only (item 18): the one plan, no picker */}
+        {pd && paySplit.payNow != null && (
           <section>
-            <h3 className={sectionTitle}>Payment plan</h3>
-            {canChoosePlan ? (
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentFlow("FULL")}
-                  className={cn(
-                    "w-full flex items-center justify-between gap-4 rounded-2xl border-2 p-4 text-left transition-all",
-                    shownFlow === "FULL"
-                      ? "border-zinc-900"
-                      : "border-zinc-200 hover:border-zinc-300",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-5 items-center justify-center rounded-full border-2",
-                        shownFlow === "FULL"
-                          ? "border-zinc-900 bg-zinc-900"
-                          : "border-zinc-300",
-                      )}
-                    >
-                      {shownFlow === "FULL" && (
-                        <span className="size-2 rounded-full bg-white" />
-                      )}
-                    </span>
-                    <div>
-                      <p className="font-bold text-zinc-900">Pay in full</p>
-                      <p className="text-sm text-zinc-500 mt-0.5">
-                        No balance due at pickup.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 font-bold text-zinc-900">
-                    {fmt(payableTotal)}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentFlow("ADVANCE")}
-                  className={cn(
-                    "w-full flex items-center justify-between gap-4 rounded-2xl border-2 p-4 text-left transition-all",
-                    shownFlow === "ADVANCE"
-                      ? "border-zinc-900"
-                      : "border-zinc-200 hover:border-zinc-300",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-5 items-center justify-center rounded-full border-2",
-                        shownFlow === "ADVANCE"
-                          ? "border-zinc-900 bg-zinc-900"
-                          : "border-zinc-300",
-                      )}
-                    >
-                      {shownFlow === "ADVANCE" && (
-                        <span className="size-2 rounded-full bg-white" />
-                      )}
-                    </span>
-                    <div>
-                      <p className="flex items-center gap-2 font-bold text-zinc-900">
-                        <Wallet className="size-4 text-zinc-500" /> Pay advance
-                      </p>
-                      <p className="text-sm text-zinc-500 mt-0.5">
-                        {fmt(paymentOptions.advanceAmount)} now,{" "}
-                        {fmt(dueAtPickup)} at pickup.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#FF5F00] px-3 py-1 text-xs font-bold text-white">
-                    {fmt(paymentOptions.advanceAmount)}
-                  </span>
-                </button>
-              </div>
-            ) : advanceOnly ? (
-              <div className="rounded-2xl border-2 border-[#FF5F00] p-4 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-zinc-900 flex items-center gap-2">
-                    <Wallet className="size-4 text-[#FF5F00]" /> Advance payment
-                  </p>
-                  <span className="rounded-full bg-[#FF5F00] px-3 py-1 text-xs font-bold text-white">
-                    {fmt(paymentOptions.advanceAmount)} now
-                  </span>
-                </div>
-                <p className="text-sm text-zinc-500">
-                  {fmt(dueAtPickup)} remaining due at pickup.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-2xl border-2 border-zinc-900 p-4 flex items-center gap-3">
-                <Check className="size-5 text-zinc-900" />
-                <p className="font-bold text-zinc-900">
-                  Pay in full —{" "}
-                  <span className="font-medium text-zinc-500">
-                    no balance due at pickup.
-                  </span>
-                </p>
-              </div>
-            )}
-            {paymentOptions.reasonMessage && (
-              <p className="mt-2 text-xs text-zinc-500">{paymentOptions.reasonMessage}</p>
-            )}
+            <h3 className={sectionTitle}>Payment</h3>
+            <div className="rounded-2xl border-2 border-[#FF5F00] p-4 space-y-1">
+              <p className="font-bold text-zinc-900 flex items-center gap-2">
+                <Wallet className="size-4 shrink-0 text-[#FF5F00]" />
+                {payNowLine(paySplit, fmt)}
+              </p>
+              <p className="text-sm text-zinc-500">
+                {paySplit.flow === "ADVANCE"
+                  ? "The advance is paid online now; the balance is collected at pickup."
+                  : paySplit.fullReason}
+              </p>
+            </div>
           </section>
         )}
 
@@ -346,13 +244,14 @@ export const VehicleBookingPanel = ({
                       `${pd.pricingBreakdown.duration.minutes}m`}
                   </span>
                 </div>
+                {/* Rent is GST-inclusive (item 17): GST is inside the price */}
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Base price</span>
+                  <span className="text-zinc-500">Rent (incl. GST)</span>
                   <span className="font-medium text-zinc-900">
-                    {fmt(pd.basePrice)}
+                    {fmt(rent.rent)}
                   </span>
                 </div>
-                {pd.discountAmount > 0 && (
+                {rent.discount > 0 && (
                   <div className="flex justify-between">
                     <span className="flex items-center gap-1.5 text-emerald-600">
                       <Check className="size-4" />
@@ -363,45 +262,56 @@ export const VehicleBookingPanel = ({
                       )}
                     </span>
                     <span className="font-medium text-emerald-600">
-                      -{fmt(pd.discountAmount)}
+                      -{fmt(rent.discount)}
                     </span>
                   </div>
                 )}
-                {pd.discountAmount > 0 && (
+                {rent.discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Taxable value</span>
+                    <span className="text-zinc-500">Rent after discount</span>
                     <span className="font-medium text-zinc-900">
-                      {fmt(round2(pd.basePrice - pd.discountAmount))}
+                      {fmt(rent.rentAfterDiscount)}
                     </span>
                   </div>
                 )}
-                {pd.cgstAmount > 0 && (
+                {rent.gst > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Rent without GST</span>
+                    <span className="font-medium text-zinc-700">
+                      {fmt(rent.rentWithoutGst)}
+                    </span>
+                  </div>
+                )}
+                {rent.cgst > 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">
                       {gstLabel("CGST", pd.cgstRate)}
                     </span>
                     <span className="font-medium text-zinc-700">
-                      +{fmt(pd.cgstAmount)}
+                      {fmt(rent.cgst)}
                     </span>
                   </div>
                 )}
-                {pd.sgstAmount > 0 && (
+                {rent.sgst > 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">
                       {gstLabel("SGST", pd.sgstRate)}
                     </span>
                     <span className="font-medium text-zinc-700">
-                      +{fmt(pd.sgstAmount)}
+                      {fmt(rent.sgst)}
                     </span>
                   </div>
                 )}
-                {pd.cgstAmount === 0 && pd.sgstAmount === 0 && pd.taxAmount > 0 && (
+                {rent.cgst === 0 && rent.sgst === 0 && rent.gst > 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">GST ({pd.taxRate}%)</span>
                     <span className="font-medium text-zinc-700">
-                      +{fmt(pd.taxAmount)}
+                      {fmt(rent.gst)}
                     </span>
                   </div>
+                )}
+                {rent.gst > 0 && (
+                  <p className="text-xs text-zinc-400">{rentGstSplitText(rent)}</p>
                 )}
                 <div className="flex justify-between border-t border-zinc-200 pt-3">
                   <span className="text-zinc-500">Security deposit</span>
@@ -423,11 +333,12 @@ export const VehicleBookingPanel = ({
               {fmt(group.pricing.daily ?? 0)}
             </span>
             <span className="text-sm font-bold uppercase tracking-wider text-zinc-400">
-              /day
+              {/* The base for the picked period, not a per-day rate */}
+              {pd.pricingBreakdown.billedAs ? `/ ${pd.pricingBreakdown.billedAs}` : "/day"}
             </span>
             <span className="ml-auto text-sm text-zinc-500">
-              <span className="font-bold text-zinc-900">{fmt(pd.finalTotal)}</span>{" "}
-              total
+              <span className="font-bold text-zinc-900">{fmt(rent.rentAfterDiscount)}</span>{" "}
+              total incl. GST
             </span>
           </div>
         ) : (

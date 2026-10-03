@@ -13,8 +13,10 @@ interface ExtensionChargeBreakdownProps {
 }
 
 /**
- * Extension charge as the server priced it: charge before GST (after any
- * discount), GST with its CGST/SGST parts, then the GST-inclusive total.
+ * Extension charge as the server priced it. Rent is GST-inclusive (item 17):
+ * the total is the extension rent incl. GST, shown with the rent without GST
+ * and the GST (CGST/SGST) inside it — GST is not added on top. Any discount
+ * was taken before the split (stored in taxable terms).
  * Nothing is computed here — a response without the split shows only the total.
  */
 export function ExtensionChargeBreakdown({
@@ -36,31 +38,31 @@ export function ExtensionChargeBreakdown({
     <div className={cn("space-y-1.5 text-sm", className)}>
       {hasSplit && (
         <>
-          {hasDiscount && (
-            <>
-              <div className="flex justify-between text-neutral-600">
-                <span>Extension charge</span>
-                <span>{formatInrExact(base)}</span>
-              </div>
-              <div className="flex justify-between text-green-600">
-                <span>Discount</span>
-                <span>−{formatInrExact(discount)}</span>
-              </div>
-            </>
-          )}
           <div className="flex justify-between text-neutral-600">
-            <span>Extension charge (excl. GST)</span>
-            <span>{formatInrExact(taxable)}</span>
+            <span>Extension rent (incl. GST)</span>
+            <span>{formatInrExact(total)}</span>
           </div>
-          <div className="flex justify-between text-neutral-600">
-            <span>GST{rate !== null ? ` (${Number(rate.toFixed(2))}%)` : ""}</span>
-            <span>+{formatInrExact(tax)}</span>
+          <div className="space-y-0.5 rounded-md bg-neutral-50 px-2.5 py-2 text-xs text-neutral-500">
+            <div className="flex justify-between">
+              <span>Rent without GST</span>
+              <span>{formatInrExact(taxable)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>GST{rate !== null ? ` (${Number(rate.toFixed(2))}%)` : ""} included</span>
+              <span>{formatInrExact(tax)}</span>
+            </div>
+            {(gstNumber(split.cgstAmount) !== null || gstNumber(split.sgstAmount) !== null) && (
+              <p className="text-right text-neutral-400">
+                {gstSplitText(split.cgstAmount, split.sgstAmount)}
+              </p>
+            )}
+            {hasDiscount && (
+              <p className="text-green-600">
+                Discount of {formatInrExact(discount)} (before GST) already taken off
+                {base !== null ? ` the ${formatInrExact(base)} rent without GST` : ""}
+              </p>
+            )}
           </div>
-          {(gstNumber(split.cgstAmount) !== null || gstNumber(split.sgstAmount) !== null) && (
-            <p className="text-xs text-neutral-400 text-right">
-              {gstSplitText(split.cgstAmount, split.sgstAmount)}
-            </p>
-          )}
         </>
       )}
       <div

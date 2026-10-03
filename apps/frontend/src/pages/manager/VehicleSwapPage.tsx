@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { vehicleSwapService } from "@/services/vehicleSwap.service";
-import { AvailableVehiclesList } from "@/components/manager/vehicle-swap/AvailableVehiclesList";
+import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 import { SwapHistoryTable } from "@/components/manager/vehicle-swap/SwapHistoryTable";
 import type { SwapDetailsData } from "@/components/manager/vehicle-swap/SwapDetailsForm";
@@ -311,11 +311,11 @@ export const VehicleSwapPage = () => {
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Same category first; higher categories are marked Upgrade. Price
-                differences cover the rest of the rental, before GST.
+                differences cover the rest of the rental (rents incl. GST; no GST is added on top).
               </p>
             </CardHeader>
             <CardContent>
-              <AvailableVehiclesList
+              <SwapVehiclePickerField
                 vehicles={availableVehicles}
                 onSelectVehicle={handleSelectVehicle}
                 selectedVehicleId={selectedVehicle?.id}

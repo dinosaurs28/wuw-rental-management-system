@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import { ArrowLeft, Car, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -20,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { bookingService } from "@/services/booking.service";
+import { bookingService, bookingTotalsInclGst } from "@/services/booking.service";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
@@ -29,16 +27,21 @@ import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { usePaymentStore } from "@/store/payment.store";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { qrPhotoKeys } from "@/hooks/useQrPhoto";
+import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
 import {
-  apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
-  isValidUtr,
-} from "@/lib/counterErrors";
+  apiCode,
+  counterPaymentErrorField,
+  counterPaymentProblem,
+  formatRupees,
+  walkInPaymentFields,
+  type CounterPaymentMethod,
+  type CounterPaymentValue,
+} from "@/lib/counterPayment";
+import { CounterPaymentFields } from "@/components/payment/counter/CounterPaymentFields";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import { CUSTOMER_PROFILE_INCOMPLETE } from "@/lib/customerProfile";
 import { dlInUseToastOptions } from "@/lib/dlInUse";
 import { gstLabel } from "@/lib/gst";
-import { round2 } from "@repo/schemas";
 import { durationDiscountTitle } from "@/lib/paymentPlan";
 import { customerSession } from "@/utils/customerSession";
 
@@ -63,18 +66,23 @@ export const EmployeeBookingSummaryPage = () => {
   // Set when create returned SHIFT_REQUIRED — no hold exists yet, so the same
   // payload is retried as soon as the staff member's shift is open.
   const [shiftBlocked, setShiftBlocked] = useState(false);
-  // Set when the server rejected the UPI UTR (at create, or at confirmation
-  // after the hold was released) — staff enter a new UTR and create again.
-  const [utrRetry, setUtrRetry] = useState<{
+  // Set when the server refused the counter payment — the UPI photo (or an old
+  // UTR), the split amounts or the collateral — at create, or at confirmation
+  // after the hold was released. Staff fix it here and create again.
+  const [paymentRetry, setPaymentRetry] = useState<{
     message: string;
-    rejectedUtr: string;
+    field: "proof" | "collateral" | "split" | null;
+    /** The server's total (SPLIT_AMOUNT_MISMATCH), when it sent one. */
+    total: number | null;
+    /** Staff changed something since — the server message no longer applies. */
+    edited: boolean;
   } | null>(null);
-  const [retryUtr, setRetryUtr] = useState("");
+  const [retryPayment, setRetryPayment] = useState<CounterPaymentValue | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const { activeShift } = useActiveShift();
-  const { setUtr } = useEmployeeBookingStore();
+  const { upiProof } = useEmployeeBookingStore();
   const { openCheckout, isOpening } = useRazorpayCheckout();
-  // Held in state so a UTR retry can re-create with the corrected payload.
+  // Held in state so a payment retry can re-create with the corrected payload.
   const [bookingPayload, setBookingPayload] = useState(
     location.state?.bookingPayload,
   );
@@ -93,12 +101,24 @@ export const EmployeeBookingSummaryPage = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [bookingData]);
 
-  const showUtrRetry = useCallback((error: unknown, rejectedUtr: string) => {
-    setUtrRetry({
-      message: apiErrorMessage(error, "Check the UTR number and try again."),
-      rejectedUtr,
+  const showPaymentRetry = useCallback((error: unknown, payload: { payment_type?: string } | undefined) => {
+    const field = counterPaymentErrorField(error);
+    const total = Number((error as { response?: { data?: { total?: unknown } } })?.response?.data?.total);
+    const store = useEmployeeBookingStore.getState();
+    const method = (["CASH", "UPI", "SPLIT", "CREDIT"] as const).find((m) => m === payload?.payment_type) ?? "UPI";
+    setPaymentRetry({
+      message: apiErrorMessage(error, "Check the payment details and try again."),
+      field,
+      total: Number.isFinite(total) && total > 0 ? total : null,
+      edited: false,
     });
-    setRetryUtr(rejectedUtr);
+    setRetryPayment({
+      method: method as CounterPaymentMethod,
+      // A refused photo has to be taken again
+      proof: field === "proof" ? null : store.upiProof,
+      splitCash: store.splitCash,
+      collateral: store.collateral,
+    });
   }, []);
 
   const createBooking = useCallback(async (payload = bookingPayload) => {
@@ -122,10 +142,10 @@ export const EmployeeBookingSummaryPage = () => {
         return;
       }
 
-      const code = counterErrorCode(error);
-      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
-        // No hold was created — stay here so staff can fix the UTR.
-        showUtrRetry(error, payload?.utr ?? "");
+      // Payment photo / split / collateral refused — no hold was created, so
+      // staff fix it here and create again.
+      if (counterPaymentErrorField(error)) {
+        showPaymentRetry(error, payload);
         return;
       }
 
@@ -192,7 +212,7 @@ export const EmployeeBookingSummaryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [bookingPayload, navigate, showUtrRetry, queryClient]);
+  }, [bookingPayload, navigate, showPaymentRetry, queryClient]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -219,12 +239,21 @@ export const EmployeeBookingSummaryPage = () => {
     void createBooking();
   }, [shiftBlocked, activeShift, createBooking]);
 
-  const handleRetryWithUtr = () => {
-    const utr = cleanUtr(retryUtr);
-    const payload = { ...bookingPayload, utr };
-    setUtr(utr); // keep the pricing card in sync if staff go back
+  const handleRetryPayment = () => {
+    if (!retryPayment) return;
+    // Drop the refused payment fields (and an old UTR) and send the corrected ones
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { utr, proof_file_id, cash_amount, upi_amount, collateral, payment_type, ...rest } = bookingPayload ?? {};
+    const payload = { ...rest, ...walkInPaymentFields(retryPayment) };
+    // Keep the pricing card in sync if staff go back
+    const store = useEmployeeBookingStore.getState();
+    store.setPaymentType(retryPayment.method);
+    store.setUpiProof(retryPayment.proof);
+    store.setSplitCash(retryPayment.splitCash);
+    store.setCollateral(retryPayment.collateral);
     setBookingPayload(payload);
-    setUtrRetry(null);
+    setPaymentRetry(null);
+    setRetryPayment(null);
     void createBooking(payload);
   };
 
@@ -265,45 +294,36 @@ export const EmployeeBookingSummaryPage = () => {
     );
   }
 
-  if (utrRetry) {
-    const unchanged = cleanUtr(retryUtr) === utrRetry.rejectedUtr;
-    const retryError = unchanged
-      ? utrRetry.message
-      : retryUtr && !isValidUtr(retryUtr)
-        ? "Enter the 12-digit UTR number."
-        : null;
+  if (paymentRetry && retryPayment) {
+    const retryProblem = counterPaymentProblem(retryPayment, paymentRetry.total);
+    const fieldErrors =
+      paymentRetry.field && !paymentRetry.edited ? { [paymentRetry.field]: paymentRetry.message } : {};
     return (
       <div className="min-h-screen bg-zinc-50 pb-20">
         <DashboardNavbar />
         <main className="max-w-7xl mx-auto px-4 md:px-6 py-6">
           <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4 max-w-md">
             <div>
-              <h3 className="font-semibold">UPI (UTR) payment</h3>
+              <h3 className="font-semibold">Fix the payment</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Enter the UTR from the customer's UPI app to create the booking again.
+                {paymentRetry.field
+                  ? "The payment wasn't accepted. Correct it below to create the booking again."
+                  : paymentRetry.message}
               </p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="retry-utr">
-                UTR number <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="retry-utr"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={20}
-                placeholder="12-digit UTR"
-                value={retryUtr}
-                onChange={(e) => setRetryUtr(e.target.value)}
-                aria-invalid={!!retryError}
-                className="h-11 font-mono tracking-wide"
-              />
-              {retryError && <p className="text-xs text-red-600">{retryError}</p>}
-            </div>
+            <CounterPaymentFields
+              idPrefix="walkin-retry"
+              value={retryPayment}
+              onChange={setRetryPayment}
+              amount={paymentRetry.total}
+              proofRole="staff"
+              errors={fieldErrors}
+              onEdit={() => setPaymentRetry((prev) => (prev ? { ...prev, edited: true } : prev))}
+            />
             <Button
               className="w-full h-11 font-semibold"
-              disabled={unchanged || !isValidUtr(retryUtr)}
-              onClick={handleRetryWithUtr}
+              disabled={!!retryProblem || (!!paymentRetry.field && !paymentRetry.edited)}
+              onClick={handleRetryPayment}
             >
               Create Booking Again
             </Button>
@@ -360,10 +380,16 @@ export const EmployeeBookingSummaryPage = () => {
 
   const items = bookingData?.data?.items || [];
   const vehicle = items.length > 0 ? items[0] : null;
-  // UPI (UTR) completes like cash: no gateway, the server confirms it directly.
-  const isUpiPayment =
-    bookingPayload?.payment_type === "UPI" ||
-    (typeof transactionId === "string" && transactionId.startsWith("UPI_"));
+  // The rent incl. GST, its discounts and the GST inside it (item 17)
+  const rentIncl = totals ? bookingTotalsInclGst(totals) : null;
+  // Counter UPI / split / credit settle without a gateway: the server confirms
+  // them directly (#3 / #11). Cash goes to the status page as before.
+  const counterType =
+    (["UPI", "SPLIT", "CREDIT"] as const).find(
+      (t) =>
+        bookingPayload?.payment_type === t ||
+        (typeof transactionId === "string" && transactionId.startsWith(`${t}_`)),
+    ) ?? null;
 
   if (!vehicle) {
     return <div className="p-4">No vehicle data found.</div>;
@@ -388,10 +414,11 @@ export const EmployeeBookingSummaryPage = () => {
     });
   };
 
-  // UPI is confirmed here rather than on the status page because the server
-  // re-checks the UTR: if another payment claimed it meanwhile, the hold is
-  // released (409 DUPLICATE_UTR) and staff enter a new UTR instead.
-  const handleConfirmUpi = async () => {
+  // UPI / split / credit are confirmed here rather than on the status page because
+  // the server re-checks the payment photo: if another payment claimed it meanwhile,
+  // the hold is released (409 DUPLICATE_PAYMENT_PROOF; DUPLICATE_UTR for an old
+  // UTR-backed hold) and staff take a new photo instead.
+  const handleConfirmCounter = async () => {
     setIsConfirming(true);
     try {
       const response = await bookingService.verifyEmployeePayment(transactionId);
@@ -404,10 +431,11 @@ export const EmployeeBookingSummaryPage = () => {
         goToStatus("failed", response.message || "Payment failed. Please try again.");
       }
     } catch (error) {
-      if (counterErrorCode(error) === "DUPLICATE_UTR") {
+      const code = apiCode(error);
+      if (code === "DUPLICATE_UTR" || code === "DUPLICATE_PAYMENT_PROOF") {
         setBookingData(null);
         setHoldExpiresAt(null);
-        showUtrRetry(error, bookingPayload?.utr ?? "");
+        showPaymentRetry(error, bookingPayload);
       } else if ((error as { response?: unknown })?.response) {
         goToStatus("failed", apiErrorMessage(error, "Payment verification failed"));
       } else {
@@ -527,10 +555,7 @@ export const EmployeeBookingSummaryPage = () => {
               <span>{format(endDate, "MMM dd, yyyy h:mm a")} (IST)</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-              <span>{formatRentalLength(startDate, endDate)}</span>
-              {vehicle.pricingBreakdown?.billedAs && (
-                <span>· billed as {vehicle.pricingBreakdown.billedAs}</span>
-              )}
+              <span>{vehicle.pricingBreakdown?.billedAs || formatRentalLength(startDate, endDate)}</span>
               {(bookingData?.data?.rentalPeriodType === "MONTHLY" ||
                 bookingData?.data?.plan === "MONTHLY") && (
                 <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wide">
@@ -545,33 +570,36 @@ export const EmployeeBookingSummaryPage = () => {
         <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
           <h3 className="font-semibold">Price Details</h3>
           <div className="space-y-2 text-sm">
+            {/* Rent is GST-inclusive (item 17): discounts come off it, GST is inside it */}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Base Price</span>
-              <span>{formatPrice(totals?.grandBaseTotal)}</span>
+              <span className="text-muted-foreground">Rent (incl. GST)</span>
+              <span>{formatPrice(rentIncl?.rent ?? 0)}</span>
             </div>
-            {totals?.grandDiscountTotal > 0 && (
+            {rentIncl && rentIncl.discount > 0 && (
               <div className="flex justify-between text-green-600">
                 {/* Walk-ins take no coupon: the discount is the duration slab */}
                 <span>{totals.durationDiscountLabel ? durationDiscountTitle(totals.durationDiscountLabel) : "Discount"}</span>
-                <span>-{formatPrice(totals.grandDiscountTotal)}</span>
+                <span>-{formatPrice(rentIncl.discount)}</span>
               </div>
             )}
 
-            {totals?.grandDiscountTotal > 0 && (
+            {rentIncl && rentIncl.discount > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Taxable value</span>
-                <span>
-                  {formatPrice(round2(totals.grandBaseTotal - totals.grandDiscountTotal))}
-                </span>
+                <span className="text-muted-foreground">Rent after discount</span>
+                <span>{formatPrice(rentIncl.rentAfterDiscount)}</span>
               </div>
             )}
 
-            {/* Tax Breakdown — rates exactly as the server sent them, no fallback */}
+            {/* GST inside the rent — rates exactly as the server sent them, no fallback */}
             {totals?.grandTaxTotal > 0 && (
               <>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Rent without GST</span>
+                  <span>{formatPrice(rentIncl?.rentWithoutGst ?? 0)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    {gstLabel("GST", totals.taxRate)}
+                    {gstLabel("GST", totals.taxRate)} (included)
                   </span>
                   <span>{formatPrice(totals.grandTaxTotal)}</span>
                 </div>
@@ -617,21 +645,41 @@ export const EmployeeBookingSummaryPage = () => {
           ) : (
             <div className="space-y-3">
               <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
-                {isUpiPayment
-                  ? "UPI (UTR) Payment — Confirm Collection"
-                  : "Cash Payment — Confirm Collection"}
-                {isUpiPayment && bookingPayload?.utr && (
+                {counterType === "UPI"
+                  ? "UPI Payment — Confirm Collection"
+                  : counterType === "SPLIT"
+                    ? "Split Payment (Cash + UPI) — Confirm Collection"
+                    : counterType === "CREDIT"
+                      ? "On Credit — Confirm Booking"
+                      : "Cash Payment — Confirm Collection"}
+                {counterType === "SPLIT" && typeof bookingPayload?.cash_amount === "number" && (
                   <p className="text-xs font-normal text-green-700 mt-1">
-                    UTR <span className="font-mono">{bookingPayload.utr}</span>
+                    Cash {formatRupees(bookingPayload.cash_amount)} · UPI the rest
+                    {typeof totals?.grandFinalTotal === "number"
+                      ? ` (${formatRupees(Math.max(0, totals.grandFinalTotal - bookingPayload.cash_amount))})`
+                      : ""}
                   </p>
                 )}
+                {counterType === "CREDIT" && bookingPayload?.collateral && (
+                  <p className="text-xs font-normal text-amber-700 mt-1">
+                    Nothing is collected now — the total stays owed. Collateral held: {bookingPayload.collateral}
+                  </p>
+                )}
+                {(counterType === "UPI" || counterType === "SPLIT") &&
+                  upiProof &&
+                  upiProof.proofFileId === bookingPayload?.proof_file_id && (
+                    <div className="mt-2 flex items-center justify-center gap-2 text-xs font-normal text-green-700">
+                      <ProofPhotoThumb photo={upiProof} caption="Customer's UPI payment screen" size="md" />
+                      Payment photo attached
+                    </div>
+                  )}
               </div>
               <Button
                 className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"
                 disabled={isConfirming}
                 onClick={() =>
-                  isUpiPayment
-                    ? void handleConfirmUpi()
+                  counterType
+                    ? void handleConfirmCounter()
                     : navigate(
                         `/employee/booking/status/${bookingData.data.transactionId}`,
                       )

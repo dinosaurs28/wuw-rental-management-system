@@ -32,8 +32,9 @@ export interface AvailableVehicle {
   /** Higher category than the current car */
   isUpgrade?: boolean;
   /**
-   * Pro-rated PRE-GST difference for the rest of the rental (2 dp string,
-   * never negative). null = the cars couldn't be priced (see pricingError).
+   * Pro-rated difference of the GST-inclusive rents for the rest of the rental
+   * (item 17; 2 dp string, never negative), charged with no GST added (item 8).
+   * null = the cars couldn't be priced (see pricingError).
    */
   priceDifference?: string | null;
 }
@@ -137,7 +138,7 @@ export interface VehicleSwap {
   originalVehicleFuelLevel?: string | null;
   newVehicleStartOdometer?: number | null;
   newVehicleFuelLevel?: string | null;
-  /** Decimal string, PRE-GST (e.g. "1500" or "299.91") */
+  /** Decimal string (e.g. "1500" or "299.91"): difference of the GST-inclusive rents, billed with no GST added */
   priceDifference?: string | null;
   /** false with a priceDifference > 0 = waived */
   chargeDifference?: boolean;

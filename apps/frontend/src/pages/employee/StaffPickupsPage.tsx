@@ -21,6 +21,8 @@ import {
   RefreshCw,
   Tag,
   ShieldAlert,
+  CalendarClock,
+  Timer,
 } from "lucide-react";
 
 import { cn, compressImage } from "@/lib/utils";
@@ -60,7 +62,10 @@ import { StepCard } from "@/components/employee/StepCard";
 //   type ExtendBookingModalSuccessResult,
 // } from "@/components/employee/extension/ExtendBookingModal";
 // import { ExtensionHistoryPanel } from "@/components/employee/extension/ExtensionHistoryPanel";
-import { AvailableVehiclesList } from "@/components/manager/vehicle-swap/AvailableVehiclesList";
+// Before the handover (CONFIRMED, no pickup session yet): move the booking or extend it (P4b / P4c)
+import { ExtendBookingModal as UpcomingExtendModal } from "@/components/employee/extension/ExtendBookingModal";
+import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
+import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 
 import apiClient from "@/lib/axios";
@@ -85,9 +90,9 @@ import {
   type UploadedImage,
 } from "@/components/employee/PickupImageCard";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
-import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
+import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
 import { isDlInUse, dlInUseToastOptions } from "@/lib/dlInUse";
 
 interface CaptureField {
@@ -272,7 +277,7 @@ function RentalTermsBox({
 
 // --- ORIGINAL LICENCE (#3) ---
 // Server codes for a bad DL choice; shown under the selector rather than only as a toast.
-const DL_ERROR_CODES = ["INVALID_DL_STATUS", "DL_DEPOSIT_NOTE_REQUIRED", "DL_DEPOSIT_NOTE_TOO_LONG"];
+const DL_ERROR_CODES = ["INVALID_DL_STATUS", "DL_STATUS_INVALID"];
 
 // ============================================================================
 // MAIN COMPONENT
@@ -295,6 +300,10 @@ export default function StaffPickupsPage() {
   // const [showExtendModal, setShowExtendModal] = useState(false);
   // const [pendingExtensionPublicId, setPendingExtensionPublicId] = useState<string | null>(null);
 
+  // --- Before the handover: reschedule (P4c) / extend a confirmed booking (P4b) ---
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [showUpcomingExtend, setShowUpcomingExtend] = useState(false);
+
   // --- STEP 2: Payment ---
   // Session-based pickup: set when InitiatePickupSession succeeds or restored on mount
   const [pickupSession, setPickupSession] = useState<PaymentSession | null>(null);
@@ -310,6 +319,8 @@ export default function StaffPickupsPage() {
 
   // --- STEP 3: DL number (required, X2) + KYC documents (optional) ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+  const [kycViewerIndex, setKycViewerIndex] = useState<number | null>(null);
+  const [brokenKycImages, setBrokenKycImages] = useState<Set<string>>(new Set());
   const [dlNumberInput, setDlNumberInput] = useState("");
   const [dlNumberEditing, setDlNumberEditing] = useState(false);
   /** Last DL_NUMBER_REQUIRED / INVALID_DL_NUMBER refusal, shown at the input. */
@@ -330,7 +341,6 @@ export default function StaffPickupsPage() {
 
   // --- ORIGINAL LICENCE (#3): optional choice (X1), nothing pre-selected ---
   const [dlStatus, setDlStatus] = useState<DlStatus>(null);
-  const [dlDepositNote, setDlDepositNote] = useState("");
   const [dlError, setDlError] = useState<string | null>(null);
 
   // --- CONFIRM DIALOG ---
@@ -462,7 +472,6 @@ export default function StaffPickupsPage() {
       pickupImageIds?: string[];
       requireManagerConfirmation?: boolean;
       dlStatus?: NonNullable<DlStatus>;
-      dlDepositNote?: string | null;
       drivingLicenceNumber?: string;
     }) => bookingService.approvePickup(bookingId!, data),
     onSuccess: (response: any) => {
@@ -634,6 +643,18 @@ export default function StaffPickupsPage() {
   // --- DERIVED STATE ---
   // KYC documents are optional (X2): shown for review, never a handover gate
   const kycDocs = kycData?.kyc || [];
+  const kycDocLabel = (doc: any) => {
+    const side = doc.side === "FRONT" ? "Front" : doc.side === "BACK" ? "Back" : null;
+    const type = getDocumentTypeName(doc.type);
+    return side ? `${type} - ${side}` : type;
+  };
+  // Image documents only, in list order, for the zoom viewer
+  const kycImageDocs = kycDocs.filter((d: any) => isImageFile(d.file.mime));
+  const kycLightboxItems = kycImageDocs.map((d: any) => ({
+    url: d.file.url as string,
+    label: kycDocLabel(d),
+    mime: d.file.mime as string,
+  }));
   const isPickedUp = booking?.status === "PICKED_UP";
   // The DL NUMBER is the gate (X2): on file, or typed here and sent with the pickup
   const dlOnFile = booking?.customer?.drivingLicenceNumber ?? null;
@@ -648,6 +669,12 @@ export default function StaffPickupsPage() {
   // regardless of whether this is an advance-payment booking. Extension-only and
   // deposit-only pickups also use the session flow.
   const useSessionFlow = booking?.usePaymentSessions === true;
+  // Legacy branches: an advance booking's balance is settled at the counter before handover
+  const legacyRemainingDue =
+    !useSessionFlow &&
+    booking?.isAdvancePayment === true &&
+    !booking.remainingPaidAt &&
+    (parseFloat(booking.remainingBalance ?? "0") || 0) > 0;
 
   // Restore active session on page reload (must be after useSessionFlow is declared)
   useEffect(() => {
@@ -671,8 +698,8 @@ export default function StaffPickupsPage() {
     dlNumberReady &&
     (watch("odo") ?? 0) > 0 &&
     watch("fuelLevel") !== "";
-  // The DL status may be left unset (X1); a chosen DEPOSIT still needs its note.
-  const dlChoiceReady = pickupDlChoiceError(dlStatus, dlDepositNote) === null;
+  // The DL status may be left unset (X1); only Collected / Not collected can be chosen.
+  const dlChoiceReady = pickupDlChoiceError(dlStatus) === null;
 
   // --- HANDLERS ---
   const handleFileSelect = async (file: File) => {
@@ -691,21 +718,15 @@ export default function StaffPickupsPage() {
     setDlError(null);
   };
 
-  const handleDlNoteChange = (note: string) => {
-    setDlDepositNote(note);
-    setDlError(null);
-  };
-
   /** Leave the DL status unrecorded (X1) — it can be set later from the booking. */
   const handleDlStatusClear = () => {
     setDlStatus(null);
-    setDlDepositNote("");
     setDlError(null);
   };
 
-  /** Blocks the handover only for a DEPOSIT without its note — the status itself is optional (X1). */
+  /** Guards the chosen DL status — the status itself is optional (X1). */
   const checkDlChoice = (): boolean => {
-    const problem = pickupDlChoiceError(dlStatus, dlDepositNote);
+    const problem = pickupDlChoiceError(dlStatus);
     setDlError(problem);
     return problem === null;
   };
@@ -803,9 +824,9 @@ export default function StaffPickupsPage() {
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
-      // dlStatus (+ dlDepositNote for DEPOSIT) only when chosen (optional, X1);
+      // dlStatus only when chosen (optional, X1);
       // the deprecated licenseCollected is no longer sent.
-      ...(dlStatus ? dlChoicePayload(dlStatus, dlDepositNote) : {}),
+      ...(dlStatus ? dlChoicePayload(dlStatus) : {}),
       // DL number typed at the counter (X2) — omitted to keep the stored one
       ...(dlNumber.toSend ? { drivingLicenceNumber: dlNumber.toSend } : {}),
     };
@@ -856,7 +877,6 @@ export default function StaffPickupsPage() {
         // extensionPublicId: pendingExtensionPublicId ?? undefined, // extension disabled
         discountCode: pendingDiscountCode ?? undefined,
         dlStatus: payload.dlStatus,
-        dlDepositNote: payload.dlDepositNote,
         drivingLicenceNumber: payload.drivingLicenceNumber,
       });
     } else {
@@ -999,6 +1019,34 @@ export default function StaffPickupsPage() {
                 </p>
               </div>
             </div>
+            {/* The customer asked for another time or more hours: move / extend before the handover */}
+            {booking.status === "CONFIRMED" && !pickupSession && (
+              <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setShowReschedule(true)}
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  Reschedule
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setShowUpcomingExtend(true)}
+                >
+                  <Timer className="h-4 w-4" />
+                  Extend
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Move the pickup (same length and price) or add hours before the handover.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1102,7 +1150,7 @@ export default function StaffPickupsPage() {
                       </Button>
                     </div>
                     <div className="p-3">
-                      <AvailableVehiclesList
+                      <SwapVehiclePickerField
                         vehicles={availableVehicles}
                         onSelectVehicle={(v) => {
                           setSelectedVehicle(v);
@@ -1230,8 +1278,12 @@ export default function StaffPickupsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {kycDocs.map((doc) => {
                   const isImage = isImageFile(doc.file.mime);
-                  const fileName =
-                    doc.file.url.split("/").pop()?.split("?")[0] || "Document";
+                  const imageIdx = kycImageDocs.findIndex(
+                    (d: any) => d.publicId === doc.publicId,
+                  );
+                  const imageBroken = brokenKycImages.has(doc.publicId);
+                  const sideLabel =
+                    doc.side === "FRONT" ? "Front" : doc.side === "BACK" ? "Back" : null;
 
                   return (
                     <div
@@ -1239,13 +1291,28 @@ export default function StaffPickupsPage() {
                       className="group relative flex flex-col bg-card border border-border rounded-lg overflow-hidden hover:shadow-md transition-all"
                     >
                       <div className="relative aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                        {isImage ? (
-                          <img
-                            src={doc.file.url}
-                            alt={doc.type}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                        {isImage && imageBroken ? (
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <ImageIcon className="w-10 h-10 opacity-50" />
+                            <span className="text-xs font-medium">Preview unavailable</span>
+                          </div>
+                        ) : isImage ? (
+                          <button
+                            type="button"
+                            className="w-full h-full"
+                            aria-label={`View ${kycDocLabel(doc)}`}
+                            onClick={() => setKycViewerIndex(imageIdx)}
+                          >
+                            <img
+                              src={doc.file.url}
+                              alt={kycDocLabel(doc)}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={() =>
+                                setBrokenKycImages((prev) => new Set(prev).add(doc.publicId))
+                              }
+                            />
+                          </button>
                         ) : (
                           <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <FileText className="w-12 h-12 opacity-50" />
@@ -1266,17 +1333,19 @@ export default function StaffPickupsPage() {
                         >
                           {doc.status}
                         </span>
-                        <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="h-9 bg-white/90 hover:bg-white text-xs"
-                            onClick={() => setSelectedDoc(doc)}
-                          >
-                            <Eye className="h-3.5 w-3.5 mr-1.5" /> View
-                          </Button>
-                        </div>
+                        {!(isImage && !imageBroken) && (
+                          <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="h-9 bg-white/90 hover:bg-white text-xs"
+                              onClick={() => setSelectedDoc(doc)}
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1.5" /> View
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-3 bg-white flex flex-col gap-3">
@@ -1284,14 +1353,11 @@ export default function StaffPickupsPage() {
                           <p className="font-medium text-sm truncate">
                             {getDocumentTypeName(doc.type)}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                            {isImage ? (
-                              <ImageIcon className="w-3 h-3" />
-                            ) : (
-                              <FileText className="w-3 h-3" />
-                            )}
-                            {fileName}
-                          </p>
+                          {sideLabel && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {sideLabel}
+                            </p>
+                          )}
                         </div>
                         {!isPickedUp && doc.status !== "APPROVED" && (
                           <div className="flex items-center gap-2">
@@ -1334,13 +1400,6 @@ export default function StaffPickupsPage() {
               </div>
             )}
 
-            {/* Customer QR code photo (#4) — informational, not part of the approval gate */}
-            {bookingId && (
-              <CustomerQrPhotoCard
-                className="mt-4"
-                target={{ kind: "booking", role: "staff", bookingId }}
-              />
-            )}
           </CardContent>
         </StepCard>
 
@@ -1853,9 +1912,7 @@ export default function StaffPickupsPage() {
                       <DlStatusSelector
                         id="dl-status-session"
                         value={dlStatus}
-                        note={dlDepositNote}
                         onValueChange={handleDlStatusChange}
-                        onNoteChange={handleDlNoteChange}
                         error={dlError}
                         disabled={initiatePickupSessionMutation.isPending}
                         optional
@@ -1885,11 +1942,7 @@ export default function StaffPickupsPage() {
                           ? "Complete all steps above to proceed"
                           : "Enter the customer's driving licence number (step 3) to proceed"}
                       </p>
-                    ) : !dlChoiceReady && (
-                      <p className="text-xs text-center text-muted-foreground">
-                        Note what the customer left as the DL deposit to proceed
-                      </p>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -1899,10 +1952,9 @@ export default function StaffPickupsPage() {
                       publicId={booking.publicId}
                       bookingStatus={booking.status}
                       dlStatus={dlStatus ?? booking.dlStatus}
-                      dlDepositNote={dlStatus ? dlDepositNote : booking.dlDepositNote}
+                      dlDepositNote={dlStatus ? null : booking.dlDepositNote}
                       onUpdated={(result) => {
                         setDlStatus(result.dlStatus);
-                        setDlDepositNote(result.dlDepositNote ?? "");
                       }}
                     />
                     <LedgerSummaryCard
@@ -1914,11 +1966,18 @@ export default function StaffPickupsPage() {
                       onSuccess={(updatedSession) => {
                         setPickupSession(updatedSession);
                         if (updatedSession.status === "COMPLETED") {
-                          toast.success("Payment collected! Booking marked as Picked Up.");
+                          toast.success(
+                            updatedSession.credit
+                              ? `₹${updatedSession.credit.amount} put on credit (collateral: ${updatedSession.credit.collateral}). Booking marked as Picked Up.`
+                              : "Payment collected! Booking marked as Picked Up.",
+                          );
                           queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
                           navigate("/employee/dashboard");
                         }
                       }}
+                      // Credit can't cover a safety deposit — offer to take it off the bill (#11)
+                      onRemoveDeposit={() => removeDepositMutation.mutate()}
+                      removingDeposit={removeDepositMutation.isPending}
                     />
                   </>
                 )}
@@ -1929,14 +1988,21 @@ export default function StaffPickupsPage() {
 
         {!isPickedUp && !useSessionFlow && (
           <div className="pt-2 space-y-4">
+            {/* Advance booking: the balance is settled at the counter before handover (#11) */}
+            {legacyRemainingDue && (
+              <LegacyRemainingPaymentCard
+                bookingPublicId={booking.publicId}
+                context="pickup"
+                remainingBalance={booking.remainingBalance!}
+                onSettled={() => queryClient.invalidateQueries({ queryKey: ["booking", bookingId] })}
+              />
+            )}
             {isHandoverReady && (
               <div className="rounded-lg border border-gray-200 bg-white p-3">
                 <DlStatusSelector
                   id="dl-status-legacy"
                   value={dlStatus}
-                  note={dlDepositNote}
                   onValueChange={handleDlStatusChange}
-                  onNoteChange={handleDlNoteChange}
                   error={dlError}
                   disabled={handoverMutation.isPending}
                   optional
@@ -1947,7 +2013,7 @@ export default function StaffPickupsPage() {
             <Button
               type="button"
               className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-14 text-base font-semibold rounded-xl shadow-md"
-              disabled={!isHandoverReady || !dlChoiceReady || handoverMutation.isPending}
+              disabled={!isHandoverReady || !dlChoiceReady || legacyRemainingDue || handoverMutation.isPending}
               onClick={handleSubmit(onConfirmHandoverLegacy)}
             >
               {handoverMutation.isPending ? (
@@ -1965,11 +2031,11 @@ export default function StaffPickupsPage() {
                   ? "Complete all steps above to enable handover"
                   : "Enter the customer's driving licence number (step 3) to enable handover"}
               </p>
-            ) : !dlChoiceReady && (
+            ) : legacyRemainingDue ? (
               <p className="text-xs text-center text-muted-foreground">
-                Note what the customer left as the DL deposit to enable handover
+                Settle the remaining balance above to enable handover
               </p>
-            )}
+            ) : null}
           </div>
         )}
       </main>
@@ -2029,6 +2095,35 @@ export default function StaffPickupsPage() {
           }}
         />
       )} */}
+
+      {/* Reschedule a confirmed booking (P4c) — same length and price, new pickup + return */}
+      <RescheduleBookingSheet
+        open={showReschedule}
+        onOpenChange={setShowReschedule}
+        bookingPublicId={booking.publicId}
+        role="employee"
+        onRescheduled={() => {
+          queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+          queryClient.invalidateQueries({ queryKey: ["pickup-pricing-rules", bookingId] });
+        }}
+      />
+
+      {/* Extend a confirmed booking before the handover (P4b): priced, collected and confirmed in the modal */}
+      {showUpcomingExtend && (
+        <UpcomingExtendModal
+          open={showUpcomingExtend}
+          bookingPublicId={booking.publicId}
+          currentEndAt={booking.endAt}
+          role="employee"
+          mode="standalone"
+          onClose={() => setShowUpcomingExtend(false)}
+          onSuccess={() => {
+            setShowUpcomingExtend(false);
+            queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+            queryClient.invalidateQueries({ queryKey: ["pickup-pricing-rules", bookingId] });
+          }}
+        />
+      )}
 
       {/* Confirm Handover Dialog (with pricing rules) */}
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -2091,9 +2186,7 @@ export default function StaffPickupsPage() {
             <DlStatusSelector
               id="dl-status-confirm"
               value={dlStatus}
-              note={dlDepositNote}
               onValueChange={handleDlStatusChange}
-              onNoteChange={handleDlNoteChange}
               error={dlError}
               disabled={handoverMutation.isPending}
               optional
@@ -2128,6 +2221,14 @@ export default function StaffPickupsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PhotoLightbox
+        open={kycViewerIndex !== null}
+        onOpenChange={(o) => !o && setKycViewerIndex(null)}
+        items={kycLightboxItems}
+        startIndex={kycViewerIndex ?? 0}
+        title="KYC documents"
+      />
 
       {/* Document Preview Dialog */}
       {selectedDoc && (
@@ -2172,8 +2273,7 @@ export default function StaffPickupsPage() {
             </div>
             <div className="p-4 pt-2 border-t bg-card">
               <p className="text-sm text-muted-foreground truncate">
-                {selectedDoc.file.url.split("/").pop()?.split("?")[0] ||
-                  "Document"}
+                {kycDocLabel(selectedDoc)}
               </p>
             </div>
           </DialogContent>

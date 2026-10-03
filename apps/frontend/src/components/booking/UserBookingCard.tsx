@@ -57,20 +57,41 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
     booking.balanceDue ??
       (booking.isAdvancePayment && booking.paymentStatus === "SUCCESS" ? booking.remainingBalance : 0),
   ) || 0;
-  // At the 15-day (or monthly 180-day) limit: say why there is no Extend button
+  // Left on credit at the counter (#11): owed to the branch, not due at a pickup / drop step
+  const onCredit = Math.min(balanceDue, Number(booking.balanceOnCredit ?? 0) || 0);
+  const dueAtStep = Math.max(0, balanceDue - onCredit);
+  // At the 15-day (or monthly 180-day) limit — or less than 12 hours left before
+  // it, the shortest extension a customer can buy (P3): say why there is no Extend button
+  const noExtensionPackageFits =
+    eligibility?.packageOptions?.length === 0 && (eligibility.hoursUntilEnd ?? 0) > 0;
   const extendCapReason =
-    isActive && eligibility?.eligible === false && eligibility.atCap ? eligibility.reason : null;
-  // GST of the original booking, as the server stored it (#23): CGST + SGST
-  // when the split is sent, else the GST total; nothing from older servers.
+    isActive && eligibility?.eligible === false && (eligibility.atCap || noExtensionPackageFits)
+      ? eligibility.reason
+      : null;
+  // GST of the original booking, as the server stored it (#23), shown inside the
+  // GST-inclusive rent (item 17): "Rent without GST ₹1,066 + GST ₹234 = ₹1,300"
+  // (+ the CGST / SGST split when sent); nothing from older servers.
   const bookingTax = gstNumber(booking.totalTax);
   const bookingCgst = gstNumber(booking.totalCgst);
   const bookingSgst = gstNumber(booking.totalSgst);
+  const rentWithoutGst =
+    gstNumber(booking.rentWithoutGst) ??
+    (booking.totalBase != null ? Number(booking.totalBase) - Number(booking.totalDiscount ?? 0) : null);
+  const rentAfterDiscount =
+    gstNumber(booking.rentAfterDiscountInclGst) ??
+    (rentWithoutGst != null && bookingTax != null ? rentWithoutGst + bookingTax : null);
   const gstLine =
     bookingTax == null || bookingTax <= 0
       ? null
-      : bookingCgst != null && bookingSgst != null
-        ? `Rental incl. ${gstLabel("CGST", booking.cgstRate)} ${formatInrExact(bookingCgst)} · ${gstLabel("SGST", booking.sgstRate)} ${formatInrExact(bookingSgst)}`
-        : `Rental incl. GST ${formatInrExact(bookingTax)}`;
+      : rentWithoutGst != null && rentAfterDiscount != null
+        ? `Rent without GST ${formatInrExact(rentWithoutGst)} + GST ${formatInrExact(bookingTax)} = ${formatInrExact(rentAfterDiscount)}`
+        : `Rent incl. GST ${formatInrExact(bookingTax)}`;
+  const gstSplitLine =
+    bookingTax != null && bookingTax > 0 && bookingCgst != null && bookingSgst != null
+      ? `${gstLabel("CGST", booking.cgstRate)} ${formatInrExact(bookingCgst)} · ${gstLabel("SGST", booking.sgstRate)} ${formatInrExact(bookingSgst)}`
+      : null;
+  // Discount off the GST-inclusive rent (older servers: the pre-GST discount)
+  const discountShown = gstNumber(booking.discountInclGst) ?? Number(booking.totalDiscount ?? 0);
 
   return (
     <>
@@ -167,19 +188,25 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 <span className="text-2xl font-bold text-zinc-900 font-mono tracking-tight">
                   {formatCurrency(showPaid ? paid : total)}
                 </span>
-                {balanceDue > 0 && (
+                {dueAtStep > 0 && (
                   <span className="text-xs text-zinc-500 mt-0.5">
-                    +{formatCurrency(balanceDue)} due at{" "}
+                    +{formatCurrency(dueAtStep)} due at{" "}
                     {(booking.balanceDueAt ?? (booking.status === "PICKED_UP" ? "DROP" : "PICKUP")) === "DROP" ? "drop" : "pickup"} ·{" "}
                     {formatCurrency(total)} total
                   </span>
                 )}
-                {booking.couponCode && Number(booking.totalDiscount ?? 0) > 0 && (
+                {onCredit > 0 && (
+                  <span className="text-xs text-amber-700 mt-0.5">
+                    {formatCurrency(onCredit)} on credit — owed to the branch · {formatCurrency(total)} total
+                  </span>
+                )}
+                {booking.couponCode && discountShown > 0 && (
                   <span className="text-xs text-emerald-600 mt-0.5">
-                    Discount −{formatCurrency(Number(booking.totalDiscount))} · coupon {booking.couponCode}
+                    Discount −{formatInrExact(discountShown)} · coupon {booking.couponCode}
                   </span>
                 )}
                 {gstLine && <span className="text-xs text-zinc-500 mt-0.5">{gstLine}</span>}
+                {gstSplitLine && <span className="text-[11px] text-zinc-400">{gstSplitLine}</span>}
                 {extendCapReason && (
                   <span className="text-xs text-zinc-500 mt-0.5">{extendCapReason}</span>
                 )}

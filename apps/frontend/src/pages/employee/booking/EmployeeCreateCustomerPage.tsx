@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Ban, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
@@ -102,6 +102,15 @@ export default function EmployeeCreateCustomerPage() {
   const [existingCustomerId, setExistingCustomerId] = useState<string | null>(
     null,
   );
+  // That existing customer is blacklisted (#13): new bookings are blocked.
+  const [existingBlacklist, setExistingBlacklist] = useState<{
+    customerId: string;
+    reason: string | null;
+  } | null>(null);
+  const blacklistedExisting =
+    existingBlacklist && existingBlacklist.customerId === existingCustomerId
+      ? existingBlacklist
+      : null;
 
   // Forms
   const phoneForm = useForm<z.infer<typeof phoneSchema>>({
@@ -130,6 +139,7 @@ export default function EmployeeCreateCustomerPage() {
   const handleSendOtp = async (data: z.infer<typeof phoneSchema>) => {
     setIsLoading(true);
     setExistingCustomerId(null);
+    setExistingBlacklist(null);
     try {
       // Call Backend: Initiate Walkin (req.body: { phone })
       const response = await employeeCustomerService.initiateWalkin(data.phone);
@@ -152,6 +162,20 @@ export default function EmployeeCreateCustomerPage() {
         typeof existingId === "string"
       ) {
         setExistingCustomerId(existingId);
+        // Look the customer up now so a blacklist shows next to the prompt.
+        employeeCustomerService
+          .getCustomer(existingId)
+          .then((existing) => {
+            if (existing.isBlacklisted) {
+              setExistingBlacklist({
+                customerId: existingId,
+                reason: existing.blacklistReason ?? null,
+              });
+            }
+          })
+          .catch(() => {
+            // Checked again on "Continue with existing customer".
+          });
       }
       toast.error(error.response?.data?.message || "Failed to send OTP");
     } finally {
@@ -167,6 +191,19 @@ export default function EmployeeCreateCustomerPage() {
     try {
       const existing =
         await employeeCustomerService.getCustomer(existingCustomerId);
+      if (existing.isBlacklisted) {
+        // Same rule as the customer search: no new booking for this customer.
+        setExistingBlacklist({
+          customerId: existingCustomerId,
+          reason: existing.blacklistReason ?? null,
+        });
+        toast.error(
+          `This customer is blacklisted and can't make new bookings${
+            existing.blacklistReason ? ` (reason: ${existing.blacklistReason})` : ""
+          }.`,
+        );
+        return;
+      }
       const session: CustomerSession = {
         publicId: existingCustomerId,
         name: existing.name,
@@ -175,7 +212,7 @@ export default function EmployeeCreateCustomerPage() {
         kycStatus: false,
       };
       customerSession.set(session);
-      useEmployeeBookingStore.getState().setUtr("");
+      useEmployeeBookingStore.getState().clearCounterPayment();
       toast.success(`Selected customer: ${existing.name}`);
       navigate("/employee/vehicles");
     } catch (error) {
@@ -249,7 +286,7 @@ export default function EmployeeCreateCustomerPage() {
         kycStatus: false, // New customer, no KYC yet
       };
       customerSession.set(session);
-      useEmployeeBookingStore.getState().setUtr("");
+      useEmployeeBookingStore.getState().clearCounterPayment();
 
       if (result.isProfileCompleted) {
         toast.success("Customer profile created!");
@@ -376,20 +413,40 @@ export default function EmployeeCreateCustomerPage() {
 
                     {existingCustomerId && !otpSent && (
                       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
-                        <p className="text-sm text-amber-800">
+                        <p className="text-sm text-amber-800 flex items-center gap-2 flex-wrap">
                           A customer with this phone number already exists.
-                          Continue with that customer instead of creating a
-                          new account.
+                          {blacklistedExisting && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                              <Ban className="h-3 w-3" /> Blacklisted
+                            </span>
+                          )}
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={handleUseExistingCustomer}
-                          disabled={isLoading}
-                        >
-                          Continue with existing customer
-                        </Button>
+                        {blacklistedExisting ? (
+                          <div className="rounded-md bg-red-50 px-3 py-2 text-xs flex items-start gap-2 text-red-700">
+                            <Ban className="h-3.5 w-3.5 shrink-0 mt-px" />
+                            <span>
+                              <span className="font-semibold uppercase tracking-wide">Blacklisted</span>
+                              {blacklistedExisting.reason ? ` — ${blacklistedExisting.reason}` : ""}
+                              . Booking is blocked; a branch manager can remove the blacklist from the Customers tab.
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-amber-800">
+                              Continue with that customer instead of creating a
+                              new account.
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={handleUseExistingCustomer}
+                              disabled={isLoading}
+                            >
+                              Continue with existing customer
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
 

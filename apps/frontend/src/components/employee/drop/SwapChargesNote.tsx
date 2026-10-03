@@ -19,25 +19,19 @@ export function SwapChargesNote({ charges, billedOnDropBill }: SwapChargesNotePr
       {charges.map((c) => (
         <div key={c.swapPublicId} className="flex items-baseline justify-between gap-3 text-sm">
           <span className="text-gray-800 min-w-0 break-words">{c.label}</span>
+          {/* No GST on the swap difference (item 8): `taxable` is the amount charged */}
           <span className="shrink-0 tabular-nums text-gray-900">
             {inr(c.taxable)}
-            {c.gst != null && c.total != null ? (
+            {c.gst != null && Number(c.gst) > 0 && c.total != null && (
               <span className="text-xs text-muted-foreground"> + GST {inr(c.gst)} = {inr(c.total)}</span>
-            ) : (
-              <span className="text-xs text-muted-foreground"> + GST</span>
             )}
           </span>
         </div>
       ))}
-      {charges.some((c) => c.gstUnavailableReason === "GST_RULE_MISSING") && (
-        <p className="text-xs text-amber-700">
-          GST rates aren't set up for this branch — ask the branch manager to set the GST rule before billing.
-        </p>
-      )}
       <p className="text-xs text-blue-800/80">
         {billedOnDropBill
-          ? "Added to the drop bill automatically when you compute the charges."
-          : "Recorded with GST when you complete the return — the branch manager collects it at settlement."}
+          ? "Added to the drop bill automatically when you compute the charges (no GST)."
+          : "Recorded when you complete the return (no GST) — the branch manager collects it at settlement."}
       </p>
     </div>
   );

@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentConfirmModal } from "./PaymentConfirmModal";
 import { CreditBookingCard } from "./CreditBookingCard";
 import { ledgerService, type CreditSection } from "@/services/ledger.service";
+import { creditClearanceFields, type CounterPaymentValue } from "@/lib/counterPayment";
 
 interface Props {
   open: boolean;
@@ -48,19 +49,26 @@ export function ClearCreditDrawer({ open, onClose, customerPublicId, onSuccess }
     enabled: !!selectedCreditId && step === 2,
   });
 
+  // Clearing records the money as payments (#11): Cash, UPI (photo) or Split
   const clearMutation = useMutation({
-    mutationFn: ({ method, ref }: { method: "CASH" | "ONLINE"; ref?: string }) =>
-      ledgerService.clearCredit(selectedCreditId!, selectedKeys, method, ref),
-    onSuccess: () => {
-      toast.success("Credit cleared successfully");
+    mutationFn: ({ payment, amount }: { payment: CounterPaymentValue; amount: number }) =>
+      ledgerService.clearCreditWithPayment(selectedCreditId!, {
+        sectionKeys: selectedKeys,
+        ...creditClearanceFields(payment, amount),
+      }),
+    onSuccess: (entry) => {
+      // A hand-added section the booking's payments already covered records no payment
+      toast.success(
+        (entry as { alreadyPaid?: boolean } | undefined)?.alreadyPaid
+          ? "Credit cleared — the booking's payments already cover it, so no new payment was recorded"
+          : "Credit cleared — the payment is recorded",
+      );
       queryClient.invalidateQueries({ queryKey: ["ledger"] });
       onSuccess();
       handleClose();
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Failed to clear credit";
-      toast.error(msg);
-    },
+    // The payment dialog shows the error: photo / split ones at their field,
+    // the rest (e.g. CREDIT_EXCEEDS_DUE) under the form
   });
 
   function handleClose() {
@@ -68,6 +76,7 @@ export function ClearCreditDrawer({ open, onClose, customerPublicId, onSuccess }
     setSelectedCreditId(null);
     setSelectedKeys([]);
     setPaymentModalOpen(false);
+    clearMutation.reset();
     onClose();
   }
 
@@ -178,6 +187,13 @@ export function ClearCreditDrawer({ open, onClose, customerPublicId, onSuccess }
                                 Custom
                               </span>
                             )}
+                            {/* Fleet credit (#11): what is held until it is cleared */}
+                            {section.collateral && (
+                              <span className="mt-0.5 block text-xs font-normal text-amber-700">
+                                Collateral held: {section.collateral}
+                                {section.createdByName ? ` · by ${section.createdByName}` : ""}
+                              </span>
+                            )}
                           </Label>
                           <span className="text-sm font-medium text-zinc-700 shrink-0">
                             {formatAmount(section.amount)}
@@ -205,7 +221,10 @@ export function ClearCreditDrawer({ open, onClose, customerPublicId, onSuccess }
                             <div className="w-4 h-4 rounded border-2 border-green-500 bg-green-100 flex items-center justify-center">
                               <span className="text-green-600 text-xs">✓</span>
                             </div>
-                            <span className="flex-1 text-sm text-zinc-500">{section.label}</span>
+                            <span className="flex-1 text-sm text-zinc-500">
+                              {section.label}
+                              {section.voided ? " · closed (booking cancelled)" : ""}
+                            </span>
                             <span className="text-sm text-zinc-400 line-through">
                               {formatAmount(section.amount)}
                             </span>
@@ -244,10 +263,17 @@ export function ClearCreditDrawer({ open, onClose, customerPublicId, onSuccess }
 
       <PaymentConfirmModal
         open={paymentModalOpen}
-        onClose={() => setPaymentModalOpen(false)}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          clearMutation.reset();
+        }}
         loading={clearMutation.isPending}
         totalAmount={selectedTotal}
-        onConfirm={(method, ref) => clearMutation.mutate({ method, ref })}
+        onConfirm={(payment) => clearMutation.mutate({ payment, amount: selectedTotal })}
+        error={clearMutation.error}
+        onEdit={() => {
+          if (clearMutation.error) clearMutation.reset();
+        }}
       />
     </>
   );

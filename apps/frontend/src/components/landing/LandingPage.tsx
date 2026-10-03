@@ -1,6 +1,7 @@
 import { Navbar } from "./Navbar";
 import { SearchForm } from "./SearchForm";
 import { Footer } from "./Footer";
+import { HeroOfferSlider } from "./HeroOfferSlider";
 import { Check, Car, HeartHandshake } from "lucide-react";
 
 export const LandingPage = () => {
@@ -12,17 +13,21 @@ export const LandingPage = () => {
       </div>
 
       <main className="w-full">
-        {/* Hero Section (Just image and widget) */}
-        <section className="relative w-full h-[65vh] min-h-[500px]">
-          {/* Hero Background Image - Sixt style car */}
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-[#2C2F33]"
-            style={{
-              backgroundImage: 'url("https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=3000&auto=format&fit=crop")',
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
-        </section>
+        {/* Hero: live offer posters as a slider (#15); the static image when there are none */}
+        <HeroOfferSlider
+          fallback={
+            <section className="relative w-full h-[65vh] min-h-[500px]">
+              {/* Hero Background Image - Sixt style car */}
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-[#2C2F33]"
+                style={{
+                  backgroundImage: 'url("https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=3000&auto=format&fit=crop")',
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+            </section>
+          }
+        />
 
         {/* Huge Orange Banner. The search form is the first child here, pulled up
             over the hero with a negative margin so it stays in normal flow — its

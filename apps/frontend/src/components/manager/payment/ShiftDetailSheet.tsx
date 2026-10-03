@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ShiftStatusBadge, TransactionBadge } from "@/components/manager/payment/PaymentStateBadge";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import type {
   ShiftDetail,
@@ -219,7 +220,20 @@ function TransactionRow({ txn }: { txn: ShiftTransaction }) {
             {txn.collectedByName ? ` · ${txn.collectedByName}` : ""}
           </span>
         )}
-        {txn.onlineTransactionRef && <span className="font-mono">UTR {txn.onlineTransactionRef}</span>}
+        {/* A photo-backed UPI payment has no UTR: its ref is our own transaction id */}
+        {txn.onlineTransactionRef && !(txn.proofPhoto || txn.proofPhotoUrl) && (
+          <span className="font-mono">UTR {txn.onlineTransactionRef}</span>
+        )}
+        {/* The customer's UPI payment screen (#3) */}
+        {(txn.proofPhoto || txn.proofPhotoUrl) && (
+          <span className="inline-flex items-center gap-1.5">
+            <ProofPhotoThumb
+              photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
+              caption={`${txn.bookingPublicId}${txn.customerName ? ` · ${txn.customerName}` : ""} · ${formatMoney(txn.totalAmount)}`}
+            />
+            UPI photo
+          </span>
+        )}
       </div>
       {(txn.confirmedAt || txn.rejectedAt) && (
         <p className="pl-8 text-[11px] text-neutral-500">

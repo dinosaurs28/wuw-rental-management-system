@@ -35,6 +35,8 @@ interface FinancialCalculationProps {
   cgstRate?: number | null;
   sgstRate?: number | null;
   gstRuleMissing?: boolean;
+  /** Item 8: false = no GST on damage (penalty or compensation). Default true (older servers). */
+  damageGstApplies?: boolean;
 }
 
 export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
@@ -55,11 +57,15 @@ export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
   cgstRate,
   sgstRate,
   gstRuleMissing = false,
+  damageGstApplies = true,
 }) => {
-  const isPenalty = chargeType === "PENALTY";
+  // No GST on damage (item 8): only an older server still taxes a penalty
+  const isPenalty = chargeType === "PENALTY" && damageGstApplies;
   // A penalty with no GST rule can't be closed (409 GST_RULE_MISSING) — no guessed rate.
   const penaltyGstMissing = isPenalty && (gstRuleMissing || cgstRate == null || sgstRate == null);
-  const penaltyGst = previewPenaltyGst(chargeType, finalCost, cgstRate, sgstRate);
+  const penaltyGst = damageGstApplies
+    ? previewPenaltyGst(chargeType, finalCost, cgstRate, sgstRate)
+    : { cgst: 0, sgst: 0, gst: 0 };
   const taxAmount = penaltyGst.gst;
   const totalDamage = round2(finalCost + taxAmount);
   // net = additionalCharges + damageCharge - safetyDeposit
@@ -182,6 +188,9 @@ export const FinancialCalculation: React.FC<FinancialCalculationProps> = ({
             <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1.5">
               {GST_RULE_MISSING_MESSAGE} A penalty can't be closed until it is set.
             </p>
+          )}
+          {!damageGstApplies && finalCost > 0 && (
+            <p className="text-[11px] text-gray-500 text-right">No GST on damage charges.</p>
           )}
 
           {/* Net balance */}

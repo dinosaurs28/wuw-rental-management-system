@@ -7,6 +7,7 @@ import {
     Car,
     Bike,
     Clock,
+    Timer,
 } from "lucide-react";
 
 const getCategoryIcon = (name: string) => {
@@ -25,8 +26,14 @@ import { useSearchStore } from "@/store/search.store";
 import { cn } from "@/lib/utils";
 import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
-import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import {
+    PackageHints,
+    PackageQuickChips,
+    PackageSelect,
+    formatPackageReturn,
+} from "@/components/booking/PackagePicker";
 import { bookingPickerLimits, MAX_BOOKING_DAYS, snapPickupPastClosedToday } from "@/utils/bookingPickers";
+import { packageRangeState, returnForNewPickup, returnForPackage } from "@/utils/bookingPackages";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -75,6 +82,46 @@ export const SearchForm = () => {
         [schedule, pickupDate, pickupTime, returnDate, returnTime],
     );
 
+    // Customers book packages (12 hours / 1–15 days): the return is pickup + the
+    // package, computed — never picked freely
+    const packageInput = {
+        schedule,
+        pickupDate,
+        pickupTime: pickupTime || "10:00",
+        returnDate,
+        returnTime: returnTime || "10:00",
+    };
+    const pkg = useMemo(
+        () => packageRangeState(packageInput),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [schedule, pickupDate, pickupTime, returnDate, returnTime],
+    );
+    // A range that isn't a bookable package (none yet, hours just loaded, 12 h now out of hours) snaps to one
+    const correctionKey = pkg.correction
+        ? `${pkg.correction.returnDate.getTime()}|${pkg.correction.returnTime}`
+        : "";
+    useEffect(() => {
+        if (pkg.correction) setSearchCriteria(pkg.correction);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [correctionKey]);
+
+    /** Moves the pickup and keeps the package: the return moves with it. */
+    const setPickup = (next: { pickupDate?: Date | null; pickupTime?: string }) => {
+        const ret = returnForNewPickup(packageInput, {
+            pickupDate: next.pickupDate !== undefined ? next.pickupDate : pickupDate,
+            pickupTime: next.pickupTime ?? (pickupTime || "10:00"),
+        });
+        setSearchCriteria({ ...next, ...(ret ?? {}) });
+    };
+
+    const choosePackage = (packageHours: number) => {
+        const ret = returnForPackage(
+            { schedule, pickupDate, pickupTime: pickupTime || "10:00" },
+            { packageHours, extraHours: 0 },
+        );
+        if (ret) setSearchCriteria(ret);
+    };
+
     // Branch already closed for today: start the default range at its next opening
     useEffect(() => {
         const snap = snapPickupPastClosedToday({ schedule, pickupDate, returnDate, returnTime });
@@ -83,13 +130,14 @@ export const SearchForm = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule]);
 
+    const isFormValid =
+        !!branchPublicId && !!pickupDate && !!returnDate && !limits.windowError && !!pkg.selected && !pkg.correction;
+
     const handleSearch = () => {
-        if (branchPublicId && pickupDate && returnDate && !limits.windowError) {
+        if (isFormValid) {
             navigate("/vehicles");
         }
     };
-
-    const isFormValid = branchPublicId && pickupDate && returnDate && !limits.windowError;
 
     return (
         <motion.div
@@ -207,7 +255,7 @@ export const SearchForm = () => {
                                     <Calendar
                                         mode="single"
                                         selected={pickupDate || undefined}
-                                        onSelect={(date) => setSearchCriteria({ pickupDate: date })}
+                                        onSelect={(date) => setPickup({ pickupDate: date ?? null })}
                                         initialFocus
                                         className="p-3 bg-white rounded-2xl"
                                         disabled={limits.isPickupDayDisabled}
@@ -219,7 +267,7 @@ export const SearchForm = () => {
                                 <Clock className="size-[18px] shrink-0 text-zinc-400" strokeWidth={2} />
                                 <TimeSelect
                                     value={pickupTime || "10:00"}
-                                    onChange={(v) => setSearchCriteria({ pickupTime: v })}
+                                    onChange={(v) => setPickup({ pickupTime: v })}
                                     isDisabled={limits.isPickupSlotDisabled}
                                     triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
                                 />
@@ -227,50 +275,17 @@ export const SearchForm = () => {
                         </div>
                     </div>
 
-                    {/* Return Date & Time */}
+                    {/* Rental length — the return is computed (pickup + 12 hours / N days) */}
                     <div className="relative">
                         <label className="block text-[15px] font-bold tracking-[-0.01em] text-zinc-900 mb-[10px] pl-0.5">
-                            Return date
+                            Rental length
                         </label>
-                        <div className="flex items-stretch h-[64px] rounded-[14px] border-[1.5px] border-zinc-200 bg-white overflow-hidden transition-colors focus-within:border-zinc-900 focus-within:shadow-[0_0_0_3px_rgba(22,22,26,0.06)]">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            "flex items-center gap-[12px] min-w-[158px] h-full rounded-none justify-start px-5 text-left bg-transparent hover:bg-[#fafafb] border-0 shadow-none font-medium",
-                                            !returnDate ? "text-[#8a8a93]" : "text-zinc-900"
-                                        )}
-                                    >
-                                        <CalendarIcon className="size-[22px] shrink-0 text-zinc-900" strokeWidth={1.8} />
-                                        <span className="text-[19px] font-medium tracking-[-0.01em] whitespace-nowrap">
-                                            {returnDate ? format(returnDate, "MMM do") : "Select"}
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-2 rounded-2xl border-zinc-200 shadow-xl" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={returnDate || undefined}
-                                        onSelect={(date) => setSearchCriteria({ returnDate: date })}
-                                        initialFocus
-                                        className="p-3 bg-white rounded-2xl"
-                                        // Compares calendar days, so a same-day return (a daytime 12 h trip) is selectable
-                                        disabled={limits.isReturnDayDisabled}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <div className="h-full w-[1.5px] bg-zinc-200 shrink-0" />
-                            <div className="flex items-center h-full px-[14px] gap-1 hover:bg-[#fafafb] transition-colors">
-                                <Clock className="size-[18px] shrink-0 text-zinc-400" strokeWidth={2} />
-                                <TimeSelect
-                                    value={returnTime || "10:00"}
-                                    onChange={(v) => setSearchCriteria({ returnTime: v })}
-                                    isDisabled={limits.isReturnSlotDisabled}
-                                    triggerClassName="text-[17px] font-medium tracking-[-0.01em] text-zinc-900"
-                                />
-                            </div>
-                        </div>
+                        <PackageSelect
+                            state={pkg}
+                            onSelect={choosePackage}
+                            icon={<Timer className="size-[22px] shrink-0 text-zinc-900" strokeWidth={1.8} />}
+                            triggerClassName="w-full !h-[64px] bg-white border-[1.5px] border-zinc-200 rounded-[14px] px-5 text-left text-[19px] font-medium tracking-[-0.01em] text-zinc-900 hover:border-zinc-300 focus:border-zinc-900 transition-colors shadow-none focus:ring-0 focus:ring-offset-0"
+                        />
                     </div>
 
                     {/* Search Button */}
@@ -297,22 +312,21 @@ export const SearchForm = () => {
 
                 {/* Quick durations, branch hours for the picked dates, 15-day window */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_200px] gap-x-7 gap-y-2 items-start">
-                    <DurationPresetChips
-                        pickupDate={pickupDate}
-                        pickupTime={pickupTime || "10:00"}
-                        returnDate={returnDate}
-                        returnTime={returnTime || "10:00"}
-                        schedule={schedule}
-                        onApply={(date, time) => setSearchCriteria({ returnDate: date, returnTime: time })}
-                    />
+                    <div className="space-y-1.5">
+                        <PackageQuickChips state={pkg} onSelect={choosePackage} />
+                        <PackageHints state={pkg} />
+                    </div>
                     <div>
                         <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" className="mt-0 pl-0.5" />
                     </div>
-                    <div>
-                        <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" className="mt-0 pl-0.5" />
+                    <div className="pl-0.5">
+                        <p className="text-[11px] font-medium text-zinc-400">Return</p>
+                        <p className="text-sm font-semibold text-zinc-900">
+                            {pkg.selected ? formatPackageReturn(pkg.returnAt) : "—"}
+                        </p>
                     </div>
                     <p className="text-[11px] font-medium text-zinc-400">
-                        Book up to {MAX_BOOKING_DAYS} days ahead
+                        12 hours or 1–{MAX_BOOKING_DAYS} days · book up to {MAX_BOOKING_DAYS} days ahead
                     </p>
                 </div>
                 {limits.windowError && (

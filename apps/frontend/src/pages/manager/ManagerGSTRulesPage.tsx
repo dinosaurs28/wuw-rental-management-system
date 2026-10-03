@@ -26,6 +26,11 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import { fetchGSTRule, createOrUpdateGSTRule } from "@/services/gst.service";
+import { splitRentTotal } from "@repo/schemas";
+import { formatInrExact } from "@/lib/gst";
+
+/** A round rent for the GST-inclusive split example (illustration only). */
+const RENT_EXAMPLE_TOTAL = 1000;
 
 // Mirrors the server's GST_RATE_INVALID checks (POST /branchManager/gst): rentals
 // are intra-state supplies, so GST is always CGST + SGST and IGST is never charged.
@@ -86,6 +91,11 @@ export const ManagerGSTRulesPage = () => {
   const sgstRate = Number(form.watch("sgstRate")) || 0;
   const igstRate = Number(form.watch("igstRate")) || 0;
   const totalIntrastate = cgstRate + sgstRate;
+  // The server's split (splitRentTotal) at the rates being edited
+  const rentExample =
+    totalIntrastate > 0 && totalIntrastate <= 28
+      ? splitRentTotal(RENT_EXAMPLE_TOTAL, { cgstRate, sgstRate })
+      : null;
 
   useEffect(() => {
     loadData();
@@ -115,11 +125,23 @@ export const ManagerGSTRulesPage = () => {
   const onSubmit = async (data: GSTRuleFormValues) => {
     setIsSaving(true);
     try {
-      await createOrUpdateGSTRule({
+      const saved = await createOrUpdateGSTRule({
         ...data,
         igstRate: data.igstRate ?? 0,
       });
-      toast.success("GST settings saved successfully");
+      // Item 17: saving the rule re-derives the rent without GST of the branch's
+      // GST-inclusive rents (vehicles + branch pricing defaults)
+      const updated = saved?.rentWithoutGstUpdated as { vehicles?: number; defaults?: number } | undefined;
+      toast.success(
+        "GST settings saved successfully",
+        updated
+          ? {
+              description: `Rent without GST recalculated for ${updated.vehicles ?? 0} vehicle${updated.vehicles === 1 ? "" : "s"}${
+                updated.defaults ? ` and ${updated.defaults} branch pricing default${updated.defaults === 1 ? "" : "s"}` : ""
+              }. The rents customers pay are unchanged.`,
+            }
+          : undefined,
+      );
       loadData();
     } catch (error: any) {
       console.error("Submit Error:", error);
@@ -230,6 +252,14 @@ export const ManagerGSTRulesPage = () => {
                     <span className="text-xs text-emerald-700 font-medium">Total</span>
                     <span className="text-lg font-bold text-emerald-700">{totalIntrastate}%</span>
                   </div>
+                  {/* Worked example of the GST-inclusive rent split (item 17) */}
+                  {rentExample && (
+                    <p className="mt-3 text-[11px] leading-snug text-neutral-600">
+                      Example: a rent of {formatInrExact(RENT_EXAMPLE_TOTAL)} incl. GST = rent without GST{" "}
+                      <span className="font-semibold">{formatInrExact(rentExample.taxable)}</span> + CGST{" "}
+                      {formatInrExact(rentExample.cgst)} + SGST {formatInrExact(rentExample.sgst)}
+                    </p>
+                  )}
                 </div>
 
                 {/* Interstate */}
@@ -256,11 +286,16 @@ export const ManagerGSTRulesPage = () => {
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium text-blue-800">About GST Rates</p>
                   <p className="text-xs text-blue-700 leading-relaxed">
-                    Every rental is billed as an intrastate supply: <strong>CGST + SGST</strong> (equal halves, at most 28% together) on the
-                    rental after discounts, extensions, extra km, late return, fuel and other drop charges. Each is rounded to the paisa per line.
+                    Every rental is billed as an intrastate supply: <strong>CGST + SGST</strong> (equal halves, at most 28% together).
+                    Vehicle rents are the totals customers pay, <strong>GST included</strong>: CGST and SGST are each that percentage of
+                    the rent after discounts (rounded to the paisa), and the rest is the rent without GST. Extensions are rent too.
                   </p>
                   <p className="text-xs text-blue-700 leading-relaxed">
-                    Not taxed: refundable deposits, FASTag/tolls and damage compensation (a damage marked as a penalty is taxed).
+                    No GST on drop / recovery charges (extra km, late return, fuel, FASTag, damage, vehicle-swap difference, other
+                    charges) or on refundable deposits.
+                  </p>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    Saving a new rate recalculates the rent without GST of every vehicle in this branch; the rents customers pay stay the same.
                   </p>
                   <p className="text-xs text-blue-700 leading-relaxed">
                     <strong>IGST</strong> is never charged. Leave it 0, or set it equal to CGST + SGST for reference.

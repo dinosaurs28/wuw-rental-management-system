@@ -14,6 +14,7 @@ import { useKycStore } from "@/store/kyc.store";
 import { useAuthStore } from "@/store/auth.store";
 import { kycService, type KycDocument, type KycDocumentType } from "@/services/kyc.service";
 import { InlineKycUpload } from "./InlineKycUpload";
+import { DlPhotosAlertDialog } from "./DlPhotosAlertDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Check, FileText, ArrowRight, Eye, Upload, User, AlertCircle } from "lucide-react";
@@ -46,6 +47,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
   const [error, setError] = useState<string | null>(null);
   const [profileNotFound, setProfileNotFound] = useState(false);
   const [showInlineKycUpload, setShowInlineKycUpload] = useState(false);
+  const [dlAlertOpen, setDlAlertOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<{
     url: string;
     title: string;
@@ -183,6 +185,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
 
   return (
     <>
+      <DlPhotosAlertDialog open={dlAlertOpen} onOpenChange={setDlAlertOpen} />
       {/* Image Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden">
@@ -215,6 +218,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                 setShowInlineKycUpload(false);
                 fetchDocuments();
               }}
+              onDlPhotosComplete={() => setDlAlertOpen(true)}
               onCancel={() => setShowInlineKycUpload(false)}
             />
           ) : (
@@ -224,12 +228,23 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                 const isSelected = selectedKycFilePublicId === group.front?.file.publicId;
                 const label = KYC_TYPE_LABELS[group.type] || group.type;
 
+                // A div with button semantics: the card holds the thumbnail preview
+                // buttons, and a <button> inside a <button> is invalid HTML.
                 return (
-                  <button
+                  <div
                     key={group.type}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     onClick={() => handleSelectGroup(group)}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleSelectGroup(group);
+                      }
+                    }}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 text-left",
+                      "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 text-left cursor-pointer",
                       isSelected
                         ? "border-primary bg-primary/5"
                         : "border-zinc-200 hover:border-zinc-300 bg-white",
@@ -253,6 +268,8 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                                 className="w-full h-full object-cover"
                               />
                               <button
+                                type="button"
+                                aria-label={`View ${label} ${i === 0 ? "front" : "back"}`}
                                 onClick={(e) => handleViewDoc(e, doc, `${label} — ${i === 0 ? "Front" : "Back"}`)}
                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity"
                               >
@@ -295,7 +312,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                     )}>
                       {isSelected && <Check className="size-4 text-white" />}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
 

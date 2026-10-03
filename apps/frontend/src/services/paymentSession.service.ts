@@ -77,12 +77,56 @@ export interface ReturnKmSummary {
   kmSource?: "ODOMETER" | "STAFF_ENTERED" | "NONE";
   swapCount?: number;
   segments?: OdometerSegment[];
+  /** includedKm = free km of the original period + free km the extensions add (#7). */
+  freeKmOriginal?: number;
+  freeKmExtensions?: number;
 }
 
 export interface ReturnDiscount {
   amount: string;
   reason: string;
 }
+
+/** How the safety deposit taken at pickup goes back at drop (#6). */
+export type SafetyDepositHandling = "SET_OFF" | "REFUND_IN_FULL";
+
+/** The drop bill's deposit block (#6) — money as 2-dp strings. */
+export interface DropDepositSummary {
+  handling: SafetyDepositHandling;
+  /** Deposit held from pickup. */
+  held: string;
+  /** SET_OFF: the part used against the charges. */
+  setOff: string;
+  /** Deposit going back (SET_OFF: the remainder; REFUND_IN_FULL: all of it). */
+  refund: string;
+  /** Drop charges (the bill total). */
+  charges: string;
+  /** What the customer still pays. */
+  toCollect: string;
+  /** RECORD_REFUND = record-refund; PAYMENT_DEPOSIT_REFUND = `depositRefund` on record-payment. */
+  refundVia: "RECORD_REFUND" | "PAYMENT_DEPOSIT_REFUND" | null;
+}
+
+/** What a record-payment put on credit (#11). */
+export interface SessionCreditRecorded {
+  creditEntryPublicId: string;
+  sectionKey: string;
+  amount: string;
+  collateral: string;
+}
+
+/** The deposit refunded with a REFUND_IN_FULL drop bill (#6). */
+export interface SessionDepositRefund {
+  publicId: string;
+  amount: string;
+  method: string;
+}
+
+/** record-payment response: the session plus what it put on credit / refunded. */
+export type RecordPaymentResult = PaymentSession & {
+  credit?: SessionCreditRecorded | null;
+  depositRefund?: SessionDepositRefund | null;
+};
 
 export interface ReturnSessionResponse {
   session: PaymentSession;
@@ -108,6 +152,14 @@ export interface ReturnSessionResponse {
   returnedAt?: string | null;
   /** GET only: the booked end moved since the compute — recompute before taking payment. */
   billStale?: boolean;
+  /**
+   * GET only: why the bill is stale — "DROP_GST_REMOVED" (computed with GST on drop
+   * charges before item 8; recomputing rebuilds it without GST) or "PERIOD_CHANGED"
+   * (an extension moved the booked end); null when fresh. Absent from older servers.
+   */
+  billStaleReason?: "DROP_GST_REMOVED" | "PERIOD_CHANGED" | null;
+  /** Safety deposit set off / refunded on this bill (#6); null on bills computed before it. */
+  deposit?: DropDepositSummary | null;
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────
@@ -262,6 +314,8 @@ export const paymentSessionService = {
       waiveLateCharge?: { reason: string } | null;
       /** Only used when kmAllowance.manualExtraKmAllowed (swap without readings). */
       manualExtraKm?: number | null;
+      /** Safety deposit (#6): SET_OFF (default) or REFUND_IN_FULL — resend it on every compute. */
+      safetyDepositHandling?: SafetyDepositHandling;
     },
   ): Promise<ReturnSessionResponse> {
     const { data } = await apiClient.post(
@@ -300,7 +354,8 @@ export const paymentSessionService = {
   async recordPayment(
     sessionPublicId: string,
     payload: {
-      method: "CASH" | "ONLINE" | "SPLIT";
+      /** UPI = counter UPI (merchant QR) backed by proof_file_id; CREDIT needs collateral (#11). */
+      method: "CASH" | "ONLINE" | "SPLIT" | "UPI" | "CREDIT";
       amount: number;
       idempotencyKey: string;
       notes?: string;
@@ -308,8 +363,14 @@ export const paymentSessionService = {
       onlineGateway?: string;
       cashAmount?: number;
       onlineAmount?: number;
+      /** Photo of the customer's UPI payment screen (UPI / split's UPI part). */
+      proof_file_id?: string;
+      /** CREDIT: what was taken from the customer until it is cleared. */
+      collateral?: string;
+      /** Drop bill refunding the safety deposit in full (#6): how it is paid back. */
+      depositRefund?: { method: "CASH" | "UPI"; proof_file_id?: string; notes?: string };
     },
-  ): Promise<PaymentSession> {
+  ): Promise<RecordPaymentResult> {
     const { data } = await apiClient.post(
       `/employee/sessions/${sessionPublicId}/record-payment`,
       payload,
@@ -323,10 +384,12 @@ export const paymentSessionService = {
   async recordRefund(
     sessionPublicId: string,
     payload: {
-      method: "CASH" | "ONLINE";
+      /** UPI = paid back by UPI, optionally with a photo of the transfer. */
+      method: "CASH" | "ONLINE" | "UPI";
       amount: number;
       idempotencyKey: string;
       notes?: string;
+      proof_file_id?: string;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(

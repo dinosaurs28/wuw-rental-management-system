@@ -18,6 +18,10 @@ export interface EmployeeCustomerDetail {
   /** Full 12 digits — prefill only; show masked anywhere read-only. */
   aadhaarNumber?: string | null;
   missingFields: string[];
+  /** Blacklisted by a branch manager — new bookings are refused. */
+  isBlacklisted?: boolean;
+  blacklistReason?: string | null;
+  blacklistedAt?: string | null;
 }
 
 /** POST /employee/walkin/complete body. */

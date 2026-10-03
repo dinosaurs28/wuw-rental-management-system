@@ -385,7 +385,8 @@ export function DiscountPanel({ bookingPublicId, bookingTotal }: DiscountPanelPr
                         </div>
                       )}
                       <div className="flex justify-between text-sm font-semibold text-neutral-900 pt-1 border-t border-neutral-100">
-                        <span>Final total</span>
+                        {/* discount-summary amounts are on the GST-inclusive rent (item 17) */}
+                        <span>Rent after discounts (incl. GST)</span>
                         <span>{fmt(summary!.finalTotal)}</span>
                       </div>
                     </div>

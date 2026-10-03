@@ -322,7 +322,7 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                 <>
                   <p className="text-sm text-gray-900">
                     <span className="font-semibold">+{formatSwapRupees(difference)}</span>{" "}
-                    for the rest of the rental, before GST
+                    for the rest of the rental (no GST added)
                   </p>
                   {remainingPct !== null && (
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -353,7 +353,7 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                 </Label>
                 <p className="text-xs text-gray-600 mt-0.5">
                   {chargeDifference
-                    ? "Billed on the drop bill, plus GST."
+                    ? "Billed on the drop bill (no GST)."
                     : "Waived — not charged; kept on the swap record."}
                   {!reason && " Choose a reason to apply its default."}
                 </p>

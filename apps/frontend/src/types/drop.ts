@@ -4,6 +4,8 @@
  * bill with GST. Money is a 2-dp string; minutes are whole numbers; dates are ISO.
  */
 
+import type { ExtensionFreeKm } from "@/services/extension.service";
+
 /** ON_TIME · WITHIN_GRACE · CHARGED · WAIVED · DISABLED · RATE_UNAVAILABLE */
 export type LateReturnStatus =
   | "ON_TIME"
@@ -50,6 +52,8 @@ export interface RentalTimelineExtension {
   /** GST-inclusive. */
   additionalAmount: string;
   taxAmount: string;
+  /** Free km this extension adds to the allowance (#7); null when unknown, absent from older servers. */
+  freeKm?: ExtensionFreeKm | null;
 }
 
 /** GET /employee/return/:id `rentalTimeline` (also on the drop-bill compute / GET). */
@@ -62,6 +66,8 @@ export interface RentalTimeline {
   totalMinutes: number;
   extensionCount: number;
   extensions: RentalTimelineExtension[];
+  /** Σ free km the extensions add (0 with none); null when the vehicle's free km are unknown. */
+  extensionFreeKmTotal?: number | null;
   /** As-of time of the late figures (frozen return time on an open bill, else now); null before pickup. */
   returnedAt: string | null;
   lateMinutes: number;

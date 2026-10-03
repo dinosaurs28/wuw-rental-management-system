@@ -97,8 +97,8 @@ function SwapRow({ swap }: { swap: VehicleSwap }) {
         <p className="text-xs">
           {swap.chargeDifference ? (
             <span className="text-orange-700">
-              <span className="font-semibold">+{formatSwapRupees(difference)}</span> + GST, billed at
-              drop
+              <span className="font-semibold">+{formatSwapRupees(difference)}</span> billed at drop (no
+              GST)
             </span>
           ) : (
             <span className="text-gray-500">

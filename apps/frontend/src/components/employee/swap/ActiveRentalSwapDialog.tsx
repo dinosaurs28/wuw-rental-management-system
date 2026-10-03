@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowLeft, ArrowRight, Car, ChevronRight, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Car, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import {
@@ -24,7 +24,7 @@ import {
   SwapDetailsForm,
   type SwapDetailsData,
 } from "@/components/manager/vehicle-swap/SwapDetailsForm";
-import { SwapPriceLine } from "@/components/manager/vehicle-swap/AvailableVehiclesList";
+import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
 import {
   SWAP_PICK_AGAIN_CODES,
   swapAmount,
@@ -292,46 +292,12 @@ export function ActiveRentalSwapDialog({
                   {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"} free until the booking
                   ends — same category first.
                 </p>
-                <div className="space-y-2">
-                  {vehicles.map((vehicle) => (
-                    <button
-                      key={vehicle.id}
-                      type="button"
-                      onClick={() => pick(vehicle)}
-                      className="w-full flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-left transition-colors hover:border-orange-300 hover:bg-orange-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
-                    >
-                      <div className="h-12 w-16 shrink-0 overflow-hidden rounded border bg-neutral-50 flex items-center justify-center">
-                        {vehicle.images[0]?.url ? (
-                          <img
-                            src={vehicle.images[0].url}
-                            alt={`${vehicle.make} ${vehicle.model}`}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <Car className="h-4 w-4 text-neutral-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-neutral-900 truncate">
-                          {vehicle.make} {vehicle.model}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                          <span className="font-mono text-xs text-neutral-500">{vehicle.regNo}</span>
-                          <span className="text-xs text-neutral-400">{vehicle.categoryName}</span>
-                          {vehicle.isUpgrade && <UpgradeBadge />}
-                        </div>
-                        <SwapPriceLine priceDifference={vehicle.priceDifference} className="sm:hidden mt-0.5" />
-                      </div>
-                      <SwapPriceLine
-                        priceDifference={vehicle.priceDifference}
-                        stacked
-                        className="hidden sm:block text-right shrink-0"
-                      />
-                      <ChevronRight className="h-4 w-4 text-neutral-300 shrink-0" />
-                    </button>
-                  ))}
-                </div>
+                <SwapVehiclePickerField
+                  vehicles={vehicles}
+                  selectedVehicleId={undefined}
+                  onSelectVehicle={pick}
+                  autoOpen
+                />
               </>
             )}
           </div>

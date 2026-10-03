@@ -173,20 +173,27 @@ export function AddCreditDrawer({ open, onClose, customerPublicId, onSuccess }: 
                 <>
                   {/* Booking summary */}
                   <div className="rounded-xl bg-zinc-50 border px-4 py-3 grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <p className="text-zinc-500 text-xs">Base</p>
-                      <p className="font-medium">{formatAmount(chargesQuery.data.bookingSummary.totalBase)}</p>
-                    </div>
-                    <div>
-                      <p className="text-zinc-500 text-xs">Discount</p>
-                      <p className="font-medium text-green-600">
-                        -{formatAmount(chargesQuery.data.bookingSummary.totalDiscount)}
-                      </p>
-                    </div>
-                    {/* Base / discount / GST describe the original booking; the total also carries
+                    {/* The original booking's rent, GST-inclusive (item 17): rent without GST
+                        (base − discount, taxable terms) + GST. The total also carries
                         confirmed extensions and the refundable deposit. */}
                     <div>
-                      <p className="text-zinc-500 text-xs">Taxable value</p>
+                      <p className="text-zinc-500 text-xs">Rent incl. GST</p>
+                      <p className="font-medium">
+                        {formatAmount(
+                          round2(
+                            Number(chargesQuery.data.bookingSummary.totalBase) -
+                              Number(chargesQuery.data.bookingSummary.totalDiscount) +
+                              Number(chargesQuery.data.bookingSummary.totalTax),
+                          ),
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-xs">GST included (rent)</p>
+                      <p className="font-medium">{formatAmount(chargesQuery.data.bookingSummary.totalTax)}</p>
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-xs">Rent without GST</p>
                       <p className="font-medium">
                         {formatAmount(
                           round2(
@@ -197,8 +204,10 @@ export function AddCreditDrawer({ open, onClose, customerPublicId, onSuccess }: 
                       </p>
                     </div>
                     <div>
-                      <p className="text-zinc-500 text-xs">GST (rental)</p>
-                      <p className="font-medium">{formatAmount(chargesQuery.data.bookingSummary.totalTax)}</p>
+                      <p className="text-zinc-500 text-xs">Discount (before GST)</p>
+                      <p className="font-medium text-green-600">
+                        -{formatAmount(chargesQuery.data.bookingSummary.totalDiscount)}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-zinc-500 text-xs">Total (incl. extensions & deposit)</p>

@@ -163,14 +163,15 @@ export const ManagerConfirmations = ({
 
     try {
       setIsSubmitting(true);
-      if (refundDepositFull && Number(details?.safetyDeposit) > 0) {
+      // Only a deposit with no recorded drop choice is refunded here (#6) — one
+      // the drop recorded is refunded from Settlements once the return is approved
+      if (refundDepositFull && !details?.safetyDepositHandling && Number(details?.safetyDeposit) > 0) {
         const res = await managerDashboardService.refundSafetyDeposit(selectedBookingId, Number(details.safetyDeposit));
         toast.success(res.message || "Refund processed");
-      } else {
-        // Otherwise use the confirm return route directly
-        const res = await managerDashboardService.confirmReturnManager(selectedBookingId);
-        toast.success(res.message || "Return confirmed successfully");
       }
+      // "Finalize & Approve Return" always approves the return
+      const res = await managerDashboardService.confirmReturnManager(selectedBookingId);
+      toast.success(res.message || "Return confirmed successfully");
       setIsDialogOpen(false);
       loadConfirmations();
       onChanged?.();
@@ -382,7 +383,27 @@ export const ManagerConfirmations = ({
                     {details.safetyDeposit ? ` (${details.safetyDepositMethod})` : ''}
                   </p>
 
-                  {Number(details.safetyDeposit) > 0 && (
+                  {/* The drop recorded how the deposit goes back (#6): it is refunded with a real
+                      refund record from Payments → Settlements (legacy drop) or on the drop bill */}
+                  {details.safetyDepositHandling ? (
+                    <div className="mt-4 rounded border bg-white p-3 text-sm text-gray-700 space-y-1">
+                      <p>
+                        Staff chose at the drop:{" "}
+                        <strong>
+                          {details.safetyDepositHandling === "REFUND_IN_FULL"
+                            ? "Refund in full"
+                            : "Set off against charges"}
+                        </strong>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {details.safetyDepositHandlingFlow === "DROP_BILL"
+                          ? "Settled on the drop bill."
+                          : details.safetyDepositHandling === "REFUND_IN_FULL"
+                            ? "After approving the return, refund the deposit from Payments → Settlements; collect the return charges there separately."
+                            : "After approving the return, Payments → Settlements uses the deposit against the return charges and shows any remainder to refund."}
+                      </p>
+                    </div>
+                  ) : Number(details.safetyDeposit) > 0 && !details.safetyDepositRefunded && (
                     <div className="flex items-center space-x-2 mt-4 bg-white p-3 rounded border">
                       <Checkbox 
                         id="refundDepositFull" 

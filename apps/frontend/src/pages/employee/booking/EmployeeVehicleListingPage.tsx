@@ -253,16 +253,18 @@ export default function EmployeeVehicleListingPage() {
     }
   };
 
-  // Write-back: persist bumped return to local state + store
+  // Write-back: persist bumped return to local state + store. Monthly plan only —
+  // the standard plan's package selector offers in-hours returns only (and
+  // keeps the extra hours, which a bump to pickup + k days would drop).
   useEffect(() => {
-    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    if (!isMonthly || !adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
     const adjusted = new Date(adjustedEndDateTime);
     if (isNaN(adjusted.getTime())) return;
     setSelectedReturnDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
     const hh = String(adjusted.getHours()).padStart(2, "0");
     const mm = String(adjusted.getMinutes()).padStart(2, "0");
     setReturnTime(`${hh}:${mm}`);
-  }, [adjustedEndDateTime, scheduleVerdict?.status]);
+  }, [adjustedEndDateTime, scheduleVerdict?.status, isMonthly]);
 
   if (!isAuthenticated) return null;
 
@@ -366,6 +368,7 @@ export default function EmployeeVehicleListingPage() {
             schedule={schedule}
             scheduleVerdict={scheduleVerdict}
             monthly={isMonthly}
+            packageMode="fleet"
           />
         </div>
 

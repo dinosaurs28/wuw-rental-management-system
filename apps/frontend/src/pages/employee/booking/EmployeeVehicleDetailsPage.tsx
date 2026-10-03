@@ -37,7 +37,7 @@ import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
-import { cleanUtr } from "@/lib/counterErrors";
+import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
 
@@ -56,7 +56,9 @@ export const EmployeeVehicleDetailsPage = () => {
     selectedVehicleId,
     setVehicle,
     paymentType,
-    utr,
+    upiProof,
+    splitCash,
+    collateral,
     customerKycId,
     setCustomerKycId,
     setDates,
@@ -103,9 +105,11 @@ export const EmployeeVehicleDetailsPage = () => {
     { monthly: plan === "MONTHLY" },
   );
 
-  // Write-back: a return outside office hours moves to the next in-hours return
+  // Write-back: a return outside office hours moves to the next in-hours return.
+  // Monthly plan only — the standard plan's package picker offers in-hours
+  // returns only and keeps the extra hours, which a bump would drop.
   useEffect(() => {
-    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED" || !startDate) return;
+    if (plan !== "MONTHLY" || !adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED" || !startDate) return;
     const adjusted = new Date(adjustedEndDateTime);
     if (isNaN(adjusted.getTime())) return;
     setDates(new Date(startDate), new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
@@ -271,8 +275,11 @@ export const EmployeeVehicleDetailsPage = () => {
       qr_photo_id: qrPhotoId,
       start: startDateTime || format(new Date(startDate!), "yyyy-MM-dd"),
       end: endDateTime || format(new Date(endDate!), "yyyy-MM-dd"),
-      payment_type: paymentType || "CASH",
-      ...(paymentType === "UPI" ? { utr: cleanUtr(utr) } : {}),
+      // Counter payment (#3 / #11): the UPI photo, the split's cash part or the
+      // collateral for credit; ONLINE = Razorpay checkout on the next screen
+      ...(paymentType === "ONLINE"
+        ? { payment_type: "ONLINE" as const }
+        : walkInPaymentFields({ method: paymentType || "CASH", proof: upiProof, splitCash, collateral })),
       // Monthly rental (30–180 days) is an explicit counter plan
       plan,
     };

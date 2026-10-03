@@ -235,7 +235,8 @@ export function ExtensionsPage() {
                             className="block text-[11px] font-normal text-gray-500"
                             title={gstSplitText(ext.cgstAmount, ext.sgstAmount)}
                           >
-                            {fmtMoney(ext.taxableAmount)} + GST{" "}
+                            {/* GST-inclusive extension rent (item 17) */}
+                            Rent without GST {fmtMoney(ext.taxableAmount)} + GST{" "}
                             {ext.taxRate ? `${Number(ext.taxRate)}% ` : ""}
                             {fmtMoney(ext.taxAmount)}
                           </span>

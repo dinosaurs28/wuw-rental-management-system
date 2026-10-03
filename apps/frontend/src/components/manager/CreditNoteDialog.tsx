@@ -24,8 +24,10 @@ export interface CreditNote {
   receiptRef: { publicId: string; receiptNumber: string | null } | null;
   amount: number;
   /**
-   * GST split of the (GST-inclusive) credit: it reverses the invoice's taxable
-   * value + GST first; the rest is non-taxable (deposit / FASTag / compensation).
+   * GST split of the (GST-inclusive) credit: up to the invoice's rent incl. GST
+   * it is split in the invoice's own rent-without-GST : GST ratio (a ₹1,300
+   * credit on a ₹1,300 rent → 1066 + 117 + 117); the rest is non-taxable
+   * (drop charges / deposit / FASTag / damage).
    * taxableAmount + taxAmount + nonTaxableAmount = amount. Absent on older servers.
    */
   taxableAmount?: number;
@@ -39,14 +41,14 @@ export interface CreditNote {
   createdAt: string;
 }
 
-/** "Taxable ₹x + GST ₹y (CGST ₹a · SGST ₹b) + non-taxable ₹z" from the server's split. */
+/** "Rent without GST ₹x + GST ₹y (CGST ₹a · SGST ₹b) + no GST ₹z" from the server's split. */
 function creditSplitText(cn: CreditNote): string | null {
   if (cn.taxableAmount == null || cn.taxAmount == null) return null;
-  const parts = [`Taxable ${formatInrExact(cn.taxableAmount)}`];
+  const parts = [`Rent without GST ${formatInrExact(cn.taxableAmount)}`];
   if (cn.taxAmount !== 0) {
     parts.push(`GST ${formatInrExact(cn.taxAmount)} (${gstSplitText(cn.cgstAmount, cn.sgstAmount)})`);
   }
-  if (cn.nonTaxableAmount) parts.push(`non-taxable ${formatInrExact(cn.nonTaxableAmount)}`);
+  if (cn.nonTaxableAmount) parts.push(`no GST ${formatInrExact(cn.nonTaxableAmount)}`);
   return parts.join(" + ");
 }
 

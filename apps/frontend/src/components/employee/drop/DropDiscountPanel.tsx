@@ -34,7 +34,6 @@ export function DropDiscountPanel({ applied, error, isPending, onApply, onRemove
           <div className="min-w-0">
             <p className="text-sm font-semibold">
               Discount {formatCurrency(parseFloat(applied.amount) || 0)} applied
-              <span className="font-normal"> (before GST)</span>
             </p>
             <p className="text-xs break-words">{applied.reason}</p>
           </div>
@@ -60,11 +59,11 @@ export function DropDiscountPanel({ applied, error, isPending, onApply, onRemove
         <span className="text-xs font-normal text-muted-foreground">(optional)</span>
       </p>
       <p className="text-xs text-muted-foreground">
-        Taken off the drop charges before GST (up to the charges before GST), so the customer also saves the GST on it.
+        Taken off the drop charges (up to their total). Drop charges carry no GST.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs text-neutral-600">Amount before GST (₹)</Label>
+          <Label className="text-xs text-neutral-600">Amount (₹)</Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
             <Input

@@ -63,21 +63,27 @@ const settlementModeOf = (report: DamageReport): SettlementMode => {
   return report.chargedAtDrop ? "CHARGED_AT_DROP" : "COMPANY_EXPENSE";
 };
 
-/** A PENALTY on a branch without a GST rule — the server refuses to close it. */
+/** Damage carries no GST any more (item 8); older servers still taxed a penalty. */
+const damageGstApplies = (report: DamageReport): boolean => report.financialHint.damageGstApplies !== false;
+
+/** A PENALTY on a branch without a GST rule — an older server refuses to close it. */
 const penaltyGstMissing = (report: DamageReport): boolean =>
+  damageGstApplies(report) &&
   report.chargeType === "PENALTY" &&
   (!!report.financialHint.gstRuleMissing ||
     report.financialHint.cgstRate == null ||
     report.financialHint.sgstRate == null);
 
-/** Net the review will settle: return charges + damage (+ CGST/SGST on a penalty) − safety deposit. */
+/** Net the review will settle: return charges + damage (+ CGST/SGST on a penalty, older servers) − safety deposit. */
 const settlementPreview = (report: DamageReport, finalCost: number) => {
-  const penaltyGst = previewPenaltyGst(
-    report.chargeType,
-    finalCost,
-    report.financialHint.cgstRate,
-    report.financialHint.sgstRate,
-  );
+  const penaltyGst = damageGstApplies(report)
+    ? previewPenaltyGst(
+        report.chargeType,
+        finalCost,
+        report.financialHint.cgstRate,
+        report.financialHint.sgstRate,
+      )
+    : { cgst: 0, sgst: 0, gst: 0 };
   const additionalCharges = report.financialHint.additionalCharges ?? 0;
   const net = round2(additionalCharges + finalCost + penaltyGst.gst - report.booking.deposit);
   return { penaltyGst, additionalCharges, net };
@@ -410,6 +416,7 @@ export const DamageReviewPage = () => {
                     cgstRate={report.financialHint.cgstRate}
                     sgstRate={report.financialHint.sgstRate}
                     gstRuleMissing={penaltyGstMissing(report)}
+                    damageGstApplies={damageGstApplies(report)}
                   />
                 )}
 

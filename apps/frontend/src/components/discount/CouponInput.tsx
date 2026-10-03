@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import {
   discountPublicService,
   discountCustomerService,
+  couponSavingInclGst,
   type CouponValidationResult,
 } from "@/services/discount.service";
 import type { PaymentFlow } from "@/lib/paymentPlan";
 import { useAuthStore } from "@/store/auth.store";
+import { activeOfferCode, useOfferCouponStore } from "@/store/offerCoupon.store";
 
 interface CouponInputProps {
   vehiclePublicId?: string;
@@ -19,7 +21,7 @@ interface CouponInputProps {
   /** Plan the customer picked — the coupon is checked for it, and re-checked when it changes. */
   paymentFlow?: PaymentFlow;
   appliedCode: string | null;
-  /** Coupon layer (pre-GST) of the applied coupon. */
+  /** What the applied coupon takes off the GST-inclusive rent (item 17). */
   appliedAmount?: number;
   /** The applied coupon has no server breakdown yet (restored from an older session) — re-check it. */
   needsRecheck?: boolean;
@@ -47,7 +49,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   COUPON_MIN_AMOUNT: "This coupon requires a higher booking amount.",
   COUPON_MAX_AMOUNT: "This coupon is only valid for smaller bookings.",
   COUPON_VEHICLE_CATEGORY_MISMATCH: "This coupon is not valid for this vehicle category.",
-  COUPON_PAYMENT_PLAN_MISMATCH: "This coupon is not valid for the payment plan you picked.",
+  COUPON_PAYMENT_PLAN_MISMATCH: "This coupon can't be used with how this booking is paid (advance now, balance at pickup).",
   COUPON_USAGE_LIMIT_EXCEEDED: "This coupon has reached its total usage limit.",
   COUPON_PER_USER_LIMIT_EXCEEDED: "You have already used this coupon the maximum number of times.",
   COUPON_BRANCH_LIMIT_EXCEEDED: "This coupon has reached its limit at this branch.",
@@ -80,6 +82,13 @@ export function CouponInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // "Use code" on a landing offer poster (#15): the saved code is prefilled and
+  // tried once for this vehicle and dates (the normal check decides); it is
+  // forgotten once applied or dismissed.
+  const offerCode = useOfferCouponStore((s) => activeOfferCode(s));
+  const clearOfferCode = useOfferCouponStore((s) => s.clearCode);
+  const offerTried = useRef(false);
 
   // Server preview of the coupon for this vehicle, dates and plan (nothing is recorded)
   const checkCoupon = async (code: string): Promise<CheckOutcome> => {
@@ -130,7 +139,8 @@ export function CouponInput({
       }
       onApply(code, outcome.result);
       setInputValue("");
-      const saved = outcome.result.pricing?.couponDiscountAmount ?? Number(outcome.result.discountAmount);
+      // Off the GST-inclusive rent (item 17): a flat ₹100 coupon saves ₹100
+      const saved = couponSavingInclGst(outcome.result);
       toast.success(`Coupon ${code} applied! ₹${saved.toFixed(2)} off`);
     } finally {
       setLoading(false);
@@ -173,6 +183,36 @@ export function CouponInput({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentFlow, appliedCode, needsRecheck]);
+
+  // Offer code (#15): consumed once it is applied, by hand or automatically
+  useEffect(() => {
+    if (appliedCode && appliedCode === offerCode) clearOfferCode();
+  }, [appliedCode, offerCode, clearOfferCode]);
+
+  useEffect(() => {
+    if (appliedCode || !offerCode || offerTried.current) return;
+    if (!((vehiclePublicId || groupKey) && startAt && endAt)) {
+      setInputValue((v) => v || offerCode);
+      return;
+    }
+    offerTried.current = true;
+    setInputValue(offerCode);
+    setError(null);
+    setLoading(true);
+    void checkCoupon(offerCode)
+      .then((outcome) => {
+        if (!outcome.ok) {
+          setError(outcome.message);
+          return;
+        }
+        onApply(offerCode, outcome.result);
+        setInputValue("");
+        const saved = couponSavingInclGst(outcome.result);
+        toast.success(`Offer code ${offerCode} applied! ₹${saved.toFixed(2)} off`);
+      })
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedCode, offerCode, vehiclePublicId, groupKey, startAt, endAt]);
 
   if (appliedCode) {
     return (
@@ -239,6 +279,22 @@ export function CouponInput({
       </div>
       {error && (
         <p className="text-xs text-red-500 pl-1">{error}</p>
+      )}
+      {offerCode && inputValue === offerCode && !loading && (
+        <p className="text-xs text-neutral-500 pl-1">
+          Code from the offer you picked.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              clearOfferCode();
+              setInputValue("");
+              setError(null);
+            }}
+            className="font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
+          >
+            Don't use it
+          </button>
+        </p>
       )}
     </div>
   );

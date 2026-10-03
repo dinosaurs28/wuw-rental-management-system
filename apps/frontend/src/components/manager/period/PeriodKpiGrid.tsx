@@ -210,7 +210,7 @@ export function PeriodKpiGrid({ report }: { report: PeriodReport }) {
               <p>{formatInr(s.extensions.amount)} incl. GST</p>
               {s.extensions.count > 0 && (
                 <p className="text-neutral-400">
-                  Taxable {formatInr(s.extensions.taxableAmount)} · CGST{" "}
+                  Rent without GST {formatInr(s.extensions.taxableAmount)} · CGST{" "}
                   {formatInr(s.extensions.cgstAmount)} · SGST {formatInr(s.extensions.sgstAmount)}
                 </p>
               )}

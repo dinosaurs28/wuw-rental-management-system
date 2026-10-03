@@ -235,8 +235,8 @@ export function snapTo15Minutes(h: number, m: number): { h: number; m: number } 
 }
 
 /**
- * Rental length for labels: under 24 h → "N hours" (a 12 h trip is "12 hours",
- * not "1 day"); otherwise whole days rounded up ("2 days").
+ * Exact rental length, same style as the server's billedAs: under 24 h ->
+ * "N hours"; otherwise "D days" or "D days + R hours" (26 h -> "1 day + 2 hours").
  */
 export function formatRentalLength(
   start: string | Date | null | undefined,
@@ -246,9 +246,11 @@ export function formatRentalLength(
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (!Number.isFinite(ms) || ms <= 0) return "-";
   const hours = Math.ceil(ms / 3_600_000 - 1e-9);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"}`;
-  const days = Math.ceil(ms / 86_400_000 - 1e-9);
-  return `${days} day${days === 1 ? "" : "s"}`;
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  if (hours < 24) return plural(hours, "hour");
+  const d = Math.floor(hours / 24);
+  const r = hours % 24;
+  return r === 0 ? plural(d, "day") : `${plural(d, "day")} + ${plural(r, "hour")}`;
 }
 
 export function getCurrentTime(): string {

@@ -40,6 +40,116 @@ export function formatInrExact(value: number | string | null | undefined): strin
   }).format(n);
 }
 
+/**
+ * GST-inclusive rent (item 17): every configured rent is the total the customer
+ * pays, and GST is split out of the rent after discounts. Pricing responses
+ * carry these numbers next to the classic taxable-terms fields
+ * (basePrice / discountAmount / taxAmount = rent without GST, its discount and
+ * the GST; finalTotal = rent incl. GST after discounts).
+ */
+export interface RentInclGstFields {
+  rentInclGst?: number | null;
+  durationDiscountInclGst?: number | null;
+  couponDiscountInclGst?: number | null;
+  manualDiscountInclGst?: number | null;
+  discountInclGst?: number | null;
+  rentAfterDiscountInclGst?: number | null;
+  rentWithoutGst?: number | null;
+  gst?: number | null;
+  cgst?: number | null;
+  sgst?: number | null;
+}
+
+/** The classic fields a pricing response always has (fallback for quotes cached before item 17). */
+export interface ClassicRentFields {
+  basePrice?: number | string | null;
+  discountAmount?: number | string | null;
+  durationDiscountAmount?: number | string | null;
+  couponDiscountAmount?: number | string | null;
+  manualDiscountAmount?: number | string | null;
+  taxAmount?: number | string | null;
+  cgstAmount?: number | string | null;
+  sgstAmount?: number | string | null;
+  finalTotal?: number | string | null;
+}
+
+/** One rent, GST-inclusive: the price, its discounts and the GST inside what is left. */
+export interface RentInclGstView {
+  /** Rent incl. GST before discounts — the price. */
+  rent: number;
+  durationDiscount: number;
+  couponDiscount: number;
+  manualDiscount: number;
+  /** All discounts, off the inclusive rent. */
+  discount: number;
+  /** Rent incl. GST after discounts (what the rent costs). */
+  rentAfterDiscount: number;
+  rentWithoutGst: number;
+  gst: number;
+  cgst: number;
+  sgst: number;
+}
+
+const money = (v: number | string | null | undefined): number => gstNumber(v) ?? 0;
+const cents = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * The inclusive view of a server pricing result. Uses the server's inclusive
+ * fields when present; a quote cached before they existed falls back to the
+ * classic fields (rent after discounts = base − discount + GST), which is what
+ * that quote costs too.
+ */
+export function rentInclGstView(pd: RentInclGstFields & ClassicRentFields): RentInclGstView {
+  if (pd.rentInclGst != null && pd.rentAfterDiscountInclGst != null) {
+    return {
+      rent: money(pd.rentInclGst),
+      durationDiscount: money(pd.durationDiscountInclGst),
+      couponDiscount: money(pd.couponDiscountInclGst),
+      manualDiscount: money(pd.manualDiscountInclGst),
+      discount: money(pd.discountInclGst),
+      rentAfterDiscount: money(pd.rentAfterDiscountInclGst),
+      rentWithoutGst: money(pd.rentWithoutGst),
+      gst: money(pd.gst),
+      cgst: money(pd.cgst),
+      sgst: money(pd.sgst),
+    };
+  }
+  const discount = money(pd.discountAmount);
+  const rentWithoutGst = cents(money(pd.basePrice) - discount);
+  const gst = money(pd.taxAmount);
+  const rentAfterDiscount =
+    pd.finalTotal != null ? money(pd.finalTotal) : cents(rentWithoutGst + gst);
+  return {
+    rent: cents(rentAfterDiscount + discount),
+    durationDiscount: money(pd.durationDiscountAmount),
+    couponDiscount: money(pd.couponDiscountAmount),
+    manualDiscount: money(pd.manualDiscountAmount),
+    discount,
+    rentAfterDiscount,
+    rentWithoutGst,
+    gst,
+    cgst: money(pd.cgstAmount),
+    sgst: money(pd.sgstAmount),
+  };
+}
+
+/** "Rent without GST ₹1,066 + GST ₹234 = ₹1,300". */
+export function rentGstSplitText(view: Pick<RentInclGstView, "rentWithoutGst" | "gst" | "rentAfterDiscount">): string {
+  return `Rent without GST ${formatInrExact(view.rentWithoutGst)} + GST ${formatInrExact(view.gst)} = ${formatInrExact(view.rentAfterDiscount)}`;
+}
+
+/** "CGST 9% ₹117 + SGST 9% ₹117" (rates optional) — the parts of the GST inside a rent. */
+export function rentGstPartsText(
+  cgst: number | string | null | undefined,
+  sgst: number | string | null | undefined,
+  cgstRate?: number | string | null,
+  sgstRate?: number | string | null,
+): string {
+  const c = formatGstRate(cgstRate);
+  const s = formatGstRate(sgstRate);
+  return `CGST${c ? ` ${c}` : ""} ${formatInrExact(cgst)} + SGST${s ? ` ${s}` : ""} ${formatInrExact(sgst)}`;
+}
+
 /** "9%" / "2.5%" — null when the server sent no rate. */
 export function formatGstRate(rate: number | string | null | undefined): string | null {
   const n = gstNumber(rate);
@@ -53,19 +163,26 @@ export function gstLabel(name: string, rate: number | string | null | undefined)
   return r ? `${name} (${r})` : name;
 }
 
-/** The GST part of a server `pricingDetails` (vehicle / group endpoints), for the booking store. */
-export function gstSplitFromPricing(pd: {
-  taxRate?: number | null;
-  cgstAmount?: number | null;
-  sgstAmount?: number | null;
-  cgstRate?: number | null;
-  sgstRate?: number | null;
-}): {
+/**
+ * The GST part of a server `pricingDetails` (vehicle / group endpoints), for the booking store,
+ * with the GST-inclusive rent view (item 17) the review page shows.
+ */
+export function gstSplitFromPricing(
+  pd: RentInclGstFields &
+    ClassicRentFields & {
+      taxRate?: number | null;
+      cgstAmount?: number | null;
+      sgstAmount?: number | null;
+      cgstRate?: number | null;
+      sgstRate?: number | null;
+    },
+): {
   taxRate: number;
   cgstAmount: number;
   sgstAmount: number;
   cgstRate: number | null;
   sgstRate: number | null;
+  rent: RentInclGstView;
 } {
   return {
     taxRate: gstNumber(pd.taxRate) ?? 0,
@@ -73,6 +190,7 @@ export function gstSplitFromPricing(pd: {
     sgstAmount: gstNumber(pd.sgstAmount) ?? 0,
     cgstRate: gstNumber(pd.cgstRate),
     sgstRate: gstNumber(pd.sgstRate),
+    rent: rentInclGstView(pd),
   };
 }
 

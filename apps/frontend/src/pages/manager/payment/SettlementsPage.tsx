@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowRight, TrendingDown, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -26,16 +27,25 @@ import {
   type PaymentMethod,
   type OnlineGateway,
 } from "@/services/payment.service";
+import { apiErrorMessage } from "@/lib/counterErrors";
 import {
-  apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
-  isValidUtr,
-} from "@/lib/counterErrors";
+  counterPaymentErrorField,
+  formatRupees,
+  type CounterProof,
+  type CounterRefundMethod,
+} from "@/lib/counterPayment";
+import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
+import { RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
 import apiClient from "@/lib/axios";
 import { CreditNoteDialog, type CreditNote } from "@/components/manager/CreditNoteDialog";
 
 const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
+
+/** Money on credit (#11) stays in netPayable but is collected on the Customer Credit page, not here. */
+const payableHere = (s: SettlementSummary) =>
+  s.payableExcludingCredit != null
+    ? parseFloat(s.payableExcludingCredit) || 0
+    : Math.max(0, (parseFloat(s.netPayable) || 0) - (parseFloat(s.creditPending ?? "0") || 0));
 
 // ── Settle Modal ──────────────────────────────────────────────────────────────
 
@@ -48,14 +58,21 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
   const [txnRef, setTxnRef] = useState("");
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [loading, setLoading] = useState(false);
-  // Shown at the reference field (client check or INVALID_UTR / DUPLICATE_UTR)
+  // Shown at the reference / photo field (client check or a refused photo)
   const [refError, setRefError] = useState<string | null>(null);
+  // UPI at the counter is backed by a photo of the customer's payment screen (#3)
+  const [proof, setProof] = useState<CounterProof | null>(null);
+  // Legacy drop (#6): the held safety deposit paid back by the branch manager
+  const [depositMethod, setDepositMethod] = useState<CounterRefundMethod>("CASH");
+  const [depositProof, setDepositProof] = useState<CounterProof | null>(null);
+  const [depositError, setDepositError] = useState<string | null>(null);
+  const [refunding, setRefunding] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
   const isUpi = gateway === "UPI";
 
   useEffect(() => {
     paymentService.getSettlementSummary(bookingPublicId)
-      .then((s) => { setSummary(s); setAmount(parseFloat(s.netPayable).toFixed(2)); })
+      .then((s) => { setSummary(s); setAmount(payableHere(s).toFixed(2)); })
       .catch(() => toast.error("Failed to load settlement details."))
       .finally(() => setLoadingSummary(false));
   }, [bookingPublicId]);
@@ -75,8 +92,12 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
 
   const handleSubmit = async () => {
     if (totalNum <= 0) { toast.error("Please enter a valid amount."); return; }
-    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !isValidUtr(txnRef) : !txnRef.trim())) {
-      setRefError(isUpi ? "Enter the 12-digit UTR number." : "Transaction reference is required for online payments.");
+    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !proof : !txnRef.trim())) {
+      setRefError(
+        isUpi
+          ? "Add a photo of the customer's UPI payment-success screen."
+          : "Transaction reference is required for online payments.",
+      );
       return;
     }
     if (method === "SPLIT" && (cashNum <= 0 || onlineNum <= 0)) { toast.error("Both cash and online portions must be greater than 0."); return; }
@@ -86,20 +107,43 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
         purpose: "REMAINING_BALANCE", method, totalAmount: totalNum,
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef: method !== "CASH" ? (isUpi ? cleanUtr(txnRef) : txnRef.trim()) : undefined,
+        onlineTransactionRef: method !== "CASH" && !isUpi ? txnRef.trim() : undefined,
+        proof_file_id: method !== "CASH" && isUpi ? proof?.proofFileId : undefined,
         onlineGateway: method !== "CASH" ? gateway : undefined,
         idempotencyKey: idempotencyKey.current,
       });
       toast.success("Settlement payment recorded.");
       onDone();
     } catch (err) {
-      const code = counterErrorCode(err);
-      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
-        setRefError(apiErrorMessage(err, "Check the reference and try again."));
+      if (counterPaymentErrorField(err) === "proof") {
+        setRefError(apiErrorMessage(err, "Check the payment photo and try again."));
       } else {
         toast.error(apiErrorMessage(err, "Failed to record settlement."));
       }
     } finally { setLoading(false); }
+  };
+
+  // Legacy drop (#6): pay the held safety deposit back — all of what is still to refund
+  const depositToRefund = parseFloat(summary?.safetyDepositToRefund ?? "0") || 0;
+  // On credit (#11): part of Net Payable, collected on the Customer Credit page
+  const creditHere = parseFloat(summary?.creditPending ?? "0") || 0;
+  const handleRefundDeposit = async () => {
+    setRefunding(true);
+    setDepositError(null);
+    try {
+      const res = await paymentService.refundSettlementDeposit(bookingPublicId, {
+        method: depositMethod,
+        ...(depositMethod === "UPI" && depositProof ? { proof_file_id: depositProof.proofFileId } : {}),
+      });
+      toast.success(res.message || "Safety deposit refunded.");
+      setSummary(res.data.settlement);
+      setAmount(payableHere(res.data.settlement).toFixed(2));
+      setDepositProof(null);
+    } catch (err) {
+      setDepositError(apiErrorMessage(err, "Couldn't record the deposit refund."));
+    } finally {
+      setRefunding(false);
+    }
   };
 
   return (
@@ -124,9 +168,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   ["Damage Charges", summary.damageCharges],
                   // Confirmed extensions (taxable + GST) — informational, already inside the rental total
                   ["Extension Charges (incl. GST, part of rental total)", summary.extensionCharges],
-                  // Extra km / late return recorded at a legacy drop, or the drop bill (incl. GST) — part of Net Payable
+                  // Extra km / late return recorded at a legacy drop, or the drop bill — part of Net Payable.
+                  // No GST on drop charges (item 8); bills completed before keep the GST they carried.
                   ...(summary.returnCharges != null && parseFloat(summary.returnCharges) > 0
-                    ? [["Return Charges (drop bill / extra km / late return, incl. GST)", summary.returnCharges]]
+                    ? [["Return Charges (drop bill / extra km / late return)", summary.returnCharges]]
                     : []),
                   // Refundable safety deposit still held — counted in Net Payable and in Already Paid
                   ...(summary.safetyDepositHeld != null && parseFloat(summary.safetyDepositHeld) > 0
@@ -135,6 +180,20 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   // Refunds paid out — already taken off Already Paid
                   ...(summary.refunded != null && parseFloat(summary.refunded) > 0
                     ? [["Refunded to Customer", summary.refunded]]
+                    : []),
+                  // Left owed at the counter against collateral (#11) — part of Net Payable until cleared
+                  ...(summary.creditPending != null && parseFloat(summary.creditPending) > 0
+                    ? [[
+                        `On Credit${summary.creditCollateral?.length ? ` (collateral: ${summary.creditCollateral.join(", ")})` : ""}`,
+                        summary.creditPending,
+                      ]]
+                    : []),
+                  // Legacy drop's deposit choice (#6) — what is still to pay back
+                  ...(summary.safetyDepositToRefund != null && parseFloat(summary.safetyDepositToRefund) > 0
+                    ? [[
+                        `Safety Deposit to Refund${summary.safetyDepositHandling === "REFUND_IN_FULL" ? " (refund in full)" : " (left after set-off)"}`,
+                        summary.safetyDepositToRefund,
+                      ]]
                     : []),
                 ].map(([label, val]) => (
                   <div key={label} className="flex justify-between items-center px-4 py-2.5">
@@ -167,6 +226,64 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                 />
               </div>
 
+              {/* Money on credit (#11) is collected only on the Customer Credit page, whose
+                  clearing records the payment and closes the credit — never through this form */}
+              {creditHere > 0 && (
+                <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900">
+                  <p>
+                    <span className="font-semibold">{formatRupees(creditHere)} is on customer credit</span>
+                    {summary.creditCollateral?.length ? ` (collateral held: ${summary.creditCollateral.join(", ")})` : ""}.
+                  </p>
+                  <p>
+                    Collect it on the Customer Credit page — clearing it there records the payment.
+                    {summary.customerPublicId && (
+                      <>
+                        {" "}
+                        <Link to={`/manager/ledger/${summary.customerPublicId}`} className="font-medium underline">
+                          Open Customer Credit
+                        </Link>
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Legacy drop (#6): the held safety deposit paid back to the customer */}
+              {depositToRefund > 0 && (
+                <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-blue-900">Refund the safety deposit</span>
+                    <span className="text-sm font-bold text-blue-900">{formatRupees(depositToRefund)}</span>
+                  </div>
+                  <p className="text-xs text-blue-800">
+                    {summary.safetyDepositHandling === "REFUND_IN_FULL"
+                      ? "Staff chose to refund the deposit in full at the drop; collect the charges below separately."
+                      : "The deposit covered the charges; this is what is left to give back."}
+                  </p>
+                  <RefundMethodFields
+                    idPrefix="settle-deposit"
+                    method={depositMethod}
+                    onMethodChange={(m) => { setDepositMethod(m); setDepositError(null); }}
+                    proof={depositProof}
+                    onProofChange={(p) => { setDepositProof(p); setDepositError(null); }}
+                    proofRole="manager"
+                    disabled={refunding}
+                  />
+                  {depositError && <p className="text-xs text-red-600">{depositError}</p>}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-10 border-blue-300 text-blue-800 hover:bg-blue-100"
+                    disabled={refunding}
+                    onClick={handleRefundDeposit}
+                  >
+                    {refunding ? "Recording…" : `Refund ${formatRupees(depositToRefund)} (${depositMethod === "UPI" ? "UPI" : "Cash"})`}
+                  </Button>
+                </div>
+              )}
+
+              {/* Nothing left to collect here (e.g. only the deposit goes back, or only credit is left) — no payment form */}
+              {payableHere(summary) > 0 ? (<>
               {/* Method */}
               <div className="space-y-2">
                 <Label className="text-xs text-neutral-600 font-medium">Payment Method</Label>
@@ -227,19 +344,30 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                       <SelectContent>{gateways.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-neutral-600">{isUpi ? "UTR number" : "Transaction Ref"} <span className="text-red-500">*</span></Label>
-                    <Input
-                      placeholder={isUpi ? "12-digit UTR" : "e.g. pay_xyz789"}
-                      inputMode={isUpi ? "numeric" : undefined}
-                      autoComplete="off"
-                      aria-invalid={!!refError}
-                      className={isUpi ? "h-11 font-mono tracking-wide" : "h-11"}
-                      value={txnRef}
-                      onChange={(e) => { setTxnRef(e.target.value); setRefError(null); }}
+                  {isUpi ? (
+                    // Counter UPI (#3): a photo of the customer's payment screen, no UTR box
+                    <PaymentProofField
+                      id="settle-proof"
+                      className="col-span-2"
+                      role="manager"
+                      value={proof}
+                      onChange={(p) => { setProof(p); setRefError(null); }}
+                      error={refError}
                     />
-                  </div>
-                  {refError && <p className="col-span-2 -mt-1 text-xs text-red-600">{refError}</p>}
+                  ) : (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-neutral-600">Transaction Ref <span className="text-red-500">*</span></Label>
+                      <Input
+                        placeholder="e.g. pay_xyz789"
+                        autoComplete="off"
+                        aria-invalid={!!refError}
+                        className="h-11"
+                        value={txnRef}
+                        onChange={(e) => { setTxnRef(e.target.value); setRefError(null); }}
+                      />
+                    </div>
+                  )}
+                  {refError && !isUpi && <p className="col-span-2 -mt-1 text-xs text-red-600">{refError}</p>}
                 </div>
               )}
 
@@ -249,6 +377,18 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   {loading ? "Recording…" : "Record Settlement"}
                 </Button>
               </div>
+              </>) : (
+                <div className="space-y-3">
+                  <p className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+                    Nothing to collect here.
+                    {depositToRefund > 0 ? " Refund the safety deposit above to settle it." : ""}
+                    {creditHere > 0 ? " The amount on credit is cleared on the Customer Credit page." : ""}
+                  </p>
+                  <Button variant="outline" onClick={depositToRefund > 0 ? onClose : onDone} className="w-full h-11">
+                    Close
+                  </Button>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
@@ -345,6 +485,12 @@ export function SettlementsTab() {
                         <td className="px-5 py-3.5 text-sm text-neutral-600">{item.vehicleRegNo}</td>
                         <td className={`px-5 py-3.5 text-right font-semibold text-sm ${isRefundDue ? "text-blue-600" : "text-neutral-900"}`}>
                           {isRefundDue ? "−" : ""}₹ {Math.abs(net).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          {/* Collected on the Customer Credit page (#11) */}
+                          {parseFloat(item.creditPending ?? "0") > 0 && (
+                            <span className="block text-[11px] font-normal text-amber-700">
+                              {net > 0 ? "incl. " : ""}₹ {parseFloat(item.creditPending!).toLocaleString("en-IN", { minimumFractionDigits: 2 })} on credit
+                            </span>
+                          )}
                         </td>
                         <td className="px-5 py-3.5 text-right">
                           {isRefundDue ? (

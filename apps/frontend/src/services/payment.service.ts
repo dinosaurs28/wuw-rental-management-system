@@ -43,6 +43,12 @@ export interface BranchTransaction {
   collectedAt: string;
   confirmedAt: string | null;
   createdAt: string;
+  // Additive (#3): the UPI payment-screen photo and the cash / UPI split. Absent on older servers.
+  proofPhoto?: PaymentProofPhoto | null;
+  proofPhotoUrl?: string | null;
+  onlineGateway?: string | null;
+  cashAmount?: string;
+  onlineAmount?: string;
 }
 
 export type ShiftStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED";
@@ -66,6 +72,48 @@ export interface FinancialState {
   safetyDepositHeld?: string;
   /** totalFinal + returnCharges + safety deposit held. Absent on older servers. */
   totalOwed?: string;
+  /** Part of amountDue that is on credit (#11) — min(amountDue, credit still pending). */
+  creditPending?: string;
+  /** The booking's customer credit (#11), null when none. */
+  credit?: BookingCreditState | null;
+  /** Legacy drop's deposit choice (#6), null when none recorded. */
+  safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL" | null;
+}
+
+/** A booking's CustomerCreditEntry as the financial state reports it (#11). */
+export interface BookingCreditState {
+  creditEntryPublicId: string;
+  status: "PENDING" | "PARTIALLY_CLEARED" | "CLEARED";
+  total: string;
+  cleared: string;
+  pending: string;
+  /** Collateral notes of the pending sections. */
+  collateral: string[];
+  pendingSections: Array<{
+    sectionKey: string;
+    label: string;
+    amount: string | number;
+    collateral: string | null;
+    purpose: string | null;
+    createdAt: string | null;
+  }>;
+}
+
+/** `proofPhoto` on transaction rows (#3): the UPI payment-screen photo, presigned for 15 minutes. */
+export interface PaymentProofPhoto {
+  proofFileId: string;
+  publicId: string;
+  url: string;
+  mime: string;
+  size: number;
+  capturedAt: string;
+  expiresIn: number;
+}
+
+/** Additive proof fields on transaction rows (absent on older servers). */
+export interface ProofPhotoRowFields {
+  proofPhoto?: PaymentProofPhoto | null;
+  proofPhotoUrl?: string | null;
 }
 
 export interface PaymentTransaction {
@@ -85,7 +133,7 @@ export interface PaymentTransaction {
   customerName?: string;
 }
 
-export interface PendingCashItem {
+export interface PendingCashItem extends ProofPhotoRowFields {
   transactionPublicId: string;
   bookingPublicId: string;
   customerName: string;
@@ -93,6 +141,14 @@ export interface PendingCashItem {
   employeeName: string;
   collectedAt: string;
   purpose: PaymentPurpose;
+  // Additive (#3 / #12): counter UPI and split payments wait here too. Absent on older servers.
+  method?: PaymentMethod;
+  isUpi?: boolean;
+  cashAmount?: string;
+  onlineAmount?: string;
+  onlineGateway?: string | null;
+  onlineTransactionRef?: string | null;
+  notes?: string | null;
 }
 
 export interface SettlementItem {
@@ -100,6 +156,8 @@ export interface SettlementItem {
   customerName: string;
   vehicleRegNo: string;
   netPayable: string;
+  /** Part of netPayable on customer credit (#11). Absent on older servers. */
+  creditPending?: string;
 }
 
 export interface SettlementSummary {
@@ -122,6 +180,33 @@ export interface SettlementSummary {
   refunded?: string;
   /** What netPayable is measured against. Absent on older servers. */
   totalOwed?: string;
+  /** Still owed on credit (#11) — part of netPayable until the BM clears it. */
+  creditPending?: string;
+  /**
+   * What Settlements collects: netPayable less the money on credit (≥ 0). Credit is
+   * collected only on the Customer Credit page. Absent on older servers.
+   */
+  payableExcludingCredit?: string;
+  /** For the Customer Credit page link (/manager/ledger/:customerPublicId). Absent on older servers. */
+  customerPublicId?: string;
+  /** Collateral notes of the credit still pending. */
+  creditCollateral?: string[];
+  /** Legacy drop's deposit choice (#6); null when none recorded. */
+  safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL" | null;
+  /** Safety deposit still to pay back to the customer (#6) — refund-deposit pays it. */
+  safetyDepositToRefund?: string;
+}
+
+/** POST /branchManager/payment/settlements/:id/refund-deposit (#6, legacy drop). */
+export interface DepositRefundResult {
+  refund: {
+    publicId: string;
+    method: "CASH" | "UPI";
+    amount: string;
+    status: string;
+    remainingToRefund: string;
+  };
+  settlement: SettlementSummary;
 }
 
 export interface RefundItem {
@@ -234,6 +319,9 @@ export interface ShiftTransaction {
   notes: string | null;
   /** Recorded after the close snapshot, so not part of the shift's figures. */
   linkedAfterClose: boolean;
+  /** UPI payment-screen photo (#3); absent on older servers. */
+  proofPhoto?: PaymentProofPhoto | null;
+  proofPhotoUrl?: string | null;
 }
 
 export interface ShiftDetail extends ShiftView {
@@ -330,6 +418,8 @@ export interface RecordPaymentPayload {
   onlineGateway?: string;
   notes?: string;
   idempotencyKey: string;
+  /** Photo of the customer's UPI payment screen (#3) — replaces the UTR for UPI. */
+  proof_file_id?: string;
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
@@ -370,7 +460,16 @@ export const razorpayService = {
    */
   verify: (payload: RazorpayVerifyPayload, role: PaymentRole = "customer") =>
     apiClient
-      .post<{ status: "Success"; message?: string; redirectURL?: string }>(
+      .post<{
+        status: "Success";
+        message?: string;
+        redirectURL?: string;
+        /**
+         * A UPI QR had already paid this booking / extension (#2): it is
+         * confirmed, and `message` says this second payment will be refunded.
+         */
+        duplicatePayment?: boolean;
+      }>(
         VERIFY_PATHS[role],
         payload,
       )
@@ -467,6 +566,21 @@ export const paymentService = {
     apiClient
       .post<{ message: string }>(
         `/branchManager/payment/settlements/${bookingPublicId}/pay`,
+        payload
+      )
+      .then((r) => r.data),
+
+  /**
+   * Legacy drop (#6): pay the held safety deposit back — all of
+   * safetyDepositToRefund unless `amount` is sent. Cash comes off the BM's open shift.
+   */
+  refundSettlementDeposit: (
+    bookingPublicId: string,
+    payload: { method: "CASH" | "UPI"; amount?: number; proof_file_id?: string; notes?: string }
+  ) =>
+    apiClient
+      .post<{ success: boolean; message: string; data: DepositRefundResult }>(
+        `/branchManager/payment/settlements/${bookingPublicId}/refund-deposit`,
         payload
       )
       .then((r) => r.data),

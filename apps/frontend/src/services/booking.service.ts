@@ -41,6 +41,17 @@ export interface BookingItem {
   discountPercent: number;
   deposit: number;
   finalTotal: number;
+  // GST-inclusive rent of this vehicle (item 17; absent from older servers)
+  rentInclGst?: number;
+  durationDiscountInclGst?: number;
+  couponDiscountInclGst?: number;
+  manualDiscountInclGst?: number;
+  discountInclGst?: number;
+  rentAfterDiscountInclGst?: number;
+  rentWithoutGst?: number;
+  gst?: number;
+  cgst?: number;
+  sgst?: number;
   /** What the base price covers, e.g. "5 hours", "1 day + 2 hours" (#5). */
   pricingBreakdown?: {
     periodType?: string;
@@ -78,6 +89,74 @@ export interface BookingTotals {
   razorpay: RazorpayOrder | null;
   encryptedFinalPrice: string | null;
   transactionId: string | null;
+  // GST-inclusive rent (item 17; absent from older servers). grandBaseTotal /
+  // grandDiscountTotal / the layer totals above are rent WITHOUT GST.
+  // grandRentAfterDiscountInclGst = grandRentInclGst − grandDiscountInclGst
+  //                               = grandRentWithoutGst + grandTaxTotal.
+  grandRentInclGst?: number;
+  grandDurationDiscountInclGst?: number;
+  grandCouponDiscountInclGst?: number;
+  grandManualDiscountInclGst?: number;
+  grandDiscountInclGst?: number;
+  grandRentAfterDiscountInclGst?: number;
+  grandRentWithoutGst?: number;
+}
+
+/**
+ * The GST-inclusive rent of a booking's totals (item 17). Older servers (GST
+ * added on top of the pre-GST rent) read the same way from the classic totals:
+ * rent after discounts = base − discount + GST.
+ */
+export function bookingTotalsInclGst(t: Pick<
+  BookingTotals,
+  | "grandBaseTotal"
+  | "grandDiscountTotal"
+  | "grandTaxTotal"
+  | "grandDurationDiscountTotal"
+  | "grandCouponDiscountTotal"
+  | "grandRentInclGst"
+  | "grandDurationDiscountInclGst"
+  | "grandCouponDiscountInclGst"
+  | "grandManualDiscountInclGst"
+  | "grandDiscountInclGst"
+  | "grandRentAfterDiscountInclGst"
+  | "grandRentWithoutGst"
+>): {
+  rent: number;
+  durationDiscount: number;
+  couponDiscount: number;
+  manualDiscount: number;
+  discount: number;
+  rentAfterDiscount: number;
+  rentWithoutGst: number;
+  gst: number;
+} {
+  const n = (v: number | string | null | undefined) => Number(v ?? 0) || 0;
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  if (t.grandRentInclGst != null && t.grandRentAfterDiscountInclGst != null) {
+    return {
+      rent: n(t.grandRentInclGst),
+      durationDiscount: n(t.grandDurationDiscountInclGst),
+      couponDiscount: n(t.grandCouponDiscountInclGst),
+      manualDiscount: n(t.grandManualDiscountInclGst),
+      discount: n(t.grandDiscountInclGst),
+      rentAfterDiscount: n(t.grandRentAfterDiscountInclGst),
+      rentWithoutGst: n(t.grandRentWithoutGst),
+      gst: n(t.grandTaxTotal),
+    };
+  }
+  const rentWithoutGst = r2(n(t.grandBaseTotal) - n(t.grandDiscountTotal));
+  const rentAfterDiscount = r2(rentWithoutGst + n(t.grandTaxTotal));
+  return {
+    rent: r2(rentAfterDiscount + n(t.grandDiscountTotal)),
+    durationDiscount: n(t.grandDurationDiscountTotal),
+    couponDiscount: n(t.grandCouponDiscountTotal),
+    manualDiscount: 0,
+    discount: n(t.grandDiscountTotal),
+    rentAfterDiscount,
+    rentWithoutGst,
+    gst: n(t.grandTaxTotal),
+  };
 }
 
 export interface CreateBookingSummaryResponse {
@@ -86,7 +165,8 @@ export interface CreateBookingSummaryResponse {
   payment_type: "CASH" | "ONLINE";
   /** The plan actually charged (the server converts a plan the branch/amounts don't allow). */
   payment_flow: "FULL" | "ADVANCE";
-  paymentFlowRequested?: "FULL" | "ADVANCE";
+  /** null when the request carried no payment_flow (item 18: the plan is the server's). */
+  paymentFlowRequested?: "FULL" | "ADVANCE" | null;
   paymentFlowAdjusted?: boolean;
   paymentFlowAdjustReason?: PaymentFlowReason | null;
   /** Show as an inline notice when the plan was adjusted. */
@@ -219,6 +299,9 @@ export interface EmployeeBooking {
     autoKmSkipped?: "VEHICLE_SWAPPED" | null;
     /** A mid-rental swap was recorded without readings — staff enter the extra km at drop. */
     manualExtraKmAllowed?: boolean;
+    /** includedKm = free km of the original period + free km the extensions add (#7). */
+    freeKmOriginal?: number;
+    freeKmExtensions?: number;
   } | null;
   /** Return details only: original / extended / late rental time (drop screen). */
   rentalTimeline?: RentalTimeline;
@@ -511,6 +594,8 @@ export const bookingService = {
       applyGrace?: boolean;
       /** Drops the automatic late charge (audit-logged). */
       waiveLateCharge?: { reason: string } | null;
+      /** Safety deposit (#6): SET_OFF (default) or REFUND_IN_FULL — the branch manager settles it. */
+      safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL";
     },
   ) => {
     const response = await apiClient.post<{
@@ -520,6 +605,12 @@ export const bookingService = {
       km?: ReturnKmSummary | null;
       late?: ReturnLateSummary;
       returnCharges?: LegacyReturnCharges;
+      /** The deposit choice recorded with the return (#6); null when no deposit is held. */
+      safetyDeposit?: {
+        handling: "SET_OFF" | "REFUND_IN_FULL";
+        amount: string;
+        settledBy: "BRANCH_MANAGER";
+      } | null;
     }>(
       `/employee/return/${bookingId}/complete`,
       data,
@@ -577,10 +668,18 @@ export const bookingService = {
   initiateRemainingPayment: async (
     bookingId: string,
     context: "pickup" | "return",
-    data: { method: "CASH" | "UPI" | "ONLINE" },
+    data: {
+      /** UPI = counter UPI backed by proof_file_id; SPLIT = cashAmount + onlineAmount; CREDIT needs collateral (#11). */
+      method: "CASH" | "UPI" | "ONLINE" | "SPLIT" | "CREDIT";
+      proof_file_id?: string;
+      cashAmount?: number;
+      onlineAmount?: number;
+      collateral?: string;
+    },
   ) => {
     const paidDuring = context === "pickup" ? "PICKUP" : "RETURN";
-    const method = data.method === "ONLINE" ? "ONLINE_RAZORPAY" : data.method;
+    const { method: picked, ...extra } = data;
+    const method = picked === "ONLINE" ? "ONLINE_RAZORPAY" : picked;
     const response = await apiClient.post<{
       success: boolean;
       message: string;
@@ -588,10 +687,12 @@ export const bookingService = {
         razorpay?: RazorpayOrder;
         transactionId?: string;
         amountCollected?: string;
+        /** CREDIT: the balance left owed against the collateral. */
+        amountOnCredit?: string;
         method?: string;
         paidDuring?: string;
       };
-    }>(`/employee/${context}/${bookingId}/initiate-remaining-payment`, { method, paidDuring });
+    }>(`/employee/${context}/${bookingId}/initiate-remaining-payment`, { method, paidDuring, ...extra });
     return {
       ...response.data,
       razorpay: response.data.data?.razorpay,
@@ -681,9 +782,18 @@ export const bookingService = {
     customer_kyc_id?: string;
     start: string;
     end: string;
-    payment_type: "CASH" | "ONLINE" | "UPI";
-    /** 12-digit UPI UTR — required when payment_type is "UPI". */
+    /** ONLINE = Razorpay; SPLIT = cash + UPI; CREDIT = owed against collateral (#11). */
+    payment_type: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
+    /** 12-digit UPI UTR — older clients only; new UIs send proof_file_id. */
     utr?: string;
+    /** Photo of the customer's UPI payment screen (#3) — UPI and the UPI part of SPLIT. */
+    proof_file_id?: string;
+    /** SPLIT: the cash part (the UPI part is the rest of the total). */
+    cash_amount?: number;
+    /** SPLIT (optional): the UPI part — cash + UPI must equal the total. */
+    upi_amount?: number;
+    /** CREDIT: what was taken from the customer until it is cleared. */
+    collateral?: string;
     /** QrPhotoView.publicId of the customer's current QR code photo (409 QR_PHOTO_MISMATCH if replaced). */
     qr_photo_id?: string;
     /** Counter plan: MONTHLY = 30–180 days, pickup within 15 days (omitted = STANDARD). */

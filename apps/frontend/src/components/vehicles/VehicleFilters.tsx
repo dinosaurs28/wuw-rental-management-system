@@ -32,7 +32,20 @@ import type { ScheduleVerdict } from "@/utils/branchScheduleValidator";
 import type { VehicleUseCase } from "@/services/vehicle.service";
 import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
 import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
+import {
+  ExtraHoursSelect,
+  PackageHints,
+  PackageQuickChips,
+  PackageSelect,
+  formatPackageReturn,
+} from "@/components/booking/PackagePicker";
 import { bookingPickerLimits, MAX_BOOKING_DAYS } from "@/utils/bookingPickers";
+import {
+  MAX_EXTRA_HOURS,
+  packageRangeState,
+  returnForNewPickup,
+  returnForPackage,
+} from "@/utils/bookingPackages";
 
 interface VehicleFiltersProps {
   branches: { publicId: string; name: string }[];
@@ -63,6 +76,12 @@ interface VehicleFiltersProps {
   onUseCasesChange?: (useCases: VehicleUseCase[]) => void;
   /** Fleet "Monthly rental" plan: 30–180 days, no 15-day limit on the return. */
   monthly?: boolean;
+  /**
+   * Package lengths instead of a free return picker (not on the monthly plan):
+   * "customer" = 12 hours / 1–15 days only; "fleet" = the same plus 0–11 extra
+   * hours. The return is computed and shown read-only.
+   */
+  packageMode?: "customer" | "fleet";
 }
 
 const SORT_OPTIONS = [
@@ -99,9 +118,65 @@ export const VehicleFilters = ({
   useCases = [],
   onUseCasesChange,
   monthly = false,
+  packageMode,
 }: VehicleFiltersProps) => {
   // Local state for immediate input response
   const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Packages (12 hours / N days, + extra hours for Fleet): the return is computed
+  const usePackages = !!packageMode && !monthly && !!onReturnDateChange && !!onReturnTimeChange;
+  const packageInput = {
+    schedule,
+    pickupDate,
+    pickupTime: pickupTime || "10:00",
+    returnDate,
+    returnTime: returnTime || "10:00",
+    allowExtraHours: packageMode === "fleet",
+  };
+  const pkg = useMemo(
+    () => packageRangeState(packageInput),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, pickupDate, pickupTime, returnDate, returnTime, packageMode],
+  );
+  const applyReturn = (ret: { returnDate: Date; returnTime: string } | null) => {
+    if (!ret) return;
+    onReturnDateChange(ret.returnDate);
+    onReturnTimeChange?.(ret.returnTime);
+  };
+  // A range that isn't a bookable package snaps to one (old range, hours just loaded, a pickup change)
+  const correctionKey =
+    usePackages && pkg.correction
+      ? `${pkg.correction.returnDate.getTime()}|${pkg.correction.returnTime}`
+      : "";
+  useEffect(() => {
+    if (usePackages && pkg.correction) applyReturn(pkg.correction);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [correctionKey]);
+
+  // The pickup moved: the return moves with it, keeping the package (+ extra hours)
+  const handlePickupDate = (date: Date | undefined) => {
+    onPickupDateChange(date);
+    if (usePackages && date) {
+      applyReturn(returnForNewPickup(packageInput, { pickupDate: date, pickupTime: pickupTime || "10:00" }));
+    }
+  };
+  const handlePickupTime = (time: string) => {
+    onPickupTimeChange?.(time);
+    if (usePackages) applyReturn(returnForNewPickup(packageInput, { pickupDate, pickupTime: time }));
+  };
+  const choosePackage = (packageHours: number) =>
+    applyReturn(
+      returnForPackage(packageInput, { packageHours, extraHours: packageMode === "fleet" ? pkg.extraHours : 0 }),
+    );
+  const chooseExtraHours = (extraHours: number) => {
+    if (!pkg.selected) return;
+    applyReturn(
+      returnForPackage(packageInput, {
+        packageHours: pkg.selected.hours,
+        extraHours: Math.min(extraHours, MAX_EXTRA_HOURS),
+      }),
+    );
+  };
 
   // Office hours (#2) + 15-day window (#15) for the date/time pickers
   const limits = useMemo(
@@ -213,7 +288,7 @@ export const VehicleFilters = ({
               <Calendar
                 mode="single"
                 selected={pickupDate || undefined}
-                onSelect={onPickupDateChange}
+                onSelect={handlePickupDate}
                 disabled={limits.isPickupDayDisabled}
               />
             </PopoverContent>
@@ -228,7 +303,7 @@ export const VehicleFilters = ({
           <div className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center focus-within:border-zinc-300 transition-all">
             <TimeSelect
               value={pickupTime || "10:00"}
-              onChange={(v) => onPickupTimeChange?.(v)}
+              onChange={handlePickupTime}
               isDisabled={limits.isPickupSlotDisabled}
               className="w-full"
             />
@@ -236,6 +311,53 @@ export const VehicleFilters = ({
           <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" />
         </div>
 
+        {usePackages ? (
+          <>
+            {/* Rental length — 12 hours or whole days; the return follows */}
+            <div className="w-full">
+              <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+                Rental Length
+              </label>
+              <PackageSelect
+                state={pkg}
+                onSelect={choosePackage}
+                triggerClassName="!h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5 font-medium"
+              />
+            </div>
+
+            {/* Fleet: 0–11 extra hours on top of the package (Extra Hour Rate) */}
+            {packageMode === "fleet" && (
+              <div className="w-full">
+                <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+                  Extra Hours
+                </label>
+                <ExtraHoursSelect
+                  state={pkg}
+                  onSelect={chooseExtraHours}
+                  triggerClassName="!h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5 font-medium"
+                />
+              </div>
+            )}
+
+            {/* Return — computed, read-only */}
+            <div className="w-full">
+              <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+                Return
+              </label>
+              <div
+                aria-live="polite"
+                className="h-14 w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center gap-3 font-medium"
+              >
+                <CalendarIcon className="size-4 text-zinc-400 shrink-0" />
+                <span className="truncate text-sm">
+                  {pkg.selected ? formatPackageReturn(pkg.returnAt) : "—"}
+                </span>
+              </div>
+              <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
+            </div>
+          </>
+        ) : (
+          <>
         {/* Return Date */}
         <div className="w-full">
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
@@ -289,6 +411,8 @@ export const VehicleFilters = ({
           </div>
           <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
         </div>
+          </>
+        )}
 
         {/* Category */}
         <div className="w-full">
@@ -349,7 +473,12 @@ export const VehicleFilters = ({
 
       {/* Quick durations (#5) + booking window (#15) */}
       <div className="mt-5 relative z-10 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6 ml-2">
-        {!monthly && onReturnDateChange && onReturnTimeChange && (
+        {usePackages ? (
+          <div className="space-y-1.5">
+            <PackageQuickChips state={pkg} onSelect={choosePackage} />
+            <PackageHints state={pkg} showExtraHoursNote={packageMode === "fleet"} />
+          </div>
+        ) : !monthly && onReturnDateChange && onReturnTimeChange && (
           <DurationPresetChips
             pickupDate={pickupDate}
             pickupTime={pickupTime || "10:00"}
@@ -365,7 +494,11 @@ export const VehicleFilters = ({
         <p className="text-[11px] font-medium text-zinc-400 sm:pt-2">
           {monthly
             ? "Monthly rental: 30 to 180 days, pickup within the next 15 days"
-            : `Book up to ${MAX_BOOKING_DAYS} days ahead, up to ${MAX_BOOKING_DAYS} days long`}
+            : usePackages
+              ? packageMode === "fleet"
+                ? `12 hours or 1–${MAX_BOOKING_DAYS} days, plus up to ${MAX_EXTRA_HOURS} extra hours · up to ${MAX_BOOKING_DAYS} days ahead`
+                : `12 hours or 1–${MAX_BOOKING_DAYS} days · book up to ${MAX_BOOKING_DAYS} days ahead`
+              : `Book up to ${MAX_BOOKING_DAYS} days ahead, up to ${MAX_BOOKING_DAYS} days long`}
         </p>
       </div>
       {limits.windowError && (

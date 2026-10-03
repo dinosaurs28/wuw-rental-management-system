@@ -79,6 +79,11 @@ const items = [
     icon: MessageCircle,
   },
   {
+    title: "Email & SMS",
+    url: "/admin/delivery",
+    icon: MessageCircle,
+  },
+  {
     title: "Audit Log",
     url: "/admin/audit-log",
     icon: ScrollText,

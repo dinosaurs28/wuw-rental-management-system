@@ -25,6 +25,19 @@ export interface CouponPricing {
   deposit: number;
   /** finalTotal + deposit. */
   payableTotal: number;
+  // GST-inclusive rent view (item 17; absent from older servers):
+  // rentInclGst − discountInclGst = rentAfterDiscountInclGst = rentWithoutGst + gst.
+  // basePrice / discountAmount / taxableAmount above are rent WITHOUT GST.
+  rentInclGst?: number;
+  durationDiscountInclGst?: number;
+  couponDiscountInclGst?: number;
+  manualDiscountInclGst?: number;
+  discountInclGst?: number;
+  rentAfterDiscountInclGst?: number;
+  rentWithoutGst?: number;
+  gst?: number;
+  cgst?: number;
+  sgst?: number;
 }
 
 export interface CouponValidationResult {
@@ -32,6 +45,8 @@ export interface CouponValidationResult {
   couponCode: string;
   /** Coupon layer only (pre-GST). */
   discountAmount: string;
+  /** What the coupon takes off the GST-inclusive rent (item 17) — show this one. */
+  discountInclGst?: string;
   discountType?: string;
   discountValue?: string;
   // Absent from servers older than the Oct 2026 coupon fixes
@@ -53,6 +68,20 @@ export interface CouponValidationError {
 
 export type CouponValidation = CouponValidationResult | CouponValidationError;
 
+/**
+ * What an accepted coupon takes off what the customer pays: the discount on the
+ * GST-inclusive rent (item 17). Older servers only sent the pre-GST amount.
+ */
+export function couponSavingInclGst(result: CouponValidationResult): number {
+  const v =
+    result.discountInclGst ??
+    result.pricing?.couponDiscountInclGst ??
+    result.pricing?.couponDiscountAmount ??
+    result.discountAmount;
+  return Number(v) || 0;
+}
+
+/** Amounts are on the GST-inclusive rent (item 17): finalTotal = rent incl. GST after discounts. */
 export interface DiscountSummary {
   bookingPublicId: string;
   durationDiscountAmount: string;

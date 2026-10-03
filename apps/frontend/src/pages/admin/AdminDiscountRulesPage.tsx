@@ -694,7 +694,7 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                   />
                 </div>
               </div>
-              <p className="text-xs text-neutral-400 -mt-2">Rental before GST.</p>
+              <p className="text-xs text-neutral-400 -mt-2">Rent incl. GST (what the customer pays for the rent).</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -731,6 +731,13 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                     <SelectItem value="ADVANCE">Advance payment only</SelectItem>
                   </SelectContent>
                 </Select>
+                {planChoice === "FULL" && (
+                  <p className="text-xs text-amber-700">
+                    Online bookings are paid with an advance, so customers can&apos;t use a
+                    full-payment-only coupon online at all. It still applies at the counter to
+                    walk-in bookings, which are paid in full.
+                  </p>
+                )}
               </div>
             </div>
           )}

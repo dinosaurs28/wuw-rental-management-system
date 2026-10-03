@@ -60,27 +60,27 @@ export function LedgerSummaryCard({ session, className, onRemoveDiscount }: Ledg
   const netPayable = parseFloat(session.netPayable);
   const isRefund = netPayable < 0;
 
-  // Discounts are pre-GST: a discount line's amount carries its GST reversal
-  // (gstAmount < 0), so it is shown before GST and the GST row is net of it.
+  // Rent is GST-inclusive (item 17) and drop / recovery charges carry no GST
+  // (item 8), so every line is shown at what it adds to the bill: a taxable line
+  // (extension rent) as its amount + its GST, a discount as its full credit
+  // (amount — its GST reversal is a part of it). The lines then add up to the
+  // net payable, and the GST row below only says how much GST is inside them.
   // Every figure is the server's stored value; nothing is taxed here.
   const discountGst = round2(discounts.reduce((s, e) => s + num(e.gstAmount), 0));
   const netGst = round2(num(session.gstAmount) + discountGst);
   const hasGstInclusiveCharge = charges.some(isGstInclusiveCharge);
-  // Taxable value = taxable lines (pre-GST) + the taxable share of discounts.
-  // A GST-inclusive line (pickup remaining balance) carries its GST already, so
-  // it is left out and the row reads "of other charges".
-  const preGstTaxable = charges.filter((e) => e.classification === "TAXABLE" && !isGstInclusiveCharge(e));
-  const taxableValue = round2(
-    preGstTaxable.reduce((s, e) => s + num(e.amount), 0) + discounts.reduce((s, e) => s + num(e.baseAmount), 0),
-  );
-  const showTaxableValue = netGst > 0 && taxableValue > 0 && preGstTaxable.length > 0;
-  const gstRowLabel = !hasGstInclusiveCharge
-    ? "GST"
-    : netGst < 0
+  const chargeShown = (e: LedgerEntry) =>
+    e.classification === "TAXABLE" && !isGstInclusiveCharge(e) ? round2(num(e.amount) + num(e.gstAmount)) : num(e.amount);
+  const gstRowLabel =
+    netGst < 0
       ? "GST taken off by the discount"
-      : discountGst !== 0
-        ? "GST on other charges (net of discount)"
-        : "GST on other charges";
+      : hasGstInclusiveCharge
+        ? discountGst !== 0
+          ? "GST included in the other lines (net of discount)"
+          : "GST included in the other lines"
+        : discountGst !== 0
+          ? "GST included above (net of discount)"
+          : "GST included above";
   // CGST / SGST from the per-line split, only when it adds up to the GST shown.
   const cgstSum = round2(live.reduce((s, e) => s + num(e.cgst), 0));
   const sgstSum = round2(live.reduce((s, e) => s + num(e.sgst), 0));
@@ -103,10 +103,13 @@ export function LedgerSummaryCard({ session, className, onRemoveDiscount }: Ledg
               {entryLabel(e)}
               {isGstInclusiveCharge(e) && <span className="text-xs"> (GST already included)</span>}
               {e.classification === "TAXABLE" && !isGstInclusiveCharge(e) && num(e.gstAmount) !== 0 && (
-                <span className="text-xs"> (excl. GST)</span>
+                <span className="text-xs">
+                  {" "}
+                  (rent without GST {formatAmount(e.amount)} + GST {formatAmount(e.gstAmount ?? "0")})
+                </span>
               )}
             </span>
-            <span>{formatAmount(e.amount)}</span>
+            <span>{formatAmount(chargeShown(e).toFixed(2))}</span>
           </div>
         ))}
 
@@ -117,14 +120,17 @@ export function LedgerSummaryCard({ session, className, onRemoveDiscount }: Ledg
               <div key={e.publicId} className="flex items-center justify-between text-sm">
                 <span className={cn("flex-1", amountColor(e))}>
                   {entryLabel(e)}
-                  {num(e.gstAmount) !== 0 && <span className="text-xs"> (before GST)</span>}
+                  {/* The full credit: its GST reversal is part of it */}
+                  {num(e.gstAmount) !== 0 && (
+                    <span className="text-xs"> · GST part {formatAmount(e.gstAmount ?? "0")}</span>
+                  )}
                   {/* Pickup entries come without their GST part: a counter coupon there carries its GST reversal. */}
                   {e.gstAmount === undefined && session.sessionType === "PICKUP" && (
                     <span className="text-xs"> (incl. GST)</span>
                   )}
                 </span>
                 <span className={cn("font-medium", amountColor(e))}>
-                  {formatAmount(round2(num(e.amount) - num(e.gstAmount)).toFixed(2))}
+                  {formatAmount(e.amount)}
                 </span>
                 {onRemoveDiscount && session.status === "AWAITING_PAYMENT" && (
                   <button
@@ -141,20 +147,12 @@ export function LedgerSummaryCard({ session, className, onRemoveDiscount }: Ledg
           </>
         )}
 
-        {(showTaxableValue || netGst !== 0) && <Separator className="my-1" />}
-        {showTaxableValue && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">
-              {hasGstInclusiveCharge ? "Taxable value of other charges" : "Taxable value"}
-            </span>
-            <span>{formatAmount(taxableValue.toFixed(2))}</span>
-          </div>
-        )}
+        {netGst !== 0 && <Separator className="my-1" />}
         {netGst !== 0 && (
           <div className="text-sm">
-            <div className="flex justify-between">
-              {/* The remaining balance already carries its own GST — this row is the rest. */}
-              <span className="text-muted-foreground">{gstRowLabel}</span>
+            <div className="flex justify-between text-muted-foreground">
+              {/* Informational: this GST is already inside the lines above (not added again). */}
+              <span>{gstRowLabel}</span>
               <span>{formatAmount(netGst.toFixed(2))}</span>
             </div>
             {showSplit && (

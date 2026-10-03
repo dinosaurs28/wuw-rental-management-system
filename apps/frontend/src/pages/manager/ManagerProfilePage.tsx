@@ -7,6 +7,7 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
+import RecoveryPhoneCard from "@/components/auth/RecoveryPhoneCard";
 import { useBranchManagerAuthStore } from "@/store/branchManagerAuth.store";
 
 export const ManagerProfilePage = () => {
@@ -60,6 +61,9 @@ export const ManagerProfilePage = () => {
               </p>
             </div>
           </div>
+        </div>
+        <div className="mt-6">
+          <RecoveryPhoneCard portal="branchManager" />
         </div>
       </div>
     </ManagerLayout>

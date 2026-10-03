@@ -21,12 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
-import {
-  apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
-  isValidUtr,
-} from "@/lib/counterErrors";
+import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
+import { counterPaymentErrorField, type CounterProof } from "@/lib/counterPayment";
+import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
 
 interface RecordPaymentModalProps {
   open: boolean;
@@ -82,8 +79,10 @@ export function RecordPaymentModal({
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  // Shown at the reference field (client check or INVALID_UTR / DUPLICATE_UTR)
+  // Shown at the reference / photo field (client check or a refused photo)
   const [refError, setRefError] = useState<string | null>(null);
+  // Counter UPI is backed by a photo of the customer's payment screen (#3), not a UTR
+  const [proof, setProof] = useState<CounterProof | null>(null);
   // Staff only — the staff endpoint needs an open cash shift
   const [shiftRequired, setShiftRequired] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
@@ -100,6 +99,7 @@ export function RecordPaymentModal({
     setAmount(amountDue.toString());
     setCashAmount("");
     setTxnRef("");
+    setProof(null);
     setGateway("UPI");
     setNotes("");
     setRefError(null);
@@ -123,10 +123,10 @@ export function RecordPaymentModal({
       toast.error("Please enter a valid amount.");
       return;
     }
-    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !isValidUtr(txnRef) : !txnRef.trim())) {
+    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !proof : !txnRef.trim())) {
       setRefError(
         isUpi
-          ? "Enter the 12-digit UTR number."
+          ? "Add a photo of the customer's UPI payment-success screen."
           : "Transaction reference is required for online payments.",
       );
       return;
@@ -145,8 +145,8 @@ export function RecordPaymentModal({
         totalAmount: totalNum,
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef:
-          method !== "CASH" ? (isUpi ? cleanUtr(txnRef) : txnRef.trim()) : undefined,
+        onlineTransactionRef: method !== "CASH" && !isUpi ? txnRef.trim() : undefined,
+        proof_file_id: method !== "CASH" && isUpi ? proof?.proofFileId : undefined,
         onlineGateway: method !== "CASH" ? gateway : undefined,
         notes: notes || undefined,
         idempotencyKey: idempotencyKey.current,
@@ -164,8 +164,8 @@ export function RecordPaymentModal({
       resetAndClose();
     } catch (err) {
       const code = counterErrorCode(err);
-      if (code === "INVALID_UTR" || code === "DUPLICATE_UTR") {
-        setRefError(apiErrorMessage(err, "Check the reference and try again."));
+      if (counterPaymentErrorField(err) === "proof") {
+        setRefError(apiErrorMessage(err, "Check the payment photo and try again."));
       } else if (code === "SHIFT_REQUIRED") {
         setShiftRequired(true);
       } else {
@@ -381,26 +381,38 @@ export function RecordPaymentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="txnRef">
-                      {isUpi ? "UTR number" : "Transaction Reference"}{" "}
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="txnRef"
-                      placeholder={isUpi ? "12-digit UTR" : "e.g. pay_xyz789"}
-                      inputMode={isUpi ? "numeric" : undefined}
-                      autoComplete="off"
-                      aria-invalid={!!refError}
-                      className={isUpi ? "h-12 font-mono tracking-wide" : "h-12"}
-                      value={txnRef}
-                      onChange={(e) => {
-                        setTxnRef(e.target.value);
+                  {isUpi ? (
+                    // Counter UPI (#3): photo of the customer's payment screen
+                    <PaymentProofField
+                      id="record-payment-proof"
+                      role={role === "employee" ? "staff" : "manager"}
+                      value={proof}
+                      onChange={(p) => {
+                        setProof(p);
                         setRefError(null);
                       }}
+                      error={refError}
                     />
-                    {refError && <p className="text-xs text-red-600">{refError}</p>}
-                  </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="txnRef">
+                        Transaction Reference <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="txnRef"
+                        placeholder="e.g. pay_xyz789"
+                        autoComplete="off"
+                        aria-invalid={!!refError}
+                        className="h-12"
+                        value={txnRef}
+                        onChange={(e) => {
+                          setTxnRef(e.target.value);
+                          setRefError(null);
+                        }}
+                      />
+                      {refError && <p className="text-xs text-red-600">{refError}</p>}
+                    </div>
+                  )}
                 </>
               )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
@@ -16,10 +16,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import SmsResetFlow from "@/components/auth/SmsResetFlow";
+import { passwordResetService, type ResetChannels } from "@/services/passwordReset.service";
 
 export default function AdminForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [mode, setMode] = useState<"sms" | "email">("sms");
+  const [channels, setChannels] = useState<ResetChannels | null>(null);
+
+  useEffect(() => {
+    passwordResetService.getChannels().then((c) => {
+      setChannels(c);
+      if (!c.sms) setMode("email");
+    });
+  }, []);
 
   const form = useForm<z.infer<typeof forgotPasswordSchema>>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -70,12 +81,21 @@ export default function AdminForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="text-sm text-muted-foreground">
-              Enter your email address and we'll send you a link to reset
-              your password.
+              {mode === "sms"
+                ? "Enter your mobile number or email and we'll text you a 6-digit code."
+                : "Enter your email address and we'll send you a link to reset your password."}
             </p>
           </div>
 
-          {submitted ? (
+          {mode === "sms" ? (
+            <SmsResetFlow
+              scope="admin"
+              variant="portal"
+              signInPath="/admin/sign-in"
+              emailAvailable={channels?.email !== false}
+              onUseEmail={() => setMode("email")}
+            />
+          ) : submitted ? (
             <p className="text-sm text-muted-foreground">
               If that email is registered, a reset link has been sent.
               Please check your inbox.
@@ -108,6 +128,23 @@ export default function AdminForgotPasswordPage() {
                 </Button>
               </form>
             </Form>
+          )}
+
+          {mode === "email" && channels?.email === false && (
+            <p className="text-center text-sm text-amber-600">
+              Email reset is unavailable right now — use the SMS code.
+            </p>
+          )}
+          {mode === "email" && channels?.sms !== false && (
+            <p className="text-center text-sm text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => setMode("sms")}
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Text me a code instead
+              </button>
+            </p>
           )}
 
           <p className="text-center text-sm text-muted-foreground">

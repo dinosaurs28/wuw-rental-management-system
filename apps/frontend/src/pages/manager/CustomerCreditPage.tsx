@@ -16,11 +16,32 @@ import {
 import { AddCreditDrawer } from "@/components/manager/ledger/AddCreditDrawer";
 import { ClearCreditDrawer } from "@/components/manager/ledger/ClearCreditDrawer";
 import { CreditBookingCard } from "@/components/manager/ledger/CreditBookingCard";
-import { ledgerService } from "@/services/ledger.service";
+import { ledgerService, type CreditClearance } from "@/services/ledger.service";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 
 function formatAmount(val: string | number) {
   return `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+const formatClearedAt = (iso: string) =>
+  new Date(iso).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+/** How a clearance was paid — "ONLINE" is the older name for UPI. */
+const clearanceMethodLabel = (c: CreditClearance) =>
+  c.paymentMethod === "ALREADY_PAID"
+    ? "Already paid — no new payment"
+    : c.paymentMethod === "SPLIT"
+      ? "Split (cash + UPI)"
+      : c.paymentMethod === "CASH"
+        ? "Cash"
+        : "UPI";
 
 export const CustomerCreditPage = () => {
   const { customerId } = useParams<{ customerId: string }>();
@@ -173,6 +194,8 @@ export const CustomerCreditPage = () => {
                         }`}
                       >
                         {s.label} · {formatAmount(s.amount)}
+                        {/* Cancelled booking (#11): closed, nothing owed */}
+                        {s.voided ? " · closed (booking cancelled)" : ""}
                       </span>
                     ))}
                     {(entry.sections?.length ?? 0) > 5 && (
@@ -181,6 +204,40 @@ export const CustomerCreditPage = () => {
                       </span>
                     )}
                   </div>
+                  {/* Collateral held for credit given at the counter (#11) */}
+                  {(entry.sections ?? [])
+                    .filter((s) => !s.isCleared && s.collateral)
+                    .map((s) => (
+                      <p key={`col-${s.sectionKey}`} className="px-4 text-xs text-amber-700">
+                        Collateral held: <span className="font-medium">{s.collateral}</span>
+                        <span className="text-zinc-500">
+                          {" "}— {s.label}
+                          {s.createdByName ? ` · ${s.createdByName}` : ""}
+                        </span>
+                      </p>
+                    ))}
+                  {/* Clearances and the payments they recorded, with the UPI photo (#3) */}
+                  {(entry.clearances ?? []).length > 0 && (
+                    <div className="px-4 pb-2 space-y-1">
+                      {(entry.clearances ?? []).map((c) => (
+                        <div key={c.publicId} className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                          <span>
+                            Cleared {formatAmount(c.amountCleared)} · {clearanceMethodLabel(c)} ·{" "}
+                            {formatClearedAt(c.clearedAt)}
+                          </span>
+                          {(c.payments ?? [])
+                            .filter((p) => p.proofPhoto || p.proofPhotoUrl)
+                            .map((p) => (
+                              <ProofPhotoThumb
+                                key={p.publicId}
+                                photo={p.proofPhoto ?? { url: p.proofPhotoUrl! }}
+                                caption={`${entry.booking.publicId} · UPI ${formatAmount(p.onlineAmount)}`}
+                              />
+                            ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

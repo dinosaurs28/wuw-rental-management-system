@@ -21,6 +21,7 @@ import { compressImage } from "@/lib/utils";
 import { UploadedDocumentsGrid } from "@/components/verification/UploadedDocumentsGrid";
 
 import { useKycStore } from "@/store/kyc.store";
+import { DlPhotosAlertDialog, dlPairCompletedByUpload } from "@/components/booking/DlPhotosAlertDialog";
 import { useAuthStore } from "@/store/auth.store";
 import { kycService } from "@/services/kyc.service";
 
@@ -43,6 +44,7 @@ export function DocumentsPage() {
   } = useKycStore();
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dlAlertOpen, setDlAlertOpen] = useState(false);
   const [isProfileMissing, setIsProfileMissing] = useState(false);
   const [uploadingSide, setUploadingSide] = useState<KycSide | null>(null);
   const [selectedSide, setSelectedSide] = useState<KycSide | null>(null);
@@ -108,8 +110,14 @@ export function DocumentsPage() {
           selectedDocumentType,
           side,
         );
+        const completesDlPair = dlPairCompletedByUpload(
+          useKycStore.getState().uploadedDocuments,
+          selectedDocumentType,
+          side,
+        );
         addDocument(response.data);
         toast.success(`${side === "FRONT" ? "Front" : "Back"} side uploaded`);
+        if (completesDlPair) setDlAlertOpen(true);
         setSelectedSide(null);
 
         // Auto-deselect type once both sides are uploaded
@@ -218,6 +226,7 @@ export function DocumentsPage() {
 
   return (
     <DashboardLayout>
+      <DlPhotosAlertDialog open={dlAlertOpen} onOpenChange={setDlAlertOpen} />
       <div className="container mx-auto px-4 py-6 md:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">

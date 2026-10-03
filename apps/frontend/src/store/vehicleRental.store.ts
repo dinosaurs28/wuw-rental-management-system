@@ -4,6 +4,7 @@ import { getCurrentTime } from "@/utils/formatters";
 import type { RazorpayOrder } from "@/lib/razorpay";
 import { clampPaymentFlow, type PaymentOptions } from "@/lib/paymentPlan";
 import type { CouponPricing, CouponValidationResult } from "@/services/discount.service";
+import type { RentInclGstView } from "@/lib/gst";
 
 /** GST split of the priced rental exactly as the server sent it (rates may be null). */
 export interface ApiGstSplit {
@@ -12,6 +13,8 @@ export interface ApiGstSplit {
   sgstAmount: number;
   cgstRate: number | null;
   sgstRate: number | null;
+  /** The rent incl. GST, its discounts and the GST inside it (item 17); absent in sessions stored before it. */
+  rent?: RentInclGstView;
 }
 
 interface VehicleRentalState {
@@ -55,7 +58,7 @@ interface VehicleRentalState {
   paymentType: "CASH" | "ONLINE" | null;
   paymentFlow: "FULL" | "ADVANCE";
   advancePayAmount: number;
-  /** Plans the branch/amounts allow for the selected vehicle (server); null until loaded. */
+  /** The one plan the amounts allow for the selected vehicle (server; advance only — item 18); null until loaded. */
   paymentOptions: PaymentOptions | null;
   couponCode: string | null;
   /** Coupon layer only (pre-GST). */
@@ -249,7 +252,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       apiDurationDiscountType: null,
       selectedKycFilePublicId: null,
       paymentType: null,
-      // FULL until the server's paymentOptions say otherwise (ADVANCE_ONLY branches clamp it)
+      // Placeholder until the server's paymentOptions arrive — setPaymentOptions
+      // moves it onto the server's plan (ADVANCE whenever the advance is usable)
       paymentFlow: "FULL",
       advancePayAmount: 0,
       paymentOptions: null,

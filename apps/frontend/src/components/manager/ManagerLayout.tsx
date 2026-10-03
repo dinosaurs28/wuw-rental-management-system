@@ -22,6 +22,8 @@ import {
   Truck,
   CalendarRange,
   ClipboardCheck,
+  Contact,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
@@ -57,6 +59,7 @@ interface ManagerLayoutProps {
 
 const financialsItems = [
   { label: "Financials", path: "/manager/payment/financials", icon: DollarSign },
+  { label: "Period", path: "/manager/period", icon: CalendarRange },
   { label: "Payment Recheck", path: "/manager/payment/recheck", icon: RefreshCcw },
   { label: "Extensions", path: "/manager/payment/extensions", icon: Repeat2 },
   { label: "Discounts", path: "/manager/payment/discounts", icon: Tag },
@@ -68,16 +71,17 @@ const operationsItems = [
   { label: "Confirmations", path: "/manager/confirmations", icon: ClipboardCheck },
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
   { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
+  { label: "Offers & Banners", path: "/manager/offers", icon: Megaphone },
   { label: "Cancellations", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },
+  { label: "Employees", path: "/manager/employees", icon: Users },
 ];
 
 const topLevelItems = [
   { label: "Dashboard", path: "/manager/dashboard", icon: LayoutDashboard },
-  { label: "Period", path: "/manager/period", icon: CalendarRange },
   { label: "Fleet", path: "/manager/fleet", icon: Truck },
   { label: "Vehicles", path: "/manager/vehicles", icon: Car },
-  { label: "Employees", path: "/manager/employees", icon: Users },
+  { label: "Customers", path: "/manager/customers", icon: Contact },
 ];
 
 function NavBadge({ count, variant = "orange" }: { count: number; variant?: "orange" | "red" }) {
@@ -202,10 +206,10 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
             </Link>
 
             {/* Divider */}
-            <div className="hidden md:block w-px h-6 bg-neutral-200 shrink-0" />
+            <div className="hidden xl:block w-px h-6 bg-neutral-200 shrink-0" />
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-0.5 flex-wrap">
+            <nav className="hidden xl:flex items-center gap-0.5 flex-nowrap whitespace-nowrap">
               {/* Top-level standalone items */}
               {topLevelItems.map((item) => (
                 <Link
@@ -266,7 +270,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
             <NotificationBell role="MANAGER" />
 
             {/* User Profile - Desktop */}
-            <div className="hidden md:flex items-center gap-3 pl-4 border-l border-neutral-200">
+            <div className="hidden xl:flex items-center gap-3 pl-4 border-l border-neutral-200">
               <div className="text-right">
                 <p className="text-sm font-medium leading-none text-neutral-800">
                   {user?.name || "Manager"}
@@ -309,7 +313,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
             </div>
 
             {/* Mobile Menu */}
-            <div className="md:hidden">
+            <div className="xl:hidden">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="-mr-1">

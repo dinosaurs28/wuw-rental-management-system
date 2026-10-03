@@ -1,78 +1,83 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import type { PaymentSession } from "@/services/paymentSession.service";
+import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE } from "@repo/schemas";
+import type { PaymentSession, RecordPaymentResult } from "@/services/paymentSession.service";
 import { paymentSessionService } from "@/services/paymentSession.service";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
 import {
-  apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
-  isValidUtr,
-} from "@/lib/counterErrors";
+  chargesSafetyDeposit,
+  counterFieldErrors,
+  counterMethodTakesMoney,
+  depositRefundOnSession,
+  counterPaymentErrorField,
+  counterPaymentParts,
+  counterPaymentProblem,
+  emptyCounterPayment,
+  formatRupees,
+  sessionPaymentFields,
+  type CounterPaymentValue,
+  type CounterProof,
+  type CounterRefundMethod,
+} from "@/lib/counterPayment";
+import { CounterPaymentFields, RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { dlConflictLabel } from "@/lib/dlInUse";
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { usePaymentStore } from "@/store/payment.store";
 
-// UPI = customer paid the shop's UPI QR, recorded by its 12-digit UTR.
-// OTHER = a reference from another gateway. Both are sent as method ONLINE.
-type Method = "CASH" | "UPI" | "SPLIT" | "OTHER";
-type Gateway = "Razorpay" | "Other";
-
-const METHODS: Method[] = ["CASH", "UPI", "SPLIT", "OTHER"];
-const METHOD_LABELS: Record<Method, string> = {
-  CASH: "Cash",
-  UPI: "UPI (UTR)",
-  SPLIT: "Split",
-  OTHER: "Other online",
-};
-const GATEWAYS: Gateway[] = ["Razorpay", "Other"];
+// Cash / UPI (photo of the customer's payment screen) / Split / Credit (#3, #11).
+// UPI is the branch's merchant QR — no UTR box; the photo backs the payment.
 
 interface RecordPaymentPanelProps {
   session: PaymentSession;
-  onSuccess: (updatedSession: PaymentSession) => void;
+  /** The updated session; `credit` / `depositRefund` say what this settlement put on credit / refunded. */
+  onSuccess: (updatedSession: RecordPaymentResult) => void;
   /**
    * Called with any failed record/refund call (e.g. a stale drop bill) so the
    * parent can react. The panel still shows the server's message itself.
    */
   onError?: (error: unknown) => void;
+  /** Pickup bill: take the safety deposit off so the rest can go on credit. */
+  onRemoveDeposit?: () => void;
+  removingDeposit?: boolean;
   className?: string;
 }
 
-export function RecordPaymentPanel({ session, onSuccess, onError, className }: RecordPaymentPanelProps) {
+export function RecordPaymentPanel({
+  session,
+  onSuccess,
+  onError,
+  onRemoveDeposit,
+  removingDeposit = false,
+  className,
+}: RecordPaymentPanelProps) {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
-  const [method, setMethod] = useState<Method>("CASH");
-  const [utr, setUtr] = useState("");
-  const [utrTouched, setUtrTouched] = useState(false);
-  const [txnRef, setTxnRef] = useState("");
-  const [gateway, setGateway] = useState<Gateway>("Razorpay");
-  const [splitCash, setSplitCash] = useState("");
-  const [splitOnline, setSplitOnline] = useState("");
+  const [payment, setPayment] = useState<CounterPaymentValue>(() => emptyCounterPayment());
+  // Refund of a drop remainder (deposit set off, more than the charges)
+  const [refundMethod, setRefundMethod] = useState<CounterRefundMethod>("CASH");
+  const [refundProof, setRefundProof] = useState<CounterProof | null>(null);
+  // Deposit refunded in full on a drop bill (#6) — paid back with this settlement
+  const [depositMethod, setDepositMethod] = useState<CounterRefundMethod>("CASH");
+  const [depositProof, setDepositProof] = useState<CounterProof | null>(null);
   const { activeShift, needsShift } = useActiveShift();
 
   const netPayable = parseFloat(session.netPayable);
   const isZeroBalance = netPayable === 0;
   const isRefund = netPayable < 0;
   const amount = Math.abs(netPayable);
-
-  // Validate split amounts
-  const splitCashNum = parseFloat(splitCash) || 0;
-  const splitOnlineNum = parseFloat(splitOnline) || 0;
-  const splitTotal = splitCashNum + splitOnlineNum;
-  const splitValid = method !== "SPLIT" || Math.abs(splitTotal - amount) < 0.01;
-  const needsUtr = method === "UPI" || (method === "SPLIT" && splitOnlineNum > 0);
-  const utrValid = isValidUtr(utr);
+  const depositRefundDue = depositRefundOnSession(session);
+  const depositRefund =
+    depositRefundDue > 0
+      ? {
+          method: depositMethod,
+          ...(depositMethod === "UPI" && depositProof ? { proof_file_id: depositProof.proofFileId } : {}),
+        }
+      : undefined;
+  // A safety deposit can't go on credit (CREDIT_NOT_FOR_DEPOSIT)
+  const creditBlocked = payment.method === "CREDIT" && chargesSafetyDeposit(session);
 
   const zeroMutation = useMutation({
     mutationFn: () =>
@@ -80,7 +85,10 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
         method: "CASH",
         amount: 0,
         idempotencyKey,
-        notes: "No payment required — zero balance",
+        notes: depositRefund
+          ? "No charges to collect — safety deposit refunded in full"
+          : "No payment required — zero balance",
+        ...(depositRefund ? { depositRefund } : {}),
       }),
     onSuccess,
     onError,
@@ -88,43 +96,21 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
 
   const payMutation = useMutation({
     mutationFn: () => {
-      if (method === "SPLIT") {
-        return paymentSessionService.recordPayment(session.publicId, {
-          method: "SPLIT",
-          amount,
-          idempotencyKey,
-          notes: `Split: ₹${splitCashNum.toFixed(2)} cash + ₹${splitOnlineNum.toFixed(2)} UPI`,
-          cashAmount: splitCashNum,
-          onlineAmount: splitOnlineNum,
-          onlineTransactionRef: splitOnlineNum > 0 ? cleanUtr(utr) : undefined,
-          onlineGateway: splitOnlineNum > 0 ? "UPI" : undefined,
-        });
-      }
-      if (method === "UPI") {
-        return paymentSessionService.recordPayment(session.publicId, {
-          method: "ONLINE",
-          amount,
-          idempotencyKey,
-          notes: `UPI payment of ₹${amount.toFixed(2)}`,
-          onlineTransactionRef: cleanUtr(utr),
-          onlineGateway: "UPI",
-        });
-      }
-      if (method === "OTHER") {
-        return paymentSessionService.recordPayment(session.publicId, {
-          method: "ONLINE",
-          amount,
-          idempotencyKey,
-          notes: `Online payment of ₹${amount.toFixed(2)}`,
-          onlineTransactionRef: txnRef.trim(),
-          onlineGateway: gateway,
-        });
-      }
+      const parts = counterPaymentParts(payment, amount);
+      const notes =
+        payment.method === "CASH"
+          ? `Cash payment of ₹${amount.toFixed(2)}`
+          : payment.method === "UPI"
+            ? `UPI payment of ₹${amount.toFixed(2)}`
+            : payment.method === "SPLIT"
+              ? `Split: ₹${parts.cash.toFixed(2)} cash + ₹${parts.upi.toFixed(2)} UPI`
+              : undefined; // Credit: the server notes the collateral
       return paymentSessionService.recordPayment(session.publicId, {
-        method: "CASH",
+        ...sessionPaymentFields(payment, amount),
         amount,
         idempotencyKey,
-        notes: `Cash payment of ₹${amount.toFixed(2)}`,
+        notes,
+        ...(depositRefund ? { depositRefund } : {}),
       });
     },
     onSuccess,
@@ -138,14 +124,14 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
     },
   });
 
-  const refundMethod = method === "UPI" || method === "OTHER" ? "ONLINE" : "CASH";
   const refundMutation = useMutation({
     mutationFn: () =>
       paymentSessionService.recordRefund(session.publicId, {
         method: refundMethod,
         amount,
         idempotencyKey,
-        notes: `${refundMethod === "CASH" ? "Cash" : "Online"} refund of ₹${amount.toFixed(2)}`,
+        notes: `${refundMethod === "CASH" ? "Cash" : "UPI"} refund of ₹${amount.toFixed(2)}`,
+        ...(refundMethod === "UPI" && refundProof ? { proof_file_id: refundProof.proofFileId } : {}),
       }),
     onSuccess,
     onError,
@@ -167,59 +153,66 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
     resetZero();
   }, [session.publicId, session.netPayable, resetPay, resetRefund, resetZero]);
 
-  const isLoading = payMutation.isPending || refundMutation.isPending;
-  const error = payMutation.error || refundMutation.error;
+  const isLoading = payMutation.isPending || refundMutation.isPending || zeroMutation.isPending;
+  const error = payMutation.error || refundMutation.error || zeroMutation.error;
   const errorCode = counterErrorCode(error);
-  // Cash, split and UPI (UTR) need an open shift; refunds and other online
-  // gateways don't (server returns SHIFT_REQUIRED only for the gated methods).
-  const shiftGated = !isRefund && method !== "OTHER";
+  // Cash, UPI and split take money and need an open shift; credit and refunds
+  // don't (the server returns SHIFT_REQUIRED only for the gated methods).
+  const shiftGated = !isRefund && !isZeroBalance && counterMethodTakesMoney(payment.method);
   const shiftRequired =
     shiftGated && (needsShift || counterErrorCode(payError) === "SHIFT_REQUIRED");
-  const utrServerError =
-    errorCode === "INVALID_UTR" || errorCode === "DUPLICATE_UTR"
-      ? apiErrorMessage(error, "Check the UTR number and try again.")
-      : null;
-  const utrError =
-    utrServerError ?? (utrTouched && !utrValid ? "Enter the 12-digit UTR number." : null);
-  const canSubmit = (() => {
-    if (shiftRequired) return false;
-    if (method === "CASH") return true;
-    if (method === "UPI") return utrValid;
-    if (method === "OTHER") return txnRef.trim().length > 0;
-    // SPLIT
-    return splitValid && (!needsUtr || utrValid);
-  })();
+  // Server errors are shown at the field they concern. A photo error while the
+  // payment itself carries no photo is about the refund photo.
+  const errorField = counterPaymentErrorField(error);
+  const fieldErrors = counterFieldErrors(error);
+  const paymentHasPhoto = !isRefund && !isZeroBalance && (payment.method === "UPI" || payment.method === "SPLIT");
+  const paymentErrors = paymentHasPhoto ? fieldErrors : { ...fieldErrors, proof: null };
+  const refundPhotoError = errorField === "proof" && !paymentHasPhoto ? fieldErrors.proof ?? null : null;
+  const generalError = !!error && !errorField && errorCode !== "SHIFT_REQUIRED";
+  const problem = isRefund || isZeroBalance ? null : counterPaymentProblem(payment, amount);
+  const canSubmit = !shiftRequired && !problem && !creditBlocked;
 
-  const handleUtrChange = (value: string) => {
-    setUtr(value);
-    // A server UTR error refers to the old value — clear it once staff edit.
-    if (utrServerError) resetPay();
+  // Staff changed the input a server error referred to — clear it.
+  const clearErrors = () => {
+    if (payMutation.error) resetPay();
+    if (refundMutation.error) resetRefund();
+    if (zeroMutation.error) resetZero();
   };
 
-  const utrField = (
-    <div className="space-y-1.5">
-      <Label htmlFor="rpp-utr" className={method === "SPLIT" ? "text-xs" : "text-sm"}>
-        UTR number <span className="text-red-500">*</span>
-      </Label>
-      <Input
-        id="rpp-utr"
-        inputMode="numeric"
-        autoComplete="off"
-        maxLength={20}
-        placeholder="12-digit UTR"
-        value={utr}
-        onChange={(e) => handleUtrChange(e.target.value)}
-        onBlur={() => setUtrTouched(true)}
-        aria-invalid={!!utrError}
-        className="h-10 font-mono tracking-wide"
+  const generalErrorText = generalError && (
+    <p className="text-sm text-destructive">
+      {apiErrorMessage(error, "Something went wrong. Try again.")}
+      {/* DL_IN_USE (X3): the booking holding this driving licence */}
+      {dlConflictLabel(error) && <span className="mt-1 block font-medium">{dlConflictLabel(error)}</span>}
+    </p>
+  );
+
+  // Deposit refunded in full with this settlement (#6)
+  const depositRefundSection = depositRefundDue > 0 && (
+    <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm font-medium text-blue-900">
+          <Undo2 className="h-4 w-4" /> Safety deposit refund
+        </span>
+        <span className="text-sm font-semibold text-blue-900">{formatRupees(depositRefundDue)}</span>
+      </div>
+      <RefundMethodFields
+        idPrefix="rpp-deposit-refund"
+        label="Refund the deposit by"
+        method={depositMethod}
+        onMethodChange={(m) => {
+          setDepositMethod(m);
+          clearErrors();
+        }}
+        proof={depositProof}
+        onProofChange={(p) => {
+          setDepositProof(p);
+          clearErrors();
+        }}
+        proofRole="staff"
+        proofError={refundPhotoError}
+        disabled={isLoading}
       />
-      {utrError ? (
-        <p className="text-xs text-red-600">{utrError}</p>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          From the customer's UPI app after paying the shop's QR.
-        </p>
-      )}
     </div>
   );
 
@@ -241,16 +234,14 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2.5 text-sm">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span className="font-medium">No payment required — charges are fully covered.</span>
+            <span className="font-medium">
+              {depositRefundDue > 0
+                ? "No charges to collect."
+                : "No payment required — charges are fully covered."}
+            </span>
           </div>
-          {!!zeroMutation.error && (
-            <p className="text-sm text-destructive">
-              {apiErrorMessage(zeroMutation.error, "Something went wrong. Try again.")}
-              {dlConflictLabel(zeroMutation.error) && (
-                <span className="mt-1 block font-medium">{dlConflictLabel(zeroMutation.error)}</span>
-              )}
-            </p>
-          )}
+          {depositRefundSection}
+          {generalErrorText}
           <Button
             className="w-full"
             disabled={zeroMutation.isPending}
@@ -258,6 +249,8 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
           >
             {zeroMutation.isPending ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing…</>
+            ) : depositRefundDue > 0 ? (
+              `Complete — refund deposit ${formatRupees(depositRefundDue)} (${depositMethod === "CASH" ? "Cash" : "UPI"})`
             ) : (
               "Complete — No Payment Needed"
             )}
@@ -286,127 +279,68 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
           </span>
         </div>
 
-        {/* Method toggle — only for payments, not refunds */}
+        {/* Cash / UPI (photo) / Split / Credit — payments only */}
         {!isRefund && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {METHODS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMethod(m)}
-                className={cn(
-                  "px-3 py-2.5 rounded-lg border text-sm font-medium transition-all",
-                  method === m
-                    ? "border-orange-500 bg-orange-50 text-orange-700"
-                    : "border-neutral-200 hover:border-neutral-300 text-neutral-700",
-                )}
-              >
-                {METHOD_LABELS[m]}
-              </button>
-            ))}
-          </div>
+          <CounterPaymentFields
+            idPrefix="rpp"
+            value={payment}
+            onChange={setPayment}
+            amount={amount}
+            proofRole="staff"
+            errors={paymentErrors}
+            onEdit={clearErrors}
+            disabled={isLoading}
+            cashNote={
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                Cash payments require manager confirmation. The booking will be processed immediately, but a manager must verify the cash.
+              </p>
+            }
+            creditNote={
+              chargesSafetyDeposit(session) && (
+                <div className="space-y-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                  <p className="text-xs text-red-700">{CREDIT_NOT_FOR_DEPOSIT_MESSAGE}</p>
+                  {onRemoveDeposit && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-red-200 text-red-700 hover:bg-red-100"
+                      disabled={removingDeposit}
+                      onClick={onRemoveDeposit}
+                    >
+                      {removingDeposit && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                      Remove safety deposit
+                    </Button>
+                  )}
+                </div>
+              )
+            }
+          />
         )}
 
-        {/* UPI (UTR) fields */}
-        {!isRefund && method === "UPI" && utrField}
-
-        {/* Other online gateway fields */}
-        {!isRefund && method === "OTHER" && (
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="rpp-txnRef" className="text-sm">
-                Transaction Reference <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="rpp-txnRef"
-                placeholder="e.g. pay_xyz789"
-                value={txnRef}
-                onChange={(e) => setTxnRef(e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rpp-gateway" className="text-sm">Gateway</Label>
-              <Select value={gateway} onValueChange={(v) => setGateway(v as Gateway)}>
-                <SelectTrigger id="rpp-gateway" className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {GATEWAYS.map((g) => (
-                    <SelectItem key={g} value={g}>{g}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        {/* Refund of the remainder — Cash, or UPI with an optional photo */}
+        {isRefund && (
+          <RefundMethodFields
+            idPrefix="rpp-refund"
+            method={refundMethod}
+            onMethodChange={(m) => {
+              setRefundMethod(m);
+              clearErrors();
+            }}
+            proof={refundProof}
+            onProofChange={(p) => {
+              setRefundProof(p);
+              clearErrors();
+            }}
+            proofRole="staff"
+            proofError={refundPhotoError}
+            disabled={isLoading}
+          />
         )}
 
-        {/* Split fields */}
-        {!isRefund && method === "SPLIT" && (
-          <div className="space-y-3 p-3 rounded-lg bg-neutral-50 border">
-            <p className="text-xs text-muted-foreground font-medium">
-              Total to split: ₹{amount.toFixed(2)}
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Cash Amount (₹)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={amount}
-                  placeholder="0"
-                  value={splitCash}
-                  onChange={(e) => {
-                    setSplitCash(e.target.value);
-                    const cash = parseFloat(e.target.value) || 0;
-                    setSplitOnline(String(Math.max(0, amount - cash).toFixed(2)));
-                  }}
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">UPI Amount (₹)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={amount}
-                  placeholder="0"
-                  value={splitOnline}
-                  onChange={(e) => {
-                    setSplitOnline(e.target.value);
-                    const online = parseFloat(e.target.value) || 0;
-                    setSplitCash(String(Math.max(0, amount - online).toFixed(2)));
-                  }}
-                  className="h-10"
-                />
-              </div>
-            </div>
-            {!splitValid && splitCash && splitOnline && (
-              <p className="text-xs text-red-600">Cash + UPI must equal ₹{amount.toFixed(2)}</p>
-            )}
-            {splitOnlineNum > 0 && utrField}
-          </div>
-        )}
+        {!isRefund && depositRefundSection}
 
-        {!isRefund && method === "CASH" && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            Cash payments require manager confirmation. The booking will be processed immediately, but a manager must verify the cash.
-          </p>
-        )}
-
-        {shiftRequired ? (
-          <ShiftRequiredNotice onShiftOpened={resetPay} />
-        ) : (
-          !!error && !utrServerError && errorCode !== "SHIFT_REQUIRED" && (
-            <p className="text-sm text-destructive">
-              {apiErrorMessage(error, "Something went wrong. Try again.")}
-              {/* DL_IN_USE (X3): the booking holding this driving licence */}
-              {dlConflictLabel(error) && (
-                <span className="mt-1 block font-medium">{dlConflictLabel(error)}</span>
-              )}
-            </p>
-          )
-        )}
+        {shiftRequired ? <ShiftRequiredNotice onShiftOpened={resetPay} /> : generalErrorText}
 
         <Button
           className="w-full"
@@ -416,15 +350,20 @@ export function RecordPaymentPanel({ session, onSuccess, onError, className }: R
           {isLoading
             ? "Processing…"
             : isRefund
-              ? `Refund ₹${amount.toFixed(2)} (${refundMethod === "ONLINE" ? "Online" : "Cash"})`
-              : method === "CASH"
-                ? `Mark ₹${amount.toFixed(2)} as collected (Cash)`
-                : method === "UPI"
-                  ? `Record UPI Payment ₹${amount.toFixed(2)}`
-                  : method === "OTHER"
-                    ? `Record Online Payment ₹${amount.toFixed(2)}`
-                    : `Record Split Payment ₹${amount.toFixed(2)}`}
+              ? `Refund ${formatRupees(amount)} (${refundMethod === "UPI" ? "UPI" : "Cash"})`
+              : `${
+                  payment.method === "CASH"
+                    ? `Mark ${formatRupees(amount)} as collected (Cash)`
+                    : payment.method === "UPI"
+                      ? `Record UPI payment ${formatRupees(amount)}`
+                      : payment.method === "SPLIT"
+                        ? `Record split payment ${formatRupees(amount)}`
+                        : `Put ${formatRupees(amount)} on credit`
+                }${depositRefundDue > 0 ? ` · refund deposit ${formatRupees(depositRefundDue)}` : ""}`}
         </Button>
+        {!isRefund && !shiftRequired && problem && (payment.method !== "SPLIT" || payment.splitCash !== "") && (
+          <p className="text-center text-xs text-muted-foreground">{problem}</p>
+        )}
       </div>
     </div>
   );

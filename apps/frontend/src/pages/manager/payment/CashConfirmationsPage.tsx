@@ -15,6 +15,7 @@ import {
 
 import { paymentService, type PendingCashItem } from "@/services/payment.service";
 import { usePaymentStore } from "@/store/payment.store";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 
 const purposeLabels: Record<string, string> = {
   FULL_PAYMENT: "Full Payment",
@@ -47,6 +48,16 @@ function formatCollectedAt(iso: string): { label: string; isOld: boolean } {
   return { label, isOld: diffH > 2 };
 }
 
+/** How the employee took it (#3 / #12): counter UPI and split payments wait here too. */
+function methodLabel(item: PendingCashItem): string {
+  if (item.method === "SPLIT") return "Split";
+  if (item.method === "ONLINE") return item.isUpi === false ? "Online" : "UPI";
+  return "Cash";
+}
+
+const formatRupee = (value: string | number | undefined) =>
+  `₹ ${(parseFloat(String(value ?? 0)) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
     day: "2-digit", month: "short", year: "numeric",
@@ -62,11 +73,15 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const method = methodLabel(item);
+  const hasUpiPart = method === "UPI" || method === "Split";
+  const photo = item.proofPhoto ?? (item.proofPhotoUrl ? { url: item.proofPhotoUrl } : null);
+
   const handleConfirm = async () => {
     setLoading(true);
     try {
       await paymentService.confirmCash(item.transactionPublicId, notes || undefined);
-      toast.success("Cash payment confirmed.");
+      toast.success(`${method} payment confirmed.`);
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to confirm.");
@@ -78,7 +93,7 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
     setLoading(true);
     try {
       await paymentService.rejectCash(item.transactionPublicId, rejectionReason.trim());
-      toast.success("Cash payment rejected.");
+      toast.success(`${method} payment rejected.`);
       onDone();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to reject.");
@@ -91,7 +106,7 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
         <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/60">
           <DialogHeader>
             <DialogTitle className="text-[15px]">
-              {rejectMode ? "Reject Cash Payment" : "Review Cash Payment"}
+              {rejectMode ? `Reject ${method} Payment` : `Review ${method} Payment`}
             </DialogTitle>
             <p className="text-xs text-neutral-500 mt-0.5">
               {item.customerName} — ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
@@ -107,6 +122,12 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
                   ["Booking", item.bookingPublicId],
                   ["Customer", item.customerName],
                   ["Purpose", purposeLabels[item.purpose] ?? item.purpose],
+                  ["Method", method],
+                  ...(method === "Split"
+                    ? [["Cash / UPI", `${formatRupee(item.cashAmount)} cash + ${formatRupee(item.onlineAmount)} UPI`]]
+                    : []),
+                  // Old app builds back UPI with a UTR instead of a photo
+                  ...(hasUpiPart && !photo && item.onlineTransactionRef ? [["UTR", item.onlineTransactionRef]] : []),
                   ["Amount", `₹ ${parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`],
                   ["Collected by", item.employeeName],
                   ["Collected at", formatDateTime(item.collectedAt)],
@@ -117,6 +138,30 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
                   </div>
                 ))}
               </div>
+              {/* The customer's UPI payment screen (#3) — check amount and time against the account */}
+              {hasUpiPart && (
+                photo ? (
+                  <div className="flex items-start gap-3 rounded-xl border border-neutral-100 px-4 py-3">
+                    <ProofPhotoThumb
+                      photo={photo}
+                      size="lg"
+                      caption={`${item.customerName} · ${item.bookingPublicId} · ${method === "Split" ? `UPI part ${formatRupee(item.onlineAmount)}` : formatRupee(item.amount)}`}
+                    />
+                    <div className="space-y-1 text-xs text-neutral-500">
+                      <p className="font-medium text-neutral-800">Customer's UPI payment screen</p>
+                      <p>
+                        Check the amount{method === "Split" ? ` (${formatRupee(item.onlineAmount)})` : ""} and time match a credit in the branch account, then confirm.
+                      </p>
+                      <p>Tap the photo to zoom.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
+                    No payment photo{item.onlineTransactionRef ? " — recorded with a UTR from an older app" : ""}. Check the branch account before confirming.
+                  </p>
+                )
+              )}
+              {item.notes && <p className="text-xs italic text-neutral-500">"{item.notes}"</p>}
               <div className="space-y-1.5">
                 <Label className="text-xs text-neutral-600">Notes (optional)</Label>
                 <Textarea placeholder="Any notes for the record…" rows={2} className="resize-none text-sm" value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -145,7 +190,7 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
                 <XCircle className="w-4 h-4" /> Reject
               </Button>
               <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5" onClick={handleConfirm} disabled={loading}>
-                <CheckCircle className="w-4 h-4" /> {loading ? "Confirming…" : "Confirm Cash"}
+                <CheckCircle className="w-4 h-4" /> {loading ? "Confirming…" : `Confirm ${method}`}
               </Button>
             </>
           ) : (
@@ -196,7 +241,7 @@ export function CashConfirmationsTab() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-neutral-900">Pending Cash Confirmations</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Review and confirm cash collected by employees</p>
+            <p className="text-xs text-neutral-500 mt-0.5">Review and confirm cash and counter UPI collected by employees — UPI shows the customer's payment photo</p>
           </div>
           <div className="flex items-center gap-2">
             {total > 0 && (
@@ -237,7 +282,7 @@ export function CashConfirmationsTab() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                    {["Booking", "Customer", "Purpose", "Amount", "Employee", "Collected", ""].map((h) => (
+                    {["Booking", "Customer", "Purpose", "Method", "Amount", "Employee", "Collected", ""].map((h) => (
                       <th key={h} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" || h === "" ? "text-right" : "text-left"}`}>{h}</th>
                     ))}
                   </tr>
@@ -250,6 +295,17 @@ export function CashConfirmationsTab() {
                         <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{item.bookingPublicId}</td>
                         <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm">{item.customerName}</td>
                         <td className="px-5 py-3.5 text-sm text-neutral-600">{purposeLabels[item.purpose] ?? item.purpose}</td>
+                        <td className="px-5 py-3.5 text-sm text-neutral-600">
+                          <span className="inline-flex items-center gap-2">
+                            {(item.proofPhoto || item.proofPhotoUrl) && (
+                              <ProofPhotoThumb
+                                photo={item.proofPhoto ?? { url: item.proofPhotoUrl! }}
+                                caption={`${item.customerName} · ${item.bookingPublicId}`}
+                              />
+                            )}
+                            {methodLabel(item)}
+                          </span>
+                        </td>
                         <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm">
                           ₹ {parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </td>

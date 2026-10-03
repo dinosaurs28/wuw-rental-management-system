@@ -10,6 +10,11 @@ import { apiErrorMessage } from "@/lib/counterErrors";
 import { StepCard } from "@/components/employee/StepCard";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
+import { depositRefundOnSession } from "@/lib/counterPayment";
+import { SafetyDepositChoice } from "@/components/payment/counter/SafetyDepositChoice";
+import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
+import type { SafetyDepositHandling } from "@/services/paymentSession.service";
+import { employeePaymentService } from "@/services/payment.service";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { DropDamageSection } from "@/components/employee/drop/DropDamageSection";
 import { DropDiscountPanel, type DropDiscountInput } from "@/components/employee/drop/DropDiscountPanel";
@@ -254,6 +259,10 @@ export default function ReturnProcessPage() {
   // Discount the server accepted — resent with every compute or it is dropped.
   const [appliedDiscount, setAppliedDiscount] = useState<DropDiscountInput | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
+  // Safety deposit at drop (#6): set off (default) or refunded in full — resent with every
+  // compute. The ref feeds a recompute started in the same tick as the change.
+  const [depositHandling, setDepositHandling] = useState<SafetyDepositHandling>("SET_OFF");
+  const depositHandlingRef = useRef<SafetyDepositHandling>("SET_OFF");
   const [showExtendModal, setShowExtendModal] = useState(false);
 
   // ── Damage ─────────────────────────────────────────────────────────────────
@@ -298,9 +307,34 @@ export default function ReturnProcessPage() {
   const safetyDeposit = parseFloat(booking?.safetyDeposit ?? "0") || 0;
   const isCompleted = booking?.status === "RETURNED" || booking?.status === "COMPLETED";
 
+  // Deposit still held and anything already on credit (#6 / #11). Once a drop bill is
+  // computed its own deposit block is used instead.
+  const { data: financialState } = useQuery({
+    queryKey: ["employee-financial-state", bookingId],
+    queryFn: () => employeePaymentService.getFinancialState(bookingId!),
+    enabled: !!bookingId && !!booking && !isCompleted,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const depositHeld = returnSession?.deposit
+    ? parseFloat(returnSession.deposit.held) || 0
+    : financialState?.safetyDepositHeld != null
+      ? parseFloat(financialState.safetyDepositHeld) || 0
+      : safetyDeposit;
+  const creditPending = parseFloat(financialState?.creditPending ?? "0") || 0;
+  const creditCollateral = financialState?.credit?.collateral ?? [];
+  // Legacy branches: an advance booking's balance is settled at the counter before the return
+  const legacyRemainingDue =
+    booking?.usePaymentSessions !== true &&
+    booking?.isAdvancePayment === true &&
+    !booking.remainingPaidAt &&
+    (parseFloat(booking.remainingBalance ?? "0") || 0) > 0;
+
   const paymentSettled = returnSession?.session?.status === "COMPLETED";
   const netPayable = returnSession ? parseFloat(returnSession.session.netPayable) : 0;
   const isZeroBalance = returnSession !== null && netPayable === 0;
+  // "Refund in full" bill (#6): the deposit is paid back with the settlement — the panel asks how
+  const refundsDepositInFull = !!returnSession && depositRefundOnSession(returnSession.session) > 0;
 
   const showFastagModule = !!frozenConfig?.fastagModuleEnabled && !!vehicle?.hasFastag;
   // Km across mid-rental swaps: swaps with readings are measured segment by segment
@@ -351,6 +385,8 @@ export default function ReturnProcessPage() {
           segments: serverKm.segments ?? [],
           manualExtraKm: serverKm.manualExtraKm ?? null,
           kmSource: serverKm.kmSource,
+          freeKmOriginal: serverKm.freeKmOriginal ?? null,
+          freeKmExtensions: serverKm.freeKmExtensions ?? null,
         },
       }
     : kmPreview
@@ -367,9 +403,13 @@ export default function ReturnProcessPage() {
     ? FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER[pickupFuelLevel]
     : false;
 
-  // Real money taken in this session (the deposit credit is a DEPOSIT entry, not a payment).
+  // Real money taken in this session (the deposit credit is a DEPOSIT entry, not a payment;
+  // a "Refund in full" bill's SAFETY_DEPOSIT_REFUND line is part of the bill, not money paid out).
   const hasRecordedPayment = !!returnSession?.session.entries.some(
-    (e) => !e.isVoided && (e.entryType === "PAYMENT" || e.entryType === "REFUND"),
+    (e) =>
+      !e.isVoided &&
+      (e.entryType === "PAYMENT" || e.entryType === "REFUND") &&
+      e.referenceType !== "SAFETY_DEPOSIT_REFUND",
   );
   // Once money moves, the bill (damage, discount, extension) is frozen.
   const billLocked = paymentSettled || hasRecordedPayment || isCompleted;
@@ -435,6 +475,11 @@ export default function ReturnProcessPage() {
       if (session.discount) {
         setAppliedDiscount({ amount: parseFloat(session.discount.amount), reason: session.discount.reason });
       }
+      // The deposit choice on that bill (#6) is resent by the next compute
+      if (session.deposit?.handling) {
+        depositHandlingRef.current = session.deposit.handling;
+        setDepositHandling(session.deposit.handling);
+      }
       if (session.km?.kmSource === "STAFF_ENTERED" && session.km.manualExtraKm != null) {
         setManualExtraKm(String(session.km.manualExtraKm));
       }
@@ -444,7 +489,11 @@ export default function ReturnProcessPage() {
         session.billStale ||
         (session.km && !session.km.autoKmSkipped && allowance && session.km.includedKm !== allowance.includedKm)
       ) {
-        toast.info("The rental changed since the charges were computed — enter the readings and compute them again.");
+        toast.info(
+          session.billStaleReason === "DROP_GST_REMOVED"
+            ? "Drop charges no longer carry GST — enter the readings and compute the charges again."
+            : "The rental changed since the charges were computed — enter the readings and compute them again.",
+        );
         return;
       }
       // Late-charge choices on that bill are resent by the next compute
@@ -503,6 +552,8 @@ export default function ReturnProcessPage() {
         .map((c) => ({ label: c.label.trim(), amount: parseFloat(c.amount) }));
     }
     if (discountToSend) payload.discount = discountToSend;
+    // Safety deposit choice (#6) — resent with every compute, like the discount
+    payload.safetyDepositHandling = depositHandlingRef.current;
     return payload;
   };
 
@@ -650,6 +701,16 @@ export default function ReturnProcessPage() {
     setLateOptions(next);
   };
 
+  /**
+   * Safety deposit choice changed (#6). A live drop bill is recomputed with it right
+   * away; otherwise it is sent with the next compute (legacy: with the completion).
+   */
+  const handleDepositHandlingChange = (next: SafetyDepositHandling) => {
+    depositHandlingRef.current = next;
+    setDepositHandling(next);
+    if (useSessionFlow && returnSession && !billLocked) void recomputeBill(appliedDiscount, "refresh");
+  };
+
   /** A drop damage was added or removed — refresh the list and (session branches) the bill. */
   const handleDamagesChanged = async () => {
     await refetchDropDamages();
@@ -693,6 +754,8 @@ export default function ReturnProcessPage() {
     message: string;
     /** Extra km / late return recorded for the branch manager to collect. */
     returnCharges?: Awaited<ReturnType<typeof bookingService.completeReturn>>["returnCharges"];
+    /** Deposit choice recorded with the return (#6). */
+    safetyDeposit?: Awaited<ReturnType<typeof bookingService.completeReturn>>["safetyDeposit"];
   } | null>(null);
 
   const completeReturnMutation = useMutation({
@@ -703,6 +766,7 @@ export default function ReturnProcessPage() {
         success: true,
         message: data.message || "Return completed",
         returnCharges: data.returnCharges,
+        safetyDeposit: data.safetyDeposit,
       });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
     },
@@ -780,7 +844,7 @@ export default function ReturnProcessPage() {
     const stepPhotos = pickupCaptures.length > 0 ? 2 : 1;
     const stepCharges = stepPhotos + 1;
     const stepDamage = stepCharges + 1;
-    const stepDeposit = safetyDeposit > 0 ? stepDamage + 1 : null;
+    const stepDeposit = depositHeld > 0 ? stepDamage + 1 : null;
     const stepPayment = (stepDeposit ?? stepDamage) + 1;
     const canExtend = booking.status === "PICKED_UP" && !billLocked;
     const showDiscountPanel =
@@ -963,7 +1027,7 @@ export default function ReturnProcessPage() {
               </div>
               {fuelDeficit && (
                 <div className="space-y-1.5 ml-7">
-                  <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹, before GST — GST is added on the bill)</Label>
+                  <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹, no GST)</Label>
                   <div className="relative max-w-xs">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
                     <Input
@@ -1042,7 +1106,7 @@ export default function ReturnProcessPage() {
               {hasOtherCharges && (
                 <div className="ml-7 space-y-3">
                   <p className="text-xs text-neutral-600">
-                    Amounts are before GST — GST is added on the bill. Late return is charged automatically, so don't add it here.
+                    Charged as entered — drop charges carry no GST. Late return is charged automatically, so don't add it here.
                   </p>
                   {otherChargeItems.map((item) => (
                     <div key={item.id} className="flex gap-2 items-center">
@@ -1122,14 +1186,14 @@ export default function ReturnProcessPage() {
               </p>
             )}
 
-            {/* ── Safety Deposit Hint ── */}
-            {safetyDeposit > 0 && !step3Complete && (
-              <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800">
-                <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
-                <p className="text-xs">
-                  <span className="font-semibold">{formatPrice(safetyDeposit)} safety deposit</span> collected at pickup will be credited automatically against the above charges.
-                </p>
-              </div>
+            {/* ── Safety deposit: set off against the charges or refund in full (#6) ── */}
+            {depositHeld > 0 && !step3Complete && (
+              <SafetyDepositChoice
+                held={depositHeld}
+                value={depositHandling}
+                onChange={handleDepositHandlingChange}
+                isPending={computeChargesMutation.isPending}
+              />
             )}
 
             {/* ── Compute Button ── */}
@@ -1148,7 +1212,7 @@ export default function ReturnProcessPage() {
               </Button>
             )}
 
-            {/* ── Drop charges with per-line GST (server bill; updates on every recompute) ── */}
+            {/* ── Drop charges at face value, no GST (server bill; updates on every recompute) ── */}
             {step3Complete && returnSession?.bill && <DropBillSummary bill={returnSession.bill} />}
 
             {/* Recompute hint when session exists */}
@@ -1258,32 +1322,49 @@ export default function ReturnProcessPage() {
           <StepCard
             stepNum={stepDeposit}
             title="Safety Deposit"
-            subtitle="The deposit collected at pickup has been applied as a credit"
+            subtitle={
+              depositHandling === "REFUND_IN_FULL"
+                ? "The deposit collected at pickup is refunded in full"
+                : "The deposit collected at pickup is set off against the charges"
+            }
             isCompleted={step3Complete && damageStepDone}
             isLocked={!step3Complete || !damageStepDone}
           >
             <CardContent className="pt-4">
-              <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 p-4">
-                <ShieldCheck className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">
-                    {formatPrice(safetyDeposit)} safety deposit applied
-                  </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The safety deposit collected at pickup has been automatically credited against the return charges.
-                    {returnSession && (
-                      <>
-                        {" "}
-                        {parseFloat(returnSession.session.netPayable) < 0
-                          ? `A refund of ${formatPrice(Math.abs(parseFloat(returnSession.session.netPayable)))} is due to the customer.`
-                          : parseFloat(returnSession.session.netPayable) === 0
-                            ? "The deposit exactly covers all charges — no further payment needed."
-                            : `The deposit partially covers the charges. ${formatPrice(parseFloat(returnSession.session.netPayable))} remains payable.`}
-                      </>
-                    )}
-                  </p>
+              {returnSession?.deposit ? (
+                // The bill's own deposit block (#6); changing the choice recomputes the bill
+                <SafetyDepositChoice
+                  held={depositHeld}
+                  value={depositHandling}
+                  onChange={handleDepositHandlingChange}
+                  deposit={returnSession.deposit}
+                  readOnly={billLocked}
+                  isPending={computeChargesMutation.isPending}
+                />
+              ) : (
+                // Bill computed before the deposit choice existed (or reloaded without one)
+                <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 p-4">
+                  <ShieldCheck className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900">
+                      {formatPrice(depositHeld)} safety deposit applied
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      The safety deposit collected at pickup has been automatically credited against the return charges.
+                      {returnSession && (
+                        <>
+                          {" "}
+                          {parseFloat(returnSession.session.netPayable) < 0
+                            ? `A refund of ${formatPrice(Math.abs(parseFloat(returnSession.session.netPayable)))} is due to the customer.`
+                            : parseFloat(returnSession.session.netPayable) === 0
+                              ? "The deposit exactly covers all charges — no further payment needed."
+                              : `The deposit partially covers the charges. ${formatPrice(parseFloat(returnSession.session.netPayable))} remains payable.`}
+                        </>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               {returnSession && (
                 <div className="mt-4">
                   <LedgerSummaryCard session={returnSession.session} />
@@ -1322,11 +1403,20 @@ export default function ReturnProcessPage() {
                   />
                 )}
 
-                {safetyDeposit <= 0 && (
+                {depositHeld <= 0 && (
                   <LedgerSummaryCard session={returnSession.session} />
                 )}
 
-                {isZeroBalance && (
+                {/* Money already left owed on this booking (#11) — the branch manager clears it */}
+                {creditPending > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <span className="font-semibold">On credit: {formatPrice(creditPending)}</span>
+                    {creditCollateral.length > 0 && <> (collateral: {creditCollateral.join(", ")})</>}
+                    {" "}— still owed from earlier; the branch manager clears it when the customer pays.
+                  </div>
+                )}
+
+                {isZeroBalance && !refundsDepositInFull && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
                       <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -1351,14 +1441,22 @@ export default function ReturnProcessPage() {
                   </div>
                 )}
 
-                {!isZeroBalance && (
+                {(!isZeroBalance || refundsDepositInFull) && (
                   <RecordPaymentPanel
                     session={returnSession.session}
                     onSuccess={(updatedSession) => {
                       setReturnSession((prev) => prev ? { ...prev, session: updatedSession } : null);
                       if (updatedSession.status === "COMPLETED") {
                         queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-                        toast.success("Return settled — booking marked as Returned.");
+                        const notes = [
+                          updatedSession.credit &&
+                            `₹${updatedSession.credit.amount} put on credit (collateral: ${updatedSession.credit.collateral})`,
+                          updatedSession.depositRefund &&
+                            `deposit ₹${updatedSession.depositRefund.amount} refunded (${updatedSession.depositRefund.method === "CASH" ? "cash" : "UPI"})`,
+                        ].filter(Boolean);
+                        toast.success(
+                          `Return settled — booking marked as Returned.${notes.length ? ` ${notes.join("; ")}.` : ""}`,
+                        );
                       }
                     }}
                     onError={handleStaleBill}
@@ -1443,6 +1541,15 @@ export default function ReturnProcessPage() {
             <h2 className="text-2xl font-bold text-green-800">{legacySubmissionResult.message}</h2>
             {legacySubmissionResult.returnCharges && (
               <LegacyReturnChargesSummary charges={legacySubmissionResult.returnCharges} />
+            )}
+            {legacySubmissionResult.safetyDeposit && (
+              <p className="text-sm text-blue-800">
+                Safety deposit {formatPrice(legacySubmissionResult.safetyDeposit.amount)}:{" "}
+                {legacySubmissionResult.safetyDeposit.handling === "REFUND_IN_FULL"
+                  ? "to be refunded in full"
+                  : "set off against the charges"}{" "}
+                — the branch manager settles it.
+              </p>
             )}
             <Button className="w-full mt-4 bg-green-600 hover:bg-green-700" onClick={() => navigate("/employee/dashboard")}>
               Return to Dashboard
@@ -1582,6 +1689,30 @@ export default function ReturnProcessPage() {
         </Card>
       )}
 
+      {/* Advance booking: the balance is settled at the counter before the return (#11) */}
+      {legacyRemainingDue && !isCompleted && (
+        <LegacyRemainingPaymentCard
+          bookingPublicId={booking.publicId}
+          context="return"
+          remainingBalance={booking.remainingBalance!}
+          onSettled={() => {
+            queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+            queryClient.invalidateQueries({ queryKey: ["employee-financial-state", bookingId] });
+          }}
+        />
+      )}
+
+      {/* Safety deposit (#6): recorded with the return — the branch manager settles it */}
+      {depositHeld > 0 && returnPhotos.length > 0 && !isCompleted && (
+        <SafetyDepositChoice
+          held={depositHeld}
+          value={depositHandling}
+          onChange={handleDepositHandlingChange}
+          readOnly={completeReturnMutation.isPending}
+          settledByManager
+        />
+      )}
+
       {/* Sidebar with action buttons — legacy */}
       {returnPhotos.length > 0 && !isCompleted && (
         <div className="flex flex-col gap-3">
@@ -1592,7 +1723,7 @@ export default function ReturnProcessPage() {
                 queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
                 setLegacyShowCompleteDialog(true);
               }}
-              disabled={(legacyShowDamage && dropDamages.length === 0) || !readingsReady}>
+              disabled={(legacyShowDamage && dropDamages.length === 0) || !readingsReady || legacyRemainingDue}>
               <FileCheck className="mr-2 h-4 w-4" /> Complete Return
             </Button>
             <DialogContent>
@@ -1609,7 +1740,7 @@ export default function ReturnProcessPage() {
                 swapCharges.length > 0) && (
                 <p className="text-sm text-muted-foreground">
                   Extra km, any late return and the vehicle-swap difference are worked out by the server when you
-                  confirm (GST added) and recorded for the branch manager to collect at settlement.
+                  confirm (no GST on drop charges) and recorded for the branch manager to collect at settlement.
                 </p>
               )}
               <DialogFooter>
@@ -1622,6 +1753,8 @@ export default function ReturnProcessPage() {
                     ...(manualKmAllowed && manualExtraKmValue != null ? { manualExtraKm: manualExtraKmValue } : {}),
                     ...(lateOptions.applyGrace ? { applyGrace: true } : {}),
                     ...(lateOptions.waiver ? { waiveLateCharge: lateOptions.waiver } : {}),
+                    // Recorded only when a deposit is held; the branch manager settles it (#6)
+                    ...(depositHeld > 0 ? { safetyDepositHandling: depositHandling } : {}),
                   })}>
                   {completeReturnMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Confirm Complete
@@ -1639,6 +1772,11 @@ export default function ReturnProcessPage() {
               {manualExtraKmMissing && endOdometer !== "" && !endOdometerTooLow
                 ? "Enter the extra km driven to complete the return."
                 : "Enter the end odometer reading to complete the return."}
+            </p>
+          )}
+          {legacyRemainingDue && (
+            <p className="text-xs text-amber-600 text-center">
+              Settle the remaining balance above to complete the return.
             </p>
           )}
         </div>

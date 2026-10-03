@@ -330,10 +330,16 @@ export const ManagerVehiclesPage = () => {
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
+                          {/* GST-inclusive daily total (item 17) */}
                           <p className="text-base font-bold text-neutral-900 leading-none">
-                            ₹{vehicle.customPricing?.price24Hour}
+                            ₹{vehicle.customPricing?.totalRent24Hour ?? vehicle.customPricing?.price24Hour}
                           </p>
-                          <p className="text-[10px] text-neutral-400 mt-0.5">/day</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">/day incl. GST</p>
+                          {vehicle.customPricing?.rentWithoutGst24Hour != null && (
+                            <p className="text-[10px] text-neutral-400">
+                              ₹{Number(vehicle.customPricing.rentWithoutGst24Hour).toLocaleString("en-IN", { maximumFractionDigits: 2 })} without GST
+                            </p>
+                          )}
                         </div>
                       </div>
 

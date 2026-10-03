@@ -20,12 +20,3 @@ export function apiErrorMessage(err: unknown, fallback: string): string {
 
 export const SHIFT_REQUIRED_MESSAGE =
   "Open your cash shift before taking bookings or collecting payments.";
-
-/** A UPI UTR is 12 digits. Spaces and dashes typed by staff are ignored. */
-export function cleanUtr(raw: string): string {
-  return raw.replace(/[\s-]/g, "");
-}
-
-export function isValidUtr(raw: string): boolean {
-  return /^\d{12}$/.test(cleanUtr(raw));
-}

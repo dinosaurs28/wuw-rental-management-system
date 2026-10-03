@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getCurrentTime } from "@/utils/formatters";
+import type { CounterProof } from "@/lib/counterPayment";
 
 interface Pricing {
   baseTotal: number;
@@ -9,7 +10,8 @@ interface Pricing {
   finalTotal: number;
 }
 
-export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI";
+/** ONLINE = Razorpay checkout; the rest are counter methods (#3 / #11). */
+export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
 
 /** Counter plan (#15/#17): MONTHLY = 30–180 days, stored as rentalPeriodType MONTHLY. */
 export type EmployeeBookingPlan = "STANDARD" | "MONTHLY";
@@ -23,8 +25,12 @@ interface EmployeeBookingState {
   endTime: string;
   plan: EmployeeBookingPlan;
   paymentType: EmployeePaymentType;
-  /** UPI (UTR) walk-ins: the 12-digit UTR the customer paid with. */
-  utr: string;
+  /** UPI / split walk-ins: the photo of the customer's payment screen (#3). */
+  upiProof: CounterProof | null;
+  /** Split walk-ins: the cash part as typed — the server takes the rest as UPI. */
+  splitCash: string;
+  /** Credit walk-ins: what was taken from the customer until it is cleared (#11). */
+  collateral: string;
   pricing: Pricing | null;
   customerKycId: string | null;
 
@@ -36,7 +42,11 @@ interface EmployeeBookingState {
   setEndTime: (time: string) => void;
   setPlan: (plan: EmployeeBookingPlan) => void;
   setPaymentType: (type: EmployeePaymentType) => void;
-  setUtr: (utr: string) => void;
+  setUpiProof: (proof: CounterProof | null) => void;
+  setSplitCash: (cash: string) => void;
+  setCollateral: (note: string) => void;
+  /** Drops the photo, split and collateral (another customer / a new booking). */
+  clearCounterPayment: () => void;
   setPricing: (pricing: Pricing) => void;
   setCustomerKycId: (id: string | null) => void;
   reset: () => void;
@@ -53,7 +63,9 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       endTime: getCurrentTime(),
       plan: "STANDARD",
       paymentType: "CASH",
-      utr: "",
+      upiProof: null,
+      splitCash: "",
+      collateral: "",
       pricing: null,
       customerKycId: null,
 
@@ -64,7 +76,10 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       setEndTime: (time) => set({ endTime: time }),
       setPlan: (plan) => set({ plan }),
       setPaymentType: (type) => set({ paymentType: type }),
-      setUtr: (utr) => set({ utr }),
+      setUpiProof: (proof) => set({ upiProof: proof }),
+      setSplitCash: (cash) => set({ splitCash: cash }),
+      setCollateral: (note) => set({ collateral: note }),
+      clearCounterPayment: () => set({ upiProof: null, splitCash: "", collateral: "" }),
       setPricing: (pricing) => set({ pricing }),
       setCustomerKycId: (id) => set({ customerKycId: id }),
       reset: () =>
@@ -77,7 +92,9 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
           endTime: "10:00",
           plan: "STANDARD",
           paymentType: "CASH",
-          utr: "",
+          upiProof: null,
+          splitCash: "",
+          collateral: "",
           pricing: null,
           customerKycId: null,
         }),
@@ -85,9 +102,10 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
     {
       name: "employee-booking-storage",
       partialize: (state) => {
-        // UTR stays in memory only so it can't carry over to another customer's booking
+        // Payment photo, split and collateral stay in memory only so they can't carry
+        // over to another customer's booking
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { startTime, endTime, utr, ...rest } = state;
+        const { startTime, endTime, upiProof, splitCash, collateral, ...rest } = state;
         return rest;
       },
       storage: createJSONStorage(() => ({
