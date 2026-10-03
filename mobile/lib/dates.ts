@@ -155,14 +155,16 @@ export function initialRange(startIso?: string | null, endIso?: string | null, n
   return normalizeRange(start, end, now);
 }
 
-// Rental length wording shared by the booking screens: "3 hours" under a day,
-// otherwise days rounded up ("1 day", "2 days").
+// Rental length wording shared by the booking screens, exact (never rounded
+// up to whole days): "3 hours", "1 day", "1 day + 2 hours".
 export function rentalLengthLabel(hours: number): string | null {
   const h = Math.ceil(hours);
   if (!(h >= 1)) return null;
-  if (h < 24) return `${h} hour${h !== 1 ? 's' : ''}`;
-  const days = Math.ceil(h / 24);
-  return `${days} day${days !== 1 ? 's' : ''}`;
+  const pl = (n: number, w: string) => `${n} ${w}${n !== 1 ? 's' : ''}`;
+  if (h < 24) return pl(h, 'hour');
+  const d = Math.floor(h / 24);
+  const r = h % 24;
+  return r === 0 ? pl(d, 'day') : `${pl(d, 'day')} + ${pl(r, 'hour')}`;
 }
 
 export function rangeLengthLabel(start: Date, end: Date): string | null {

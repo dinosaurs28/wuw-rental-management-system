@@ -1,5 +1,7 @@
 // Types for the Fleet Executive vehicle-return flow.
 
+import type { ExtensionFreeKm } from './api';
+
 export type FuelLevel =
   | 'EMPTY'
   | 'QUARTER'
@@ -147,6 +149,9 @@ export interface KmAllowance {
   autoKmSkipped?: 'VEHICLE_SWAPPED' | null;
   // true only then: staff type the extra km at drop (manualExtraKm)
   manualExtraKmAllowed?: boolean;
+  // includedKm = free km of the original period + free km the extensions add (#7)
+  freeKmOriginal?: number;
+  freeKmExtensions?: number;
 }
 
 // ── Rental timeline (#7) and late return (#12) ─────────────────────────────
@@ -191,6 +196,8 @@ export interface RentalTimelineExtension {
   trigger: string;
   additionalAmount: string; // GST-inclusive
   taxAmount: string;
+  // free km this extension adds to the allowance (#7); null when unknown, absent from older servers
+  freeKm?: ExtensionFreeKm | null;
 }
 
 // Original / extended / late rental time, in whole minutes
@@ -204,6 +211,8 @@ export interface RentalTimeline {
   totalMinutes: number;
   extensionCount: number;
   extensions: RentalTimelineExtension[];
+  // Σ free km the extensions add (0 with none); null when the vehicle's free km are unknown
+  extensionFreeKmTotal?: number | null;
   // Late part, as of the return time frozen on the open drop bill, else now.
   returnedAt: string | null;
   lateMinutes: number;
@@ -279,7 +288,11 @@ export interface SwapChargePreview {
   gstUnavailableReason: string | null;
 }
 
-// ── Drop bill with GST (#23) ───────────────────────────────────────────────
+// ── Drop bill (#23) ─────────────────────────────────────────────────────────
+// Item 8: drop / recovery charges carry no GST — every line comes back with
+// taxable false, GST "0.00" and total = amount; bill.gst "0.00", gstRates null.
+// A bill computed before that is reported stale by GET …/return/session
+// (billStale true, billStaleReason "DROP_GST_REMOVED") and must be recomputed.
 
 export interface GstRates {
   cgstRate: number;
@@ -348,6 +361,12 @@ export interface CompleteReturnResponse {
     gstRates: GstRates | null;
     lines: LegacyReturnChargeLine[];
     total: string;
+  } | null;
+  // #6 — the held safety deposit's settlement as recorded (null when none held).
+  safetyDeposit?: {
+    handling: 'SET_OFF' | 'REFUND_IN_FULL';
+    amount: string;
+    settledBy: 'BRANCH_MANAGER' | string;
   } | null;
 }
 
@@ -421,6 +440,9 @@ export interface ReturnKmSummary {
   kmSource?: 'ODOMETER' | 'STAFF_ENTERED' | 'NONE';
   swapCount?: number;
   segments?: KmSegment[];
+  // includedKm = free km of the original period + free km the extensions add (#7)
+  freeKmOriginal?: number;
+  freeKmExtensions?: number;
 }
 
 export interface DropDiscount {

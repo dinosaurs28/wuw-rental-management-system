@@ -21,7 +21,21 @@ import { useEmployeeBookingStore, type WalkinPlan } from '../../../store/employe
 import { useAuthStore } from '../../../store/auth';
 import DateRangePicker from '../../../components/ui/DateRangePicker';
 import DurationChips from '../../../components/ui/DurationChips';
+import PackagePicker from '../../../components/booking/PackagePicker';
 import { BranchHoursLine, TimesNotice } from '../../../components/booking/BranchHours';
+import {
+  WALKIN_EXTRA_HOURS,
+  fitWalkinPackage,
+  initialPackageRange,
+  latestPackagePickup,
+  packageRangeEnd,
+  packageTimesNotice,
+  walkinExtraIssue,
+  walkinLengthLabel,
+  walkinPackageChoices,
+  type PackageChoice,
+  type WalkinPackage,
+} from '../../../lib/packages';
 import { useBranchSchedule } from '../../../hooks/useBranchSchedule';
 import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
 import {
@@ -35,7 +49,6 @@ import {
   slotsWithinHours,
 } from '../../../lib/branchSchedule';
 import {
-  DURATION_PRESETS,
   activePresetHours,
   bookingWindowLastDay,
   initialRange,
@@ -45,6 +58,7 @@ import {
   normalizeRange,
   presetRange,
   rangeLengthLabel,
+  timeLabel,
   timeOf,
   withSelectedSlot,
   withTime,
@@ -143,16 +157,20 @@ export default function WalkinVehiclesScreen() {
   const setDates = useEmployeeBookingStore((s) => s.setDates);
   const setStorePlan = useEmployeeBookingStore((s) => s.setPlan);
 
-  // Pickup today at the next 5-minute mark, return 24 hours later; every
-  // change goes through normalizeRange so the return stays after the pickup.
-  const [range, setRange] = useState(() => initialRange());
-  const { start: startDate, end: endDate } = range;
-  const [showDates, setShowDates] = useState(false);
-
   // Rental plan (#15/#17): Standard = up to 15 days; Monthly rental = the
   // counter-only monthly plan, 30–180 days with the pickup inside 15 days.
   const [plan, setPlan] = useState<WalkinPlan>(() => useEmployeeBookingStore.getState().plan);
   const monthly = plan === 'MONTHLY';
+
+  // Monthly plan: a free pickup → return (30–180 days); every change goes
+  // through normalizeRange so the return stays after the pickup.
+  const [range, setRange] = useState(() => initialRange());
+  // Standard plan (BRIEF4 P4a): the customers' packages — 12 hours or 1 … 15
+  // days — plus 0–11 extra hours at the counter. The return is computed.
+  const [std, setStd] = useState<WalkinPackage>(() => ({ ...initialPackageRange(), extra: 0 }));
+  const startDate = monthly ? range.start : std.start;
+  const endDate = monthly ? range.end : packageRangeEnd(std, std.extra);
+  const [showDates, setShowDates] = useState(false);
 
   // Office hours of the staff member's branch (#2): pickers offer only times
   // it accepts, and the range is moved back inside hours and length limits
@@ -166,22 +184,43 @@ export default function WalkinVehiclesScreen() {
     [schedule, maxEnd, monthly],
   );
   useEffect(() => {
-    setRange((r) => fit(r));
-  }, [fit, range]);
-  const timesNotice = bookingTimesNotice(schedule, startDate, endDate, { monthly });
-  const presets = monthly ? MONTH_PRESETS : DURATION_PRESETS;
+    if (monthly) setRange((r) => fit(r));
+  }, [fit, range, monthly]);
+  // Standard: a pickup outside hours moves in; a package / extra hours whose
+  // return the branch wouldn't take become the nearest ones it would.
+  const fitStd = useCallback((s: WalkinPackage) => fitWalkinPackage(s, { config: schedule }), [schedule]);
+  useEffect(() => {
+    if (!monthly) setStd((s) => fitStd(s));
+  }, [fitStd, std, monthly]);
+  const timesNotice = monthly
+    ? bookingTimesNotice(schedule, startDate, endDate, { monthly })
+    : packageTimesNotice(schedule, { start: std.start, hours: std.hours + std.extra });
+  // Standard: the packages (checked with the extra hours chosen) and the extra hours (checked with the package).
+  const packageChoices = monthly ? [] : walkinPackageChoices(std.start, std.extra, schedule);
+  const extraChoices: PackageChoice[] = monthly
+    ? []
+    : WALKIN_EXTRA_HOURS.map((e) => ({
+        hours: e,
+        label: e === 0 ? 'None' : `+${e} h`,
+        endAt: packageRangeEnd(std, e),
+        issue: walkinExtraIssue(schedule, std.start, std.hours, e),
+      }));
   const presetIssue = (hours: number) => {
     const next = presetRange(startDate, hours);
-    if (next.end.getTime() > maxEnd(startDate).getTime()) {
-      return `past the ${monthly ? MONTHLY_MAX_DAYS : MAX_BOOKING_DAYS}-day limit`;
-    }
+    if (next.end.getTime() > maxEnd(startDate).getTime()) return `past the ${MONTHLY_MAX_DAYS}-day limit`;
     return rangeScheduleIssue(schedule, next.start, next.end);
   };
   const choosePlan = (next: WalkinPlan) => {
     if (next === plan) return;
     setPlan(next);
-    // Monthly starts at the 30-day minimum; Standard goes back to one day.
-    setRange((r) => presetRange(r.start, next === 'MONTHLY' ? MONTHLY_MIN_DAYS * 24 : 24));
+    // Monthly starts at the 30-day minimum from the same pickup; Standard
+    // keeps its package from the monthly pickup.
+    if (next === 'MONTHLY') setRange(presetRange(std.start, MONTHLY_MIN_DAYS * 24));
+    else setStd((s) => ({ ...s, start: range.start }));
+  };
+  const setPickupTime = (t: string) => {
+    if (monthly) setRange((r) => normalizeRange(withTime(r.start, t), r.end));
+    else setStd((s) => ({ ...s, start: withTime(s.start, t) }));
   };
 
   const [category, setCategory] = useState<string>('all');
@@ -245,13 +284,21 @@ export default function WalkinVehiclesScreen() {
   const selectGroup = async (card: VehicleCard) => {
     if (blockedReason(card)) return;
     // The screen may have sat open past the pickup time — bump it first.
-    const next = fit(normalizeRange(startDate, endDate));
+    const nextStd = monthly ? null : fitStd(std);
+    const next = nextStd
+      ? { start: nextStd.start, end: packageRangeEnd(nextStd, nextStd.extra) }
+      : fit(normalizeRange(startDate, endDate));
     const start = toLocalISO(next.start);
     const end = toLocalISO(next.end);
-    if (start !== startISO || end !== endISO) setRange(next);
+    if (start !== startISO || end !== endISO) {
+      if (nextStd) setStd(nextStd);
+      else setRange(next);
+    }
     // Times the server would refuse (15-day / monthly limits, pickup outside
     // branch hours): stop here with the same message.
-    const blocking = bookingTimesNotice(schedule, next.start, next.end, { monthly });
+    const blocking = nextStd
+      ? packageTimesNotice(schedule, { start: nextStd.start, hours: nextStd.hours + nextStd.extra })
+      : bookingTimesNotice(schedule, next.start, next.end, { monthly });
     if (blocking?.tone === 'error') {
       Alert.alert('Change the rental period', blocking.text);
       return;
@@ -332,7 +379,7 @@ export default function WalkinVehiclesScreen() {
         <Text style={styles.planHint}>
           {monthly
             ? `${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days · pickup within the next ${MAX_BOOKING_DAYS} days`
-            : `Up to ${MAX_BOOKING_DAYS} days · return by ${fmtDate(bookingWindowLastDay())}`}
+            : `12 hours or 1–${MAX_BOOKING_DAYS} days, plus extra hours if asked · return by ${fmtDate(bookingWindowLastDay())}`}
         </Text>
 
         <TouchableOpacity style={styles.dateRow} onPress={() => setShowDates(true)} activeOpacity={0.8}>
@@ -348,37 +395,69 @@ export default function WalkinVehiclesScreen() {
           <Ionicons name="calendar-outline" size={18} color={Colors.ink3} />
         </TouchableOpacity>
 
-        {/* Quick lengths (#5): 12 hours / 1 day, or months on the monthly plan */}
-        <DurationChips
-          presets={presets}
-          activeHours={activePresetHours(startDate, endDate, presets)}
-          issueFor={presetIssue}
-          onSelect={(h) => setRange((r) => presetRange(r.start, h))}
-        />
+        {/* Quick lengths on the monthly plan (whole months) */}
+        {monthly ? (
+          <DurationChips
+            presets={MONTH_PRESETS}
+            activeHours={activePresetHours(startDate, endDate, MONTH_PRESETS)}
+            issueFor={presetIssue}
+            onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+          />
+        ) : null}
 
         <View style={styles.timeBlock}>
           <Text style={styles.timeLabel}>Pickup time</Text>
           <TimeRow
             value={timeOf(startDate)}
-            slots={slotsWithinHours(startDate, schedule, 'pickup')}
+            slots={slotsWithinHours(startDate, schedule, 'pickup', monthly ? {} : { before: latestPackagePickup() })}
             emptyText={closedDayText(schedule, startDate)}
-            onChange={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
+            onChange={setPickupTime}
           />
         </View>
-        <View style={styles.timeBlock}>
-          <Text style={styles.timeLabel}>
-            Return time{rangeLengthLabel(startDate, endDate) ? ` · ${rangeLengthLabel(startDate, endDate)}` : ''}
-          </Text>
-          <TimeRow
-            value={timeOf(endDate)}
-            slots={slotsWithinHours(endDate, schedule, 'return', {
-              after: monthly ? new Date(monthlyReturnMin(startDate).getTime() - 1) : startDate,
-              before: maxEnd(startDate),
-            })}
-            emptyText={closedDayText(schedule, endDate)}
-            onChange={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
-          />
-        </View>
+        {monthly ? (
+          <View style={styles.timeBlock}>
+            <Text style={styles.timeLabel}>
+              Return time{rangeLengthLabel(startDate, endDate) ? ` · ${rangeLengthLabel(startDate, endDate)}` : ''}
+            </Text>
+            <TimeRow
+              value={timeOf(endDate)}
+              slots={slotsWithinHours(endDate, schedule, 'return', {
+                after: new Date(monthlyReturnMin(startDate).getTime() - 1),
+                before: maxEnd(startDate),
+              })}
+              emptyText={closedDayText(schedule, endDate)}
+              onChange={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
+            />
+          </View>
+        ) : (
+          <>
+            {/* P4a — the customers' packages (12 hours / whole days) … */}
+            <View style={styles.timeBlock}>
+              <Text style={styles.timeLabel}>Package</Text>
+              <PackagePicker
+                choices={packageChoices}
+                selectedHours={std.hours}
+                onSelect={(hours) => setStd((s) => ({ ...s, hours }))}
+              />
+            </View>
+            {/* … plus up to 11 extra hours when the customer asks (Fleet only),
+                priced by the server like any other length */}
+            <View style={styles.timeBlock}>
+              <Text style={styles.timeLabel}>Extra hours (optional)</Text>
+              <PackagePicker
+                choices={extraChoices}
+                selectedHours={std.extra}
+                onSelect={(extra) => setStd((s) => ({ ...s, extra }))}
+              />
+            </View>
+            <View style={styles.returnRow}>
+              <Ionicons name="flag-outline" size={15} color={Colors.ink3} />
+              <Text style={styles.returnText}>
+                Return {fmtDate(endDate)}, {timeLabel(timeOf(endDate))} · {walkinLengthLabel(std.hours, std.extra)}
+              </Text>
+            </View>
+          </>
+        )}
 
         {/* Branch hours (#2) and anything the server would refuse */}
         <BranchHoursLine text={rangeHoursLine(schedule, startDate, endDate)} />
@@ -524,6 +603,8 @@ export default function WalkinVehiclesScreen() {
                     {item.pricingDetails
                       ? ` total${item.pricingDetails.billedAs ? ` · ${item.pricingDetails.billedAs}` : ''}`
                       : '/day'}
+                    {/* Rents are GST-inclusive (item 17) */}
+                    {' · incl. GST'}
                   </Text>
                 )}
               </View>
@@ -541,7 +622,14 @@ export default function WalkinVehiclesScreen() {
         visible={showDates}
         startDate={startDate}
         endDate={endDate}
-        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
+        // Standard: only the pickup day — the return follows the package + extra hours.
+        pickupOnly={!monthly}
+        returnFor={(p) => packageRangeEnd({ start: p, hours: std.hours }, std.extra)}
+        onConfirm={(s, e) =>
+          monthly
+            ? setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))
+            : setStd((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))
+        }
         onClose={() => setShowDates(false)}
         maxStartDay={bookingWindowLastDay()}
         endDayBounds={monthly ? (p) => ({ min: monthlyReturnMin(p), max: monthlyReturnMax(p) }) : undefined}
@@ -596,6 +684,8 @@ const styles = StyleSheet.create({
   timePillText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
   timePillTextActive: { color: Colors.white },
   timeEmpty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, paddingVertical: 7 },
+  returnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  returnText: { flex: 1, fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
 
   limitBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,

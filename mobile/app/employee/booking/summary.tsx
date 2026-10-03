@@ -27,38 +27,46 @@ import {
 } from '../../../lib/razorpay';
 import {
   apiErrorMessage,
-  cleanUtr,
   counterErrorCode,
   handleShiftRequired,
-  isValidUtr,
 } from '../../../lib/counterErrors';
+import {
+  COUNTER_PAYMENT_METHODS,
+  counterChoiceLabel,
+  inrCounter,
+  type CounterPaymentChoice,
+  type PaymentMethodKey,
+} from '../../../lib/counterPayment';
 import { durationLabel } from '../../../lib/pricing';
 import { handleDlInUse } from '../../../lib/dlInUse';
 import { rangeLengthLabel, toLocalMinuteIso } from '../../../lib/dates';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import { profileIncompleteMessage } from '../../../lib/identity';
-import { gstLabel, inrExact, round2 } from '../../../lib/gst';
+import { inrExact, rentGstNoteLines, rentInclGstView } from '../../../lib/gst';
 import { quoteDiscountLines } from '../../../lib/discounts';
-import UtrInput from '../../../components/employee/UtrInput';
+import CounterPaymentPicker, { useCounterPayment } from '../../../components/employee/CounterPaymentPicker';
 import RazorpayPayOptions from '../../../components/payments/RazorpayPayOptions';
 import { QR_PHOTO_LABEL, qrPhotoQueryKey, useQrPhoto } from '../../../components/employee/QrPhotoSection';
 
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
 
-type PayMethod = 'CASH' | 'ONLINE' | 'UPI';
+// Counter methods (#3 / #11) — Cash, UPI (payment-screen photo), Split, Credit —
+// plus Razorpay checkout.
+const PAY_METHODS: readonly PaymentMethodKey[] = [...COUNTER_PAYMENT_METHODS, 'ONLINE'];
 
-const PAY_METHODS: { key: PayMethod; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { key: 'CASH', label: 'Cash', icon: 'wallet-outline' },
-  { key: 'ONLINE', label: 'Online', icon: 'card-outline' },
-  { key: 'UPI', label: 'UPI (UTR)', icon: 'keypad-outline' },
-];
+// `handled`: an alert (e.g. Open shift) was already shown. `proofErr`: the
+// payment photo can't back this hold (already used) — retake it.
+type PollResult = { ok: boolean; message?: string; proofErr?: any; handled?: boolean };
 
-// `handled`: an alert (e.g. Open shift) was already shown.
-type PollResult = { ok: boolean; message?: string; utrError?: string; handled?: boolean };
-
-const isUtrError = (err: any) => {
-  const code = counterErrorCode(err);
-  return code === 'INVALID_UTR' || code === 'DUPLICATE_UTR';
+// The UPI photo (or an old build's UTR) can never back this payment.
+const isProofError = (err: any) => {
+  const code = err?.response?.data?.code;
+  return (
+    code === 'DUPLICATE_PAYMENT_PROOF' ||
+    code === 'INVALID_PAYMENT_PROOF' ||
+    counterErrorCode(err) === 'INVALID_UTR' ||
+    counterErrorCode(err) === 'DUPLICATE_UTR'
+  );
 };
 
 function Line({ label, value, bold, credit }: { label: string; value: string; bold?: boolean; credit?: boolean }) {
@@ -91,9 +99,13 @@ export default function WalkinSummaryScreen() {
   const qc = useQueryClient();
   const { data: qrState } = useQrPhoto(customer ? { kind: 'customer', publicId: customer.publicId } : null);
 
-  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
-  const [utr, setUtr] = useState('');
-  const [utrError, setUtrError] = useState<string | undefined>();
+  const pay = useCounterPayment('CASH');
+  const payMethod = pay.method;
+  // The server's total for this booking when it differs from the quote below
+  // (SPLIT_AMOUNT_MISMATCH carries it), tied to the quote it was seen against.
+  const [serverTotal, setServerTotal] = useState<{ total: number; quoted: number } | null>(null);
+  // How the confirmed booking was paid, for the success screen.
+  const [paidWith, setPaidWith] = useState<CounterPaymentChoice | null>(null);
   const [phase, setPhase] = useState<'REVIEW' | 'PAYING' | 'DONE'>('REVIEW');
   const [statusText, setStatusText] = useState('');
   const [bookingRef, setBookingRef] = useState('');
@@ -167,9 +179,9 @@ export default function WalkinSummaryScreen() {
     );
   }, [phase, hasHold, secondsLeft]);
 
-  // The UTR field sits at the bottom of the review — bring it into view.
+  // The photo / split / collateral fields sit at the bottom of the review — bring them into view.
   useEffect(() => {
-    if (payMethod !== 'UPI') return;
+    if (payMethod === 'CASH' || payMethod === 'ONLINE') return;
     const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(t);
   }, [payMethod]);
@@ -218,6 +230,13 @@ export default function WalkinSummaryScreen() {
   const tax = pd?.taxAmount ?? 0;
   const finalTotal = pd ? pd.finalTotal : base + tax;
   const grandTotal = finalTotal + deposit;
+  // The server prices the vehicle it actually assigns (first free one in the
+  // group), which can cost a little more or less than this quote's vehicle. Once
+  // a split is refused for that, collect the server's total instead — retrying
+  // with the quote's total could never add up.
+  const payTotal = serverTotal && serverTotal.quoted === grandTotal ? serverTotal.total : grandTotal;
+  // The rent incl. GST, its discounts and the GST inside what is left (item 17).
+  const rent = pd ? rentInclGstView(pd) : null;
 
   // Back to the vehicle step to choose other times (no hold exists yet).
   const backToVehicles = () => {
@@ -257,9 +276,10 @@ export default function WalkinSummaryScreen() {
         if (status === 'Success') return { ok: true };
         if (status === 'Failed') return { ok: false, message: res.data?.message };
       } catch (err: any) {
-        // A UPI booking's UTR is re-checked when it is confirmed; a duplicate
-        // (409) cancels the hold server-side, so stop and ask for a new UTR.
-        if (isUtrError(err)) return { ok: false, utrError: apiErrorMessage(err, 'Check the UTR number.') };
+        // A UPI / split booking's photo is re-checked when it is confirmed; one
+        // already used elsewhere (409) cancels the hold server-side, so stop and
+        // ask for a new photo.
+        if (isProofError(err)) return { ok: false, proofErr: err };
         if (handleShiftRequired(err)) return { ok: false, handled: true };
         if (err?.response?.data?.status === 'Failed') {
           return { ok: false, message: apiErrorMessage(err, 'Could not confirm the booking.') };
@@ -294,11 +314,12 @@ export default function WalkinSummaryScreen() {
       );
       return;
     }
-    if (payMethod === 'UPI' && !isValidUtr(utr)) {
-      setUtrError("Enter the 12-digit UTR from the customer's UPI app.");
+    // UPI / split need the payment-screen photo, credit the collateral note (#3 / #11).
+    const choice = pay.resolve(payTotal);
+    if (!choice) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
       return;
     }
-    setUtrError(undefined);
     setPhase('PAYING');
     // Retrying after a failed attempt: release the previous hold so we don't orphan it.
     if (holdRef.current) {
@@ -316,8 +337,13 @@ export default function WalkinSummaryScreen() {
         ...(customerKycId ? { customer_kyc_id: customerKycId } : {}),
         start,
         end,
-        payment_type: payMethod,
-        ...(payMethod === 'UPI' ? { utr: cleanUtr(utr) } : {}),
+        payment_type: choice.method,
+        ...(choice.method === 'UPI' ? { proof_file_id: choice.proofFileId } : {}),
+        // Both parts are sent so a total that moved on the server is refused, not re-split.
+        ...(choice.method === 'SPLIT'
+          ? { cash_amount: choice.cashAmount, upi_amount: choice.upiAmount, proof_file_id: choice.proofFileId }
+          : {}),
+        ...(choice.method === 'CREDIT' ? { collateral: choice.collateral } : {}),
         qr_photo_id: qrPhotoId,
         // Omitted = STANDARD, so standard bookings send exactly what they used to.
         ...(plan === 'MONTHLY' ? { plan: 'MONTHLY' as const } : {}),
@@ -325,9 +351,9 @@ export default function WalkinSummaryScreen() {
       const data = res.data?.data ?? {};
       const holdId: string = data.bookingId;
       const transactionId: string = data.transactionId;
-      // Null on the CASH / UPI branches (where transactionId is a CASH_ / UPI_
-      // ref), so the presence of the order — not payMethod — decides whether
-      // Checkout opens.
+      // Null on the counter branches (where transactionId is a CASH_ / UPI_ /
+      // SPLIT_ / CREDIT_ ref), so the presence of the order — not payMethod —
+      // decides whether Checkout opens.
       const rzp: RazorpayOrder | null = data.razorpay ?? null;
       setHold({ holdId, transactionId });
       if (typeof data.expiresIn === 'number') setSecondsLeft(data.expiresIn);
@@ -364,6 +390,7 @@ export default function WalkinSummaryScreen() {
             const paid = await poll(transactionId, QR_CANCEL_POLL_DELAYS);
             if (!mountedRef.current) return;
             if (paid.ok) {
+              setPaidWith(choice);
               setPhase('DONE');
               return;
             }
@@ -373,7 +400,7 @@ export default function WalkinSummaryScreen() {
           Alert.alert(
             cancelled ? 'Payment cancelled' : 'Payment failed',
             cancelled
-              ? 'The payment sheet was closed. Retry, switch to cash or UPI, or cancel the hold.'
+              ? 'The payment sheet was closed. Retry, switch to a counter method (cash, UPI, split or credit), or cancel the hold.'
               : description || 'The payment could not be completed. Retry or collect cash.',
           );
           return;
@@ -389,23 +416,32 @@ export default function WalkinSummaryScreen() {
           });
         } catch { /* fall through — the poll below is the fallback */ }
       } else {
-        setStatusText(payMethod === 'UPI' ? 'Confirming UPI payment…' : 'Confirming cash payment…');
+        setStatusText(
+          choice.method === 'UPI'
+            ? 'Confirming UPI payment…'
+            : choice.method === 'SPLIT'
+              ? 'Confirming split payment…'
+              : choice.method === 'CREDIT'
+                ? 'Confirming booking on credit…'
+                : 'Confirming cash payment…',
+        );
       }
 
       const result = await poll(transactionId);
       if (!mountedRef.current) return;
       if (result.ok) {
+        setPaidWith(choice);
         setPhase('DONE');
       } else {
         setPhase('REVIEW');
-        if (result.utrError) {
-          // The UTR can never back this hold (a duplicate already cancelled it
-          // server-side). Drop it so staff fix the UTR and create the booking afresh.
+        if (result.proofErr) {
+          // The photo can never back this hold (already used — the server
+          // cancelled it). Drop both so staff retake it and create the booking afresh.
           try { await employeeApi.cancelBookingHold(holdId); } catch { /* already released */ }
           if (!mountedRef.current) return;
           setHold(null);
           setSecondsLeft(null);
-          setUtrError(result.utrError);
+          pay.showServerError(result.proofErr);
           return;
         }
         if (result.handled) return;
@@ -413,7 +449,7 @@ export default function WalkinSummaryScreen() {
           'Payment not completed',
           result.message ??
             (payMethod === 'ONLINE'
-              ? 'The online payment was not confirmed. Retry, switch to cash or UPI, or cancel the hold.'
+              ? 'The online payment was not confirmed. Retry, switch to a counter method, or cancel the hold.'
               : 'Could not confirm the booking. Please retry.'),
         );
       }
@@ -421,8 +457,19 @@ export default function WalkinSummaryScreen() {
       if (!mountedRef.current) return;
       setPhase('REVIEW');
       if (handleShiftRequired(err)) return;
-      if (isUtrError(err)) {
-        setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
+      // The parts didn't add up to the server's total for the vehicle it assigns:
+      // re-split against that total (the picker recomputes the UPI part).
+      const mismatchTotal = Number(err?.response?.data?.total);
+      if (
+        err?.response?.data?.code === 'SPLIT_AMOUNT_MISMATCH' &&
+        Number.isFinite(mismatchTotal) &&
+        mismatchTotal > 0
+      ) {
+        setServerTotal({ total: mismatchTotal, quoted: grandTotal });
+      }
+      // Photo / split / collateral problems show under the payment picker (#3 / #11).
+      if (pay.showServerError(err)) {
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
         return;
       }
       // X3 — this DL has a vehicle out / an overlapping booking: name that booking
@@ -435,6 +482,16 @@ export default function WalkinSummaryScreen() {
           'Recheck the QR code photo',
           apiErrorMessage(err, "The customer's QR code photo was replaced. Please recheck it and try again."),
           [{ text: 'OK', onPress: () => router.back() }],
+          { cancelable: false },
+        );
+        return;
+      }
+      if (err?.response?.data?.code === 'CUSTOMER_BLACKLISTED') {
+        // Stale screen: the customer was blacklisted after this flow began.
+        Alert.alert(
+          'Customer blacklisted',
+          apiErrorMessage(err, "This customer is blacklisted and can't make new bookings."),
+          [{ text: 'OK', onPress: () => router.replace('/employee/customer/search') }],
           { cancelable: false },
         );
         return;
@@ -536,6 +593,23 @@ export default function WalkinSummaryScreen() {
             {vehicle.make} {vehicle.model} booked for {customer.name}.
           </Text>
           <Text style={styles.successRef}>#{bookingRef.slice(-8).toUpperCase()}</Text>
+          {/* How it was paid (#3 / #11) — split cash waits for the manager; credit stays owed */}
+          {paidWith && paidWith.method !== 'ONLINE' && (
+            <View style={styles.paidNote}>
+              <Ionicons
+                name={paidWith.method === 'CREDIT' ? 'hourglass-outline' : 'cash-outline'}
+                size={15}
+                color={paidWith.method === 'CREDIT' ? '#b45309' : Colors.ink3}
+              />
+              <Text style={styles.paidNoteText}>
+                {paidWith.method === 'CREDIT'
+                  ? `${inrCounter(paidWith.amount)} on credit — collateral: ${paidWith.collateral}. The branch manager clears it when the customer pays.`
+                  : paidWith.method === 'SPLIT'
+                    ? `${counterChoiceLabel(paidWith)} — the cash part awaits the branch manager's confirmation.`
+                    : `${inrCounter(paidWith.amount)} · ${counterChoiceLabel(paidWith)}`}
+              </Text>
+            </View>
+          )}
           <TouchableOpacity
             style={styles.doneBtn}
             onPress={() => { reset(); router.replace('/(employee)/dashboard'); }}
@@ -554,7 +628,13 @@ export default function WalkinSummaryScreen() {
 
   const ctaLabel = holdRef.current
     ? 'Retry payment'
-    : payMethod === 'UPI' ? 'Confirm UPI payment' : 'Confirm & collect cash';
+    : payMethod === 'UPI'
+      ? 'Confirm UPI payment'
+      : payMethod === 'SPLIT'
+        ? 'Confirm split payment'
+        : payMethod === 'CREDIT'
+          ? 'Confirm on credit'
+          : 'Confirm & collect cash';
 
   return (
     <KeyboardAvoidingView
@@ -626,25 +706,22 @@ export default function WalkinSummaryScreen() {
         {/* Price breakdown */}
         <Text style={styles.sectionLabel}>Price breakdown</Text>
         <View style={styles.card}>
-          <Line label={`Base (${billedText})`} value={inrExact(base)} />
+          {/* Rent is GST-inclusive (item 17): rent → discounts (off the
+              inclusive rent) → rent after discount, with the GST inside it */}
+          <Line label={rent ? `Rent (${billedText}, incl. GST)` : `Base (${billedText})`} value={inrExact(rent ? rent.rent : base)} />
           {/* Duration slab named (#24), e.g. "Weekly discount (10%)" */}
-          {pd
-            ? quoteDiscountLines(pd).map((l) => (
+          {pd && rent
+            ? quoteDiscountLines({ ...pd, discountAmount: rent.discount, durationDiscountAmount: rent.durationDiscount }).map((l) => (
                 <Line key={l.label} label={l.label} value={`−${inrExact(l.amount)}`} credit />
               ))
             : discount > 0 && <Line label="Discount" value={`−${inrExact(discount)}`} credit />}
-          {/* GST on the rental after discounts, CGST + SGST as the server priced them (#23) */}
-          {pd ? (
+          {/* The GST inside the rent, CGST + SGST as the server priced them (#23) */}
+          {pd && rent ? (
             <>
-              {discount > 0 && <Line label="Taxable value" value={inrExact(round2(base - discount))} />}
-              {pd.cgstAmount > 0 || pd.sgstAmount > 0 ? (
-                <>
-                  <Line label={gstLabel('CGST', pd.cgstRate)} value={inrExact(pd.cgstAmount)} />
-                  <Line label={gstLabel('SGST', pd.sgstRate)} value={inrExact(pd.sgstAmount)} />
-                </>
-              ) : (
-                <Line label={gstLabel('GST', pd.taxRate)} value={inrExact(tax)} />
-              )}
+              {rent.discount > 0 && <Line label="Rent after discount" value={inrExact(rent.rentAfterDiscount)} />}
+              {rentGstNoteLines(rent, pd).map((t) => (
+                <Text key={t} style={styles.priceNote}>{t}</Text>
+              ))}
             </>
           ) : (
             <Line label="GST" value="Not available" />
@@ -652,6 +729,15 @@ export default function WalkinSummaryScreen() {
           <Line label="Deposit (refundable, no GST)" value={inrExact(deposit)} />
           <View style={styles.divider} />
           <Line label="Grand total" value={inrExact(grandTotal)} bold />
+          {payTotal !== grandTotal && (
+            <>
+              <Line label="Total for the vehicle assigned" value={inrExact(payTotal)} bold />
+              <Text style={styles.priceWarn}>
+                The vehicle this booking gets is priced differently from the quote above. Collect{' '}
+                {inrExact(payTotal)}.
+              </Text>
+            </>
+          )}
           {!pd && (
             <Text style={styles.priceWarn}>
               The price for these dates couldn't be loaded. Go back and select the vehicle again.
@@ -661,33 +747,10 @@ export default function WalkinSummaryScreen() {
 
         {/* Payment method */}
         <Text style={styles.sectionLabel}>Payment method</Text>
-        <View style={styles.methodRow}>
-          {PAY_METHODS.map((m) => (
-            <TouchableOpacity
-              key={m.key}
-              style={[styles.methodBtn, payMethod === m.key && styles.methodBtnActive]}
-              onPress={() => !paying && setPayMethod(m.key)}
-              activeOpacity={0.8}
-              disabled={paying}
-            >
-              <Ionicons name={m.icon} size={18} color={payMethod === m.key ? Colors.white : Colors.ink2} />
-              <Text style={[styles.methodText, payMethod === m.key && styles.methodTextActive]}>{m.label}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Cash / UPI (payment-screen photo) / Split / Credit (collateral) / Online */}
+        <View style={styles.card}>
+          <CounterPaymentPicker ctl={pay} amount={payTotal} methods={PAY_METHODS} disabled={paying} title={null} />
         </View>
-
-        {payMethod === 'UPI' && (
-          <View style={styles.card}>
-            <Text style={styles.upiHint}>
-              Ask the customer to pay ₹{grandTotal.toLocaleString('en-IN')} to the shop's UPI QR, then enter the UTR from their UPI app.
-            </Text>
-            <UtrInput
-              value={utr}
-              onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
-              error={utrError}
-            />
-          </View>
-        )}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -701,14 +764,14 @@ export default function WalkinSummaryScreen() {
             {payMethod === 'ONLINE' ? (
               <RazorpayPayOptions
                 payLabel={holdRef.current ? 'Retry payment' : 'Confirm & pay online'}
-                trailing={`₹${grandTotal.toLocaleString('en-IN')}`}
+                trailing={`₹${payTotal.toLocaleString('en-IN')}`}
                 onPay={confirm}
                 buttonStyle={styles.rzpBtn}
               />
             ) : (
               <TouchableOpacity style={styles.cta} onPress={() => confirm()} activeOpacity={0.85}>
                 <Text style={styles.ctaText}>{ctaLabel}</Text>
-                <Text style={styles.ctaTotal}>₹{grandTotal.toLocaleString('en-IN')}</Text>
+                <Text style={styles.ctaTotal}>₹{payTotal.toLocaleString('en-IN')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.cancelBtn} onPress={cancel} activeOpacity={0.8}>
@@ -757,16 +820,8 @@ const styles = StyleSheet.create({
   lineValueBold: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
   credit: { color: '#10b981' },
   priceWarn: { fontFamily: Fonts.body, fontSize: 12, color: '#d97706', lineHeight: 17 },
-
-  methodRow: { flexDirection: 'row', gap: 10 },
-  methodBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
-  },
-  methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
-  methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
-  methodTextActive: { color: Colors.white },
-  upiHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 19 },
+  // The GST inside the rent (item 17) — a note, not a line that adds to the total.
+  priceNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', lineHeight: 17 },
 
   footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: Colors.bg, borderTopWidth: 1, borderTopColor: Colors.hairline, gap: 8 },
   cta: {
@@ -791,6 +846,11 @@ const styles = StyleSheet.create({
   successTitle: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.ink, letterSpacing: -0.8 },
   successSub: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3, textAlign: 'center', lineHeight: 22 },
   successRef: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink3, letterSpacing: 1 },
+  paidNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8, alignSelf: 'stretch',
+    backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline, padding: 12,
+  },
+  paidNoteText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 19 },
   doneBtn: { backgroundColor: Colors.ink, borderRadius: 16, paddingVertical: 17, paddingHorizontal: 40, alignItems: 'center', marginTop: 16, width: '100%' },
   doneBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white },
 });

@@ -4,8 +4,13 @@ import type { DropDamageInput } from '../types/return';
 import type { AppNotification, NotificationAudience, NotificationPage } from '../types/notifications';
 import type { MyShiftsParams } from '../types/shift';
 import type { DlCollectionStatus, UpdateDlStatusBody } from './dlStatus';
-import type { ExtensionGstFields } from './gst';
+import type { ExtensionGstFields, RentInclGstFields } from './gst';
+import type { ExtensionFreeKm } from '../types/api';
 import type { PaymentFlow, PaymentOptions } from '../types/api';
+import type { RescheduleOptions, RescheduleResult } from '../types/api';
+import type { PublicOffersResponse } from '../types/offers';
+import type { UpiQrTarget, UpiQrView } from '../types/upiQr';
+import type { CounterRefundMethod, PaymentProof, SafetyDepositHandling } from './counterPayment';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -103,12 +108,42 @@ export const vehiclesApi = {
   }) => api.post('/api/public/vehicles/booking', body),
 };
 
+// ─── offer posters (#15) ────────────────────────────────────────────────────
+
+export const offersApi = {
+  // No auth. Live posters for the home hero: with `branch`, that branch's plus
+  // global ones. { data: [] } (or any error) → show the static hero.
+  list: (branchPublicId?: string | null) =>
+    api.get<PublicOffersResponse>('/api/public/offers', {
+      params: branchPublicId ? { branch: branchPublicId } : undefined,
+    }),
+};
+
 // ─── payment / config ───────────────────────────────────────────────────────
 
 export const paymentApi = {
   // Customer online payment status: { status: 'Success' | 'Pending' | 'Failed' }
   status: (transactionId: string) =>
     api.get(`/api/payment/status/${transactionId}`),
+};
+
+// UPI QR scanned from another phone (item 2) — customer only. Pays the order
+// the booking / extension already has. Errors: { success:false, code, message }.
+export const upiQrApi = {
+  // { data: { enabled } } — false: don't offer the QR (ops switch / no keys).
+  availability: () =>
+    api.get<{ success: boolean; data: { enabled: boolean } }>('/api/payment/upi-qr/availability'),
+  // 201 a new QR, 200 the still-open one (reused: true). 409 BOOKING_ALREADY_PAID /
+  // EXTENSION_ALREADY_PAID → already paid; 409 HOLD_EXPIRED → start again.
+  create: (target: UpiQrTarget) =>
+    api.post<{ success: boolean; data: UpiQrView }>('/api/payment/upi-qr', target),
+  // Poll every 3 s — confirms the booking / extension as soon as the payment lands.
+  status: (qrPaymentId: string) =>
+    api.get<{ success: boolean; data: UpiQrView }>(`/api/payment/upi-qr/${qrPaymentId}`),
+  // Stops the QR taking money (left the screen / paying another way). A payment
+  // that already landed is settled and comes back as CONFIRMED.
+  close: (qrPaymentId: string) =>
+    api.post<{ success: boolean; data: UpiQrView }>(`/api/payment/upi-qr/${qrPaymentId}/close`, {}),
 };
 
 export const configApi = {
@@ -131,6 +166,13 @@ export const authApi = {
     api.post('/api/auth/email/forgot-password', { email }),
   resetPassword: (email: string, otp: string, password: string) =>
     api.post('/api/auth/email/reset-password', { email, otp, password }),
+  // SMS-code reset (default path). identifier = mobile number or email; the code
+  // always goes by SMS to the phone on the account. Request is always a generic 200.
+  passwordResetChannels: () => api.get('/api/auth/password-reset/channels'),
+  smsForgotPassword: (identifier: string) =>
+    api.post('/api/auth/sms/forgot-password', { identifier }),
+  smsResetPassword: (identifier: string, otp: string, password: string) =>
+    api.post('/api/auth/sms/reset-password', { identifier, otp, password }),
 };
 
 // ─── razorpay ─────────────────────────────────────────────────────────────
@@ -242,6 +284,8 @@ export interface CustomerExtensionQuote {
     /** Rental length before the extension / hours this quote adds (numbers). */
     originalHours?: number;
     extensionHours?: number;
+    /** Free km this quote adds (#7) — none for an extension under 12 h. */
+    extensionFreeKm?: ExtensionFreeKm | null;
   } & ExtensionGstFields; // GST split of additionalAmount (= taxableAmount + taxAmount)
   resolutionOptions: { type: CustomerExtensionResolution; description: string; partialNewEndAt?: string }[];
 }
@@ -279,6 +323,11 @@ export const employeeApi = {
     api.post('/api/employee/auth/email/forgot-password', { email }),
   resetPassword: (email: string, otp: string, password: string) =>
     api.post('/api/employee/auth/email/reset-password', { email, otp, password }),
+  // SMS-code reset (default path), STAFF accounts only.
+  smsForgotPassword: (identifier: string) =>
+    api.post('/api/employee/auth/sms/forgot-password', { identifier }),
+  smsResetPassword: (identifier: string, otp: string, password: string) =>
+    api.post('/api/employee/auth/sms/reset-password', { identifier, otp, password }),
   dashboardStats: () => api.get('/api/employee/dashboard/stats'),
   // { data: null | ActiveShift } (types/shift.ts).
   getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
@@ -338,7 +387,7 @@ export const employeeApi = {
     // gated by booking.frozenChargeConfig.safetyDepositEnabled
     safetyDepositRequest?: { requestedAmount: number; reason: string };
     // Original driving licence status (#3) — optional (X1): omitted / null leaves
-    // it unset. DEPOSIT needs dlDepositNote (≤200 chars); the server clears it otherwise.
+    // it unset. DEPOSIT is no longer accepted (400 DL_STATUS_INVALID).
     dlStatus?: DlCollectionStatus | null;
     dlDepositNote?: string | null;
     // Deprecated alias kept for old builds (dlStatus wins). Never send false.
@@ -368,6 +417,9 @@ export const employeeApi = {
     // MANUAL grace branches only
     applyGrace?: boolean;
     waiveLateCharge?: { reason: string } | null;
+    // #6 — how the held safety deposit is settled (recorded for the branch
+    // manager's settlement). Omitted = SET_OFF. Response adds `safetyDeposit`.
+    safetyDepositHandling?: SafetyDepositHandling;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
   getBookingKyc: (bookingId: string) =>
     api.get(`/api/employee/kyc/${bookingId}`),
@@ -377,12 +429,15 @@ export const employeeApi = {
   // ── remaining / advance balance collection (pickup + return) ──────────────
   initiateRemainingPaymentPickup: (
     bookingId: string,
-    // UPI = counter UPI QR; `utr` (12 digits) required, settles like CASH.
-    body: { method: 'CASH' | 'ONLINE_RAZORPAY' | 'UPI'; paidDuring: 'PICKUP'; utr?: string },
+    // UPI = counter UPI QR backed by `proof_file_id` (payment-screen photo, #3;
+    // older builds sent a 12-digit `utr`) — settles like CASH. SPLIT = cashAmount
+    // + onlineAmount (= the balance) + the photo. CREDIT = the balance stays owed
+    // against `collateral` (#11) and the counter step counts as settled.
+    body: RemainingPaymentBody & { paidDuring: 'PICKUP' },
   ) => api.post(`/api/employee/pickup/${bookingId}/initiate-remaining-payment`, body),
   initiateRemainingPaymentReturn: (
     bookingId: string,
-    body: { method: 'CASH' | 'ONLINE_RAZORPAY' | 'UPI'; paidDuring: 'RETURN'; utr?: string },
+    body: RemainingPaymentBody & { paidDuring: 'RETURN' },
   ) => api.post(`/api/employee/return/${bookingId}/initiate-remaining-payment`, body),
   remainingPaymentStatus: (transactionId: string) =>
     api.get(`/api/employee/payment/remaining-status/${transactionId}`),
@@ -401,7 +456,7 @@ export const employeeApi = {
       fastagNotes?: string;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
-      // re-applied on every compute — resend it on recomputes. Pre-tax.
+      // re-applied on every compute — resend it on recomputes. Drop charges carry no GST (item 8).
       discount?: { amount: number; reason: string };
       // Late return: "Apply grace" (MANUAL grace branches only)
       applyGrace?: boolean;
@@ -409,6 +464,9 @@ export const employeeApi = {
       waiveLateCharge?: { reason: string } | null;
       // only used when kmAllowance.manualExtraKmAllowed (swap without readings)
       manualExtraKm?: number | null;
+      // #6 — safety deposit at drop; resend on every compute while it should stay.
+      // Omitted = SET_OFF. data.deposit: DropDeposit (lib/counterPayment).
+      safetyDepositHandling?: SafetyDepositHandling;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
   getReturnSession: (bookingId: string) =>
@@ -423,7 +481,8 @@ export const employeeApi = {
   recordSessionPayment: (
     sessionPublicId: string,
     body: {
-      method: 'CASH' | 'ONLINE' | 'SPLIT';
+      // UPI ≡ ONLINE through the counter UPI gateway; CREDIT = stays owed (#11)
+      method: 'CASH' | 'ONLINE' | 'SPLIT' | 'UPI' | 'CREDIT';
       amount: number;
       idempotencyKey: string;
       notes?: string;
@@ -432,15 +491,24 @@ export const employeeApi = {
       // SPLIT only: the cash and online parts (must add up to amount)
       cashAmount?: number;
       onlineAmount?: number;
+      // UPI / a split's UPI part: the payment-screen photo (#3)
+      proof_file_id?: string;
+      // CREDIT only: what was taken from the customer (3–300 chars)
+      collateral?: string;
+      // Drop bill with the deposit refunded in full (#6): how it's paid back.
+      // Without it: 400 DEPOSIT_REFUND_METHOD_REQUIRED { depositRefundAmount }.
+      depositRefund?: { method: CounterRefundMethod; proof_file_id?: string; notes?: string };
     },
   ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
   recordSessionRefund: (
     sessionPublicId: string,
     body: {
-      method: 'CASH' | 'ONLINE';
+      // UPI = ONLINE paid back by UPI, optionally with a photo of the transfer
+      method: 'CASH' | 'ONLINE' | 'UPI';
       amount: number;
       idempotencyKey: string;
       notes?: string;
+      proof_file_id?: string;
     },
   ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
 
@@ -526,9 +594,16 @@ export const employeeApi = {
     customer_kyc_id?: string;
     start: string;
     end: string;
-    payment_type: 'CASH' | 'ONLINE' | 'UPI';
-    /** Required for UPI — then confirmed via bookingPaymentStatus like CASH. */
+    payment_type: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT';
+    /** Older builds' UPI proof — this app sends proof_file_id instead. */
     utr?: string;
+    /** UPI / SPLIT: the payment-screen photo (#3); then confirmed via bookingPaymentStatus like CASH. */
+    proof_file_id?: string;
+    /** SPLIT: the cash part (> 0); upi_amount, when sent, must add up to the total (400 SPLIT_AMOUNT_MISMATCH { total }). */
+    cash_amount?: number;
+    upi_amount?: number;
+    /** CREDIT: the collateral held (3–300 chars) — no payment is recorded (#11). */
+    collateral?: string;
     /** QrPhoto.publicId of the customer's current QR code photo (409 QR_PHOTO_MISMATCH if replaced). */
     qr_photo_id?: string;
     /** Counter monthly plan (#15/#17): 30–180 days, pickup within 15 days. Omitted = STANDARD. */
@@ -569,7 +644,7 @@ export const employeeApi = {
       originalVehicleFuelLevel?: string;
       newVehicleStartOdometer?: number;
       newVehicleFuelLevel?: string;
-      // Bill the pre-GST price difference at drop; omitted ⇒ server default for the reason.
+      // Bill the price difference at drop (face value, no GST — item 8); omitted ⇒ server default for the reason.
       chargeDifference?: boolean;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/swap-vehicle`, body),
@@ -611,14 +686,45 @@ export const employeeApi = {
     /** Collect now instead of deferring the charge to a pickup payment session. */
     collectNow?: boolean;
   }) => api.post('/api/employee/extensions/commit', body),
-  // ONLINE = UPI (UTR): onlineTransactionRef is the 12-digit UTR.
+  // CASH / UPI / SPLIT → COLLECTED, awaiting the manager (data.payment "pending");
+  // CREDIT → confirmed at once, the amount stays owed (data.credit). UPI is
+  // backed by proof_file_id (older builds: ONLINE + 12-digit onlineTransactionRef).
   collectExtension: (
     extensionPublicId: string,
-    body: { method: 'CASH' | 'ONLINE'; onlineTransactionRef?: string },
+    body: {
+      method: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT';
+      onlineTransactionRef?: string;
+      proof_file_id?: string;
+      // SPLIT: cash > 0 and UPI > 0, adding up to the extension amount
+      cashAmount?: number;
+      onlineAmount?: number;
+      collateral?: string;
+    },
   ) => api.post(`/api/employee/extensions/${extensionPublicId}/collect`, body),
   // Releases an unpaid (not CONFIRMED) extension and restores the old return time.
   cancelExtension: (extensionPublicId: string, reason?: string) =>
     api.post(`/api/employee/extensions/${extensionPublicId}/cancel`, reason ? { reason } : {}),
+
+  // ── reschedule a CONFIRMED booking (BRIEF4 P4c) — own branch only ──────────
+  // { success, data: RescheduleOptions } (types/api.ts): whether it can move
+  // (reschedulable + code/reason), its fixed length, the pickup range, office
+  // hours and what is in the way. 404 BOOKING_NOT_FOUND for another branch.
+  rescheduleOptions: (bookingPublicId: string) =>
+    api.get<{ success: boolean; data: RescheduleOptions }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/reschedule`,
+    ),
+  // newStartAt: IST "YYYY-MM-DDTHH:mm"; the return moves by the same amount,
+  // the price doesn't change. 200 { message, data: RescheduleResult }; 4xx
+  // { code, message } — VALIDATION_ERROR, BOOKING_NOT_RESCHEDULABLE,
+  // PICKUP_PENDING_CONFIRMATION, PAYMENT_SESSION_OPEN, PAYMENT_IN_PROGRESS,
+  // EXTENSION_PENDING, RESCHEDULE_NO_CHANGE, RESCHEDULE_IN_PAST,
+  // BOOKING_MAX_PERIOD_EXCEEDED, BRANCH_SCHEDULE_VIOLATION, DL_IN_USE,
+  // VEHICLE_TYPE_LIMIT_EXCEEDED, VEHICLE_UNAVAILABLE, RESCHEDULE_BUSY, RESCHEDULE_CONFLICT.
+  rescheduleBooking: (bookingPublicId: string, body: { newStartAt: string; reason?: string }) =>
+    api.post<{ success: boolean; message: string; data: RescheduleResult }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/reschedule`,
+      body,
+    ),
 
   // ── counter payment panel (financial state + ledger + record) ─────────────
   financialState: (bookingPublicId: string) =>
@@ -733,9 +839,29 @@ export const employeeApi = {
     api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
   recordRefund: (
     sessionPublicId: string,
-    body: { method: 'CASH' | 'ONLINE'; amount: number; idempotencyKey: string; notes?: string },
+    body: { method: 'CASH' | 'ONLINE' | 'UPI'; amount: number; idempotencyKey: string; notes?: string; proof_file_id?: string },
   ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-refund`, body),
+
+  // ── UPI payment-proof photo (#3) — multipart field 'file', image ≤10 MB ────
+  // 201 { data: PaymentProof } (lib/counterPayment); send data.proofFileId as
+  // proof_file_id. 400 FILE_REQUIRED / INVALID_FILE_TYPE / INVALID_IMAGE /
+  // IMAGE_TOO_SMALL, 413 FILE_TOO_LARGE — all with a message.
+  uploadPaymentProof: (formData: FormData) =>
+    api.post<{ success: boolean; message: string; data: PaymentProof }>('/api/employee/payment/proof', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
+    }),
+  // A fresh 15-minute URL for a proof of this branch; 404 PAYMENT_PROOF_NOT_FOUND.
+  getPaymentProof: (proofFileId: string) =>
+    api.get<{ success: boolean; data: PaymentProof }>(`/api/employee/payment/proof/${encodeURIComponent(proofFileId)}`),
 };
+
+// Legacy remaining balance (#3 / #11) — POST …/initiate-remaining-payment.
+export type RemainingPaymentBody =
+  | { method: 'CASH' | 'ONLINE_RAZORPAY' }
+  | { method: 'UPI'; proof_file_id?: string; utr?: string }
+  | { method: 'SPLIT'; cashAmount: number; onlineAmount: number; proof_file_id?: string; utr?: string }
+  | { method: 'CREDIT'; collateral: string };
 
 // ─── discount ───────────────────────────────────────────────────────────────
 
@@ -750,11 +876,13 @@ export interface CouponValidateBody {
 }
 
 /**
- * The server's re-priced breakdown with the coupon applied (numbers). The
- * coupon comes off before GST, so render totals from here — never
- * `oldTotal − discountAmount`.
+ * The server's re-priced breakdown with the coupon applied (numbers). Render
+ * totals from here — never `oldTotal − discountAmount` (discountAmount is the
+ * coupon's rent-without-GST part).
  */
-export interface CouponPreviewPricing {
+// Item 17: the classic fields are in taxable terms (rent without GST); the
+// GST-inclusive fields (RentInclGstFields) are the price the customer sees.
+export interface CouponPreviewPricing extends RentInclGstFields {
   basePrice: number;
   durationDiscountAmount: number;
   durationDiscountPercent: number;
@@ -781,6 +909,8 @@ export interface CouponValidateValid {
   couponCode: string;
   /** Coupon layer only (pre-GST), Decimal string. */
   discountAmount: string;
+  /** What the coupon takes off the GST-inclusive rent (item 17) — show this one. Absent on older servers. */
+  discountInclGst?: string;
   discountType?: string;
   discountValue?: string;
   // Absent on older servers.
@@ -829,7 +959,8 @@ export interface CouponRejectedBody {
 }
 
 // Pickup-counter coupon (Unified Payments). Money fields are 2-dp STRINGS.
-// totalCredit = discountAmount (pre-GST) + gstAmount — the bill line.
+// totalCredit = the coupon off the GST-inclusive rent (item 17) = discountAmount
+// (its rent-without-GST part) + gstAmount — the bill line.
 export interface CounterCouponQuote {
   couponCode: string;
   discountAmount: string;
@@ -837,6 +968,8 @@ export interface CounterCouponQuote {
   sgstAmount: string;
   gstAmount: string;
   totalCredit: string;
+  /** = totalCredit: the coupon off the GST-inclusive rent (item 17) — show this one. */
+  discountInclGst?: string;
   rentalBase: string;
   owedBeforeCoupon: string;
   /** OWED: limited to the rental still due; COMBINED_CAP: the branch's maximum discount. */
@@ -853,7 +986,8 @@ export interface CustomerBookingCreateResponse {
   holdId: string;
   /** The plan actually charged (may differ from the one sent). */
   payment_flow?: PaymentFlow;
-  paymentFlowRequested?: PaymentFlow;
+  /** null when the request carried no payment_flow (item 18: the plan is the server's). */
+  paymentFlowRequested?: PaymentFlow | null;
   paymentFlowAdjusted?: boolean;
   paymentFlowAdjustReason?: string | null;
   paymentFlowAdjustMessage?: string | null;
@@ -866,6 +1000,11 @@ export interface CustomerBookingCreateResponse {
       grandDiscountTotal?: number;
       grandDurationDiscountTotal?: number;
       grandCouponDiscountTotal?: number;
+      // GST-inclusive rent totals (item 17); the grand*Total discounts above are taxable-terms.
+      grandRentInclGst?: number;
+      grandDiscountInclGst?: number;
+      grandRentAfterDiscountInclGst?: number;
+      grandRentWithoutGst?: number;
       durationDiscountLabel?: string | null;
       appliedCouponCode?: string | null;
       advanceAmount?: number;
@@ -910,4 +1049,30 @@ export const notificationsApi = {
   // { data: { removed: 0 | 1 } }. Short timeout: it runs during sign-out.
   unregisterPushToken: (audience: NotificationAudience, token: string) =>
     api.delete(`${notificationsBase(audience)}/push-token`, { data: { token }, timeout: 5_000 }),
+};
+
+// ─── deferred deep links (#16) ─────────────────────────────────────────────
+// No auth. The website records the shared vehicle (keyed by network + platform,
+// 1 h) before sending a phone to the store; the app claims it once on first
+// launch. { data: { path, vehicleId, kind, createdAt } | null } — the claim
+// deletes the entry. Errors (treat all as "nothing to open"): 400
+// DEFERRED_LINK_PLATFORM_INVALID, 429 RATE_LIMITED, 503 DEFERRED_LINK_UNAVAILABLE.
+
+export interface DeferredLinkClaim {
+  /** Encoded for URLs — navigate with vehicleId instead. */
+  path: string;
+  /** Raw group key or vehicle publicId. */
+  vehicleId: string;
+  kind: 'group' | 'vehicle';
+  createdAt: string;
+}
+
+export const deepLinkApi = {
+  // Short timeout: it runs at startup and must never hold the app up.
+  claim: (platform: 'android' | 'ios') =>
+    api.post<{ success: boolean; data: DeferredLinkClaim | null }>(
+      '/api/public/deferred-links/claim',
+      { platform },
+      { timeout: 6_000 },
+    ),
 };

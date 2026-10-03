@@ -11,8 +11,8 @@ import {
   type SwapReason,
   type VehicleSwapRecord,
 } from '../../types/vehicleSwap';
+import SwapVehiclePicker from './SwapVehiclePicker';
 import {
-  SwapCandidateList,
   SwapPriceDifference,
   SwapReasonChips,
   chargeDifferenceToSend,
@@ -24,8 +24,9 @@ import {
 
 // #51 — "is the vehicle available?" gate → pick a replacement (same category
 // first, higher categories flagged "Upgrade") → swap. Before pickup: no
-// readings. The pre-GST price difference shows per car; "Charge customer"
-// decides whether it goes on the drop bill (#13).
+// readings. The price difference (of the GST-inclusive rents, item 17) shows
+// per car; "Charge customer" decides whether it goes on the drop bill (#13),
+// at face value with no GST (item 8).
 export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId: string; onSwapped: () => void }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -71,7 +72,7 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
       const money =
         diff > 0
           ? swap?.chargeDifference
-            ? ` Price difference ${swapInr(diff)} + GST goes on the drop bill.`
+            ? ` Price difference ${swapInr(diff)} goes on the drop bill (no GST).`
             : ` The ${swapInr(diff)} price difference was waived.`
           : '';
       Alert.alert('Vehicle swapped', `The booking now points to the new vehicle.${money}`);
@@ -122,7 +123,7 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
               {context?.pricingError ? (
                 <Text style={styles.warnText}>Price differences unavailable: {context.pricingError}</Text>
               ) : null}
-              <SwapCandidateList
+              <SwapVehiclePicker
                 vehicles={vehicles}
                 selectedId={selectedId}
                 onSelect={(v) => setSelectedId(v.id)}

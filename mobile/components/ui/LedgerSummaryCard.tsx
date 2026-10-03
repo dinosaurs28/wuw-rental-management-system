@@ -2,8 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Fonts } from '../../constants/colors';
 import type { LedgerEntry, ReturnSession } from '../../types/api';
 import { gstNumber, gstSplitText, inrExact, round2 } from '../../lib/gst';
+import { SAFETY_DEPOSIT_REFUND_REF, dropBillDeposit, dropBillNetNote } from '../../lib/counterPayment';
 
-// Paise shown when present: drop-line GST is rounded to the paisa (#23).
+// Paise shown when present: GST is rounded to the paisa (#23).
 function inr(n: number) {
   return inrExact(n);
 }
@@ -11,12 +12,17 @@ function inr(n: number) {
 function EntryRow({ e }: { e: LedgerEntry }) {
   const amt = Number(e.amount);
   const credit = amt < 0; // discounts / payments / deposit credits are negative
+  // "Refund in full" (#6): the deposit credited back is paid out to the customer
+  const refundOut = e.referenceType === SAFETY_DEPOSIT_REFUND_REF;
   return (
-    <View style={styles.row}>
-      <Text style={styles.label} numberOfLines={2}>{e.description}</Text>
-      <Text style={[styles.value, credit && styles.credit]}>
-        {credit ? '−' : ''}{inr(amt)}
-      </Text>
+    <View>
+      <View style={styles.row}>
+        <Text style={styles.label} numberOfLines={2}>{e.description}</Text>
+        <Text style={[styles.value, credit && styles.credit]}>
+          {credit ? '−' : refundOut ? '+' : ''}{inr(amt)}
+        </Text>
+      </View>
+      {refundOut && <Text style={styles.note}>Paid back to the customer — not part of the charges</Text>}
     </View>
   );
 }
@@ -36,15 +42,20 @@ export default function LedgerSummaryCard({ session }: { session: ReturnSession 
   const sgst = round2(taxableLines.reduce((s, e) => s + (gstNumber(e.sgst) ?? 0), 0));
   const showSplit = gst > 0 && Math.abs(round2(cgst + sgst) - gst) < 0.005;
   const taxableBase = gstNumber(session.taxableBase);
+  // Right for both drop deposit choices (#6): with "Refund in full", ₹0 means no charges
+  const netNote = dropBillNetNote(net, entries);
+  const refundingInFull = dropBillDeposit(entries).refundedInFull > 0;
 
   return (
     <View style={styles.card}>
       {charges.map((e) => <EntryRow key={e.publicId} e={e} />)}
 
-      {/* Taxable lines carry their GST on top (netPayable includes it) */}
+      {/* Only rent lines are taxable (items 8 + 17): their GST is booked next
+          to the rent without GST (netPayable includes it). Drop / recovery
+          charges carry none. */}
       {Number(session.gstAmount) > 0 && (
         <View style={styles.row}>
-          <Text style={styles.label}>GST (CGST + SGST)</Text>
+          <Text style={styles.label}>GST on rent (CGST + SGST)</Text>
           <Text style={styles.value}>{inr(Number(session.gstAmount))}</Text>
         </View>
       )}
@@ -61,7 +72,7 @@ export default function LedgerSummaryCard({ session }: { session: ReturnSession 
 
       <View style={styles.row}>
         <Text style={styles.netLabel}>
-          {net > 0 ? 'Amount payable' : net < 0 ? 'Refund due' : 'Settled'}
+          {net > 0 ? 'Amount payable' : net < 0 ? 'Refund due' : refundingInFull ? 'Charges to collect' : 'Settled'}
         </Text>
         <Text
           style={[
@@ -73,12 +84,7 @@ export default function LedgerSummaryCard({ session }: { session: ReturnSession 
           {net === 0 ? '₹0' : `${net < 0 ? '−' : ''}${inr(net)}`}
         </Text>
       </View>
-      {net === 0 && (
-        <Text style={styles.note}>Security deposit covers all charges — nothing to collect.</Text>
-      )}
-      {net < 0 && (
-        <Text style={styles.note}>Refund the difference to the customer to complete the return.</Text>
-      )}
+      {netNote && <Text style={styles.note}>{netNote}</Text>}
     </View>
   );
 }

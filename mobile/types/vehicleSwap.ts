@@ -6,8 +6,9 @@
 //   GET  /api/employee/bookings/:bookingId/swap-history       → VehicleSwapRecord[] (newest first)
 //
 // Money is a 2-dp Decimal STRING ("299.95", may arrive as "1500") — Number() it.
-// The price difference is PRE-GST and pro-rated to the rest of the rental; when
-// charged it is billed at drop with GST on top.
+// The price difference is the difference of the GST-inclusive rents (item 17),
+// pro-rated to the rest of the rental; when charged it is billed at drop at
+// face value, no GST (item 8).
 
 export type SwapReason = 'CUSTOMER_REQUEST' | 'MAINTENANCE' | 'UPGRADE' | 'DOWNGRADE' | 'DAMAGE' | 'OTHER';
 
@@ -53,7 +54,22 @@ export interface SwapCandidate {
   sameCategory?: boolean;
   // Higher category than the current car → "Upgrade" badge.
   isUpgrade?: boolean;
-  // PRE-GST difference for the rest of the rental, ≥ 0; null = couldn't be priced.
+  // Difference of the GST-inclusive rents for the rest of the rental, ≥ 0; null = couldn't be priced.
+  priceDifference?: string | null;
+}
+
+// What the swap picker sheet (#4) reads. A SwapCandidate fits as is; the
+// extension's "swap to another vehicle" list maps { id: publicId, make, model,
+// regNo } and has no image, category or price (the server doesn't send them).
+export interface SwapPickerVehicle {
+  id: string | number;
+  make: string;
+  model: string;
+  regNo: string;
+  categoryName?: string | null;
+  images?: { url: string | null }[];
+  isUpgrade?: boolean;
+  // null / absent = no price shown.
   priceDifference?: string | null;
 }
 

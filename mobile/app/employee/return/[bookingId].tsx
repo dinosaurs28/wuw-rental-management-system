@@ -20,7 +20,12 @@ import RemainingBalanceCollect from '../../../components/employee/RemainingBalan
 import LedgerSummaryCard from '../../../components/ui/LedgerSummaryCard';
 import PhotoCaptureSection, { type CapturedPhoto } from '../../../components/employee/PhotoCaptureSection';
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
-import UtrInput from '../../../components/employee/UtrInput';
+import CounterPaymentPicker, {
+  CounterRefundPicker,
+  useCounterPayment,
+  useCounterRefund,
+} from '../../../components/employee/CounterPaymentPicker';
+import SafetyDepositAtDrop from '../../../components/employee/SafetyDepositAtDrop';
 import ActiveRentalSwap from '../../../components/employee/ActiveRentalSwap';
 import { DlStatusCard } from '../../../components/employee/DlStatus';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -31,12 +36,15 @@ import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import {
   apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
   handleShiftRequired,
-  isValidUtr,
 } from '../../../lib/counterErrors';
-import type { ReturnSession } from '../../../types/api';
+import {
+  SAFETY_DEPOSIT_HANDLING_LABELS,
+  counterChoiceLabel,
+  type DropDeposit,
+  type SafetyDepositHandling,
+} from '../../../lib/counterPayment';
+import type { FinancialState, ReturnSession } from '../../../types/api';
 import type { DropDamage, DropDiscount, ReturnBooking, ReturnKmSummary } from '../../../types/return';
 import type {
   CompleteReturnResponse,
@@ -89,17 +97,9 @@ const fuelBars = (level: string | null | undefined): number | null =>
   level && /^([1-9]|10)$/.test(level) ? Number(level) : null;
 const fuelLabel = (level: string) => (fuelBars(level) != null ? `${level}/10` : level);
 
-// Settlement methods — same set as the web RecordPaymentPanel. UPI is the shop
-// QR recorded by its 12-digit UTR; "Other online" is another gateway's reference.
-type PayMethod = 'CASH' | 'UPI' | 'SPLIT' | 'OTHER';
-const PAY_METHODS: PayMethod[] = ['CASH', 'UPI', 'SPLIT', 'OTHER'];
-const PAY_METHOD_LABELS: Record<PayMethod, string> = {
-  CASH: 'Cash',
-  UPI: 'UPI (UTR)',
-  SPLIT: 'Split',
-  OTHER: 'Other online',
-};
-const GATEWAYS = ['Razorpay', 'Other'] as const;
+// Settlement methods (#3 / #11): Cash · UPI (photo of the customer's payment
+// screen) · Split · Credit — components/employee/CounterPaymentPicker. Refunds:
+// Cash or UPI (optional transfer photo).
 
 interface OtherChargeLine {
   id: string;
@@ -197,7 +197,7 @@ export default function ReturnScreen() {
   // so the local preview stops showing km math after "Edit charges".
   const [kmAutoSkipped, setKmAutoSkipped] = useState<ReturnKmSummary['autoKmSkipped']>(null);
   const [serverDiscount, setServerDiscount] = useState<DropDiscount | null>(null);
-  // Drop bill with GST (#23) and the late line's summary, from the compute.
+  // Drop bill (no GST on drop charges, item 8) and the late line's summary, from the compute.
   const [bill, setBill] = useState<DropBill | null>(null);
   const [lateSummary, setLateSummary] = useState<ReturnLateSummary | null>(null);
   // Rental timeline from the last compute / restore (late part measured to the
@@ -209,15 +209,16 @@ export default function ReturnScreen() {
   const [recomputeTick, setRecomputeTick] = useState(0);
   const [deletingDamageId, setDeletingDamageId] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
-  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
-  const [utr, setUtr] = useState('');
-  const [utrError, setUtrError] = useState<string | undefined>(undefined);
-  const [splitCash, setSplitCash] = useState('');
-  const [splitUpi, setSplitUpi] = useState('');
-  const [otherRef, setOtherRef] = useState('');
-  const [otherGateway, setOtherGateway] = useState<(typeof GATEWAYS)[number]>('Razorpay');
-  const [otherRefError, setOtherRefError] = useState<string | null>(null);
-  const [payError, setPayError] = useState<string | null>(null);
+  // How the drop bill is settled: Cash / UPI (photo) / Split / Credit for a
+  // balance due; Cash / UPI for a refund or the deposit refunded in full.
+  const pay = useCounterPayment('CASH');
+  const refundPay = useCounterRefund();
+  // Safety deposit at drop (#6): set off against the charges (default) or
+  // refunded in full — resent on every compute; `dropDeposit` is the split.
+  const [depositHandling, setDepositHandling] = useState<SafetyDepositHandling>('SET_OFF');
+  const [dropDeposit, setDropDeposit] = useState<DropDeposit | null>(null);
+  // What the settlement did, for the success screen (credit / refunds).
+  const [settledNote, setSettledNote] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -262,6 +263,25 @@ export default function ReturnScreen() {
     staleTime: 30_000,
     retry: false,
   });
+
+  // Money position (same cache as the Payment panel): the safety deposit held
+  // before the drop bill exists (#6) and any remaining balance on credit (#11).
+  const { data: fin } = useQuery<FinancialState | null>({
+    queryKey: ['employee', 'financial-state', booking?.publicId],
+    queryFn: async () => {
+      const res = await employeeApi.financialState(booking!.publicId);
+      return (res.data?.data ?? null) as FinancialState | null;
+    },
+    enabled: !!booking?.publicId,
+    staleTime: 15_000,
+    retry: false,
+  });
+  // Deposit taken at pickup and not yet credited back (#6) — before the drop bill exists.
+  const depositHeldBefore = num(fin?.safetyDepositHeld);
+  // The legacy rental balance was put on credit (#11): still owed, not paid.
+  const balanceOnCredit = !!fin?.credit?.pendingSections?.some((s) =>
+    s.sectionKey.startsWith('credit:remaining_payment:'),
+  );
 
   // Pre-delivery reference photos captured at pickup (#55) — for condition comparison.
   const { data: pickupCaptures = [] } = useQuery({
@@ -337,10 +357,18 @@ export default function ReturnScreen() {
         if (late?.graceType === 'MANUAL' && late.graceApplied) setApplyGrace(true);
         const d = (data?.discount ?? null) as DropDiscount | null;
         if (d) setDiscount({ amount: num(d.amount), reason: d.reason });
-        // An extension moved the end time since this bill was computed — the
+        // Keep the deposit choice the bill was computed with (#6); null on older bills.
+        const dep = (data?.deposit ?? null) as DropDeposit | null;
+        if (dep?.handling) setDepositHandling(dep.handling);
+        // An extension moved the end time since this bill was computed, or the
+        // bill still carries GST on drop charges (computed before item 8) — the
         // server refuses payment on it, so start from the charges form.
         if (data?.billStale) {
-          setNotice('The rental period changed since the drop bill was computed — enter the return details and compute the charges again.');
+          setNotice(
+            data?.billStaleReason === 'DROP_GST_REMOVED'
+              ? 'Drop charges no longer carry GST — enter the return details and compute the charges again to update the bill.'
+              : 'The rental period changed since the drop bill was computed — enter the return details and compute the charges again.',
+          );
           return;
         }
         setSession(s);
@@ -348,6 +376,7 @@ export default function ReturnScreen() {
         setBill((data?.bill ?? null) as DropBill | null);
         setLateSummary(late);
         setServerDiscount(d);
+        setDropDeposit(dep);
       } catch {
         /* no active session — start fresh */
       }
@@ -384,7 +413,7 @@ export default function ReturnScreen() {
     kmSegments?.complete === false;
   const manualKmAllowed = !!allowance?.manualExtraKmAllowed;
   // Read-only preview of the server's extra-km charge (same formula as compute),
-  // before GST.
+  // at face value — no GST on drop charges (item 8).
   const kmPreview = useMemo(() => {
     const e = parseFloat(endOdo);
     if (!Number.isFinite(e)) return null;
@@ -510,6 +539,7 @@ export default function ReturnScreen() {
     setKmSummary(null);
     setServerDiscount(null);
     setBill(null);
+    setDropDeposit(null);
     setLateSummary(null);
     setBillStale(false);
     setNotice(message);
@@ -518,6 +548,8 @@ export default function ReturnScreen() {
   const runCompute = async (
     nextDiscount: AppliedDiscount | null,
     source: 'form' | 'discount' | 'auto',
+    // #6 — a new deposit choice to compute with (the current one otherwise)
+    nextHandling?: SafetyDepositHandling,
   ): Promise<boolean> => {
     if (!booking || photosPending > 0) return false;
     if (computeBusyRef.current) {
@@ -564,6 +596,9 @@ export default function ReturnScreen() {
         if (lines.length > 0) body.otherCharges = lines;
       }
       if (nextDiscount) body.discount = nextDiscount;
+      // Safety deposit at drop (#6) — resent on every compute
+      const handling = nextHandling ?? depositHandling;
+      body.safetyDepositHandling = handling;
       Object.assign(body, extras);
       const res = await employeeApi.computeReturnSession(bookingId as string, body);
       const data = res.data?.data;
@@ -578,6 +613,8 @@ export default function ReturnScreen() {
         setServerDiscount((data?.discount ?? null) as DropDiscount | null);
         setDiscount(nextDiscount);
         setDiscountError(null);
+        setDepositHandling(handling);
+        setDropDeposit((data?.deposit ?? null) as DropDeposit | null);
         setBillStale(false);
         setNotice(null);
       }
@@ -684,6 +721,23 @@ export default function ReturnScreen() {
     void runCompute(null, 'discount');
   };
 
+  // Safety deposit at drop (#6): before the bill exists the choice just rides
+  // along; on a computed bill it is recomputed (a restored bill's inputs aren't
+  // on this screen, so it goes back to the form like the discount does).
+  const changeDepositHandling = (next: SafetyDepositHandling) => {
+    if (next === depositHandling) return;
+    if (!session) {
+      setDepositHandling(next);
+      return;
+    }
+    if (!computedHereRef.current) {
+      setDepositHandling(next);
+      backToForm(`Enter the return details and compute the charges again to ${next === 'REFUND_IN_FULL' ? 'refund the deposit in full' : 'set the deposit off against the charges'}.`);
+      return;
+    }
+    void runCompute(discount, 'discount', next);
+  };
+
   const openDiscountForm = () => {
     setDiscountAmt(serverDiscount ? String(num(serverDiscount.amount)) : '');
     setDiscountReason(serverDiscount?.reason ?? '');
@@ -716,6 +770,7 @@ export default function ReturnScreen() {
   const onSettled = () => {
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
     qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking?.publicId] });
     if (mountedRef.current) setDone(true);
   };
 
@@ -726,72 +781,89 @@ export default function ReturnScreen() {
       return;
     }
     const net = num(session.netPayable);
-    const cashPart = num(splitCash);
-    const upiPart = num(splitUpi);
-    if (net > 0) {
-      if (payMethod === 'SPLIT' && Math.abs(cashPart + upiPart - net) >= 0.01) {
-        setPayError(`Cash + UPI must add up to ${inr(net)}.`);
-        return;
+    // Deposit refunded in full (#6): paid back in the same settlement.
+    const depositRefundAmt = dropDeposit?.refundVia === 'PAYMENT_DEPOSIT_REFUND' ? num(dropDeposit.refund) : 0;
+    // Cash / UPI (payment-screen photo) / Split / Credit for a balance due (#3 / #11)
+    const choice = net > 0 ? pay.resolve(net) : null;
+    if (net > 0 && !choice) return;
+    // Cash / UPI for money going back: the bill's refund, or the deposit in full
+    const refundChoice = net < 0 || depositRefundAmt > 0 ? refundPay.resolve() : null;
+    if ((net < 0 || depositRefundAmt > 0) && !refundChoice) return;
+    const depositRefund = depositRefundAmt > 0 && refundChoice
+      ? {
+        depositRefund: {
+          method: refundChoice.method,
+          ...(refundChoice.proofFileId ? { proof_file_id: refundChoice.proofFileId } : {}),
+        },
       }
-      if ((payMethod === 'UPI' || (payMethod === 'SPLIT' && upiPart > 0)) && !isValidUtr(utr)) {
-        setUtrError('Enter the 12-digit UTR number.');
-        return;
-      }
-      if (payMethod === 'OTHER' && !otherRef.trim()) {
-        setOtherRefError('Enter the transaction reference.');
-        return;
-      }
-    }
+      : {};
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
-    setPayError(null);
-    setUtrError(undefined);
-    setOtherRefError(null);
     try {
-      if (net < 0) {
+      if (net < 0 && refundChoice) {
         await employeeApi.recordSessionRefund(session.publicId, {
-          method: 'CASH',
+          method: refundChoice.method,
           amount: Math.abs(net),
           idempotencyKey: `refund:${session.publicId}`,
+          ...(refundChoice.proofFileId ? { proof_file_id: refundChoice.proofFileId } : {}),
         });
-      } else if (net === 0) {
+      } else if (net === 0 || !choice) {
         await employeeApi.recordSessionPayment(session.publicId, {
           method: 'CASH',
           amount: 0,
           idempotencyKey: `zero-balance:${session.publicId}`,
+          ...depositRefund,
         });
       } else {
         const idempotencyKey = `settle:${session.publicId}`;
         await employeeApi.recordSessionPayment(
           session.publicId,
-          payMethod === 'SPLIT'
+          choice.method === 'SPLIT'
             ? {
               method: 'SPLIT',
               amount: net,
               idempotencyKey,
-              notes: `Split: ₹${cashPart.toFixed(2)} cash + ₹${upiPart.toFixed(2)} UPI`,
-              cashAmount: cashPart,
-              onlineAmount: upiPart,
-              ...(upiPart > 0 ? { onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) } : {}),
+              notes: `Split: ₹${choice.cashAmount.toFixed(2)} cash + ₹${choice.upiAmount.toFixed(2)} UPI`,
+              cashAmount: choice.cashAmount,
+              onlineAmount: choice.upiAmount,
+              onlineGateway: 'UPI',
+              proof_file_id: choice.proofFileId,
+              ...depositRefund,
             }
-            : payMethod === 'UPI'
-              ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) }
-              : payMethod === 'OTHER'
-                ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: otherGateway, onlineTransactionRef: otherRef.trim() }
-                : { method: 'CASH', amount: net, idempotencyKey },
+            : choice.method === 'UPI'
+              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, ...depositRefund }
+              : choice.method === 'CREDIT'
+                ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral, ...depositRefund }
+                : { method: 'CASH', amount: net, idempotencyKey, ...depositRefund },
         );
       }
+      // What happened to the money, for the success screen.
+      const refundedAmt = net < 0 ? Math.abs(net) : depositRefundAmt;
+      const notes = [
+        choice?.method === 'CREDIT' ? `${inr(net)} ${counterChoiceLabel(choice).charAt(0).toLowerCase()}${counterChoiceLabel(choice).slice(1)} — the branch manager clears it when the customer pays.` : null,
+        refundedAmt > 0 && refundChoice
+          ? refundChoice.method === 'CASH'
+            ? `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refunded in cash — the branch manager acknowledges it.`
+            : `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refunded by UPI.`
+          : null,
+      ].filter(Boolean);
+      if (mountedRef.current) setSettledNote(notes.length ? notes.join('\n') : null);
       onSettled();
     } catch (err: any) {
       if (!mountedRef.current) return;
       if (handleShiftRequired(err)) return;
-      const code = counterErrorCode(err);
-      if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
-        const message = apiErrorMessage(err, 'Check the reference number.');
-        if (payMethod === 'OTHER') setOtherRefError(message);
-        else setUtrError(message);
-        return;
+      // Photo / split / collateral problems show under the picker they belong to:
+      // the payment's photo is checked first, the deposit refund's after it.
+      const paymentHasPhoto = choice?.method === 'UPI' || choice?.method === 'SPLIT';
+      if (net > 0 && (paymentHasPhoto || !refundChoice) && pay.showServerError(err)) return;
+      if (refundChoice && refundPay.showServerError(err)) return;
+      if (net > 0 && pay.showServerError(err)) return;
+      // The bill now refunds the deposit in full (computed elsewhere) — reload it
+      // so the refund method can be chosen.
+      if (err?.response?.data?.code === 'DEPOSIT_REFUND_METHOD_REQUIRED') {
+        if (computedHereRef.current) void runCompute(discount, 'auto');
+        else backToForm('The deposit is refunded in full on this bill — enter the return details and compute the charges again.');
       }
       // 409 (DROP_BILL_STALE): the bill changed since the last compute (a damage
       // was added or removed, an extension moved the end time, or the amount
@@ -810,28 +882,6 @@ export default function ReturnScreen() {
       settleBusyRef.current = false;
       if (mountedRef.current) setSettling(false);
     }
-  };
-
-  const selectPayMethod = (m: PayMethod) => {
-    setPayMethod(m);
-    setPayError(null);
-    setUtrError(undefined);
-    setOtherRefError(null);
-  };
-
-  // Split: typing one part fills the other so they always add up to the bill.
-  const changeSplit = (part: 'cash' | 'upi', text: string, net: number) => {
-    const clean = text.replace(/[^\d.]/g, '');
-    const rest = Number.isFinite(Number(clean)) ? Math.max(0, net - (Number(clean) || 0)) : 0;
-    const restText = String(Math.round(rest * 100) / 100);
-    if (part === 'cash') {
-      setSplitCash(clean);
-      setSplitUpi(restText);
-    } else {
-      setSplitUpi(clean);
-      setSplitCash(restText);
-    }
-    setPayError(null);
   };
 
   const requestLegacyComplete = () => {
@@ -876,6 +926,8 @@ export default function ReturnScreen() {
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
         endOdometer: Number(endOdo.trim()),
         ...extras,
+        // #6 — recorded for the branch manager's settlement when a deposit is held
+        ...(depositHeldBefore > 0 ? { safetyDepositHandling: depositHandling } : {}),
       });
       if (mountedRef.current) setLegacyResult((res.data ?? null) as CompleteReturnResponse | null);
       onSettled();
@@ -936,7 +988,16 @@ export default function ReturnScreen() {
               : `${vehicle.make} ${vehicle.model} has been returned by ${customer.name}. Status updated to RETURNED.`}
             {!requireManager && damages.length > 0 ? ' The vehicle is with the manager for a damage check.' : ''}
           </Text>
+          {/* Credit / refunds recorded with the drop bill (#6 / #11) */}
+          {settledNote && <Text style={styles.settledNote}>{settledNote}</Text>}
           {legacyResult && <LegacyReturnChargesCard result={legacyResult} />}
+          {legacyResult?.safetyDeposit && (
+            <Text style={styles.settledNote}>
+              Safety deposit {inr(num(legacyResult.safetyDeposit.amount))}:{' '}
+              {SAFETY_DEPOSIT_HANDLING_LABELS[legacyResult.safetyDeposit.handling]?.toLowerCase() ?? legacyResult.safetyDeposit.handling}
+              {' '}— the branch manager settles it.
+            </Text>
+          )}
           <TouchableOpacity style={styles.doneBtn} onPress={() => router.replace('/(employee)/bookings')} activeOpacity={0.85}>
             <Text style={styles.doneBtnText}>Back to Queue</Text>
           </TouchableOpacity>
@@ -948,6 +1009,15 @@ export default function ReturnScreen() {
   const net = session ? num(session.netPayable) : 0;
   const sessionDone = session?.status === 'COMPLETED';
   const safetyDeposit = num(booking.safetyDeposit);
+  // Deposit refunded in full on this bill (#6): paid back with the settlement.
+  const depositRefundDue = dropDeposit?.refundVia === 'PAYMENT_DEPOSIT_REFUND' ? num(dropDeposit.refund) : 0;
+  // Footer action, e.g. "Collect ₹300, refund ₹2,000 deposit & complete".
+  const settleParts = [
+    net > 0 ? (pay.method === 'CREDIT' ? `Put ${inr(net)} on credit` : `Collect ${inr(net)}`) : null,
+    net < 0 ? `Refund ${inr(net)}` : null,
+    depositRefundDue > 0 ? `${net > 0 ? 'refund' : 'Refund'} ${inr(depositRefundDue)} deposit` : null,
+  ].filter(Boolean);
+  const settleLabel = settleParts.length ? `${settleParts.join(', ')} & complete` : 'Complete Return';
   const showDamages = !hasRemainingBalance && !sessionDone && !awaitingManager;
   // The bill on screen may not include the latest damages yet.
   const billBusy = computing || billStale || damagesFetching || !!deletingDamageId;
@@ -1062,8 +1132,8 @@ export default function ReturnScreen() {
                 <InfoRow
                   icon={booking.remainingPaidAt ? 'checkmark-done-outline' : 'alert-circle-outline'}
                   label="Rental balance"
-                  value={booking.remainingPaidAt ? 'Paid' : `${inr(num(booking.remainingBalance))} due`}
-                  valueColor={booking.remainingPaidAt ? '#10b981' : '#f59e0b'}
+                  value={booking.remainingPaidAt ? (balanceOnCredit ? 'On credit' : 'Paid') : `${inr(num(booking.remainingBalance))} due`}
+                  valueColor={booking.remainingPaidAt && !balanceOnCredit ? '#10b981' : '#f59e0b'}
                 />
               </>
             )}
@@ -1252,12 +1322,17 @@ export default function ReturnScreen() {
                       {kmPreview.allowance
                         ? ` · Included ${kmPreview.allowance.included.toLocaleString('en-IN')}`
                           + (kmPreview.allowance.enabled
-                            ? ` · Extra ${kmPreview.allowance.extra.toLocaleString('en-IN')} km × ${inr(kmPreview.allowance.rate)} = ${inr(kmPreview.allowance.charge)} + GST`
+                            ? ` · Extra ${kmPreview.allowance.extra.toLocaleString('en-IN')} km × ${inr(kmPreview.allowance.rate)} = ${inr(kmPreview.allowance.charge)} (no GST)`
                             : ' · Extra km not charged')
                         : ''}
                     </Text>
+                    {kmPreview.allowance && allowance?.freeKmOriginal != null && (allowance.freeKmExtensions ?? 0) > 0 && (
+                      <Text style={styles.kmPreviewText}>
+                        Included = original {km(allowance.freeKmOriginal)} + extensions {km(allowance.freeKmExtensions ?? 0)}
+                      </Text>
+                    )}
                     {!booking.usePaymentSessions && !!kmPreview.allowance?.charge && (
-                      <Text style={styles.kmPreviewText}>Billed with GST — the branch manager collects it.</Text>
+                      <Text style={styles.kmPreviewText}>Billed at face value (no GST) — the branch manager collects it.</Text>
                     )}
                     {kmPreview.belowStart && (
                       <Text style={styles.kmPreviewWarn}>
@@ -1284,7 +1359,7 @@ export default function ReturnScreen() {
                       Km beyond the {allowance ? `${allowance.includedKm.toLocaleString('en-IN')} km ` : ''}included in the plan, across every vehicle used. Leave blank if none.
                       {manualKmPreview && manualKmPreview.extra > 0
                         ? manualKmPreview.enabled
-                          ? ` ${manualKmPreview.extra.toLocaleString('en-IN')} km × ${inr(manualKmPreview.rate)} = ${inr(manualKmPreview.charge)} + GST.`
+                          ? ` ${manualKmPreview.extra.toLocaleString('en-IN')} km × ${inr(manualKmPreview.rate)} = ${inr(manualKmPreview.charge)} (no GST).`
                           : ' Extra km is not charged at this branch.'
                         : ''}
                     </Text>
@@ -1356,7 +1431,7 @@ export default function ReturnScreen() {
                     style={styles.input}
                     value={fuelAmt}
                     onChangeText={setFuelAmt}
-                    placeholder="Amount ₹ (before GST)"
+                    placeholder="Amount ₹"
                     placeholderTextColor={Colors.ink4}
                     keyboardType="numeric"
                   />
@@ -1365,7 +1440,7 @@ export default function ReturnScreen() {
                       {fuelDeficitBars} bar{fuelDeficitBars > 1 ? 's' : ''} × {inr(fuelBarRate)} = {inr(Math.ceil(fuelDeficitBars * fuelBarRate))} (editable)
                     </Text>
                   )}
-                  <Text style={styles.hintTight}>GST is added on top.</Text>
+                  <Text style={styles.hintTight}>Charged at face value — no GST.</Text>
                 </ChargeToggle>
                 {fuelDeficitBars > 0 && !chargeFuel && (
                   <Text style={styles.hint}>Return fuel is lower than pickup — turn this on to charge.</Text>
@@ -1429,7 +1504,7 @@ export default function ReturnScreen() {
                     <Text style={styles.link}>+ Add another charge</Text>
                   </TouchableOpacity>
                   <Text style={styles.hintTight}>
-                    Amounts are before GST — GST is added on top. Late return is billed automatically; record damage under Vehicle Condition.
+                    Charged at face value — no GST. Late return is billed automatically; record damage under Vehicle Condition.
                   </Text>
                 </ChargeToggle>
 
@@ -1439,7 +1514,7 @@ export default function ReturnScreen() {
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text style={styles.toggleLabel}>Discount −{inr(discount.amount)}</Text>
-                        <Text style={styles.hint} numberOfLines={2}>{discount.reason} · before GST, applied on compute</Text>
+                        <Text style={styles.hint} numberOfLines={2}>{discount.reason} · applied on compute</Text>
                       </View>
                       <TouchableOpacity onPress={removeDiscount} hitSlop={8}>
                         <Text style={styles.linkDanger}>Remove</Text>
@@ -1449,11 +1524,20 @@ export default function ReturnScreen() {
                 )}
               </View>
 
-              {safetyDeposit > 0 && (
+              {/* Safety deposit at drop (#6): set off against the charges, or refund in full */}
+              {depositHeldBefore > 0 ? (
+                <SafetyDepositAtDrop
+                  held={depositHeldBefore}
+                  handling={depositHandling}
+                  onChange={changeDepositHandling}
+                  legacy={!booking.usePaymentSessions}
+                  disabled={computing || settling}
+                />
+              ) : safetyDeposit > 0 && !fin ? (
                 <Text style={styles.depositNote}>
                   Security deposit of {inr(safetyDeposit)} will be credited against the charges below.
                 </Text>
-              )}
+              ) : null}
             </>
           )}
 
@@ -1638,7 +1722,7 @@ export default function ReturnScreen() {
                               : `${km(kmSummary.extraKm)} · not charged`}
                             valueColor={num(kmSummary.extraKmCharge) > 0 ? '#f59e0b' : undefined}
                           />
-                          <Text style={styles.hint}>Before GST. {VEHICLE_SWAPPED_KM_NOTE}</Text>
+                          <Text style={styles.hint}>No GST. {VEHICLE_SWAPPED_KM_NOTE}</Text>
                         </>
                       ) : (
                         <Text style={styles.hint}>{VEHICLE_SWAPPED_KM_NOTE}</Text>
@@ -1667,10 +1751,20 @@ export default function ReturnScreen() {
                       <InfoRow icon="navigate-outline" label="Km driven" value={km(kmSummary.kmDriven)} />
                       <View style={styles.divider} />
                       <InfoRow icon="gift-outline" label="Included" value={km(kmSummary.includedKm)} />
+                      {kmSummary.freeKmOriginal != null && (kmSummary.freeKmExtensions ?? 0) > 0 && (
+                        <>
+                          <View style={styles.divider} />
+                          <InfoRow
+                            icon="add-circle-outline"
+                            label="Included from"
+                            value={`original ${km(kmSummary.freeKmOriginal)} + extensions ${km(kmSummary.freeKmExtensions ?? 0)}`}
+                          />
+                        </>
+                      )}
                       <View style={styles.divider} />
                       <InfoRow
                         icon="trending-up-outline"
-                        label="Extra km (before GST)"
+                        label="Extra km (no GST)"
                         value={kmSummary.extraKmEnabled
                           ? `${km(kmSummary.extraKm)} × ${inr(num(kmSummary.extraKmRate))} = ${inr(num(kmSummary.extraKmCharge))}`
                           : `${km(kmSummary.extraKm)} · not charged`}
@@ -1682,7 +1776,7 @@ export default function ReturnScreen() {
               )}
 
               <SectionHeader title="Settlement" />
-              {/* GST-aware drop bill (#23); sessions computed before it fall back to the ledger */}
+              {/* Drop bill (no GST on drop charges, item 8); sessions computed before it fall back to the ledger */}
               {bill ? (
                 <DropBillCard bill={bill} session={session} late={lateSummary} />
               ) : (
@@ -1693,9 +1787,9 @@ export default function ReturnScreen() {
               {!sessionDone && (
                 discountOpen ? (
                   <View style={[styles.card, { marginTop: 8 }]}>
-                    <Text style={styles.fieldLabel}>Discount amount (₹, before GST)</Text>
+                    <Text style={styles.fieldLabel}>Discount amount (₹)</Text>
                     <Text style={[styles.hintTight, { marginBottom: 8 }]}>
-                      Taken off the drop charges before GST, so the customer also saves the GST on it. It can't exceed the drop charges.
+                      Taken off the drop charges (they carry no GST). It can't exceed the drop charges.
                     </Text>
                     <TextInput
                       style={styles.input}
@@ -1770,91 +1864,40 @@ export default function ReturnScreen() {
                 )
               )}
 
+              {/* Safety deposit at drop (#6): the choice, and how it splits on this bill */}
+              {!sessionDone && num(dropDeposit?.held) > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  <SafetyDepositAtDrop
+                    held={num(dropDeposit?.held)}
+                    handling={depositHandling}
+                    onChange={changeDepositHandling}
+                    deposit={dropDeposit}
+                    disabled={computing || settling}
+                  />
+                </View>
+              )}
+
+              {/* Shortfall / charges: Cash / UPI (photo) / Split / Credit (#3 / #11) */}
               {!sessionDone && net > 0 && (
                 <View style={[styles.card, { marginTop: 8 }]}>
-                  <Text style={styles.fieldLabel}>Payment method</Text>
-                  <View style={styles.methodGrid}>
-                    {PAY_METHODS.map((m) => (
-                      <TouchableOpacity
-                        key={m}
-                        style={[styles.methodBtn, styles.methodGridBtn, payMethod === m && styles.methodBtnActive]}
-                        onPress={() => selectPayMethod(m)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
-                          {PAY_METHOD_LABELS[m]}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  <CounterPaymentPicker
+                    ctl={pay}
+                    amount={net}
+                    title={`Collect ${inr(net)} by`}
+                    disabled={computing || settling}
+                  />
+                </View>
+              )}
 
-                  {payMethod === 'SPLIT' && (
-                    <View style={styles.splitBox}>
-                      <Text style={styles.hintInline}>Total to split: {inr(net)}</Text>
-                      <View style={styles.splitRow}>
-                        <View style={styles.splitCol}>
-                          <Text style={styles.splitLabel}>Cash (₹)</Text>
-                          <TextInput
-                            style={styles.input}
-                            value={splitCash}
-                            onChangeText={(t) => changeSplit('cash', t, net)}
-                            placeholder="0"
-                            placeholderTextColor={Colors.ink4}
-                            keyboardType="decimal-pad"
-                          />
-                        </View>
-                        <View style={styles.splitCol}>
-                          <Text style={styles.splitLabel}>UPI (₹)</Text>
-                          <TextInput
-                            style={styles.input}
-                            value={splitUpi}
-                            onChangeText={(t) => changeSplit('upi', t, net)}
-                            placeholder="0"
-                            placeholderTextColor={Colors.ink4}
-                            keyboardType="decimal-pad"
-                          />
-                        </View>
-                      </View>
-                      {payError && <Text style={styles.fieldError}>{payError}</Text>}
-                    </View>
-                  )}
-
-                  {(payMethod === 'UPI' || (payMethod === 'SPLIT' && num(splitUpi) > 0)) && (
-                    <UtrInput
-                      value={utr}
-                      onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
-                      error={utrError}
-                    />
-                  )}
-
-                  {payMethod === 'OTHER' && (
-                    <>
-                      <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Transaction reference</Text>
-                      <TextInput
-                        style={[styles.input, otherRefError ? styles.inputError : undefined]}
-                        value={otherRef}
-                        onChangeText={(t) => { setOtherRef(t); setOtherRefError(null); }}
-                        placeholder="e.g. pay_xyz789"
-                        placeholderTextColor={Colors.ink4}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                      {otherRefError && <Text style={styles.fieldError}>{otherRefError}</Text>}
-                      <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Gateway</Text>
-                      <View style={styles.methodRow}>
-                        {GATEWAYS.map((g) => (
-                          <TouchableOpacity
-                            key={g}
-                            style={[styles.methodBtn, otherGateway === g && styles.methodBtnActive]}
-                            onPress={() => setOtherGateway(g)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={[styles.methodText, otherGateway === g && styles.methodTextActive]}>{g}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </>
-                  )}
+              {/* Money going back: the deposit refunded in full, or the bill's refund */}
+              {!sessionDone && (net < 0 || depositRefundDue > 0) && (
+                <View style={[styles.card, { marginTop: 8 }]}>
+                  <CounterRefundPicker
+                    ctl={refundPay}
+                    amount={net < 0 ? Math.abs(net) : depositRefundDue}
+                    title={depositRefundDue > 0 ? `Refund the ${inr(depositRefundDue)} deposit by` : undefined}
+                    disabled={computing || settling}
+                  />
                 </View>
               )}
 
@@ -1866,6 +1909,7 @@ export default function ReturnScreen() {
                     setKmSummary(null);
                     setServerDiscount(null);
                     setBill(null);
+                    setDropDeposit(null);
                     setLateSummary(null);
                     setDiscountOpen(false);
                     setBillStale(false);
@@ -1982,7 +2026,7 @@ export default function ReturnScreen() {
                 <>
                   <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
                   <Text style={styles.confirmBtnText}>
-                    {net > 0 ? `Collect ${inr(net)} & complete` : net < 0 ? `Refund ${inr(net)} & complete` : 'Complete Return'}
+                    {settleLabel}
                   </Text>
                 </>
               )}
@@ -1999,7 +2043,7 @@ export default function ReturnScreen() {
         message={(damages.length > 0
           ? `Confirm that ${customer.name} has returned the vehicle? The recorded damage goes to the branch manager, who charges it and sets the vehicle's status.`
           : `Confirm that ${customer.name} has returned the vehicle with no new damage?`)
-          + ' Any extra km or late-return charge is billed with GST and collected by the branch manager.'}
+          + ' Any extra km or late-return charge is billed at face value (no GST) and collected by the branch manager.'}
         confirmLabel="Complete Return"
         confirmColor="#3b82f6"
         onConfirm={() => { setShowConfirm(false); completeLegacy(); }}
@@ -2138,13 +2182,6 @@ const styles = StyleSheet.create({
   addDamageText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#dc3545' },
 
   methodRow: { flexDirection: 'row', gap: 8 },
-  methodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  methodGridBtn: { flexBasis: '48%', flexGrow: 1 },
-  splitBox: { backgroundColor: Colors.bg, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline, padding: 12, marginTop: 12, gap: 10 },
-  splitRow: { flexDirection: 'row', gap: 10 },
-  splitCol: { flex: 1, gap: 6 },
-  splitLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
-  inputError: { borderColor: '#e53e3e' },
 
   decisionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -2191,6 +2228,8 @@ const styles = StyleSheet.create({
   successIcon: { width: 100, height: 100, borderRadius: 30, backgroundColor: '#10b98115', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   successTitle: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.ink, letterSpacing: -0.8 },
   successSub: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3, textAlign: 'center', lineHeight: 22 },
+  // Credit / refunds / deposit recorded with the return (#6 / #11)
+  settledNote: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, textAlign: 'center', lineHeight: 19 },
   doneBtn: { backgroundColor: Colors.ink, borderRadius: 16, paddingVertical: 17, paddingHorizontal: 40, alignItems: 'center', marginTop: 8, width: '100%' },
   doneBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white },
 });

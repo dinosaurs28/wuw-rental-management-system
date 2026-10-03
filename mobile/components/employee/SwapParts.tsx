@@ -11,6 +11,7 @@ import {
   type SwapCandidate,
   type SwapCandidates,
   type SwapContext,
+  type SwapPickerVehicle,
   type SwapReason,
 } from '../../types/vehicleSwap';
 
@@ -51,15 +52,15 @@ export function chargeDifferenceToSend(candidate: SwapCandidate | null, reason: 
   return !!reason && diff != null && diff > 0 && charge;
 }
 
-export function SwapCandidateList({
+export function SwapCandidateList<T extends SwapPickerVehicle>({
   vehicles,
   selectedId,
   onSelect,
   disabled,
 }: {
-  vehicles: SwapCandidate[];
-  selectedId: number | null;
-  onSelect: (v: SwapCandidate) => void;
+  vehicles: T[];
+  selectedId: string | number | null;
+  onSelect: (v: T) => void;
   disabled?: boolean;
 }) {
   return (
@@ -98,7 +99,7 @@ export function SwapCandidateList({
                   )}
                   {diff != null && (
                     <Text style={[styles.vehPrice, diff > 0 && styles.vehPriceUp]}>
-                      {diff > 0 ? `+${swapInr(diff)} before GST` : 'No price difference'}
+                      {diff > 0 ? `+${swapInr(diff)}` : 'No price difference'}
                     </Text>
                   )}
                 </View>
@@ -181,7 +182,7 @@ export function SwapPriceDifference({
         <Text style={styles.priceTitle}>Price difference</Text>
         <Text style={styles.priceAmount}>+{swapInr(diff)}</Text>
       </View>
-      <Text style={styles.priceSub}>For the rest of the rental, before GST.</Text>
+      <Text style={styles.priceSub}>For the rest of the rental (rents incl. GST).</Text>
       {reason ? (
         <>
           <View style={styles.chargeRow}>
@@ -195,7 +196,7 @@ export function SwapPriceDifference({
             />
           </View>
           <Text style={styles.priceSub}>
-            {charge ? 'Added to the drop bill, plus GST.' : "Waived — the customer doesn't pay the difference."}
+            {charge ? 'Added to the drop bill (no GST on top).' : "Waived — the customer doesn't pay the difference."}
           </Text>
         </>
       ) : (

@@ -26,6 +26,7 @@ import { useIsGuest } from '../../lib/auth-gate';
 import { displayEmail, joinProfileFieldLabels, maskAadhaar } from '../../lib/identity';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
+import DlPhotosSheet, { dlPairCompletedByUpload } from '../../components/ui/DlPhotosSheet';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { notificationsScreenHref, unreadBadgeLabel } from '../../lib/notifications';
 import type { KycDocument, KycType, KycSide } from '../../types/api';
@@ -60,6 +61,8 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  // Item 10: shown once, when an upload leaves both DL sides present.
+  const [dlSheetOpen, setDlSheetOpen] = useState(false);
 
   // Signing in or out swaps this screen between the account view and the much
   // shorter guest view. The tab stays mounted, so without this the list keeps
@@ -116,9 +119,11 @@ export default function Profile() {
       // `side` is mandatory — the backend 400s without it.
       const form = toUploadForm(file, { type, side });
 
+      const completesDlPair = dlPairCompletedByUpload(kyc, type, side);
       await userApi.uploadKyc(form);
       queryClient.invalidateQueries({ queryKey: ['kyc'] });
       setToast({ title: `${SIDE_LABEL[side]} uploaded`, type: 'success' });
+      if (completesDlPair) setDlSheetOpen(true);
     } catch (err: any) {
       setToast({
         title: err.response?.status === 409 ? 'Already uploaded' : 'Upload failed',
@@ -177,6 +182,7 @@ export default function Profile() {
         type={toast?.type ?? 'error'}
         onDismiss={() => setToast(null)}
       />
+      <DlPhotosSheet visible={dlSheetOpen} onClose={() => setDlSheetOpen(false)} />
 
       <ScrollView
         ref={scrollRef}

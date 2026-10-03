@@ -67,6 +67,9 @@ export default function CounterPaymentPanel({ bookingPublicId }: Props) {
   const life = LIFECYCLE[data.lifecycleState] ?? { label: data.lifecycleState, color: Colors.ink3 };
   const due = Number(data.amountDue ?? 0);
   const txns = data.transactions ?? [];
+  // Part of the amount due put on credit (#11) — still owed until the manager clears it.
+  const onCredit = Number(data.creditPending ?? 0);
+  const collateral = (data.credit?.collateral ?? []).join(', ');
 
   return (
     <View style={styles.card}>
@@ -85,6 +88,14 @@ export default function CounterPaymentPanel({ bookingPublicId }: Props) {
         <Text style={styles.dueLabel}>{due > 0 ? 'Amount due' : 'Settled'}</Text>
         <Text style={[styles.dueValue, due > 0 && { color: '#dc3545' }]}>{due > 0 ? inr(due) : inr(0)}</Text>
       </View>
+      {onCredit > 0 && (
+        <View style={styles.creditRow}>
+          <Ionicons name="hourglass-outline" size={14} color="#b45309" />
+          <Text style={styles.creditText}>
+            {inr(onCredit)} on credit{collateral ? ` (collateral: ${collateral})` : ''} — the branch manager clears it when the customer pays.
+          </Text>
+        </View>
+      )}
 
       {open && (
         <>
@@ -161,6 +172,11 @@ const styles = StyleSheet.create({
   dueRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 12 },
   dueLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3 },
   dueValue: { fontFamily: Fonts.displayBold, fontSize: 22, color: Colors.ink, letterSpacing: -0.5 },
+  creditRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8,
+    backgroundColor: '#fef3c7', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8,
+  },
+  creditText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: '#92400e', lineHeight: 17 },
 
   divider: { height: 1, backgroundColor: Colors.hairline, marginVertical: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },

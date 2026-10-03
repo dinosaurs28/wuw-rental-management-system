@@ -1,4 +1,5 @@
 import type { BranchScheduleConfig } from '../lib/branchSchedule';
+import type { RentInclGstFields } from '../lib/gst';
 
 // Period type returned by the pricing engine (duration-calculator.service.ts)
 export type RentalPeriodType = 'HOURLY' | 'HALF_DAY' | 'FULL_DAY' | 'MULTI_DAY' | 'MONTHLY';
@@ -18,11 +19,19 @@ export interface ListPricing {
   discountAmount?: number;
   discountPercent?: number;
   discountLabel?: string | null;
+  // GST-inclusive rent (item 17): price / finalPrice include GST; these split
+  // finalPrice (rentWithoutGst + gst = finalPrice, gst = cgst + sgst). Absent
+  // when the branch has no GST rule, and on older servers.
+  rentWithoutGst?: number;
+  gst?: number;
+  cgst?: number;
+  sgst?: number;
 }
 
-// ── Customer payment plan (#6) ──────────────────────────────────────────────
-// The server decides which plans a booking may use (branch customerPaymentMode
-// + amounts) and sends them as `paymentOptions`; screens render exactly that.
+// ── Customer payment plan (#6, advance only since item 18) ──────────────────
+// The server decides the one plan a booking is paid with (from the amounts —
+// the branch's customerPaymentMode is ignored) and sends it as
+// `paymentOptions`; screens render exactly that, never a choice.
 export type PaymentFlow = 'FULL' | 'ADVANCE';
 export type CustomerPaymentMode = 'ADVANCE_ONLY' | 'FULL_ONLY' | 'BOTH';
 export type PaymentFlowReason =
@@ -48,6 +57,10 @@ export interface PaymentOptions {
   reasonMessage: string | null;
   /** payableTotal − advance (due at pickup) when ADVANCE is allowed. */
   remainingAfterAdvance: number | null;
+  /** Item 18 servers: charged online now (advance, or the full total on FULL; null without dates). */
+  payNowAmount?: number | null;
+  /** Item 18 servers: collected at pickup (0 on FULL; null without dates). */
+  dueAtPickup?: number | null;
 }
 
 export interface Vehicle {
@@ -88,7 +101,11 @@ export interface RentalDuration {
   billableDuration: number;
 }
 
-export interface PricingDetails {
+// Classic fields are in TAXABLE terms (item 17): basePrice / discountAmount /
+// taxAmount = rent without GST, its discount and the GST; finalTotal = rent
+// incl. GST after discounts. Show the price from the inclusive fields
+// (RentInclGstFields: rentInclGst, discountInclGst, … — lib/gst rentInclGstView).
+export interface PricingDetails extends RentInclGstFields {
   basePrice: number;
   // Combined discount (duration slab + coupon + manual).
   discountAmount: number;
@@ -144,6 +161,30 @@ export interface ExtensionEligibility {
   branchPublicId?: string;
   /** Same shape as the public branch schedule. */
   officeHours?: BranchScheduleConfig;
+  /**
+   * Customer endpoint only (BRIEF4 P3): what a customer may add — +12 hours,
+   * +1 day, +2 days … up to maxEndAt. insideHours:false = that return is
+   * outside the branch's return hours (offer it disabled). Absent on early
+   * returns and older servers.
+   */
+  packageOptions?: Array<{ hours: number; label: string; newEndAt: string; insideHours: boolean }>;
+}
+
+// Free km an extension adds to the drop allowance (#7), server-computed: each
+// whole 24 h → freeKm24Hour, a remaining block of 12 h or more → freeKm12Hour,
+// other hours → 0 (an extension under 12 h adds none). On extension quotes
+// (pricing.extensionFreeKm), commit responses and drop timeline rows (freeKm).
+// Absent from older servers; null when the vehicle's free km can't be read.
+export interface ExtensionFreeKm {
+  km: number;
+  minutes: number;
+  fullDays: number;
+  halfDay: boolean;
+  minutesWithoutKm: number;
+  freeKm24Hour: number;
+  freeKm12Hour: number;
+  /** e.g. "150 km for 1 day; no km for the other 2 h". */
+  label: string;
 }
 
 export interface BookingTrip {
@@ -167,6 +208,9 @@ export interface BookingTrip {
   balanceDueAt?: 'PICKUP' | 'DROP' | null;
   dueAtPickup?: number;
   dueAtDrop?: number;
+  // Part of balanceDue left on credit at the branch counter (#11): still owed,
+  // the branch collects it against what it holds. Absent on older servers.
+  balanceOnCredit?: number;
   // Applied coupon (online or counter) and the original booking's money (#20).
   couponCode?: string | null;
   totalBase?: number;
@@ -178,6 +222,13 @@ export interface BookingTrip {
   totalSgst?: number | null;
   cgstRate?: number | null;
   sgstRate?: number | null;
+  // GST-inclusive rent of the original booking (item 17), absent on older
+  // servers: rentInclGst − discountInclGst = rentAfterDiscountInclGst
+  // = rentWithoutGst + totalTax.
+  rentInclGst?: number;
+  discountInclGst?: number;
+  rentAfterDiscountInclGst?: number;
+  rentWithoutGst?: number;
   createdAt: string;
   vehicles: BookingVehicle[];
 }
@@ -271,12 +322,18 @@ export interface FinancialState {
   totalCollectedPending: string;
   totalRefunded: string;
   amountDue: string; // max(0, totalOwed - (totalCollectedConfirmed - refunds paid out))
-  /** Drop / return charges outside totalFinal, incl. GST, after the drop discount (absent on older servers) */
+  /** Drop / return charges outside totalFinal, after the drop discount — at face value, no GST since item 8 (absent on older servers) */
   returnCharges?: string;
   /** Refundable safety deposit taken and not yet credited back at drop (absent on older servers) */
   safetyDepositHeld?: string;
   /** totalFinal + returnCharges + safety deposit held (absent on older servers) */
   totalOwed?: string;
+  /** Part of amountDue put on customer credit (#11) and not cleared yet — still due. */
+  creditPending?: string;
+  /** The booking's credit position, or null (absent on older servers). */
+  credit?: BookingCreditSummary | null;
+  /** Legacy drop's safety-deposit choice (#6): SET_OFF | REFUND_IN_FULL, or null. */
+  safetyDepositHandling?: 'SET_OFF' | 'REFUND_IN_FULL' | null;
   lifecycleState:
     | 'UNPAID'
     | 'PARTIALLY_PAID'
@@ -285,6 +342,25 @@ export interface FinancialState {
     | 'OVERPAID'
     | 'REFUNDED';
   transactions: FinancialStateTxn[];
+}
+
+// Fleet credit (#11) on a booking: money still owed against the collateral held
+// until the branch manager clears it. Amounts are 2-dp strings.
+export interface BookingCreditSummary {
+  creditEntryPublicId: string;
+  status: 'PENDING' | 'PARTIALLY_CLEARED' | 'CLEARED' | string;
+  total: string;
+  cleared: string;
+  pending: string;
+  collateral: string[];
+  pendingSections: {
+    sectionKey: string;
+    label: string;
+    amount: number | string;
+    collateral: string | null;
+    purpose: string | null;
+    createdAt: string | null;
+  }[];
 }
 
 export interface FinancialStateTxn {
@@ -378,4 +454,63 @@ export interface UserProfile {
   isProfileCompleted: boolean;
   /** Empty required fields (keys of CUSTOMER_PROFILE_FIELD_LABELS in lib/identity). */
   missingFields?: string[];
+}
+
+// ── Reschedule a CONFIRMED booking (BRIEF4 P4c) ─────────────────────────────
+// GET /api/employee/bookings/:publicId/reschedule → data. The booking keeps
+// its length and price; only the pickup (and with it the return) moves.
+export interface RescheduleBusyRange {
+  startAt: string;
+  endAt: string;
+  bookingPublicId: string | null;
+  bookingStatus: string | null;
+}
+
+export interface RescheduleOptions {
+  bookingPublicId: string;
+  status: string;
+  /** false ⇒ show `reason` and don't offer times. */
+  reschedulable: boolean;
+  code: string | null;
+  reason: string | null;
+  startAt: string;
+  endAt: string;
+  /** Fixed: the new return = the new pickup + this. */
+  durationMinutes: number;
+  durationLabel: string;
+  isMonthly: boolean;
+  rentalPeriodType: RentalPeriodType | null;
+  /** Now (to the minute) — offer pickups from here. */
+  earliestStartAt: string;
+  /** Standard: window end − length; monthly: window end. */
+  latestStartAt: string;
+  /** The server takes a pickup up to this many minutes in the past. */
+  pastToleranceMinutes: number;
+  branchPublicId: string;
+  /** Same shape as the public branch schedule. */
+  officeHours: BranchScheduleConfig;
+  vehicles: Array<{ publicId: string; make: string; model: string; regNo: string }>;
+  /** Other bookings / holds on the vehicle(s); bookingPublicId null = a customer checkout in progress. */
+  vehicleBusy: Array<RescheduleBusyRange & { vehiclePublicId: string; kind: 'BOOKING' | 'HOLD' }>;
+  /** Other bookings on the customer's driving licence. */
+  dlBusy: RescheduleBusyRange[];
+}
+
+// POST /api/employee/bookings/:publicId/reschedule → data
+export interface RescheduleResult {
+  booking: {
+    publicId: string;
+    status: string;
+    startAt: string;
+    endAt: string;
+    durationMinutes: number;
+    rentalPeriodType: RentalPeriodType | null;
+    branchPublicId: string;
+    vehicles: Array<{ publicId: string; make: string; model: string; regNo: string }>;
+  };
+  previous: { startAt: string; endAt: string };
+  /** Positive = later, negative = earlier. */
+  shiftMinutes: number;
+  reason: string | null;
+  releasedExtensionQuotePublicId: string | null;
 }

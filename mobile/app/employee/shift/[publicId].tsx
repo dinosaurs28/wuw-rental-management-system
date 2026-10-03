@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { apiErrorMessage } from '../../../lib/counterErrors';
 import StatusBadge from '../../../components/ui/StatusBadge';
+import ImageViewer from '../../../components/ui/ImageViewer';
 import {
   PURPOSE_LABEL,
   TXN_STATUS_BADGE,
@@ -68,8 +70,10 @@ function methodLabel(t: ShiftTransaction): string {
   return `Cash ${inrOrDash(t.cashAmount)} + ${online} ${inrOrDash(t.onlineAmount)}`;
 }
 
-function TransactionRow({ t }: { t: ShiftTransaction }) {
+function TransactionRow({ t, onViewProof }: { t: ShiftTransaction; onViewProof?: (t: ShiftTransaction) => void }) {
   const badge = TXN_STATUS_BADGE[t.status] ?? { label: t.status, tone: 'neutral' as const };
+  // Photo of the customer's UPI payment screen (#3) — a 15-minute link.
+  const proofUrl = t.proofPhoto?.url ?? t.proofPhotoUrl ?? null;
   const out = t.direction === 'OUT';
   const amount = money(t.totalAmount) ?? 0;
   const at = t.collectedAt ?? t.createdAt;
@@ -96,6 +100,19 @@ function TransactionRow({ t }: { t: ShiftTransaction }) {
         <StatusBadge label={badge.label} tone={badge.tone} />
       </View>
       {t.onlineTransactionRef ? <Text style={styles.txnMeta}>UTR {t.onlineTransactionRef}</Text> : null}
+      {proofUrl ? (
+        <TouchableOpacity
+          style={styles.proofRow}
+          onPress={() => onViewProof?.(t)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="View the UPI payment photo"
+        >
+          <Image source={{ uri: proofUrl }} style={styles.proofThumb} resizeMethod="resize" />
+          <Text style={styles.proofText}>UPI payment photo</Text>
+          <Ionicons name="expand-outline" size={14} color={Colors.ink3} />
+        </TouchableOpacity>
+      ) : null}
       {t.status === 'CONFIRMED' && t.confirmedByName ? (
         <Text style={styles.txnMeta}>Confirmed by {t.confirmedByName}</Text>
       ) : null}
@@ -120,7 +137,7 @@ export default function ShiftDetailScreen() {
   const insets = useSafeAreaInsets();
   const { publicId } = useLocalSearchParams<{ publicId: string }>();
 
-  const { data: shift, isLoading, isError, error, refetch } = useQuery<ShiftDetail>({
+  const { data: shift, isLoading, isError, error, refetch, dataUpdatedAt } = useQuery<ShiftDetail>({
     // Under ['employee', 'shifts'] so a close refreshes it.
     queryKey: ['employee', 'shifts', 'detail', publicId],
     queryFn: async () => {
@@ -140,6 +157,19 @@ export default function ShiftDetailScreen() {
     } finally {
       setPulling(false);
     }
+  };
+
+  // UPI payment photos (#3) are 15-minute links: reload the shift for fresh
+  // ones when the loaded copy is about to lapse, then zoom.
+  const [proofView, setProofView] = useState<string | null>(null);
+  const openProof = async (t: ShiftTransaction) => {
+    let url = t.proofPhoto?.url ?? t.proofPhotoUrl ?? null;
+    if (Date.now() - dataUpdatedAt > 13 * 60_000) {
+      const fresh = await refetch();
+      const ft = fresh.data?.transactions.find((x) => x.publicId === t.publicId);
+      url = ft?.proofPhoto?.url ?? ft?.proofPhotoUrl ?? url;
+    }
+    if (url) setProofView(url);
   };
 
   const header = (
@@ -308,7 +338,7 @@ export default function ShiftDetailScreen() {
             {shift.transactions.map((t, i) => (
               <View key={t.publicId}>
                 {i > 0 ? <View style={styles.divider} /> : null}
-                <TransactionRow t={t} />
+                <TransactionRow t={t} onViewProof={openProof} />
               </View>
             ))}
           </View>
@@ -318,6 +348,11 @@ export default function ShiftDetailScreen() {
           </View>
         )}
       </ScrollView>
+      <ImageViewer
+        visible={!!proofView}
+        images={proofView ? [{ url: proofView, label: 'UPI payment photo' }] : []}
+        onClose={() => setProofView(null)}
+      />
     </View>
   );
 }
@@ -382,6 +417,9 @@ const styles = StyleSheet.create({
   txnBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   txnMeta: { flexShrink: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
   txnRejected: { color: Colors.availNone },
+  proofRow: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
+  proofThumb: { width: 40, height: 40, borderRadius: 8, backgroundColor: Colors.bg },
+  proofText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink2 },
   afterClose: {
     flexDirection: 'row',
     alignItems: 'center',

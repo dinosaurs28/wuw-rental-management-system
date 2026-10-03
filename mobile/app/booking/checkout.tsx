@@ -26,7 +26,7 @@ import {
   type CustomerBookingCreateResponse,
   type RazorpayOrder,
 } from '../../lib/api';
-import { paymentOptionsFor, pickFlow, serverPaymentOptions } from '../../lib/paymentPlan';
+import { paymentOptionsFor, payNowSplit, payNowText, serverPaymentOptions } from '../../lib/paymentPlan';
 import { durationDiscountText, quoteDiscountLines } from '../../lib/discounts';
 import {
   CHECKING_PAYMENT_TEXT,
@@ -37,18 +37,27 @@ import {
 } from '../../lib/razorpay';
 import { durationLabel } from '../../lib/pricing';
 import { rangeLengthLabel, startOfDay } from '../../lib/dates';
+import {
+  BOOKING_PACKAGE_REQUIRED,
+  BOOKING_PACKAGE_REQUIRED_MESSAGE,
+  customerPackageFor,
+} from '../../lib/bookingWindow';
 import { useAuthStore } from '../../store/auth';
+import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import { profileIncompleteMessage } from '../../lib/identity';
 import { handleDlInUse } from '../../lib/dlInUse';
-import { gstLabel, gstNumber, inrExact, round2 } from '../../lib/gst';
+import { inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
 import { bookingTimesNotice, rangeHoursLine } from '../../lib/branchSchedule';
 import RazorpayPayOptions from '../../components/payments/RazorpayPayOptions';
+import UpiQrPayModal, { type UpiQrExit } from '../../components/payments/UpiQrPayModal';
+import { NO_UPI_APP_QR_NOTE, UPI_QR_OPTION_LABEL, useUpiQrAvailable } from '../../lib/upiQr';
 import Button from '../../components/ui/Button';
 import { LEGAL_URLS } from '../../constants/links';
+import { isVehicleGroupKey } from '../../lib/shareLink';
 import type { VehicleDetail, KycDocument, UserProfile, PaymentFlow, PaymentOptions } from '../../types/api';
 
 // The backend still accepts a pickup a little earlier today, so only a pickup
@@ -58,29 +67,12 @@ const PICKUP_GRACE_MS = 15 * 60 * 1000;
 const PRICE_UNAVAILABLE_TEXT =
   "We couldn't price this rental for these dates, so it can't be paid yet. Go back and choose the dates again.";
 
-// GST of a coupon preview (validate `data.pricing`, numbers) — the coupon is
-// taken off before GST, so these replace the vehicle quote's GST figures.
-type CouponGst = { taxable: number; tax: number; cgst: number; sgst: number; rate: number | null };
-
-function couponGstFrom(p: any): CouponGst | null {
-  const taxable = gstNumber(p?.taxableAmount);
-  const tax = gstNumber(p?.taxAmount);
-  if (taxable === null || tax === null) return null; // older server: no breakdown
-  return {
-    taxable,
-    tax,
-    cgst: gstNumber(p?.cgstAmount) ?? 0,
-    sgst: gstNumber(p?.sgstAmount) ?? 0,
-    rate: gstNumber(p?.taxRate),
-  };
-}
-
 // A coupon the server priced for this booking (#20): its re-priced breakdown
-// and the payment plans the post-coupon total leaves (#6).
+// and the payment plans the post-coupon total leaves (#6). `amount` is what it
+// takes off the GST-inclusive rent (item 17: a ₹100 coupon is ₹100 off).
 type AppliedCoupon = {
   code: string;
   amount: number;
-  gst?: CouponGst | null;
   pricing?: CouponPreviewPricing | null;
   paymentOptions?: PaymentOptions | null;
 };
@@ -162,6 +154,17 @@ function LineItem({
   );
 }
 
+// A booking hold created and waiting for its online payment: Razorpay
+// Checkout, or (Item 2) the UPI QR screen — both pay the same order.
+type PendingPayment = {
+  holdId: string;
+  transactionId: string;
+  rzp: RazorpayOrder;
+  confirmParams: Record<string, string>;
+  description: string;
+  payNow: number | null;
+};
+
 export default function Checkout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -185,6 +188,10 @@ export default function Checkout() {
   const [payMode, setPayMode] = useState<CheckoutMode>('default');
   const [startPassed, setStartPassed] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  // Item 2 — the hold being paid by a UPI QR scanned from another phone (the
+  // QR screen is open while set). Offered when the server has it switched on.
+  const [qrPayment, setQrPayment] = useState<PendingPayment | null>(null);
+  const upiQrEnabled = useUpiQrAvailable(!isGuest);
   // The pay footer grows with the QR option / no-UPI note; keep content clear of it.
   const [ctaHeight, setCtaHeight] = useState(0);
   // #36 — which uploaded KYC doc to attach (defaults to the first). Optional
@@ -196,16 +203,24 @@ export default function Checkout() {
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  // #15 — a code picked with "Use code" on a home offer poster: filled in and
+  // checked once the car is priced (the normal coupon check decides).
+  const offerCoupon = useOfferCouponStore((s) => activeOfferCoupon(s.coupon));
+  const loadOfferCoupon = useOfferCouponStore((s) => s.load);
+  const clearOfferCoupon = useOfferCouponStore((s) => s.clear);
+  const offerPrefilledRef = useRef(false);
+  useEffect(() => {
+    void loadOfferCoupon();
+  }, [loadOfferCoupon]);
 
-  // Payment plan (#6) + terms. null = not picked: the branch's default plan
-  // (FULL when it offers both), clamped to the plans it allows (pickFlow).
-  const [flow, setFlow] = useState<PaymentFlow | null>(null);
+  // Terms. (No plan state: advance only — item 18 — the plan is the server's.)
   const [terms, setTerms] = useState(false);
 
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const isGroupKey = !!vehicleId && vehicleId.includes('__');
+  // Same group-key test as the vehicle page (a publicId can contain "__").
+  const isGroupKey = !!vehicleId && isVehicleGroupKey(vehicleId);
 
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
     queryKey: ['vehicle', vehicleId, startDate.toISOString(), endDate.toISOString()],
@@ -252,6 +267,10 @@ export default function Checkout() {
     return n?.tone === 'error' ? n : null;
   })();
 
+  // Customers book packages only (BRIEF4 P2): 12 hours or whole days. The
+  // vehicle page always sends one; anything else (an old link) can't be booked.
+  const bookedPackage = customerPackageFor(startDate, endDate);
+
   // Back to the vehicle page to pick new times.
   const changeTimes = () => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`));
 
@@ -273,9 +292,9 @@ export default function Checkout() {
   });
   const authUser = useAuthStore((s) => s.user);
 
-  // Prices the coupon on the server for the plan the customer has picked
-  // (signed in: the customer's own coupons and limits apply). `recheck`: the
-  // coupon is already applied and the plan changed — drop it if it no longer fits.
+  // Prices the coupon on the server for the plan shown (signed in: the
+  // customer's own coupons and limits apply). `recheck`: the coupon is already
+  // applied — drop it if it no longer fits.
   const previewCoupon = async (code: string, plan: PaymentFlow, recheck = false) => {
     if (!code || !vehicle) return;
     setCouponBusy(true);
@@ -293,10 +312,9 @@ export default function Checkout() {
       if (d?.valid) {
         setAppliedCoupon({
           code: d.couponCode ?? code.toUpperCase(),
-          amount: Number(d.discountAmount ?? 0),
-          // The coupon is pre-GST: the preview's post-coupon GST replaces the quote's
-          gst: couponGstFrom(d.pricing),
-          // Totals and plans come from the server's re-priced breakdown (#20/#6)
+          // Off the GST-inclusive rent (item 17); discountAmount is only its rent-without-GST part
+          amount: Number(d.discountInclGst ?? d.discountAmount ?? 0),
+          // Totals, the GST inside the rent and plans come from the server's re-priced breakdown (#20/#6)
           pricing: d.pricing ?? null,
           paymentOptions: serverPaymentOptions(d.paymentOptions),
         });
@@ -320,19 +338,32 @@ export default function Checkout() {
     }
   };
 
-  const applyCoupon = () => {
+  // The coupon is checked for the plan this booking is charged (item 18: the
+  // advance whenever it's usable) — a full-payment-only coupon is refused
+  // with the server's reason (COUPON_PAYMENT_PLAN_MISMATCH).
+  const applyCoupon = (code?: string) => {
     if (!vehicle) return;
     const pd = vehicle.pricingDetails;
-    const plan = pickFlow(flow, checkoutPaymentOptions(vehicle, null, pd ? round2(pd.finalTotal + pd.deposit) : null));
-    void previewCoupon(couponInput.trim(), plan);
+    const plan = checkoutPaymentOptions(vehicle, null, pd ? round2(pd.finalTotal + pd.deposit) : null).defaultFlow;
+    void previewCoupon((code ?? couponInput).trim(), plan);
   };
 
-  // Some coupons are for one plan only (COUPON_PAYMENT_PLAN_MISMATCH), so a
-  // plan change re-checks the applied coupon.
-  const selectFlow = (next: PaymentFlow) => {
-    if (couponBusy) return;
-    setFlow(next);
-    if (appliedCoupon) void previewCoupon(appliedCoupon.code, next, true);
+  // #15 — fill in the offer code once per visit and check it like a typed one
+  // (only once the car is priced: an unpriced checkout can't be paid anyway).
+  useEffect(() => {
+    if (offerPrefilledRef.current || isGuest || !offerCoupon || !vehicle) return;
+    if (appliedCoupon || couponInput.trim()) return;
+    offerPrefilledRef.current = true;
+    setCouponInput(offerCoupon.code);
+    if (vehicle.pricingDetails) applyCoupon(offerCoupon.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offerCoupon, vehicle, isGuest]);
+
+  // "Remove" on an offer code: stop filling it in at every checkout.
+  const dropOfferCoupon = () => {
+    clearOfferCoupon();
+    setCouponInput('');
+    setCouponError(null);
   };
 
   // Not a sign-in problem: the profile is missing fields (e.g. DL / Aadhaar
@@ -344,6 +375,149 @@ export default function Checkout() {
     ]);
   };
 
+  // #43 — release the inventory hold immediately instead of waiting 10 min to
+  // expire. True when it can't be: a UPI QR already paid it (409
+  // UPI_QR_ALREADY_PAID) and the booking is confirmed.
+  const releaseHold = async (holdId: string): Promise<boolean> => {
+    try {
+      await userApi.cancelHold(holdId);
+    } catch (err: any) {
+      if (err?.response?.data?.code === 'UPI_QR_ALREADY_PAID') return true;
+      /* otherwise best-effort */
+    }
+    return false;
+  };
+
+  // #38 — the dedicated status screen (polls + success/pending/failed states).
+  const goToPaymentStatus = (p: PendingPayment, extra?: Record<string, string>) =>
+    router.replace({
+      pathname: '/booking/payment-status',
+      params: { transactionId: p.transactionId, ...(extra ?? {}), ...p.confirmParams },
+    });
+
+  // Razorpay Checkout for the hold's order (also "Pay another way" from the
+  // UPI QR screen). The hold is released when the payment doesn't go through.
+  const payByCheckout = async (p: PendingPayment, mode: CheckoutMode) => {
+    const { holdId, transactionId, rzp } = p;
+    let payment;
+    try {
+      payment = await openRazorpayCheckout(
+        {
+          key: rzp.keyId,
+          order_id: rzp.orderId,
+          amount: rzp.amount,
+          currency: rzp.currency,
+          description: p.description,
+          prefill: {
+            name: profile?.name ?? authUser?.name ?? '',
+            email: profile?.email ?? authUser?.email ?? '',
+            contact: profile?.phone ?? '',
+          },
+        },
+        { mode },
+      );
+    } catch (rzpErr: any) {
+      // Razorpay rejects for both user cancellation and real failures.
+      const cancelled = isCheckoutCancelled(rzpErr);
+      // A QR cancel is often this phone's sheet being closed after the QR was
+      // paid from another phone — check before releasing the hold.
+      if (cancelled && mode === 'qr') {
+        setCheckingPayment(true);
+        let paid = false;
+        for (const delay of QR_CANCEL_POLL_DELAYS) {
+          if (!mountedRef.current) return;
+          try {
+            const status = (await paymentApi.status(transactionId)).data?.status;
+            if (status === 'Success') { paid = true; break; }
+            if (status === 'Failed') break;
+          } catch { /* transient — keep checking */ }
+          await new Promise((r) => setTimeout(r, delay));
+        }
+        if (!mountedRef.current) return;
+        setCheckingPayment(false);
+        if (paid) {
+          goToPaymentStatus(p);
+          return;
+        }
+      }
+      const paidByQr = await releaseHold(holdId);
+      if (!mountedRef.current) return;
+      if (paidByQr) {
+        goToPaymentStatus(p);
+        return;
+      }
+      const description: string = rzpErr?.description ?? '';
+      if (cancelled) {
+        Alert.alert('Payment cancelled', 'You closed the payment page, so the booking hold was released.');
+      } else {
+        Alert.alert('Payment failed', description || 'The payment could not be completed. Please try again.');
+      }
+      return;
+    }
+
+    // Confirm the signature server-side. A failure here is not fatal — the
+    // status screen still polls, and the Razorpay webhook may confirm late.
+    let verified = false;
+    try {
+      await userApi.verifyRazorpaySignature({
+        razorpay_order_id: payment.razorpay_order_id ?? rzp.orderId,
+        razorpay_payment_id: payment.razorpay_payment_id,
+        razorpay_signature: payment.razorpay_signature ?? '',
+      });
+      verified = true;
+    } catch { /* fall through to polling */ }
+
+    if (!mountedRef.current) return;
+    goToPaymentStatus(p, verified ? { verified: '1' } : undefined);
+  };
+
+  // Item 2 — the UPI QR screen closed: what follows for the hold.
+  const handleQrExit = async (exit: UpiQrExit) => {
+    const p = qrPayment;
+    setQrPayment(null);
+    if (!p) return;
+    if (exit.kind === 'paid') {
+      goToPaymentStatus(p);
+      return;
+    }
+    if (exit.kind === 'another-way') {
+      // The QR is closed; the same order (and hold) goes to Razorpay Checkout.
+      setPayMode('default');
+      setLoading(true);
+      try {
+        await payByCheckout(p, 'default');
+      } finally {
+        if (mountedRef.current) setLoading(false);
+      }
+      return;
+    }
+    if (exit.kind === 'refund') {
+      // Paid twice: the other payment confirmed the booking (the QR one is refunded).
+      if (exit.view.booking.status === 'CONFIRMED') {
+        goToPaymentStatus(p);
+        return;
+      }
+      // The refund notice was on the QR screen; the hold is over or unusable.
+      if (await releaseHold(p.holdId)) goToPaymentStatus(p);
+      return;
+    }
+    // Left without paying, or the hold ran out: release it (a QR that was
+    // paid meanwhile turns this into a confirmed booking).
+    const paidByQr = await releaseHold(p.holdId);
+    if (!mountedRef.current) return;
+    if (paidByQr) {
+      goToPaymentStatus(p);
+      return;
+    }
+    if (exit.kind === 'expired') {
+      Alert.alert('Booking hold ended', exit.message);
+    } else if (exit.message) {
+      Alert.alert('Payment not started', `${exit.message}\n\nThe booking hold was released.`);
+    } else {
+      Alert.alert('Payment cancelled', 'You left the UPI QR payment, so the booking hold was released.');
+    }
+  };
+
   const handleBook = async (mode: CheckoutMode) => {
     if (!vehicle) return;
     // Checkout left open too long: the pickup time is now in the past. The
@@ -351,6 +525,14 @@ export default function Checkout() {
     const now = new Date();
     if (startDate.getTime() < now.getTime() - PICKUP_GRACE_MS || startDate < startOfDay(now)) {
       setStartPassed(true);
+      return;
+    }
+    // Not a 12-hour / whole-day package — the server would refuse it (P2).
+    if (!bookedPackage) {
+      Alert.alert('Choose a package', BOOKING_PACKAGE_REQUIRED_MESSAGE, [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Change times', onPress: changeTimes },
+      ]);
       return;
     }
     // #1 — the server refuses an incomplete profile (403 PROFILE_INCOMPLETE);
@@ -386,14 +568,14 @@ export default function Checkout() {
     const depositNow = pdNow?.deposit ?? 0;
     const taxNow = pdNow?.taxAmount ?? 0; // never a guessed rate — no pricing is blocked above
     const baseTotalNow = pdNow ? pdNow.finalTotal + depositNow : subtotalNow + depositNow + taxNow;
-    // With a coupon the server's re-priced total wins — the coupon comes off
-    // before GST, so subtracting it from the GST-inclusive total would be wrong.
+    // With a coupon the server's re-priced total wins (its caps and rounding);
+    // an older server without one: the inclusive coupon off the inclusive total.
     const totalNow = appliedCoupon?.pricing
       ? appliedCoupon.pricing.payableTotal
       : Math.max(0, baseTotalNow - (appliedCoupon?.amount ?? 0));
-    // The plan shown selected: the branch's allowed plans for this total (#6).
-    // The server re-decides and converts (never rejects) a plan it won't take.
-    const sendFlow: PaymentFlow = pickFlow(flow, checkoutPaymentOptions(vehicle, appliedCoupon, totalNow));
+    // The plan shown (item 18: the advance whenever it's usable). The server
+    // re-decides and converts (never rejects) it, flagging any difference.
+    const sendFlow: PaymentFlow = checkoutPaymentOptions(vehicle, appliedCoupon, totalNow).defaultFlow;
 
     // #36 — attach the customer-chosen KYC doc (default: first), if any (X2: optional).
     const chosenKyc = pickKyc(kyc, selectedKycId);
@@ -414,6 +596,8 @@ export default function Checkout() {
       });
 
       const created = res.data as CustomerBookingCreateResponse;
+      // #15 — the offer code went onto a booking: stop filling it in.
+      if (offerCoupon && appliedCoupon?.code.toUpperCase() === offerCoupon.code) clearOfferCoupon();
       const { holdId, data } = created;
       const totals = data?.totals ?? {};
       const transactionId: string | undefined = totals.transactionId;
@@ -442,15 +626,9 @@ export default function Checkout() {
         return;
       }
 
-      // #43 — release the inventory hold immediately instead of waiting 10 min to expire.
-      const releaseHold = async () => {
-        try { await userApi.cancelHold(holdId); } catch { /* best-effort */ }
-      };
-
-      // #6 — the branch (or the amounts) didn't allow the plan shown: say what
-      // will be charged before opening the payment sheet.
+      // The server charges a different plan than the one shown (the amounts
+      // moved since the quote): say what will be charged before the payment sheet.
       if (created.paymentFlowAdjusted) {
-        setFlow(chargedFlow);
         const amountText = payNowAmount != null ? inrExact(payNowAmount) : null;
         const proceed = await askToContinue(
           'Payment plan changed',
@@ -459,81 +637,27 @@ export default function Checkout() {
           amountText ? `Pay ${amountText}` : 'Continue',
         );
         if (!proceed) {
-          await releaseHold();
+          await releaseHold(holdId);
           return;
         }
       }
 
-      let payment;
-      try {
-        payment = await openRazorpayCheckout(
-          {
-            key: rzp.keyId,
-            order_id: rzp.orderId,
-            amount: rzp.amount,
-            currency: rzp.currency,
-            description: durationNow ? `${vehicle.make} ${vehicle.model} · ${durationNow}` : `${vehicle.make} ${vehicle.model}`,
-            prefill: {
-              name: profile?.name ?? authUser?.name ?? '',
-              email: profile?.email ?? authUser?.email ?? '',
-              contact: profile?.phone ?? '',
-            },
-          },
-          { mode },
-        );
-      } catch (rzpErr: any) {
-        // Razorpay rejects for both user cancellation and real failures.
-        const cancelled = isCheckoutCancelled(rzpErr);
-        // A QR cancel is often this phone's sheet being closed after the QR was
-        // paid from another phone — check before releasing the hold.
-        if (cancelled && mode === 'qr') {
-          setCheckingPayment(true);
-          let paid = false;
-          for (const delay of QR_CANCEL_POLL_DELAYS) {
-            if (!mountedRef.current) return;
-            try {
-              const status = (await paymentApi.status(transactionId)).data?.status;
-              if (status === 'Success') { paid = true; break; }
-              if (status === 'Failed') break;
-            } catch { /* transient — keep checking */ }
-            await new Promise((r) => setTimeout(r, delay));
-          }
-          if (!mountedRef.current) return;
-          setCheckingPayment(false);
-          if (paid) {
-            router.replace({ pathname: '/booking/payment-status', params: { transactionId, ...confirmParams } });
-            return;
-          }
-        }
-        await releaseHold();
-        if (!mountedRef.current) return;
-        const description: string = rzpErr?.description ?? '';
-        if (cancelled) {
-          Alert.alert('Payment cancelled', 'You closed the payment page, so the booking hold was released.');
-        } else {
-          Alert.alert('Payment failed', description || 'The payment could not be completed. Please try again.');
-        }
+      const payNowNumber = Number(payNowAmount);
+      const pending: PendingPayment = {
+        holdId,
+        transactionId,
+        rzp,
+        confirmParams,
+        description: durationNow ? `${vehicle.make} ${vehicle.model} · ${durationNow}` : `${vehicle.make} ${vehicle.model}`,
+        payNow: payNowAmount != null && Number.isFinite(payNowNumber) ? payNowNumber : null,
+      };
+      // Item 2 — "Scan a UPI QR from another phone": the QR screen pays this
+      // hold's order (the hold stays — it's what the QR pays for).
+      if (mode === 'qr' && upiQrEnabled) {
+        if (mountedRef.current) setQrPayment(pending);
         return;
       }
-
-      // Confirm the signature server-side. A failure here is not fatal — the
-      // status screen still polls, and the Razorpay webhook may confirm late.
-      let verified = false;
-      try {
-        await userApi.verifyRazorpaySignature({
-          razorpay_order_id: payment.razorpay_order_id ?? rzp.orderId,
-          razorpay_payment_id: payment.razorpay_payment_id,
-          razorpay_signature: payment.razorpay_signature ?? '',
-        });
-        verified = true;
-      } catch { /* fall through to polling */ }
-
-      // #38 — hand off to the dedicated status screen (polls + success/pending/failed states).
-      if (!mountedRef.current) return;
-      router.replace({
-        pathname: '/booking/payment-status',
-        params: { transactionId, ...(verified ? { verified: '1' } : {}), ...confirmParams },
-      });
+      await payByCheckout(pending, mode);
     } catch (err: any) {
       // #20 — the coupon stopped being valid (expired, limit reached, wrong
       // plan…). Refused before any payment: drop it and show the new total.
@@ -544,6 +668,13 @@ export default function Checkout() {
         Alert.alert(
           'Coupon removed',
           `${rejected.message}\n\nYou have not been charged. Check the new total, then pay again.`,
+        );
+        return;
+      }
+      if (err?.response?.data?.code === 'CUSTOMER_BLACKLISTED') {
+        Alert.alert(
+          'Booking unavailable',
+          err.response.data.message ?? "This account can't make new bookings right now. Please contact the branch.",
         );
         return;
       }
@@ -581,14 +712,22 @@ export default function Checkout() {
         ]);
         return;
       }
-      // #2 / #15 — pickup outside branch hours, or past the 15-day limit.
+      // #2 / #15 — pickup outside branch hours, or past the 15-day limit;
+      // P2 — not a 12-hour / whole-day package.
       if (
         body?.code === 'BRANCH_SCHEDULE_VIOLATION' ||
         body?.code === 'BOOKING_MAX_PERIOD_EXCEEDED' ||
-        body?.code === 'INVALID_DATES'
+        body?.code === 'INVALID_DATES' ||
+        body?.code === BOOKING_PACKAGE_REQUIRED
       ) {
         Alert.alert(
-          body.code === 'BOOKING_MAX_PERIOD_EXCEEDED' ? 'Booking period too long' : body.code === 'INVALID_DATES' ? 'Check your dates' : 'Outside branch hours',
+          body.code === 'BOOKING_MAX_PERIOD_EXCEEDED'
+            ? 'Booking period too long'
+            : body.code === 'INVALID_DATES'
+            ? 'Check your dates'
+            : body.code === BOOKING_PACKAGE_REQUIRED
+            ? 'Choose a package'
+            : 'Outside branch hours',
           body.message ?? 'Please choose different times.',
           [
             { text: 'Not now', style: 'cancel' },
@@ -644,36 +783,25 @@ export default function Checkout() {
   const tax = pd?.taxAmount ?? 0; // no pricing ⇒ "GST not available" and payment is blocked
   // The server's re-priced breakdown once a coupon is applied (#20).
   const couponPricing = appliedCoupon?.pricing ?? null;
-  const couponDiscount = couponPricing?.couponDiscountAmount ?? appliedCoupon?.amount ?? 0;
+  // The rent incl. GST, its discounts and the GST inside what is left (item 17),
+  // as the server priced them: the coupon preview's figures with a coupon.
+  const rentView = couponPricing ? rentInclGstView(couponPricing) : pd ? rentInclGstView(pd) : null;
+  const couponDiscount = (couponPricing && rentView ? rentView.couponDiscount : null) ?? appliedCoupon?.amount ?? 0;
   const baseTotal = pd ? pd.finalTotal + deposit : subtotal + deposit + tax;
-  // The coupon comes off before GST, so the post-coupon total is the server's,
-  // never baseTotal − coupon (only an older server without a breakdown).
+  // The post-coupon total is the server's (its caps and rounding), never
+  // baseTotal − coupon (only an older server without a breakdown).
   const total = couponPricing ? couponPricing.payableTotal : Math.max(0, baseTotal - couponDiscount);
-  // GST lines exactly as the server priced them (#23): taxable value after all
-  // discounts, then CGST/SGST. With a coupon, the coupon preview's figures.
-  const gstView: CouponGst | null =
-    appliedCoupon?.gst ??
-    (pd
-      ? {
-          taxable: round2(pd.basePrice - pd.discountAmount),
-          tax: pd.taxAmount,
-          cgst: pd.cgstAmount,
-          sgst: pd.sgstAmount,
-          rate: pd.taxRate,
-        }
-      : null);
 
   // Uploaded documents that can be attached (X2: optional), and the one that will be.
   const kycDocs = (kyc ?? []).filter((d) => !!d.file?.publicId);
   const chosenKyc = pickKyc(kyc, selectedKycId);
-  // Payment plan (#6): only what the branch allows for this total — a chooser
-  // only when it offers both (FULL preselected); handleBook sends the same plan.
+  // Advance only (item 18): the one plan the server allows for this total
+  // ("Pay ₹X now · ₹Y at pickup"); handleBook sends the same plan.
   const payOptions = checkoutPaymentOptions(vehicle, appliedCoupon, pd ? total : null);
-  const effectiveFlow: PaymentFlow = pickFlow(flow, payOptions);
-  const advanceAmount = payOptions.advanceAmount;
-  const payNow = effectiveFlow === 'ADVANCE' ? advanceAmount : total;
-  const remainingAtPickup =
-    effectiveFlow === 'ADVANCE' ? payOptions.remainingAfterAdvance ?? Math.max(0, round2(total - advanceAmount)) : 0;
+  const effectiveFlow: PaymentFlow = payOptions.defaultFlow;
+  const paySplit = payNowSplit(payOptions);
+  const payNow = paySplit.payNow ?? total;
+  const remainingAtPickup = paySplit.atPickup ?? 0;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -714,6 +842,15 @@ export default function Checkout() {
         </View>
         {/* #2 — branch hours for these days; a note when the return was moved to fit them */}
         <View style={styles.hoursWrap}>
+          {/* P1 — the package booked: the return is pickup + 12 hours / N days */}
+          {bookedPackage ? (
+            <View style={styles.packageRow}>
+              <Ionicons name="pricetag-outline" size={14} color={Colors.ink3} />
+              <Text style={styles.packageText}>{bookedPackage.label} package</Text>
+            </View>
+          ) : (
+            <TimesNotice notice={{ tone: 'error', text: BOOKING_PACKAGE_REQUIRED_MESSAGE }} />
+          )}
           <BranchHoursLine text={rangeHoursLine(schedule, startDate, endDate)} />
           {adjusted ? (
             <TimesNotice
@@ -808,10 +945,15 @@ export default function Checkout() {
           <View style={styles.couponApplied}>
             <Ionicons name="pricetag" size={16} color="#2d9d61" />
             <Text style={styles.couponAppliedText}>
-              <Text style={styles.couponCode}>{appliedCoupon.code}</Text> applied · {inrExact(couponDiscount)} off before GST
+              <Text style={styles.couponCode}>{appliedCoupon.code}</Text> applied · {inrExact(couponDiscount)} off
             </Text>
             <TouchableOpacity
-              onPress={() => { setAppliedCoupon(null); setCouponError(null); }}
+              onPress={() => {
+                // Removing the offer code (#15) also stops it being filled in next time.
+                if (offerCoupon && appliedCoupon.code.toUpperCase() === offerCoupon.code) clearOfferCoupon();
+                setAppliedCoupon(null);
+                setCouponError(null);
+              }}
               disabled={couponBusy}
               hitSlop={8}
             >
@@ -831,7 +973,7 @@ export default function Checkout() {
             />
             <TouchableOpacity
               style={[styles.couponBtn, (!couponInput.trim() || couponBusy) && styles.couponBtnDisabled]}
-              onPress={applyCoupon}
+              onPress={() => applyCoupon()}
               disabled={!couponInput.trim() || couponBusy}
               activeOpacity={0.85}
             >
@@ -840,43 +982,51 @@ export default function Checkout() {
           </View>
         )}
         {couponError && <Text style={styles.couponErrorText}>{couponError}</Text>}
+        {/* #15 — the field holds the code saved from a home offer poster */}
+        {!appliedCoupon && offerCoupon && couponInput.trim().toUpperCase() === offerCoupon.code ? (
+          <View style={styles.offerCodeNote}>
+            <Ionicons name="pricetag-outline" size={14} color={Colors.ink3} />
+            <Text style={styles.offerCodeNoteText}>Code from an offer you picked</Text>
+            <TouchableOpacity onPress={dropOfferCoupon} disabled={couponBusy} hitSlop={8}>
+              <Text style={styles.editLink}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* Price breakdown */}
         <Text style={styles.sectionTitle}>Price breakdown</Text>
         <View style={styles.priceCard}>
+          {/* Rent is GST-inclusive (item 17): rent → discounts (off the
+              inclusive rent) → rent after discount, with the GST inside it */}
           <LineItem
-            label={pd ? `Base rate (${pd.pricingBreakdown?.billedAs ?? durationText})` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
-            value={`₹${(pd?.basePrice ?? daily * days).toLocaleString('en-IN')}`}
+            label={pd ? `Rent (${pd.pricingBreakdown?.billedAs ?? durationText}, incl. GST)` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
+            value={rentView ? inrExact(rentView.rent) : `₹${(daily * days).toLocaleString('en-IN')}`}
           />
           {/* Duration slab named (#24). With a coupon, the server's re-priced
               layers — a slab the coupon replaced (no stacking) is not shown. */}
-          {couponPricing
+          {couponPricing && rentView
             ? !couponPricing.durationSuppressed &&
-              couponPricing.durationDiscountAmount > 0 && (
+              rentView.durationDiscount > 0 && (
                 <LineItem
                   label={durationDiscountText({ ...couponPricing, durationDiscountType: pd?.durationDiscountType ?? null })}
-                  value={`−${inrExact(couponPricing.durationDiscountAmount)}`}
+                  value={`−${inrExact(rentView.durationDiscount)}`}
                   credit
                 />
               )
             : pd &&
-              quoteDiscountLines(pd).map((l) => (
+              rentView &&
+              quoteDiscountLines({ ...pd, discountAmount: rentView.discount, durationDiscountAmount: rentView.durationDiscount }).map((l) => (
                 <LineItem key={l.label} label={l.label} value={`−${inrExact(l.amount)}`} credit />
               ))}
           {couponDiscount > 0 && (
             <LineItem label={`Coupon (${appliedCoupon!.code})`} value={`−${inrExact(couponDiscount)}`} credit />
           )}
-          {gstView ? (
+          {rentView ? (
             <>
-              <LineItem label="Taxable value" value={inrExact(gstView.taxable)} />
-              {gstView.cgst > 0 || gstView.sgst > 0 ? (
-                <>
-                  <LineItem label={gstLabel('CGST', pd?.cgstRate)} value={inrExact(gstView.cgst)} />
-                  <LineItem label={gstLabel('SGST', pd?.sgstRate)} value={inrExact(gstView.sgst)} />
-                </>
-              ) : (
-                <LineItem label={gstLabel('GST', gstView.rate)} value={inrExact(gstView.tax)} />
-              )}
+              {rentView.discount > 0 && <LineItem label="Rent after discount" value={inrExact(rentView.rentAfterDiscount)} />}
+              {rentGstNoteLines(rentView, pd).map((t) => (
+                <Text key={t} style={styles.priceNote}>{t}</Text>
+              ))}
             </>
           ) : (
             <LineItem label="GST" value="Not available" />
@@ -887,46 +1037,26 @@ export default function Checkout() {
           <LineItem label="Total" value={`₹${total.toLocaleString('en-IN')}`} bold />
         </View>
 
-        {/* Payment plan (#6) — the branch's plans for this total. Two cards only
-            when it offers both; otherwise the one plan that will be charged. */}
+        {/* Payment — advance only (item 18): the one plan the server charges for
+            this total (re-priced with the coupon), never a choice. */}
         {pd && (
           <>
-            <Text style={styles.sectionTitle}>Payment plan</Text>
-            <View style={styles.planRow}>
-              {payOptions.allowedFlows.includes('FULL') && (
-                <TouchableOpacity
-                  style={[styles.planCard, effectiveFlow === 'FULL' && styles.planCardActive]}
-                  onPress={() => effectiveFlow !== 'FULL' && selectFlow('FULL')}
-                  disabled={payOptions.allowedFlows.length < 2 || couponBusy}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.planTop}>
-                    <Text style={[styles.planTitle, effectiveFlow === 'FULL' && styles.planTitleActive]}>Pay full</Text>
-                    {effectiveFlow === 'FULL' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
-                  </View>
-                  <Text style={styles.planAmount}>{inrExact(total)}</Text>
-                  <Text style={styles.planNote}>Nothing due at pickup</Text>
-                </TouchableOpacity>
-              )}
-              {payOptions.allowedFlows.includes('ADVANCE') && (
-                <TouchableOpacity
-                  style={[styles.planCard, effectiveFlow === 'ADVANCE' && styles.planCardActive]}
-                  onPress={() => effectiveFlow !== 'ADVANCE' && selectFlow('ADVANCE')}
-                  disabled={payOptions.allowedFlows.length < 2 || couponBusy}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.planTop}>
-                    <Text style={[styles.planTitle, effectiveFlow === 'ADVANCE' && styles.planTitleActive]}>Pay advance</Text>
-                    {effectiveFlow === 'ADVANCE' && <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />}
-                  </View>
-                  <Text style={styles.planAmount}>{inrExact(advanceAmount)}</Text>
-                  <Text style={styles.planNote}>
-                    {inrExact(payOptions.remainingAfterAdvance ?? Math.max(0, round2(total - advanceAmount)))} at pickup
-                  </Text>
-                </TouchableOpacity>
-              )}
+            <Text style={styles.sectionTitle}>Payment</Text>
+            <View style={[styles.planCard, styles.planCardActive]}>
+              <View style={styles.planTop}>
+                <Text style={[styles.planTitle, styles.planTitleActive]}>
+                  {effectiveFlow === 'ADVANCE' ? 'Advance payment' : 'Full payment'}
+                </Text>
+                <Ionicons name="checkmark-circle" size={18} color={Colors.orange} />
+              </View>
+              <Text style={styles.planLine}>{payNowText(paySplit, inrExact)}</Text>
+              <Text style={styles.planNote}>
+                {effectiveFlow === 'ADVANCE'
+                  ? 'The advance is paid online now; the balance is collected at pickup.'
+                  : 'The full amount is paid online now · deposit included'}
+              </Text>
             </View>
-            {payOptions.reasonMessage ? <Text style={styles.planReason}>{payOptions.reasonMessage}</Text> : null}
+            {paySplit.fullReason ? <Text style={styles.planReason}>{paySplit.fullReason}</Text> : null}
           </>
         )}
 
@@ -961,7 +1091,8 @@ export default function Checkout() {
         <View style={styles.ctaSummary}>
           <Text style={styles.ctaTotal}>₹{payNow.toLocaleString('en-IN')}</Text>
           <Text style={styles.ctaTotalNote}>
-            {effectiveFlow === 'ADVANCE' ? `advance now · ${inrExact(remainingAtPickup)} at pickup` : `total · ${durationText}`}
+            {/* Item 18: always "now · ₹Y at pickup" (₹0 when paid in full) */}
+            {`${effectiveFlow === 'ADVANCE' ? 'advance' : 'full amount'} now · ${inrExact(remainingAtPickup)} at pickup`}
           </Text>
         </View>
         {startPassed ? (
@@ -979,13 +1110,29 @@ export default function Checkout() {
           <RazorpayPayOptions
             payLabel="Confirm & pay"
             onPay={handleBook}
-            disabled={loading || !terms || !pd || couponBusy}
+            disabled={loading || !terms || !pd || couponBusy || !bookedPackage}
             busyMode={loading ? payMode : null}
             busyLabel={checkingPayment ? CHECKING_PAYMENT_TEXT : undefined}
-            noUpiNote="No UPI app on this phone — scan the QR with a UPI app on another phone."
+            // Item 2 — with the server's UPI QR on, the QR option opens the QR
+            // screen (first, with this note, on a phone with no UPI app).
+            qrLabel={upiQrEnabled ? UPI_QR_OPTION_LABEL : undefined}
+            noUpiNote={
+              upiQrEnabled
+                ? NO_UPI_APP_QR_NOTE
+                : 'No UPI app on this phone — scan the QR with a UPI app on another phone.'
+            }
           />
         )}
       </View>
+
+      {/* Item 2 — pay this hold by scanning a UPI QR with another phone */}
+      <UpiQrPayModal
+        target={qrPayment ? { bookingId: qrPayment.holdId } : null}
+        expectedAmount={qrPayment?.payNow ?? null}
+        subtitle={qrPayment?.description}
+        canPayAnotherWay
+        onExit={(exit) => void handleQrExit(exit)}
+      />
     </View>
   );
 }
@@ -1032,6 +1179,8 @@ const styles = StyleSheet.create({
   },
   datesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hoursWrap: { marginTop: 8, gap: 8 },
+  packageRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  packageText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
   dateInput: {
     flex: 1,
     backgroundColor: Colors.surface,
@@ -1136,6 +1285,8 @@ const styles = StyleSheet.create({
   couponAppliedText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: '#1a7035' },
   couponCode: { fontFamily: Fonts.bodySemiBold },
   couponErrorText: { fontFamily: Fonts.body, fontSize: 12, color: '#dc3545', marginTop: 8 },
+  offerCodeNote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  offerCodeNoteText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
 
   priceCard: {
     backgroundColor: Colors.surface,
@@ -1152,6 +1303,8 @@ const styles = StyleSheet.create({
   lineValueBold: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink },
   lineValueCredit: { color: '#2d9d61' },
   priceUnavailable: { fontFamily: Fonts.body, fontSize: 12, color: '#856404', lineHeight: 17 },
+  // The GST inside the rent (item 17) — a note, not a line that adds to the total.
+  priceNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', lineHeight: 17, marginTop: -6 },
   divider: { height: 1, backgroundColor: Colors.hairline },
 
   // Payment plan
@@ -1170,6 +1323,8 @@ const styles = StyleSheet.create({
   planTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
   planTitleActive: { color: Colors.ink, fontFamily: Fonts.bodySemiBold },
   planAmount: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
+  // "Pay ₹X now · ₹Y at pickup" (item 18) — may wrap on narrow phones
+  planLine: { fontFamily: Fonts.displayBold, fontSize: 16, color: Colors.ink, letterSpacing: -0.3, lineHeight: 22 },
   planNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
   planReason: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 8, lineHeight: 17 },
 

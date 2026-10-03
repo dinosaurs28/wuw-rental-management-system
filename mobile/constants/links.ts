@@ -1,5 +1,6 @@
 // Static external links + contact constants, mirrored from the web app
 // (apps/frontend/src/pages/ContactPage.tsx and apps/frontend/public/legal/*).
+import { vehicleWebPath } from '../lib/shareLink';
 
 export const SITE_ORIGIN = 'https://whatuwantrentals.com';
 
@@ -53,10 +54,9 @@ export function whatsappUrl(phoneNumber: string, message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-// Public website URL for a vehicle: the group page when `id` is a groupKey
-// (contains '__'), else the single-vehicle page. No dates or private data.
+// Public website URL for a vehicle: the group page when `id` is a groupKey,
+// else the single-vehicle page. No dates or private data. Share buttons send
+// the app link instead — buildVehicleShareMessage in lib/shareLink.ts (#16).
 export function vehicleShareUrl(id: string): string {
-  return id.includes('__')
-    ? `${SITE_ORIGIN}/vehicle/group/${encodeURIComponent(id)}`
-    : `${SITE_ORIGIN}/vehicle/${encodeURIComponent(id)}`;
+  return `${SITE_ORIGIN}${vehicleWebPath(id)}`;
 }

@@ -6,17 +6,21 @@
  * by Fleet while the booking is CONFIRMED / PICKED_UP.
  *   COLLECTED     — the branch holds the original licence
  *   NOT_COLLECTED — the customer kept it (a valid choice; the pickup goes ahead)
- *   DEPOSIT       — the customer left something else instead (dlDepositNote says what)
+ *   DEPOSIT       — LEGACY (removed Oct 2026): old rows read "DL Deposit (old)"; the
+ *                   server rejects new writes with it (400 DL_STATUS_INVALID)
  * null on a booking = not recorded (picked up before this release, or by an old
  * app build). Show it as "Not recorded", never as "Not collected".
  */
 export const DL_COLLECTION_STATUSES = ['COLLECTED', 'NOT_COLLECTED', 'DEPOSIT'] as const;
 export type DlCollectionStatus = (typeof DL_COLLECTION_STATUSES)[number];
 
+/** The statuses that can be chosen / sent. */
+export const DL_SELECTABLE_STATUSES = ['COLLECTED', 'NOT_COLLECTED'] as const;
+
 export const DL_STATUS_LABELS: Record<DlCollectionStatus, string> = {
   COLLECTED: 'DL collected',
   NOT_COLLECTED: 'DL not collected',
-  DEPOSIT: 'DL deposit',
+  DEPOSIT: 'DL Deposit (old)',
 };
 
 export const DL_NOT_RECORDED_LABEL = 'Not recorded';
@@ -24,7 +28,9 @@ export const DL_NOT_RECORDED_LABEL = 'Not recorded';
 export const DL_DEPOSIT_NOTE_MAX = 200;
 
 export const DL_STATUS_INVALID_MESSAGE =
-  'Choose the driving licence status: Collected, Not collected or Deposit.';
+  'Choose the driving licence status: Collected or Not collected.';
+export const DL_STATUS_DEPOSIT_REMOVED_MESSAGE =
+  'DL deposit is no longer an option — choose Collected or Not collected.';
 export const DL_DEPOSIT_NOTE_REQUIRED_MESSAGE =
   'Note what the customer left as the DL deposit (e.g. Aadhaar card kept, ₹2,000 cash).';
 export const DL_DEPOSIT_NOTE_TOO_LONG_MESSAGE =
@@ -61,6 +67,7 @@ export interface UpdateDlStatusResult {
 /** 4xx codes the pickup and DL-status endpoints return for the DL fields. */
 export const DL_ERROR_CODES = [
   'INVALID_DL_STATUS',
+  'DL_STATUS_INVALID',
   'DL_DEPOSIT_NOTE_REQUIRED',
   'DL_DEPOSIT_NOTE_TOO_LONG',
   'LICENSE_NOT_COLLECTED',
@@ -74,30 +81,21 @@ export function dlStatusLabel(status: DlCollectionStatus | null | undefined): st
   return status ? DL_STATUS_LABELS[status] : DL_NOT_RECORDED_LABEL;
 }
 
-/** True when the status needs a deposit note. */
-export function dlStatusNeedsNote(status: DlCollectionStatus | null | undefined): boolean {
-  return status === 'DEPOSIT';
-}
-
 export function canEditDlStatus(bookingStatus: string | null | undefined): boolean {
   return !!bookingStatus && (DL_EDITABLE_BOOKING_STATUSES as readonly string[]).includes(bookingStatus);
 }
 
 /**
  * What still blocks a DL choice, or null when it can be sent. Mirrors the
- * server rules: a status is required and DEPOSIT needs a non-blank note.
+ * server rules: a status is required and DEPOSIT can no longer be chosen.
  */
-export function dlChoiceProblem(status: DlCollectionStatus | null, note: string): string | null {
+export function dlChoiceProblem(status: DlCollectionStatus | null): string | null {
   if (!status) return DL_STATUS_INVALID_MESSAGE;
-  if (dlStatusNeedsNote(status)) {
-    const trimmed = note.trim();
-    if (!trimmed) return DL_DEPOSIT_NOTE_REQUIRED_MESSAGE;
-    if (trimmed.length > DL_DEPOSIT_NOTE_MAX) return DL_DEPOSIT_NOTE_TOO_LONG_MESSAGE;
-  }
+  if (status === 'DEPOSIT') return DL_STATUS_DEPOSIT_REMOVED_MESSAGE;
   return null;
 }
 
-/** Request fields for a pickup / update: the note only goes with DEPOSIT. */
-export function dlChoiceBody(status: DlCollectionStatus, note: string): UpdateDlStatusBody {
-  return dlStatusNeedsNote(status) ? { dlStatus: status, dlDepositNote: note.trim() } : { dlStatus: status };
+/** Request fields for a pickup / update. */
+export function dlChoiceBody(status: DlCollectionStatus): UpdateDlStatusBody {
+  return { dlStatus: status };
 }

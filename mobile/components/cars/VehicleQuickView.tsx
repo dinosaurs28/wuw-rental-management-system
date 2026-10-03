@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { periodLabel, priceUnitFor } from '../../lib/pricing';
+import { rentGstSplitText } from '../../lib/gst';
 import type { Vehicle } from '../../types/api';
 
 const { height } = Dimensions.get('window');
@@ -32,6 +33,18 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
   // The listed price is the period total — "for 12 hours" when the server says what it covers (#5).
   const priceUnit = vehicle?.priceInfo ? priceUnitFor(vehicle.priceInfo) : '/day';
   const periodBadge = vehicle?.priceInfo && !vehicle.priceInfo.billedAs ? periodLabel(vehicle.priceInfo.type) : null;
+  // Rents are GST-inclusive (item 17). With dates the server also splits the
+  // GST out of the total (finalPrice, after any duration discount); absent when
+  // the branch has no GST rule.
+  const info = vehicle?.priceInfo;
+  const gstSplit =
+    price != null && info && typeof info.rentWithoutGst === 'number' && typeof info.gst === 'number' && info.gst > 0
+      ? `${info.finalPrice < info.price ? 'After the discount: ' : ''}${rentGstSplitText({
+          rentWithoutGst: info.rentWithoutGst,
+          gst: info.gst,
+          rentAfterDiscount: info.finalPrice,
+        })}`
+      : null;
 
   const handleViewDetails = () => {
     const id = vehicle!.publicId;
@@ -124,11 +137,13 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                 <View style={styles.priceSummaryRow}>
                   <Text style={styles.priceSummaryLabel}>
                     {vehicle?.priceInfo?.billedAs ? 'Price' : periodBadge ? `${periodBadge} rate` : 'Daily rate'}
+                    {price != null ? ' (incl. GST)' : ''}
                   </Text>
                   <Text style={styles.priceSummaryValue}>
                     {price != null ? `₹${price.toLocaleString('en-IN')} ${priceUnit}` : '—'}
                   </Text>
                 </View>
+                {gstSplit ? <Text style={styles.priceGstSplit}>{gstSplit}</Text> : null}
                 <View style={styles.priceHintRow}>
                   <Ionicons name="information-circle-outline" size={14} color={Colors.ink3} />
                   <Text style={styles.priceHint}>
@@ -282,6 +297,7 @@ const styles = StyleSheet.create({
   },
   priceSummaryLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
   priceSummaryValue: { fontFamily: Fonts.displayBold, fontSize: 16, color: Colors.ink, letterSpacing: -0.3 },
+  priceGstSplit: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 16, textAlign: 'right', marginTop: -4 },
   priceHintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   priceHint: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 16 },
   cta: {

@@ -20,7 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { vehiclesApi } from '../../lib/api';
-import { vehicleShareUrl } from '../../constants/links';
+import { buildVehicleShareMessage, isVehicleGroupKey } from '../../lib/shareLink';
 import { useRequireAuth } from '../../lib/auth-gate';
 import { useSavedStore } from '../../store/saved';
 import DateRangePicker from '../../components/ui/DateRangePicker';
@@ -28,36 +28,30 @@ import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
+import { bookingWindowLastDay, rangeLengthLabel, timeLabel, timeOf, withTime } from '../../lib/dates';
+import { MAX_BOOKING_DAYS, packageLabel } from '../../lib/bookingWindow';
+import { formatGstRate, inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import {
-  DURATION_PRESETS,
-  activePresetHours,
-  bookingWindowLastDay,
-  initialRange,
-  maxReturnFor,
-  normalizeRange,
-  presetRange,
-  rangeLengthLabel,
-  refreshRange,
-  timeLabel,
-  timeOf,
-  withTime,
-} from '../../lib/dates';
-import { MAX_BOOKING_DAYS } from '../../lib/bookingWindow';
-import { formatGstRate, gstLabel, inrExact, round2 } from '../../lib/gst';
-import {
-  bookingTimesNotice,
   closedDayText,
-  fitBookingRange,
   isClosedDay,
   noPickupTimesLeft,
   rangeHoursLine,
-  rangeScheduleIssue,
   slotsWithinHours,
 } from '../../lib/branchSchedule';
+import {
+  customerPackageChoices,
+  fitPackageRange,
+  initialPackageRange,
+  latestPackagePickup,
+  packageRangeEnd,
+  packageTimesNotice,
+  refreshPackageRange,
+  type PackageRange,
+} from '../../lib/packages';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
-import DurationChips from '../../components/ui/DurationChips';
+import PackagePicker from '../../components/booking/PackagePicker';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
-import { paymentOptionsFor, serverPaymentOptions } from '../../lib/paymentPlan';
+import { paymentOptionsFor, payNowSplit, payNowText, serverPaymentOptions } from '../../lib/paymentPlan';
 import { quoteDiscountLines } from '../../lib/discounts';
 import type { VehicleDetail } from '../../types/api';
 
@@ -92,18 +86,20 @@ export default function VehicleDetail() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const [showPicker, setShowPicker] = useState(false);
-  // Search params win; otherwise pickup today at the next 5-minute mark and
-  // return 24 hours later. normalizeRange keeps the return after the pickup.
-  const [range, setRange] = useState(() => initialRange(startParam, endParam));
-  const { start: startDate, end: endDate } = range;
+  // A pickup + PACKAGE (BRIEF4 P1) — "12 hours" or "1 day" … "15 days"; the
+  // return is pickup + the package, shown read-only. Search params win (their
+  // length read as a package); otherwise the next 5-minute mark and 1 day.
+  const [pkg, setPkg] = useState(() => initialPackageRange(startParam, endParam));
+  const startDate = pkg.start;
+  const endDate = packageRangeEnd(pkg);
 
   // Coming back from checkout (or the background) can leave the pickup in the
   // past. While focused — on focus, on return to the foreground and every
-  // 15s — move a past pickup to the next 5-minute mark (and the return after
-  // it). A pickup still in the future is left untouched.
+  // 15s — move a past pickup to the next 5-minute mark (the return follows
+  // the package). A pickup still in the future is left untouched.
   useFocusEffect(
     useCallback(() => {
-      const refresh = () => setRange((r) => refreshRange(r));
+      const refresh = () => setPkg((r) => refreshPackageRange(r));
       refresh();
       const timer = setInterval(refresh, 15_000);
       const sub = AppState.addEventListener('change', (state) => {
@@ -115,13 +111,16 @@ export default function VehicleDetail() {
       };
     }, []),
   );
-  const [timePicker, setTimePicker] = useState<null | 'start' | 'end'>(null);
+  const [pickupTimeOpen, setPickupTimeOpen] = useState(false);
   const toggle = useSavedStore(s => s.toggle);
   const savedList = useSavedStore(s => s.saved);
   // Browsing this page is public; only the booking action needs an account.
   const requireAuth = useRequireAuth();
 
-  const isGroupKey = !!id && id.includes('__');
+  // A nanoid publicId can contain "__" too — match the whole group-key shape.
+  const isGroupKey = !!id && isVehicleGroupKey(id);
+  // Opened straight from a shared link (#16) there is nothing to go back to.
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
   const rangeLength = rangeLengthLabel(startDate, endDate) ?? '';
 
   const { data: vehicle, isLoading, isFetching } = useQuery({
@@ -157,23 +156,17 @@ export default function VehicleDetail() {
     enabled: !!id,
   });
 
-  // Office hours (#2) + the 15-day limit (#15): the pickers offer only times
-  // the branch accepts, and a range that lands outside them is moved back in.
+  // Office hours (#2) + the 15-day limit (#15): the pickers offer only pickups
+  // the branch accepts, a pickup outside them moves back in, and a package
+  // whose return the branch wouldn't take becomes the nearest one it would.
   const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
   const { data: schedule } = useBranchSchedule(branchPublicId);
-  const fit = useCallback(
-    (r: { start: Date; end: Date }) => fitBookingRange(r, { config: schedule, maxEnd: (s) => maxReturnFor(s) }),
-    [schedule],
-  );
+  const fit = useCallback((r: PackageRange) => fitPackageRange(r, { config: schedule }), [schedule]);
   useEffect(() => {
-    setRange((r) => fit(r));
-  }, [fit, range]);
-  const timesNotice = bookingTimesNotice(schedule, startDate, endDate);
-  const presetIssue = (hours: number) => {
-    const next = presetRange(startDate, hours);
-    if (next.end.getTime() > maxReturnFor(startDate).getTime()) return `past the ${MAX_BOOKING_DAYS}-day booking limit`;
-    return rangeScheduleIssue(schedule, next.start, next.end);
-  };
+    setPkg((r) => fit(r));
+  }, [fit, pkg]);
+  const timesNotice = packageTimesNotice(schedule, pkg);
+  const packageChoices = customerPackageChoices(startDate, schedule);
 
   if (isLoading) {
     return (
@@ -187,7 +180,7 @@ export default function VehicleDetail() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Car not found.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
+        <TouchableOpacity onPress={goBack} style={styles.backLink}>
           <Text style={styles.backLinkText}>← Go back</Text>
         </TouchableOpacity>
       </View>
@@ -229,20 +222,20 @@ export default function VehicleDetail() {
   if (vehicle.branch) specs.push({ icon: 'location-outline', label: vehicle.branch });
   if (pd?.freeKmLimit) specs.push({ icon: 'speedometer-outline', label: `${pd.freeKmLimit} km included` });
   if (pd?.extraKmRate) specs.push({ icon: 'navigate-outline', label: `₹${pd.extraKmRate}/km after limit` });
-  // GST is charged on top of the rental (after discounts), not included in it.
-  if (pd?.taxRate) specs.push({ icon: 'receipt-outline', label: `+${formatGstRate(pd.taxRate) ?? `${pd.taxRate}%`} GST` });
+  // Rent is GST-inclusive (item 17): the price already contains the GST.
+  if (pd?.taxRate) specs.push({ icon: 'receipt-outline', label: `Prices incl. ${formatGstRate(pd.taxRate) ?? `${pd.taxRate}%`} GST` });
+  // The rent incl. GST, its discounts and the GST inside what is left (server figures).
+  const rent = pd ? rentInclGstView(pd) : null;
+  const rentGstNotes = rent ? rentGstNoteLines(rent, pd) : [];
 
-  // Payment plans this branch offers for these amounts (#6) — the server's
-  // paymentOptions (same rules checkout and booking create use).
+  // Advance only (item 18): the one plan the server charges for these amounts
+  // (same rule checkout and booking create use), as "Pay ₹X now · ₹Y at pickup".
   const payOptions = paymentOptionsFor(serverPaymentOptions(vehicle.paymentOptions), {
     mode: vehicle.customerPaymentMode,
     advanceAmount: vehicle.advancePayAmount ?? 0,
     payableTotal: total,
   });
-  const advance = payOptions.advanceAmount;
-  const offersFull = payOptions.allowedFlows.includes('FULL');
-  const offersAdvance = payOptions.allowedFlows.includes('ADVANCE');
-  const dueAtPickup = payOptions.remainingAfterAdvance ?? (total != null ? round2(total - advance) : null);
+  const paySplit = payNowSplit(payOptions);
 
   const avColor = vehicle.availability === null
     ? Colors.onDarkMuted
@@ -277,7 +270,7 @@ export default function VehicleDetail() {
           )}
 
           <View style={[styles.heroTop, { top: insets.top + 12 }]}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()} hitSlop={8} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.iconBtn} onPress={goBack} hitSlop={8} activeOpacity={0.85}>
               <Ionicons name="arrow-back" size={20} color={Colors.white} />
             </TouchableOpacity>
             <View style={styles.heroTopRight}>
@@ -308,13 +301,14 @@ export default function VehicleDetail() {
                 hitSlop={8}
                 activeOpacity={0.85}
                 onPress={() => {
-                  const shareUrl = vehicleShareUrl(id);
-                  // `url` is iOS-only, so the link also goes in the message for Android.
+                  // #16: the app link (opens this vehicle in the app when it's
+                  // installed, else the store / website) in the client's wording.
+                  // The link lives in the message only — also passing `url` makes
+                  // iOS share targets append it a second time.
                   Share.share({
                     title: `${vehicle.make} ${vehicle.model}`,
-                    message: `Check out this ${vehicle.make} ${vehicle.model} at WUW Rentals — ${vehicle.branch}!${unitPrice != null ? ` From ₹${unitPrice.toLocaleString('en-IN')} ${unit}.` : ''}\n${shareUrl}`,
-                    url: shareUrl,
-                  });
+                    message: buildVehicleShareMessage(id),
+                  }).catch(() => {});
                 }}
               >
                 <Ionicons name="share-outline" size={20} color={Colors.white} />
@@ -364,12 +358,13 @@ export default function VehicleDetail() {
           </View>
         ) : null}
 
-        {/* ── Itinerary — tap dates for calendar, times for time picker ── */}
+        {/* ── Itinerary — tap for the pickup date, "Change time" for the pickup
+            time; the return follows from the package (P1) ── */}
         <TouchableOpacity style={styles.itinCard} onPress={() => setShowPicker(true)} activeOpacity={0.85}>
           <View style={styles.itinHalf}>
             <Text style={styles.itinLabel}>PICKUP</Text>
             <Text style={styles.itinValue}>{fmtStamp(startDate)}</Text>
-            <TouchableOpacity onPress={() => setTimePicker('start')} hitSlop={8}>
+            <TouchableOpacity onPress={() => setPickupTimeOpen(true)} hitSlop={8}>
               <Text style={styles.itinTimeLink}>Change time</Text>
             </TouchableOpacity>
           </View>
@@ -377,23 +372,20 @@ export default function VehicleDetail() {
           <View style={styles.itinHalf}>
             <Text style={styles.itinLabel}>RETURN</Text>
             <Text style={styles.itinValue}>{fmtStamp(endDate)}</Text>
-            <TouchableOpacity onPress={() => setTimePicker('end')} hitSlop={8}>
-              <Text style={styles.itinTimeLink}>Change time</Text>
-            </TouchableOpacity>
+            <Text style={styles.itinFixedNote}>{packageLabel(pkg.hours)} package</Text>
           </View>
           <View style={styles.itinEdit}>
             <Ionicons name="pencil" size={16} color={Colors.white} />
           </View>
         </TouchableOpacity>
 
-        {/* Quick lengths (#5) + branch hours (#2) */}
+        {/* Package (P1): 12 hours or whole days in the 15-day window + branch hours (#2) */}
         <View style={styles.itinExtras}>
-          <DurationChips
+          <PackagePicker
             tone="dark"
-            presets={DURATION_PRESETS}
-            activeHours={activePresetHours(startDate, endDate)}
-            issueFor={presetIssue}
-            onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+            choices={packageChoices}
+            selectedHours={pkg.hours}
+            onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
           />
           <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, startDate, endDate)} />
           <TimesNotice tone="dark" notice={timesNotice} />
@@ -413,27 +405,21 @@ export default function VehicleDetail() {
         </View>
 
         {/* ── Pricing breakdown ── */}
-        {pd ? (
+        {pd && rent ? (
           <>
             <Text style={styles.sectionTitle}>Pricing breakdown</Text>
             <View style={styles.darkCard}>
-              {/* Base → discount → taxable value → CGST/SGST → deposit (no GST) → total (#23) */}
-              <PriceLine label={`Base rate (${billedAs ?? realDuration ?? rangeLength})`} value={inrExact(pd.basePrice)} />
-              {/* Duration slab named (#24), e.g. "Weekly discount (10%)" */}
-              {quoteDiscountLines(pd).map((l) => (
+              {/* Rent is GST-inclusive (item 17): rent → discounts → rent after
+                  discount, with the GST inside it → deposit (no GST) → total */}
+              <PriceLine label={`Rent (${billedAs ?? realDuration ?? rangeLength}, incl. GST)`} value={inrExact(rent.rent)} />
+              {/* Duration slab named (#24), e.g. "Weekly discount (10%)" — off the inclusive rent */}
+              {quoteDiscountLines({ ...pd, discountAmount: rent.discount, durationDiscountAmount: rent.durationDiscount }).map((l) => (
                 <PriceLine key={l.label} label={l.label} value={`-${inrExact(l.amount)}`} valueColor={Colors.availGood} />
               ))}
-              {pd.discountAmount > 0 && (
-                <PriceLine label="Taxable value" value={inrExact(round2(pd.basePrice - pd.discountAmount))} />
-              )}
-              {pd.taxAmount > 0 && (pd.cgstAmount > 0 || pd.sgstAmount > 0) ? (
-                <>
-                  <PriceLine label={gstLabel('CGST', pd.cgstRate)} value={inrExact(pd.cgstAmount)} />
-                  <PriceLine label={gstLabel('SGST', pd.sgstRate)} value={inrExact(pd.sgstAmount)} />
-                </>
-              ) : (
-                <PriceLine label={gstLabel('GST', pd.taxRate)} value={inrExact(pd.taxAmount)} />
-              )}
+              {rent.discount > 0 && <PriceLine label="Rent after discount" value={inrExact(rent.rentAfterDiscount)} />}
+              {rentGstNotes.map((t) => (
+                <Text key={t} style={styles.priceNote}>{t}</Text>
+              ))}
               <PriceLine label="Deposit (refundable, no GST)" value={inrExact(pd.deposit)} />
               <View style={styles.priceDivider} />
               <PriceLine label="Total" value={inrExact(round2(pd.finalTotal + pd.deposit))} bold />
@@ -446,35 +432,27 @@ export default function VehicleDetail() {
           </View>
         )}
 
-        {/* ── Payment options — only the plans the branch allows for this total (#6) ── */}
-        {total != null ? (
+        {/* ── Payment — advance only (item 18): the one plan, no picker ── */}
+        {total != null && paySplit.payNow != null ? (
           <>
-            <Text style={styles.sectionTitle}>Payment options</Text>
+            <Text style={styles.sectionTitle}>Payment</Text>
             <View style={styles.darkCard}>
-              {offersFull ? (
-                <View style={styles.payRow}>
-                  <Ionicons name="card-outline" size={20} color={Colors.onDark} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.payTitle}>Pay in full</Text>
-                    <Text style={styles.paySub}>{inrExact(total)} now · deposit included</Text>
-                  </View>
+              <View style={styles.payRow}>
+                <Ionicons
+                  name={paySplit.flow === 'ADVANCE' ? 'time-outline' : 'card-outline'}
+                  size={20}
+                  color={Colors.onDark}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.payTitle}>{payNowText(paySplit, inrExact)}</Text>
+                  <Text style={styles.paySub}>
+                    {paySplit.flow === 'ADVANCE'
+                      ? 'The advance is paid online when you book; the balance is collected at pickup.'
+                      : 'Paid online when you book · deposit included'}
+                  </Text>
                 </View>
-              ) : null}
-              {offersFull && offersAdvance ? <View style={styles.priceDivider} /> : null}
-              {offersAdvance ? (
-                <View style={styles.payRow}>
-                  <Ionicons name="time-outline" size={20} color={Colors.onDark} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.payTitle}>Reserve with advance</Text>
-                    <Text style={styles.paySub}>
-                      {inrExact(advance)} now{dueAtPickup != null ? ` · ${inrExact(dueAtPickup)} at pickup` : ''}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-              {payOptions.reasonMessage ? (
-                <Text style={styles.payReason}>{payOptions.reasonMessage}</Text>
-              ) : null}
+              </View>
+              {paySplit.fullReason ? <Text style={styles.payReason}>{paySplit.fullReason}</Text> : null}
             </View>
           </>
         ) : null}
@@ -491,7 +469,7 @@ export default function VehicleDetail() {
           ) : unitPrice != null ? (
             <>
               <Text style={styles.ctaPrice}>₹{unitPrice.toLocaleString('en-IN')}</Text>
-              <Text style={styles.ctaNote}>{unit} · select dates</Text>
+              <Text style={styles.ctaNote}>{unit} incl. GST · select dates</Text>
             </>
           ) : (
             <Text style={styles.ctaNote}>Select dates to see price</Text>
@@ -504,11 +482,11 @@ export default function VehicleDetail() {
             // moment they commit to booking, and returns them to this car.
             if (!requireAuth({ returnTo: `/vehicle/${id}` })) return;
             // The page may have sat open past its pickup time — bump it first.
-            const next = fit(normalizeRange(startDate, endDate));
-            setRange(next);
+            const next = fit(refreshPackageRange(pkg));
+            setPkg(next);
             // Times the server would refuse (15-day limit, pickup outside
             // branch hours) — say so here instead of after checkout.
-            const blocking = bookingTimesNotice(schedule, next.start, next.end);
+            const blocking = packageTimesNotice(schedule, next);
             if (blocking?.tone === 'error') {
               Alert.alert('Change your times', blocking.text);
               return;
@@ -518,7 +496,8 @@ export default function VehicleDetail() {
               params: {
                 vehicleId: vehicle.publicId,
                 start: next.start.toISOString(),
-                end: next.end.toISOString(),
+                // Always pickup + the package (12 h or N × 24 h, P2).
+                end: packageRangeEnd(next).toISOString(),
                 ...(branchPublicId ? { branch: branchPublicId } : {}),
               },
             });
@@ -531,12 +510,14 @@ export default function VehicleDetail() {
         </TouchableOpacity>
       </View>
 
-      {/* Date picker — preserve the chosen times when dates change */}
+      {/* Pickup date — keeps the pickup time; the return follows the package */}
       <DateRangePicker
         visible={showPicker}
         startDate={startDate}
         endDate={endDate}
-        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
+        pickupOnly
+        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours })}
+        onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setShowPicker(false)}
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
@@ -544,23 +525,16 @@ export default function VehicleDetail() {
         note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
       />
 
-      {/* Time picker — today lists only future times; a same-day return only
-          times after the pickup; both only inside branch hours and the 15-day limit */}
+      {/* Pickup time — today lists only future times; only inside branch
+          hours and early enough for a package in the 15-day window */}
       <TimeFieldPicker
-        visible={timePicker !== null}
-        value={timePicker === 'end' ? timeOf(endDate) : timeOf(startDate)}
-        slots={
-          timePicker === 'end'
-            ? slotsWithinHours(endDate, schedule, 'return', { after: startDate, before: maxReturnFor(startDate) })
-            : slotsWithinHours(startDate, schedule, 'pickup')
-        }
-        emptyText={closedDayText(schedule, timePicker === 'end' ? endDate : startDate)}
-        title={timePicker === 'end' ? 'Return time' : 'Pickup time'}
-        onSelect={(t) => {
-          if (timePicker === 'end') setRange((r) => normalizeRange(r.start, withTime(r.end, t)));
-          else setRange((r) => normalizeRange(withTime(r.start, t), r.end));
-        }}
-        onClose={() => setTimePicker(null)}
+        visible={pickupTimeOpen}
+        value={timeOf(startDate)}
+        slots={slotsWithinHours(startDate, schedule, 'pickup', { before: latestPackagePickup() })}
+        emptyText={closedDayText(schedule, startDate)}
+        title="Pickup time"
+        onSelect={(t) => setPkg((r) => ({ ...r, start: withTime(r.start, t) }))}
+        onClose={() => setPickupTimeOpen(false)}
       />
     </View>
   );
@@ -641,6 +615,7 @@ const styles = StyleSheet.create({
   itinLabel: { fontFamily: Fonts.bodyMedium, fontSize: 9, color: Colors.onDarkMuted, letterSpacing: 0.9, marginBottom: 5 },
   itinValue: { fontFamily: Fonts.bodySemiBold, fontSize: 14.5, color: Colors.white },
   itinTimeLink: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.orange, marginTop: 5 },
+  itinFixedNote: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.onDarkMuted, marginTop: 5 },
   itinEdit: { paddingHorizontal: 14 },
   itinExtras: { marginHorizontal: 16, marginTop: 12, gap: 10 },
 
@@ -679,6 +654,8 @@ const styles = StyleSheet.create({
   priceLineValue: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDark },
   priceLineValueBold: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.white, letterSpacing: -0.5 },
   priceDivider: { height: 1, backgroundColor: Colors.hairlineOnDark, marginVertical: 6 },
+  // The GST inside the rent (item 17) — a note, not a line that adds to the total.
+  priceNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.onDarkMuted, textAlign: 'right', lineHeight: 17, marginBottom: 2 },
 
   noPriceHint: {
     flexDirection: 'row', alignItems: 'center', gap: 10,

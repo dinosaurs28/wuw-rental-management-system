@@ -9,12 +9,14 @@ import type {
   SwapChargePreview,
 } from '../../../types/return';
 import { inr2, num, pct } from './format';
+import { SAFETY_DEPOSIT_REFUND_REF, dropBillDeposit, dropBillNetNote } from '../../../lib/counterPayment';
 
-// Drop bill with GST (#23): each line's taxable value and GST, then the
-// discount (before GST), taxable value, CGST / SGST and the drop total; the
+// Drop bill: each line at face value, the discount and the drop total; the
 // session's credits (safety deposit, payments) take it to the amount payable.
-// Taxable: extra km, late return, fuel, vehicle swap, other charges.
-// Not taxable: damage compensation, FASTag / tolls.
+// Item 8: drop / recovery charges (extra km, late return, fuel, FASTag,
+// damage, vehicle swap, other charges) carry NO GST. GST rows appear only on a
+// bill the server still sends with GST (computed before item 8 — the server
+// marks those stale and they are recomputed without it).
 
 function Row({
   label, value, strong, credit, sub,
@@ -58,8 +60,13 @@ export default function DropBillCard({
 }) {
   const net = num(session.netPayable);
   const credits = (session.entries ?? []).filter((e) => !e.isVoided && e.classification === 'PAYMENT');
-  const hasTaxable = num(bill.taxableTotal) > 0;
+  // GST rows only when the bill actually carries GST (item 8: new bills never do)
+  const hasGst = num(bill.gst) > 0;
   const note = lateNote(late);
+  // Under the net: right for both deposit choices (#6)
+  const netNote = dropBillNetNote(net, session.entries);
+  // "Refund in full": ₹0 means no charges — the deposit still goes back, so not "Settled"
+  const refundingInFull = dropBillDeposit(session.entries).refundedInFull > 0;
 
   return (
     <View style={styles.card}>
@@ -71,7 +78,7 @@ export default function DropBillCard({
             key={`${line.referenceType}:${line.referenceId ?? ''}:${i}`}
             label={line.label}
             value={inr2(num(line.amount))}
-            sub={line.taxable ? `+ GST ${inr2(num(line.gst))} = ${inr2(num(line.total))}` : 'No GST'}
+            sub={num(line.gst) > 0 ? `+ GST ${inr2(num(line.gst))} = ${inr2(num(line.total))}` : null}
           />
         ))
       )}
@@ -79,16 +86,16 @@ export default function DropBillCard({
 
       <View style={styles.divider} />
 
-      <Row label="Subtotal (before GST)" value={inr2(num(bill.subtotal))} />
+      {(bill.discount || hasGst) && <Row label="Subtotal" value={inr2(num(bill.subtotal))} />}
       {bill.discount && (
         <Row
-          label="Discount (before GST)"
+          label="Discount"
           value={`−${inr2(num(bill.discount.amount))}`}
           credit
           sub={num(bill.discount.gst) > 0 ? `Also takes ${inr2(num(bill.discount.gst))} GST off` : null}
         />
       )}
-      {hasTaxable && (
+      {hasGst && (
         <>
           <Row label="Taxable value" value={inr2(num(bill.taxableValue))} />
           <Row
@@ -101,22 +108,30 @@ export default function DropBillCard({
           />
         </>
       )}
-      {num(bill.nonTaxableValue) > 0 && (
+      {hasGst && num(bill.nonTaxableValue) > 0 && (
         <Row label="Not taxable (damage, tolls)" value={inr2(num(bill.nonTaxableValue))} />
       )}
-      <Row label="Drop charges" value={inr2(num(bill.total))} strong />
+      <Row
+        label="Drop charges"
+        value={inr2(num(bill.total))}
+        strong
+        sub={!hasGst && bill.lines.length > 0 ? 'No GST on drop charges' : null}
+      />
 
       {credits.length > 0 && (
         <>
           <View style={styles.divider} />
           {credits.map((e) => {
             const amt = num(e.amount);
+            // "Refund in full" (#6): the deposit credited above goes back to the customer
+            const refundOut = e.referenceType === SAFETY_DEPOSIT_REFUND_REF;
             return (
               <Row
                 key={e.publicId}
                 label={e.description}
-                value={`${amt < 0 ? '−' : ''}${inr2(amt)}`}
+                value={`${amt < 0 ? '−' : refundOut ? '+' : ''}${inr2(amt)}`}
                 credit={amt < 0}
+                sub={refundOut ? 'Paid back to the customer — not part of the charges' : null}
               />
             );
           })}
@@ -127,24 +142,20 @@ export default function DropBillCard({
 
       <View style={styles.row}>
         <Text style={styles.netLabel}>
-          {net > 0 ? 'Amount payable' : net < 0 ? 'Refund due' : 'Settled'}
+          {net > 0 ? 'Amount payable' : net < 0 ? 'Refund due' : refundingInFull ? 'Charges to collect' : 'Settled'}
         </Text>
         <Text style={[styles.netValue, net < 0 && styles.credit, net === 0 && styles.balanced]}>
           {net === 0 ? '₹0' : `${net < 0 ? '−' : ''}${inr2(net)}`}
         </Text>
       </View>
-      {net === 0 && (
-        <Text style={styles.sub}>Security deposit covers all charges — nothing to collect.</Text>
-      )}
-      {net < 0 && (
-        <Text style={styles.sub}>Refund the difference to the customer to complete the return.</Text>
-      )}
+      {netNote && <Text style={styles.sub}>{netNote}</Text>}
     </View>
   );
 }
 
 // Vehicle-swap differences (#13) staff chose to bill at the swap — previewed
-// before the drop bill is computed.
+// before the drop bill is computed. Item 8: billed at face value, no GST
+// (`taxable` keeps its name = the amount).
 export function SwapChargesCard({ charges, legacy }: { charges: SwapChargePreview[]; legacy: boolean }) {
   if (charges.length === 0) return null;
   return (
@@ -156,15 +167,15 @@ export function SwapChargesCard({ charges, legacy }: { charges: SwapChargePrevie
             key={c.swapPublicId}
             label={c.label}
             value={inr2(num(c.taxable))}
-            sub={c.gst != null && c.total != null
+            sub={num(c.gst) > 0 && c.total != null
               ? `+ GST ${inr2(num(c.gst))} = ${inr2(num(c.total))} · swapped ${fmtIstShort(c.swappedAt)}`
-              : `+ GST (branch GST rule missing) · swapped ${fmtIstShort(c.swappedAt)}`}
+              : `Swapped ${fmtIstShort(c.swappedAt)}`}
           />
         ))}
         <Text style={styles.sub}>
           {legacy
-            ? 'Recorded with GST when you complete the return — the branch manager collects it.'
-            : 'Added to the drop bill as a taxable line.'}
+            ? 'Recorded when you complete the return (no GST) — the branch manager collects it.'
+            : 'Added to the drop bill (no GST).'}
         </Text>
       </View>
     </>
@@ -179,6 +190,8 @@ export function LegacyReturnChargesCard({ result }: { result: CompleteReturnResp
   const late = result.late ?? null;
   const lateUnbilled = late != null && late.lateMinutes > 0 && late.status === 'RATE_UNAVAILABLE';
   const lateWaived = late != null && late.status === 'WAIVED';
+  // Item 8: return charges carry no GST (a server before it still sent GST lines)
+  const anyGst = lines.some((l) => num(l.gst) > 0);
   if (lines.length === 0 && !lateUnbilled && !lateWaived) return null;
 
   return (
@@ -191,12 +204,14 @@ export function LegacyReturnChargesCard({ result }: { result: CompleteReturnResp
               key={`${l.type}:${i}`}
               label={l.label}
               value={inr2(num(l.amount))}
-              sub={l.taxable ? `+ GST ${inr2(num(l.gst))} = ${inr2(num(l.total))}` : 'No GST'}
+              sub={num(l.gst) > 0 ? `+ GST ${inr2(num(l.gst))} = ${inr2(num(l.total))}` : null}
             />
           ))}
           <View style={styles.divider} />
-          <Row label="Total (incl. GST)" value={inr2(num(charges?.total))} strong />
-          <Text style={styles.sub}>Collected by the branch manager.</Text>
+          <Row label={anyGst ? 'Total (incl. GST)' : 'Total'} value={inr2(num(charges?.total))} strong />
+          <Text style={styles.sub}>
+            {anyGst ? 'Collected by the branch manager.' : 'No GST on return charges · collected by the branch manager.'}
+          </Text>
         </>
       )}
       {lateUnbilled && (

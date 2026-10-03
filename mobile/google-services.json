@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "257395262108",
+    "project_id": "wuw-rentals",
+    "storage_bucket": "wuw-rentals.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257395262108:android:c860d4ae420f5a8fa36359",
+        "android_client_info": {
+          "package_name": "com.whatuwantrentals.rentals"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7sI12lZ2xPy8T8Btz6zNyXobXkMtzr1s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

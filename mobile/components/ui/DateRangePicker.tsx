@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { isSameDay, nextFiveMinuteMark, normalizeRange, rangeLengthLabel, timeOf, withTime } from '../../lib/dates';
+import { isSameDay, nextFiveMinuteMark, normalizeRange, rangeLengthLabel, timeLabel, timeOf, withTime } from '../../lib/dates';
 
 const { width: SW } = Dimensions.get('window');
 const H_PAD = 16;
@@ -46,6 +46,10 @@ interface Props {
   noPickupTimes?: (day: Date) => boolean;
   // Extra line under the range hint, e.g. "Bookings open up to 15 days ahead".
   note?: string;
+  // Package bookings (BRIEF4 P1/P4a): only the pickup day is picked; the
+  // return is `returnFor(pickup at its current time)` and shown read-only.
+  pickupOnly?: boolean;
+  returnFor?: (pickup: Date) => Date;
 }
 
 export default function DateRangePicker({
@@ -59,7 +63,14 @@ export default function DateRangePicker({
   isDayClosed,
   noPickupTimes,
   note,
+  pickupOnly = false,
+  returnFor,
 }: Props) {
+  // Package mode: the return that goes with a pickup day (the pickup keeps its time).
+  const packageReturn = (day: Date) => {
+    const pickup = withTime(day, timeOf(startDate));
+    return returnFor ? returnFor(pickup) : pickup;
+  };
   // Earliest pickable day: today, or tomorrow once today has no pickup times left.
   const minDay = sod(nextFiveMinuteMark());
   const lastStartDay = maxStartDay ? sod(maxStartDay) : null;
@@ -99,7 +110,7 @@ export default function DateRangePicker({
   useEffect(() => {
     if (!visible) return;
     setTempStart(sod(startDate));
-    setTempEnd(sod(endDate));
+    setTempEnd(sod(pickupOnly ? packageReturn(startDate) : endDate));
     setPicking('start');
     setDisplayMonth(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
   }, [visible]);
@@ -116,11 +127,17 @@ export default function DateRangePicker({
   }, [displayMonth]);
 
   // A cell is a pickup choice in 'start' mode or before the pickup; otherwise a return choice.
-  const dayDisabled = (d: Date) => (picking === 'end' && d >= tempStart ? !endAllowed(d, tempStart) : !startAllowed(d));
+  const dayDisabled = (d: Date) =>
+    !pickupOnly && picking === 'end' && d >= tempStart ? !endAllowed(d, tempStart) : !startAllowed(d);
 
   const handleDay = (day: number) => {
     const d = sod(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day));
     if (dayDisabled(d)) return;
+    if (pickupOnly) {
+      setTempStart(d);
+      setTempEnd(sod(packageReturn(d)));
+      return;
+    }
     if (picking === 'start' || d < tempStart) {
       setTempStart(d);
       setTempEnd(defaultEnd(d));
@@ -147,7 +164,9 @@ export default function DateRangePicker({
   };
   const sameStartEnd = sameDay(tempStart, tempEnd);
   // Length with the caller's times, exactly as it will be once confirmed.
-  const preview = normalizeRange(withTime(tempStart, timeOf(startDate)), withTime(tempEnd, timeOf(endDate)));
+  const preview = pickupOnly
+    ? { start: withTime(tempStart, timeOf(startDate)), end: packageReturn(tempStart) }
+    : normalizeRange(withTime(tempStart, timeOf(startDate)), withTime(tempEnd, timeOf(endDate)));
   const sameDayReturn = isSameDay(preview.start, preview.end);
   const lengthText = rangeLengthLabel(preview.start, preview.end);
 
@@ -178,8 +197,9 @@ export default function DateRangePicker({
             <Ionicons name="arrow-forward" size={14} color={Colors.ink4} />
 
             <TouchableOpacity
-              style={[styles.pill, picking === 'end' && styles.pillActive]}
+              style={[styles.pill, picking === 'end' && styles.pillActive, pickupOnly && styles.pillFixed]}
               onPress={() => setPicking('end')}
+              disabled={pickupOnly}
               activeOpacity={0.8}
             >
               <Ionicons name="calendar-outline" size={14} color={picking === 'end' ? Colors.white : Colors.ink3} />
@@ -191,7 +211,11 @@ export default function DateRangePicker({
           </View>
 
           <Text style={styles.rangeLabel}>
-            {picking === 'start'
+            {pickupOnly
+              ? `Select pickup date · return ${fmtShort(preview.end)}, ${timeLabel(timeOf(preview.end))}${
+                  lengthText ? ` (${lengthText})` : ''
+                }`
+              : picking === 'start'
               ? 'Select pickup date'
               : sameDayReturn
               ? 'Same-day return · tap a later date to extend'
@@ -291,7 +315,7 @@ export default function DateRangePicker({
               activeOpacity={0.85}
             >
               <Text style={styles.confirmText}>
-                {sameDayReturn ? 'Confirm same-day return' : `Confirm ${lengthText}`}
+                {pickupOnly ? 'Confirm pickup date' : sameDayReturn ? 'Confirm same-day return' : `Confirm ${lengthText}`}
               </Text>
               <Ionicons name="checkmark" size={16} color={Colors.white} />
             </TouchableOpacity>
@@ -327,6 +351,8 @@ const styles = StyleSheet.create({
     padding: 13, borderWidth: 1.5, borderColor: Colors.hairline,
   },
   pillActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  // Package mode: the return follows from the pickup — shown, not picked.
+  pillFixed: { backgroundColor: Colors.bg, borderStyle: 'dashed' },
   pillSub: { fontFamily: Fonts.bodyMedium, fontSize: 9, color: Colors.ink3, letterSpacing: 0.9, marginBottom: 2 },
   pillSubActive: { color: 'rgba(255,255,255,0.55)' },
   pillDate: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.ink },

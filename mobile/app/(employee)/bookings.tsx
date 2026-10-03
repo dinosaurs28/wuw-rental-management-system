@@ -20,6 +20,7 @@ import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
 import { callPhone } from '../../components/employee/recovery/recoveryUtils';
 import { useRecoveryCount } from '../../components/employee/recovery/useRecovery';
+import { fmtDurationMinutes } from '../../lib/dates';
 import { DlStatusLine } from '../../components/employee/DlStatus';
 import type {
   BookingListType,
@@ -78,6 +79,15 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
   const dateLabel = type === 'pickups' ? 'Pickup' : 'Return';
   const dateValue = type === 'pickups' ? booking.startAt : booking.endAt;
   const monthly = (booking.bookingType ?? (booking.rentalPeriodType === 'MONTHLY' ? 'MONTHLY' : 'DAILY')) === 'MONTHLY';
+  // Still out past its return time: live "Overdue · 1d 19h" instead of "Return".
+  const [now, setNow] = useState(() => Date.now());
+  const overdueMs = type === 'returns' && booking.status === 'PICKED_UP' ? now - new Date(booking.endAt).getTime() : 0;
+  const isOverdue = overdueMs > 0;
+  useEffect(() => {
+    if (!isOverdue) return;
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, [isOverdue]);
 
   return (
     <TouchableOpacity
@@ -98,9 +108,9 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
           </Text>
           {vehicle?.regNo && <Text style={styles.regNo} numberOfLines={1}>{vehicle.regNo}</Text>}
         </View>
-        <View style={[styles.statusBadge, type === 'pickups' ? styles.statusPickup : styles.statusReturn]}>
-          <Text style={[styles.statusText, type === 'pickups' ? styles.statusPickupText : styles.statusReturnText]}>
-            {type === 'pickups' ? 'Pickup' : 'Return'}
+        <View style={[styles.statusBadge, type === 'pickups' ? styles.statusPickup : isOverdue ? styles.statusOverdue : styles.statusReturn]}>
+          <Text style={[styles.statusText, type === 'pickups' ? styles.statusPickupText : isOverdue ? styles.statusOverdueText : styles.statusReturnText]}>
+            {type === 'pickups' ? 'Pickup' : isOverdue ? `Overdue · ${fmtDurationMinutes(overdueMs / 60000)}` : 'Return'}
           </Text>
         </View>
       </View>
@@ -329,6 +339,7 @@ export default function BookingsQueue() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              style={{ flexGrow: 0 }}
               contentContainerStyle={styles.dateStrip}
             >
               {dateOptions.map((d) => {
@@ -380,9 +391,9 @@ export default function BookingsQueue() {
               <TouchableOpacity style={styles.overdueBanner} onPress={() => router.navigate('/(employee)/recovery' as Href)} activeOpacity={0.85}>
                 <Ionicons name="alarm-outline" size={16} color={Colors.availNone} />
                 <Text style={styles.overdueBannerText}>
-                  {overdueCount} rental{overdueCount === 1 ? ' is' : 's are'} overdue
+                  {overdueCount} rental{overdueCount === 1 ? '' : 's'} not returned on time
                 </Text>
-                <Text style={styles.overdueBannerLink}>Recovery</Text>
+                <Text style={styles.overdueBannerLink}>open Recovery</Text>
                 <Ionicons name="chevron-forward" size={14} color={Colors.availNone} />
               </TouchableOpacity>
             ) : null
@@ -487,7 +498,7 @@ const styles = StyleSheet.create({
   },
   scopeText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
 
-  dateStrip: { paddingHorizontal: 20, gap: 8, paddingBottom: 14 },
+  dateStrip: { paddingHorizontal: 20, gap: 8, paddingBottom: 14, alignItems: 'flex-start' },
   dateChip: {
     width: 52,
     paddingVertical: 8,
@@ -528,6 +539,8 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: Fonts.bodySemiBold, fontSize: 11 },
   statusPickupText: { color: Colors.orange },
   statusReturnText: { color: '#3b82f6' },
+  statusOverdue: { backgroundColor: Colors.availNone + '1f' },
+  statusOverdueText: { color: Colors.availNone },
 
   cardMeta: { gap: 6 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

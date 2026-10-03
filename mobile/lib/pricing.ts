@@ -55,9 +55,8 @@ export function periodLabel(periodType?: string | null): string | null {
   }
 }
 
-// Concise real-duration string from the engine's RentalDuration object:
-// "3 hours" under a day, otherwise "1 day" / "2 days". The engine's `hours`
-// is already rounded up, and ceil(hours / 24) equals its `days`.
+// Exact real-duration string from the engine's RentalDuration object, never
+// rounded up to whole days: "3 hours", "1 day", "1 day + 2 hours".
 export function durationLabel(d?: RentalDuration | null): string | null {
   if (!d) return null;
   return rentalLengthLabel(d.hours);

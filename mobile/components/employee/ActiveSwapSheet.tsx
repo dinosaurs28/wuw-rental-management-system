@@ -31,7 +31,6 @@ import {
   type VehicleSwapRecord,
 } from '../../types/vehicleSwap';
 import {
-  SwapCandidateList,
   SwapFuelBars,
   SwapPriceDifference,
   SwapReasonChips,
@@ -39,12 +38,14 @@ import {
   swapInr,
   useSwapCandidates,
 } from './SwapParts';
+import SwapVehiclePicker from './SwapVehiclePicker';
 
 // #13 — swap the car during an active rental (booking PICKED_UP), from the drop
 // screen. Same server rules as the pickup swap, plus the handover readings: the
 // returning car's end odometer + fuel and the replacement's start odometer +
-// fuel. The pro-rated, pre-GST price difference is not collected here — when
-// "Charge customer" is on it goes on the drop bill with GST.
+// fuel. The pro-rated price difference (of the GST-inclusive rents, item 17) is
+// not collected here — when "Charge customer" is on it goes on the drop bill
+// at face value, no GST (item 8).
 
 type Field = 'vehicle' | 'reason' | 'endOdo' | 'endFuel' | 'startOdo' | 'startFuel' | 'maintNotes';
 
@@ -232,7 +233,7 @@ export default function ActiveSwapSheet({
       const money =
         diff > 0
           ? swap?.chargeDifference
-            ? ` Price difference ${swapInr(diff)} + GST goes on the drop bill.`
+            ? ` Price difference ${swapInr(diff)} goes on the drop bill (no GST).`
             : ` The ${swapInr(diff)} price difference was waived.`
           : '';
       Keyboard.dismiss();
@@ -293,7 +294,7 @@ export default function ActiveSwapSheet({
     const money =
       diff != null && diff > 0
         ? charged
-          ? `\n\nPrice difference ${swapInr(diff)} + GST will be added to the drop bill.`
+          ? `\n\nPrice difference ${swapInr(diff)} will be added to the drop bill (no GST).`
           : `\n\nThe ${swapInr(diff)} price difference is waived.`
         : '';
     Alert.alert(
@@ -387,7 +388,7 @@ export default function ActiveSwapSheet({
                   {context?.pricingError ? (
                     <Text style={styles.warn}>Price differences unavailable: {context.pricingError}</Text>
                   ) : null}
-                  <SwapCandidateList vehicles={vehicles} selectedId={selected?.id ?? null} onSelect={pickVehicle} disabled={swapping} />
+                  <SwapVehiclePicker vehicles={vehicles} selectedId={selected?.id ?? null} onSelect={pickVehicle} disabled={swapping} />
                   {errors.vehicle ? <Text style={styles.fieldError}>{errors.vehicle}</Text> : null}
 
                   <Text style={[styles.label, { marginTop: 14 }]}>Reason</Text>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { priceUnitFor, unitLabel } from '../../lib/pricing';
 import { slabChipText } from '../../lib/discounts';
+import { inrExact } from '../../lib/gst';
 import type { Vehicle } from '../../types/api';
 
 interface Props {
@@ -25,6 +26,11 @@ export default function OfferCard({ vehicle, onPress }: Props) {
   const total = dated && vehicle.priceInfo!.finalPrice > 0 ? vehicle.priceInfo!.finalPrice : null;
   // A duration slab (#24) already inside the dated total, e.g. "Weekly −10%".
   const slabChip = total != null ? slabChipText(vehicle.priceInfo) : null;
+  // Rents are GST-inclusive (item 17); with dates the server also sends the GST
+  // inside the total (absent when the branch has no GST rule).
+  const totalGst = total != null ? vehicle.priceInfo?.gst : null;
+  const gstNote =
+    typeof totalGst === 'number' && totalGst > 0 ? `incl. ${inrExact(totalGst)} GST` : 'incl. GST';
 
   const count = vehicle.availableCount;
 
@@ -97,6 +103,7 @@ export default function OfferCard({ vehicle, onPress }: Props) {
             <Text style={styles.price}>—</Text>
           )}
         </View>
+        {rate != null ? <Text style={styles.gstNote}>{gstNote}</Text> : null}
       </View>
     </TouchableOpacity>
   );
@@ -142,6 +149,7 @@ const styles = StyleSheet.create({
   price: { fontFamily: Fonts.displayBold, fontSize: 26, color: Colors.white, letterSpacing: -0.5 },
   priceUnit: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDarkMuted, letterSpacing: 0 },
   total: { fontFamily: Fonts.body, fontSize: 15, color: Colors.onDarkMuted },
+  gstNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.onDarkMuted, marginTop: 2 },
   slabChip: {
     alignSelf: 'center',
     borderRadius: 999,

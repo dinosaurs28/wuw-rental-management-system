@@ -136,7 +136,8 @@ function SavedHero({
             <>
               <Text style={styles.heroPriceCurrency}>₹</Text>
               <Text style={styles.heroPrice}>{price.toLocaleString('en-IN')}</Text>
-              <Text style={styles.heroPriceUnit}>/day</Text>
+              {/* Daily rents are GST-inclusive (item 17) */}
+              <Text style={styles.heroPriceUnit}>/day incl. GST</Text>
             </>
           ) : (
             <Text style={styles.heroPrice}>—</Text>

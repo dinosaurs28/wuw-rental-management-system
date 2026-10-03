@@ -25,6 +25,7 @@ import { TimesNotice } from '../components/booking/BranchHours';
 import { useBranchSchedule } from '../hooks/useBranchSchedule';
 import { bookingTimesNotice } from '../lib/branchSchedule';
 import { timeLabel, timeOf } from '../lib/dates';
+import { customerPackageFor } from '../lib/bookingWindow';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -93,6 +94,8 @@ export default function Search() {
 
   const startStamp = fmtStamp(start);
   const endStamp = fmtStamp(end);
+  // The package searched (P1), e.g. "1 day" — the search card only sends packages.
+  const searchedPackage = start && end ? customerPackageFor(start, end)?.label ?? null : null;
 
   // Searched times the branch won't accept (outside office hours, past the
   // 15-day limit) — flagged above the offers so it isn't a checkout surprise.
@@ -118,7 +121,10 @@ export default function Search() {
         <View style={{ flex: 1 }}>
           <Text style={styles.summaryTitle} numberOfLines={1}>{branchName ?? 'All branches'}</Text>
           {startStamp && endStamp ? (
-            <Text style={styles.summaryDates}>{startStamp} - {endStamp}</Text>
+            <Text style={styles.summaryDates}>
+              {startStamp} - {endStamp}
+              {searchedPackage ? ` · ${searchedPackage}` : ''}
+            </Text>
           ) : null}
         </View>
         <Ionicons name="pencil" size={19} color={Colors.white} />

@@ -73,8 +73,12 @@ export interface ShiftTransaction {
   cashAmount: string;
   onlineAmount: string;
   onlineGateway: string | null;
-  // The UTR for counter UPI payments.
+  // The UTR for counter UPI payments (older builds; new ones attach a photo).
   onlineTransactionRef: string | null;
+  // Photo of the customer's UPI payment screen (#3) — a 15-minute presigned URL;
+  // refetch the shift for a fresh one. Absent on older servers.
+  proofPhoto?: { proofFileId: string; publicId: string; url: string; capturedAt: string; expiresIn: number } | null;
+  proofPhotoUrl?: string | null;
   collectedAt: string | null;
   confirmedAt: string | null;
   rejectedAt: string | null;

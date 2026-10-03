@@ -14,33 +14,28 @@ import { useFocusEffect } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
 import DateRangePicker from '../ui/DateRangePicker';
 import TimeFieldPicker from '../ui/TimeFieldPicker';
-import DurationChips from '../ui/DurationChips';
+import PackagePicker from '../booking/PackagePicker';
 import { BranchHoursLine, TimesNotice } from '../booking/BranchHours';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
-import {
-  DURATION_PRESETS,
-  activePresetHours,
-  bookingWindowLastDay,
-  initialRange,
-  maxReturnFor,
-  normalizeRange,
-  presetRange,
-  refreshRange,
-  timeLabel,
-  timeOf,
-  withTime,
-} from '../../lib/dates';
+import { bookingWindowLastDay, timeLabel, timeOf, withTime } from '../../lib/dates';
 import { MAX_BOOKING_DAYS } from '../../lib/bookingWindow';
 import {
-  bookingTimesNotice,
   closedDayText,
-  fitBookingRange,
   isClosedDay,
   noPickupTimesLeft,
   rangeHoursLine,
-  rangeScheduleIssue,
   slotsWithinHours,
 } from '../../lib/branchSchedule';
+import {
+  customerPackageChoices,
+  fitPackageRange,
+  initialPackageRange,
+  latestPackagePickup,
+  packageRangeEnd,
+  packageTimesNotice,
+  refreshPackageRange,
+  type PackageRange,
+} from '../../lib/packages';
 
 export interface SearchQuery {
   branchId: string;
@@ -70,7 +65,8 @@ function fmtD(d: Date) {
 }
 
 // Sixt-style dark search box: pickup branch row, one combined
-// "12 Jul | 6:05 PM – 13 Jul | 6:05 PM" row, and a large orange CTA.
+// "12 Jul | 6:05 PM – 13 Jul | 6:05 PM" row, the package chips and a large
+// orange CTA.
 export default function SearchCard({
   branches,
   branch,
@@ -80,36 +76,30 @@ export default function SearchCard({
   ctaLabel = 'Show offers',
   onSubmit,
 }: Props) {
-  // Full pickup/return datetimes. Every change goes through normalizeRange so
-  // the return always stays after the pickup (same day allowed).
-  const [range, setRange] = useState(() => initialRange(initialStart, initialEnd));
-  const { start, end } = range;
+  // Customers book a pickup + a PACKAGE (BRIEF4 P1): "12 hours" or "1 day" …
+  // "15 days". The return is pickup + the package — shown, never picked.
+  const [pkg, setPkg] = useState(() => initialPackageRange(initialStart, initialEnd));
+  const start = pkg.start;
+  const end = packageRangeEnd(pkg);
 
   // The branch's office hours (#2) and the 15-day limit (#15): pickers only
-  // offer accepted times, and any change that lands outside them (a new
-  // branch, a closed day, a pickup that slipped past closing) is moved back in.
+  // offer accepted pickups, a pickup outside them moves back in, and a package
+  // whose return the branch wouldn't take becomes the nearest one it would.
   const { data: schedule } = useBranchSchedule(branch?.publicId);
-  const fit = useCallback(
-    (r: { start: Date; end: Date }) => fitBookingRange(r, { config: schedule, maxEnd: (s) => maxReturnFor(s) }),
-    [schedule],
-  );
+  const fit = useCallback((r: PackageRange) => fitPackageRange(r, { config: schedule }), [schedule]);
   useEffect(() => {
-    setRange((r) => fit(r));
-  }, [fit, range]);
-  const notice = bookingTimesNotice(schedule, start, end);
-  const presetIssue = (hours: number) => {
-    const next = presetRange(start, hours);
-    if (next.end.getTime() > maxReturnFor(start).getTime()) return `past the ${MAX_BOOKING_DAYS}-day booking limit`;
-    return rangeScheduleIssue(schedule, next.start, next.end);
-  };
+    setPkg((r) => fit(r));
+  }, [fit, pkg]);
+  const notice = packageTimesNotice(schedule, pkg);
+  const choices = customerPackageChoices(start, schedule);
 
   // The home tab stays mounted, so the shown pickup can slip into the past.
   // While this screen is focused — on focus, on return to the foreground and
-  // every 15s — move a past pickup to the next 5-minute mark (and the return
-  // after it). A pickup that is still in the future is left untouched.
+  // every 15s — move a past pickup to the next 5-minute mark (the package and
+  // so the return follow it). A pickup still in the future is left untouched.
   useFocusEffect(
     useCallback(() => {
-      const refresh = () => setRange((r) => refreshRange(r));
+      const refresh = () => setPkg((r) => refreshPackageRange(r));
       refresh();
       const timer = setInterval(refresh, 15_000);
       const sub = AppState.addEventListener('change', (state) => {
@@ -125,7 +115,6 @@ export default function SearchCard({
   const [branchOpen, setBranchOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [pickupOpen, setPickupOpen] = useState(false);
-  const [returnOpen, setReturnOpen] = useState(false);
 
   const submit = () => {
     if (!branch) {
@@ -133,13 +122,13 @@ export default function SearchCard({
       return;
     }
     // The card may have sat open past its pickup time — bump it first.
-    const next = fit(normalizeRange(start, end));
-    setRange(next);
+    const next = fit(pkg);
+    setPkg(next);
     onSubmit({
       branchId: branch.publicId,
       branchName: branch.name,
       start: next.start.toISOString(),
-      end: next.end.toISOString(),
+      end: packageRangeEnd(next).toISOString(),
     });
   };
 
@@ -189,7 +178,8 @@ export default function SearchCard({
       </TouchableOpacity>
       <View style={styles.underline} />
 
-      {/* Dates & times — "12 Jul | 6:05 PM – 13 Jul | 6:05 PM" */}
+      {/* Dates & times — "12 Jul | 6:05 PM – 13 Jul | 6:05 PM"; the return
+          follows from the package (read-only) */}
       <View style={styles.row}>
         <Ionicons name="calendar-outline" size={19} color={Colors.white} />
         <View style={styles.dateSeg}>
@@ -201,24 +191,19 @@ export default function SearchCard({
             <Text style={styles.rowValue}>{timeLabel(timeOf(start))}</Text>
           </TouchableOpacity>
           <Text style={styles.dash}>–</Text>
-          <TouchableOpacity onPress={() => setDateOpen(true)} hitSlop={6}>
-            <Text style={styles.rowValue}>{fmtD(end)}</Text>
-          </TouchableOpacity>
-          <Text style={styles.sep}>|</Text>
-          <TouchableOpacity onPress={() => setReturnOpen(true)} hitSlop={6}>
-            <Text style={styles.rowValue}>{timeLabel(timeOf(end))}</Text>
-          </TouchableOpacity>
+          <Text style={styles.rowValueFixed} accessibilityLabel={`Return ${fmtD(end)} ${timeLabel(timeOf(end))}`}>
+            {fmtD(end)} <Text style={styles.sep}>|</Text> {timeLabel(timeOf(end))}
+          </Text>
         </View>
       </View>
 
-      {/* Quick lengths (#5) + branch hours (#2) */}
+      {/* Package (P1): 12 hours or whole days, up to the 15-day window + branch hours (#2) */}
       <View style={styles.extras}>
-        <DurationChips
+        <PackagePicker
           tone="dark"
-          presets={DURATION_PRESETS}
-          activeHours={activePresetHours(start, end)}
-          issueFor={presetIssue}
-          onSelect={(h) => setRange((r) => presetRange(r.start, h))}
+          choices={choices}
+          selectedHours={pkg.hours}
+          onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
         />
         <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, start, end)} />
         <TimesNotice tone="dark" notice={notice} />
@@ -235,7 +220,9 @@ export default function SearchCard({
         visible={dateOpen}
         startDate={start}
         endDate={end}
-        onConfirm={(s, e) => setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))}
+        pickupOnly
+        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours })}
+        onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setDateOpen(false)}
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
@@ -245,20 +232,11 @@ export default function SearchCard({
       <TimeFieldPicker
         visible={pickupOpen}
         value={timeOf(start)}
-        slots={slotsWithinHours(start, schedule, 'pickup')}
+        slots={slotsWithinHours(start, schedule, 'pickup', { before: latestPackagePickup() })}
         emptyText={closedDayText(schedule, start)}
         title="Pickup time"
-        onSelect={(t) => setRange((r) => normalizeRange(withTime(r.start, t), r.end))}
+        onSelect={(t) => setPkg((r) => ({ ...r, start: withTime(r.start, t) }))}
         onClose={() => setPickupOpen(false)}
-      />
-      <TimeFieldPicker
-        visible={returnOpen}
-        value={timeOf(end)}
-        slots={slotsWithinHours(end, schedule, 'return', { after: start, before: maxReturnFor(start) })}
-        emptyText={closedDayText(schedule, end)}
-        title="Return time"
-        onSelect={(t) => setRange((r) => normalizeRange(r.start, withTime(r.end, t)))}
-        onClose={() => setReturnOpen(false)}
       />
     </View>
   );
@@ -281,6 +259,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 18 },
   rowValue: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.white, letterSpacing: -0.2, flexShrink: 1 },
+  // The return — computed from the package, not a control.
+  rowValueFixed: { fontFamily: Fonts.bodyMedium, fontSize: 17, color: Colors.onDarkMuted, letterSpacing: -0.2, flexShrink: 1 },
   dateSeg: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   sep: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted },
   dash: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginHorizontal: 2 },

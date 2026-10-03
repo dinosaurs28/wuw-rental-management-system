@@ -70,6 +70,8 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
             <Text style={styles.price}>—</Text>
           )}
         </View>
+        {/* Listed rents are the GST-inclusive totals the customer pays (item 17) */}
+        {price != null ? <Text style={styles.gstNote}>incl. GST</Text> : null}
       </View>
     </TouchableOpacity>
   );
@@ -107,4 +109,5 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 2 },
   price: { fontFamily: Fonts.displayBold, fontSize: 16, color: Colors.white, letterSpacing: -0.3 },
   unit: { fontFamily: Fonts.body, fontSize: 11, color: Colors.onDarkMuted },
+  gstNote: { fontFamily: Fonts.body, fontSize: 10.5, color: Colors.onDarkMuted, marginTop: -3 },
 });

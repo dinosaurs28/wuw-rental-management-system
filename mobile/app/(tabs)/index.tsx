@@ -11,18 +11,22 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Colors, Fonts } from '../../constants/colors';
-import { vehiclesApi } from '../../lib/api';
+import { offersApi, vehiclesApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
+import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon';
 import { normalizeGroups } from '../../lib/vehicles';
 import CarCard from '../../components/cars/CarCard';
 import SearchCard, { type SearchQuery } from '../../components/cars/SearchCard';
 import Avatar from '../../components/ui/Avatar';
+import Toast from '../../components/ui/Toast';
+import OfferHeroSlider from '../../components/offers/OfferHeroSlider';
+import type { PublicOffer } from '../../types/offers';
 
 const { height } = Dimensions.get('window');
 const HERO_HEIGHT = Math.min(0.52 * height, 440);
@@ -44,7 +48,7 @@ export default function Home() {
   const isFocused = useIsFocused();
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
-  const { data: branches } = useQuery<Branch[]>({
+  const { data: branches, status: branchesStatus } = useQuery<Branch[]>({
     queryKey: ['branches'],
     queryFn: async () => {
       const res = await vehiclesApi.branches();
@@ -58,6 +62,73 @@ export default function Home() {
       setSelectedBranch(branches[0]);
     }
   }, [branches]);
+
+  // #15 — offer posters for the hero: the selected branch's plus global ones
+  // (every live poster when there is no branch). None, still loading, or an
+  // error → the static hero below.
+  const offersBranch = selectedBranch?.publicId ?? null;
+  const { data: offerFeed } = useQuery({
+    queryKey: ['offers', offersBranch ?? 'all'],
+    queryFn: async () => {
+      const res = await offersApi.list(offersBranch);
+      const serverMs = new Date(res.data?.serverTime ?? '').getTime();
+      return {
+        branch: offersBranch ?? 'all',
+        offers: (res.data?.data ?? []).filter((o) => !!o?.publicId && !!o?.imageUrl),
+        // Device clock vs server clock, so a poster that has ended drops out
+        // even when the phone's time is off.
+        clockSkewMs: Number.isFinite(serverMs) ? serverMs - Date.now() : 0,
+      };
+    },
+    enabled: !!selectedBranch || (branchesStatus !== 'pending' && !branches?.length),
+    staleTime: 60_000,
+    // Switching branch keeps the current posters up until the new ones arrive
+    // (no flash back to the static hero); new and ended posters show up while
+    // the home tab stays open.
+    placeholderData: keepPreviousData,
+    refetchInterval: isFocused ? 5 * 60_000 : false,
+  });
+  const offers: PublicOffer[] = useMemo(() => {
+    if (!offerFeed) return [];
+    const now = Date.now() + offerFeed.clockSkewMs;
+    return offerFeed.offers.filter((o) => {
+      const end = new Date(o.endsAt).getTime();
+      return !Number.isFinite(end) || end > now;
+    });
+  }, [offerFeed, isFocused]);
+  const hasOffers = offers.length > 0;
+
+  // "Use code" saves the poster's coupon; checkout fills it in.
+  const savedOfferCoupon = useOfferCouponStore((s) => activeOfferCoupon(s.coupon));
+  const loadOfferCoupon = useOfferCouponStore((s) => s.load);
+  const saveOfferCoupon = useOfferCouponStore((s) => s.save);
+  useEffect(() => {
+    void loadOfferCoupon();
+  }, [loadOfferCoupon]);
+  const [codeToast, setCodeToast] = useState<string | null>(null);
+
+  const saveOfferCode = (offer: PublicOffer) => {
+    if (!offer.couponCode) return;
+    saveOfferCoupon(offer.couponCode, offer.coupon?.validUntil ?? null);
+    setCodeToast(offer.couponCode.toUpperCase());
+  };
+
+  // The poster's vehicle (group key or vehicle — /vehicle/[id] takes both), or
+  // the vehicles list for the poster's branch.
+  const openOffer = (offer: PublicOffer) => {
+    if (offer.linkTarget) {
+      router.push({
+        pathname: '/vehicle/[id]',
+        params: { id: offer.linkTarget, ...(offer.branch ? { branch: offer.branch.publicId } : {}) },
+      });
+      return;
+    }
+    const branch = offer.branch ?? selectedBranch;
+    router.push({
+      pathname: '/search',
+      params: branch ? { branch: branch.publicId, branchName: branch.name } : {},
+    });
+  };
 
   // Recommended rail — real availability for a default next-day window.
   const today = new Date().toISOString().slice(0, 10);
@@ -84,33 +155,51 @@ export default function Home() {
       params: { branch: q.branchId, branchName: q.branchName, start: q.start, end: q.end },
     });
 
+  // Brand + profile
+  const brandBar = (
+    <>
+      <View style={styles.logoRow}>
+        <Text style={styles.logo}>WUW</Text>
+        <View style={styles.logoDot} />
+      </View>
+      <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.85}>
+        <Avatar seed={user?.name ?? 'you'} size={44} />
+      </TouchableOpacity>
+    </>
+  );
+
   return (
     <View style={styles.root}>
       {isFocused ? <StatusBar style="light" /> : null}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* ── Hero ── */}
-        <View style={[styles.hero, { height: HERO_HEIGHT }]}>
-          <Image source={CAR} style={styles.heroImg} resizeMode="cover" />
-          <LinearGradient
-            colors={['transparent', Colors.bgDark]}
-            style={styles.heroFade}
-            pointerEvents="none"
-          />
-
-          {/* Brand + profile */}
-          <View style={[styles.topBar, { top: insets.top + 10 }]}>
-            <View style={styles.logoRow}>
-              <Text style={styles.logo}>WUW</Text>
-              <View style={styles.logoDot} />
-            </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.85}>
-              <Avatar seed={user?.name ?? 'you'} size={44} />
-            </TouchableOpacity>
+        {/* ── Hero: the live offer posters (#15), else the studio car ── */}
+        {hasOffers ? (
+          <View style={[styles.offersHero, { paddingTop: insets.top + 10 }]}>
+            <View style={styles.topBarFlow}>{brandBar}</View>
+            <OfferHeroSlider
+              key={offerFeed?.branch ?? 'all'}
+              offers={offers}
+              paused={!isFocused}
+              savedCode={savedOfferCoupon?.code ?? null}
+              onOpen={openOffer}
+              onUseCode={saveOfferCode}
+            />
           </View>
-        </View>
+        ) : (
+          <View style={[styles.hero, { height: HERO_HEIGHT }]}>
+            <Image source={CAR} style={styles.heroImg} resizeMode="cover" />
+            <LinearGradient
+              colors={['transparent', Colors.bgDark]}
+              style={styles.heroFade}
+              pointerEvents="none"
+            />
 
-        {/* ── Centred search box, overlapping the hero ── */}
-        <View style={styles.searchWrap}>
+            <View style={[styles.topBar, { top: insets.top + 10 }]}>{brandBar}</View>
+          </View>
+        )}
+
+        {/* ── Centred search box, overlapping the hero (below the posters) ── */}
+        <View style={[styles.searchWrap, hasOffers && styles.searchWrapAfterOffers]}>
           <SearchCard
             branches={branches ?? []}
             branch={selectedBranch}
@@ -145,6 +234,14 @@ export default function Home() {
           <Text style={styles.emptyText}>No vehicles available right now — check back soon.</Text>
         )}
       </ScrollView>
+
+      <Toast
+        visible={!!codeToast}
+        type="success"
+        title={codeToast ? `${codeToast} saved` : ''}
+        message="It will be filled in at checkout. Pick a car to use it."
+        onDismiss={() => setCodeToast(null)}
+      />
     </View>
   );
 }
@@ -167,7 +264,16 @@ const styles = StyleSheet.create({
   logo: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.white, letterSpacing: 1 },
   logoDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.orange, marginTop: 8 },
 
+  offersHero: { backgroundColor: Colors.bgDark, gap: 16 },
+  topBarFlow: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
   searchWrap: { paddingHorizontal: 16, marginTop: -96 },
+  searchWrapAfterOffers: { marginTop: 20 },
 
   sectionTitle: {
     fontFamily: Fonts.displayBold,

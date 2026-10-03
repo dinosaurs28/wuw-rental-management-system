@@ -68,7 +68,7 @@ function SwapRow({ swap }: { swap: VehicleSwapRecord }) {
       {diff > 0 && (
         <Text style={[styles.price, !swap.chargeDifference && styles.priceWaived]}>
           {swap.chargeDifference
-            ? `Price difference ${swapInr(diff)} + GST · charged`
+            ? `Price difference ${swapInr(diff)} · charged`
             : `Price difference ${swapInr(diff)} · waived`}
         </Text>
       )}

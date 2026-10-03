@@ -21,6 +21,8 @@ interface CustomerResult {
   // null for a walk-in placeholder email.
   email: string | null;
   phone: string | null;
+  isBlacklisted?: boolean;
+  blacklistReason?: string | null;
   customerProfile: {
     // Derived server-side: includes the DL + Aadhaar numbers (#1).
     isProfileCompleted: boolean;
@@ -135,7 +137,17 @@ export default function CustomerSearch() {
               <View style={styles.customerInfo}>
                 <Text style={styles.customerName}>{item.name}</Text>
                 <Text style={styles.customerPhone}>{item.phone || item.email || '—'}</Text>
+                {item.isBlacklisted && (
+                  <Text style={styles.blacklistedReason} numberOfLines={2}>
+                    {item.blacklistReason ? `Reason: ${item.blacklistReason}` : 'No new bookings'}
+                  </Text>
+                )}
               </View>
+              {item.isBlacklisted && (
+                <View style={styles.blacklistBadge}>
+                  <Text style={styles.blacklistBadgeText}>Blacklisted</Text>
+                </View>
+              )}
               <View style={[styles.kycBadge, item.customerProfile?.isProfileCompleted ? styles.kycGreen : styles.kycAmber]}>
                 <Text style={[styles.kycText, item.customerProfile?.isProfileCompleted ? styles.kycTextGreen : styles.kycTextAmber]}>
                   {item.customerProfile?.isProfileCompleted ? 'Verified' : 'Incomplete'}
@@ -238,6 +250,9 @@ const styles = StyleSheet.create({
   customerInfo: { flex: 1 },
   customerName: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
   customerPhone: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink3, marginTop: 2 },
+  blacklistBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#ef444415' },
+  blacklistBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: '#ef4444' },
+  blacklistedReason: { fontFamily: Fonts.body, fontSize: 12, color: '#ef4444', marginTop: 2 },
   kycBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   kycGreen: { backgroundColor: '#10b98115' },
   kycAmber: { backgroundColor: '#f59e0b15' },

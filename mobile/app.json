@@ -13,6 +13,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.whatuwantrentals.rentals",
+      "associatedDomains": [
+        "applinks:whatuwantrentals.com"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -36,6 +39,28 @@
       ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "whatuwantrentals.com",
+              "pathPrefix": "/app/vehicle/"
+            },
+            {
+              "scheme": "https",
+              "host": "whatuwantrentals.com",
+              "pathPrefix": "/vehicle/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {

@@ -80,8 +80,10 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           ...(trip.paid != null ? { paid: String(trip.paid) } : {}),
           ...(trip.balanceDue != null ? { balanceDue: String(trip.balanceDue) } : {}),
           ...(trip.balanceDueAt ? { balanceDueAt: trip.balanceDueAt } : {}),
+          ...(trip.balanceOnCredit != null ? { balanceOnCredit: String(trip.balanceOnCredit) } : {}),
           ...(trip.couponCode ? { couponCode: trip.couponCode } : {}),
           ...(trip.totalDiscount != null ? { totalDiscount: String(trip.totalDiscount) } : {}),
+          ...(trip.discountInclGst != null ? { discountInclGst: String(trip.discountInclGst) } : {}),
         },
       })}
       activeOpacity={0.88}
@@ -105,10 +107,13 @@ function TripCard({ trip }: { trip: BookingTrip }) {
             <Text style={styles.total}>
               ₹{Number(trip.total).toLocaleString('en-IN')}
             </Text>
-            {/* Advance booking with a balance still owed (#6) */}
+            {/* Advance booking with a balance still owed (#6); money left on
+                credit at the counter is owed to the branch, not due at a step (#11) */}
             {Number(trip.balanceDue ?? 0) > 0 ? (
               <Text style={styles.dueNote} numberOfLines={1}>
-                ₹{Number(trip.balanceDue).toLocaleString('en-IN')} due at {trip.balanceDueAt === 'DROP' ? 'drop' : 'pickup'}
+                {Number(trip.balanceOnCredit ?? 0) >= Number(trip.balanceDue)
+                  ? `₹${Number(trip.balanceDue).toLocaleString('en-IN')} owed to the branch (credit)`
+                  : `₹${Number(trip.balanceDue).toLocaleString('en-IN')} due at ${trip.balanceDueAt === 'DROP' ? 'drop' : 'pickup'}`}
               </Text>
             ) : null}
           </View>

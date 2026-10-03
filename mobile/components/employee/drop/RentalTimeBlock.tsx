@@ -41,6 +41,9 @@ function ExtensionLine({ ext }: { ext: RentalTimelineExtension }) {
     <View style={styles.extLine}>
       <Text style={styles.extText}>
         {fmtIstShort(ext.oldEndAt)} → {fmtIstShort(ext.newEndAt)} · +{rentalMinutesLabel(ext.minutes)}
+        {ext.freeKm
+          ? ` · ${ext.freeKm.km > 0 ? `+${ext.freeKm.km.toLocaleString('en-IN')} free km` : 'no extra free km'}`
+          : ''}
       </Text>
       <View style={styles.tagRow}>
         {ext.unpaid ? (
@@ -84,6 +87,16 @@ export default function RentalTimeBlock({ timeline }: { timeline: RentalTimeline
           {timeline.extensions.map((ext) => (
             <ExtensionLine key={ext.publicId} ext={ext} />
           ))}
+          {timeline.extensionFreeKmTotal != null && timeline.extensions.length > 0 ? (
+            <>
+              <Row
+                icon="speedometer-outline"
+                label="Free km from extensions"
+                value={`+${timeline.extensionFreeKmTotal.toLocaleString('en-IN')} km`}
+              />
+              <Text style={styles.subNote}>Whole days and 12-hour blocks only — extra hours add none</Text>
+            </>
+          ) : null}
         </>
       ) : (
         <Row

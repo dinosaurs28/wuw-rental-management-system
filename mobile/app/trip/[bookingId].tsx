@@ -9,7 +9,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { Colors, Fonts } from '../../constants/colors';
 import { extensionApi, userApi } from '../../lib/api';
 import { startsInLabel } from '../../lib/dates';
-import { gstLabel, gstNumber, inrExact, round2 } from '../../lib/gst';
+import { gstNumber, inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
@@ -105,8 +105,12 @@ export default function TripDetail() {
     paid?: string;
     balanceDue?: string;
     balanceDueAt?: string;
+    // Part of balanceDue on credit at the counter (#11) — absent on older servers.
+    balanceOnCredit?: string;
     couponCode?: string;
     totalDiscount?: string;
+    // Discounts off the GST-inclusive rent (item 17) — absent on older servers.
+    discountInclGst?: string;
   }>();
 
   const { bookingId, id, make, model, thumbnail, startAt, vehiclesJson } = params;
@@ -128,32 +132,52 @@ export default function TripDetail() {
   const paidNow = gstNumber(live ? live.paid : params.paid);
   const balanceDue = gstNumber(live ? live.balanceDue : params.balanceDue) ?? 0;
   const balanceDueAt = (live ? live.balanceDueAt : params.balanceDueAt) ?? null;
+  // Left on credit at the counter (#11): owed to the branch, which holds collateral
+  // for it — not due at a pickup / drop step. The rest of balanceDue is.
+  const onCredit = Math.min(balanceDue, gstNumber(live ? live.balanceOnCredit : params.balanceOnCredit) ?? 0);
+  const dueAtStep = Math.max(0, balanceDue - onCredit);
   const couponCode = (live ? live.couponCode : params.couponCode) || null;
-  const totalDiscount = gstNumber(live ? live.totalDiscount : params.totalDiscount) ?? 0;
+  // Off the GST-inclusive rent (item 17) when the server says; else the stored discount.
+  const totalDiscount =
+    gstNumber(live ? live.discountInclGst ?? live.totalDiscount : params.discountInclGst ?? params.totalDiscount) ?? 0;
   const partlyPaid = paymentStatus === 'SUCCESS' && balanceDue > 0;
 
-  // GST of the original booking (#23). totalBase / totalDiscount / totalTax
-  // leave out the refundable deposit and extensions (each extension carries its
-  // own GST); older servers don't send them, so nothing is shown then.
+  // The original booking's rent (#23, item 17): GST-inclusive rent → discounts
+  // → rent after discounts, with the GST inside it (rent without GST + GST).
+  // totalBase / totalDiscount / totalTax leave out the refundable deposit and
+  // extensions (each extension carries its own GST); older servers don't send
+  // them, so nothing is shown then.
   const gstSource = live as (BookingTrip & { totalBase?: number; totalDiscount?: number; totalTax?: number }) | null | undefined;
   const bookingTax = gstNumber(gstSource?.totalTax);
   const bookingBase = gstNumber(gstSource?.totalBase);
   const bookingDiscount = gstNumber(gstSource?.totalDiscount) ?? 0;
   const bookingTaxable = bookingBase != null ? round2(bookingBase - bookingDiscount) : null;
-  // CGST / SGST as the server stored them (newer servers); otherwise one GST row
+  // CGST / SGST as the server stored them (newer servers)
   const bookingCgst = gstNumber(gstSource?.totalCgst);
   const bookingSgst = gstNumber(gstSource?.totalSgst);
-  const bookingGst =
+  // Servers before item 17 send no inclusive fields: rentInclGstView reads the
+  // same figures from totalBase − totalDiscount + totalTax (what the rent cost).
+  const bookingRent =
     bookingBase != null && bookingTax != null && bookingTaxable != null && bookingTaxable > 0
-      ? {
-          base: bookingBase,
-          discount: bookingDiscount,
-          taxable: bookingTaxable,
-          tax: bookingTax,
-          split: bookingCgst != null && bookingSgst != null ? { cgst: bookingCgst, sgst: bookingSgst } : null,
-        }
+      ? rentInclGstView({
+          rentInclGst: gstSource?.rentInclGst,
+          discountInclGst: gstSource?.discountInclGst,
+          rentAfterDiscountInclGst: gstSource?.rentAfterDiscountInclGst,
+          rentWithoutGst: gstSource?.rentWithoutGst,
+          gst: bookingTax,
+          cgst: bookingCgst,
+          sgst: bookingSgst,
+          basePrice: bookingBase,
+          discountAmount: bookingDiscount,
+          taxAmount: bookingTax,
+          cgstAmount: bookingCgst,
+          sgstAmount: bookingSgst,
+        })
       : null;
-  const beyondRental = bookingGst ? round2(Number(total) - bookingGst.taxable - bookingGst.tax) : 0;
+  const bookingRentGstNotes = bookingRent
+    ? rentGstNoteLines(bookingRent, { cgstRate: live?.cgstRate, sgstRate: live?.sgstRate })
+    : [];
+  const beyondRental = bookingRent ? round2(Number(total) - bookingRent.rentAfterDiscount) : 0;
 
   const canExtendStatus = status === 'CONFIRMED' || status === 'PICKED_UP';
   // { eligible, reason }: eligible = not ended and no other extension open.
@@ -166,7 +190,11 @@ export default function TripDetail() {
     enabled: canExtendStatus && !!bookingId,
   });
   // #15 — the trip already runs to the booking-period limit: no Extend, say why.
-  const extendCapped = canExtendStatus && eligibility?.atCap === true;
+  // P3 — or less than the 12-hour package is left before that limit.
+  const extendCapped =
+    canExtendStatus &&
+    (eligibility?.atCap === true ||
+      (eligibility?.eligible === false && Array.isArray(eligibility.packageOptions) && eligibility.packageOptions.length === 0));
   // An extension left open (e.g. the app was closed mid-quote) blocks new ones;
   // the extend screen can release it, so keep the way in visible.
   const extensionBlocked = !!eligibility?.reason && /pending extension/i.test(eligibility.reason);
@@ -381,26 +409,27 @@ export default function TripDetail() {
               label="Total"
               value={`₹${Number(total).toLocaleString('en-IN')}`}
             />
-            {/* Original booking, in order: rental → discounts (duration slab +
-                coupon, #20/#24) → taxable value → GST (#23). Rental + GST of the
-                taxable value is what the booking cost before deposit/extensions. */}
-            {bookingGst ? (
+            {/* Original booking, in order (item 17): rent incl. GST → discounts
+                (duration slab + coupon, #20/#24, off the inclusive rent) → rent
+                after discount, then the GST inside it (#23). That is what the
+                rent cost before the deposit / extensions. */}
+            {bookingRent ? (
               <View style={styles.gstBlock}>
                 <View style={styles.gstRow}>
-                  <Text style={styles.gstLabel}>Rental (excl. GST)</Text>
-                  <Text style={styles.gstValue}>{inrExact(bookingGst.base)}</Text>
+                  <Text style={styles.gstLabel}>Rent (incl. GST)</Text>
+                  <Text style={styles.gstValue}>{inrExact(bookingRent.rent)}</Text>
                 </View>
-                {bookingGst.discount > 0 ? (
+                {bookingRent.discount > 0 ? (
                   <>
                     <View style={styles.gstRow}>
                       <Text style={styles.gstLabel}>
                         {couponCode ? `Discounts (incl. coupon ${couponCode})` : 'Discounts'}
                       </Text>
-                      <Text style={[styles.gstValue, styles.creditValue]}>−{inrExact(bookingGst.discount)}</Text>
+                      <Text style={[styles.gstValue, styles.creditValue]}>−{inrExact(bookingRent.discount)}</Text>
                     </View>
                     <View style={styles.gstRow}>
-                      <Text style={styles.gstLabel}>Taxable value</Text>
-                      <Text style={styles.gstValue}>{inrExact(bookingGst.taxable)}</Text>
+                      <Text style={styles.gstLabel}>Rent after discount</Text>
+                      <Text style={styles.gstValue}>{inrExact(bookingRent.rentAfterDiscount)}</Text>
                     </View>
                   </>
                 ) : couponCode ? (
@@ -409,23 +438,9 @@ export default function TripDetail() {
                     <Text style={styles.gstValue}>{couponCode}</Text>
                   </View>
                 ) : null}
-                {bookingGst.split ? (
-                  <>
-                    <View style={styles.gstRow}>
-                      <Text style={styles.gstLabel}>{gstLabel('CGST', live?.cgstRate)}</Text>
-                      <Text style={styles.gstValue}>{inrExact(bookingGst.split.cgst)}</Text>
-                    </View>
-                    <View style={styles.gstRow}>
-                      <Text style={styles.gstLabel}>{gstLabel('SGST', live?.sgstRate)}</Text>
-                      <Text style={styles.gstValue}>{inrExact(bookingGst.split.sgst)}</Text>
-                    </View>
-                  </>
-                ) : (
-                  <View style={styles.gstRow}>
-                    <Text style={styles.gstLabel}>GST</Text>
-                    <Text style={styles.gstValue}>{inrExact(bookingGst.tax)}</Text>
-                  </View>
-                )}
+                {bookingRentGstNotes.map((t) => (
+                  <Text key={t} style={styles.gstNote}>{t}</Text>
+                ))}
                 {beyondRental > 0 ? (
                   <Text style={styles.gstNote}>
                     The total also includes the refundable deposit and any extension or other charges.
@@ -434,7 +449,7 @@ export default function TripDetail() {
               </View>
             ) : null}
             {/* Older servers (no GST figures): discounts on their own */}
-            {!bookingGst && (totalDiscount > 0 || couponCode) ? (
+            {!bookingRent && (totalDiscount > 0 || couponCode) ? (
               <View style={styles.gstBlock}>
                 {totalDiscount > 0 ? (
                   <View style={styles.gstRow}>
@@ -456,18 +471,27 @@ export default function TripDetail() {
               <View style={[styles.infoRow, styles.payRowGap]}>
                 <View style={styles.infoLeft}>
                   <Ionicons name="wallet-outline" size={15} color={Colors.ink3} />
-                  <Text style={styles.infoLabel}>{partlyPaid ? 'Paid (advance)' : 'Paid'}</Text>
+                  <Text style={styles.infoLabel}>{partlyPaid ? (dueAtStep > 0 ? 'Paid (advance)' : 'Paid so far') : 'Paid'}</Text>
                 </View>
                 <Text style={styles.infoValue}>{inrExact(paidNow)}</Text>
               </View>
             ) : null}
-            {balanceDue > 0 ? (
+            {dueAtStep > 0 ? (
               <View style={[styles.infoRow, styles.payRowGap]}>
                 <View style={styles.infoLeft}>
                   <Ionicons name="time-outline" size={15} color={Colors.ink3} />
                   <Text style={styles.infoLabel}>{balanceDueAt === 'DROP' ? 'Due at drop' : 'Due at pickup'}</Text>
                 </View>
-                <Text style={[styles.infoValue, styles.dueValue]}>{inrExact(balanceDue)}</Text>
+                <Text style={[styles.infoValue, styles.dueValue]}>{inrExact(dueAtStep)}</Text>
+              </View>
+            ) : null}
+            {onCredit > 0 ? (
+              <View style={[styles.infoRow, styles.payRowGap]}>
+                <View style={styles.infoLeft}>
+                  <Ionicons name="hourglass-outline" size={15} color={Colors.ink3} />
+                  <Text style={styles.infoLabel}>On credit — owed to the branch</Text>
+                </View>
+                <Text style={[styles.infoValue, styles.dueValue]}>{inrExact(onCredit)}</Text>
               </View>
             ) : null}
             <View style={styles.divider} />
@@ -479,8 +503,10 @@ export default function TripDetail() {
               <View style={[styles.payBadge, { backgroundColor: paymentStatus === 'SUCCESS' ? '#2d9d6120' : '#f59e0b20' }]}>
                 <Text style={[styles.payBadgeText, { color: paymentStatus === 'SUCCESS' ? '#2d9d61' : '#d97706' }]}>
                   {paymentStatus === 'SUCCESS'
-                    ? partlyPaid
-                      ? 'Advance paid'
+                    ? onCredit > 0 && !(paidNow != null && paidNow > 0)
+                      ? 'On credit'
+                      : partlyPaid
+                      ? onCredit > 0 ? 'Part paid' : 'Advance paid'
                       : 'Paid'
                     : paymentStatus === 'FAILED'
                     ? 'Failed'

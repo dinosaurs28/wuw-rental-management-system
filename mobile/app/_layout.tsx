@@ -28,6 +28,7 @@ import { useSavedStore } from '../store/saved';
 import SplashAnimation from '../components/SplashAnimation';
 import NoInternetScreen from '../components/NoInternetScreen';
 import { useNotificationBridge } from '../hooks/useNotifications';
+import { useDeferredVehicleLink } from '../hooks/useDeferredVehicleLink';
 import { configureNotificationPresentation } from '../lib/push';
 
 // Public connectivity probes — checking the device has internet, NOT whether
@@ -73,6 +74,8 @@ function RootLayoutNav() {
 
   // Push registration, inbox refresh on foreground/push, and push-tap deep links.
   useNotificationBridge();
+  // First launch after installing from a shared vehicle link opens that vehicle (#16).
+  useDeferredVehicleLink();
 
   useEffect(() => {
     if (!isLoaded || segments.length < 1) return;

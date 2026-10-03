@@ -7,8 +7,9 @@ import { inr2, num, pct } from './format';
 
 // Late return without a formal extension (#12). The server bills it
 // automatically: extraHourRate × ceil(late hours left after the branch grace),
-// taxable at the branch GST. Staff can tick "Apply grace" on MANUAL-grace
-// branches, or waive the charge with a reason (audit-logged).
+// at face value — no GST on drop / recovery charges (item 8). Staff can tick
+// "Apply grace" on MANUAL-grace branches, or waive the charge with a reason
+// (audit-logged).
 
 const CHARGEABLE = new Set(['CHARGED', 'RATE_UNAVAILABLE', 'WAIVED']);
 
@@ -129,7 +130,8 @@ export default function LateReturnCard({
                   GST rates aren't set up for this branch — ask the branch manager to set the GST rule before
                   {legacy ? ' completing the return.' : ' computing the bill.'}
                 </Text>
-              ) : (
+              ) : num(preview.gst) > 0 ? (
+                // A server before item 8 still added GST to the late line
                 <>
                   <AmountRow
                     label={`GST${preview.gstRate ? ` ${pct(preview.gstRate)}` : ''}`}
@@ -138,14 +140,20 @@ export default function LateReturnCard({
                   />
                   <AmountRow label="Late charge" value={inr2(num(preview.total))} strong muted={waive} />
                 </>
+              ) : (
+                <AmountRow label="Late charge (no GST)" value={inr2(num(preview.total))} strong muted={waive} />
               )}
               {waive ? (
                 <Text style={styles.previewText}>Will be waived — not billed.</Text>
               ) : (
                 <Text style={styles.previewText}>
                   {legacy
-                    ? 'Billed with GST and collected by the branch manager.'
-                    : 'Added to the drop bill as a taxable line.'}
+                    ? num(preview.gst) > 0
+                      ? 'Billed with GST and collected by the branch manager.'
+                      : 'Billed at face value (no GST) and collected by the branch manager.'
+                    : num(preview.gst) > 0
+                      ? 'Added to the drop bill as a taxable line.'
+                      : 'Added to the drop bill (no GST).'}
                   {' '}Measured to the minute {legacy ? 'the return is completed' : 'the bill is first computed'}.
                 </Text>
               )}

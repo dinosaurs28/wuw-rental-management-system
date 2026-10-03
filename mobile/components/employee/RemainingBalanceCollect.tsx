@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { employeeApi, verifyRazorpaySignature, type RazorpayOrder } from '../../lib/api';
+import { employeeApi, verifyRazorpaySignature, type RazorpayOrder, type RemainingPaymentBody } from '../../lib/api';
 import {
   CHECKING_PAYMENT_TEXT,
   QR_CANCEL_POLL_DELAYS,
@@ -10,106 +10,103 @@ import {
   isCheckoutCancelled,
   type CheckoutMode,
 } from '../../lib/razorpay';
-import {
-  apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
-  handleShiftRequired,
-  isValidUtr,
-} from '../../lib/counterErrors';
+import { apiErrorMessage, handleShiftRequired } from '../../lib/counterErrors';
+import { COUNTER_PAYMENT_METHODS, type CounterPaymentChoice, type PaymentMethodKey } from '../../lib/counterPayment';
 import RazorpayPayOptions from '../payments/RazorpayPayOptions';
-import UtrInput from './UtrInput';
+import CounterPaymentPicker, { useCounterPayment } from './CounterPaymentPicker';
 
 interface Props {
   bookingId: string;
   amount: number;
   context: 'pickup' | 'return';
-  /** Called after the balance is settled (CASH / UPI) or verified SUCCESS (Razorpay). Parent should refetch the booking. */
+  /** Called after the balance is settled (CASH / UPI / SPLIT / CREDIT) or verified SUCCESS (Razorpay). Parent should refetch the booking. */
   onCollected: () => void;
 }
 
-type Method = 'CASH' | 'UPI' | 'ONLINE';
-
-const METHODS: { key: Method; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { key: 'CASH', label: 'Cash', icon: 'wallet-outline' },
-  { key: 'UPI', label: 'UPI (UTR)', icon: 'keypad-outline' },
-  { key: 'ONLINE', label: 'Online', icon: 'card-outline' },
-];
+// Counter methods (#3 / #11) plus Razorpay checkout.
+const METHODS: readonly PaymentMethodKey[] = [...COUNTER_PAYMENT_METHODS, 'ONLINE'];
 
 // Mirror the customer checkout polling cadence (2s settle, then back off).
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
 
 export default function RemainingBalanceCollect({ bookingId, amount, context, onCollected }: Props) {
-  const [method, setMethod] = useState<Method>('CASH');
-  const [busy, setBusy] = useState<null | 'CASH' | 'UPI' | CheckoutMode>(null);
+  const pay = useCounterPayment('CASH');
+  const method = pay.method;
+  const [busy, setBusy] = useState<null | 'COUNTER' | CheckoutMode>(null);
   const [verifyingText, setVerifyingText] = useState<string | null>(null);
-  const [utr, setUtr] = useState('');
-  const [utrError, setUtrError] = useState<string | undefined>();
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   const amountText = `₹${amount.toLocaleString('en-IN')}`;
 
-  const initiate = (m: 'CASH' | 'ONLINE_RAZORPAY' | 'UPI', upiUtr?: string) => {
-    const extra = upiUtr ? { utr: upiUtr } : {};
-    return context === 'pickup'
-      ? employeeApi.initiateRemainingPaymentPickup(bookingId, { method: m, paidDuring: 'PICKUP', ...extra })
-      : employeeApi.initiateRemainingPaymentReturn(bookingId, { method: m, paidDuring: 'RETURN', ...extra });
-  };
+  const initiate = (body: RemainingPaymentBody) =>
+    context === 'pickup'
+      ? employeeApi.initiateRemainingPaymentPickup(bookingId, { ...body, paidDuring: 'PICKUP' })
+      : employeeApi.initiateRemainingPaymentReturn(bookingId, { ...body, paidDuring: 'RETURN' });
 
-  const collectCash = () => {
-    Alert.alert(
-      'Collect cash',
-      `Confirm ${amountText} received in cash from the customer?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setBusy('CASH');
-            try {
-              await initiate('CASH'); // settles synchronously server-side
-              if (mountedRef.current) onCollected();
-            } catch (err: any) {
-              if (!handleShiftRequired(err)) {
-                Alert.alert('Failed', apiErrorMessage(err, 'Could not record cash payment.'));
-              }
-            } finally {
-              if (mountedRef.current) setBusy(null);
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const collectUpi = async () => {
-    if (!isValidUtr(utr)) {
-      setUtrError("Enter the 12-digit UTR from the customer's UPI app.");
-      return;
-    }
-    setBusy('UPI');
-    setUtrError(undefined);
+  // Cash, UPI (payment-screen photo), split or credit — all settle synchronously
+  // server-side; credit leaves the balance owed against the collateral (#11).
+  const record = async (choice: CounterPaymentChoice) => {
+    const body: RemainingPaymentBody =
+      choice.method === 'UPI'
+        ? { method: 'UPI', proof_file_id: choice.proofFileId }
+        : choice.method === 'SPLIT'
+          ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId }
+          : choice.method === 'CREDIT'
+            ? { method: 'CREDIT', collateral: choice.collateral }
+            : { method: 'CASH' };
+    setBusy('COUNTER');
     try {
-      await initiate('UPI', cleanUtr(utr)); // settles synchronously server-side, like CASH
+      await initiate(body);
       if (mountedRef.current) onCollected();
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
-      const code = counterErrorCode(err);
-      if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
-        if (mountedRef.current) setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
-      } else {
-        Alert.alert('Failed', apiErrorMessage(err, 'Could not record the UPI payment.'));
-      }
+      if (mountedRef.current && pay.showServerError(err)) return;
+      Alert.alert('Failed', apiErrorMessage(err, 'Could not record the payment.'));
     } finally {
       if (mountedRef.current) setBusy(null);
     }
   };
 
+  const collectCounter = () => {
+    const choice = pay.resolve(amount);
+    if (!choice) return;
+    if (choice.method === 'CASH') {
+      Alert.alert('Collect cash', `Confirm ${amountText} received in cash from the customer?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm', onPress: () => void record(choice) },
+      ]);
+      return;
+    }
+    if (choice.method === 'CREDIT') {
+      Alert.alert(
+        'Put on credit',
+        `${amountText} stays owed by the customer against: ${choice.collateral}. The branch manager clears it when they pay.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Put on credit', onPress: () => void record(choice) },
+        ],
+      );
+      return;
+    }
+    void record(choice);
+  };
+
+  const counterLabel =
+    method === 'CASH'
+      ? `Collect ${amountText} cash`
+      : method === 'UPI'
+        ? `Record ${amountText} UPI payment`
+        : method === 'SPLIT'
+          ? `Record ${amountText} split payment`
+          : `Put ${amountText} on credit`;
+  const counterIcon: React.ComponentProps<typeof Ionicons>['name'] =
+    method === 'CASH' ? 'wallet-outline' : method === 'CREDIT' ? 'hourglass-outline' : 'checkmark-circle-outline';
+
   const collectOnline = async (mode: CheckoutMode) => {
     setBusy(mode);
     try {
-      const res = await initiate('ONLINE_RAZORPAY');
+      const res = await initiate({ method: 'ONLINE_RAZORPAY' });
       const data = res.data?.data ?? {};
       const transactionId: string | undefined = data.transactionId;
       // The CASH branch returns { amountCollected, method, paidDuring } with no
@@ -167,7 +164,7 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
             if (!mountedRef.current) return;
             if (paid) { onCollected(); return; }
           }
-          Alert.alert('Payment cancelled', 'The payment sheet was closed. Retry, or collect cash / UPI.');
+          Alert.alert('Payment cancelled', 'The payment sheet was closed. Retry, or take it at the counter (cash, UPI, split or credit).');
           return;
         }
       }
@@ -200,65 +197,24 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
         </View>
       </View>
 
-      <View style={styles.methodRow}>
-        {METHODS.map((m) => {
-          const active = method === m.key;
-          return (
-            <TouchableOpacity
-              key={m.key}
-              style={[styles.methodBtn, active && styles.methodBtnActive, !!busy && !active && styles.btnDisabled]}
-              onPress={() => setMethod(m.key)}
-              disabled={!!busy}
-              activeOpacity={0.85}
-            >
-              <Ionicons name={m.icon} size={15} color={active ? Colors.white : Colors.ink2} />
-              <Text style={[styles.methodText, active && styles.methodTextActive]}>{m.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <CounterPaymentPicker ctl={pay} amount={amount} methods={METHODS} disabled={!!busy} title={null} />
 
-      {method === 'CASH' && (
+      {method !== 'ONLINE' && (
         <TouchableOpacity
-          style={[styles.btn, styles.btnCash, !!busy && styles.btnDisabled]}
-          onPress={collectCash}
+          style={[styles.btn, method === 'CASH' ? styles.btnCash : styles.btnUpi, !!busy && styles.btnDisabled]}
+          onPress={collectCounter}
           disabled={!!busy}
           activeOpacity={0.85}
         >
-          {busy === 'CASH' ? (
+          {busy === 'COUNTER' ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <>
-              <Ionicons name="wallet-outline" size={16} color={Colors.white} />
-              <Text style={styles.btnText}>Collect {amountText} cash</Text>
+              <Ionicons name={counterIcon} size={16} color={Colors.white} />
+              <Text style={styles.btnText}>{counterLabel}</Text>
             </>
           )}
         </TouchableOpacity>
-      )}
-
-      {method === 'UPI' && (
-        <>
-          <UtrInput
-            value={utr}
-            onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
-            error={utrError}
-          />
-          <TouchableOpacity
-            style={[styles.btn, styles.btnUpi, !!busy && styles.btnDisabled]}
-            onPress={collectUpi}
-            disabled={!!busy}
-            activeOpacity={0.85}
-          >
-            {busy === 'UPI' ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={16} color={Colors.white} />
-                <Text style={styles.btnText}>Record {amountText} UPI payment</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </>
       )}
 
       {method === 'ONLINE' && (
@@ -289,22 +245,6 @@ const styles = StyleSheet.create({
   headText: { flex: 1 },
   title: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: '#92400e' },
   amount: { fontFamily: Fonts.body, fontSize: 13, color: '#b45309', marginTop: 2 },
-  methodRow: { flexDirection: 'row', gap: 8 },
-  methodBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-  },
-  methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
-  methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
-  methodTextActive: { color: Colors.white },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   type StyleProp,
@@ -16,8 +15,7 @@ import { employeeApi } from '../../lib/api';
 import { apiErrorMessage } from '../../lib/counterErrors';
 import { fmtIstDateTime } from '../../lib/dates';
 import {
-  DL_COLLECTION_STATUSES,
-  DL_DEPOSIT_NOTE_MAX,
+  DL_SELECTABLE_STATUSES,
   DL_STATUS_LABELS,
   canEditDlStatus,
   dlChoiceBody,
@@ -36,7 +34,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const OPTION_HINTS: Record<DlCollectionStatus, { icon: IoniconName; hint: string }> = {
   COLLECTED: { icon: 'id-card-outline', hint: "The branch keeps the customer's original licence until the car is back." },
   NOT_COLLECTED: { icon: 'person-outline', hint: 'The customer keeps their licence.' },
-  DEPOSIT: { icon: 'wallet-outline', hint: 'The customer leaves something else instead, e.g. Aadhaar card or cash.' },
+  DEPOSIT: { icon: 'wallet-outline', hint: 'Legacy record: the customer left something else instead.' },
 };
 
 const LOOK: Record<DlCollectionStatus | 'NONE', { fg: string; bg: string; icon: IoniconName }> = {
@@ -50,17 +48,15 @@ const LOOK: Record<DlCollectionStatus | 'NONE', { fg: string; bg: string; icon: 
 
 interface SelectorProps {
   value: DlCollectionStatus | null;
-  note: string;
   onChange: (value: DlCollectionStatus) => void;
-  onNoteChange: (note: string) => void;
   disabled?: boolean;
 }
 
-/** Three-option choice (nothing pre-selected) plus the note DEPOSIT needs. */
-export function DlStatusSelector({ value, note, onChange, onNoteChange, disabled }: SelectorProps) {
+/** Two-option choice (Collected / Not collected); nothing pre-selected. */
+export function DlStatusSelector({ value, onChange, disabled }: SelectorProps) {
   return (
     <View style={styles.options} accessibilityRole="radiogroup">
-      {DL_COLLECTION_STATUSES.map((s) => {
+      {DL_SELECTABLE_STATUSES.map((s) => {
         const active = value === s;
         const { icon, hint } = OPTION_HINTS[s];
         return (
@@ -88,26 +84,6 @@ export function DlStatusSelector({ value, note, onChange, onNoteChange, disabled
           </TouchableOpacity>
         );
       })}
-
-      {value === 'DEPOSIT' && (
-        <View style={styles.noteWrap}>
-          <View style={styles.noteLabelRow}>
-            <Text style={styles.noteLabel}>What did the customer leave?</Text>
-            {!note.trim() && <Text style={styles.requiredTag}>Required</Text>}
-          </View>
-          <TextInput
-            style={styles.noteInput}
-            value={note}
-            onChangeText={onNoteChange}
-            maxLength={DL_DEPOSIT_NOTE_MAX}
-            placeholder="e.g. Aadhaar card kept, ₹2,000 cash"
-            placeholderTextColor={Colors.ink4}
-            multiline
-            editable={!disabled}
-          />
-          <Text style={styles.noteCounter}>{note.length}/{DL_DEPOSIT_NOTE_MAX}</Text>
-        </View>
-      )}
     </View>
   );
 }
@@ -182,7 +158,6 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
   const mountedRef = useRef(true);
   const [editing, setEditing] = useState(false);
   const [choice, setChoice] = useState<DlCollectionStatus | null>(null);
-  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // What the server returned, shown until the refetched booking catches up.
@@ -205,9 +180,8 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
   const editable = canEditDlStatus(saved?.status ?? booking.status);
   const hint = HINTS[context][status ?? 'NONE'];
 
-  const unchanged =
-    choice === status && (choice !== 'DEPOSIT' || note.trim() === (depositNote ?? ''));
-  const canSave = !!choice && !saving && !dlChoiceProblem(choice, note) && !unchanged;
+  const unchanged = choice === status;
+  const canSave = !!choice && !saving && !dlChoiceProblem(choice) && !unchanged;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['employee', 'pickup', booking.publicId] });
@@ -220,8 +194,8 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
   };
 
   const startEdit = () => {
-    setChoice(status);
-    setNote(depositNote ?? '');
+    // An old DEPOSIT row starts unselected: pick Collected / Not collected.
+    setChoice(status === 'DEPOSIT' ? null : status);
     setError(null);
     setEditing(true);
   };
@@ -233,7 +207,7 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
 
   const save = async () => {
     if (!choice || saving) return;
-    const problem = dlChoiceProblem(choice, note);
+    const problem = dlChoiceProblem(choice);
     if (problem) {
       setError(problem);
       return;
@@ -241,7 +215,7 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
     setSaving(true);
     setError(null);
     try {
-      const res = await employeeApi.updateDlStatus(booking.publicId, dlChoiceBody(choice, note));
+      const res = await employeeApi.updateDlStatus(booking.publicId, dlChoiceBody(choice));
       const data = res.data?.data as UpdateDlStatusResult | undefined;
       if (!mountedRef.current) return;
       if (data) setSaved(data);
@@ -278,9 +252,7 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
           <View style={styles.editBody}>
             <DlStatusSelector
               value={choice}
-              note={note}
               onChange={(v) => { setChoice(v); setError(null); }}
-              onNoteChange={(t) => { setNote(t); setError(null); }}
               disabled={saving}
             />
           </View>
@@ -311,7 +283,7 @@ export function DlStatusCard({ booking, context = 'pickup', onUpdated, style }: 
           {status === 'DEPOSIT' && depositNote ? (
             <View style={styles.depositBox}>
               <Text style={styles.depositLabel}>
-                {context === 'return' ? 'Return the deposit' : 'Deposit held'}
+                {context === 'return' ? 'Old DL deposit: return it' : 'Old DL deposit held'}
               </Text>
               <Text style={styles.depositText}>{depositNote}</Text>
             </View>

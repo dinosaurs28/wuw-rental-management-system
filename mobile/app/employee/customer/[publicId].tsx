@@ -33,6 +33,9 @@ interface CustomerDetail {
   drivingLicenceNumber?: string | null;
   aadhaarNumber?: string | null;
   missingFields?: string[];
+  isBlacklisted?: boolean;
+  blacklistReason?: string | null;
+  blacklistedAt?: string | null;
 }
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -103,6 +106,17 @@ export default function CustomerDetailScreen() {
                 {customer.isProfileCompleted ? 'Profile Complete' : 'Profile Incomplete'}
               </Text>
             </View>
+            {customer.isBlacklisted && (
+              <View style={styles.blacklistBox}>
+                <View style={styles.blacklistHead}>
+                  <Ionicons name="ban-outline" size={16} color="#ef4444" />
+                  <Text style={styles.blacklistTitle}>Blacklisted</Text>
+                </View>
+                <Text style={styles.blacklistText}>
+                  {customer.blacklistReason ? `Reason: ${customer.blacklistReason}` : 'No reason recorded.'}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Contact */}
@@ -189,7 +203,14 @@ export default function CustomerDetailScreen() {
 
       {customer && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-          {customer.isProfileCompleted ? (
+          {customer.isBlacklisted ? (
+            <View style={styles.footerNote}>
+              <Ionicons name="ban-outline" size={16} color="#ef4444" />
+              <Text style={[styles.footerNoteText, { color: '#ef4444' }]}>
+                This customer is blacklisted and can't make new bookings. A branch manager can remove the blacklist from the Customers tab.
+              </Text>
+            </View>
+          ) : customer.isProfileCompleted ? (
             <TouchableOpacity style={styles.bookBtn} onPress={startBooking} activeOpacity={0.85}>
               <Ionicons name="add-circle-outline" size={20} color={Colors.white} />
               <Text style={styles.bookBtnText}>Create booking for this customer</Text>
@@ -260,6 +281,20 @@ const styles = StyleSheet.create({
   badgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 12 },
   badgeGreenText: { color: '#10b981' },
   badgeAmberText: { color: '#f59e0b' },
+
+  blacklistBox: {
+    alignSelf: 'stretch',
+    backgroundColor: '#ef444412',
+    borderWidth: 1,
+    borderColor: '#ef444430',
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+    marginTop: 4,
+  },
+  blacklistHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  blacklistTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#ef4444' },
+  blacklistText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2 },
 
   section: { gap: 8 },
   sectionLabel: {

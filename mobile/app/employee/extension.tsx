@@ -21,12 +21,10 @@ import { employeeApi } from '../../lib/api';
 import { dlInUseErrorText } from '../../lib/dlInUse';
 import {
   apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
   handleShiftRequired,
-  isValidUtr,
   promptOpenShift,
 } from '../../lib/counterErrors';
+import type { CounterPaymentChoice } from '../../lib/counterPayment';
 import { isSameDay, rangeLengthLabel, startOfDay, timeLabel, timeOf, timeSlotsFor, withTime } from '../../lib/dates';
 import {
   extensionGstSplit,
@@ -54,7 +52,9 @@ import { useBranchSchedule } from '../../hooks/useBranchSchedule';
 import { useAuthStore } from '../../store/auth';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
 import type { ExtensionEligibility } from '../../types/api';
-import UtrInput from '../../components/employee/UtrInput';
+import type { ExtensionFreeKm } from '../../types/api';
+import CounterPaymentPicker, { useCounterPayment } from '../../components/employee/CounterPaymentPicker';
+import SwapVehiclePicker from '../../components/employee/SwapVehiclePicker';
 import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 
 // Opened from the pickup screen (CONFIRMED booking) and the drop screen
@@ -62,7 +62,6 @@ import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
 // 1 pick the new return · 2 choose how to resolve availability · 3 collect.
 // Commit always sends collectNow, so the charge is taken right here.
 type Phase = 'select' | 'resolve' | 'collect' | 'done';
-type Method = 'CASH' | 'UPI';
 type Resolution = 'SAME_VEHICLE' | 'SWAP_CURRENT_TO_OTHER' | 'SWAP_FUTURE_BOOKING' | 'PARTIAL_EXTENSION' | 'NO_RESOLUTION';
 
 interface AltVehicle {
@@ -79,6 +78,8 @@ interface ResolutionOption {
   availableVehicles?: AltVehicle[];
   affectedBookings?: { bookingPublicId: string; newVehicle: AltVehicle }[];
   partialNewEndAt?: string;
+  // Free km this option adds (#7) — a partial option: up to partialNewEndAt
+  extensionFreeKm?: ExtensionFreeKm | null;
 }
 
 // POST /api/employee/extensions/evaluate → data. Money is decimal strings.
@@ -88,8 +89,9 @@ interface Evaluation {
   requestedEndAt: string;
   // additionalAmount = taxableAmount + taxAmount (GST split, #23). Hours are
   // numbers: current rental length and the time this quote adds.
+  // extensionFreeKm: free km the quote adds (#7) — absent from an older server.
   pricing: { additionalAmount: string; newTotalFinal: string; originalHours?: number; extensionHours?: number } &
-    ExtensionGstFields;
+    ExtensionGstFields & { extensionFreeKm?: ExtensionFreeKm | null };
   resolutionOptions: ResolutionOption[];
   recommendedResolution: Resolution;
 }
@@ -140,17 +142,30 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
   );
 }
 
-// The extension charge's GST split, as the server stored it (never computed here).
+// Free km the extension adds to the drop allowance (#7), as the server worked
+// it out: whole days and a 12-hour block earn km, other hours none.
+function FreeKmRows({ freeKm }: { freeKm: ExtensionFreeKm }) {
+  return (
+    <>
+      <Row label="Free km added" value={freeKm.km > 0 ? `+${freeKm.km.toLocaleString('en-IN')} km` : 'None'} />
+      <Text style={styles.holdNote}>{freeKm.label}</Text>
+    </>
+  );
+}
+
+// The extension charge's GST split, as the server stored it (never computed
+// here). Item 17: the rent is GST-inclusive — rent without GST + the GST split
+// out of it = the amount due; base / discount are in without-GST terms.
 function GstSplitRows({ split }: { split: ExtensionGstSplit }) {
   return (
     <>
       {split.discount > 0 ? (
         <>
-          <Row label="Extension rental" value={inr(split.base)} />
-          <Row label="Discount" value={`−${inr(split.discount)}`} />
+          <Row label="Rent without GST, before discount" value={inr(split.base)} />
+          <Row label="Discount (without GST)" value={`−${inr(split.discount)}`} />
         </>
       ) : null}
-      <Row label="Extension charge (excl. GST)" value={inr(split.taxable)} />
+      <Row label="Rent without GST" value={inr(split.taxable)} />
       <Row label={gstLabel('GST', split.rate)} value={inr(split.tax)} />
       {split.tax > 0 ? <Text style={styles.gstNote}>{gstSplitText(split.cgst, split.sgst)}</Text> : null}
     </>
@@ -232,16 +247,29 @@ export default function ExtensionScreen() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [resolution, setResolution] = useState<Resolution | null>(null);
   const [swapVehicleId, setSwapVehicleId] = useState('');
+  // SWAP_CURRENT_TO_OTHER cars for the swap picker sheet (#4), keyed by
+  // publicId. The server sends only make / model / regNo here.
+  const swapPickerVehicles = useMemo(
+    () =>
+      (evaluation?.resolutionOptions.find((o) => o.type === 'SWAP_CURRENT_TO_OTHER')?.availableVehicles ?? []).map(
+        (v) => ({ id: v.publicId, make: v.make, model: v.model, regNo: v.regNo }),
+      ),
+    [evaluation],
+  );
 
   // Step 3 — committed: the vehicle is held until this is paid or cancelled
   const [amountDue, setAmountDue] = useState(0);
   // GST split of the committed charge (a partial extension is repriced at commit)
   const [dueGst, setDueGst] = useState<ExtensionGstSplit | null>(null);
   const [heldUntil, setHeldUntil] = useState<string | null>(null);
-  const [method, setMethod] = useState<Method>('CASH');
-  const [utr, setUtr] = useState('');
-  const [utrError, setUtrError] = useState<string | undefined>();
+  // Free km the committed extension adds (#7) — null from an older server.
+  const [heldFreeKm, setHeldFreeKm] = useState<ExtensionFreeKm | null>(null);
+  // Cash / UPI (payment-screen photo) / Split / Credit (#11 / #12)
+  const pay = useCounterPayment('CASH');
+  const method = pay.method;
   const [doneMsg, setDoneMsg] = useState('');
+  // Cash / UPI / split wait for the branch manager; credit confirms at once.
+  const [doneAwaiting, setDoneAwaiting] = useState(false);
 
   const extensionPublicId = evaluation?.extensionPublicId ?? null;
 
@@ -470,6 +498,7 @@ export default function ExtensionScreen() {
           (resolution === 'PARTIAL_EXTENSION' ? null : extensionGstSplit(evaluation.pricing)),
       );
       setHeldUntil(resolution === 'PARTIAL_EXTENSION' && opt?.partialNewEndAt ? opt.partialNewEndAt : evaluation.requestedEndAt);
+      setHeldFreeKm(d?.extensionFreeKm ?? opt?.extensionFreeKm ?? null);
       setPhase('collect');
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
@@ -479,40 +508,49 @@ export default function ExtensionScreen() {
     }
   };
 
-  // Step 3: take the money (Cash, or UPI with its UTR).
+  // Step 3: take the money — Cash, UPI (photo of the payment screen) or Split
+  // wait for the branch manager in Cash Confirmations; Credit confirms the
+  // extension at once and leaves the amount owed (#11 / #12).
   const collect = async () => {
     if (!extensionPublicId) return;
-    const upi = amountDue > 0 && method === 'UPI';
-    if (upi && !isValidUtr(utr)) {
-      setUtrError("Enter the 12-digit UTR from the customer's UPI app.");
-      return;
+    let choice: CounterPaymentChoice | null = { method: 'CASH', amount: 0 };
+    if (amountDue > 0) {
+      choice = pay.resolve(amountDue);
+      if (!choice) return;
     }
-    setBusy(true); setError(null); setUtrError(undefined);
+    setBusy(true); setError(null);
     try {
-      const res = await employeeApi.collectExtension(extensionPublicId, {
-        method: upi ? 'ONLINE' : 'CASH',
-        ...(upi ? { onlineTransactionRef: cleanUtr(utr) } : {}),
-      });
-      const payment = res.data?.data?.payment;
+      const res = await employeeApi.collectExtension(
+        extensionPublicId,
+        choice.method === 'UPI'
+          ? { method: 'UPI', proof_file_id: choice.proofFileId }
+          : choice.method === 'SPLIT'
+            ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId }
+            : choice.method === 'CREDIT'
+              ? { method: 'CREDIT', collateral: choice.collateral }
+              : { method: 'CASH' },
+      );
+      const data = res.data?.data;
+      const confirmed = data?.payment === 'confirmed';
       refreshQueues();
+      // The Payment panel on the pickup / drop screen (credit owed, pending money).
+      qc.invalidateQueries({ queryKey: ['employee', 'financial-state', bookingId] });
+      setDoneAwaiting(!confirmed);
       setDoneMsg(
-        payment === 'confirmed'
-          ? upi
-            ? 'UPI payment recorded and the extension is confirmed.'
-            : 'The extension is confirmed.'
-          : amountDue > 0
-            ? 'Cash recorded. The extension is final once a manager confirms the cash.'
-            : 'The extension awaits manager confirmation.',
+        data?.credit
+          ? `${inr(Number(data.credit.amount ?? amountDue))} is on credit (collateral: ${data.credit.collateral ?? (choice.method === 'CREDIT' ? choice.collateral : '')}). The branch manager clears it when the customer pays.`
+          : confirmed
+            ? 'The extension is confirmed.'
+            : amountDue > 0
+              ? `${choice.method === 'UPI' ? 'UPI payment' : choice.method === 'SPLIT' ? 'Split payment' : 'Cash'} recorded. The extension is final once the branch manager confirms the payment.`
+              : 'The extension awaits manager confirmation.',
       );
       setPhase('done');
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
-      const code = counterErrorCode(err);
-      if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
-        setUtrError(apiErrorMessage(err, 'Check the UTR number.'));
-      } else {
-        setError(apiErrorMessage(err, 'Could not collect the extension payment.'));
-      }
+      // Photo / split / collateral problems show under the payment picker.
+      if (pay.showServerError(err)) return;
+      setError(apiErrorMessage(err, 'Could not collect the extension payment.'));
     } finally {
       setBusy(false);
     }
@@ -522,10 +560,10 @@ export default function ExtensionScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.successBody}>
-          <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle" size={64} color="#10b981" />
+          <View style={[styles.successIcon, doneAwaiting && styles.successIconWaiting]}>
+            <Ionicons name={doneAwaiting ? 'time' : 'checkmark-circle'} size={64} color={doneAwaiting ? '#d97706' : '#10b981'} />
           </View>
-          <Text style={styles.successTitle}>Extension done</Text>
+          <Text style={styles.successTitle}>{doneAwaiting ? 'Awaiting manager confirmation' : 'Extension done'}</Text>
           {heldUntil && (
             <View style={styles.newEndPill}>
               <Ionicons name="calendar-outline" size={14} color={Colors.orange} />
@@ -684,6 +722,7 @@ export default function ExtensionScreen() {
             <View style={styles.card}>
               <Row label="Requested return" value={fmt(evaluation.requestedEndAt)} accent />
               {quotedLength ? <Row label="Extra time" value={quotedLength} /> : null}
+              {evaluation.pricing.extensionFreeKm ? <FreeKmRows freeKm={evaluation.pricing.extensionFreeKm} /> : null}
               <View style={styles.divider} />
               {quotedGst ? <GstSplitRows split={quotedGst} /> : null}
               <View style={styles.row}>
@@ -732,6 +771,12 @@ export default function ExtensionScreen() {
                               Until {fmt(opt.partialNewEndAt)} — the charge is recalculated for this time.
                             </Text>
                           ) : null}
+                          {opt.type === 'PARTIAL_EXTENSION' && opt.extensionFreeKm ? (
+                            <Text style={styles.optionSub}>
+                              Free km for this time:{' '}
+                              {opt.extensionFreeKm.km > 0 ? `+${opt.extensionFreeKm.km.toLocaleString('en-IN')} km` : 'none'}
+                            </Text>
+                          ) : null}
                           {opt.type === 'SWAP_FUTURE_BOOKING'
                             ? opt.affectedBookings?.map((ab) => (
                                 <Text key={ab.bookingPublicId} style={styles.optionSub}>
@@ -742,27 +787,15 @@ export default function ExtensionScreen() {
                         </View>
                       </TouchableOpacity>
 
-                      {/* Vehicle to swap to */}
-                      {selected && opt.type === 'SWAP_CURRENT_TO_OTHER' && opt.availableVehicles?.length ? (
+                      {/* Vehicle to swap to: the shared picker sheet with search (#4) */}
+                      {selected && opt.type === 'SWAP_CURRENT_TO_OTHER' && swapPickerVehicles.length ? (
                         <View style={styles.vehicleList}>
-                          {opt.availableVehicles.map((v) => {
-                            const picked = swapVehicleId === v.publicId;
-                            return (
-                              <TouchableOpacity
-                                key={v.publicId}
-                                style={[styles.vehicleRow, picked && styles.vehicleRowActive]}
-                                onPress={() => { setSwapVehicleId(v.publicId); setError(null); }}
-                                disabled={busy}
-                                activeOpacity={0.85}
-                              >
-                                <Ionicons name="car-outline" size={16} color={picked ? Colors.orange : Colors.ink3} />
-                                <Text style={[styles.vehicleText, picked && styles.vehicleTextActive]}>
-                                  {v.make} {v.model} — {v.regNo}
-                                </Text>
-                                {picked && <Ionicons name="checkmark" size={16} color={Colors.orange} />}
-                              </TouchableOpacity>
-                            );
-                          })}
+                          <SwapVehiclePicker
+                            vehicles={swapPickerVehicles}
+                            selectedId={swapVehicleId || null}
+                            onSelect={(v) => { setSwapVehicleId(v.id); setError(null); }}
+                            disabled={busy}
+                          />
                         </View>
                       ) : null}
                     </View>
@@ -782,6 +815,7 @@ export default function ExtensionScreen() {
           <>
             <View style={styles.card}>
               {heldUntil ? <Row label="New return" value={fmt(heldUntil)} accent /> : null}
+              {heldFreeKm ? <FreeKmRows freeKm={heldFreeKm} /> : null}
               <View style={styles.divider} />
               {dueGst ? <GstSplitRows split={dueGst} /> : null}
               <View style={styles.row}>
@@ -795,38 +829,13 @@ export default function ExtensionScreen() {
               <>
                 <Text style={styles.sectionLabel}>Collected by</Text>
                 <View style={styles.card}>
-                  <View style={styles.methodRow}>
-                    {(['CASH', 'UPI'] as const).map((m) => (
-                      <TouchableOpacity
-                        key={m}
-                        style={[styles.methodBtn, method === m && styles.methodBtnActive]}
-                        onPress={() => { setMethod(m); setError(null); }}
-                        disabled={busy}
-                        activeOpacity={0.85}
-                      >
-                        <Ionicons
-                          name={m === 'CASH' ? 'wallet-outline' : 'keypad-outline'}
-                          size={16}
-                          color={method === m ? Colors.white : Colors.ink3}
-                        />
-                        <Text style={[styles.methodText, method === m && styles.methodTextActive]}>
-                          {m === 'CASH' ? 'Cash' : 'UPI (UTR)'}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  {method === 'UPI' && (
-                    <>
-                      <Text style={styles.upiHint}>
-                        Ask the customer to pay {inr(amountDue)} to the shop's UPI QR, then enter the UTR.
-                      </Text>
-                      <UtrInput
-                        value={utr}
-                        onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
-                        error={utrError}
-                      />
-                    </>
-                  )}
+                  {/* Cash / UPI (photo) / Split / Credit — all but credit await the manager */}
+                  <CounterPaymentPicker
+                    ctl={pay}
+                    amount={amountDue}
+                    disabled={busy}
+                    title={null}
+                  />
                 </View>
               </>
             )}
@@ -872,7 +881,11 @@ export default function ExtensionScreen() {
           <TouchableOpacity style={[styles.primaryBtn, busy && styles.btnDisabled]} onPress={collect} disabled={busy} activeOpacity={0.85}>
             {busy ? <ActivityIndicator color={Colors.white} size="small" /> : (
               <Text style={styles.primaryBtnText}>
-                {amountDue > 0 ? `Collect ${inr(amountDue)}${method === 'UPI' ? ' via UPI' : ' cash'}` : 'Confirm extension'}
+                {amountDue > 0
+                  ? method === 'CREDIT'
+                    ? `Put ${inr(amountDue)} on credit`
+                    : `Collect ${inr(amountDue)}${method === 'UPI' ? ' via UPI' : method === 'SPLIT' ? ' (split)' : ' cash'}`
+                  : 'Confirm extension'}
               </Text>
             )}
           </TouchableOpacity>
@@ -962,25 +975,7 @@ const styles = StyleSheet.create({
   optionTitleActive: { color: Colors.ink },
   optionSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
 
-  vehicleList: { marginTop: 6, marginLeft: 28, gap: 6 },
-  vehicleRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline,
-    paddingHorizontal: 12, paddingVertical: 10,
-  },
-  vehicleRowActive: { borderColor: Colors.orange },
-  vehicleText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
-  vehicleTextActive: { color: Colors.ink },
-
-  methodRow: { flexDirection: 'row', gap: 8 },
-  methodBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 11, borderRadius: 12, backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline,
-  },
-  methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
-  methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink3 },
-  methodTextActive: { color: Colors.white },
-  upiHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 19, marginTop: 4 },
+  vehicleList: { marginTop: 6, marginLeft: 28 },
 
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#e53e3e10', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e53e3e30' },
   errorText: { fontFamily: Fonts.body, fontSize: 13, color: '#e53e3e', flex: 1 },
@@ -990,7 +985,8 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white },
   successBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 },
   successIcon: { width: 100, height: 100, borderRadius: 30, backgroundColor: '#10b98115', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  successTitle: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.ink, letterSpacing: -0.8 },
+  successIconWaiting: { backgroundColor: '#d9770615' },
+  successTitle: { fontFamily: Fonts.displayBold, fontSize: 28, color: Colors.ink, letterSpacing: -0.8, textAlign: 'center' },
   successSub: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3, textAlign: 'center', lineHeight: 22 },
   successBtn: { alignSelf: 'stretch' },
   newEndPill: {

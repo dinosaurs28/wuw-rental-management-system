@@ -19,8 +19,14 @@ import RemainingBalanceCollect from '../../../components/employee/RemainingBalan
 import PhotoCaptureSection, { type CapturedPhoto, type CaptureField } from '../../../components/employee/PhotoCaptureSection';
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
 import VehicleSwapSection from '../../../components/employee/VehicleSwapSection';
-import UtrInput from '../../../components/employee/UtrInput';
-import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
+import RescheduleSheet from '../../../components/employee/RescheduleSheet';
+import CounterPaymentPicker, {
+  CounterRefundPicker,
+  useCounterPayment,
+  useCounterRefund,
+} from '../../../components/employee/CounterPaymentPicker';
+import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, counterChoiceLabel } from '../../../lib/counterPayment';
+import ImageViewer from '../../../components/ui/ImageViewer';
 import { DlStatusCard, DlStatusSelector } from '../../../components/employee/DlStatus';
 import {
   dlChoiceBody,
@@ -41,10 +47,7 @@ import { counterCouponCapNote } from '../../../lib/discounts';
 import { rangeLengthLabel } from '../../../lib/dates';
 import {
   apiErrorMessage,
-  cleanUtr,
-  counterErrorCode,
   handleShiftRequired,
-  isValidUtr,
 } from '../../../lib/counterErrors';
 import type { ReturnSession } from '../../../types/api';
 import type { KmAllowance } from '../../../types/return';
@@ -96,21 +99,26 @@ interface BookingDetail extends DlStatusFields {
 interface KycDoc {
   publicId: string;
   type: string;
+  side?: string | null;
   status: string;
   file: { url: string; mime: string };
 }
 
-// Settlement methods — same set as the web RecordPaymentPanel. UPI is the shop
-// QR recorded by its 12-digit UTR; "Other online" is another gateway's reference.
-type PayMethod = 'CASH' | 'UPI' | 'SPLIT' | 'OTHER';
-const PAY_METHODS: PayMethod[] = ['CASH', 'UPI', 'SPLIT', 'OTHER'];
-const PAY_METHOD_LABELS: Record<PayMethod, string> = {
-  CASH: 'Cash',
-  UPI: 'UPI (UTR)',
-  SPLIT: 'Split',
-  OTHER: 'Other online',
+const KYC_TYPE_LABEL: Record<string, string> = {
+  DL: 'Driving licence',
+  AADHAAR: 'Aadhaar',
+  PAN: 'PAN',
+  STUDENT_ID: 'Student ID',
 };
-const GATEWAYS = ['Razorpay', 'Other'] as const;
+// "Driving licence · Front" — never the stored filename.
+function kycDocLabel(doc: KycDoc) {
+  const base = KYC_TYPE_LABEL[doc.type] ?? doc.type.replace(/_/g, ' ');
+  const side = doc.side === 'FRONT' ? 'Front' : doc.side === 'BACK' ? 'Back' : null;
+  return side ? `${base} · ${side}` : base;
+}
+
+// Settlement methods (#3 / #11): Cash · UPI (photo of the customer's payment
+// screen) · Split · Credit — components/employee/CounterPaymentPicker.
 
 type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon';
 
@@ -163,9 +171,13 @@ function SessionBill({ session }: { session: PickupSession }) {
   const entries = (session.entries ?? []).filter((e) => !e.isVoided);
   const gst = num(session.gstAmount);
   // The remaining balance is GST-inclusive (its GST is on the booking); the GST
-  // row is only the GST of lines priced before GST, e.g. an extension (#23).
+  // row is only the GST split out of a rent line booked without it — an
+  // extension (#23, item 17: rent without GST + GST = the extension rent). A
+  // counter coupon line is already off the rent incl. GST. Drop / recovery
+  // charges carry no GST (item 8).
   const isGstInclusive = (e: { referenceType?: string | null }) => e.referenceType === 'BOOKING_REMAINING';
   const hasGstInclusive = entries.some(isGstInclusive);
+  const hasExtensionGst = entries.some((e) => e.entryType === 'EXTENSION' && num(e.gstAmount) > 0);
 
   return (
     <View style={styles.card}>
@@ -185,7 +197,7 @@ function SessionBill({ session }: { session: PickupSession }) {
               )}
               {isGstInclusive(e) && <Text style={styles.billSub}>GST already included</Text>}
               {e.classification === 'TAXABLE' && !isGstInclusive(e) && num(e.gstAmount) > 0 && (
-                <Text style={styles.billSub}>Excl. GST — GST shown below</Text>
+                <Text style={styles.billSub}>Rent without GST — its GST is shown below</Text>
               )}
             </View>
             <Text style={[styles.billValue, credit && styles.billCredit]}>
@@ -196,7 +208,9 @@ function SessionBill({ session }: { session: PickupSession }) {
       })}
       {gst > 0 && (
         <View style={styles.billRow}>
-          <Text style={styles.billLabel}>{hasGstInclusive ? 'GST on other charges' : 'GST'}</Text>
+          <Text style={styles.billLabel}>
+            {hasExtensionGst ? 'GST on the extension rent' : hasGstInclusive ? 'GST on other charges' : 'GST'}
+          </Text>
           <Text style={styles.billValue}>{inr(gst)}</Text>
         </View>
       )}
@@ -229,7 +243,6 @@ export default function PickupScreen() {
   const [pendingPhotos, setPendingPhotos] = useState(0);
   // Original driving licence status (#3): optional (X1), nothing pre-selected.
   const [dlStatus, setDlStatus] = useState<DlCollectionStatus | null>(null);
-  const [dlDepositNote, setDlDepositNote] = useState('');
   // The server refused the DL choice — highlight the section.
   const [dlRejected, setDlRejected] = useState(false);
   // Driving licence NUMBER (X2): required for the handover. Typed here when none
@@ -241,10 +254,13 @@ export default function PickupScreen() {
   const [dlNumberError, setDlNumberError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   // What was settled on the pickup session, for the success screen.
-  const [paid, setPaid] = useState<{ amount: number; method: string } | null>(null);
+  // `credit`: the bill was put on credit (#11) — owed, not collected.
+  const [paid, setPaid] = useState<{ amount: number; method: string; credit?: boolean } | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [kycExpanded, setKycExpanded] = useState<Record<string, boolean>>({});
+  const [kycViewer, setKycViewer] = useState<{ url: string; label: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // P4c — the Reschedule sheet (CONFIRMED bookings, not picked up yet).
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   // Legacy flow only (branches without payment sessions)
   const [requireManager, setRequireManager] = useState(false);
@@ -266,15 +282,9 @@ export default function PickupScreen() {
   // Why the applied coupon is smaller than its face value (capped by the server).
   const [couponNote, setCouponNote] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
-  const [payMethod, setPayMethod] = useState<PayMethod>('CASH');
-  const [utr, setUtr] = useState('');
-  const [utrError, setUtrError] = useState<string | undefined>(undefined);
-  const [splitCash, setSplitCash] = useState('');
-  const [splitUpi, setSplitUpi] = useState('');
-  const [payError, setPayError] = useState<string | null>(null);
-  const [otherRef, setOtherRef] = useState('');
-  const [otherRefError, setOtherRefError] = useState<string | null>(null);
-  const [otherGateway, setOtherGateway] = useState<(typeof GATEWAYS)[number]>('Razorpay');
+  // How the bill is settled: Cash / UPI (photo) / Split / Credit, or a refund (Cash / UPI)
+  const pay = useCounterPayment('CASH');
+  const refundPay = useCounterRefund();
 
   const scrollRef = useRef<ScrollView>(null);
   const contentRef = useRef<View>(null);
@@ -386,10 +396,10 @@ export default function PickupScreen() {
     };
   };
 
-  // dlStatus (+ dlDepositNote for DEPOSIT) only when one was chosen — it's
+  // dlStatus only when one was chosen — it's
   // optional (X1) and left unset otherwise. licenseCollected is no longer sent
   // (the server keeps it for old builds only).
-  const dlBody = () => (dlStatus ? dlChoiceBody(dlStatus, dlDepositNote) : {});
+  const dlBody = () => (dlStatus ? dlChoiceBody(dlStatus) : {});
 
   // The typed DL number (X2), normalised, when it's valid and differs from the
   // one on file; the server saves it to the customer. Nothing otherwise.
@@ -420,7 +430,7 @@ export default function PickupScreen() {
     return true;
   };
 
-  const onPickupDone = (settled: { amount: number; method: string } | null) => {
+  const onPickupDone = (settled: { amount: number; method: string; credit?: boolean } | null) => {
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
     qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
     qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
@@ -522,10 +532,10 @@ export default function PickupScreen() {
     }
   };
 
+  // The bill changed: a typed split no longer adds up (the photo and collateral still apply).
   const clearPayInputs = () => {
-    setSplitCash('');
-    setSplitUpi('');
-    setPayError(null);
+    pay.setCash('');
+    pay.setErrors({});
   };
 
   const runSessionAction = async (
@@ -618,64 +628,37 @@ export default function PickupScreen() {
     );
   };
 
-  const selectPayMethod = (m: PayMethod) => {
-    setPayMethod(m);
-    setPayError(null);
-    setUtrError(undefined);
-    setOtherRefError(null);
-  };
-
-  // Split: typing one part fills the other so they always add up to the bill.
-  const changeSplit = (part: 'cash' | 'upi', text: string, net: number) => {
-    const clean = text.replace(/[^\d.]/g, '');
-    const rest = Number.isFinite(Number(clean)) ? Math.max(0, net - (Number(clean) || 0)) : 0;
-    const restText = String(Math.round(rest * 100) / 100);
-    if (part === 'cash') {
-      setSplitCash(clean);
-      setSplitUpi(restText);
-    } else {
-      setSplitUpi(clean);
-      setSplitCash(restText);
-    }
-    setPayError(null);
-  };
-
   // Session flow step 2: record the money; a COMPLETED session means the
   // server has marked the booking PICKED_UP.
   const settleSession = async () => {
     if (!session || settleBusyRef.current || sessionAction) return;
     const net = num(session.netPayable);
-    const cashPart = num(splitCash);
-    const upiPart = num(splitUpi);
-    if (net > 0) {
-      if (payMethod === 'SPLIT' && Math.abs(cashPart + upiPart - net) >= 0.01) {
-        setPayError(`Cash + UPI must add up to ${inr(net)}.`);
-        return;
-      }
-      if ((payMethod === 'UPI' || (payMethod === 'SPLIT' && upiPart > 0)) && !isValidUtr(utr)) {
-        setUtrError('Enter the 12-digit UTR number.');
-        return;
-      }
-      if (payMethod === 'OTHER' && !otherRef.trim()) {
-        setOtherRefError('Enter the transaction reference.');
-        return;
-      }
+    // Cash / UPI (payment-screen photo) / Split / Credit for a balance due (#3 / #11)
+    const choice = net > 0 ? pay.resolve(net) : null;
+    if (net > 0 && !choice) return;
+    // A safety deposit can't go on credit — say so before anything is sent.
+    if (
+      choice?.method === 'CREDIT' &&
+      session.entries?.some((e) => e.entryType === 'DEPOSIT' && !e.isVoided)
+    ) {
+      pay.setErrors({ method: CREDIT_NOT_FOR_DEPOSIT_MESSAGE });
+      return;
     }
+    const refundChoice = net < 0 ? refundPay.resolve() : null;
+    if (net < 0 && !refundChoice) return;
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
-    setPayError(null);
-    setUtrError(undefined);
-    setOtherRefError(null);
     try {
       let res;
-      if (net < 0) {
+      if (net < 0 && refundChoice) {
         res = await employeeApi.recordSessionRefund(session.publicId, {
-          method: 'CASH',
+          method: refundChoice.method,
           amount: Math.abs(net),
           idempotencyKey: `refund:${session.publicId}`,
+          ...(refundChoice.proofFileId ? { proof_file_id: refundChoice.proofFileId } : {}),
         });
-      } else if (net === 0) {
+      } else if (net === 0 || !choice) {
         res = await employeeApi.recordSessionPayment(session.publicId, {
           method: 'CASH',
           amount: 0,
@@ -686,20 +669,21 @@ export default function PickupScreen() {
         const idempotencyKey = `settle:${session.publicId}`;
         res = await employeeApi.recordSessionPayment(
           session.publicId,
-          payMethod === 'SPLIT'
+          choice.method === 'SPLIT'
             ? {
               method: 'SPLIT',
               amount: net,
               idempotencyKey,
-              notes: `Split: ₹${cashPart.toFixed(2)} cash + ₹${upiPart.toFixed(2)} UPI`,
-              cashAmount: cashPart,
-              onlineAmount: upiPart,
-              ...(upiPart > 0 ? { onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) } : {}),
+              notes: `Split: ₹${choice.cashAmount.toFixed(2)} cash + ₹${choice.upiAmount.toFixed(2)} UPI`,
+              cashAmount: choice.cashAmount,
+              onlineAmount: choice.upiAmount,
+              onlineGateway: 'UPI',
+              proof_file_id: choice.proofFileId,
             }
-            : payMethod === 'UPI'
-              ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: 'UPI', onlineTransactionRef: cleanUtr(utr) }
-              : payMethod === 'OTHER'
-                ? { method: 'ONLINE', amount: net, idempotencyKey, onlineGateway: otherGateway, onlineTransactionRef: otherRef.trim() }
+            : choice.method === 'UPI'
+              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId }
+              : choice.method === 'CREDIT'
+                ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral }
                 : { method: 'CASH', amount: net, idempotencyKey },
         );
       }
@@ -711,22 +695,17 @@ export default function PickupScreen() {
         return;
       }
       onPickupDone(
-        net > 0
-          ? { amount: net, method: PAY_METHOD_LABELS[payMethod] }
-          : net < 0
-            ? { amount: net, method: 'Cash refund' }
+        net > 0 && choice
+          ? { amount: net, method: counterChoiceLabel(choice), credit: choice.method === 'CREDIT' }
+          : net < 0 && refundChoice
+            ? { amount: net, method: refundChoice.method === 'UPI' ? 'UPI refund' : 'Cash refund' }
             : null,
       );
     } catch (err: any) {
       if (!mountedRef.current) return;
       if (handleShiftRequired(err)) return;
-      const code = counterErrorCode(err);
-      if (code === 'INVALID_UTR' || code === 'DUPLICATE_UTR') {
-        const message = apiErrorMessage(err, 'Check the reference number.');
-        if (payMethod === 'OTHER') setOtherRefError(message);
-        else setUtrError(message);
-        return;
-      }
+      // Photo / split / collateral / deposit-on-credit problems show under the picker.
+      if (net < 0 ? refundPay.showServerError(err) : pay.showServerError(err)) return;
       // 409 COUPON_NO_LONGER_VALID (the coupon is re-checked when the payment is
       // recorded): nothing was recorded — take the coupon off and collect in full.
       const rejected = couponRejection(err);
@@ -835,18 +814,14 @@ export default function PickupScreen() {
                 ? 'Wait for the photos to upload (retry or remove failed ones).'
                 : !sessionMode && depositInvalid
                   ? 'Enter the deposit amount and reason, or turn the request off.'
-                  : dlStatus === 'DEPOSIT' && !dlDepositNote.trim()
-                    ? 'Note what the customer left as the DL deposit.'
-                    : sessionMode && restoring
-                      ? 'Checking for an open payment…'
-                      : null;
+                  : sessionMode && restoring
+                    ? 'Checking for an open payment…'
+                    : null;
 
   // What was recorded for the licence: the choice sent from this screen, else the
   // server's value (a pickup session reopened after an app restart).
   const recordedDlStatus = dlStatus ?? booking.dlStatus ?? null;
-  const recordedDlNote = dlStatus
-    ? dlStatus === 'DEPOSIT' ? dlDepositNote.trim() || null : null
-    : booking.dlDepositNote ?? null;
+  const recordedDlNote = dlStatus ? null : booking.dlDepositNote ?? null;
   // Unset is allowed (X1) — say what it is about rather than a bare "Not recorded".
   const dlSummary = recordedDlStatus
     ? `${dlStatusLabel(recordedDlStatus)}${recordedDlStatus === 'DEPOSIT' && recordedDlNote ? ` · ${recordedDlNote}` : ''}`
@@ -899,7 +874,9 @@ export default function PickupScreen() {
                 <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
                 <Text style={styles.successRowText}>
                   {paid
-                    ? `${paid.amount < 0 ? 'Refunded' : 'Collected'} ${inr(paid.amount)} · ${paid.method}`
+                    ? paid.credit
+                      ? `${inr(paid.amount)} ${paid.method.charAt(0).toLowerCase()}${paid.method.slice(1)}`
+                      : `${paid.amount < 0 ? 'Refunded' : 'Collected'} ${inr(paid.amount)} · ${paid.method}`
                     : 'Nothing to collect at pickup'}
                 </Text>
               </View>
@@ -999,7 +976,7 @@ export default function PickupScreen() {
 
   const openKycDoc = (doc: KycDoc) => {
     if (doc.file.mime?.startsWith('image/')) {
-      setKycExpanded((v) => ({ ...v, [doc.publicId]: !v[doc.publicId] }));
+      setKycViewer({ url: doc.file.url, label: kycDocLabel(doc) });
       return;
     }
     // The in-app document viewer renders images only — PDFs open in the browser sheet.
@@ -1167,15 +1144,17 @@ export default function PickupScreen() {
                   {i > 0 && <View style={styles.divider} />}
                   <View style={styles.kycRow}>
                     <View style={styles.kycRowLeft}>
-                      <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
-                        <Ionicons
-                          name={approved ? 'checkmark-circle' : rejected ? 'close-circle' : isImage ? 'card-outline' : 'document-text-outline'}
-                          size={20}
-                          color={approved ? '#10b981' : rejected ? '#e53e3e' : Colors.ink3}
-                        />
-                      </View>
+                      {isImage ? (
+                        <TouchableOpacity onPress={() => openKycDoc(doc)} activeOpacity={0.85}>
+                          <Image source={{ uri: doc.file.url }} style={styles.kycThumb} resizeMode="cover" />
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={[styles.kycIcon, approved && styles.kycIconApproved, rejected && styles.kycIconRejected]}>
+                          <Ionicons name="document-text-outline" size={20} color={Colors.ink3} />
+                        </View>
+                      )}
                       <View>
-                        <Text style={styles.kycType}>{doc.type.replace(/_/g, ' ')}</Text>
+                        <Text style={styles.kycType}>{kycDocLabel(doc)}</Text>
                         <Text style={[styles.kycStatus, approved && { color: '#10b981' }, rejected && { color: '#e53e3e' }]}>
                           {doc.status}{isImage ? '' : ' · PDF'}
                         </Text>
@@ -1187,31 +1166,10 @@ export default function PickupScreen() {
                       activeOpacity={0.8}
                     >
                       <Text style={styles.kycViewBtnText}>
-                        {!isImage ? 'Open' : kycExpanded[doc.publicId] ? 'Hide' : 'View'}
+                        {!isImage ? 'Open' : 'View'}
                       </Text>
                     </TouchableOpacity>
                   </View>
-
-                  {isImage && kycExpanded[doc.publicId] && (
-                    <TouchableOpacity
-                      style={styles.kycImageWrap}
-                      onPress={() => router.push({
-                        pathname: '/document-viewer',
-                        params: { url: doc.file.url, title: doc.type.replace(/_/g, ' ') },
-                      } as any)}
-                      activeOpacity={0.9}
-                    >
-                      <Image
-                        source={{ uri: doc.file.url }}
-                        style={styles.kycImage}
-                        resizeMode="contain"
-                      />
-                      <View style={styles.kycZoomHint}>
-                        <Ionicons name="expand-outline" size={12} color={Colors.white} />
-                        <Text style={styles.kycZoomHintText}>Tap to zoom</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
 
                   {/* Pending or rejected documents can still be approved (e.g. a re-check at the counter). */}
                   {!approved && (
@@ -1266,10 +1224,6 @@ export default function PickupScreen() {
             </View>
           )}
         </View>
-
-        {/* Customer QR code photo (#4) — informational, not part of the DL gate */}
-        <SectionHeader title={QR_PHOTO_LABEL} />
-        <QrPhotoSection target={{ kind: 'booking', bookingId: booking.publicId }} />
 
         {/* Vehicle */}
         <SectionHeader title="Vehicle" />
@@ -1422,6 +1376,17 @@ export default function PickupScreen() {
           <Text style={styles.extendBtnText}>Extend booking</Text>
           <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
         </TouchableOpacity>
+        {/* Reschedule (P4c): a new pickup time, same length and price — the
+            sheet says why when it can't move (e.g. a counter payment is open) */}
+        <TouchableOpacity
+          style={styles.extendBtn}
+          onPress={() => setRescheduleOpen(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="time-outline" size={18} color={Colors.ink2} />
+          <Text style={styles.extendBtnText}>Reschedule pickup</Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+        </TouchableOpacity>
 
         {/* Payment ledger */}
         <SectionHeader title="Payment" />
@@ -1449,10 +1414,7 @@ export default function PickupScreen() {
               booking={booking}
               onUpdated={(r) => {
                 // Keep this screen's choice in step, so the summary after payment is right.
-                if (r?.dlStatus) {
-                  setDlStatus(r.dlStatus);
-                  setDlDepositNote(r.dlDepositNote ?? '');
-                }
+                if (r?.dlStatus) setDlStatus(r.dlStatus);
                 refetch();
               }}
             />
@@ -1593,89 +1555,31 @@ export default function PickupScreen() {
             {/* How the customer pays */}
             {net > 0 && (
               <View style={[styles.card, { marginTop: 4 }]}>
-                <Text style={styles.fieldLabelSolo}>Payment method</Text>
-                <View style={styles.methodGrid}>
-                  {PAY_METHODS.map((m) => (
-                    <TouchableOpacity
-                      key={m}
-                      style={[styles.methodBtn, styles.methodGridBtn, payMethod === m && styles.methodBtnActive]}
-                      onPress={() => selectPayMethod(m)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.methodText, payMethod === m && styles.methodTextActive]}>
-                        {PAY_METHOD_LABELS[m]}
+                {/* Cash / UPI (photo of the payment screen) / Split / Credit (#3 / #11) */}
+                <CounterPaymentPicker
+                  ctl={pay}
+                  amount={net}
+                  disabled={sessionBusy}
+                  creditNotice={depositEntry ? (
+                    <View style={styles.creditDepositNote}>
+                      <Text style={styles.creditDepositText}>
+                        This bill carries a {inr(num(depositEntry.amount))} safety deposit, which can't go on credit.
                       </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {payMethod === 'SPLIT' && (
-                  <View style={styles.splitBox}>
-                    <Text style={styles.hintInline}>Total to split: {inr(net)}</Text>
-                    <View style={styles.splitRow}>
-                      <View style={styles.splitCol}>
-                        <Text style={styles.splitLabel}>Cash (₹)</Text>
-                        <TextInput
-                          style={styles.odoInput}
-                          value={splitCash}
-                          onChangeText={(t) => changeSplit('cash', t, net)}
-                          placeholder="0"
-                          placeholderTextColor={Colors.ink4}
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
-                      <View style={styles.splitCol}>
-                        <Text style={styles.splitLabel}>UPI (₹)</Text>
-                        <TextInput
-                          style={styles.odoInput}
-                          value={splitUpi}
-                          onChangeText={(t) => changeSplit('upi', t, net)}
-                          placeholder="0"
-                          placeholderTextColor={Colors.ink4}
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
+                      <TouchableOpacity onPress={removeDeposit} disabled={sessionBusy} hitSlop={8}>
+                        {sessionAction === 'removeDeposit'
+                          ? <ActivityIndicator size="small" color="#dc3545" />
+                          : <Text style={styles.linkDanger}>Remove deposit</Text>}
+                      </TouchableOpacity>
                     </View>
-                    {payError && <Text style={styles.fieldError}>{payError}</Text>}
-                  </View>
-                )}
+                  ) : undefined}
+                />
+              </View>
+            )}
 
-                {(payMethod === 'UPI' || (payMethod === 'SPLIT' && num(splitUpi) > 0)) && (
-                  <UtrInput
-                    value={utr}
-                    onChangeText={(t) => { setUtr(t); setUtrError(undefined); }}
-                    error={utrError}
-                  />
-                )}
-
-                {payMethod === 'OTHER' && (
-                  <>
-                    <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Transaction reference</Text>
-                    <TextInput
-                      style={[styles.odoInput, styles.refInput, otherRefError ? styles.inputError : undefined]}
-                      value={otherRef}
-                      onChangeText={(t) => { setOtherRef(t); setOtherRefError(null); }}
-                      placeholder="e.g. pay_xyz789"
-                      placeholderTextColor={Colors.ink4}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    {otherRefError && <Text style={styles.fieldError}>{otherRefError}</Text>}
-                    <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Gateway</Text>
-                    <View style={styles.methodRow}>
-                      {GATEWAYS.map((g) => (
-                        <TouchableOpacity
-                          key={g}
-                          style={[styles.methodBtn, otherGateway === g && styles.methodBtnActive]}
-                          onPress={() => setOtherGateway(g)}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.methodText, otherGateway === g && styles.methodTextActive]}>{g}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
-                )}
+            {/* Overpaid: pay the difference back — Cash, or UPI with an optional transfer photo */}
+            {net < 0 && (
+              <View style={[styles.card, { marginTop: 4 }]}>
+                <CounterRefundPicker ctl={refundPay} amount={Math.abs(net)} disabled={sessionBusy} />
               </View>
             )}
           </>
@@ -1821,7 +1725,7 @@ export default function PickupScreen() {
             )}
 
             {/* Original driving licence (#3) — optional (X1): nothing pre-selected, and
-                the handover goes ahead without it. DEPOSIT still needs its note. */}
+                the handover goes ahead without it. */}
             <SectionHeader title="Original Licence" />
             <View style={[styles.card, dlRejected && styles.cardError]}>
               <View style={styles.toggleRow}>
@@ -1831,7 +1735,7 @@ export default function PickupScreen() {
                 </View>
                 {dlStatus && (
                   <TouchableOpacity
-                    onPress={() => { setDlStatus(null); setDlDepositNote(''); setDlRejected(false); }}
+                    onPress={() => { setDlStatus(null); setDlRejected(false); }}
                     hitSlop={8}
                   >
                     <Text style={styles.link}>Clear</Text>
@@ -1843,9 +1747,7 @@ export default function PickupScreen() {
               </Text>
               <DlStatusSelector
                 value={dlStatus}
-                note={dlDepositNote}
                 onChange={(v) => { setDlStatus(v); setDlRejected(false); }}
-                onNoteChange={(t) => { setDlDepositNote(t); setDlRejected(false); }}
               />
             </View>
 
@@ -1910,7 +1812,11 @@ export default function PickupScreen() {
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
                 <Text style={styles.confirmBtnText}>
-                  {net > 0 ? `Collect ${inr(net)} & hand over` : net < 0 ? `Refund ${inr(net)} & hand over` : 'Complete Pickup'}
+                  {net > 0
+                    ? pay.method === 'CREDIT'
+                      ? `Put ${inr(net)} on credit & hand over`
+                      : `Collect ${inr(net)} & hand over`
+                    : net < 0 ? `Refund ${inr(net)} & hand over` : 'Complete Pickup'}
                 </Text>
               </>
             )}
@@ -1954,6 +1860,24 @@ export default function PickupScreen() {
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
       onCancel={() => setShowConfirm(false)}
     />
+      <ImageViewer
+        visible={!!kycViewer}
+        images={kycViewer ? [{ url: kycViewer.url, label: kycViewer.label }] : []}
+        onClose={() => setKycViewer(null)}
+      />
+      {/* P4c — move the pickup (and the return with it) for the customer */}
+      <RescheduleSheet
+        visible={rescheduleOpen}
+        bookingPublicId={booking.publicId}
+        onClose={() => setRescheduleOpen(false)}
+        onRescheduled={(_result, message) => {
+          setRescheduleOpen(false);
+          qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+          qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
+          refetch();
+          Alert.alert('Booking rescheduled', message);
+        }}
+      />
     </>
   );
 }
@@ -2084,7 +2008,6 @@ const styles = StyleSheet.create({
     color: Colors.ink,
   },
   inputError: { borderColor: '#e53e3e' },
-  refInput: { fontSize: 15 },
 
   fuelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   fuelPill: {
@@ -2170,17 +2093,14 @@ const styles = StyleSheet.create({
   couponBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white },
 
   methodRow: { flexDirection: 'row', gap: 8 },
-  methodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  methodGridBtn: { flexBasis: '47%', flexGrow: 1 },
   methodBtn: { flex: 1, paddingVertical: 11, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline },
   methodBtnActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   methodText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink3 },
   methodTextActive: { color: Colors.white },
 
-  splitBox: { marginTop: 12, gap: 8 },
-  splitRow: { flexDirection: 'row', gap: 8 },
-  splitCol: { flex: 1 },
-  splitLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3, marginBottom: 6 },
+  // Credit picked on a bill with a safety deposit (#11)
+  creditDepositNote: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  creditDepositText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.ink2, lineHeight: 17 },
 
   errorBox: {
     flexDirection: 'row',
@@ -2224,6 +2144,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
   },
   kycViewBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  kycThumb: { width: 48, height: 48, borderRadius: 10, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: Colors.hairline },
   kycImageWrap: {
     marginTop: 12,
     borderRadius: 12,
