@@ -47,6 +47,9 @@ const recordPaymentBase = z.object({
   onlineGateway: z.string().max(64).optional(),
   idempotencyKey: z.string().min(1).max(64),
   notes: z.string().max(500).optional(),
+  // Photo of the customer's UPI payment-success screen (POST …/payment/proof);
+  // backs the UPI part instead of typing the UTR (#3)
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
 });
 
 export const recordPaymentSchema = recordPaymentBase
@@ -66,10 +69,10 @@ export const recordPaymentSchema = recordPaymentBase
   )
   .refine(
     (d) => {
-      if (d.method === "ONLINE") return !!d.onlineTransactionRef;
+      if (d.method === "ONLINE") return !!d.onlineTransactionRef || !!d.proof_file_id;
       return true;
     },
-    { message: "onlineTransactionRef is required for ONLINE payments", path: ["onlineTransactionRef"] },
+    { message: "onlineTransactionRef (or a proof_file_id photo for UPI) is required for ONLINE payments", path: ["onlineTransactionRef"] },
   )
   .refine(
     (d) => {
@@ -83,10 +86,10 @@ export const recordPaymentSchema = recordPaymentBase
   )
   .refine(
     (d) => {
-      if (d.method === "SPLIT") return !!d.onlineTransactionRef;
+      if (d.method === "SPLIT") return !!d.onlineTransactionRef || !!d.proof_file_id;
       return true;
     },
-    { message: "onlineTransactionRef is required for SPLIT payments", path: ["onlineTransactionRef"] },
+    { message: "onlineTransactionRef (or a proof_file_id photo for UPI) is required for SPLIT payments", path: ["onlineTransactionRef"] },
   );
 
 // ─── Cash Confirmation ─────────────────────────────────────────────────────

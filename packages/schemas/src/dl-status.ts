@@ -6,21 +6,34 @@ import { z } from "zod";
  * Mirrors the DlCollectionStatus DB enum.
  *   COLLECTED     — the branch holds the original licence
  *   NOT_COLLECTED — the customer kept it
- *   DEPOSIT       — the customer left something else instead (dlDepositNote says what)
+ *   DEPOSIT       — LEGACY (Oct 2026: "DL Deposit" removed). Old rows still read
+ *                   as "DL Deposit (old)"; new writes with it are rejected (400
+ *                   DL_STATUS_INVALID).
  */
 export const DL_COLLECTION_STATUSES = ["COLLECTED", "NOT_COLLECTED", "DEPOSIT"] as const;
 export type DlCollectionStatusValue = (typeof DL_COLLECTION_STATUSES)[number];
 
+/** The statuses a user may choose / the server accepts on writes. */
+export const DL_SELECTABLE_STATUSES = ["COLLECTED", "NOT_COLLECTED"] as const;
+export type DlSelectableStatusValue = (typeof DL_SELECTABLE_STATUSES)[number];
+
+export function isDlStatusSelectable(status: string | null | undefined): boolean {
+  return !!status && (DL_SELECTABLE_STATUSES as readonly string[]).includes(status);
+}
+
+export const DL_STATUS_DEPOSIT_REMOVED_MESSAGE =
+  "DL deposit is no longer an option — choose Collected or Not collected.";
+
 export const DL_STATUS_LABELS: Record<DlCollectionStatusValue, string> = {
   COLLECTED: "DL collected",
   NOT_COLLECTED: "DL not collected",
-  DEPOSIT: "DL deposit",
+  DEPOSIT: "DL Deposit (old)",
 };
 
 export const DL_DEPOSIT_NOTE_MAX = 200;
 
 export const DL_STATUS_INVALID_MESSAGE =
-  "Choose the driving licence status: Collected, Not collected or Deposit.";
+  "Choose the driving licence status: Collected or Not collected.";
 export const DL_DEPOSIT_NOTE_REQUIRED_MESSAGE =
   "Note what the customer left as the DL deposit (e.g. Aadhaar card kept, ₹2,000 cash).";
 export const DL_DEPOSIT_NOTE_TOO_LONG_MESSAGE =

@@ -1,13 +1,15 @@
 /**
  * Canonical GST arithmetic, shared by the backend and the web app.
  *
- * Rule (self-drive rental, intra-state supply):
- *   taxable value = rental after discounts + extensions + extra km
- *                   + extra time + fuel + swap difference + other service charges
- *   GST           = CGST + SGST on that value; IGST is never added.
- *   Not taxable   : refundable deposits (category + safety), FASTag/tolls
- *                   (pure-agent reimbursement), grace adjustments, damage
- *                   compensation (unless a manager marks it a PENALTY).
+ * Rule (self-drive rental, intra-state supply) — as of the Oct 3 2026 client
+ * instructions:
+ *   - Only RENT is taxed: the booking rent and extension rent.
+ *   - Rent prices are GST-INCLUSIVE totals (what the customer pays). GST is
+ *     split out of the total with splitRentTotal(); see RENT_GST_METHOD.
+ *   - Drop / recovery charges carry NO GST: extra km, late return (extra
+ *     time), fuel, FASTag, damage, vehicle-swap difference, other charges.
+ *   - Refundable deposits (category + safety) are never taxed.
+ *   - Always CGST + SGST; IGST is never added.
  *
  * Rounding: CGST and SGST are each rounded half-up to 2 dp per line, and
  * GST = CGST + SGST, so the parts always add up. Compute once when the line
@@ -28,19 +30,19 @@ export interface GstBreakdown {
   rate: number;
 }
 
-/** Ledger / charge types whose amount is a taxable supply. */
+/** Ledger / charge types whose amount is a taxable supply: rent only. */
 export const TAXABLE_CHARGE_TYPES = [
   "BOOKING_BASE",
   "EXTENSION",
+] as const;
+
+/** Ledger / charge types that are never taxed (drop / recovery charges too). */
+export const NON_TAXABLE_CHARGE_TYPES = [
   "EXTRA_KM",
   "EXTRA_TIME",
   "FUEL",
   "VEHICLE_SWAP",
   "OTHER",
-] as const;
-
-/** Ledger / charge types that are never taxed. */
-export const NON_TAXABLE_CHARGE_TYPES = [
   "DEPOSIT",
   "SAFETY_DEPOSIT",
   "FASTAG",
@@ -110,4 +112,49 @@ export function splitGstInclusive(gross: number, rates: GstRates): GstBreakdown 
     total: (sign * abs) / 100,
     rate,
   };
+}
+
+/**
+ * How GST is taken out of a GST-inclusive rent total.
+ *
+ * PERCENT_OF_TOTAL (client instruction, Oct 3 2026): GST = rate% OF THE TOTAL.
+ *   Rs 1,300 at 18% -> GST Rs 234, rent without GST Rs 1,066.
+ * BACK_CALCULATE (standard GST arithmetic): taxable = total / (1 + rate%).
+ *   Rs 1,300 at 18% -> taxable Rs 1,101.69, GST Rs 198.31.
+ *
+ * Switch here if the client's accountant asks for the standard method; every
+ * caller goes through splitRentTotal().
+ */
+export type RentGstMethod = "PERCENT_OF_TOTAL" | "BACK_CALCULATE";
+export const RENT_GST_METHOD: RentGstMethod = "PERCENT_OF_TOTAL";
+
+/**
+ * Split a GST-inclusive rent total (after discounts) into rent without GST +
+ * CGST + SGST. The parts always add back to the total exactly.
+ */
+export function splitRentTotal(
+  total: number,
+  rates: GstRates,
+  method: RentGstMethod = RENT_GST_METHOD,
+): GstBreakdown {
+  if (method === "BACK_CALCULATE") return splitGstInclusive(total, rates);
+  const totalPaise = toPaise(total);
+  const sign = totalPaise < 0 ? -1 : 1;
+  const abs = Math.abs(totalPaise);
+  const cgstPaise = Math.round((abs * Number(rates.cgstRate)) / 100 + 1e-7);
+  const sgstPaise = Math.round((abs * Number(rates.sgstRate)) / 100 + 1e-7);
+  const gstPaise = cgstPaise + sgstPaise;
+  return {
+    taxable: (sign * (abs - gstPaise)) / 100,
+    cgst: (sign * cgstPaise) / 100,
+    sgst: (sign * sgstPaise) / 100,
+    gst: (sign * gstPaise) / 100,
+    total: (sign * abs) / 100,
+    rate: Number(rates.cgstRate) + Number(rates.sgstRate),
+  };
+}
+
+/** Rent without GST for a GST-inclusive total (e.g. the vehicle form preview). */
+export function rentWithoutGst(total: number, rates: GstRates, method: RentGstMethod = RENT_GST_METHOD): number {
+  return splitRentTotal(total, rates, method).taxable;
 }

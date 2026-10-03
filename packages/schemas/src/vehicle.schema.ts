@@ -93,11 +93,16 @@ export const createVehicleSchema = z.object({
   policyNumber: z.string().min(1, "Policy Number is required"),
   provider: z.string().min(1, "Provider is required"),
 
-  // Custom Pricing Fields
+  // Custom Pricing Fields. Every rent is GST-INCLUSIVE (what the customer pays).
+  // totalRent12Hour / totalRent24Hour are the "Total rent incl. GST" the BM form
+  // edits; when sent they win over price12Hour / price24Hour (older clients send
+  // only those — the same totals). The server stores both plus rent without GST.
   hourlyRate: z.coerce.number().min(0).optional(),
   price12Hour: z.coerce.number().min(0).optional(),
+  totalRent12Hour: z.coerce.number().min(0).optional(),
   freeKm12Hour: z.coerce.number().min(0).optional(),
   price24Hour: z.coerce.number().min(0).optional(),
+  totalRent24Hour: z.coerce.number().min(0).optional(),
   freeKm24Hour: z.coerce.number().min(0).optional(),
   priceMonthly: z.coerce.number().min(0).optional(),
   freeKmMonthly: z.coerce.number().min(0).optional(),
