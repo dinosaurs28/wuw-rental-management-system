@@ -11,6 +11,25 @@ import { customAlphabet } from "nanoid";
 
 const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 16);
 
+/**
+ * Rents are GST-inclusive totals (item 17): price12Hour / price24Hour hold the
+ * total, totalRent* the same total, rentWithoutGst* = total − CGST − SGST at the
+ * seeded branch rule (9% + 9% of the total, each rounded to paise).
+ */
+const SEED_CGST = 9;
+const SEED_SGST = 9;
+const paise2 = (n: number) => Math.round(n * 100 + 1e-7) / 100;
+const withoutGst = (total: number) =>
+  paise2(total - paise2((total * SEED_CGST) / 100) - paise2((total * SEED_SGST) / 100));
+const rentCols = (total12Hour: number, total24Hour: number) => ({
+  price12Hour: total12Hour,
+  price24Hour: total24Hour,
+  totalRent12Hour: total12Hour,
+  totalRent24Hour: total24Hour,
+  rentWithoutGst12Hour: withoutGst(total12Hour),
+  rentWithoutGst24Hour: withoutGst(total24Hour),
+});
+
 async function main() {
   console.log("Starting VRMS seed...");
 
@@ -223,8 +242,8 @@ async function main() {
       publicId: nanoid(),
       branchId: manipalBranch.id,
       gstNumber: "29ABCDE1234F1Z5",
-      cgstRate: 9.0,
-      sgstRate: 9.0,
+      cgstRate: SEED_CGST,
+      sgstRate: SEED_SGST,
       igstRate: 0.0,
     },
   });
@@ -237,8 +256,7 @@ async function main() {
         branchId: manipalBranch.id,
         categoryId: twoWheeler.id,
         hourlyRate: 80,
-        price12Hour: 450,
-        price24Hour: 800,
+        ...rentCols(450, 800),
         priceMonthly: 15000,
       },
       {
@@ -246,8 +264,7 @@ async function main() {
         branchId: manipalBranch.id,
         categoryId: fourWheeler.id,
         hourlyRate: 150,
-        price12Hour: 900,
-        price24Hour: 1500,
+        ...rentCols(900, 1500),
         priceMonthly: 35000,
       },
     ],
@@ -463,8 +480,7 @@ async function main() {
         create: {
           publicId: nanoid(),
           hourlyRate: 90,
-          price12Hour: 500,
-          price24Hour: 900,
+          ...rentCols(500, 900),
           priceMonthly: 16000,
           enabled: true,
         },
@@ -528,8 +544,7 @@ async function main() {
         create: {
           publicId: nanoid(),
           hourlyRate: 175,
-          price12Hour: 1000,
-          price24Hour: 1800,
+          ...rentCols(1000, 1800),
           priceMonthly: 38000,
           enabled: true,
         },

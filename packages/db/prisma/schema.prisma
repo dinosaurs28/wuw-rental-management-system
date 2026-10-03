@@ -337,6 +337,11 @@ model Customer {
   country            String        @default("India")
   zipCode            String        @default("")
   isProfileCompleted Boolean       @default(false)
+  // Blacklisted customers cannot make new bookings (online or at the counter)
+  isBlacklisted      Boolean       @default(false)
+  blacklistReason    String?
+  blacklistedAt      DateTime?
+  blacklistedById    Int?
   // Identity numbers, stored normalised (DL: uppercase, no spaces/'-'/'/';
   // Aadhaar: 12 digits). Both are required for a complete profile.
   drivingLicenceNumber String?
@@ -359,6 +364,7 @@ model Customer {
   @@index([drivingLicenceNumber])
   @@index([aadhaarNumber])
   @@index([qrPhotoFileId])
+  @@index([isBlacklisted])
 }
 
 model CustomerKyc {
@@ -400,6 +406,8 @@ model FileObject {
   creditNotePdfs    CreditNote[]   @relation("CreditNotePdf")
   customerQrPhotos  Customer[]     @relation("CustomerQrPhoto")
   bookingQrPhotos   Booking[]      @relation("BookingQrPhoto")
+  paymentProofs     PaymentTransaction[] @relation("PaymentProof")
+  promoBanners      PromoBanner[]  @relation("PromoBannerImage")
 
   @@index([publicId])
 }
@@ -436,6 +444,7 @@ model Branch {
   creditEntries           CustomerCreditEntry[]
   schedules               BranchSchedule[]
   notifications           Notification[]
+  promoBanners            PromoBanner[]
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
@@ -725,6 +734,13 @@ model VehicleCustomPricing {
   price12Hour   Decimal?
   freeKm12Hour  Int      @default(100)
   price24Hour   Decimal
+  // Rent prices are GST-inclusive totals (what the customer pays). price12Hour
+  // / price24Hour hold the same totals; the "without GST" parts are derived
+  // with the branch GST rule (see @repo/schemas splitRentTotal) and stored.
+  totalRent12Hour      Decimal? @db.Decimal(10, 2)
+  totalRent24Hour      Decimal? @db.Decimal(10, 2)
+  rentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
+  rentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
   freeKm24Hour  Int      @default(150)
   priceMonthly  Decimal?
   freeKmMonthly Int      @default(1500)
@@ -749,6 +765,11 @@ model BranchPricingDefaults {
   price12Hour    Decimal?
   freeKm12Hour   Int      @default(100)
   price24Hour    Decimal
+  // GST-inclusive totals + derived "without GST" parts (see VehicleCustomPricing)
+  totalRent12Hour      Decimal? @db.Decimal(10, 2)
+  totalRent24Hour      Decimal? @db.Decimal(10, 2)
+  rentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
+  rentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
   freeKm24Hour   Int      @default(150)
   priceMonthly   Decimal?
   freeKmMonthly  Int      @default(1500)
@@ -979,6 +1000,7 @@ model Booking {
   creditEntry            CustomerCreditEntry?
   creditNotes            CreditNote[]
   notifications          Notification[]
+  upiQrPayments          UpiQrPayment[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1757,6 +1779,11 @@ model PaymentTransaction {
   // Optional shift linkage
   cashShiftId     Int?
 
+  // Photo of the customer's payment-success screen for counter UPI
+  // (merchant QR) payments; replaces typing the UTR
+  proofFileId     Int?
+  proofFile       FileObject?         @relation("PaymentProof", fields: [proofFileId], references: [id], onDelete: SetNull)
+
   notes           String?
 
   booking         Booking             @relation(fields: [bookingId], references: [id])
@@ -1776,6 +1803,7 @@ model PaymentTransaction {
   @@index([purpose])
   @@index([status, createdAt])
   @@index([onlineTransactionRef])
+  @@index([proofFileId])
 }
 
 // Refund request lifecycle. Cash refunds require manager approval before payout.
@@ -2250,6 +2278,7 @@ enum LedgerEntryType {
   PAYMENT
   REFUND
   VEHICLE_SWAP
+  CREDIT
 }
 
 enum LedgerEntryClassification {
@@ -2399,4 +2428,59 @@ model PushToken {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ── Home-page offer posters (hero slider) ────────────────────────────────────
+
+// Posters a Branch Manager publishes for the home hero slider. A poster shows
+// only between startsAt and endsAt; couponCode (optional) can be copied and
+// applied at checkout.
+model PromoBanner {
+  id           Int        @id @default(autoincrement())
+  publicId     String     @unique
+  branchId     Int?
+  branch       Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  title        String
+  subtitle     String?
+  imageFileId  Int
+  imageFile    FileObject @relation("PromoBannerImage", fields: [imageFileId], references: [id])
+  couponCode   String?
+  ctaLabel     String?
+  // Optional deep link target: a vehicle group key or vehicle publicId
+  linkTarget   String?
+  startsAt     DateTime
+  endsAt       DateTime
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdById  Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  @@index([branchId, isActive, startsAt, endsAt])
+}
+
+// ── UPI QR (Razorpay QR Codes) for customers without a UPI app ──────────────
+
+// A single-use Razorpay UPI QR shown in the app/website so the customer can
+// pay by scanning it from another phone. Settled via webhook or polling.
+model UpiQrPayment {
+  id            Int            @id @default(autoincrement())
+  publicId      String         @unique
+  qrId          String         @unique   // Razorpay qr_xxx
+  bookingId     Int
+  booking       Booking        @relation(fields: [bookingId], references: [id])
+  purpose       PaymentPurpose
+  extensionId   Int?
+  amount        Decimal        @db.Decimal(10, 2)
+  imageUrl      String
+  status        String         @default("ACTIVE") // ACTIVE | PAID | CLOSED | EXPIRED
+  paymentId     String?        // Razorpay pay_xxx once credited
+  closeBy       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
 }
