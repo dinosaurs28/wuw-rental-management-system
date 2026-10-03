@@ -12,10 +12,12 @@ import {
 } from "@repo/schemas";
 import {
   assertOpenShift,
-  validateNewUtr,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
+import { resolveCounterUpi, type CounterUpi } from "../../services/payment/payment-proof.service.js";
+import { parseCollateral } from "../../services/payment/customer-credit.service.js";
 import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
 import { EXTENSION_IN_SESSION } from "../../services/extension/extension.service.js";
 import {
   isGstRuleMissing,
@@ -25,17 +27,25 @@ import {
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
 import { DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { UpiQrError } from "../../services/payment/upi-qr.service.js";
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
   EXTENDABLE_BOOKING_STATUSES,
 } from "../../services/extension/extension-limits.service.js";
 
-// ONLINE = UPI at the counter: onlineTransactionRef is the customer's 12-digit
-// UTR (validated by validateNewUtr, which returns INVALID_UTR when missing).
+// ONLINE / UPI = UPI at the counter (merchant QR), backed by a photo of the
+// customer's payment screen (proof_file_id) or, from older builds, the 12-digit
+// UTR in onlineTransactionRef. SPLIT = cashAmount + onlineAmount (UPI part backed
+// the same way). CREDIT = the amount stays owed against the collateral noted.
+// Cash, UPI and split all wait for the branch manager's confirmation (#12).
 const collectExtensionSchema = z.object({
-  method: z.enum(["CASH", "ONLINE"]),
+  method: z.enum(["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT"]),
   onlineTransactionRef: z.string().optional(),
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
+  cashAmount: z.coerce.number().min(0).optional(),
+  onlineAmount: z.coerce.number().min(0).optional(),
+  collateral: z.string().optional(),
 });
 
 const buildActorContext = async (req: Request) => {
@@ -171,10 +181,9 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
 
     const actor = await buildActorContext(req);
 
-    // Payment follows immediately, so check the shift before the vehicle hold is written
-    if (!usePaymentSession && new Decimal(pending.additionalAmount.toString()).gt(0)) {
-      await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
-    }
+    // No shift check here: the payment method is chosen after the commit, and
+    // Credit takes no money (#11). Collect checks the open shift for cash, UPI
+    // and split before any money is recorded.
 
     const { extension, remainAmount } = await extensionService.commit(commitInput, actor);
 
@@ -191,6 +200,8 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         ...extensionSplitView(extension),
         remainAmount,
         usePaymentSession,
+        // Free km the committed extension adds to the drop allowance (#7)
+        extensionFreeKm: await describeExtensionFreeKm(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
       },
     });
   } catch (error: any) {
@@ -238,7 +249,8 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
       res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
       return;
     }
-    const { method } = validation.data;
+    // UPI is ONLINE through the counter UPI gateway
+    const method = validation.data.method === "UPI" ? "ONLINE" : validation.data.method;
 
     const pending = await prisma.bookingExtension.findUnique({
       where: { publicId: req.params.extensionPublicId! },
@@ -256,12 +268,36 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
 
     const actor = await buildActorContext(req);
 
-    // Counter money (cash or UPI) needs an open shift; a ₹0 extension takes none
-    let utr: string | undefined;
-    if (new Decimal(pending.additionalAmount.toString()).gt(0)) {
-      await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
-      if (method === "ONLINE") {
-        utr = await validateNewUtr(validation.data.onlineTransactionRef);
+    // Counter money (cash or UPI) needs an open shift; a ₹0 extension takes none.
+    // Credit takes no money — it needs the collateral note instead (#11).
+    const due = new Decimal(pending.additionalAmount.toString());
+    let upi: CounterUpi | null = null;
+    let split: { cash: Decimal; online: Decimal } | undefined;
+    let collateral: string | undefined;
+    if (due.gt(0)) {
+      if (method === "CREDIT") {
+        collateral = parseCollateral(validation.data.collateral);
+      } else {
+        await assertOpenShift({ id: actor.actorId, role: actor.actorRole });
+        if (method === "SPLIT") {
+          const cash = new Decimal(validation.data.cashAmount ?? 0).toDecimalPlaces(2);
+          const online = new Decimal(validation.data.onlineAmount ?? 0).toDecimalPlaces(2);
+          if (!cash.add(online).eq(due) || cash.lte(0) || online.lte(0)) {
+            throw new CounterGuardError(
+              StatusCode.BAD_REQUEST,
+              "SPLIT_AMOUNT_MISMATCH",
+              `Enter a cash part and a UPI part that add up to ₹${due.toFixed(2)}.`,
+            );
+          }
+          split = { cash, online };
+        }
+        if (method === "ONLINE" || method === "SPLIT") {
+          upi = await resolveCounterUpi({
+            utr: validation.data.onlineTransactionRef,
+            proofFileId: validation.data.proof_file_id,
+            branchId: req.branch_Id,
+          });
+        }
       }
     }
 
@@ -269,11 +305,20 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
       req.params.extensionPublicId!,
       method,
       actor,
-      utr,
-      { onlineGateway: method === "ONLINE" ? "UPI" : undefined },
+      upi?.utr ?? undefined,
+      {
+        onlineGateway: method === "ONLINE" || method === "SPLIT" ? "UPI" : undefined,
+        upi,
+        split,
+        collateral,
+      },
     );
     res.status(StatusCode.OK).json({
-      message: result.payment === "confirmed" ? "Extension confirmed" : "Extension payment collected — awaiting manager confirmation",
+      message: result.credit
+        ? `Extension confirmed — ₹${result.credit.amount} is on credit until the branch manager clears it`
+        : result.payment === "confirmed"
+          ? "Extension confirmed"
+          : "Extension payment collected — awaiting manager confirmation",
       data: result,
     });
   } catch (error: any) {
@@ -368,6 +413,11 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
     res.status(StatusCode.OK).json({ message: "Extension cancelled successfully" });
   } catch (error: any) {
     console.error("CancelExtension Error:", error);
+    // The customer's UPI QR for it was paid (409 UPI_QR_ALREADY_PAID) or couldn't be closed (502)
+    if (error instanceof UpiQrError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
       return;

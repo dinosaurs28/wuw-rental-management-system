@@ -3,12 +3,21 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { applyCouponSchema } from "@repo/schemas";
 import { DateTime } from "luxon";
-import PricingEngineService from "../../services/pricing/pricing-engine.service.js";
+import PricingEngineService, {
+  InclGstTotals,
+  allocateByWeights,
+  type PricingResult,
+} from "../../services/pricing/pricing-engine.service.js";
 import { discountApplicationService } from "../../services/discount/index.js";
 import type { DiscountEvaluationResult } from "../../services/discount/index.js";
 import { couponValidationService, normalizeCouponCode } from "../../services/discount/coupon-validation.service.js";
-import { isGstRuleMissing, GST_RULE_MISSING, GST_RULE_MISSING_MESSAGE } from "../../services/tax/gst.service.js";
-import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
+import {
+  isGstRuleMissing,
+  GST_RULE_MISSING,
+  GST_RULE_MISSING_MESSAGE,
+  computeLineGst,
+} from "../../services/tax/gst.service.js";
+import { refreshInvoiceTotals, isGstOnTopBooking } from "../../services/invoice-totals.service.js";
 import Decimal from "decimal.js";
 
 const pricingEngine = new PricingEngineService();
@@ -112,6 +121,56 @@ function combineEvaluations(evaluations: DiscountEvaluationResult[]): DiscountEv
 }
 
 /**
+ * An engine result re-stated the way a booking priced before GST-inclusive
+ * rents (item 17) was priced: GST added ON TOP of the configured rent. The
+ * engine evaluates every discount layer on the configured rent (₹1,300) —
+ * exactly the taxable base such a booking stored (BookingItem.baseTotal) — so
+ * `discountEvaluation` already holds its taxable-terms figures; GST then goes
+ * on top of the rent after discounts at the branch rule (checked against the
+ * booking's frozen rate before anything is written). `gross` / `rentWithoutGst`
+ * are the matching GST-inclusive view for the response only.
+ */
+function repriceGstOnTop(p: PricingResult): PricingResult {
+  const ZERO = new Decimal(0);
+  const ev = p.discountEvaluation;
+  const rates = { cgstRate: Number(p.cgstRate), sgstRate: Number(p.sgstRate) };
+  const base = ev.originalAmount;
+  const afterDiscount = ev.finalAmount;
+  const discount = ev.totalDiscountAmount;
+  const tax = computeLineGst(afterDiscount, rates);
+  const finalTotal = afterDiscount.add(tax.gst);
+  const grossPrice = computeLineGst(base, rates).total;
+  const grossDiscount = Decimal.max(ZERO, grossPrice.sub(finalTotal));
+  const [grossDuration, grossCoupon, grossManual] = allocateByWeights(grossDiscount, [
+    ev.durationDiscount.discountAmount,
+    ev.couponDiscountAmount,
+    ev.manualDiscountAmount,
+  ]) as [Decimal, Decimal, Decimal];
+  return {
+    ...p,
+    basePrice: base,
+    durationDiscountAmount: ev.durationDiscount.discountAmount,
+    couponDiscountAmount: ev.couponDiscountAmount,
+    manualDiscountAmount: ev.manualDiscountAmount,
+    discountAmount: discount,
+    discountPercent: base.gt(0) ? discount.div(base).mul(100).toDecimalPlaces(4) : ZERO,
+    taxAmount: tax.gst,
+    cgstAmount: tax.cgst,
+    sgstAmount: tax.sgst,
+    finalTotal,
+    gross: {
+      price: grossPrice,
+      durationDiscount: grossDuration,
+      couponDiscount: grossCoupon,
+      manualDiscount: grossManual,
+      discount: grossDiscount,
+      total: finalTotal,
+    },
+    rentWithoutGst: afterDiscount,
+  };
+}
+
+/**
  * Price every vehicle of the booking again (coupon once, on the first vehicle;
  * an APPROVED manual discount is kept) and write the new totals to Booking,
  * BookingItem, DiscountApplication and the coupon usage log in one
@@ -119,7 +178,9 @@ function combineEvaluations(evaluations: DiscountEvaluationResult[]): DiscountEv
  * original rental period is priced, and the base, deposit and GST rate frozen
  * at booking must come out unchanged. totalFinal moves by the change in the
  * original rental only (confirmed extensions stay included), and so does the
- * unpaid balance (extensions are paid on their own).
+ * unpaid balance (extensions are paid on their own). A booking priced before
+ * GST-inclusive rents (item 17) is re-priced the way it was priced — GST on
+ * top (repriceGstOnTop) — and its records stay in those terms.
  */
 async function repriceBooking(booking: CouponBooking, couponCode: string | undefined, actor: ActorContext) {
   // A confirmed extension moved endAt; BookingItem describes the original period
@@ -133,7 +194,7 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
   const plan = booking.isAdvancePayment ? "ADVANCE" : "FULL";
   const manual = booking.manualDiscount?.status === "APPROVED" ? booking.manualDiscount : null;
 
-  const priced = await Promise.all(
+  const enginePriced = await Promise.all(
     booking.items.map((item, index) =>
       pricingEngine.calculateBookingPrice(
         item.vehicleId,
@@ -150,6 +211,10 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
       ),
     ),
   );
+  // Priced with GST on top (before item 17): compare and store it that way, or
+  // its rent without GST (₹1,066 of ₹1,300) would never match the stored base
+  const gstOnTop = isGstOnTopBooking(booking.pricingSnapshot);
+  const priced = gstOnTop ? enginePriced.map(repriceGstOnTop) : enginePriced;
   const first = priced[0]!;
   if (couponCode && !first.discountEvaluation.couponValid) {
     throw new BookingCouponError(
@@ -211,6 +276,10 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
     cgst: sum((p) => p.cgstAmount).toDecimalPlaces(2),
     sgst: sum((p) => p.sgstAmount).toDecimalPlaces(2),
   };
+  // GST-inclusive view (item 17): the rent the customer sees, discounts off it
+  const inclGst = new InclGstTotals();
+  priced.forEach((p) => inclGst.add(p));
+  const inclGstTotals = inclGst.view();
   const evaluation = combineEvaluations(priced.map((p) => p.discountEvaluation));
 
   await prisma.$transaction(async (tx) => {
@@ -299,6 +368,9 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
             grandFinalTotal: Number(newItemsFinal.toFixed(2)),
             grandDurationDiscountTotal: Number(totals.durationDiscount.toFixed(2)),
             grandCouponDiscountTotal: Number(totals.couponDiscount.toFixed(2)),
+            // Item-17 bookings only: a GST-on-top booking never gains the inclusive
+            // totals, so it keeps being read (and re-priced) the way it was priced
+            ...(gstOnTop ? {} : inclGstTotals),
             durationDiscountLabel: first.durationDiscountLabel,
             couponCode: first.appliedCouponCode ?? null,
           },
@@ -316,7 +388,7 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
     console.error(`[booking-coupon] invoice refresh failed for booking ${booking.publicId}:`, err),
   );
 
-  return { first, totals, newTotalFinal, newRemaining };
+  return { first, totals, inclGstTotals, newTotalFinal, newRemaining };
 }
 
 /**
@@ -369,7 +441,7 @@ export const ApplyCoupon = async (req: Request, res: Response) => {
 
     const actor = await buildActorContext(req);
     // Also records the DiscountApplication + coupon use and re-syncs the invoice
-    const { first, totals, newTotalFinal, newRemaining } = await repriceBooking(booking, couponCode, actor);
+    const { first, totals, inclGstTotals, newTotalFinal, newRemaining } = await repriceBooking(booking, couponCode, actor);
 
     return res.status(StatusCode.OK).json({
       message: "Coupon applied successfully",
@@ -381,6 +453,10 @@ export const ApplyCoupon = async (req: Request, res: Response) => {
         totalTax: totals.totalTax.toFixed(2),
         finalTotal: newTotalFinal.toFixed(2),
         remainingBalance: newRemaining.toFixed(2),
+        // Off the GST-inclusive rent (item 17) — what the customer sees
+        couponDiscountInclGst: inclGstTotals.grandCouponDiscountInclGst.toFixed(2),
+        discountInclGst: inclGstTotals.grandDiscountInclGst.toFixed(2),
+        rentAfterDiscountInclGst: inclGstTotals.grandRentAfterDiscountInclGst.toFixed(2),
       },
     });
   } catch (error) {

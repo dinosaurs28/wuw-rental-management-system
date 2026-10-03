@@ -1,7 +1,10 @@
 import { prisma, PaymentPurpose } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
-import { computeBookingOwed, getBookingMoney, REFUND_PAYMENT_PURPOSES } from "./booking-owed.service.js";
+import { computeBookingOwed, creditOutstanding, getBookingMoney, REFUND_PAYMENT_PURPOSES } from "./booking-owed.service.js";
+import { getBookingCreditSummary } from "./customer-credit.service.js";
+import { CounterGuardError } from "./counter-guard.service.js";
+import { StatusCode } from "../../types/statusCode.js";
 
 const ZERO = new Decimal(0);
 
@@ -85,11 +88,30 @@ class FraudDetectionService {
     });
     if (!booking) throw new Error("Booking not found.");
 
-    const [owed, money] = await Promise.all([computeBookingOwed(bookingId), getBookingMoney(bookingId)]);
+    const [owed, money, credit] = await Promise.all([
+      computeBookingOwed(bookingId),
+      getBookingMoney(bookingId),
+      getBookingCreditSummary(bookingId),
+    ]);
     const totalOwed = owed.totalOwed;
 
     // CONFIRMED + COLLECTED money in, less refunds paid out
     const alreadyCollected = money.netConfirmed.add(money.pending);
+
+    // Money on customer credit (#11) is collected only by clearing it on the
+    // Customer Credit page — paid here, its section would stay pending for good
+    const onCredit = creditOutstanding(owed, money.netConfirmed, credit?.pending ?? ZERO);
+    if (onCredit.gt(ZERO) && alreadyCollected.add(incomingAmount).gt(totalOwed.sub(onCredit))) {
+      const collectable = Decimal.max(ZERO, totalOwed.sub(onCredit).sub(alreadyCollected));
+      const collateral = credit?.collateral.length ? ` (collateral: ${credit.collateral.join(", ")})` : "";
+      throw new CounterGuardError(
+        StatusCode.BAD_REQUEST,
+        "AMOUNT_ON_CREDIT",
+        `₹${onCredit.toFixed(2)} of booking ${booking.publicId} is on customer credit${collateral}. Clear it on the Customer Credit page, which records the payment. ` +
+          (collectable.gt(ZERO) ? `Only ₹${collectable.toFixed(2)} can be collected here.` : "Nothing else is due here."),
+      );
+    }
+
     if (alreadyCollected.add(incomingAmount).gt(totalOwed)) {
       throw new Error(
         `Payment of ₹${incomingAmount.toFixed(2)} would exceed the booking total of ₹${totalOwed.toFixed(2)}. Already collected: ₹${alreadyCollected.toFixed(2)}.`,

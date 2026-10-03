@@ -2,6 +2,7 @@ import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import type { PaymentTransaction } from "@repo/database/client";
 import { computeBookingOwed, summarizeBookingMoney } from "./booking-owed.service.js";
+import { getBookingCreditSummary, serializeCreditSummary } from "./customer-credit.service.js";
 
 export type PaymentLifecycleState =
   | "UNPAID"
@@ -40,6 +41,15 @@ export interface FinancialState {
   safetyDepositHeld: Decimal;
   /** What the booking owes: totalFinal + returnCharges + safety deposit taken − deposit credited at drop */
   totalOwed: Decimal;
+  /**
+   * Part of amountDue a Fleet Executive put on customer credit (#11) and the
+   * branch manager hasn't cleared yet (it stays inside amountDue until then).
+   */
+  creditPending: Decimal;
+  /** The booking's credit position (sections still pending, collateral held), or null */
+  credit: ReturnType<typeof serializeCreditSummary>;
+  /** Legacy drop's safety-deposit choice the settlement honours (#6), or null */
+  safetyDepositHandling: string | null;
 }
 
 const ZERO = new Decimal(0);
@@ -52,7 +62,7 @@ class FinancialStateService {
     });
     if (!booking) throw new Error("Booking not found.");
 
-    const [txns, owed] = await Promise.all([
+    const [txns, owed, credit] = await Promise.all([
       prisma.paymentTransaction.findMany({
         where: { bookingId },
         orderBy: { createdAt: "asc" },
@@ -60,6 +70,8 @@ class FinancialStateService {
       // totalFinal (rounded to paise) + drop / return charges + safety deposit held —
       // the same total the BM settlement and the over-payment guard use
       computeBookingOwed(bookingId),
+      // Counter credit is not a payment: it stays due until cleared (#11)
+      getBookingCreditSummary(bookingId),
     ]);
 
     const { totalFinal, totalOwed } = owed;
@@ -108,6 +120,9 @@ class FinancialStateService {
       returnCharges: owed.returnCharges,
       safetyDepositHeld: owed.safetyDepositHeld,
       totalOwed,
+      creditPending: Decimal.min(amountDue, credit?.pending ?? ZERO),
+      credit: serializeCreditSummary(credit),
+      safetyDepositHandling: owed.safetyDepositHandling,
     };
   }
 }

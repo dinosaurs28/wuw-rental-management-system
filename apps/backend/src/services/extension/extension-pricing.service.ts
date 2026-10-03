@@ -2,7 +2,7 @@ import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
 import { PricingEngineService, type PricingResult } from "../pricing/pricing-engine.service.js";
-import { getBranchGstRates, computeLineGst } from "../tax/gst.service.js";
+import { getBranchGstRates, splitRentGross } from "../tax/gst.service.js";
 
 export interface ExtensionPricingResult {
   newDays: number;
@@ -13,9 +13,11 @@ export interface ExtensionPricingResult {
   additionalAmount: Decimal;
   pricingResult: PricingResult;
   /**
-   * GST split of additionalAmount (canonical rule #23):
+   * GST split of additionalAmount (canonical rule #23, item 17):
+   * additionalAmount = the post-discount GST-inclusive rent delta;
+   * taxableAmount + taxAmount = additionalAmount (splitRentGross),
    * taxableAmount = baseAmount − discountAmount, taxAmount = cgst + sgst,
-   * additionalAmount = taxableAmount + taxAmount. taxRate = cgst% + sgst%.
+   * taxRate = cgst% + sgst%.
    */
   baseAmount: Decimal;
   discountAmount: Decimal;
@@ -69,8 +71,8 @@ const pricingEngine = new PricingEngineService();
 const sumOf = (results: PricingResult[], pick: (r: PricingResult) => Decimal) =>
   results.reduce((total, r) => total.add(pick(r)), new Decimal(0));
 
-/** basePrice − discountAmount, the engine's pre-GST taxable value for one vehicle */
-const taxableOf = (r: PricingResult) => r.basePrice.sub(r.discountAmount);
+/** The engine's GST-inclusive rent after discounts for one vehicle (= finalTotal) */
+const grossOf = (r: PricingResult) => r.gross.total;
 
 const hoursBetween = (from: DateTime, to: DateTime) =>
   Math.round(to.diff(from, "hours").hours * 100) / 100;
@@ -79,10 +81,11 @@ class ExtensionPricingService {
   /**
    * Recalculate the booking price for a new end date.
    *
-   * taxableAmount = post-discount engine price over [startAt, newEndAt] minus
-   * the same over the current [startAt, endAt], summed across every vehicle on
-   * the booking; additionalAmount = taxableAmount + CGST + SGST on it.
-   * newTotalFinal = booking.totalFinal + additionalAmount.
+   * additionalAmount = post-discount GST-inclusive engine rent over
+   * [startAt, newEndAt] minus the same over the current [startAt, endAt],
+   * summed across every vehicle on the booking; it is split into taxableAmount
+   * + CGST + SGST (splitRentGross). newTotalFinal = booking.totalFinal +
+   * additionalAmount.
    *
    * The engine's finalTotal excludes the refundable deposit, while
    * booking.totalFinal includes it (plus manual discounts and earlier
@@ -147,21 +150,24 @@ class ExtensionPricingService {
     // Compute days for the new full duration
     const newDays = Math.max(1, Math.ceil(endAt.diff(startAt, "days").days));
 
-    // Canonical GST rule: the extension is one taxable line. Its taxable value
-    // is the post-discount engine delta; CGST/SGST are computed once on that
-    // delta (rounded half-up per tax) and frozen on the extension. Clamped at
-    // ₹0 — a longer rental that comes out cheaper is never refunded here.
+    // Canonical GST rule: the extension is one rent line. Rents are GST-inclusive
+    // (item 17): the charge is the delta of the post-discount inclusive rent, and
+    // GST is split out of it once (splitRentGross, CGST/SGST rounded half-up per
+    // tax) and frozen on the extension. Clamped at ₹0 — a longer rental that
+    // comes out cheaper is never refunded here.
     const rates = await getBranchGstRates(booking.branchId);
-    const rawTaxable = sumOf(newPrices, taxableOf).sub(sumOf(currentPrices, taxableOf)).toDecimalPlaces(2);
+    const rawGross = sumOf(newPrices, grossOf).sub(sumOf(currentPrices, grossOf)).toDecimalPlaces(2);
     const ZERO = new Decimal(0);
     let baseAmount = ZERO;
     let discountAmount = ZERO;
-    let line = computeLineGst(0, rates);
-    if (rawTaxable.gt(0)) {
-      line = computeLineGst(rawTaxable, rates);
-      const rawBase = sumOf(newPrices, (r) => r.basePrice).sub(sumOf(currentPrices, (r) => r.basePrice)).toDecimalPlaces(2);
-      // discount = base − taxable, never negative (the base absorbs it)
-      discountAmount = Decimal.max(ZERO, rawBase.sub(line.taxable));
+    let line = splitRentGross(0, rates);
+    if (rawGross.gt(0)) {
+      line = splitRentGross(rawGross, rates);
+      // The discount's rent-without-GST share: the pre-discount inclusive delta
+      // split the same way, less the taxable value; never negative (the base absorbs it)
+      const rawGrossBase = sumOf(newPrices, (r) => r.gross.price).sub(sumOf(currentPrices, (r) => r.gross.price)).toDecimalPlaces(2);
+      const baseTaxable = rawGrossBase.gt(0) ? splitRentGross(rawGrossBase, rates).taxable : ZERO;
+      discountAmount = Decimal.max(ZERO, baseTaxable.sub(line.taxable));
       baseAmount = line.taxable.add(discountAmount);
     }
     const additionalAmount = line.taxable.add(line.gst).toDecimalPlaces(2);

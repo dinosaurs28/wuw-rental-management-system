@@ -108,8 +108,8 @@ export const PickupController = async (req: Request, res: Response) => {
     // sent now or already on file; 422 DL_NUMBER_REQUIRED otherwise.
     const pickupDl = await resolvePickupDlNumber(booking.customer.id, sentDlNumber);
 
-    // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED /
-    // DEPOSIT (+ note). Old builds send the boolean tick instead (true ⇒
+    // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED
+    // (DEPOSIT is rejected: DL_STATUS_INVALID). Old builds send the boolean tick instead (true ⇒
     // COLLECTED, false ⇒ NOT_COLLECTED); sending neither (or dlStatus null)
     // leaves it unset — staff can record it later.
     const dlChoice = resolvePickupDlStatus(parsedVehicleDetails);

@@ -11,6 +11,7 @@ import {
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
 import { confirmExtensionPayment } from "../../services/payment/bookingConfirmation.service.js";
+import { UpiQrError } from "../../services/payment/upi-qr.service.js";
 import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
 import {
   isGstRuleMissing,
@@ -20,9 +21,19 @@ import {
 import {
   customerEvaluateExtensionSchema,
   cancelExtensionSchema,
+  isExtensionPackageDuration,
+  extensionPackageOptions,
+  packageLabel,
+  EXTENSION_PACKAGE_REQUIRED,
+  EXTENSION_PACKAGE_REQUIRED_MESSAGE,
 } from "@repo/schemas";
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
-import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
+import {
+  BranchScheduleError,
+  loadBranchScheduleConfig,
+  validateReturnTime,
+} from "../../utils/booking/branchScheduleValidator.js";
+import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
@@ -30,8 +41,31 @@ import {
 import { findDlConflict, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 
 /**
+ * Customers buy extension packages only (+12 h or + N × 24 h). The longest one
+ * from `oldEndAt` that ends by `latestEnd` and inside the branch's return
+ * hours, or null when not even 12 hours fit.
+ */
+async function longestPackageEndWithin(
+  branchId: number,
+  oldEndAt: Date,
+  latestEnd: Date,
+): Promise<{ endAt: Date; hours: number } | null> {
+  const schedule = await loadBranchScheduleConfig(branchId);
+  const options = extensionPackageOptions(oldEndAt, latestEnd);
+  for (let i = options.length - 1; i >= 0; i--) {
+    const option = options[i]!;
+    if (!schedule || validateReturnTime(schedule, option.newEndAt).status !== "RETURN_OUTSIDE_HOURS") {
+      return { endAt: option.newEndAt, hours: option.hours };
+    }
+  }
+  return null;
+}
+
+/**
  * POST /api/user/bookings/:bookingPublicId/extensions/evaluate
- * Customer evaluates an extension for their own booking.
+ * Customer evaluates an extension for their own booking. Customers extend by
+ * packages only — +12 hours or whole days (400 EXTENSION_PACKAGE_REQUIRED
+ * otherwise); Fleet / Branch Manager extensions keep any length.
  */
 export const EvaluateExtension = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -65,7 +99,9 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         customerId: userForBooking.customerProfile.id,
       },
       select: {
+        id: true,
         status: true,
+        endAt: true,
         branchId: true,
         branch: { select: { name: true } },
       },
@@ -82,6 +118,20 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
     ) {
       res.status(StatusCode.BAD_REQUEST).json({
         message: `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`,
+      });
+      return;
+    }
+
+    // Packages only: +12 h or + N × 24 h from the current return (±1 minute).
+    // An end at or before the current return keeps the service's own message.
+    if (
+      new Date(newEndAt).getTime() > booking.endAt.getTime() &&
+      !isExtensionPackageDuration(booking.endAt, newEndAt)
+    ) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: EXTENSION_PACKAGE_REQUIRED,
+        message: EXTENSION_PACKAGE_REQUIRED_MESSAGE,
       });
       return;
     }
@@ -128,25 +178,43 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       // GST split of additionalAmount (taxableAmount + taxAmount)
       ...extensionSplitView(evaluation.pricing),
       extensionHours: evaluation.pricing.extensionHours,
+      // Free km the extension adds (#7) — under 12 h adds none
+      extensionFreeKm: evaluation.pricing.extensionFreeKm,
     };
     let options: Array<{ type: string; description: string; partialNewEndAt?: string }>;
 
+    // A partial extension is shortened to the longest package (+12 h / + N × 24 h)
+    // that fits before the vehicle's next booking — customers buy packages only
+    const partialPackage =
+      !sameVehicle && partial
+        ? await longestPackageEndWithin(
+            booking.branchId,
+            new Date(evaluation.oldEndAt),
+            new Date(partial.partialNewEndAt!),
+          )
+        : null;
+
     if (sameVehicle) {
       options = [sameVehicle];
-    } else if (partial) {
-      const narrowed = await extensionService.narrowQuote(
-        evaluation.extensionPublicId,
-        new Date(partial.partialNewEndAt!),
-      );
-      requestedEndAt = partial.partialNewEndAt!;
+    } else if (partial && partialPackage) {
+      const packageEndIso = partialPackage.endAt.toISOString();
+      const narrowed = await extensionService.narrowQuote(evaluation.extensionPublicId, partialPackage.endAt);
+      requestedEndAt = packageEndIso;
       pricing = {
         newDays: narrowed.newDays,
         additionalAmount: narrowed.additionalAmount.toFixed(2),
         newTotalFinal: narrowed.newTotalFinal.toFixed(2),
         ...extensionSplitView(narrowed),
         extensionHours: narrowed.extensionHours,
+        extensionFreeKm: await describeExtensionFreeKm(booking.id, new Date(evaluation.oldEndAt), partialPackage.endAt),
       };
-      options = [partial];
+      options = [
+        {
+          type: partial.type,
+          description: `Your vehicle is booked again soon, so the longest extension available is ${packageLabel(partialPackage.hours)}.`,
+          partialNewEndAt: packageEndIso,
+        },
+      ];
     } else {
       // Nothing a customer can buy — release the quote so the booking stays extendable
       await extensionService.cancel(
@@ -154,7 +222,14 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         actor,
         "No extension available to the customer for the requested dates",
       );
-      options = [{ type: "NO_RESOLUTION", description: "No extension is possible for the requested dates." }];
+      options = [
+        {
+          type: "NO_RESOLUTION",
+          description: partial
+            ? "Your vehicle is booked again soon after your return, so it can't be extended by 12 hours or more."
+            : "No extension is possible for the requested dates.",
+        },
+      ];
     }
 
     // Return customer-safe subset (no internal IDs)
@@ -181,6 +256,7 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
           taxRate: pricing.taxRate,
           originalHours: evaluation.pricing.originalHours,
           extensionHours: pricing.extensionHours,
+          extensionFreeKm: pricing.extensionFreeKm,
         },
         resolutionOptions: options.map((o) => ({
           type: o.type,
@@ -285,11 +361,18 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
       branchName: extensionRecord.booking.branch.name,
     };
 
+    // Closes any open UPI QR first (#2): 409 UPI_QR_ALREADY_PAID keeps the
+    // extension a QR payment confirmed; 502 GATEWAY_UNAVAILABLE when a code
+    // couldn't be closed — never cancel over a QR that can still take money
     await extensionService.cancel(extensionPublicId!, actor, validation.data.reason);
 
     res.status(StatusCode.OK).json({ message: "Extension cancelled successfully" });
   } catch (error: any) {
     console.error("Customer CancelExtension Error:", error);
+    if (error instanceof UpiQrError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
       return;
@@ -379,10 +462,21 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     // 15-day cap (#15) and branch office hours (#2) for the extension pickers
     const limits = await buildExtensionLimits(booking, now);
 
+    // Customers extend by packages (+12 hours, +1 day …) up to the cap; each
+    // says whether its return falls inside the branch's return hours.
+    const schedule = await loadBranchScheduleConfig(booking.branchId);
+    const packageOptions = extensionPackageOptions(booking.endAt, limits.maxEndAt).map((option) => ({
+      hours: option.hours,
+      label: option.label,
+      newEndAt: option.newEndAt.toISOString(),
+      insideHours: !schedule || validateReturnTime(schedule, option.newEndAt).status !== "RETURN_OUTSIDE_HOURS",
+    }));
+    const noPackageFits = !limits.atCap && packageOptions.length === 0;
+
     // Button is visible for any active booking that hasn't ended yet and still
-    // has room under the maximum rental period.
+    // has room for at least the 12-hour package under the maximum rental period.
     const ended = hoursUntilEnd <= 0;
-    const eligible = !ended && !limits.atCap;
+    const eligible = !ended && !limits.atCap && !noPackageFits;
 
     res.status(StatusCode.OK).json({
       data: {
@@ -392,8 +486,11 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
           ? "Rental has already ended"
           : limits.atCap
             ? maxPeriodReachedMessage(limits)
-            : null,
+            : noPackageFits
+              ? `Less than 12 hours are left before the ${limits.maxBookingDays}-day limit, so this booking can't be extended.`
+              : null,
         ...limits,
+        packageOptions,
       },
     });
   } catch (error: any) {

@@ -3,6 +3,7 @@ import { prisma, BookingStatus, Role } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 import { auditService } from "../services/audit/audit.service.js";
 import { discountApplicationService } from "../services/discount/discount-application.service.js";
+import { reconcileBookingUpiQrs } from "../services/payment/upi-qr.service.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Lazy initialization - connections created when needed, after env vars are loaded
@@ -165,6 +166,17 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
         `[BookingExpiry] Booking ${bookingPublicId} is already ${booking.status}, skipping cancellation`,
       );
       return;
+    }
+
+    // Last chance for a UPI QR payment whose webhook never arrived: its codes
+    // closed before the hold ended, so settle a captured one instead of expiring (#2)
+    try {
+      if (await reconcileBookingUpiQrs(booking.id, { close: "EXPIRED" })) {
+        console.log(`[BookingExpiry] Booking ${bookingPublicId} was paid by UPI QR — confirmed, not expiring`);
+        return;
+      }
+    } catch (qrErr) {
+      console.error(`[BookingExpiry] UPI QR reconcile failed for ${bookingPublicId}:`, qrErr);
     }
 
     // Cancel the booking
@@ -376,25 +388,32 @@ function startFallbackCron(): void {
 async function initBookingExpiryWorker(): Promise<void> {
   console.log("[BookingExpiry] Initializing booking expiry worker...");
 
+  // Instant expiry needs Redis keyspace events. Managed Redis (as in prod)
+  // refuses CONFIG SET, so that part may fail — it must never stop the
+  // fallback sweep below, or lapsed holds would never expire at all.
+  let instant = true;
   try {
-    // Enable keyspace notifications
     await enableKeyspaceNotifications();
-
-    // Start listening for expired events
-    await startExpiryListener();
-
-    // Start fallback cron as safety net
-    startFallbackCron();
-
-    console.log(
-      "[BookingExpiry] Booking expiry worker initialized successfully",
-    );
-  } catch (error) {
-    console.error(
-      "[BookingExpiry] Failed to initialize booking expiry worker:",
-      error,
+  } catch {
+    instant = false;
+    console.warn(
+      "[BookingExpiry] Could not enable keyspace notifications (CONFIG SET not allowed?) — enable notify-keyspace-events 'Ex' at the Redis provider for instant expiry; relying on the fallback sweep meanwhile",
     );
   }
+
+  try {
+    await startExpiryListener();
+  } catch (error) {
+    instant = false;
+    console.error("[BookingExpiry] Expiry listener failed to start:", error);
+  }
+
+  // Always run the fallback sweep as the safety net
+  startFallbackCron();
+
+  console.log(
+    `[BookingExpiry] Booking expiry worker initialized (${instant ? "instant events + fallback sweep" : "fallback sweep only"})`,
+  );
 }
 
 // Export initialization function to be called from index.ts after env vars are loaded

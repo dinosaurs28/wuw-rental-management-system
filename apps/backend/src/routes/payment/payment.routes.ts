@@ -2,6 +2,12 @@ import { Router } from "express";
 import { checkPayment } from "../../controller/payment/checkPayment.controller.js";
 import { verifyPayment } from "../../controller/payment/verifyPayment.controller.js";
 import { razorpayWebhook } from "../../controller/payment/razorpayWebhook.controller.js";
+import {
+  CreateUpiQr,
+  GetUpiQrStatus,
+  CloseUpiQr,
+  GetUpiQrAvailability,
+} from "../../controller/payment/upiQr.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares.js";
 import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
@@ -20,5 +26,11 @@ router.post("/staff/verify", EmployeeCheck, verifyPayment);
 router.post("/manager/verify", ManagerCheck, verifyPayment);
 // No auth — Razorpay calls this; the x-razorpay-signature HMAC is the auth.
 router.post("/razorpay/webhook", razorpayWebhook);
+
+// UPI QR for customers without a UPI app (scan from another phone) — customer only
+router.get("/upi-qr/availability", authCheckJwt, GetUpiQrAvailability);
+router.post("/upi-qr", authCheckJwt, CreateUpiQr);
+router.get("/upi-qr/:qrPaymentId", authCheckJwt, GetUpiQrStatus);
+router.post("/upi-qr/:qrPaymentId/close", authCheckJwt, CloseUpiQr);
 
 export default router;

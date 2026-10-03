@@ -1,4 +1,5 @@
-import { prisma } from "@repo/database/client";
+import crypto from "crypto";
+import { prisma, Role } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { Request, Response } from "express";
 import { rateLimit } from "../../utils/rateLimiter.js";
@@ -9,20 +10,68 @@ import {
 import { sendOTP } from "../../services/otp/otpservice.js";
 import { otpSchema } from "@repo/schemas";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
+import { normalizeIndianMobile, toMsg91Mobile } from "../../utils/phone.js";
+import {
+  readVerifySession,
+  VERIFY_SESSION_COOKIE,
+} from "../../utils/token/verifySession.js";
+
+// Sign-up phone verification. Only an UNVERIFIED customer holding a valid,
+// signed verifySession cookie (issued after their password / Google sign-in)
+// may use it. The typed phone is kept with the pending code and written to the
+// account only once the code is verified, so this endpoint can never point
+// someone else's account at a new number.
+function awaitingPhoneVerification(user: {
+  role: Role;
+  emailVerifiedAt: Date | null;
+  deletedAt: Date | null;
+  isActive: boolean;
+}): boolean {
+  return (
+    user.role === Role.CUSTOMER &&
+    !user.emailVerifiedAt &&
+    !user.deletedAt &&
+    user.isActive
+  );
+}
+
+function sessionExpired(res: Response) {
+  return res.status(StatusCode.FORBIDDEN).json({
+    success: false,
+    code: "VERIFY_SESSION_INVALID",
+    message: "Your verification session has expired. Please sign in again.",
+  });
+}
+
+function notAwaitingVerification(res: Response) {
+  return res.status(StatusCode.FORBIDDEN).json({
+    success: false,
+    code: "VERIFICATION_NOT_REQUIRED",
+    message: "This account doesn't need phone verification. Please sign in.",
+  });
+}
 
 export const generateOTP = async (req: Request, res: Response) => {
   try {
-    const publicId = req.cookies.verifySession;
-    const phone_num = req.body.phone;
+    const publicId = readVerifySession(req);
+    const phone_num = req.body?.phone;
 
     if (!publicId) {
-      return res.status(StatusCode.FORBIDDEN).json({
-        message: "The Public ID is Missing",
-      });
+      return sessionExpired(res);
     }
     if (!phone_num) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Phone Number is Missing",
+      });
+    }
+    const phone = normalizeIndianMobile(
+      typeof phone_num === "number" ? String(phone_num) : phone_num,
+    );
+    if (!phone) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_PHONE",
+        message: "Enter a valid 10-digit mobile number.",
       });
     }
 
@@ -31,17 +80,10 @@ export const generateOTP = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(StatusCode.NOT_FOUND).json({
-        message: "User not found",
-      });
+      return sessionExpired(res);
     }
-
-    // Update phone number if it's different
-    if (user.phone !== phone_num) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { phone: phone_num },
-      });
+    if (!awaitingPhoneVerification(user)) {
+      return notAwaitingVerification(res);
     }
 
     const allowed1 = await rateLimit(`otp_send_1min:${user.id}`, 1, 60);
@@ -57,22 +99,22 @@ export const generateOTP = async (req: Request, res: Response) => {
       where: { userId: user.id },
     });
 
-    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otp = crypto.randomInt(100000, 1000000);
 
-    // Store hash locally for verification
+    // Store hash locally for verification. The phone waits here until the
+    // code is verified; only then is it saved on the account.
     await prisma.emailVerificationOtp.create({
       data: {
-        phone: phone_num,
+        phone,
         userId: user.id,
         otpHash: await hashpassword(String(otp)),
         expiresAt: new Date(Date.now() + 1000 * 60 * 5),
       },
     });
-    console.log("OTP Generated", otp);
 
     // Send SMS
     const smsResponse = await sendOTP({
-      mobile: phone_num,
+      mobile: toMsg91Mobile(phone),
       otp: otp,
     });
 
@@ -96,7 +138,7 @@ export const generateOTP = async (req: Request, res: Response) => {
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
     const parsedopt = otpSchema.safeParse(req.body);
-    const publicId = req.cookies.verifySession;
+    const publicId = readVerifySession(req);
 
     if (!parsedopt.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -104,9 +146,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
       });
     }
     if (!publicId) {
-      return res.status(StatusCode.FORBIDDEN).json({
-        message: "The Public ID is Missing",
-      });
+      return sessionExpired(res);
     }
 
     const user = await prisma.user.findUnique({
@@ -116,9 +156,10 @@ export const verifyOTP = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(StatusCode.NOT_FOUND).json({
-        message: "User does not exist.",
-      });
+      return sessionExpired(res);
+    }
+    if (!awaitingPhoneVerification(user)) {
+      return notAwaitingVerification(res);
     }
 
     const allowed = await rateLimit(`otp_verify:${user.id}`, 5, 3600);
@@ -154,9 +195,14 @@ export const verifyOTP = async (req: Request, res: Response) => {
       });
     }
 
+    // The number the code went to is proven now: save it with the verification.
+    const verifiedPhone = normalizeIndianMobile(response.phone);
     await prisma.user.update({
       where: { id: user.id },
-      data: { emailVerifiedAt: new Date() },
+      data: {
+        emailVerifiedAt: new Date(),
+        ...(verifiedPhone ? { phone: verifiedPhone } : {}),
+      },
     });
 
     await prisma.emailVerificationOtp.deleteMany({
@@ -179,7 +225,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
         secure: true,
         sameSite: "strict",
       })
-      .clearCookie("verifySession")
+      .clearCookie(VERIFY_SESSION_COOKIE)
       .json({
         message: "OTP validated successfully",
       });

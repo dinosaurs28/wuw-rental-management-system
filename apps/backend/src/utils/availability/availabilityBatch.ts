@@ -132,6 +132,67 @@ async function checkHoldsForVehicles(
 }
 
 /**
+ * Active Redis holds (customer checkouts) on these vehicles that overlap
+ * [start, end), with their windows — skipping `excludeHoldIds` (a booking's own
+ * hold id is its publicId). Used where a booking is moved (reschedule) and the
+ * caller needs to say what is in the way. Redis failures are logged and read
+ * as "no holds", like checkHoldsForVehicles.
+ */
+export async function listOverlappingHolds(
+  vehicleIdToPublicId: Map<number, string>,
+  start: Date,
+  end: Date,
+  excludeHoldIds: ReadonlySet<string> = new Set(),
+): Promise<Array<{ vehicleId: number; holdId: string; startAt: Date; endAt: Date }>> {
+  const found: Array<{ vehicleId: number; holdId: string; startAt: Date; endAt: Date }> = [];
+  if (vehicleIdToPublicId.size === 0) return found;
+  try {
+    const entries = Array.from(vehicleIdToPublicId.entries());
+    const pipeline = redis.pipeline();
+    for (const [, publicId] of entries) pipeline.smembers(`vehicle_holds:${publicId}`);
+    const results = (await pipeline.exec()) ?? [];
+
+    const perVehicle: Array<{ vehicleId: number; holdIds: string[] }> = [];
+    entries.forEach(([vehicleId], i) => {
+      const result = results[i];
+      const holdIds = ((result && !result[0] ? (result[1] as string[]) : null) ?? []).filter(
+        (id) => !excludeHoldIds.has(id),
+      );
+      if (holdIds.length > 0) perVehicle.push({ vehicleId, holdIds });
+    });
+    if (perVehicle.length === 0) return found;
+
+    const uniqueHoldIds = [...new Set(perVehicle.flatMap((v) => v.holdIds))];
+    const raw = await redis.mget(...uniqueHoldIds);
+    const holds = new Map<string, { startDate: string; endDate: string }>();
+    uniqueHoldIds.forEach((id, i) => {
+      const value = raw[i];
+      if (!value) return;
+      try {
+        holds.set(id, JSON.parse(value));
+      } catch {
+        // malformed hold — skip
+      }
+    });
+
+    for (const { vehicleId, holdIds } of perVehicle) {
+      for (const holdId of holdIds) {
+        const hold = holds.get(holdId);
+        if (!hold) continue;
+        const holdStart = new Date(hold.startDate);
+        const holdEnd = new Date(hold.endDate);
+        if (holdStart < end && holdEnd > start) {
+          found.push({ vehicleId, holdId, startAt: holdStart, endAt: holdEnd });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[availability] Redis hold listing failed, ignoring holds:", err);
+  }
+  return found;
+}
+
+/**
  * TASK-003: Get all vehicleIds unavailable for [start, end).
  * Checks both CONFIRMED/PICKED_UP bookings (DB) and active holds (Redis).
  *

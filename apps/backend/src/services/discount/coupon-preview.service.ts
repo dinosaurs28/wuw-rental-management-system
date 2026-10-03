@@ -1,12 +1,13 @@
 import Decimal from "decimal.js";
 import { prisma } from "@repo/database/client";
-import { PricingEngineService } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, rentInclGstFields } from "../pricing/pricing-engine.service.js";
 import { TimezoneService } from "../timezone/timezone.service.js";
-import { couponValidationService, normalizeCouponCode } from "./coupon-validation.service.js";
+import { normalizeCouponCode } from "./coupon-validation.service.js";
 import {
   getCustomerPaymentMode,
   resolvePaymentOptions,
   resolveEffectiveFlow,
+  checkCustomerCouponPlan,
   type PaymentFlow,
   type PaymentOptions,
 } from "../payment/payment-flow.service.js";
@@ -35,7 +36,7 @@ export interface CouponPreviewInput {
   endAt: string;
   /** 0 = anonymous preview. */
   customerId: number;
-  /** Plan the customer has picked; omitted = the branch's default plan. */
+  /** Plan the client shows (item 18: there is no choice); omitted = the fixed plan. */
   paymentFlow?: PaymentFlow;
 }
 
@@ -136,27 +137,13 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
   const effective = resolveEffectiveFlow(input.paymentFlow ?? paymentOptions.defaultFlow, paymentOptions);
 
   // Plan-specific coupon rules for the plan that would actually be charged
-  const planCheck = couponValidationService.checkPaymentPlan(evaluation.couponRule, effective.flow);
+  // (item 18: the advance whenever it's usable — a full-payment-only coupon
+  // is refused with the reason, same text as booking create)
+  const planCheck = checkCustomerCouponPlan(evaluation.couponRule, paymentOptions);
   if (!planCheck.valid) {
     return {
       status: 200,
-      data: { valid: false, code: planCheck.failureCode, reason: planCheck.failureReason },
-    };
-  }
-  const minAdvance = evaluation.couponRule.minAdvanceAfterDiscount;
-  if (
-    effective.flow === "ADVANCE" &&
-    minAdvance != null &&
-    new Decimal(vehicle.advancePayAmount?.toString() ?? "0").lt(minAdvance.toString())
-  ) {
-    return {
-      status: 200,
-      data: {
-        valid: false,
-        code: "COUPON_PAYMENT_PLAN_MISMATCH",
-        reason: `This coupon needs an advance of at least ₹${Number(minAdvance).toFixed(2)}` +
-          (paymentOptions.allowedFlows.includes("FULL") ? "; pay the full amount to use it." : "."),
-      },
+      data: { valid: false, code: planCheck.code, reason: planCheck.message },
     };
   }
 
@@ -167,6 +154,8 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
       couponCode: pricing.appliedCouponCode ?? code,
       // Coupon layer only (pre-GST) — kept for older clients
       discountAmount: pricing.couponDiscountAmount.toFixed(2),
+      // What the coupon takes off the GST-inclusive rent (item 17) — show this one
+      discountInclGst: pricing.gross.couponDiscount.toFixed(2),
       discountType: evaluation.couponRule.discountType,
       discountValue: evaluation.couponRule.value.toString(),
       // The full server-priced breakdown with the coupon applied
@@ -186,6 +175,9 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
         finalTotal: n2(pricing.finalTotal),
         deposit: n2(pricing.deposit),
         payableTotal: n2(payableTotal),
+        // GST-inclusive rent view (item 17): rentInclGst − discountInclGst =
+        // rentAfterDiscountInclGst = rentWithoutGst + gst
+        ...rentInclGstFields(pricing),
       },
       payableTotal: n2(payableTotal),
       paymentFlow: effective.flow,

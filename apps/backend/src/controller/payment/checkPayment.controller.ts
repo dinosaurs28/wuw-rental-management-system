@@ -13,6 +13,7 @@ import {
 } from "../../services/payment/bookingConfirmation.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { bookingUpiQrState } from "../../services/payment/upi-qr.service.js";
 
 export const checkPayment = async (req: Request, res: Response) => {
   try {
@@ -56,6 +57,9 @@ export const checkPayment = async (req: Request, res: Response) => {
     // Counter payments (cash, or UPI with a UTR) settle without a gateway call
     const isCash = transactionId.startsWith("CASH_");
     const isUpi = transactionId.startsWith("UPI_");
+    // Counter split (cash + UPI) and credit (#11) settle without a gateway too
+    const isSplit = transactionId.startsWith("SPLIT_");
+    const isCredit = transactionId.startsWith("CREDIT_");
 
     let gatewayStatus: GatewayPaymentStatus | null = null;
     if (isRazorpayOrderId(transactionId)) {
@@ -78,12 +82,14 @@ export const checkPayment = async (req: Request, res: Response) => {
 
     console.log(`[checkPayment] isCash=${isCash} isUpi=${isUpi} isOnlineSuccess=${isOnlineSuccess} isOnlinePending=${isOnlinePending} state=${gatewayStatus?.state}`);
 
-    if (isOnlineSuccess || isCash || isUpi) {
+    if (isOnlineSuccess || isCash || isUpi || isSplit || isCredit) {
       const { alreadyConfirmed, skipped } = await confirmBookingPayment({
         bookingId: booking.id,
         transactionId,
         isCash,
         isUpi,
+        isSplit,
+        isCredit,
         gatewayPaymentId: gatewayStatus?.paymentId ?? null,
         actor: {
           ip: req.ip,
@@ -96,11 +102,18 @@ export const checkPayment = async (req: Request, res: Response) => {
       if (skipped === "CANCELLED") {
         // Counter UPI: the money is already in the branch account and the UTR
         // was never claimed, so staff simply book again with it.
-        if (isUpi) {
-          console.warn(`[checkPayment] UPI booking=${booking.publicId} is ${booking.status} — staff to re-create with the same UTR`);
+        if (isUpi || isSplit) {
+          console.warn(`[checkPayment] counter UPI booking=${booking.publicId} is ${booking.status} — staff to re-create it`);
           return res.status(StatusCode.OK).json({
             status: "Failed",
-            message: "This booking's hold expired before it was confirmed. The UPI payment was received at the counter — create the booking again with the same UTR.",
+            message: "This booking's hold expired before it was confirmed. The UPI payment was received at the counter — create the booking again with the same payment photo (or UTR).",
+            redirectURL: "FRONTEND_FAILED_URL",
+          });
+        }
+        if (isCredit) {
+          return res.status(StatusCode.OK).json({
+            status: "Failed",
+            message: "This booking's hold expired before it was confirmed. Nothing was charged — create the booking again.",
             redirectURL: "FRONTEND_FAILED_URL",
           });
         }
@@ -112,20 +125,32 @@ export const checkPayment = async (req: Request, res: Response) => {
         });
       }
 
-      // The UTR now backs another payment, so this hold can never be confirmed —
-      // release the vehicles and let staff re-create it with the right UTR.
-      if (skipped === "DUPLICATE_UTR") {
+      // The payment photo (or, from older builds, the UTR) now backs another
+      // payment, so this hold can never be confirmed — release the vehicles and
+      // let staff re-create it with the right photo / UTR.
+      if (skipped === "DUPLICATE_UTR" || skipped === "DUPLICATE_PAYMENT_PROOF") {
         await failBookingPayment(booking.id);
         try {
           await invalidateVehicleAvailability(redis, booking.items.map((item) => item.vehicle.id));
         } catch (redisErr) {
           console.warn("[payment] Cache invalidation failed (non-fatal):", redisErr);
         }
-        return res.status(StatusCode.CONFLICT).json({
-          status: "Failed",
-          code: "DUPLICATE_UTR",
-          message: "This UTR has already been used for another payment. Create the booking again with the correct UTR.",
-        });
+        return res.status(StatusCode.CONFLICT).json(
+          skipped === "DUPLICATE_PAYMENT_PROOF"
+            ? {
+                success: false,
+                status: "Failed",
+                code: "DUPLICATE_PAYMENT_PROOF",
+                message:
+                  "This payment photo is already attached to another payment. Create the booking again with a photo of this payment's success screen.",
+              }
+            : {
+                success: false,
+                status: "Failed",
+                code: "DUPLICATE_UTR",
+                message: "This UTR has already been used for another payment. Create the booking again with the correct UTR.",
+              },
+        );
       }
 
       console.log(`[checkPayment] SUCCESS booking=${booking.publicId} alreadyConfirmed=${alreadyConfirmed}`);
@@ -142,6 +167,29 @@ export const checkPayment = async (req: Request, res: Response) => {
       await invalidateVehicleAvailability(redis, vehicleIds);
     } catch (redisErr) {
       console.warn("[payment] Cache invalidation failed (non-fatal):", redisErr);
+    }
+
+    // The customer may be paying by UPI QR (scanned from another phone) instead
+    // of this order: a paid QR confirms the hold, an open one keeps it pending (#2)
+    if (isRazorpayOrderId(transactionId)) {
+      const qr = await bookingUpiQrState(booking.id, {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"] as string | undefined,
+      });
+      if (qr === "CONFIRMED") {
+        console.log(`[checkPayment] booking=${booking.publicId} confirmed by UPI QR`);
+        return res.status(StatusCode.OK).json({
+          status: "Success",
+          message: "Payment received by UPI QR",
+          redirectURL: "FRONTEND_SUCCESS_URL",
+        });
+      }
+      if (qr === "OPEN") {
+        return res.status(StatusCode.OK).json({
+          status: "Pending",
+          message: "Waiting for the UPI QR payment",
+        });
+      }
     }
 
     if (isOnlinePending) {

@@ -4,6 +4,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, ExtensionTrigger as ET } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
 import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
 import {
   isGstRuleMissing,
   GST_RULE_MISSING,
@@ -12,6 +13,7 @@ import {
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
 import { DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { UpiQrError } from "../../services/payment/upi-qr.service.js";
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
@@ -140,6 +142,8 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
         ...extensionSplitView(extension),
         remainAmount,
+        // Free km the committed extension adds to the drop allowance (#7)
+        extensionFreeKm: await describeExtensionFreeKm(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
       },
     });
   } catch (error: any) {
@@ -200,6 +204,11 @@ export const CancelExtension = async (req: Request, res: Response): Promise<void
     res.status(StatusCode.OK).json({ message: "Extension cancelled successfully" });
   } catch (error: any) {
     console.error("Manager CancelExtension Error:", error);
+    // The customer's UPI QR for it was paid (409 UPI_QR_ALREADY_PAID) or couldn't be closed (502)
+    if (error instanceof UpiQrError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
       return;

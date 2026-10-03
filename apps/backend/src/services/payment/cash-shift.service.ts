@@ -8,6 +8,7 @@ import { SYSTEM_TIMEZONE } from "../timezone/timezone.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
 import type { CashShift, Role } from "@repo/database/client";
+import { proofPhotoFields, PROOF_FILE_RELATION_SELECT } from "./payment-proof.service.js";
 
 /*
  * Cash shift money model
@@ -615,6 +616,8 @@ class CashShiftService {
             collectedBy: { select: { name: true } },
             confirmedBy: { select: { name: true } },
             rejectedBy: { select: { name: true } },
+            // UPI payment-screen photo (#3) — the BM verifies UPI money with it
+            proofFile: PROOF_FILE_RELATION_SELECT,
           },
         },
       },
@@ -627,7 +630,7 @@ class CashShiftService {
     const { transactions: rawTxns, ...record } = shift;
     const view = this.toView(record, live);
 
-    const transactions = rawTxns.map((t) => ({
+    const transactions = await Promise.all(rawTxns.map(async (t) => ({
       publicId: t.publicId,
       bookingPublicId: t.booking.publicId,
       customerName: t.booking.customer?.user?.name ?? null,
@@ -652,7 +655,9 @@ class CashShiftService {
       createdAt: t.createdAt,
       // Recorded after the close snapshot was taken, so not in its figures
       linkedAfterClose: !!shift.closedAt && t.createdAt > shift.closedAt,
-    }));
+      // Additive: presigned photo of the customer's UPI payment screen (#3)
+      ...(await proofPhotoFields(t.proofFile)),
+    })));
 
     return opts.legacy
       ? { ...record, ...this.legacyKeys(view, record), ...view, transactions }

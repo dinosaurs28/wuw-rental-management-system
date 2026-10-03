@@ -30,8 +30,8 @@ import {
   type LateReturnCharge,
   type SerializedLateReturn,
 } from "./late-return.service.js";
-import { getBranchGstRates, computeLineGst, GstRuleMissingError } from "../tax/gst.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
+import { extensionFreeKm, loadBookingFreeKmRates, type FreeKmRates } from "./extension-km.js";
 
 export interface TimelineExtensionInput {
   id: number;
@@ -109,10 +109,15 @@ export async function activeExtensionState(
   };
 }
 
-/** Pure: booked window and extensions (no late return). */
+/**
+ * Pure: booked window and extensions (no late return). With the vehicle's
+ * slab free km (freeKmRates), each extension also carries the free km it adds
+ * to the drop allowance (#7 rule, extension-km.ts); null when they're unknown.
+ */
 export function buildRentalPeriod(
   booking: { startAt: Date; endAt: Date; originalEndAt: Date | null; activeExtensionId: number | null },
   extensions: TimelineExtensionInput[],
+  freeKmRates: FreeKmRates | null = null,
 ) {
   const live = extensions
     .filter((e) => isLiveExtension(e, booking.activeExtensionId))
@@ -127,6 +132,13 @@ export function buildRentalPeriod(
   const originalMinutes = Math.min(totalMinutes, Math.max(0, minutesBetween(booking.startAt, originalEndAt)));
   const extendedMinutes = Math.max(0, totalMinutes - originalMinutes);
 
+  // Free km each extension adds (#7) — the same figures the drop's km allowance sums
+  const extensionKm = live.map((e) =>
+    freeKmRates
+      ? extensionFreeKm(Math.max(0, minutesBetween(e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt)), freeKmRates)
+      : null,
+  );
+
   return {
     startAt: booking.startAt.toISOString(),
     originalEndAt: originalEndAt.toISOString(),
@@ -135,7 +147,11 @@ export function buildRentalPeriod(
     extendedMinutes,
     totalMinutes,
     extensionCount: live.length,
-    extensions: live.map((e) => {
+    /** Σ free km the extensions add to the allowance; null when the vehicle's free km are unknown. */
+    extensionFreeKmTotal: extensionKm.every((k) => k != null)
+      ? extensionKm.reduce((sum, k) => sum + (k?.km ?? 0), 0)
+      : null,
+    extensions: live.map((e, index) => {
       const newEndAt = e.actualNewEndAt ?? e.requestedEndAt;
       return {
         publicId: e.publicId,
@@ -151,6 +167,8 @@ export function buildRentalPeriod(
         trigger: e.extensionTrigger,
         additionalAmount: new Decimal(e.additionalAmount.toString()).toFixed(2),
         taxAmount: new Decimal(e.taxAmount.toString()).toFixed(2),
+        /** Free km this extension adds (whole 24 h → freeKm24Hour, a remaining ≥ 12 h → freeKm12Hour). */
+        freeKm: extensionKm[index] ?? null,
       };
     }),
   };
@@ -175,22 +193,16 @@ const toPreview = (late: SerializedLateReturn, gstUnavailableReason: string | nu
   gstUnavailableReason,
 });
 
-/** Late charge with its GST at the branch rate; a missing GST rule is reported, not guessed. */
+/**
+ * Late charge preview. A late return is a recovery charge: billed at face value
+ * with no GST (item 8), so gst/cgst/sgst are 0, gstRate null and total = amount.
+ */
 async function priceLateCharge(
   charge: LateReturnCharge,
-  branchId: number,
-  db: TxClient,
+  _branchId: number,
+  _db: TxClient,
 ): Promise<LatePreview> {
-  if (charge.amount.lte(0)) return toPreview(serializeLateReturn(charge));
-  try {
-    const rates = await getBranchGstRates(branchId, db);
-    return toPreview(serializeLateReturn(charge, computeLineGst(charge.amount, rates)));
-  } catch (err) {
-    if (err instanceof GstRuleMissingError) {
-      return toPreview(serializeLateReturn(charge), err.code);
-    }
-    throw err;
-  }
+  return toPreview(serializeLateReturn(charge));
 }
 
 /**
@@ -242,7 +254,14 @@ export async function getRentalTimeline(
   });
   if (!booking) throw new Error("Booking not found");
 
-  const period = buildRentalPeriod(booking, booking.extensions as TimelineExtensionInput[]);
+  // The vehicle's slab free km, for the km each extension adds (missing rates → no km figures)
+  const freeKmRates = booking.extensions.length > 0
+    ? await loadBookingFreeKmRates(bookingId, db).catch((err) => {
+        console.warn(`[rental-timeline] Free km rates unavailable for booking ${bookingId}:`, err);
+        return null;
+      })
+    : null;
+  const period = buildRentalPeriod(booking, booking.extensions as TimelineExtensionInput[], freeKmRates);
 
   let late: {
     returnedAt: string | null;

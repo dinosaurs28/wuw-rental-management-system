@@ -124,6 +124,48 @@ export function rentalGstSplitView(booking: {
   };
 }
 
+/**
+ * The original booking's rent, GST-inclusive (item 17), for booking screens:
+ *   rentAfterDiscountInclGst = totalBase − totalDiscount + totalTax (what the rent costs)
+ *   rentWithoutGst           = totalBase − totalDiscount
+ *   discountInclGst          = discounts off the inclusive rent (pricing snapshot;
+ *                              older bookings: totalDiscount — taken before GST then)
+ *   rentInclGst              = rentAfterDiscountInclGst + discountInclGst
+ * GST = totalTax (CGST / SGST: rentalGstSplitView). Numbers, 2 dp.
+ */
+export function rentInclGstView(booking: {
+  totalBase: { toString(): string };
+  totalDiscount: { toString(): string };
+  totalTax: { toString(): string };
+  pricingSnapshot: unknown;
+}): { rentInclGst: number; discountInclGst: number; rentAfterDiscountInclGst: number; rentWithoutGst: number } {
+  const totals = ((booking.pricingSnapshot as { totals?: Record<string, unknown> } | null)?.totals ?? {}) as Record<string, unknown>;
+  const rentWithoutGst = r2(D(booking.totalBase).sub(D(booking.totalDiscount)));
+  const after = r2(rentWithoutGst.add(D(booking.totalTax)));
+  const discount = r2(
+    totals.grandDiscountInclGst != null ? new Decimal(String(totals.grandDiscountInclGst)) : D(booking.totalDiscount),
+  );
+  return {
+    rentInclGst: Number(after.add(discount).toFixed(2)),
+    discountInclGst: Number(discount.toFixed(2)),
+    rentAfterDiscountInclGst: Number(after.toFixed(2)),
+    rentWithoutGst: Number(rentWithoutGst.toFixed(2)),
+  };
+}
+
+/**
+ * True for a booking priced before GST-inclusive rents (item 17): GST was added
+ * ON TOP of the configured rent (totalBase = the configured price, totalTax =
+ * rate% of the rent after discounts). Every booking priced since snapshots the
+ * inclusive totals (pricingSnapshot.totals.grandRentInclGst); older snapshots —
+ * or none at all — don't. Anything that re-prices or discounts such a booking
+ * keeps its GST-on-top arithmetic, so its GST stays at the booking's rate.
+ */
+export function isGstOnTopBooking(pricingSnapshot: unknown): boolean {
+  const totals = (pricingSnapshot as { totals?: { grandRentInclGst?: unknown } } | null)?.totals;
+  return totals?.grandRentInclGst == null;
+}
+
 /** Split a stored GST amount into CGST/SGST in the ratio of the frozen rates. */
 function splitTax(tax: Decimal, rates: BranchGstRates): { cgst: Decimal; sgst: Decimal } {
   if (tax.isZero() || rates.rate <= 0) return { cgst: ZERO, sgst: ZERO };

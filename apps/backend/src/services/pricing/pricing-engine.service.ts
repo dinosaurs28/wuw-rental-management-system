@@ -19,12 +19,13 @@ import {
   branchPricingDefaultsKey,
   depositSettingKey,
 } from "../../utils/cache/vehicleCacheKeys.js";
-import { getBranchGstRatesCached, computeLineGst } from "../tax/gst.service.js";
+import { getBranchGstRatesCached, splitRentGross } from "../tax/gst.service.js";
 
 const PRICING_TTL = 300; // 5 minutes
 
 /**
- * Vehicle pricing configuration
+ * Vehicle pricing configuration. Every rent here (hourly, 12 h, 24 h, monthly)
+ * is a GST-INCLUSIVE total — what the customer pays (item 17).
  */
 export interface VehiclePricing {
   hourlyRate: Decimal | null;
@@ -51,10 +52,54 @@ function optionalRate(val: { toString(): string } | null | undefined): Decimal |
 }
 
 /**
+ * The GST-inclusive 12 h / 24 h rent of a pricing row: totalRent* (the column
+ * the BM form edits), else price* (same total; rows priced before totalRent*
+ * existed, or a cached row without it).
+ */
+function inclusiveRent(
+  row: { totalRent12Hour?: unknown; totalRent24Hour?: unknown; price12Hour?: unknown; price24Hour?: unknown },
+  slab: "12" | "24",
+): Decimal | null {
+  const total = optionalRate((slab === "12" ? row.totalRent12Hour : row.totalRent24Hour) as any);
+  return total ?? optionalRate((slab === "12" ? row.price12Hour : row.price24Hour) as any);
+}
+
+const ZERO_DEC = new Decimal(0);
+
+/**
+ * Split `total` across `weights` (rounded to paise, half-up) so the parts add up
+ * to `total` exactly: the last non-zero weight takes the rounding remainder.
+ */
+export function allocateByWeights(total: Decimal, weights: Decimal[]): Decimal[] {
+  const sum = weights.reduce((s, w) => s.add(w), ZERO_DEC);
+  if (sum.lte(0)) return weights.map(() => ZERO_DEC);
+  let lastIndex = -1;
+  weights.forEach((w, i) => { if (w.gt(0)) lastIndex = i; });
+  let remaining = total;
+  return weights.map((w, i) => {
+    if (!w.gt(0)) return ZERO_DEC;
+    if (i === lastIndex) return remaining;
+    const part = total.mul(w).div(sum).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    remaining = remaining.sub(part);
+    return part;
+  });
+}
+
+/**
  * Pricing calculation result — expanded with discount breakdown layers.
+ *
+ * Rents are GST-inclusive (item 17). The engine takes every discount off the
+ * inclusive rent (`gross`), splits GST out of the rent after discounts, and
+ * reports the booking in TAXABLE terms in the classic fields, so the stored
+ * invariants hold: basePrice − discountAmount + taxAmount = finalTotal.
+ *   basePrice      = rent without GST of the rent before discounts
+ *   discountAmount = basePrice − rent without GST after discounts
+ *                    (the duration / coupon / manual layers are its shares)
+ *   taxAmount      = GST of the rent after discounts (CGST + SGST)
+ *   finalTotal     = rent incl. GST after discounts (= gross.total)
  */
 export interface PricingResult {
-  // Base pricing (before any discount)
+  // Base pricing (before any discount) — rent without GST
   basePrice: Decimal;
 
   // Layer 1 — duration discount
@@ -94,11 +139,30 @@ export interface PricingResult {
   // Final amounts
   finalTotal: Decimal;
 
+  /**
+   * The same price GST-inclusive — what the customer sees. Discounts are taken
+   * off these amounts (a flat ₹100 coupon is grossCouponDiscount ₹100).
+   */
+  gross: {
+    /** Rent incl. GST before discounts — the configured price (e.g. ₹1,300) */
+    price: Decimal;
+    durationDiscount: Decimal;
+    couponDiscount: Decimal;
+    manualDiscount: Decimal;
+    /** durationDiscount + couponDiscount + manualDiscount */
+    discount: Decimal;
+    /** Rent incl. GST after discounts (= finalTotal) */
+    total: Decimal;
+  };
+  /** Rent without GST after discounts (= basePrice − discountAmount); + taxAmount = gross.total */
+  rentWithoutGst: Decimal;
+
   // Distance limits
   freeKmLimit: number;
   extraKmRate: Decimal;
 
-  // Full evaluation result (for DiscountApplication recording)
+  // Full evaluation result (for DiscountApplication recording) — on the
+  // GST-inclusive rent: originalAmount = gross.price, finalAmount = gross.total
   discountEvaluation: DiscountEvaluationResult;
 
   // Breakdown details
@@ -130,9 +194,14 @@ export interface PricingDiscountOptions {
 }
 
 /**
- * Tax calculation result
+ * Rent GST result: the GST-inclusive rent before / after discounts split into
+ * rent without GST + CGST + SGST (splitRentGross, the client's method).
  */
-interface TaxResult {
+interface RentTaxResult {
+  /** Rent without GST of the rent before discounts */
+  taxableBefore: Decimal;
+  /** Rent without GST of the rent after discounts */
+  taxableAfter: Decimal;
   totalTax: Decimal;
   cgst: Decimal;
   sgst: Decimal;
@@ -143,7 +212,8 @@ interface TaxResult {
 
 /**
  * Service for calculating booking prices.
- * Calculation order: Base Amount → Duration Discount → Coupon/Manual Discount → GST
+ * Calculation order: GST-inclusive rent → Duration Discount → Coupon/Manual
+ * Discount (all on the inclusive rent) → split GST out of the rent after discounts
  */
 export class PricingEngineService {
   /**
@@ -217,25 +287,41 @@ export class PricingEngineService {
       };
       const discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
 
-      const postDiscountBase = discountEvaluation.finalAmount;
-      const durationDiscountAmount = discountEvaluation.durationDiscount.discountAmount;
+      // basePrice here is the GST-inclusive rent (item 17); every discount layer
+      // above was taken off it
+      const grossPrice = basePrice;
+      const grossAfterDiscount = discountEvaluation.finalAmount;
       const durationDiscountPercent = discountEvaluation.durationDiscount.discountPercent;
-      const couponDiscountAmount = discountEvaluation.couponDiscountAmount;
       const couponDiscountPercent = discountEvaluation.couponDiscountPercent;
-      const actualManualDiscount = discountEvaluation.manualDiscountAmount;
-      const totalDiscountAmount = discountEvaluation.totalDiscountAmount;
-      const totalDiscountPercent = basePrice.gt(0)
-        ? totalDiscountAmount.div(basePrice).mul(100).toDecimalPlaces(4)
+      const [grossDuration, grossCoupon, grossManual] = allocateByWeights(
+        grossPrice.sub(grossAfterDiscount),
+        [
+          discountEvaluation.durationDiscount.discountAmount,
+          discountEvaluation.couponDiscountAmount,
+          discountEvaluation.manualDiscountAmount,
+        ],
+      ) as [Decimal, Decimal, Decimal];
+
+      // 6. Split GST out of the rent after discounts (never added on top)
+      const taxResult = await this.calculateRentTax(grossPrice, grossAfterDiscount, branchId);
+
+      // 7. Taxable terms: the discount is what it took off the rent without GST,
+      //    shared across the layers in proportion to their inclusive amounts
+      const taxableBase = taxResult.taxableBefore;
+      const totalDiscountAmount = taxableBase.sub(taxResult.taxableAfter);
+      const [durationDiscountAmount, couponDiscountAmount, actualManualDiscount] = allocateByWeights(
+        totalDiscountAmount,
+        [grossDuration, grossCoupon, grossManual],
+      ) as [Decimal, Decimal, Decimal];
+      const totalDiscountPercent = taxableBase.gt(0)
+        ? totalDiscountAmount.div(taxableBase).mul(100).toDecimalPlaces(4)
         : ZERO;
 
-      // 6. Calculate GST on post-discount amount (never on original base)
-      const taxResult = await this.calculateTax(postDiscountBase, branchId);
-
-      // 7. Final total
-      const finalTotal = postDiscountBase.add(taxResult.totalTax);
+      // 8. Final total — the rent incl. GST after discounts
+      const finalTotal = taxResult.taxableAfter.add(taxResult.totalTax);
 
       return {
-        basePrice,
+        basePrice: taxableBase,
         durationDiscountAmount,
         durationDiscountPercent,
         durationSlabId: discountEvaluation.durationDiscount.slabId,
@@ -258,13 +344,23 @@ export class PricingEngineService {
         cgstRate: taxResult.cgstRate,
         sgstRate: taxResult.sgstRate,
         finalTotal,
+        gross: {
+          price: grossPrice,
+          durationDiscount: grossDuration,
+          couponDiscount: grossCoupon,
+          manualDiscount: grossManual,
+          discount: grossDuration.add(grossCoupon).add(grossManual),
+          total: finalTotal,
+        },
+        rentWithoutGst: taxResult.taxableAfter,
         freeKmLimit,
         extraKmRate: pricing.extraKmRate,
         discountEvaluation,
         pricingBreakdown: {
           periodType: duration.periodType,
           duration,
-          applicablePrice: basePrice,
+          // The GST-inclusive slab price (what a listing shows)
+          applicablePrice: grossPrice,
           priceSource: pricing.source as any,
           billedAs,
           billedAsType,
@@ -366,9 +462,11 @@ export class PricingEngineService {
 
     if (customPricing && customPricing.enabled) {
       return {
-        hourlyRate: optionalRate(customPricing.hourlyRate),
-        price12Hour: optionalRate(customPricing.price12Hour),
-        price24Hour: new Decimal(customPricing.price24Hour.toString()),
+        // One hourly rate per vehicle: the Extra Hour Rate prices the hours
+        // beyond full days / the 12 h slab (bookings + extensions) and late returns.
+        hourlyRate: optionalRate(customPricing.extraHourRate),
+        price12Hour: inclusiveRent(customPricing, "12"),
+        price24Hour: inclusiveRent(customPricing, "24") ?? new Decimal(customPricing.price24Hour.toString()),
         priceMonthly: optionalRate(customPricing.priceMonthly),
         freeKm12Hour: customPricing.freeKm12Hour,
         freeKm24Hour: customPricing.freeKm24Hour,
@@ -409,9 +507,9 @@ export class PricingEngineService {
     }
 
     return {
-      hourlyRate: optionalRate(branchDefaults.hourlyRate),
-      price12Hour: optionalRate(branchDefaults.price12Hour),
-      price24Hour: new Decimal(branchDefaults.price24Hour.toString()),
+      hourlyRate: optionalRate(branchDefaults.extraHourRate),
+      price12Hour: inclusiveRent(branchDefaults, "12"),
+      price24Hour: inclusiveRent(branchDefaults, "24") ?? new Decimal(branchDefaults.price24Hour.toString()),
       priceMonthly: optionalRate(branchDefaults.priceMonthly),
       freeKm12Hour: branchDefaults.freeKm12Hour,
       freeKm24Hour: branchDefaults.freeKm24Hour,
@@ -487,18 +585,27 @@ export class PricingEngineService {
   }
 
   /**
-   * GST on the post-discount base through the canonical gst.service rule:
-   * CGST and SGST each rounded half-up to 2 dp, GST = CGST + SGST, never IGST.
+   * GST of the GST-inclusive rent (item 17) through the canonical gst.service
+   * rule (splitRentGross: CGST and SGST each rounded half-up to 2 dp, GST =
+   * CGST + SGST, never IGST): the rent after discounts is split into rent
+   * without GST + GST, and the rent before discounts gives the taxable base.
    * The branch rule is read through the shared Redis cache; a branch without a
    * GSTRule fails with GST_RULE_MISSING (no silent fallback rate).
    */
-  private async calculateTax(amount: Decimal, branchId: number): Promise<TaxResult> {
+  private async calculateRentTax(
+    grossPrice: Decimal,
+    grossAfterDiscount: Decimal,
+    branchId: number,
+  ): Promise<RentTaxResult> {
     const rates = await getBranchGstRatesCached(branchId);
-    const line = computeLineGst(amount, rates);
+    const before = splitRentGross(grossPrice, rates);
+    const after = splitRentGross(grossAfterDiscount, rates);
     return {
-      totalTax: line.gst,
-      cgst: line.cgst,
-      sgst: line.sgst,
+      taxableBefore: before.taxable,
+      taxableAfter: after.taxable,
+      totalTax: after.gst,
+      cgst: after.cgst,
+      sgst: after.sgst,
       rate: new Decimal(rates.rate),
       cgstRate: new Decimal(rates.cgstRate),
       sgstRate: new Decimal(rates.sgstRate),
@@ -511,6 +618,95 @@ export class PricingEngineService {
 
   calculateExtraHourCharges(extraHours: number, hourlyRate: Decimal): Decimal {
     return hourlyRate.mul(extraHours);
+  }
+}
+
+type DecLike = { toString(): string };
+
+/**
+ * The GST-inclusive rent fields every pricing response carries (numbers, 2 dp),
+ * next to the classic taxable-terms fields (basePrice / discountAmount /
+ * taxAmount / finalTotal):
+ *   rentInclGst              rent incl. GST before discounts — the price (₹1,300)
+ *   durationDiscountInclGst, couponDiscountInclGst, manualDiscountInclGst
+ *   discountInclGst          all discounts, off the inclusive rent
+ *   rentAfterDiscountInclGst rent incl. GST after discounts (= finalTotal)
+ *   rentWithoutGst           rent without GST after discounts
+ *   gst / cgst / sgst        the GST inside rentAfterDiscountInclGst
+ * rentWithoutGst + gst = rentAfterDiscountInclGst = rentInclGst − discountInclGst.
+ * Accepts a PricingResult or its JSON (Redis-cached details pricing); a cached
+ * result from before these fields existed yields {} (absent for ≤ 60 s).
+ */
+export function rentInclGstFields(pr: {
+  gross?: {
+    price: DecLike;
+    durationDiscount: DecLike;
+    couponDiscount: DecLike;
+    manualDiscount: DecLike;
+    discount: DecLike;
+    total: DecLike;
+  } | null;
+  rentWithoutGst?: DecLike | null;
+  taxAmount: DecLike;
+  cgstAmount: DecLike;
+  sgstAmount: DecLike;
+}) {
+  if (!pr.gross || pr.rentWithoutGst == null) return {};
+  const n = (d: DecLike) => Number(new Decimal(d.toString()).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toString());
+  return {
+    rentInclGst: n(pr.gross.price),
+    durationDiscountInclGst: n(pr.gross.durationDiscount),
+    couponDiscountInclGst: n(pr.gross.couponDiscount),
+    manualDiscountInclGst: n(pr.gross.manualDiscount),
+    discountInclGst: n(pr.gross.discount),
+    rentAfterDiscountInclGst: n(pr.gross.total),
+    rentWithoutGst: n(pr.rentWithoutGst),
+    gst: n(pr.taxAmount),
+    cgst: n(pr.cgstAmount),
+    sgst: n(pr.sgstAmount),
+  };
+}
+
+/**
+ * Running GST-inclusive totals over the vehicles of one booking (booking
+ * summary, walk-in create, BM reprice). view() gives the pricingSnapshot.totals
+ * / response fields (numbers, 2 dp):
+ *   grandRentInclGst                 Σ rent incl. GST before discounts
+ *   grandDurationDiscountInclGst, grandCouponDiscountInclGst, grandManualDiscountInclGst
+ *   grandDiscountInclGst             Σ discounts off the inclusive rent
+ *   grandRentAfterDiscountInclGst    Σ rent incl. GST after discounts
+ *   grandRentWithoutGst              Σ rent without GST after discounts
+ * grandRentAfterDiscountInclGst = grandRentInclGst − grandDiscountInclGst
+ *                               = grandRentWithoutGst + grandTaxTotal.
+ */
+export class InclGstTotals {
+  private rent = ZERO_DEC;
+  private duration = ZERO_DEC;
+  private coupon = ZERO_DEC;
+  private manual = ZERO_DEC;
+  private total = ZERO_DEC;
+  private withoutGst = ZERO_DEC;
+
+  add(pr: Pick<PricingResult, "gross" | "rentWithoutGst">): void {
+    this.rent = this.rent.add(pr.gross.price);
+    this.duration = this.duration.add(pr.gross.durationDiscount);
+    this.coupon = this.coupon.add(pr.gross.couponDiscount);
+    this.manual = this.manual.add(pr.gross.manualDiscount);
+    this.total = this.total.add(pr.gross.total);
+    this.withoutGst = this.withoutGst.add(pr.rentWithoutGst);
+  }
+
+  view() {
+    const n = (d: Decimal) => Number(d.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toString());
+    return {
+      grandRentInclGst: n(this.rent),
+      grandDurationDiscountInclGst: n(this.duration),
+      grandCouponDiscountInclGst: n(this.coupon),
+      grandManualDiscountInclGst: n(this.manual),
+      grandDiscountInclGst: n(this.duration.add(this.coupon).add(this.manual)),
+      grandRentAfterDiscountInclGst: n(this.total),
+      grandRentWithoutGst: n(this.withoutGst),
+    };
   }
 }
 

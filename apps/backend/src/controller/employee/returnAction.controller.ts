@@ -20,6 +20,7 @@ import path from "path";
 import { processImage } from "../../utils/image-processor.js";
 import { vehicleStatusAfterDrop, lockBookingForDrop } from "../../services/damage/drop-damage.service.js";
 import { activeExtensionState } from "../../services/charges/rental-timeline.service.js";
+import { closeExtensionUpiQrs } from "../../services/payment/upi-qr.service.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { z } from "zod";
 import Decimal from "decimal.js";
@@ -47,13 +48,10 @@ import {
   LEGACY_EXTRA_KM_KEY,
   LEGACY_EXTRA_TIME_KEY,
 } from "../../services/charges/legacy-return-charges.service.js";
-import {
-  getBranchGstRates,
-  computeLineGst,
-  GstRuleMissingError,
-  type BranchGstRates,
-} from "../../services/tax/gst.service.js";
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
+import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
+import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import { recordDepositHandling } from "../../services/payment/safety-deposit.service.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -96,6 +94,12 @@ const completeReturnSchema = z.object({
     })
     .nullable()
     .optional(),
+  // Safety deposit (#6): SET_OFF (default) or REFUND_IN_FULL — recorded on the
+  // booking and honoured by the branch manager's settlement (no drop bill here)
+  safetyDepositHandling: z
+    .enum(SAFETY_DEPOSIT_HANDLING, { message: "safetyDepositHandling must be SET_OFF or REFUND_IN_FULL" })
+    .nullable()
+    .optional(),
 });
 
 /** A return charge the branch manager collects later (legacy drop). */
@@ -134,7 +138,7 @@ function extensionPendingBody(extension: { publicId: string; extensionStatus: Ex
     code: "EXTENSION_PENDING",
     message:
       extension.extensionStatus === ExtensionStatus.PAYMENT_COLLECTED
-        ? "The extension's cash payment is waiting for the branch manager to confirm it. Ask them to confirm it, then complete the return."
+        ? "The extension's payment (cash or UPI) is waiting for the branch manager to confirm it. Ask them to confirm it, then complete the return."
         : "Collect or cancel the pending extension before completing the return.",
     pendingExtensionPublicId: extension.publicId,
     pendingExtensionStatus: extension.extensionStatus,
@@ -215,6 +219,8 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     }
     const { returnImageIds, requireManagerConfirmation, endOdometer, manualExtraKm, applyGrace, waiveLateCharge } =
       validation.data;
+    // Old builds omit it — the deposit is then set off against the charges (default)
+    const depositHandling = validation.data.safetyDepositHandling ?? "SET_OFF";
     // The vehicle is back now — the late charge is measured to this moment
     const returnedAt = new Date();
 
@@ -234,6 +240,8 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         remainingPaidAt: true,
         requiresManagerConfirmation: true,
         activeExtensionId: true,
+        // Deposit already handed back (old manager flag) — no choice to record (#6)
+        safetyDepositRefunded: true,
         items: {
           select: { vehicleId: true },
         },
@@ -348,7 +356,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     }
     const lateWaiver = late.status === "WAIVED" && waiveLateCharge ? { reason: waiveLateCharge.reason } : null;
 
-    // All taxable (distance / rental time / vehicle upgrade); GST frozen at the branch rate now
+    // Distance / late return / vehicle upgrade — at face value, no GST (item 8)
     const chargeLines: LegacyChargeLine[] = [];
     if (km && km.extraKmCharge.gt(0)) {
       chargeLines.push({
@@ -374,8 +382,8 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         gst: new Decimal(0),
       });
     }
-    // Vehicle-swap difference staff chose to bill at the swap (pre-GST, one line per
-    // swap) — the drop bill's VEHICLE_SWAP line, left for the manager to collect
+    // Vehicle-swap difference staff chose to bill at the swap (one line per swap, no
+    // GST) — the drop bill's VEHICLE_SWAP line, left for the manager to collect
     const chargedSwaps = await prisma.vehicleSwap.findMany({
       where: { bookingId: booking.id, chargeDifference: true, priceDifference: { gt: 0 } },
       orderBy: { swappedAt: "asc" },
@@ -397,37 +405,18 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         gst: new Decimal(0),
       });
     }
-    let rates: BranchGstRates | null = null;
-    if (chargeLines.length > 0) {
-      try {
-        rates = await getBranchGstRates(booking.branchId);
-      } catch (ratesErr) {
-        if (ratesErr instanceof GstRuleMissingError) {
-          return res.status(StatusCode.CONFLICT).json({
-            code: ratesErr.code,
-            message: "GST rates aren't set up for this branch, so the return charges (extra km, late return, vehicle swap) can't be billed. Ask the branch manager to set the GST rule.",
-          });
-        }
-        throw ratesErr;
-      }
-      for (const line of chargeLines) {
-        const g = computeLineGst(line.amount, rates);
-        line.cgst = g.cgst;
-        line.sgst = g.sgst;
-        line.gst = g.gst;
-      }
-    }
+    // Drop / recovery charges carry no GST (item 8): every line stays at face value
+    // (cgst / sgst / gst 0) and its ChargeEntry is written with GST columns 0, so a
+    // branch without a GST rule can still record the return.
     const kmLine = chargeLines.find((l) => l.type === "EXTRA_KM");
     const lateLine = chargeLines.find((l) => l.type === "EXTRA_TIME");
-    const lateData = serializeLateReturn(
-      late,
-      lateLine && rates ? { cgst: lateLine.cgst, sgst: lateLine.sgst, gst: lateLine.gst, rate: new Decimal(rates.rate) } : null,
-      lateWaiver,
-    );
+    const lateData = serializeLateReturn(late, null, lateWaiver);
     const returnChargesTotal = chargeLines.reduce((s, l) => s.plus(l.amount).plus(l.gst), new Decimal(0));
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
     const returnedStatuses = new Set<VehicleStatus>();
+    // The uncommitted extension quote released below — its UPI QR is closed once the drop commits
+    let releasedQuoteId = null as number | null;
 
     await prisma.$transaction(async (tx) => {
       // With the booking row locked, re-check what the charges were worked out from —
@@ -465,6 +454,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           },
         });
         await tx.booking.update({ where: { id: booking.id }, data: { activeExtensionId: null } });
+        releasedQuoteId = lockedExtension.uncommittedQuoteId;
       }
 
       // Actual return time, readings and the return charges the manager collects in Settlements
@@ -483,7 +473,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       });
 
       if (km) {
-        if (kmLine && rates) {
+        if (kmLine) {
           await upsertLegacyReturnCharge(tx as any, {
             bookingId: booking.id,
             moduleKey: LEGACY_EXTRA_KM_KEY,
@@ -493,7 +483,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
             quantity: km.extraKm,
             unitRate: km.extraKmRate,
             actorId: actingUser.id,
-            gst: computeLineGst(kmLine.amount, rates),
+            gst: null, // no GST on drop charges (item 8)
             details: { kmSource: km.kmSource, kmDriven: km.kmDriven, includedKm: km.includedKm },
           });
         } else {
@@ -501,7 +491,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         }
       }
 
-      if (lateLine && rates && late.rate) {
+      if (lateLine && late.rate) {
         await upsertLegacyReturnCharge(tx as any, {
           bookingId: booking.id,
           moduleKey: LEGACY_EXTRA_TIME_KEY,
@@ -511,7 +501,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           quantity: late.hours,
           unitRate: late.rate,
           actorId: actingUser.id,
-          gst: computeLineGst(lateLine.amount, rates),
+          gst: null, // no GST on drop charges (item 8)
           details: {
             dueAt: late.dueAt.toISOString(),
             returnedAt: late.returnedAt.toISOString(),
@@ -526,7 +516,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       // Vehicle-swap differences — one VEHICLE_SWAP row per chargeable swap
       const swapKeys: string[] = [];
       for (const line of chargeLines) {
-        if (line.type !== "VEHICLE_SWAP" || !line.referenceId || !rates) continue;
+        if (line.type !== "VEHICLE_SWAP" || !line.referenceId) continue;
         const moduleKey = legacyVehicleSwapKey(line.referenceId);
         swapKeys.push(moduleKey);
         await upsertLegacyReturnCharge(tx as any, {
@@ -538,11 +528,21 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           quantity: 1,
           unitRate: line.amount,
           actorId: actingUser.id,
-          gst: computeLineGst(line.amount, rates),
+          gst: null, // no GST on drop charges (item 8)
           details: { swapPublicId: line.referenceId },
         });
       }
       await removeStaleLegacySwapCharges(tx as any, booking.id, swapKeys);
+
+      // Safety deposit (#6): the staff's choice, honoured by the BM's settlement.
+      // Recorded only when a deposit is actually held — and not when a manager
+      // already marked it refunded (the settlement would count it again).
+      if (
+        !booking.safetyDepositRefunded &&
+        (await computeBookingOwed(booking.id, tx as any)).safetyDepositHeld.gt(0)
+      ) {
+        await recordDepositHandling(tx as any, booking.id, depositHandling, "LEGACY", actingUser.id);
+      }
 
       if (requireManagerConfirmation) {
         await tx.booking.update({
@@ -594,6 +594,22 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         });
       }
     }, { timeout: 15000 });
+
+    // The released quote's UPI QR would stay payable until it expires — close it
+    // now (best-effort: never fails the drop; a payment that already landed on it
+    // is refunded by the QR settlement, as for any cancelled extension)
+    if (releasedQuoteId != null) {
+      const quoteId = releasedQuoteId;
+      closeExtensionUpiQrs(quoteId)
+        .then(({ unresolved }) => {
+          if (unresolved) {
+            console.warn(`[return] Released extension ${quoteId} (booking ${booking.publicId}): a UPI QR could not be closed`);
+          }
+        })
+        .catch((err) =>
+          console.error(`[return] Closing UPI QRs of released extension ${quoteId} (booking ${booking.publicId}) failed:`, err),
+        );
+    }
 
     // The return charges just recorded belong on the tax invoice (and so in the
     // GST report) now; it stays PENDING until the manager's settlement clears them.
@@ -701,8 +717,10 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     }
 
     const chargesNote = returnChargesTotal.gt(0)
-      ? ` Return charges of ₹${returnChargesTotal.toFixed(2)} (incl. GST) will be collected by the branch manager.`
+      ? ` Return charges of ₹${returnChargesTotal.toFixed(2)} will be collected by the branch manager.`
       : "";
+    // Safety deposit taken at pickup — settled by the branch manager per the choice above
+    const depositTaken = (await computeBookingOwed(booking.id)).safetyDepositCharged;
     return res.status(StatusCode.OK).json({
       message: (requireManagerConfirmation
         ? "Return sent to manager for confirmation."
@@ -715,13 +733,14 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       returnCharges: {
         /** Collected by the branch manager in Settlements (legacy branches have no drop bill). */
         collectedBy: "BRANCH_MANAGER",
-        gstRates: rates ? { cgstRate: rates.cgstRate, sgstRate: rates.sgstRate, rate: rates.rate } : null,
+        // Drop / recovery charges carry no GST (item 8): no rates, every line non-taxable
+        gstRates: null,
         lines: chargeLines.map((l) => ({
           type: l.type,
           label: l.label,
           // VEHICLE_SWAP: the swap's publicId
           referenceId: l.referenceId,
-          taxable: true,
+          taxable: false,
           amount: l.amount.toFixed(2),
           cgst: l.cgst.toFixed(2),
           sgst: l.sgst.toFixed(2),
@@ -730,6 +749,10 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         })),
         total: returnChargesTotal.toFixed(2),
       },
+      // Additive (#6): the deposit choice the branch manager's settlement honours
+      safetyDeposit: depositTaken.gt(0) && !booking.safetyDepositRefunded
+        ? { handling: depositHandling, amount: depositTaken.toFixed(2), settledBy: "BRANCH_MANAGER" }
+        : null,
     });
   } catch (error) {
     if (error instanceof CompleteRejection) {

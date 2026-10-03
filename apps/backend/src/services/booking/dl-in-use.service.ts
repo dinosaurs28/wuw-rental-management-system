@@ -31,8 +31,10 @@ export const DL_IN_USE = "DL_IN_USE" as const;
  * create  — a new booking for `window` (customer hold or walk-in).
  * pickup  — handing over a vehicle: refused while another booking on the DL is out.
  * extend  — an extension adding `window` (current end → new end) to a booking.
+ * reschedule — a confirmed booking moved to `window` (its new pickup → return);
+ *           checked like extend: an out vehicle blocks only while it overlaps.
  */
-export type DlCheckMode = "create" | "pickup" | "extend";
+export type DlCheckMode = "create" | "pickup" | "extend" | "reschedule";
 
 /** Who reads the refusal: customers never see another booking's details. */
 export type DlAudience = "customer" | "staff";
@@ -105,7 +107,13 @@ function staffMessage(kind: DlConflictKind, mode: DlCheckMode, b: DlConflictingB
     if (mode === "extend") {
       return `This driving licence is linked to ${named}, which hasn't been returned and overlaps the extended dates.`;
     }
+    if (mode === "reschedule") {
+      return `This driving licence is linked to ${named}, which hasn't been returned and overlaps the new dates.`;
+    }
     return `This driving licence is linked to ${named}, which hasn't been returned. A new booking can be made once it's returned.`;
+  }
+  if (mode === "reschedule") {
+    return `This driving licence already has ${named} for ${dates}, which overlaps the new dates.`;
   }
   return mode === "extend"
     ? `This driving licence already has ${named} for ${dates}, which overlaps the extended dates.`

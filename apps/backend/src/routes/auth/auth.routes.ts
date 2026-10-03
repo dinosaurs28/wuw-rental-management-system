@@ -21,6 +21,12 @@ import {
   makeForgotPasswordController,
   resetPasswordController,
 } from "../../services/passwordReset/passwordReset.controller.js";
+import {
+  makeForgotPasswordSmsController,
+  makeResetPasswordSmsController,
+  passwordResetChannelsController,
+} from "../../services/passwordReset/smsReset.controller.js";
+import { Role } from "@repo/database/client";
 
 const router: Router = Router();
 
@@ -32,6 +38,10 @@ router.post("/reset-password", resetPasswordController);
 router.post("/email/signin", emailAuthControllerSignin);
 router.post("/email/forgot-password", forgotPassword);
 router.post("/email/reset-password", resetPassword);
+// Password reset by SMS code (customers; public). Which channels can deliver.
+router.post("/sms/forgot-password", makeForgotPasswordSmsController([Role.CUSTOMER]));
+router.post("/sms/reset-password", makeResetPasswordSmsController([Role.CUSTOMER]));
+router.get("/password-reset/channels", passwordResetChannelsController);
 router.route("/email/verify-otp").post(generateOTP);
 router.post("/email/verify-otp/code", verifyOTP);
 router.get(

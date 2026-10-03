@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { customerPaymentSummary } from "../../services/payment/payment-flow.service.js";
-import { rentalGstSplitView } from "../../services/invoice-totals.service.js";
+import { rentalGstSplitView, rentInclGstView } from "../../services/invoice-totals.service.js";
 
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
@@ -70,6 +70,8 @@ export const getUserBookings = async (req: Request, res: Response) => {
             },
           },
         },
+        // Money put on credit at the counter (#11) is still owed, not paid
+        creditEntry: { select: { pendingAmount: true } },
       },
     });
 
@@ -84,7 +86,7 @@ export const getUserBookings = async (req: Request, res: Response) => {
     bookings.forEach(b => console.log(`  booking publicId=${b.publicId} status=${b.status} paymentStatus=${b.paymentStatus}`));
 
     const data = bookings.map((booking) => {
-      const payment = customerPaymentSummary(booking);
+      const payment = customerPaymentSummary(booking, booking.creditEntry?.pendingAmount ?? 0);
       return {
       id: booking.id,
       bookingId: booking.publicId,
@@ -104,12 +106,16 @@ export const getUserBookings = async (req: Request, res: Response) => {
       balanceDueAt: payment.balanceDueAt,
       dueAtPickup: payment.dueAtPickup,
       dueAtDrop: payment.dueAtDrop,
+      // Part of balanceDue on credit (#11) — the branch collects it against the collateral
+      balanceOnCredit: payment.balanceOnCredit,
       couponCode: booking.couponCode,
       totalBase: Number(booking.totalBase),
       totalDiscount: Number(booking.totalDiscount),
       totalTax: Number(booking.totalTax),
       // CGST / SGST of totalTax (null when the booking stored no split or rate)
       ...rentalGstSplitView(booking),
+      // The rent GST-inclusive (item 17): rentWithoutGst + totalTax = rentAfterDiscountInclGst
+      ...rentInclGstView(booking),
       createdAt: booking.createdAt,
       vehicles: booking.items.map((item) => ({
         publicId: item.vehicle.publicId,

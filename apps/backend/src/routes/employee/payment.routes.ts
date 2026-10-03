@@ -12,10 +12,17 @@ import {
   ListMyShifts,
   GetMyShiftDetails,
 } from "../../controller/branchManager/cash-shift.controller.js";
+import { UploadPaymentProof, GetPaymentProof } from "../../controller/employee/paymentProof.controller.js";
+import { handleImageUpload } from "../../middlewares/upload.middleware.js";
+import { PAYMENT_PROOF_MAX_BYTES } from "../../services/payment/payment-proof.service.js";
 
 const router: Router = Router();
 
 router.use(EmployeeCheck);
+
+// UPI payment-proof photo (#3): upload first, then send its id as proof_file_id
+router.post("/proof", handleImageUpload("file", { maxBytes: PAYMENT_PROOF_MAX_BYTES }), UploadPaymentProof);
+router.get("/proof/:proofFileId", GetPaymentProof);
 
 // Booking financial state & transactions (read-only for payment panel)
 router.get("/bookings/:bookingPublicId/financial-state", GetFinancialState);

@@ -1,38 +1,23 @@
 import { prisma, DamageChargeType, DamageReport } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
-import { getBranchGstRates, computeLineGst } from "../tax/gst.service.js";
 import { computeInvoiceGstTotals, INVOICE_SOURCE } from "../invoice-totals.service.js";
 
 export class DamageChargeService {
   /**
-   * Calculate the tax amount for a specific damage charge based on the branch's GST rule.
+   * The tax on a damage charge. Damage is a recovery charge billed at face value
+   * with NO GST — compensation and a penalty alike (item 8, Oct 3 2026; a
+   * PENALTY used to carry CGST + SGST). Kept async with the same shape for callers.
    */
   async calculateDamageTax(
-    amount: number,
-    chargeType: DamageChargeType,
-    branchId: number
+    _amount: number,
+    _chargeType: DamageChargeType,
+    _branchId: number
   ) {
-    // Compensation is not taxable
-    if (chargeType === "COMPENSATION") {
-      return {
-        isTaxable: false,
-        taxAmount: 0,
-        cgstAmount: 0,
-        sgstAmount: 0,
-      };
-    }
-
-    // A penalty the manager marked in review is taxable: CGST + SGST only (an
-    // intra-state supply — IGST is never added), each rounded half-up to 2 dp.
-    // A branch without a GST rule fails with GST_RULE_MISSING.
-    const rates = await getBranchGstRates(branchId);
-    const gst = computeLineGst(amount, rates);
-
     return {
-      isTaxable: true,
-      taxAmount: gst.gst.toNumber(),
-      cgstAmount: gst.cgst.toNumber(),
-      sgstAmount: gst.sgst.toNumber(),
+      isTaxable: false,
+      taxAmount: 0,
+      cgstAmount: 0,
+      sgstAmount: 0,
     };
   }
 
@@ -49,8 +34,9 @@ export class DamageChargeService {
     taxAmount: number,
     damageReportPublicId?: string,
   ) {
-    const isTaxable = chargeType === "PENALTY";
-    const chargeEnum = isTaxable ? "DAMAGE_PENALTY" : "DAMAGE_COMPENSATION";
+    // No GST on damage (item 8): the line is non-taxable whatever its type
+    const isTaxable = false;
+    const chargeEnum = chargeType === "PENALTY" ? "DAMAGE_PENALTY" : "DAMAGE_COMPENSATION";
 
     // 1. Create the Invoice Item — its GST is stored on the line, and the
     // DAMAGE_REVIEW source keeps it through a later invoice finalization.

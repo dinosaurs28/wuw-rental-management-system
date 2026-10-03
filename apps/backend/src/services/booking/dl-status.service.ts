@@ -17,7 +17,8 @@ import {
   DL_STATUS_INVALID_MESSAGE,
   DL_DEPOSIT_NOTE_REQUIRED_MESSAGE,
   DL_DEPOSIT_NOTE_TOO_LONG_MESSAGE,
-  dlStatusNeedsNote,
+  DL_STATUS_DEPOSIT_REMOVED_MESSAGE,
+  isDlStatusSelectable,
   updateDlStatusSchema,
 } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
@@ -32,6 +33,7 @@ import {
 export type DlStatusErrorCode =
   | "LICENSE_NOT_COLLECTED"
   | "INVALID_DL_STATUS"
+  | "DL_STATUS_INVALID"
   | "DL_DEPOSIT_NOTE_REQUIRED"
   | "DL_DEPOSIT_NOTE_TOO_LONG"
   | "BOOKING_NOT_FOUND"
@@ -91,10 +93,17 @@ export function dlValidationError(error: {
   return null;
 }
 
+/** DEPOSIT was removed as an option: new writes are rejected, old rows still display. */
+function assertDlStatusSelectable(status: string): void {
+  if (!isDlStatusSelectable(status)) {
+    throw new DlStatusError(StatusCode.BAD_REQUEST, "DL_STATUS_INVALID", DL_STATUS_DEPOSIT_REMOVED_MESSAGE);
+  }
+}
+
 /**
  * What a pickup request says about the licence. Recording it is OPTIONAL (X1):
- * it never blocks the handover. Throws DlStatusError only for a DEPOSIT without a note.
- *  - dlStatus sent           → that status (DEPOSIT needs a note); licenseCollected is ignored
+ * it never blocks the handover. Throws DlStatusError (DL_STATUS_INVALID) for DEPOSIT.
+ *  - dlStatus sent           → that status (COLLECTED / NOT_COLLECTED); licenseCollected is ignored
  *  - licenseCollected: true  → COLLECTED (old builds' tick)
  *  - licenseCollected: false → NOT_COLLECTED (old builds' unticked box)
  *  - neither sent (or null)  → null: left unset, nothing recorded (can be set later)
@@ -105,18 +114,8 @@ export function resolvePickupDlStatus(input: {
   licenseCollected?: boolean;
 }): DlStatusChoice | null {
   if (input.dlStatus) {
-    const note = input.dlDepositNote?.trim() || null;
-    if (dlStatusNeedsNote(input.dlStatus) && !note) {
-      throw new DlStatusError(
-        StatusCode.BAD_REQUEST,
-        "DL_DEPOSIT_NOTE_REQUIRED",
-        DL_DEPOSIT_NOTE_REQUIRED_MESSAGE,
-      );
-    }
-    return {
-      dlStatus: input.dlStatus,
-      dlDepositNote: dlStatusNeedsNote(input.dlStatus) ? note : null,
-    };
+    assertDlStatusSelectable(input.dlStatus);
+    return { dlStatus: input.dlStatus, dlDepositNote: null };
   }
   if (input.licenseCollected === true) {
     return { dlStatus: "COLLECTED", dlDepositNote: null };
@@ -200,6 +199,9 @@ export async function updateBookingDlStatus(
   bookingPublicId: string,
   actorRole: "STAFF" | "MANAGER",
 ): Promise<DlStatusUpdateResult> {
+  if (req.body && typeof req.body === "object" && (req.body as { dlStatus?: unknown }).dlStatus === "DEPOSIT") {
+    throw new DlStatusError(StatusCode.BAD_REQUEST, "DL_STATUS_INVALID", DL_STATUS_DEPOSIT_REMOVED_MESSAGE);
+  }
   const parsed = updateDlStatusSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
     throw (
@@ -209,8 +211,9 @@ export async function updateBookingDlStatus(
   }
   const choice: DlStatusChoice = {
     dlStatus: parsed.data.dlStatus as DlCollectionStatus,
-    dlDepositNote: dlStatusNeedsNote(parsed.data.dlStatus) ? parsed.data.dlDepositNote ?? null : null,
+    dlDepositNote: null,
   };
+  assertDlStatusSelectable(choice.dlStatus);
 
   const actor = await prisma.user.findUnique({
     where: { publicId: req.public_Id },

@@ -412,6 +412,9 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         cgstRate,
         sgstRate,
         gstRuleMissing: !gstRule,
+        // Damage (penalty or compensation) is charged at face value with no GST
+        // (item 8): show no GST line; the rates above are informational only
+        damageGstApplies: false,
       },
     };
 
@@ -599,7 +602,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
     // chargeType is authoritative from what staff set during damage report creation
     const activeChargeType = damageReport.chargeType ?? "PENALTY";
 
-    // Calculate the tax (PENALTY only: CGST + SGST at the branch rule)
+    // The tax on the damage: none — damage is charged at face value (item 8)
     let taxCalculation: Awaited<ReturnType<typeof damageChargeService.calculateDamageTax>>;
     try {
       taxCalculation = await damageChargeService.calculateDamageTax(

@@ -7,10 +7,15 @@ import {
   confirmBookingPayment,
   confirmExtensionPayment,
 } from "../../services/payment/bookingConfirmation.service.js";
+import {
+  flagCheckoutPaymentAfterQr,
+  handleUpiQrWebhookEvent,
+} from "../../services/payment/upi-qr.service.js";
 
 /** Events we act on. Everything else is acknowledged and dropped. */
 const CONFIRM_EVENTS = new Set(["payment.captured", "order.paid"]);
 const FAIL_EVENTS = new Set(["payment.failed"]);
+const QR_EVENTS = new Set(["qr_code.credited", "qr_code.closed"]);
 
 /**
  * Razorpay webhook receiver. The route is mounted with `express.raw` so
@@ -79,6 +84,17 @@ export const razorpayWebhook = async (req: Request, res: Response) => {
       });
     };
 
+    // UPI QR codes (customer paid by scanning from another phone): settled
+    // through the same confirmation services as the order path (#2)
+    if (QR_EVENTS.has(eventName)) {
+      const message = await handleUpiQrWebhookEvent(event, {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"] as string | undefined,
+      });
+      await markProcessed();
+      return res.status(StatusCode.OK).json({ message });
+    }
+
     if (!CONFIRM_EVENTS.has(eventName) && !FAIL_EVENTS.has(eventName)) {
       console.log(`[razorpayWebhook] ignoring event=${eventName}`);
       return res.status(StatusCode.OK).json({ message: "Acknowledged" });
@@ -127,6 +143,10 @@ export const razorpayWebhook = async (req: Request, res: Response) => {
       }
 
       console.log(`[razorpayWebhook] extension=${extension.publicId} alreadyConfirmed=${alreadyConfirmed}`);
+      // Paid twice: a UPI QR payment had already settled it (#2)
+      if (alreadyConfirmed && (await flagCheckoutPaymentAfterQr({ extensionId: extension.id, gatewayPaymentId: paymentId }))) {
+        return res.status(StatusCode.OK).json({ message: "Acknowledged — already paid by UPI QR, refund required" });
+      }
       return res.status(StatusCode.OK).json({
         message: alreadyConfirmed ? "Already confirmed" : "Extension confirmed",
       });
@@ -174,6 +194,10 @@ export const razorpayWebhook = async (req: Request, res: Response) => {
     }
 
     console.log(`[razorpayWebhook] booking=${booking.publicId} alreadyConfirmed=${alreadyConfirmed}`);
+    // Paid twice: a UPI QR payment had already settled it (#2)
+    if (alreadyConfirmed && (await flagCheckoutPaymentAfterQr({ bookingId: booking.id, gatewayPaymentId: paymentId }))) {
+      return res.status(StatusCode.OK).json({ message: "Acknowledged — already paid by UPI QR, refund required" });
+    }
     return res.status(StatusCode.OK).json({
       message: alreadyConfirmed ? "Already confirmed" : "Confirmed",
     });

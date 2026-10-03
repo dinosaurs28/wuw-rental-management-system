@@ -5,6 +5,12 @@ import {
   makeForgotPasswordController,
   resetPasswordController,
 } from "../../services/passwordReset/passwordReset.controller.js";
+import {
+  makeForgotPasswordSmsController,
+  makeResetPasswordSmsController,
+} from "../../services/passwordReset/smsReset.controller.js";
+import { makeRecoveryPhoneHandlers } from "../../services/passwordReset/recoveryPhone.controller.js";
+import { Role as ResetRole } from "@repo/database/client";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller.js";
 import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller.js";
 import {
@@ -97,7 +103,9 @@ import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import extensionRouter from "./extension.routes.js";
 import ledgerRouter from "./ledger.routes.js";
+import customersRouter from "./customers.routes.js";
 import creditNoteRouter from "./creditNote.routes.js";
+import offersRouter from "./offers.routes.js";
 import { makeNotificationRouter } from "../notification/notification.routes.js";
 import {
   GetBranchChargeConfig,
@@ -122,12 +130,24 @@ import {
   updateBookingRestrictionMode,
 } from "../../controller/branchManager/branchSchedule.controller.js";
 import { UpdateBookingDlStatusByManager } from "../../controller/branchManager/dlStatus.controller.js";
+import {
+  GetRescheduleOptionsByManager,
+  RescheduleBookingByManager,
+} from "../../controller/branchManager/reschedule.controller.js";
 
 const router: Router = Router();
 
 router.post("/auth/login", Login);
 router.post("/auth/forgot-password", makeForgotPasswordController("branchManager"));
 router.post("/auth/reset-password", resetPasswordController);
+// Branch Manager reset by SMS code, public, MANAGER accounts only.
+router.post("/auth/sms/forgot-password", makeForgotPasswordSmsController([ResetRole.MANAGER]));
+router.post("/auth/sms/reset-password", makeResetPasswordSmsController([ResetRole.MANAGER]));
+// The manager's own recovery mobile number (where an SMS reset code goes).
+const managerRecoveryPhone = makeRecoveryPhoneHandlers(ResetRole.MANAGER);
+router.get("/account/recovery-phone", ManagerCheck, managerRecoveryPhone.get);
+router.post("/account/recovery-phone/send-code", ManagerCheck, managerRecoveryPhone.sendCode);
+router.post("/account/recovery-phone/verify", ManagerCheck, managerRecoveryPhone.verify);
 router.get("/dashboard/branch/schedule", ManagerCheck, getManagerBranchSchedule);
 router.patch("/dashboard/branch/schedule", ManagerCheck, upsertManagerBranchSchedule);
 router.patch("/dashboard/branch/grace", ManagerCheck, updateManagerBranchGrace);
@@ -314,14 +334,23 @@ router.patch("/vehicles/:vehicleId/fastag", ManagerCheck, UpdateVehicleFastag);
 
 // Original driving licence status (#3) — any booking at the branch, any status
 router.patch("/bookings/:publicId/dl-status", ManagerCheck, UpdateBookingDlStatusByManager);
+// Reschedule a confirmed booking (not picked up): new pickup, return shifted the same, price unchanged
+router.get("/bookings/:publicId/reschedule", ManagerCheck, GetRescheduleOptionsByManager);
+router.post("/bookings/:publicId/reschedule", ManagerCheck, RescheduleBookingByManager);
 
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);
+
+// ── Customers tab (#13) — every customer, rents, pending credit, blacklist ────
+router.use("/customers", customersRouter);
 
 // ── Credit Notes ──────────────────────────────────────────────────────────────
 router.use("/credit-notes", creditNoteRouter);
 
 // ── Notifications (bell) ──────────────────────────────────────────────────────
 router.use("/notifications", makeNotificationRouter(ManagerCheck));
+
+// ── Offers & banners (#15) — hero-slider posters ─────────────────────────────
+router.use("/offers", offersRouter);
 
 export default router;

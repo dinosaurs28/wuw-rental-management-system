@@ -19,7 +19,11 @@ import { createRazorpayOrder } from "../../services/payment/razorpay.service.js"
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
-import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import {
+  PricingEngineService,
+  InclGstTotals,
+  rentInclGstFields,
+} from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import Decimal from "decimal.js";
@@ -30,12 +34,18 @@ import {
   GST_RULE_MISSING_MESSAGE,
 } from "../../services/tax/gst.service.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
-import { MAX_BOOKING_DAYS } from "@repo/schemas";
+import {
+  MAX_BOOKING_DAYS,
+  isCustomerPackageDuration,
+  BOOKING_PACKAGE_REQUIRED,
+  BOOKING_PACKAGE_REQUIRED_MESSAGE,
+} from "@repo/schemas";
 import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
 import {
   getCustomerPaymentMode,
   resolvePaymentOptions,
   resolveEffectiveFlow,
+  checkCustomerCouponPlan,
   type PaymentFlow,
 } from "../../services/payment/payment-flow.service.js";
 import { couponValidationService, normalizeCouponCode } from "../../services/discount/coupon-validation.service.js";
@@ -246,6 +256,19 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       throw windowErr;
     }
 
+    // ── Packages only: 12 hours or whole days (24 h each), ±1 minute ──
+    // Customers can't book odd lengths (e.g. 6 PM → 8 AM = 14 h); Fleet / BM
+    // adjust a booking afterwards (extension, reschedule). A 12-hour request
+    // whose return falls outside office hours is still answered below with
+    // BRANCH_SCHEDULE_RETURN_ADJUSTED (pickup + k × 24 h — a package too).
+    if (!isCustomerPackageDuration(startDate, endDate)) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: BOOKING_PACKAGE_REQUIRED,
+        message: BOOKING_PACKAGE_REQUIRED_MESSAGE,
+      });
+    }
+
     // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
     await assertDlFree({ customerId, mode: "create", window: { startAt: startDate, endAt: endDate } });
 
@@ -314,16 +337,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandDurationDiscountTotal = 0;
     let grandCouponDiscountTotal = 0;
     let durationDiscountLabel: string | null = null;
+    // GST-inclusive totals (item 17) — what the customer sees; the grand* totals
+    // above describe the same booking in taxable terms (stored on Booking)
+    const inclGst = new InclGstTotals();
 
     // ── Payment plan + coupon context ──────────────────────────────────────────
-    // The branch's customerPaymentMode and the amounts decide the plan
-    // (converted, never rejected): ADVANCE only when 0 < advance < payable
-    // total, which needs the post-coupon totals. So the coupon is priced
-    // without its payment-plan rules here, and they are checked below against
-    // the plan actually charged (an ADVANCE_ONLY branch with no advance on the
-    // vehicle charges in full, so a full-payment coupon is valid there).
+    // Advance only (item 18): the amounts decide the plan, never the customer
+    // or the branch setting — ADVANCE when 0 < advance < payable total, else
+    // FULL. That needs the post-coupon totals, so the coupon is priced without
+    // its payment-plan rules here, and they are checked below against the plan
+    // actually charged (a vehicle with no advance is charged in full, so a
+    // full-payment coupon is valid there).
     const customerPaymentMode = await getCustomerPaymentMode(bookingBranchId);
-    const requestedFlow: PaymentFlow = payment_flow === "ADVANCE" ? "ADVANCE" : "FULL";
+    // payment_flow is optional now (the zod default fills "FULL"): only a value
+    // the client really sent is compared, so the response can flag a conversion.
+    const requestedFlow: PaymentFlow | null =
+      (req.body as { payment_flow?: unknown } | undefined)?.payment_flow != null ? payment_flow : null;
     // One coupon per booking: it is priced on the first vehicle only
     const requestedCoupon = couponCode ? normalizeCouponCode(couponCode) : undefined;
     let couponItemPriced = false;
@@ -528,6 +557,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         sgstAmount,
         taxRate: Number(pricingResult.taxRate.toString()),
         finalTotal,
+        // GST-inclusive rent view (item 17): rentInclGst is the price
+        ...rentInclGstFields(pricingResult),
         // Include new details for frontend or snapshot
         pricingBreakdown: {
           periodType: pricingResult.pricingBreakdown.periodType,
@@ -544,6 +575,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       grandDiscountTotal += discountAmount;
       grandDurationDiscountTotal += Number(pricingResult.durationDiscountAmount.toString());
       grandCouponDiscountTotal += Number(pricingResult.couponDiscountAmount.toString());
+      inclGst.add(pricingResult);
       durationDiscountLabel ??= pricingResult.durationDiscountLabel;
       grandTaxTotal += taxAmount;
       grandCGSTTotal += cgstAmount;
@@ -606,6 +638,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         grandDiscountTotal += Number(pr.discountAmount.toString());
         grandDurationDiscountTotal += Number(pr.durationDiscountAmount.toString());
         grandCouponDiscountTotal   += Number(pr.couponDiscountAmount.toString());
+        inclGst.add(pr);
         durationDiscountLabel ??= pr.durationDiscountLabel;
         grandTaxTotal      += Number(pr.taxAmount.toString());
         grandCGSTTotal     += Number(pr.cgstAmount.toString());
@@ -626,10 +659,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandAdvanceAmount = Number(grandAdvanceAmount.toFixed(2));
     grandDurationDiscountTotal = Number(grandDurationDiscountTotal.toFixed(2));
     grandCouponDiscountTotal = Number(grandCouponDiscountTotal.toFixed(2));
+    const inclGstTotals = inclGst.view();
 
-    // Effective plan: the branch mode, then the amounts — the advance is valid
-    // only if 0 < advance < full payable (rental after discounts + GST + deposit).
-    // A plan the branch/amounts don't allow is converted, never rejected.
+    // Effective plan (item 18): ADVANCE when 0 < advance < full payable (rental
+    // after discounts + GST + deposit), else FULL with the reason. A plan an
+    // old client sent is converted, never rejected.
     const paymentOptions = resolvePaymentOptions({
       mode: customerPaymentMode,
       advanceAmount: grandAdvanceAmount,
@@ -638,28 +672,19 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     const effectiveFlow = resolveEffectiveFlow(requestedFlow, paymentOptions);
     if (effectiveFlow.adjusted) {
       console.warn(
-        `[booking] payment_flow ${requestedFlow} → ${effectiveFlow.flow} (${effectiveFlow.reason}) ` +
-        `branch=${bookingBranchId} mode=${customerPaymentMode} advance=${grandAdvanceAmount} total=${grandFinalTotal}`,
+        `[booking] payment_flow ${requestedFlow ?? "(none)"} → ${effectiveFlow.flow} (${effectiveFlow.reason}) ` +
+        `branch=${bookingBranchId} advance=${grandAdvanceAmount} total=${grandFinalTotal}`,
       );
     }
     const isAdvancePayment = effectiveFlow.flow === "ADVANCE";
 
-    // The coupon's payment-plan rules, against the plan actually charged
+    // The coupon's payment-plan rules (item 18): a full-payment-only coupon is
+    // never usable on a customer booking, the rest are checked against the plan
+    // actually charged (says why)
     if (appliedCouponRule) {
-      const planCheck = couponValidationService.checkPaymentPlan(appliedCouponRule, effectiveFlow.flow);
+      const planCheck = checkCustomerCouponPlan(appliedCouponRule, paymentOptions);
       if (!planCheck.valid) {
-        throw new CouponRejectedError(
-          planCheck.failureCode ?? "COUPON_PAYMENT_PLAN_MISMATCH",
-          planCheck.failureReason ?? "This coupon is not valid for this payment plan.",
-        );
-      }
-      const minAdvance = appliedCouponRule.minAdvanceAfterDiscount;
-      if (isAdvancePayment && minAdvance != null && grandAdvanceAmount < Number(minAdvance)) {
-        throw new CouponRejectedError(
-          "COUPON_PAYMENT_PLAN_MISMATCH",
-          `This coupon needs an advance of at least ₹${Number(minAdvance).toFixed(2)}` +
-            (paymentOptions.allowedFlows.includes("FULL") ? "; pay the full amount to use it." : "."),
-        );
+        throw new CouponRejectedError(planCheck.code, planCheck.message);
       }
     }
 
@@ -794,6 +819,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           sgstAmount,
           taxRate:    Number(pricingResult.taxRate.toString()),
           finalTotal,
+          // GST-inclusive rent view (item 17): rentInclGst is the price
+          ...rentInclGstFields(pricingResult),
           pricingBreakdown: {
             periodType:    pricingResult.pricingBreakdown.periodType,
             billableHours: bookingDuration.billableDuration,
@@ -877,6 +904,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
               // Discount layers (they add up to grandDiscountTotal)
               grandDurationDiscountTotal,
               grandCouponDiscountTotal,
+              // GST-inclusive view (item 17): rent the customer sees, discounts off it
+              ...inclGstTotals,
               durationDiscountLabel,
               couponCode: couponItem()?.appliedCouponCode ?? null,
               paymentFlowRequested: requestedFlow,
@@ -928,33 +957,38 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             bookingId: newBooking.id,
             customerId,
             branchId: newBooking.branchId,
-            // Only the coupon layer — the duration slab is not coupon savings
-            discountedAmount: new Decimal(grandCouponDiscountTotal),
+            // Only the coupon layer — the duration slab is not coupon savings.
+            // What the coupon took off the GST-inclusive rent (item 17).
+            discountedAmount: new Decimal(inclGstTotals.grandCouponDiscountInclGst),
           },
         });
       }
 
-      // Discount layers on record (duration slab / coupon) for summaries and reports
+      // Discount layers on record (duration slab / coupon) for summaries and reports —
+      // on the GST-inclusive rent the discounts were taken off (item 17)
       if (grandDiscountTotal > 0 || appliedCouponRuleId) {
         const firstSlabId = items.find((i: any) => i.durationSlabId)?.durationSlabId ?? null;
+        const rentIncl = inclGstTotals.grandRentInclGst;
+        const durationIncl = inclGstTotals.grandDurationDiscountInclGst;
+        const couponIncl = inclGstTotals.grandCouponDiscountInclGst;
         await tx.discountApplication.create({
           data: {
             publicId: createID(),
             bookingId: newBooking.id,
-            originalAmount: new Decimal(grandBaseTotal).toFixed(2),
-            durationDiscountAmount: new Decimal(grandDurationDiscountTotal).toFixed(2),
-            durationDiscountPercent: grandBaseTotal > 0
-              ? new Decimal(grandDurationDiscountTotal).div(grandBaseTotal).mul(100).toDecimalPlaces(4).toString()
+            originalAmount: new Decimal(rentIncl).toFixed(2),
+            durationDiscountAmount: new Decimal(durationIncl).toFixed(2),
+            durationDiscountPercent: rentIncl > 0
+              ? new Decimal(durationIncl).div(rentIncl).mul(100).toDecimalPlaces(4).toString()
               : "0",
             durationSlabId: firstSlabId,
-            couponDiscountAmount: new Decimal(grandCouponDiscountTotal).toFixed(2),
-            couponDiscountPercent: grandBaseTotal - grandDurationDiscountTotal > 0
-              ? new Decimal(grandCouponDiscountTotal).div(grandBaseTotal - grandDurationDiscountTotal).mul(100).toDecimalPlaces(4).toString()
+            couponDiscountAmount: new Decimal(couponIncl).toFixed(2),
+            couponDiscountPercent: rentIncl - durationIncl > 0
+              ? new Decimal(couponIncl).div(new Decimal(rentIncl).sub(durationIncl)).mul(100).toDecimalPlaces(4).toString()
               : "0",
             discountRuleId: appliedCouponRuleId,
             manualDiscountAmount: "0.00",
-            totalDiscountAmount: new Decimal(grandDiscountTotal).toFixed(2),
-            finalAmount: new Decimal(grandBaseTotal).sub(grandDiscountTotal).toFixed(2),
+            totalDiscountAmount: new Decimal(inclGstTotals.grandDiscountInclGst).toFixed(2),
+            finalAmount: new Decimal(inclGstTotals.grandRentAfterDiscountInclGst).toFixed(2),
             paymentPlan: effectiveFlow.flow,
           },
         });
@@ -1039,6 +1073,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandFinalTotal,
           grandDurationDiscountTotal,
           grandCouponDiscountTotal,
+          // GST-inclusive view (item 17): rent the customer sees, discounts off it
+          ...inclGstTotals,
           durationDiscountLabel,
           appliedCouponCode: couponItem()?.appliedCouponCode ?? null,
           advanceAmount: isAdvancePayment ? grandAdvanceAmount : grandFinalTotal,

@@ -5,6 +5,7 @@ import { gstRuleKey } from "../../utils/cache/vehicleCacheKeys.js";
 import {
   computeGst,
   splitGstInclusive,
+  splitRentTotal,
   isTaxableChargeType,
   type GstRates,
 } from "@repo/schemas";
@@ -128,6 +129,15 @@ export function computeChargeGst(
     return { taxable: a, cgst: new Decimal(0), sgst: new Decimal(0), gst: new Decimal(0), total: a, rate: new Decimal(0) };
   }
   return computeLineGst(amount, rates);
+}
+
+/**
+ * Split a GST-inclusive RENT total (booking or extension rent, after
+ * discounts) into rent without GST + CGST + SGST, using RENT_GST_METHOD.
+ * Rent is the only taxed amount; drop / recovery charges carry no GST.
+ */
+export function splitRentGross(gross: Decimal | number | string, rates: GstRates): LineGst {
+  return toLine(splitRentTotal(Number(gross), rates));
 }
 
 export { isTaxableChargeType };

@@ -6,8 +6,9 @@
  * moduleKey) and the branch manager collects them in Settlements, the same way
  * legacy drop damage is handled.
  *
- * The GST worked out when the row is written (rate frozen at that moment) is
- * stored on the row: finalAmount = taxable value, gstAmount = cgstAmount +
+ * Since item 8 (Oct 3 2026) these charges carry NO GST: rows are written with
+ * GST columns 0. Rows written earlier keep the GST frozen on them (rate frozen
+ * at that moment): finalAmount = taxable value, gstAmount = cgstAmount +
  * sgstAmount, taxRate = CGST + SGST rate. Rows written before those columns
  * existed carry it as JSON in ChargeEntry.notes:
  *   {"source":"LEGACY_DROP","gst":{"cgstRate":9,"sgstRate":9,"cgst":"9.00","sgst":"9.00","gst":"18.00"}}
@@ -92,10 +93,61 @@ export function parseChargeEntryGst(notes: string | null | undefined): ChargeEnt
   }
 }
 
+/** ChargeEntry.notes JSON flag of a row whose frozen GST was removed (item 8). */
+export const GST_REMOVED_FLAG = "gstRemoved";
+
+/** True when the row's frozen GST was removed by stripLegacyReturnChargeGst. */
+export function chargeEntryGstRemoved(notes: string | null | undefined): boolean {
+  if (!notes || !notes.startsWith("{")) return false;
+  try {
+    return (JSON.parse(notes) as Record<string, unknown>)[GST_REMOVED_FLAG] === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Drop / recovery charges carry no GST since item 8 (Oct 3 2026). A legacy drop
+ * recorded before that froze GST on its return-charge rows; while the branch
+ * manager has not settled them yet, they are restated without it (GST columns 0,
+ * the notes JSON loses its `gst`). Returns the number of rows changed. Used by
+ * scripts/restateOpenDropGst.ts; settled bookings are never passed in.
+ */
+export async function stripLegacyReturnChargeGst(bookingId: number, tx?: TxClient): Promise<number> {
+  const db = tx ?? prisma;
+  const entries = await db.chargeEntry.findMany({
+    where: { bookingId, chargeType: { in: LEGACY_RETURN_CHARGE_TYPES } },
+    select: { id: true, gstAmount: true, cgstAmount: true, sgstAmount: true, taxRate: true, notes: true },
+  });
+  let changed = 0;
+  for (const e of entries) {
+    if (!chargeEntryGst(e)) continue;
+    // `gstRemoved` tells invoice finalization not to keep GST an earlier
+    // finalization stored on this row's invoice line
+    let parsed: Record<string, unknown> = { note: e.notes ?? null };
+    if (e.notes && e.notes.startsWith("{")) {
+      try {
+        parsed = JSON.parse(e.notes) as Record<string, unknown>;
+      } catch {
+        /* not JSON — kept as `note` */
+      }
+    }
+    delete parsed.gst;
+    parsed[GST_REMOVED_FLAG] = true;
+    const notes = JSON.stringify(parsed);
+    await db.chargeEntry.update({
+      where: { id: e.id },
+      data: { gstAmount: "0.00", cgstAmount: "0.00", sgstAmount: "0.00", taxRate: "0.00", notes },
+    });
+    changed++;
+  }
+  return changed;
+}
+
 /**
  * Creates or replaces the legacy drop's ChargeEntry for a moduleKey. `amount` is
- * the taxable value (pre-GST); `gst` is the line GST at the branch rate (frozen
- * into the GST columns), or null for a non-taxable charge.
+ * the charge at face value; `gst` is the line GST frozen into the GST columns,
+ * or null for a non-taxable charge — every drop charge since item 8.
  */
 export async function upsertLegacyReturnCharge(
   tx: TxClient,

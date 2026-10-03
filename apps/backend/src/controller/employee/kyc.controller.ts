@@ -42,6 +42,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
       select: {
         publicId: true,
         type: true,
+        side: true,
         status: true,
         file: { select: { key: true, mime: true } },
       },
@@ -54,6 +55,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         .map(async (k) => ({
           publicId: k.publicId,
           type: k.type || "UNKNOWN",
+          side: k.side,
           status: k.status || "UNKNOWN",
           // Employees get a 15-minute window to view the document
           file: { url: await generatePresignedUrl(k.file!.key, 900), mime: k.file!.mime },

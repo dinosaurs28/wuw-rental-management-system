@@ -7,6 +7,7 @@ import { createBranchSchema, editBranchSchema } from "@repo/schemas";
 import { Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { cleanupQueue } from "../../lib/queue.client.js";
+import { managerPhoneTaken, parseOptionalManagerPhone } from "./branchManager.controller.js";
 
 export const CreateBranch = async (req: Request, res: Response) => {
     try {
@@ -32,6 +33,24 @@ export const CreateBranch = async (req: Request, res: Response) => {
             });
         }
 
+        // Optional manager mobile (password reset by SMS goes to it).
+        const managerPhoneInput = parseOptionalManagerPhone(req.body?.managerPhone);
+        if (!managerPhoneInput.ok) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+                success: false,
+                code: "INVALID_PHONE",
+                message: "Enter a valid 10-digit mobile number for the branch manager.",
+            });
+        }
+        const managerPhone = managerPhoneInput.phone || undefined;
+        if (managerPhone && (await managerPhoneTaken(managerPhone))) {
+            return res.status(StatusCode.CONFLICT).json({
+                success: false,
+                code: "PHONE_IN_USE",
+                message: "This mobile number is already on another branch manager account.",
+            });
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             const newBranch = await tx.branch.create({
                 data: {
@@ -52,7 +71,8 @@ export const CreateBranch = async (req: Request, res: Response) => {
                     role: Role.MANAGER,
                     branchId: newBranch.id,
                     publicId: createID(),
-                    authProvider: 'PASSWORD'
+                    authProvider: 'PASSWORD',
+                    ...(managerPhone ? { phone: managerPhone } : {}),
                 }
             });
 
@@ -84,7 +104,8 @@ export const CreateBranch = async (req: Request, res: Response) => {
                 manager: {
                     id: result.manager.publicId,
                     name: result.manager.name,
-                    email: result.manager.email
+                    email: result.manager.email,
+                    phone: result.manager.phone
                 }
             }
         });

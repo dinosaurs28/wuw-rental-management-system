@@ -26,6 +26,7 @@ import {
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { reconcileBookingUpiQrs } from "../../services/payment/upi-qr.service.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 
@@ -221,6 +222,16 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
       });
     }
 
+    // The customer may have paid by UPI QR (scanned from another phone) instead
+    // of the order — that settles through the normal confirmation service (#2)
+    if (await reconcileBookingUpiQrs(booking.id)) {
+      return res.status(StatusCode.OK).json({
+        gatewayResult: "SUCCESS",
+        message: "Payment received by UPI QR. Booking is now CONFIRMED.",
+        newStatus: BookingStatus.CONFIRMED,
+      });
+    }
+
     // Narrowed by the isRazorpayOrderId guard above.
     const gatewayOrderId = booking.transactionId!;
     const paymentStatus = await fetchOrderStatus(gatewayOrderId);
@@ -404,6 +415,16 @@ export const ManualConfirmPayment = async (req: Request, res: Response) => {
     if (booking.paymentStatus === PaymentStatus.SUCCESS) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Payment is already marked as successful",
+      });
+    }
+
+    // Proof shown by the customer may be a UPI QR payment — apply that real
+    // payment instead of recording a manual one beside it (#2)
+    if (await reconcileBookingUpiQrs(booking.id)) {
+      return res.status(StatusCode.OK).json({
+        success: true,
+        message: "Payment received by UPI QR. Booking is now CONFIRMED.",
+        newStatus: BookingStatus.CONFIRMED,
       });
     }
 

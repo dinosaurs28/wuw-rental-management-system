@@ -6,6 +6,17 @@ import {
   resetPasswordController,
 } from "../../services/passwordReset/passwordReset.controller.js";
 import {
+  makeForgotPasswordSmsController,
+  makeResetPasswordSmsController,
+} from "../../services/passwordReset/smsReset.controller.js";
+import { Role as ResetRole } from "@repo/database/client";
+import {
+  GetEmailDiagnostics,
+  SendTestEmail,
+  SendTestSms,
+} from "../../controller/admin/diagnostics.controller.js";
+import { makeRecoveryPhoneHandlers } from "../../services/passwordReset/recoveryPhone.controller.js";
+import {
   GetAllBranches,
   CreateBranch,
   EditBranch,
@@ -57,6 +68,18 @@ const router: Router = Router();
 router.post("/auth/login", Login);
 router.post("/auth/forgot-password", makeForgotPasswordController("admin"));
 router.post("/auth/reset-password", resetPasswordController);
+// Admin reset by SMS code, public, ADMIN accounts only.
+router.post("/auth/sms/forgot-password", makeForgotPasswordSmsController([ResetRole.ADMIN]));
+router.post("/auth/sms/reset-password", makeResetPasswordSmsController([ResetRole.ADMIN]));
+// Email / SMS delivery diagnostics.
+router.get("/diagnostics/email", AdminCheck, GetEmailDiagnostics);
+router.post("/diagnostics/email/test", AdminCheck, SendTestEmail);
+router.post("/diagnostics/sms/test", AdminCheck, SendTestSms);
+// The admin's own recovery mobile number (where an SMS reset code goes).
+const adminRecoveryPhone = makeRecoveryPhoneHandlers(ResetRole.ADMIN);
+router.get("/account/recovery-phone", AdminCheck, adminRecoveryPhone.get);
+router.post("/account/recovery-phone/send-code", AdminCheck, adminRecoveryPhone.sendCode);
+router.post("/account/recovery-phone/verify", AdminCheck, adminRecoveryPhone.verify);
 router.get("/dashboard/branches", AdminCheck, GetAllBranches);
 router.post("/dashboard/branches/create", AdminCheck, CreateBranch);
 router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);

@@ -8,6 +8,11 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { AuthProvider, prisma, Role } from "@repo/database/client";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
+import {
+  signVerifySession,
+  VERIFY_SESSION_COOKIE,
+  VERIFY_SESSION_COOKIE_OPTIONS,
+} from "../../utils/token/verifySession.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 
 export const emailAuthController = async (req: Request, res: Response) => {
@@ -133,13 +138,15 @@ export const emailAuthControllerSignin = async (
       });
     }
     if (!response.emailVerifiedAt) {
+      // Signed, short-lived: a bare publicId here let anyone who knew one act
+      // as that user on the phone-OTP endpoints.
       return res
         .status(StatusCode.CREATED)
-        .cookie("verifySession", response.publicId, {
-          httpOnly: false,
-          secure: true,
-          sameSite: "strict",
-        })
+        .cookie(
+          VERIFY_SESSION_COOKIE,
+          signVerifySession(response.publicId),
+          VERIFY_SESSION_COOKIE_OPTIONS,
+        )
         .json({
           message: "Redirecting to Otp Page",
           data: {

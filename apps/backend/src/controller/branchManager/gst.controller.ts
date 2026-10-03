@@ -3,7 +3,8 @@ import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { gstRuleSchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
-import { gstRuleKey } from "../../utils/cache/vehicleCacheKeys.js";
+import { gstRuleKey, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
+import { recomputeBranchRentWithoutGst } from "../../services/pricing/rent-columns.service.js";
 
 export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
   try {
@@ -67,9 +68,15 @@ export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
       },
     });
 
+    // Rents are GST-inclusive (item 17): the stored "rent without GST" of every
+    // vehicle and pricing default of the branch follows the new rule
+    const rentWithoutGstUpdated = await recomputeBranchRentWithoutGst(branchId, { cgstRate, sgstRate });
+
     // TASK-012c: Invalidate GST cache so next pricing call fetches the updated rate
     try {
       await redis.del(gstRuleKey(branchId));
+      // Listings carry the GST inside each price
+      await invalidateGroupListingCache(redis);
     } catch (err) {
       console.warn("[pricing-cache] Failed to invalidate GST cache (non-fatal):", err);
     }
@@ -77,6 +84,8 @@ export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: "GST Rule saved successfully",
       data: gstRule,
+      // Rows whose rent without GST was recomputed (vehicles' custom pricing, branch defaults)
+      rentWithoutGstUpdated,
     });
   } catch (error) {
     console.error("Error saving GST Rule:", error);

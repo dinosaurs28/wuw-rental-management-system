@@ -4,7 +4,8 @@
  *
  *   charge = vehicle extraHourRate × ceil(late minutes left after grace / 60)
  *
- * It is a taxable EXTRA_TIME line (rental time) at the branch GST. Lateness is
+ * It is an EXTRA_TIME line billed at face value with NO GST — a recovery
+ * charge (item 8, Oct 3 2026; it used to carry the branch GST). Lateness is
  * measured from booking.endAt, which already carries any committed extension,
  * so extending at the counter before the drop replaces the late charge.
  *

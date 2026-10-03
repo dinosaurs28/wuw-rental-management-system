@@ -8,11 +8,9 @@ import {
 import { createID } from "../utils/nanoID.js";
 import { queueInvoiceGeneration } from "../utils/invoice-generation.queue.js";
 import { DROP_DAMAGE_REF, DROP_DISCOUNT_REF } from "./damage/drop-damage.service.js";
-import { computeLineGst } from "./tax/gst.service.js";
-import { chargeEntryGst } from "./charges/legacy-return-charges.service.js";
+import { chargeEntryGst, chargeEntryGstRemoved } from "./charges/legacy-return-charges.service.js";
 import { settlementEngineService } from "./payment/settlement-engine.service.js";
 import {
-  bookingGstRates,
   computeInvoiceGstTotals,
   invoiceTotalsData,
   isDamageReviewItem,
@@ -22,13 +20,14 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 // GST on return charges follows the canonical rule (#23) and is never
-// recomputed here:
+// recomputed here. Since item 8 (Oct 3 2026) drop / recovery charges carry no
+// GST, so new lines are non-taxable; lines stored with GST before keep it:
 //  - Session flow: a ledger line is taxable when it was booked TAXABLE, and its
 //    GST is the gstAmount stored on it when the drop bill was computed.
 //  - Legacy ChargeEntry flow: the GST a legacy drop froze on the row (GST
-//    columns, else JSON in notes — chargeEntryGst). Older rows have none:
-//    only DAMAGE_PENALTY was ever taxed, so it alone is taxed (once, here, at
-//    the booking's frozen rate); other old charges are not re-taxed.
+//    columns, else JSON in notes — chargeEntryGst). Older rows have none: they
+//    keep only the GST an earlier finalization stored on their invoice line (a
+//    damage penalty used to be taxed then); otherwise they are non-taxable.
 
 // LedgerEntry types to skip — these are not billable line items in the invoice
 const SKIP_LEDGER_TYPES = new Set([
@@ -136,10 +135,7 @@ function dropDiscountItems(entry: any): ChargeItem[] {
  * The session flow is detected by the presence of a completed RETURN
  * PaymentSession. Legacy is the fallback.
  */
-async function buildChargeItems(
-  bookingId: number,
-  rates: { cgstRate: number; sgstRate: number },
-): Promise<ChargeItem[]> {
+async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
   // ── 1. Session-based return flow ──────────────────────────────────────────
   const returnSession = await prisma.paymentSession.findFirst({
     where: {
@@ -231,6 +227,16 @@ async function buildChargeItems(
   const resolved = await Promise.all(
     chargeEntries.map((e) => resolveLegacyChargeType(String(e.chargeType), bookingId)),
   );
+  // The GST an earlier finalization already stored on a line stays (rows without
+  // frozen GST); a line invoiced for the first time now carries none (item 8)
+  const priorItems = await prisma.invoiceItem.findMany({
+    where: {
+      invoice: { bookingId },
+      sourceRef: { in: chargeEntries.map((e) => `${INVOICE_SOURCE.CHARGE_ENTRY}${e.publicId}`) },
+    },
+    select: { sourceRef: true, isTaxable: true, taxAmount: true },
+  });
+  const priorBySource = new Map(priorItems.map((p) => [p.sourceRef, p]));
 
   return chargeEntries.map((entry, i) => {
     const chargeType = resolved[i] ?? "ADDITIONAL_CHARGES";
@@ -250,16 +256,22 @@ async function buildChargeItems(
       };
     }
 
-    // Older rows carry no GST: only a damage penalty was ever taxed (once,
-    // here, CGST+SGST rounded per line); other old charges are not re-taxed.
-    const isTaxable = chargeType === "DAMAGE_PENALTY";
+    // Older rows carry no GST. Drop / recovery charges — damage included — are
+    // not taxed any more (item 8): a line keeps only the GST an earlier
+    // finalization of this invoice stored on it (a damage penalty used to be
+    // taxed here, once); otherwise it is non-taxable.
+    const sourceRef = `${INVOICE_SOURCE.CHARGE_ENTRY}${entry.publicId}`;
+    // A row restated without GST (open legacy drop, item 8) drops it from its line too
+    const prior = chargeEntryGstRemoved(entry.notes) ? undefined : priorBySource.get(sourceRef);
+    const priorTax = prior?.isTaxable ? new Decimal(prior.taxAmount.toString()) : new Decimal(0);
+    const isTaxable = priorTax.gt(0);
     return {
       label: entry.label,
       amount: amount.toFixed(2),
       isTaxable,
       chargeType,
-      taxAmount: isTaxable && amount.gt(0) ? computeLineGst(amount, rates).gst.toFixed(2) : "0.00",
-      sourceRef: `${INVOICE_SOURCE.CHARGE_ENTRY}${entry.publicId}`,
+      taxAmount: isTaxable ? priorTax.toFixed(2) : "0.00",
+      sourceRef,
     };
   });
 }
@@ -315,10 +327,9 @@ export async function finalizeInvoice(
   // Capture the old file ID before nulling it — passed to the worker so it can
   // delete the stale R2 object and FileObject row after the new PDF is uploaded.
   const previousFileObjectId = booking.invoice.invoicePdfFileId ?? undefined;
-  // Frozen booking rates — used only to tax legacy ChargeEntry lines (no stored GST)
-  const rates = await bookingGstRates(booking);
-
-  const chargeItems = await buildChargeItems(bookingId, rates);
+  // Return charges are never taxed here (item 8: no GST on drop / recovery
+  // charges; stored GST is read back as is)
+  const chargeItems = await buildChargeItems(bookingId);
 
   const newTotal = await prisma.$transaction(async (tx) => {
     // One rebuild at a time per invoice: a legacy drop, the manager's settlement

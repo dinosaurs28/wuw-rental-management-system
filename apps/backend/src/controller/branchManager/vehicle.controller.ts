@@ -9,6 +9,8 @@ import { invalidateVehicleAvailability, invalidateVehiclePricing, invalidateGrou
 import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS } from "@repo/schemas";
 import { z } from "zod";
+import Decimal from "decimal.js";
+import { branchRentRates, rentColumns } from "../../services/pricing/rent-columns.service.js";
 const updateVehicleFastagSchema = z.object({
   fastagNumber: z.string().min(1).nullable(),
   hasFastag: z.boolean(),
@@ -95,8 +97,10 @@ export const AddVehicle = async (req: Request, res: Response) => {
       provider,
       hourlyRate,
       price12Hour,
+      totalRent12Hour,
       freeKm12Hour,
       price24Hour,
+      totalRent24Hour,
       freeKm24Hour,
       priceMonthly,
       freeKmMonthly,
@@ -109,6 +113,12 @@ export const AddVehicle = async (req: Request, res: Response) => {
       hasFastag,
       useCases,
     } = validation.data;
+
+    // "Total rent incl. GST" (item 17): totalRent* when sent, else price* (older
+    // clients — the same totals). Stored as totalRent*, price* and rent without GST.
+    const rent12Hour = totalRent12Hour ?? price12Hour;
+    const rent24Hour = totalRent24Hour ?? price24Hour;
+    const rentRates = rent24Hour !== undefined ? await branchRentRates(branchId!) : null;
 
     const existingVehicle = await prisma.vehicle.findUnique({
       where: { regNo },
@@ -137,13 +147,15 @@ export const AddVehicle = async (req: Request, res: Response) => {
         useCases: useCases ?? [],
         insuranceExpiry: new Date(insuranceExpiry),
         status: VehicleStatus.AVAILABLE,
-        customPricing: price24Hour !== undefined ? {
+        customPricing: rent24Hour !== undefined ? {
           create: {
             publicId: createID(),
-            hourlyRate: hourlyRate ?? null,
-            price12Hour: price12Hour ?? null,
+            // Single hourly rate (Extra Hour Rate); legacy column kept in sync
+            hourlyRate: extraHourRate ?? 100.00,
             freeKm12Hour: freeKm12Hour ?? 100,
-            price24Hour: price24Hour,
+            // price12Hour / totalRent12Hour / rentWithoutGst12Hour and the 24 h trio
+            ...rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour }, rentRates),
+            price24Hour: new Decimal(rent24Hour).toFixed(2),
             freeKm24Hour: freeKm24Hour ?? 150,
             priceMonthly: priceMonthly ?? null,
             freeKmMonthly: freeKmMonthly ?? 1500,
@@ -337,8 +349,10 @@ export const EditVehicle = async (req: Request, res: Response) => {
     // Remove custom pricing root fields from updateData
     delete updateData.hourlyRate;
     delete updateData.price12Hour;
+    delete updateData.totalRent12Hour;
     delete updateData.freeKm12Hour;
     delete updateData.price24Hour;
+    delete updateData.totalRent24Hour;
     delete updateData.freeKm24Hour;
     delete updateData.priceMonthly;
     delete updateData.freeKmMonthly;
@@ -362,15 +376,21 @@ export const EditVehicle = async (req: Request, res: Response) => {
       };
     }
     
-    if (data.price24Hour !== undefined || data.isCustomPricingEnabled !== undefined) {
+    // "Total rent incl. GST" (item 17): totalRent* when sent, else price* (older
+    // clients — the same totals). Stored as totalRent*, price* and rent without GST.
+    const rent12Hour = data.totalRent12Hour ?? data.price12Hour;
+    const rent24Hour = data.totalRent24Hour ?? data.price24Hour;
+    if (rent24Hour !== undefined || data.isCustomPricingEnabled !== undefined) {
+      const rentRates = await branchRentRates(vehicle.branchId);
+      const rentCols = rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour }, rentRates);
       updateData.customPricing = {
         upsert: {
           create: {
             publicId: createID(),
-            hourlyRate: data.hourlyRate ?? null,
-            price12Hour: data.price12Hour ?? null,
+            hourlyRate: data.extraHourRate ?? 100.00,
             freeKm12Hour: data.freeKm12Hour ?? 100,
-            price24Hour: data.price24Hour ?? 0,
+            ...rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour ?? 0 }, rentRates),
+            price24Hour: new Decimal(rent24Hour ?? 0).toFixed(2),
             freeKm24Hour: data.freeKm24Hour ?? 150,
             priceMonthly: data.priceMonthly ?? null,
             freeKmMonthly: data.freeKmMonthly ?? 1500,
@@ -379,10 +399,10 @@ export const EditVehicle = async (req: Request, res: Response) => {
             enabled: data.isCustomPricingEnabled ?? true,
           },
           update: {
-            hourlyRate: data.hourlyRate ?? null,
-            price12Hour: data.price12Hour ?? null,
+            ...(data.extraHourRate !== undefined && { hourlyRate: data.extraHourRate }),
+            // 12 h trio always (null clears it, as before); the 24 h trio when sent
+            ...rentCols,
             ...(data.freeKm12Hour !== undefined && { freeKm12Hour: data.freeKm12Hour }),
-            ...(data.price24Hour !== undefined && { price24Hour: data.price24Hour }),
             ...(data.freeKm24Hour !== undefined && { freeKm24Hour: data.freeKm24Hour }),
             priceMonthly: data.priceMonthly ?? null,
             ...(data.freeKmMonthly !== undefined && { freeKmMonthly: data.freeKmMonthly }),
@@ -517,12 +537,15 @@ export const GetVehicleById = async (req: Request, res: Response) => {
     }
 
     const latestInsurance = vehicle.insuranceRecords[0];
+    // The branch GST rule, for the form's live "rent without GST + GST" preview (item 17)
+    const gstRates = await branchRentRates(vehicle.branchId);
 
     return res.status(StatusCode.OK).json({
       data: {
         ...vehicle,
         policyNumber: latestInsurance?.policyNumber || "",
         provider: latestInsurance?.provider || "",
+        gstRates,
       },
     });
   } catch (error) {
@@ -676,7 +699,8 @@ export const GetVehicles = async (req: Request, res: Response) => {
             select: { file: { select: { url: true } } },
           },
           customPricing: {
-            select: { price24Hour: true },
+            // price24Hour = totalRent24Hour: the GST-inclusive day rent (item 17)
+            select: { price24Hour: true, totalRent24Hour: true, rentWithoutGst24Hour: true },
           },
           category: {
             select: { name: true },

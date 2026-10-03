@@ -6,6 +6,7 @@ import {
   confirmBookingPayment,
   confirmExtensionPayment,
 } from "../../services/payment/bookingConfirmation.service.js";
+import { flagCheckoutPaymentAfterQr } from "../../services/payment/upi-qr.service.js";
 
 /**
  * Fast path called by the Razorpay Checkout success handler on web/mobile so
@@ -64,9 +65,19 @@ export const verifyPayment = async (req: Request, res: Response) => {
       }
 
       console.log(`[verifyPayment] booking=${booking.publicId} confirmed alreadyConfirmed=${alreadyConfirmed}`);
+      // Paid twice: a UPI QR payment had already confirmed it (#2)
+      const duplicatePayment =
+        alreadyConfirmed &&
+        (await flagCheckoutPaymentAfterQr({ bookingId: booking.id, gatewayPaymentId: razorpay_payment_id }));
       return res.status(StatusCode.OK).json({
         status: "Success",
         ...(alreadyConfirmed ? { message: "Booking already confirmed" } : {}),
+        ...(duplicatePayment
+          ? {
+              duplicatePayment: true,
+              message: "This booking was already paid by UPI QR. This second payment will be refunded.",
+            }
+          : {}),
         redirectURL: "FRONTEND_SUCCESS_URL",
       });
     }
@@ -97,9 +108,19 @@ export const verifyPayment = async (req: Request, res: Response) => {
       }
 
       console.log(`[verifyPayment] extension=${extension.publicId} confirmed alreadyConfirmed=${alreadyConfirmed}`);
+      // Paid twice: a UPI QR payment had already confirmed it (#2)
+      const duplicatePayment =
+        alreadyConfirmed &&
+        (await flagCheckoutPaymentAfterQr({ extensionId: extension.id, gatewayPaymentId: razorpay_payment_id }));
       return res.status(StatusCode.OK).json({
         status: "Success",
         ...(alreadyConfirmed ? { message: "Extension already confirmed" } : {}),
+        ...(duplicatePayment
+          ? {
+              duplicatePayment: true,
+              message: "This extension was already paid by UPI QR. This second payment will be refunded.",
+            }
+          : {}),
       });
     }
 

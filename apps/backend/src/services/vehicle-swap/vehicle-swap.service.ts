@@ -8,9 +8,10 @@
  *                   the replacement's start odometer + fuel are required and stored
  *                   on the VehicleSwap row, so the drop can bill km per vehicle.
  *
- * Every swap stores the pro-rated, PRE-GST price difference for the remaining
- * period (never negative) and whether staff chose to bill it (chargeDifference).
- * The drop bill turns a charged difference into a taxable VEHICLE_SWAP line.
+ * Every swap stores the pro-rated price difference of the GST-inclusive rents
+ * for the remaining period (never negative) and whether staff chose to bill it
+ * (chargeDifference). The drop bill turns a charged difference into a
+ * VEHICLE_SWAP line at face value, no GST (item 8).
  *
  * Callers:
  *  - swapVehicle()          the swap screens (Fleet Executive / Branch Manager)
@@ -138,7 +139,8 @@ export interface SwapCandidate extends AvailableVehicle {
   /** Higher category rank than the current vehicle */
   isUpgrade: boolean;
   /**
-   * PRE-GST difference for the remaining period, 2 dp, never negative.
+   * Difference of the GST-inclusive rents for the remaining period, 2 dp, never
+   * negative — billed as is (no GST on top) when charged.
    * null when the vehicles couldn't be priced (see swapContext.pricingError).
    */
   priceDifference: string | null;
@@ -1170,8 +1172,10 @@ export class VehicleSwapService {
   }
 
   /**
-   * Engine price of the booking's full window [startAt, endAt] on a vehicle,
-   * PRE-GST (post-discount base). Same customer and coupon inputs for both cars,
+   * Engine price of the booking's full window [startAt, endAt] on a vehicle:
+   * the GST-INCLUSIVE rent after discounts (item 17 — rents are inclusive, and a
+   * swap difference is billed at that face value with no GST added, item 8).
+   * Same customer and coupon inputs for both cars,
    * as the extension pricing does, so coupon effects cancel out in the delta.
    * The booking's own coupon is locked in exactly like extension pricing: its
    * own usage row isn't counted against it, its validity window / usage limits
@@ -1197,7 +1201,7 @@ export class VehicleSwapService {
         couponLockedIn: Boolean(booking.couponCode),
       },
     );
-    // finalTotal = post-discount base + GST
-    return new Decimal(result.finalTotal.toString()).minus(result.taxAmount.toString());
+    // finalTotal = the post-discount rent incl. GST (what the customer pays for it)
+    return new Decimal(result.finalTotal.toString());
   }
 }

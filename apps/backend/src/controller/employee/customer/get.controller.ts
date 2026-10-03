@@ -36,6 +36,9 @@ export const GetCustomerDetails = async (req: Request, res: Response) => {
             isProfileCompleted: true,
             drivingLicenceNumber: true,
             aadhaarNumber: true,
+            isBlacklisted: true,
+            blacklistReason: true,
+            blacklistedAt: true,
           },
         },
       },
@@ -73,6 +76,15 @@ export const GetCustomerDetails = async (req: Request, res: Response) => {
             }
           : {}),
         missingFields,
+        // Blacklisted customers can't be booked (#13) — staff see why.
+        isBlacklisted: customer.customerProfile?.isBlacklisted ?? false,
+        blacklistReason: customer.customerProfile?.isBlacklisted
+          ? (customer.customerProfile.blacklistReason ?? null)
+          : null,
+        blacklistedAt:
+          customer.customerProfile?.isBlacklisted && customer.customerProfile.blacklistedAt
+            ? customer.customerProfile.blacklistedAt.toISOString()
+            : null,
         ...qrPhotoFields,
       },
     });

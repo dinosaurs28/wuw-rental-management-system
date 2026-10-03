@@ -2,7 +2,16 @@ import crypto from "crypto";
 import { prisma, Role } from "@repo/database/client";
 import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password.js";
 import { rateLimit } from "../../utils/rateLimiter.js";
+import { normalizeIndianMobile } from "../../utils/phone.js";
 import { auditService, AuditCategory, AuditSeverity } from "../audit/audit.service.js";
+import {
+  claimResetCode,
+  discardResetCode,
+  getLiveResetCode,
+  registerWrongResetCodeGuess,
+  storeResetCode,
+  type LiveResetCode,
+} from "./resetCodeStore.js";
 import { sendMail } from "../email/mailer.js";
 import {
   generatePasswordResetCodeEmailTemplate,
@@ -37,13 +46,13 @@ function hashToken(rawToken: string): string {
 // Who may reset: any active, non-deleted account. Google sign-ups are included
 // on purpose: proving control of the inbox lets them set a password (the
 // mobile code flow always allowed it; authProvider is left unchanged).
-function canResetPassword(user: { isActive: boolean; deletedAt: Date | null }): boolean {
+export function canResetPassword(user: { isActive: boolean; deletedAt: Date | null }): boolean {
   return user.isActive && !user.deletedAt;
 }
 
 // Audit writes are fire-and-forget here; a failed insert must never surface as
 // an unhandled rejection (Express 4 does not catch them and Node exits).
-function logAudit(input: Parameters<typeof auditService.log>[0]): void {
+export function logAudit(input: Parameters<typeof auditService.log>[0]): void {
   auditService.log(input).catch((error) => {
     console.error("Failed to write password reset audit log:", error);
   });
@@ -306,6 +315,11 @@ export async function resetPassword(
     return { ok: false, reason: "USED_TOKEN" };
   }
 
+  // The emailed / SMS reset code lives in Redis; it dies with this reset too.
+  await discardResetCode(record.userId).catch((error) => {
+    console.error("Failed to discard a password reset code after a link reset:", error);
+  });
+
   logAudit({
     actorId: record.userId,
     actorName: record.user.name,
@@ -323,17 +337,60 @@ export async function resetPassword(
 }
 
 // ── 6-digit code flow (mobile apps) ─────────────────────────────────────────
-// The code lives in the EmailVerificationOtp table (one row per user, unique
-// userId), shared with signup verification: both delete-then-create for the
-// user, and a successful reset also verifies the email, so they never clash.
+// The code lives in Redis (resetCodeStore.ts), one live code per user shared
+// with the SMS reset channel. It is never stored in EmailVerificationOtp: the
+// sign-up phone verification and walk-in OTPs written there must never pass
+// as a password reset code.
 
 let timingDecoyHash: Promise<string> | null = null;
 
 // Compares against a throwaway hash so an unknown email costs the same bcrypt
 // time as a known one with a wrong code.
-async function spendCompareTime(code: string): Promise<void> {
+export async function spendCompareTime(code: string): Promise<void> {
   timingDecoyHash ??= hashpassword(crypto.randomBytes(16).toString("hex"));
   await comparehash(code, await timingDecoyHash);
+}
+
+// A live code survives at most this many wrong guesses (whichever endpoint —
+// emailed-code or SMS-code — they come through); then it is discarded and the
+// user must request a new one. The answer stays the generic invalid-code one.
+export const RESET_CODE_MAX_WRONG_ATTEMPTS = 5;
+
+export async function registerWrongResetCode(userId: number, codeId: string): Promise<void> {
+  // Keyed by the code's id, so a newly issued code starts from zero.
+  await registerWrongResetCodeGuess(
+    userId,
+    codeId,
+    RESET_CODE_MAX_WRONG_ATTEMPTS,
+    RESET_CODE_EXPIRY_MINUTES * 60 + 300,
+  );
+}
+
+/**
+ * A live code is only good for the address it was sent to: if the account's
+ * email or phone changed since, the code is void.
+ */
+export function resetCodeStillAddressed(
+  code: LiveResetCode,
+  user: { email: string; phone: string | null },
+): boolean {
+  return code.channel === "EMAIL"
+    ? code.sentTo === user.email.toLowerCase()
+    : code.sentTo === normalizeIndianMobile(user.phone);
+}
+
+/** Saves a freshly issued code (replacing any other live code of the user). */
+export async function saveResetCode(
+  userId: number,
+  code: string,
+  channel: "EMAIL" | "SMS",
+  sentTo: string,
+): Promise<void> {
+  await storeResetCode(
+    userId,
+    { hash: await hashpassword(code), channel, sentTo },
+    RESET_CODE_EXPIRY_MINUTES * 60,
+  );
 }
 
 export async function requestPasswordResetCode(
@@ -417,19 +474,7 @@ async function issueResetCode(
   }
 
   const code = String(crypto.randomInt(100000, 1000000));
-  const otpHash = await hashpassword(code);
-
-  await prisma.$transaction([
-    prisma.emailVerificationOtp.deleteMany({ where: { userId: user.id } }),
-    prisma.emailVerificationOtp.create({
-      data: {
-        userId: user.id,
-        phone: user.phone ?? "",
-        otpHash,
-        expiresAt: new Date(Date.now() + RESET_CODE_EXPIRY_MINUTES * 60_000),
-      },
-    }),
-  ]);
+  await saveResetCode(user.id, code, "EMAIL", user.email.toLowerCase());
 
   deliverResetEmail({
     to: user.email,
@@ -480,19 +525,19 @@ export async function resetPasswordWithCode(
 
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   const eligible = !!user && allowedRoles.includes(user.role) && canResetPassword(user);
-  const record = eligible
-    ? await prisma.emailVerificationOtp.findUnique({ where: { userId: user!.id } })
-    : null;
-  const live = !!record && !record.used && record.expiresAt > new Date();
+  const stored = eligible ? await getLiveResetCode(user!.id) : null;
+  const record = stored && resetCodeStillAddressed(stored, user!) ? stored : null;
+  const live = !!record;
 
   let matches = false;
   if (live) {
-    matches = await comparehash(code, record!.otpHash);
+    matches = await comparehash(code, record!.hash);
   } else {
     await spendCompareTime(code);
   }
 
   if (!user || !eligible || !matches) {
+    if (live) await registerWrongResetCode(user!.id, record!.id);
     logAudit({
       actorId: user?.id,
       actorName: user?.name ?? "Unknown",
@@ -518,13 +563,13 @@ export async function resetPasswordWithCode(
   const now = new Date();
 
   // Deleting the code is the claim: of two simultaneous submissions only the
-  // one that actually removed the row goes on to change the password.
-  const claimed = await prisma.$transaction(async (tx) => {
-    const claim = await tx.emailVerificationOtp.deleteMany({
-      where: { id: record!.id },
-    });
-    if (claim.count === 0) return false;
+  // one that actually removed it goes on to change the password.
+  const claimed = await claimResetCode(user.id, record!.id);
+  if (!claimed) {
+    return { ok: false, reason: "INVALID_CODE" };
+  }
 
+  await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: user.id },
       data: {
@@ -538,12 +583,7 @@ export async function resetPasswordWithCode(
       where: { userId: user.id, used: false },
       data: { used: true },
     });
-    return true;
   });
-
-  if (!claimed) {
-    return { ok: false, reason: "INVALID_CODE" };
-  }
 
   logAudit({
     actorId: user.id,

@@ -24,6 +24,17 @@
  *
  * Paid = CONFIRMED money in (refund rows excluded) − refunds paid out
  * (OVERPAYMENT_REFUND / CANCELLATION_REFUND rows).
+ *
+ * Legacy drop (no drop bill) with a recorded safety-deposit choice (#6,
+ * services/payment/safety-deposit.service.ts): SET_OFF counts the held deposit
+ * as credited against the charges at once (a deposit above them then shows as
+ * money to refund); REFUND_IN_FULL counts it as credited as it is refunded
+ * through the settlement (`sdr:` refund rows), so until then it stays held.
+ *
+ * Money put on CREDIT at the counter (#11) is not a payment: it stays owed here
+ * until the branch manager clears it, which records the PaymentTransaction.
+ * Only that clearing collects it (creditOutstanding below): Settlements and the
+ * over-payment guard leave it out, so a section can't be paid around.
  */
 import Decimal from "decimal.js";
 import {
@@ -37,6 +48,11 @@ import {
 import type { TxClient } from "./paymentSession.service.js";
 import { legacyReturnChargesTotal } from "../charges/legacy-return-charges.service.js";
 import { DROP_DAMAGE_REF, dropDamageAmount } from "../damage/drop-damage.service.js";
+import {
+  LEGACY_DEPOSIT_REFUND_KEY_PREFIX,
+  readLegacyDepositHandling,
+  type SafetyDepositHandling,
+} from "./safety-deposit.service.js";
 
 const ZERO = new Decimal(0);
 
@@ -72,6 +88,12 @@ export interface BookingOwed {
   safetyDepositHeld: Decimal;
   /** totalFinal + returnCharges + safetyDepositCharged − safetyDepositCredited */
   totalOwed: Decimal;
+  /** Legacy drop's recorded deposit choice (honoured by the BM settlement); null otherwise */
+  safetyDepositHandling: SafetyDepositHandling | null;
+  /** Deposit refunds recorded through the BM settlement (`sdr:` refund rows) */
+  legacyDepositRefunded: Decimal;
+  /** Legacy SET_OFF: the held deposit counted as credited against what is owed (0 otherwise) */
+  legacyDepositSetOff: Decimal;
 }
 
 type DecimalLike = { toString(): string } | number | string;
@@ -80,8 +102,8 @@ const dec = (v: DecimalLike | null | undefined) => new Decimal(v == null ? "0" :
 export async function computeBookingOwed(bookingId: number, tx?: TxClient): Promise<BookingOwed> {
   const db = tx ?? prisma;
 
-  const [booking, entries, legacyReturnCharges, dropDamages, standaloneDeposits] = await Promise.all([
-    db.booking.findUnique({ where: { id: bookingId }, select: { totalFinal: true } }),
+  const [booking, entries, legacyReturnCharges, dropDamages, standaloneDeposits, legacyDepositRefunds] = await Promise.all([
+    db.booking.findUnique({ where: { id: bookingId }, select: { totalFinal: true, pricingSnapshot: true } }),
     // Drop bill lines and safety-deposit lines of every payment session still in play
     db.ledgerEntry.findMany({
       where: {
@@ -115,6 +137,16 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
         purpose: PaymentPurpose.SAFETY_DEPOSIT,
         status: { in: ["COLLECTED", "CONFIRMED"] },
         NOT: { idempotencyKey: { startsWith: SESSION_TXN_KEY_PREFIX } },
+      },
+      select: { totalAmount: true },
+    }),
+    // Deposit refunds recorded through the BM settlement (legacy drop)
+    db.paymentTransaction.findMany({
+      where: {
+        bookingId,
+        purpose: { in: REFUND_PAYMENT_PURPOSES },
+        status: { in: ["COLLECTED", "CONFIRMED"] },
+        idempotencyKey: { startsWith: LEGACY_DEPOSIT_REFUND_KEY_PREFIX },
       },
       select: { totalAmount: true },
     }),
@@ -161,6 +193,18 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
 
   for (const t of standaloneDeposits) safetyDepositCharged = safetyDepositCharged.add(dec(t.totalAmount));
 
+  // Legacy drop: the staff's deposit choice, settled by the branch manager
+  const safetyDepositHandling = readLegacyDepositHandling(booking.pricingSnapshot);
+  const legacyDepositRefunded = legacyDepositRefunds.reduce((acc, t) => acc.add(dec(t.totalAmount)), ZERO);
+  let legacyDepositSetOff = ZERO;
+  if (safetyDepositHandling) {
+    const held = Decimal.max(ZERO, safetyDepositCharged.sub(safetyDepositCredited));
+    if (safetyDepositHandling === "SET_OFF") legacyDepositSetOff = held;
+    safetyDepositCredited = safetyDepositCredited.add(
+      safetyDepositHandling === "SET_OFF" ? held : Decimal.min(held, legacyDepositRefunded),
+    );
+  }
+
   const dropDamageOutsideBill = dropDamages
     .filter((d) => !damagesOnBill.has(d.publicId))
     .reduce((acc, d) => acc.add(dropDamageAmount(d)), ZERO);
@@ -178,7 +222,39 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     safetyDepositCredited,
     safetyDepositHeld: Decimal.max(ZERO, safetyDepositCharged.sub(safetyDepositCredited)),
     totalOwed,
+    safetyDepositHandling,
+    legacyDepositRefunded,
+    legacyDepositSetOff,
   };
+}
+
+/**
+ * The part of what a booking owes that sits on counter credit (#11): the
+ * credit sections still pending, never more than the booking hasn't paid.
+ *
+ * Credit is collected in one place only — the BM's Customer Credit page, whose
+ * clearing records the payment and clears the section — so Settlements and the
+ * over-payment guard keep it out of what they collect, and a legacy SET_OFF
+ * deposit is set off against the charges, never against money on credit.
+ *
+ * `netConfirmed` = confirmed money in less refunds paid out (BookingMoney).
+ */
+export function creditOutstanding(owed: BookingOwed, netConfirmed: Decimal, creditPending: Decimal): Decimal {
+  return Decimal.max(ZERO, Decimal.min(creditPending, unpaidBesideDepositRemainder(owed, netConfirmed)));
+}
+
+/**
+ * What the booking has not paid, with a legacy SET_OFF deposit counted only
+ * against the return charges (#6): the part of it beyond them goes back to the
+ * customer (through Settlements, `sdr:` refunds), so it pays nothing else —
+ * money on credit in particular (#11). Once that part is refunded, the refund
+ * already took it off netConfirmed. Without a legacy SET_OFF this is just
+ * totalOwed − netConfirmed.
+ */
+export function unpaidBesideDepositRemainder(owed: BookingOwed, netConfirmed: Decimal): Decimal {
+  const remainder = Decimal.max(ZERO, owed.legacyDepositSetOff.sub(owed.returnCharges));
+  const remainderNotRefunded = Decimal.max(ZERO, remainder.sub(owed.legacyDepositRefunded));
+  return owed.totalOwed.add(remainderNotRefunded).sub(netConfirmed);
 }
 
 export interface BookingMoney {

@@ -10,23 +10,33 @@ import { couponValidationService, normalizeCouponCode } from "./coupon-validatio
 import { discountCalculationService } from "./discount-calculation.service.js";
 import { paymentSessionService } from "../payment/paymentSession.service.js";
 import {
-  getBranchGstRates,
-  computeLineGst,
+  splitRentGross,
   splitInclusiveGst,
+  computeLineGst,
   isGstRuleMissing,
   GST_RULE_MISSING,
   GST_RULE_MISSING_MESSAGE,
+  type BranchGstRates,
+  type LineGst,
 } from "../tax/gst.service.js";
+import { bookingGstRates, isGstOnTopBooking } from "../invoice-totals.service.js";
 
 /**
  * Counter (pickup-session) coupon — Unified Payments branches only.
  *
- * The coupon is the same rule the customer could have used online, applied to
- * the booking's pre-GST rental base (totalBase − existing discounts). Its GST is
- * reduced with it, so the session credit is discount + GST on the discount. It
- * is capped at the rental and extension amount still owed in the session —
- * never the safety deposit — and, when the branch sets one, at
- * maxCombinedDiscountPercent of the booking base.
+ * The coupon is the same rule the customer could have used online, applied —
+ * like online (item 17) — to the GST-inclusive rent the customer pays after the
+ * booking's existing discounts (totalBase − totalDiscount + totalTax). The
+ * credit on the bill is that inclusive coupon amount; it is split into the
+ * rent-without-GST discount + the GST it takes off (splitRentGross). It is
+ * capped at the rental and extension amount still owed in the session — never
+ * the safety deposit — and, when the branch sets one, at
+ * maxCombinedDiscountPercent of the booking's inclusive rent.
+ *
+ * A booking priced before item 17 (GST added on top — isGstOnTopBooking) keeps
+ * that arithmetic: the credit is split taxable = credit / (1 + rate) at the
+ * booking's frozen rates, so its GST stays at its rate (10% of ₹1,534 →
+ * ₹130.00 + GST ₹23.40), and its discount records stay in taxable terms.
  *
  * Flow: the pickup session gets a DISCOUNT ledger line (referenceType
  * DISCOUNT_RULE, metadata = the split) when staff apply the code; when the
@@ -58,14 +68,17 @@ export class CounterCouponError extends Error {
 export interface CounterCouponQuote {
   rule: DiscountRule;
   code: string;
-  /** Pre-GST rental base the coupon was calculated on (totalBase − totalDiscount). */
+  /**
+   * GST-inclusive rent the coupon was calculated on: the original booking's rent
+   * after its existing discounts (totalBase − totalDiscount + totalTax).
+   */
   rentalBase: Decimal;
-  /** Pre-GST discount. */
+  /** Rent-without-GST part of the credit (taxable discount). */
   discount: Decimal;
   cgst: Decimal;
   sgst: Decimal;
   gst: Decimal;
-  /** discount + gst — the credit on the pickup bill. */
+  /** discount + gst — the coupon off the inclusive rent, the credit on the pickup bill. */
   total: Decimal;
   cgstRate: number;
   sgstRate: number;
@@ -110,16 +123,51 @@ async function bookingDurationDiscount(
   };
 }
 
-/** Largest pre-GST discount whose discount + GST fits in `limit`. */
-function fitDiscountToLimit(limit: Decimal, rates: { cgstRate: number; sgstRate: number }) {
-  const rate = new Decimal(rates.cgstRate).add(rates.sgstRate);
-  let d = limit.div(rate.div(100).add(1)).toDecimalPlaces(2, Decimal.ROUND_DOWN);
-  let line = computeLineGst(d, rates);
-  while (d.gt(0) && line.total.gt(limit)) {
-    d = d.sub("0.01");
-    line = computeLineGst(d, rates);
+/**
+ * The original booking's GST-inclusive rent (item 17): after its discounts
+ * (totalBase − totalDiscount + totalTax — what the customer pays for the rent),
+ * before them, and the discounts already taken off it. A booking priced with
+ * GST on top (before item 17; `gstOnTop`) has no inclusive totals: its rent
+ * before discounts is totalBase plus its GST at the booking's frozen rates
+ * (without the rates — a completion that doesn't need it — the taxable
+ * discount stands in).
+ */
+function bookingRentInclGst(
+  booking: {
+    totalBase: unknown;
+    totalDiscount: unknown;
+    totalTax: unknown;
+    pricingSnapshot: unknown;
+  },
+  rates: BranchGstRates | null,
+): { before: Decimal; after: Decimal; discount: Decimal; gstOnTop: boolean } {
+  const totals = ((booking.pricingSnapshot as any)?.totals ?? {}) as Record<string, unknown>;
+  const after = Decimal.max(
+    ZERO,
+    toDec(booking.totalBase as any).sub(toDec(booking.totalDiscount as any)).add(toDec(booking.totalTax as any)),
+  );
+  if (isGstOnTopBooking(booking.pricingSnapshot)) {
+    const before = rates
+      ? Decimal.max(after, computeLineGst(toDec(booking.totalBase as any), rates).total)
+      : after.add(toDec(booking.totalDiscount as any));
+    return { before, after, discount: before.sub(after), gstOnTop: true };
   }
-  return { discount: d, line };
+  const before = new Decimal(String(totals.grandRentInclGst));
+  const discount = totals.grandDiscountInclGst != null
+    ? new Decimal(String(totals.grandDiscountInclGst))
+    : Decimal.max(ZERO, before.sub(after));
+  return { before, after, discount, gstOnTop: false };
+}
+
+/**
+ * The coupon credit (GST-inclusive) as rent-without-GST discount + the GST it
+ * takes off, at the booking's frozen rates. Item-17 bookings split it the
+ * client's way (splitRentGross, GST = rate% of the credit); a booking priced
+ * with GST on top splits it back (taxable = credit / (1 + rate)), so its
+ * remaining GST is still rate% of its remaining taxable rent.
+ */
+function splitCouponCredit(credit: Decimal, rates: BranchGstRates, gstOnTop: boolean): LineGst {
+  return gstOnTop ? splitInclusiveGst(credit, rates) : splitRentGross(credit, rates);
 }
 
 /**
@@ -144,11 +192,12 @@ export async function quoteCounterCoupon(
       days: true,
       totalBase: true,
       totalDiscount: true,
+      totalTax: true,
       couponCode: true,
       discountRuleId: true,
       isAdvancePayment: true,
       pricingSnapshot: true,
-      items: { select: { vehicle: { select: { categoryId: true } } }, orderBy: { id: "asc" } },
+      items: { select: { taxRate: true, vehicle: { select: { categoryId: true } } }, orderBy: { id: "asc" } },
     },
   });
 
@@ -163,9 +212,20 @@ export async function quoteCounterCoupon(
     );
   }
 
-  const totalBase = toDec(booking.totalBase);
-  const existingDiscount = toDec(booking.totalDiscount);
-  const rentalBase = Decimal.max(ZERO, totalBase.sub(existingDiscount));
+  // The coupon's GST comes off at the rates frozen on the booking
+  let rates: BranchGstRates;
+  try {
+    rates = await bookingGstRates(booking, db);
+  } catch (err) {
+    if (isGstRuleMissing(err)) {
+      throw new CounterCouponError(409, GST_RULE_MISSING, GST_RULE_MISSING_MESSAGE);
+    }
+    throw err;
+  }
+
+  // The GST-inclusive rent the customer pays after existing discounts (item 17)
+  const rent = bookingRentInclGst(booking, rates);
+  const rentalBase = rent.after;
 
   const validation = await couponValidationService.validate(
     code,
@@ -205,19 +265,22 @@ export async function quoteCounterCoupon(
     );
   }
 
-  let discount = discountCalculationService.calculateCouponDiscount(rule, rentalBase).discountAmount;
+  // The coupon off the GST-inclusive rent (a flat ₹100 coupon takes ₹100 off)
+  let couponAmount = discountCalculationService
+    .calculateCouponDiscount(rule, rentalBase)
+    .discountAmount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   let cappedBy: CounterCouponQuote["cappedBy"] = null;
 
-  // Branch combined cap: existing discounts + coupon ≤ cap% of the booking base
+  // Branch combined cap: existing discounts + coupon ≤ cap% of the booking's inclusive rent
   if (config?.maxCombinedDiscountPercent != null) {
     const cap = toDec(config.maxCombinedDiscountPercent);
-    const maxTotal = totalBase.mul(cap).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-    const room = Decimal.max(ZERO, maxTotal.sub(existingDiscount));
-    if (discount.gt(room)) {
-      discount = room;
+    const maxTotal = rent.before.mul(cap).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const room = Decimal.max(ZERO, maxTotal.sub(rent.discount));
+    if (couponAmount.gt(room)) {
+      couponAmount = room;
       cappedBy = "COMBINED_CAP";
     }
-    if (discount.lte(0)) {
+    if (couponAmount.lte(0)) {
       throw new CounterCouponError(
         422,
         "COUPON_NOTHING_TO_DISCOUNT",
@@ -237,7 +300,7 @@ export async function quoteCounterCoupon(
   });
   // A TAXABLE line's payable is amount + its stored GST (0 when amount is GST-inclusive)
   const owed = owedLines.reduce((sum, l) => sum.add(toDec(l.amount)).add(toDec(l.gstAmount)), ZERO);
-  if (owed.lte(0) || discount.lte(0)) {
+  if (owed.lte(0) || couponAmount.lte(0)) {
     throw new CounterCouponError(
       422,
       "COUPON_NOTHING_TO_DISCOUNT",
@@ -245,24 +308,14 @@ export async function quoteCounterCoupon(
     );
   }
 
-  let rates: { cgstRate: number; sgstRate: number };
-  try {
-    rates = await getBranchGstRates(booking.branchId, db);
-  } catch (err) {
-    if (isGstRuleMissing(err)) {
-      throw new CounterCouponError(409, GST_RULE_MISSING, GST_RULE_MISSING_MESSAGE);
-    }
-    throw err;
-  }
-
-  let line = computeLineGst(discount, rates);
-  if (line.total.gt(owed)) {
-    const fitted = fitDiscountToLimit(owed, rates);
-    discount = fitted.discount;
-    line = fitted.line;
+  // The credit (inclusive) never exceeds what is owed for the rental now
+  if (couponAmount.gt(owed)) {
+    couponAmount = owed;
     cappedBy = "OWED";
   }
-  if (discount.lte(0)) {
+  // Rent without GST + the GST the coupon takes off — they add up to the credit
+  const line = splitCouponCredit(couponAmount, rates, rent.gstOnTop);
+  if (line.total.lte(0)) {
     throw new CounterCouponError(
       422,
       "COUPON_NOTHING_TO_DISCOUNT",
@@ -274,7 +327,7 @@ export async function quoteCounterCoupon(
     rule,
     code: rule.code,
     rentalBase,
-    discount,
+    discount: line.taxable,
     cgst: line.cgst,
     sgst: line.sgst,
     gst: line.gst,
@@ -322,7 +375,7 @@ export async function writeCounterCouponEntry(
       amount: quote.total.negated().toFixed(2),
       baseAmount: quote.discount.negated().toFixed(2),
       gstAmount: quote.gst.negated().toFixed(2),
-      description: `Coupon ${quote.code} (₹${quote.discount.toFixed(2)} + GST ₹${quote.gst.toFixed(2)})`,
+      description: `Coupon ${quote.code} (₹${quote.total.toFixed(2)} off the rent incl. GST)`,
       referenceId: quote.rule.publicId,
       referenceType: COUNTER_COUPON_REF,
       idempotencyKey: `pickup:${bookingId}:discount:${sessionId}:${quote.rule.id}:${createID()}`,
@@ -404,6 +457,7 @@ export async function applyCounterCouponOnSessionCompletion(
           taxAmount: true,
           cgstAmount: true,
           sgstAmount: true,
+          taxRate: true,
           finalTotal: true,
           vehicle: { select: { categoryId: true } },
         },
@@ -422,14 +476,24 @@ export async function applyCounterCouponOnSessionCompletion(
     );
   }
 
-  const totalBase = toDec(booking.totalBase);
   const existingDiscount = toDec(booking.totalDiscount);
+  // The booking's frozen GST rates. Only an older ledger line without a split
+  // strictly needs them, so a booking that records none (and a branch without
+  // a GST rule) still completes when the line carries its split.
+  let rates: BranchGstRates | null = null;
+  try {
+    rates = await bookingGstRates(booking, tx);
+  } catch (err) {
+    if (!isGstRuleMissing(err)) throw err;
+  }
+  // The GST-inclusive rent the coupon was quoted on (item 17)
+  const rent = bookingRentInclGst(booking, rates);
   const recheck = await couponValidationService.validate(
     rule.code,
     {
       branchId: booking.branchId,
       customerId: booking.customerId,
-      bookingAmount: Decimal.max(ZERO, totalBase.sub(existingDiscount)),
+      bookingAmount: rent.after,
       rentalDays: booking.days,
       vehicleCategoryId: booking.items[0]?.vehicle.categoryId ?? 0,
       paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
@@ -457,8 +521,7 @@ export async function applyCounterCouponOnSessionCompletion(
     cgst = new Decimal(String(meta.cgst));
     sgst = new Decimal(String(meta.sgst));
   } else {
-    const rates = await getBranchGstRates(booking.branchId, tx);
-    const split = splitInclusiveGst(credit, rates);
+    const split = splitCouponCredit(credit, rates ?? (await bookingGstRates(booking, tx)), rent.gstOnTop);
     discount = split.taxable;
     cgst = split.cgst;
     sgst = split.sgst;
@@ -469,6 +532,9 @@ export async function applyCounterCouponOnSessionCompletion(
   const newTotalDiscount = existingDiscount.add(discount);
   const remaining = toDec(booking.remainingBalance);
   const snapshot = (booking.pricingSnapshot ?? {}) as Record<string, unknown>;
+  const snapshotTotals = (snapshot.totals ?? {}) as Record<string, unknown>;
+  const addSnap = (v: unknown, by: Decimal) =>
+    Number(new Decimal(String(v ?? 0)).add(by).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toString());
 
   await tx.booking.update({
     where: { id: booking.id },
@@ -483,6 +549,16 @@ export async function applyCounterCouponOnSessionCompletion(
         : {}),
       pricingSnapshot: {
         ...snapshot,
+        // The GST-inclusive view follows the coupon (item 17; snapshots that have it)
+        ...(snapshotTotals.grandRentInclGst != null && {
+          totals: {
+            ...snapshotTotals,
+            grandCouponDiscountInclGst: addSnap(snapshotTotals.grandCouponDiscountInclGst, total),
+            grandDiscountInclGst: addSnap(snapshotTotals.grandDiscountInclGst, total),
+            grandRentAfterDiscountInclGst: addSnap(snapshotTotals.grandRentAfterDiscountInclGst, total.negated()),
+            grandRentWithoutGst: addSnap(snapshotTotals.grandRentWithoutGst, discount.negated()),
+          },
+        }),
         counterCoupon: {
           couponCode: rule.code,
           discountRuleId: rule.id,
@@ -491,6 +567,8 @@ export async function applyCounterCouponOnSessionCompletion(
           sgst: sgst.toFixed(2),
           gst: gst.toFixed(2),
           total: total.toFixed(2),
+          // = total: the coupon off the GST-inclusive rent
+          discountInclGst: total.toFixed(2),
           sessionId,
           ledgerEntryPublicId: entry.publicId,
           appliedAt: new Date().toISOString(),
@@ -541,37 +619,54 @@ export async function applyCounterCouponOnSessionCompletion(
     });
   }
 
-  const rentalBase = Decimal.max(ZERO, totalBase.sub(existingDiscount));
-  const couponPercent = rentalBase.gt(0) ? discount.div(rentalBase).mul(100).toDecimalPlaces(4) : ZERO;
+  // DiscountApplication + usage log record the coupon in the booking's own
+  // terms: off the GST-inclusive rent on an item-17 booking (`total` — rent
+  // without GST + the GST it took off), or, on a booking priced with GST on top
+  // (its records were written in taxable terms), the taxable discount as before
+  const recorded = rent.gstOnTop
+    ? {
+        coupon: discount,
+        original: toDec(booking.totalBase),
+        existingDiscount,
+        after: Decimal.max(ZERO, toDec(booking.totalBase).sub(existingDiscount)),
+      }
+    : { coupon: total, original: rent.before, existingDiscount: rent.discount, after: rent.after };
+  const couponPercent = recorded.after.gt(0)
+    ? recorded.coupon.div(recorded.after).mul(100).toDecimalPlaces(4)
+    : ZERO;
   const application = await tx.discountApplication.findUnique({ where: { bookingId: booking.id } });
   if (application) {
     await tx.discountApplication.update({
       where: { bookingId: booking.id },
       data: {
-        couponDiscountAmount: toDec(application.couponDiscountAmount).add(discount).toFixed(2),
+        couponDiscountAmount: toDec(application.couponDiscountAmount).add(recorded.coupon).toFixed(2),
         couponDiscountPercent: couponPercent.toString(),
         discountRuleId: rule.id,
-        totalDiscountAmount: toDec(application.totalDiscountAmount).add(discount).toFixed(2),
-        finalAmount: Decimal.max(ZERO, toDec(application.finalAmount).sub(discount)).toFixed(2),
+        totalDiscountAmount: toDec(application.totalDiscountAmount).add(recorded.coupon).toFixed(2),
+        finalAmount: Decimal.max(ZERO, toDec(application.finalAmount).sub(recorded.coupon)).toFixed(2),
       },
     });
   } else {
     const duration = await bookingDurationDiscount(tx, booking);
+    // The slab in the same terms: an item-17 snapshot carries it off the inclusive rent
+    const durationAmount = !rent.gstOnTop && snapshotTotals.grandDurationDiscountInclGst != null
+      ? new Decimal(String(snapshotTotals.grandDurationDiscountInclGst))
+      : duration.amount;
     await tx.discountApplication.create({
       data: {
         publicId: createID(),
         bookingId: booking.id,
-        originalAmount: totalBase.toFixed(2),
-        durationDiscountAmount: duration.amount.toFixed(2),
-        durationDiscountPercent: totalBase.gt(0)
-          ? duration.amount.div(totalBase).mul(100).toDecimalPlaces(4).toString()
+        originalAmount: recorded.original.toFixed(2),
+        durationDiscountAmount: durationAmount.toFixed(2),
+        durationDiscountPercent: recorded.original.gt(0)
+          ? durationAmount.div(recorded.original).mul(100).toDecimalPlaces(4).toString()
           : "0",
-        couponDiscountAmount: discount.toFixed(2),
+        couponDiscountAmount: recorded.coupon.toFixed(2),
         couponDiscountPercent: couponPercent.toString(),
         discountRuleId: rule.id,
-        manualDiscountAmount: Decimal.max(ZERO, existingDiscount.sub(duration.amount)).toFixed(2),
-        totalDiscountAmount: newTotalDiscount.toFixed(2),
-        finalAmount: Decimal.max(ZERO, totalBase.sub(newTotalDiscount)).toFixed(2),
+        manualDiscountAmount: Decimal.max(ZERO, recorded.existingDiscount.sub(durationAmount)).toFixed(2),
+        totalDiscountAmount: recorded.existingDiscount.add(recorded.coupon).toFixed(2),
+        finalAmount: Decimal.max(ZERO, recorded.after.sub(recorded.coupon)).toFixed(2),
         paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
       },
     });
@@ -583,7 +678,7 @@ export async function applyCounterCouponOnSessionCompletion(
       bookingId: booking.id,
       customerId: booking.customerId,
       branchId: booking.branchId,
-      discountedAmount: discount.toFixed(2),
+      discountedAmount: recorded.coupon.toFixed(2),
     },
   });
 
@@ -599,6 +694,10 @@ export function serializeCounterCouponQuote(quote: CounterCouponQuote) {
     sgstAmount: quote.sgst.toFixed(2),
     gstAmount: quote.gst.toFixed(2),
     totalCredit: quote.total.toFixed(2),
+    // = totalCredit: the coupon off the GST-inclusive rent (item 17) — show this one;
+    // discountAmount + gstAmount are its rent-without-GST and GST parts
+    discountInclGst: quote.total.toFixed(2),
+    // GST-inclusive rent the coupon was calculated on
     rentalBase: quote.rentalBase.toFixed(2),
     owedBeforeCoupon: quote.owed.toFixed(2),
     cappedBy: quote.cappedBy,

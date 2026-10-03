@@ -6,6 +6,10 @@ import {
   makeForgotPasswordCodeController,
   makeResetPasswordCodeController,
 } from "../../services/passwordReset/passwordReset.controller.js";
+import {
+  makeForgotPasswordSmsController,
+  makeResetPasswordSmsController,
+} from "../../services/passwordReset/smsReset.controller.js";
 import { Role } from "@repo/database/client";
 import {
   searchVehicles,
@@ -95,6 +99,7 @@ import sessionRouter from "./session.routes.js";
 import dashboardRouter from "./dashboard.routes.js";
 import { makeNotificationRouter } from "../notification/notification.routes.js";
 import { UpdateBookingDlStatus } from "../../controller/employee/dlStatus.controller.js";
+import { GetRescheduleOptions, RescheduleBooking } from "../../controller/employee/reschedule.controller.js";
 
 const router: Router = Router();
 
@@ -105,6 +110,9 @@ router.post("/auth/reset-password", resetPasswordController);
 // STAFF accounts only (same request/response shapes as /api/auth/email/*).
 router.post("/auth/email/forgot-password", makeForgotPasswordCodeController([Role.STAFF]));
 router.post("/auth/email/reset-password", makeResetPasswordCodeController([Role.STAFF]));
+// Fleet Executive reset by SMS code (web + Fleet app), public, STAFF only.
+router.post("/auth/sms/forgot-password", makeForgotPasswordSmsController([Role.STAFF]));
+router.post("/auth/sms/reset-password", makeResetPasswordSmsController([Role.STAFF]));
 router.get("/booking", EmployeeCheck, BookingController);
 router.get("/booking/:bookingId/scan", EmployeeCheck, ScanBooking);
 router.get("/return", EmployeeCheck, returnController);
@@ -199,6 +207,9 @@ router.get("/pickup/:bookingId/pricing-rules", EmployeeCheck, GetPickupPricingRu
 
 // ── Original driving licence status (#3) ──────────────────────────────────────
 router.patch("/bookings/:publicId/dl-status", EmployeeCheck, UpdateBookingDlStatus);
+// Reschedule a confirmed booking (not picked up): new pickup, return shifted the same, price unchanged
+router.get("/bookings/:publicId/reschedule", EmployeeCheck, GetRescheduleOptions);
+router.post("/bookings/:publicId/reschedule", EmployeeCheck, RescheduleBooking);
 
 // ── Charge Engine ─────────────────────────────────────────────────────────────
 

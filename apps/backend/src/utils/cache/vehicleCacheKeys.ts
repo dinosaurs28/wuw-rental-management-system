@@ -39,9 +39,14 @@ export const branchDiscountConfigKey = (branchId: number): string =>
 export const durationDiscountSlabKey = (branchId: number, days: number): string =>
   `discount-slab:branch:${branchId}:days:${days}`;
 
-/** Full PricingResult for a vehicle+time window. TTL 60s. Invalidate on booking change. (TASK-017) */
+/**
+ * Full PricingResult for a vehicle+time window. TTL 60s. Invalidate on booking change. (TASK-017)
+ * "v2": results priced on the GST-inclusive rent (item 17); "v3": the Extra Hour
+ * Rate became the one hourly rate — a result cached by an older release is never
+ * read back.
+ */
 export const vehicleDetailsPricingKey = (vehicleId: number, startIso: string, endIso: string): string =>
-  `pricing-result:vehicle:${vehicleId}:${startIso}:${endIso}`;
+  `pricing-result:vehicle:${vehicleId}:v3:${startIso}:${endIso}`;
 
 /**
  * TASK-019: Delete availability cache for a set of vehicles.

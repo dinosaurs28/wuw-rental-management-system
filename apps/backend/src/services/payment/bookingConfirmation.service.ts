@@ -14,6 +14,9 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
 import { claimUtr, CounterGuardError, normalizeUtr } from "./counter-guard.service.js";
+import { claimPaymentProof } from "./payment-proof.service.js";
+import { addFleetCredit } from "./customer-credit.service.js";
+import Decimal from "decimal.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
 import { initialInvoiceGstData, refreshInvoiceTotals } from "../invoice-totals.service.js";
@@ -25,10 +28,20 @@ interface ConfirmBookingPaymentParams {
   /** Razorpay order id (`order_xxx`) or the `CASH_xxx` / `UPI_xxx` reference. */
   transactionId: string;
   isCash: boolean;
-  /** Counter UPI payment — the UTR is read from `pricingSnapshot.upi.utr`. */
+  /** Counter UPI payment — the UTR / payment photo is read from `pricingSnapshot.upi`. */
   isUpi?: boolean;
+  /** Counter split (cash + UPI) — the parts and the UPI backing are read from `pricingSnapshot.split` (#11). */
+  isSplit?: boolean;
+  /** Counter credit — nothing paid; the collateral is read from `pricingSnapshot.credit` (#11). */
+  isCredit?: boolean;
   /** Razorpay `pay_xxx` id, when known. Stored on PaymentTransaction.notes. */
   gatewayPaymentId?: string | null;
+  /**
+   * The caller sends its own refund notice when the payment can't be applied
+   * (UPI QR: it names the QR's `pay_xxx`, never attached to the order), so the
+   * order-level PAYMENT_NEEDS_REFUND notice is skipped.
+   */
+  callerNotifiesRefund?: boolean;
   actor: { ip?: string; userAgent?: string };
 }
 
@@ -64,12 +77,15 @@ async function clearHolds(
  * key together guarantee a single set of financial rows.
  *
  * `skipped: "DUPLICATE_UTR"` means a counter UPI booking's UTR was claimed by
- * another payment after the booking was created; the caller cancels the hold.
+ * another payment after the booking was created; `"DUPLICATE_PAYMENT_PROOF"`
+ * the same for its payment photo (#3). The caller cancels the hold.
  */
 export async function confirmBookingPayment(
   params: ConfirmBookingPaymentParams,
-): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" | "DUPLICATE_UTR" }> {
-  const { bookingId, transactionId, isCash, isUpi = false, gatewayPaymentId, actor } = params;
+): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" | "DUPLICATE_UTR" | "DUPLICATE_PAYMENT_PROOF" }> {
+  const { bookingId, transactionId, isCash, isUpi = false, isSplit = false, isCredit = false, gatewayPaymentId, callerNotifiesRefund = false, actor } = params;
+  // Taken at the counter without a gateway: the hold lapsing just means staff re-create it
+  const isCounterNoGateway = isUpi || isSplit || isCredit;
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -99,22 +115,47 @@ export async function confirmBookingPayment(
   // staff re-create the booking and the UTR is still free to use.
   if (
     booking.status === BookingStatus.CANCELLED ||
-    (isUpi && booking.status === BookingStatus.HOLD_EXPIRED)
+    (isCounterNoGateway && booking.status === BookingStatus.HOLD_EXPIRED)
   ) {
     console.error(
-      isUpi
-        ? `[confirmBookingPayment] UPI booking=${booking.publicId} is ${booking.status} — not confirming; staff re-create it with the same UTR`
+      isCounterNoGateway
+        ? `[confirmBookingPayment] counter booking=${booking.publicId} is ${booking.status} — not confirming; staff re-create it`
         : `[confirmBookingPayment] REFUND REQUIRED booking=${booking.publicId} txn=${transactionId} ` +
             `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured against a ${booking.status} booking, not confirming`,
     );
-    if (!isUpi && !isCash) void notifyEvents.paymentNeedsRefund({ bookingId: booking.id, transactionId });
+    if (!isCounterNoGateway && !isCash && !callerNotifiesRefund) {
+      void notifyEvents.paymentNeedsRefund({ bookingId: booking.id, transactionId });
+    }
     return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
 
-  // The UTR typed at booking time rides on the pricing snapshot until now.
-  const upiUtr = isUpi
-    ? normalizeUtr((booking.pricingSnapshot as { upi?: { utr?: string } } | null)?.upi?.utr)
+  // The UTR / payment photo given at booking time rides on the pricing snapshot
+  // until now (UPI: `upi`; split: `split` with its cash and UPI parts; credit: `credit`).
+  const snapshot = booking.pricingSnapshot as {
+    upi?: { utr?: string | null; proofFileId?: string | null };
+    split?: { cash?: number; upi?: number; utr?: string | null; proofFileId?: string | null };
+    credit?: { collateral?: string };
+  } | null;
+  const counterSnap = isUpi ? snapshot?.upi : isSplit ? snapshot?.split : undefined;
+  const proofFile = counterSnap?.proofFileId
+    ? await prisma.fileObject.findUnique({
+        where: { publicId: counterSnap.proofFileId },
+        select: { id: true, publicId: true },
+      })
     : null;
+  // Older holds carry only a UTR — still required then (INVALID_UTR as before)
+  const upiUtr = (isUpi || isSplit) && (counterSnap?.utr || !proofFile)
+    ? normalizeUtr(counterSnap?.utr)
+    : null;
+  const splitCash = isSplit ? new Decimal(String(snapshot?.split?.cash ?? 0)) : null;
+  const splitUpi = isSplit ? new Decimal(String(snapshot?.split?.upi ?? 0)) : null;
+  const creditCollateral = isCredit ? (snapshot?.credit?.collateral ?? "").trim() : null;
+  if (isSplit && (!splitCash!.gt(0) || !splitUpi!.gt(0))) {
+    throw new Error(`[confirmBookingPayment] split booking=${booking.publicId} has no cash/UPI parts on its snapshot`);
+  }
+  if (isCredit && !creditCollateral) {
+    throw new Error(`[confirmBookingPayment] credit booking=${booking.publicId} has no collateral on its snapshot`);
+  }
 
   // Fetch actor info before the transaction to avoid adding latency inside it
   const paymentActor = await prisma.user.findUnique({
@@ -122,11 +163,14 @@ export async function confirmBookingPayment(
     select: { name: true, role: true, branchId: true },
   });
 
-  const method = isCash
+  // A split's cash part is what awaits the manager; credit takes no money at all
+  const method = isCash || isSplit
     ? DepositMethod.CASH
     : isUpi
       ? DepositMethod.UPI
-      : DepositMethod.ONLINE_RAZORPAY;
+      : isCredit
+        ? null
+        : DepositMethod.ONLINE_RAZORPAY;
 
   try {
     console.log(
@@ -134,9 +178,10 @@ export async function confirmBookingPayment(
     );
     await prisma.$transaction(
       async (tx) => {
-        // Claim inside the transaction: the UTR may have been used for another
-        // payment while this booking sat on HOLD.
+        // Claim inside the transaction: the UTR / payment photo may have been used
+        // for another payment while this booking sat on HOLD.
         if (upiUtr) await claimUtr(upiUtr, tx);
+        if (proofFile) await claimPaymentProof(proofFile, tx);
 
         const bookingUpdateData: any = {
           status: BookingStatus.CONFIRMED,
@@ -162,14 +207,19 @@ export async function confirmBookingPayment(
         if (booking.discountRuleId) {
           const usage = await tx.couponUsageLog.findFirst({ where: { bookingId: booking.id }, select: { id: true } });
           if (!usage) {
-            const snapshotTotals = (booking.pricingSnapshot as { totals?: { grandCouponDiscountTotal?: number } } | null)?.totals;
+            // What the coupon took off the GST-inclusive rent (item 17; older snapshots: taxable terms)
+            const snapshotTotals = (booking.pricingSnapshot as {
+              totals?: { grandCouponDiscountTotal?: number; grandCouponDiscountInclGst?: number };
+            } | null)?.totals;
             await tx.couponUsageLog.create({
               data: {
                 discountRuleId: booking.discountRuleId,
                 bookingId: booking.id,
                 customerId: booking.customerId,
                 branchId: booking.branchId,
-                discountedAmount: Number(snapshotTotals?.grandCouponDiscountTotal ?? 0).toFixed(2),
+                discountedAmount: Number(
+                  snapshotTotals?.grandCouponDiscountInclGst ?? snapshotTotals?.grandCouponDiscountTotal ?? 0,
+                ).toFixed(2),
               },
             });
           }
@@ -184,7 +234,8 @@ export async function confirmBookingPayment(
           },
         });
 
-        if (booking.totalDeposit.gt(0)) {
+        // Credit: no deposit money was taken
+        if (booking.totalDeposit.gt(0) && method) {
           await tx.deposit.create({
             data: {
               publicId: createID(),
@@ -196,8 +247,8 @@ export async function confirmBookingPayment(
         }
 
         // For advance payment: invoice stays PENDING until remaining is collected.
-        // For full payment: invoice is PAID immediately.
-        const invoiceStatus = booking.isAdvancePayment
+        // For full payment: invoice is PAID immediately — unless it is on credit.
+        const invoiceStatus = booking.isAdvancePayment || isCredit
           ? InvoiceStatus.PENDING
           : InvoiceStatus.PAID;
 
@@ -220,6 +271,32 @@ export async function confirmBookingPayment(
           ? booking.advanceAmount
           : booking.totalFinal;
 
+        // Credit (#11): nothing was paid — no payment rows; the booking's credit
+        // entry records what is owed and the collateral held, and the financial
+        // state keeps it due until the branch manager clears it.
+        if (method === null) {
+          const existing = await tx.customerCreditEntry.findUnique({
+            where: { bookingId: booking.id },
+            select: { sections: true },
+          });
+          const sectionKey = `credit:walkin:${booking.publicId}`;
+          const already = ((existing?.sections as Array<{ sectionKey?: string }> | null) ?? []).some(
+            (s) => s.sectionKey === sectionKey,
+          );
+          if (!already) {
+            await addFleetCredit(tx, {
+              bookingId: booking.id,
+              amount: new Decimal(booking.totalFinal.toString()),
+              purpose: PaymentPurpose.FULL_PAYMENT,
+              label: "Walk-in booking on credit",
+              collateral: creditCollateral!,
+              reference: { type: "WALKIN", publicId: booking.publicId },
+              actor: { id: booking.createdById, name: paymentActor?.name ?? "Fleet Executive" },
+            });
+          }
+          return;
+        }
+
         await tx.payment.create({
           data: {
             publicId: createID(),
@@ -232,9 +309,10 @@ export async function confirmBookingPayment(
 
         // Cash collected by an employee always requires manager approval (COLLECTED)
         // before it is counted as received — regardless of cashConfirmationEnabled.
-        // Online payments (Razorpay and counter UPI) confirm immediately.
+        // A split's cash part does too. Online payments (Razorpay and counter UPI)
+        // confirm immediately.
         let activeShiftId: number | null = null;
-        const collectedAtCounter = isCash || isUpi;
+        const collectedAtCounter = isCash || isUpi || isSplit;
 
         if (collectedAtCounter) {
           const activeShift = await (tx as any).cashShift.findFirst({
@@ -244,7 +322,7 @@ export async function confirmBookingPayment(
           activeShiftId = activeShift?.id ?? null;
         }
 
-        const txnStatus = isCash ? "COLLECTED" : "CONFIRMED";
+        const txnStatus = isCash || isSplit ? "COLLECTED" : "CONFIRMED";
         const now = new Date();
 
         await tx.paymentTransaction.create({
@@ -254,16 +332,18 @@ export async function confirmBookingPayment(
             bookingId:           booking.id,
             branchId:            booking.branchId,
             purpose:             booking.isAdvancePayment ? PaymentPurpose.ADVANCE : PaymentPurpose.FULL_PAYMENT,
-            method:              isCash ? PaymentMethod.CASH : PaymentMethod.ONLINE,
+            method:              isCash ? PaymentMethod.CASH : isSplit ? PaymentMethod.SPLIT : PaymentMethod.ONLINE,
             status:              txnStatus,
             totalAmount:         paymentAmount,
-            cashAmount:          isCash ? paymentAmount : 0,
-            onlineAmount:        isCash ? 0 : paymentAmount,
+            cashAmount:          isCash ? paymentAmount : isSplit ? splitCash!.toFixed(2) : 0,
+            onlineAmount:        isCash ? 0 : isSplit ? splitUpi!.toFixed(2) : paymentAmount,
             // The order id is what every other lookup keys on, so it stays the
             // ref; the pay_xxx id is kept alongside it for reconciliation.
             // Counter UPI payments are keyed on the customer's UTR instead.
             onlineTransactionRef: isCash ? null : (upiUtr ?? transactionId),
-            onlineGateway:       isCash ? null : isUpi ? "UPI" : "RAZORPAY",
+            onlineGateway:       isCash ? null : isUpi || isSplit ? "UPI" : "RAZORPAY",
+            // Photo of the customer's payment screen (#3)
+            proofFileId:         proofFile?.id ?? null,
             notes:               !isCash && gatewayPaymentId ? `razorpay_payment_id=${gatewayPaymentId}` : null,
             collectedById:       collectedAtCounter ? booking.createdById : null,
             collectedAt:         collectedAtCounter ? now : null,
@@ -283,18 +363,37 @@ export async function confirmBookingPayment(
       );
       return { alreadyConfirmed: true };
     }
+    // The racing confirm can also land first on the booking's one Deposit /
+    // Invoice row (e.g. UPI QR webhook + poll + checkout verify at once)
+    if (error?.code === "P2002") {
+      const latest = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        select: { paymentStatus: true },
+      });
+      if (latest?.paymentStatus === PaymentStatus.SUCCESS) {
+        console.log(
+          `[confirmBookingPayment] unique conflict (${error?.meta?.target}) — already processed booking=${booking.publicId}`,
+        );
+        return { alreadyConfirmed: true };
+      }
+    }
     // A concurrent confirm of this same booking also trips the UTR check once
     // its row commits — only a UTR used elsewhere is a real duplicate.
-    if (error instanceof CounterGuardError && error.code === "DUPLICATE_UTR") {
+    if (
+      error instanceof CounterGuardError &&
+      (error.code === "DUPLICATE_UTR" || error.code === "DUPLICATE_PAYMENT_PROOF")
+    ) {
       const latest = await prisma.booking.findUnique({
         where: { id: booking.id },
         select: { paymentStatus: true },
       });
       if (latest?.paymentStatus === PaymentStatus.SUCCESS) return { alreadyConfirmed: true };
+      // Report what actually clashed: the payment photo (new UIs) or the UTR (old builds)
+      const clash = error.code === "DUPLICATE_PAYMENT_PROOF" ? `payment photo ${proofFile?.publicId}` : `UTR ${upiUtr}`;
       console.error(
-        `[confirmBookingPayment] UTR ${upiUtr} already used elsewhere — not confirming booking=${booking.publicId}`,
+        `[confirmBookingPayment] ${clash} already used elsewhere — not confirming booking=${booking.publicId}`,
       );
-      return { alreadyConfirmed: false, skipped: "DUPLICATE_UTR" };
+      return { alreadyConfirmed: false, skipped: error.code };
     }
     throw error;
   }
@@ -317,7 +416,17 @@ export async function confirmBookingPayment(
     actorBranchId: paymentActor?.branchId ?? undefined,
     action: booking.isAdvancePayment ? "BOOKING_CONFIRMED_ADVANCE" : "BOOKING_CONFIRMED",
     category: AuditCategory.PAYMENT,
-    description: `Booking ${booking.publicId} confirmed via ${isCash ? "cash" : isUpi ? "UPI (UTR)" : "online"} payment`,
+    description: `Booking ${booking.publicId} confirmed via ${
+      isCash
+        ? "cash"
+        : isUpi
+          ? proofFile ? "UPI (payment photo)" : "UPI (UTR)"
+          : isSplit
+            ? "split (cash + UPI)"
+            : isCredit
+              ? `customer credit (collateral: ${creditCollateral})`
+              : "online"
+    } payment`,
     entity: "Booking",
     entityId: booking.publicId,
     ipAddress: actor.ip,
@@ -342,6 +451,8 @@ interface ConfirmExtensionPaymentParams {
   /** Razorpay order id (`order_xxx`) stored on BookingExtension.gatewayTransactionId. */
   transactionId: string;
   gatewayPaymentId?: string | null;
+  /** The caller sends its own refund notice naming the payment (UPI QR) — skip the order-level one. */
+  callerNotifiesRefund?: boolean;
   /** Who is credited in the audit trail, e.g. "Razorpay Webhook". */
   actorName: string;
   actor: { ip?: string; userAgent?: string };
@@ -356,7 +467,7 @@ interface ConfirmExtensionPaymentParams {
 export async function confirmExtensionPayment(
   params: ConfirmExtensionPaymentParams,
 ): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" | "EXTENSION_CLOSED" }> {
-  const { extensionId, transactionId, gatewayPaymentId, actorName, actor } = params;
+  const { extensionId, transactionId, gatewayPaymentId, callerNotifiesRefund = false, actorName, actor } = params;
 
   const extensionRecord = await prisma.bookingExtension.findUnique({
     where: { id: extensionId },
@@ -393,7 +504,9 @@ export async function confirmExtensionPayment(
       `[confirmExtensionPayment] REFUND REQUIRED extension=${extensionRecord.publicId} txn=${transactionId} ` +
         `gatewayPaymentId=${gatewayPaymentId ?? "none"} — payment captured on a ${extensionRecord.extensionStatus} extension, not confirming`,
     );
-    void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
+    if (!callerNotifiesRefund) {
+      void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
+    }
     return { alreadyConfirmed: false, skipped: "EXTENSION_CLOSED" };
   }
 
@@ -405,7 +518,9 @@ export async function confirmExtensionPayment(
       `[confirmExtensionPayment] REFUND REQUIRED extension=${extensionRecord.publicId} txn=${transactionId} ` +
         `gatewayPaymentId=${gatewayPaymentId ?? "none"} — parent booking ${extensionRecord.booking.publicId} is CANCELLED, not confirming`,
     );
-    void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
+    if (!callerNotifiesRefund) {
+      void notifyEvents.paymentNeedsRefund({ bookingId: extensionRecord.booking.id, transactionId, extensionId: extensionRecord.id });
+    }
     return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
 

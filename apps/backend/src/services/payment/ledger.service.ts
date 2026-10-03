@@ -29,10 +29,11 @@ export interface TaxableEntryResult {
 /**
  * Maps charge-engine ChargeType moduleKey → LedgerEntryType + classification.
  */
+// Drop / recovery charges carry no GST (item 8) — only rent (base) is taxable
 const CHARGE_TYPE_MAP: Record<string, { entryType: LedgerEntryType; classification: LedgerEntryClassification }> = {
-  extra_km:         { entryType: LedgerEntryType.EXTRA_KM,        classification: LedgerEntryClassification.TAXABLE },
-  extra_time:       { entryType: LedgerEntryType.EXTRA_TIME,       classification: LedgerEntryClassification.TAXABLE },
-  fuel_deficit:     { entryType: LedgerEntryType.FUEL,             classification: LedgerEntryClassification.TAXABLE },
+  extra_km:         { entryType: LedgerEntryType.EXTRA_KM,        classification: LedgerEntryClassification.NON_TAXABLE },
+  extra_time:       { entryType: LedgerEntryType.EXTRA_TIME,       classification: LedgerEntryClassification.NON_TAXABLE },
+  fuel_deficit:     { entryType: LedgerEntryType.FUEL,             classification: LedgerEntryClassification.NON_TAXABLE },
   fastag:           { entryType: LedgerEntryType.FASTAG,           classification: LedgerEntryClassification.NON_TAXABLE },
   // Damage recovered from the customer is compensation, not a taxable supply (#23)
   damage:           { entryType: LedgerEntryType.DAMAGE,           classification: LedgerEntryClassification.NON_TAXABLE },

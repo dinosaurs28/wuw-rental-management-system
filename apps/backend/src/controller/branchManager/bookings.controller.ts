@@ -13,6 +13,7 @@ import type { PaymentMethod } from "@repo/database/client";
 import { runNoShowAutoCancel } from "../../jobs/noShowAutoCancel.worker.js";
 import { vehicleStatusAfterDrop } from "../../services/damage/drop-damage.service.js";
 import { getBookingQrPhotoFields } from "../../services/qr-photo/customer-qr-photo.service.js";
+import { readDepositHandling } from "../../services/payment/safety-deposit.service.js";
 import type { Prisma } from "@repo/database/client";
 import {
   parseBookingListType,
@@ -564,11 +565,32 @@ export const RefundDeposit = async (req: Request, res: Response) => {
         .status(StatusCode.NOT_FOUND)
         .json({ message: "Booking not found" });
 
+    // A drop that recorded how the deposit goes back (#6) is refunded where that
+    // choice is honoured — Settlements (legacy drop) or the drop bill — which
+    // record a real refund. Flagging it here too would count it twice.
+    const handling = readDepositHandling(booking.pricingSnapshot);
+    if (handling) {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "DEPOSIT_REFUND_VIA_SETTLEMENT",
+        message:
+          handling.flow === "DROP_BILL"
+            ? "This safety deposit is settled on the drop bill — it can't be refunded here."
+            : `Staff recorded the safety deposit at the drop (${handling.mode === "REFUND_IN_FULL" ? "refund in full" : "set off against charges"}). Approve the return, then refund it from Payments → Settlements.`,
+        safetyDepositHandling: handling.mode,
+      });
+    }
+
+    // refundedBy is the user's numeric id (the audit looks the user up by it)
+    const actingUser = await prisma.user.findUnique({ where: { publicId: userId }, select: { id: true } });
+    if (!actingUser)
+      return res.status(StatusCode.NOT_FOUND).json({ message: "User not found" });
+
     const result = await advanceDepositService.refundSafetyDeposit(
       booking.id,
       Number(amount),
       method,
-      userId as any,
+      actingUser.id,
     );
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.REFUNDED,
@@ -988,6 +1010,9 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         remainingPaidDuring: true,
         safetyDeposit: true,
         safetyDepositMethod: true,
+        safetyDepositRefunded: true,
+        // Read for the drop's deposit choice only (not sent)
+        pricingSnapshot: true,
         dlStatus: true,
         dlDepositNote: true,
         dlStatusUpdatedAt: true,
@@ -1043,14 +1068,25 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     // A pickup confirmation (booking still CONFIRMED) shows the handover photos
     // only; a return confirmation keeps every photo (pickup, return, damage),
     // each carrying its type / captureLabel so the dialog can label it.
+    const { pricingSnapshot, ...bookingFields } = booking;
     const photos =
       booking.status === BookingStatus.CONFIRMED
         ? booking.photos.filter((photo) => photo.type === "PRE_DELIVERY")
         : booking.photos;
 
+    // How staff chose to return the safety deposit at the drop (#6): SET_OFF /
+    // REFUND_IN_FULL, refunded through Settlements (LEGACY) or on the drop bill
+    const depositHandling = readDepositHandling(pricingSnapshot);
+
     return res.status(StatusCode.OK).json({
       success: true,
-      data: { ...booking, photos, ...qrPhotoFields },
+      data: {
+        ...bookingFields,
+        photos,
+        ...qrPhotoFields,
+        safetyDepositHandling: depositHandling?.mode ?? null,
+        safetyDepositHandlingFlow: depositHandling?.flow ?? null,
+      },
     });
   } catch (error: any) {
     console.error("Manager Confirmation details error:", error);

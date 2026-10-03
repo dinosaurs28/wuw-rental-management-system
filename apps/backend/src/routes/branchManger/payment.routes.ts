@@ -20,6 +20,7 @@ import {
   ListPendingSettlements,
   GetSettlementSummary,
   RecordSettlementPayment,
+  RefundSettlementDeposit,
 } from "../../controller/branchManager/settlement.controller.js";
 import {
   RequestRefund,
@@ -44,9 +45,17 @@ import {
   ManualConfirmPayment,
 } from "../../controller/branchManager/payment-recheck.controller.js";
 
+import { UploadPaymentProof, GetPaymentProof } from "../../controller/employee/paymentProof.controller.js";
+import { handleImageUpload } from "../../middlewares/upload.middleware.js";
+import { PAYMENT_PROOF_MAX_BYTES } from "../../services/payment/payment-proof.service.js";
+
 const router: Router = Router();
 
 router.use(ManagerCheck);
+
+// UPI payment-proof photo (#3): credit clearance by UPI; viewing a proof again
+router.post("/proof", handleImageUpload("file", { maxBytes: PAYMENT_PROOF_MAX_BYTES }), UploadPaymentProof);
+router.get("/proof/:proofFileId", GetPaymentProof);
 
 // Payment config
 router.get("/config", GetMyBranchPaymentConfig);
@@ -68,6 +77,8 @@ router.post("/cash/:publicId/reject", RejectCashPayment);
 router.get("/settlements", ListPendingSettlements);
 router.get("/settlements/:bookingPublicId", GetSettlementSummary);
 router.post("/settlements/:bookingPublicId/pay", RecordSettlementPayment);
+// Legacy drop: pay the safety deposit back per the drop's choice (#6)
+router.post("/settlements/:bookingPublicId/refund-deposit", RefundSettlementDeposit);
 
 // Refunds
 router.post("/refunds", RequestRefund);

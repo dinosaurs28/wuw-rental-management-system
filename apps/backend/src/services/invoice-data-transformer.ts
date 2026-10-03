@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database/client";
 import { displayEmail } from "../utils/customer/identity.js";
 import { computeInvoiceGstTotals, invoiceItemGst } from "./invoice-totals.service.js";
+import { readLegacyDepositHandling } from "./payment/safety-deposit.service.js";
 
 // ─── Section model ─────────────────────────────────────────────────────────────
 
@@ -99,7 +100,9 @@ export interface InvoiceData {
 
 /** Section of a return-charge / review line. Taxable lines go to the GST pages. */
 function classifyChargeType(chargeType: string | null | undefined, isTaxable: boolean): SectionType {
-  if (chargeType === "DAMAGE_PENALTY") return "DAMAGE_PENALTY";
+  // A penalty is taxable only when it was stored with GST (before item 8); since
+  // then damage carries no GST and sits with the other non-taxable damage lines
+  if (chargeType === "DAMAGE_PENALTY") return isTaxable ? "DAMAGE_PENALTY" : "DAMAGE_COMPENSATION";
   if (chargeType === "DAMAGE_COMPENSATION") return "DAMAGE_COMPENSATION";
   return isTaxable ? "TAXABLE_RETURN_CHARGES" : "ADDITIONAL_CHARGES";
 }
@@ -369,7 +372,8 @@ export async function transformBookingToInvoiceData(
     nonTaxableSections.push(
       buildSection(
         "DAMAGE_COMPENSATION",
-        "Damage Compensation",
+        // Compensation, and penalties since item 8 — damage carries no GST
+        "Damage Charges",
         compensationItems,
         noRate,
         compensationDiscount,
@@ -397,6 +401,23 @@ export async function transformBookingToInvoiceData(
   // ── Payment info ──────────────────────────────────────────────────────────────
   const latestPayment = booking.invoice.payments[0];
   const paymentMethod = latestPayment?.method ? String(latestPayment.method) : undefined;
+
+  // Safety deposit set off against the drop charges (#6): a completed drop bill
+  // stores its deposit block (REFUND_IN_FULL sets off nothing, SET_OFF up to the
+  // charges); a legacy drop refunded in full applied none. Otherwise (older
+  // bookings, legacy SET_OFF) the deposit taken, as before.
+  const dropBill = await prisma.paymentSession.findFirst({
+    where: { bookingId: booking.id, sessionType: "RETURN", status: "COMPLETED" },
+    orderBy: { createdAt: "desc" },
+    select: { metadata: true },
+  });
+  const dropDeposit = (dropBill?.metadata as { deposit?: { setOff?: string | number } | null } | null)?.deposit;
+  const safetyDepositApplied =
+    dropDeposit?.setOff != null
+      ? round2(Number(dropDeposit.setOff))
+      : readLegacyDepositHandling(booking.pricingSnapshot) === "REFUND_IN_FULL"
+        ? 0
+        : Number(booking.safetyDeposit ?? 0);
 
   // ── Customer address ──────────────────────────────────────────────────────────
   const customer = booking.customer;
@@ -461,6 +482,6 @@ export async function transformBookingToInvoiceData(
 
     paymentStatus: String(booking.invoice.status),
     paymentMethod,
-    safetyDepositApplied: Number(booking.safetyDeposit ?? 0),
+    safetyDepositApplied,
   };
 }

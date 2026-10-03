@@ -209,6 +209,61 @@ export const notifyEvents = {
     });
   },
 
+  /** A UPI QR payment (customer scanned from another phone) was captured but can't be applied (#2). */
+  upiQrPaymentNeedsRefund(args: {
+    bookingId: number;
+    extensionId?: number | null;
+    /** Razorpay `pay_xxx` — what the manager refunds in the Razorpay dashboard. */
+    paymentId: string;
+    amountInPaise: number;
+    reason: "HOLD_LAPSED" | "BOOKING_CANCELLED" | "DUPLICATE_PAYMENT" | "AMOUNT_MISMATCH" | "EXTENSION_CLOSED";
+    /** The surplus payment's channel: the QR itself, or a checkout payment after the QR settled it. */
+    via?: "UPI_QR" | "CHECKOUT";
+  }): Promise<void> {
+    return safely("upiQrPaymentNeedsRefund", async () => {
+      const booking = await loadBooking(args.bookingId);
+      if (!booking) return;
+      const extension = args.extensionId
+        ? await prisma.bookingExtension.findUnique({
+            where: { id: args.extensionId },
+            select: { publicId: true },
+          })
+        : null;
+      const amount = money(args.amountInPaise / 100);
+      const what = extension ? `an extension of ${ref(booking.publicId)}` : ref(booking.publicId);
+      const why: Record<typeof args.reason, string> = {
+        HOLD_LAPSED: "after the booking's hold had ended",
+        BOOKING_CANCELLED: "after the booking was cancelled",
+        DUPLICATE_PAYMENT: "although it was already paid",
+        AMOUNT_MISMATCH: "with an amount that didn't match what was due",
+        EXTENSION_CLOSED: "after the extension was closed",
+      };
+      const base = {
+        type: "PAYMENT_NEEDS_REFUND" as const,
+        branchId: booking.branchId,
+        bookingId: booking.id,
+        data: bookingData(booking, extension ? { extensionPublicId: extension.publicId } : {}),
+        dedupeKey: `refund-required:${args.paymentId}`,
+      };
+
+      await notify({
+        ...base,
+        recipients: [{ branchId: booking.branchId, roles: MANAGER_ONLY }],
+        title: "Refund needed",
+        body:
+          args.via === "CHECKOUT"
+            ? `${amount} was paid online for ${what} although a UPI QR payment had already paid it. Refund the customer (payment ${args.paymentId}).`
+            : `${amount} was paid by UPI QR for ${what} ${why[args.reason]}. Refund the customer (payment ${args.paymentId}).`,
+      });
+      await notify({
+        ...base,
+        recipients: [booking.customer.userId],
+        title: "Payment received — refund due",
+        body: `We received ${amount} for your ${extension ? "extension" : "booking"} on booking ${ref(booking.publicId)}, but it could not be applied. The branch has been asked to refund it.`,
+      });
+    });
+  },
+
   /** Extension finalised (customer online payment, counter collection, cash confirmation, session). */
   extensionConfirmed(args: {
     extensionId: number;
@@ -370,6 +425,50 @@ export const notifyEvents = {
         actorUserId: args.actorUserId,
         title: "Booking displaced",
         body: `${ref(booking.publicId)} for ${booking.customer.user.name} was moved to ${vehicleLabel(vehicle)} because ${ref(extension.booking.publicId)} was extended. Confirm the swap or cancel it.`,
+      });
+    });
+  },
+
+  /**
+   * Fleet / the branch manager moved a confirmed booking (reschedule): new
+   * pickup and return, same length and price. Sent as BOOKING_CONFIRMED (the
+   * schema has no reschedule type) so clients deep-link it like a confirmation.
+   * One notification per new pickup time.
+   */
+  bookingRescheduled(args: {
+    bookingId: number;
+    previousStartAt: Date;
+    newStartAt: Date;
+    actorUserId?: number | null;
+    reason?: string | null;
+  }): Promise<void> {
+    return safely("bookingRescheduled", async () => {
+      const booking = await loadBooking(args.bookingId);
+      // Moved again (or cancelled) since — the later event speaks for it
+      if (!booking || booking.status !== "CONFIRMED") return;
+      if (booking.startAt.getTime() !== args.newStartAt.getTime()) return;
+      const vehicle = booking.items[0]?.vehicle;
+      const base = {
+        type: "BOOKING_CONFIRMED" as const,
+        branchId: booking.branchId,
+        bookingId: booking.id,
+        data: bookingData(booking),
+        dedupeKey: `rescheduled:${booking.publicId}:${args.newStartAt.toISOString()}`,
+      };
+
+      await notify({
+        ...base,
+        recipients: [booking.customer.userId],
+        title: "Booking rescheduled",
+        body: `Your booking ${ref(booking.publicId)} for the ${vehicleName(vehicle)} now starts ${when(booking.startAt)} (was ${when(args.previousStartAt)}). Please return it by ${when(booking.endAt)}. The price is unchanged.`,
+      });
+      const why = args.reason?.trim() ? ` Reason: ${args.reason.trim()}` : "";
+      await notify({
+        ...base,
+        recipients: [{ branchId: booking.branchId, roles: STAFF_AND_MANAGER }],
+        actorUserId: args.actorUserId,
+        title: "Booking rescheduled",
+        body: `${ref(booking.publicId)} · ${vehicleLabel(vehicle)} for ${booking.customer.user.name} was moved by ${await actorName(args.actorUserId)} — pickup ${when(booking.startAt)}, return ${when(booking.endAt)}.${why}`,
       });
     });
   },

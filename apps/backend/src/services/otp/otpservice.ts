@@ -9,12 +9,28 @@ const MSG91_OTP_URL = process.env.MSG91_OTP_URL!;
 interface SendOTPParams {
   mobile: string;
   otp: number;
+  // A different MSG91 template (e.g. password-reset wording); defaults to
+  // MSG91_OTP_TEMPLATE_ID.
+  templateId?: string;
 }
 
 interface OTPResponse {
   success: boolean;
   message?: string;
   type?: string;
+  // Transport/provider detail for diagnostics (never shown to customers).
+  error?: string;
+}
+
+const MSG91_ENV_VARS = ["MSG91_AUTH_KEY", "MSG91_OTP_TEMPLATE_ID", "MSG91_OTP_URL"] as const;
+
+/** MSG91 env vars that are unset (empty list = SMS can be sent). */
+export function smsMissingEnv(): string[] {
+  return MSG91_ENV_VARS.filter((name) => !process.env[name]?.trim());
+}
+
+export function isSmsConfigured(): boolean {
+  return smsMissingEnv().length === 0;
 }
 
 /**
@@ -36,13 +52,15 @@ export const sendOTP = async (params: SendOTPParams): Promise<OTPResponse> => {
       {},
       {
         params: {
-          template_id: MSG91_OTP_TEMPLATE_ID,
+          template_id: params.templateId || MSG91_OTP_TEMPLATE_ID,
           mobile: mobile,
           otp: otp,
         },
         headers: {
           authkey: MSG91_AUTH_KEY,
         },
+        // A stalled provider must not hold a request open indefinitely.
+        timeout: 15_000,
       },
     );
 
@@ -58,6 +76,11 @@ export const sendOTP = async (params: SendOTPParams): Promise<OTPResponse> => {
     }
   } catch (error: any) {
     console.error("Error sending OTP:", error.response?.data || error.message);
-    return { success: false, message: "Internal Error sending OTP" };
+    const detail = error.response?.data?.message || error.message;
+    return {
+      success: false,
+      message: "Internal Error sending OTP",
+      ...(detail ? { error: String(detail) } : {}),
+    };
   }
 };

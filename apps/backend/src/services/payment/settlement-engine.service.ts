@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
-import { computeBookingOwed, getBookingMoney } from "./booking-owed.service.js";
+import { computeBookingOwed, creditOutstanding, getBookingMoney, type BookingOwed } from "./booking-owed.service.js";
+import { getBookingCreditSummary } from "./customer-credit.service.js";
 
 const ZERO = new Decimal(0);
 
@@ -28,6 +29,24 @@ export interface SettlementSummary {
   refunded: string;
   /** totalFinal + returnCharges + safety deposit held — what netPayable is measured against */
   totalOwed: string;
+  /**
+   * Part of what is owed that is on customer credit (#11) — cleared on the Customer
+   * Credit page (never more than the booking hasn't paid). Inside netPayable.
+   */
+  creditPending: string;
+  /**
+   * What Settlements collects: netPayable less the money on credit (≥ 0). Credit is
+   * collected only by clearing it on the Customer Credit page.
+   */
+  payableExcludingCredit: string;
+  /** The customer's publicId — the Customer Credit page is /manager/ledger/:customerPublicId */
+  customerPublicId: string;
+  /** Collateral held for that credit */
+  creditCollateral: string[];
+  /** Legacy drop's safety-deposit choice (#6): SET_OFF | REFUND_IN_FULL; null when none was recorded */
+  safetyDepositHandling: string | null;
+  /** Safety deposit still to pay back to the customer under that choice (refund-deposit endpoint) */
+  safetyDepositToRefund: string;
 }
 
 export interface PaginatedSettlements {
@@ -35,6 +54,22 @@ export interface PaginatedSettlements {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/**
+ * Legacy drop's deposit choice (#6): REFUND_IN_FULL — the deposit still held goes
+ * back in full; SET_OFF — what the deposit paid beyond the charges goes back
+ * (never more than the deposit itself). Zero when no choice was recorded.
+ * `netPayable` = totalOwed − confirmed money (refunds paid out taken off).
+ * `creditPending` (creditOutstanding) stays owed against its collateral: the
+ * deposit is set off against the charges, not against money on credit (#11).
+ */
+export function depositToRefund(owed: BookingOwed, netPayable: Decimal, creditPending: Decimal = ZERO): Decimal {
+  if (owed.safetyDepositHandling === "REFUND_IN_FULL") return owed.safetyDepositHeld;
+  if (owed.safetyDepositHandling === "SET_OFF") {
+    return Decimal.min(owed.safetyDepositCharged, Decimal.max(ZERO, netPayable.sub(creditPending).negated()));
+  }
+  return ZERO;
 }
 
 class SettlementEngineService {
@@ -47,6 +82,7 @@ class SettlementEngineService {
         totalFinal: true,
         customer: {
           select: {
+            publicId: true,
             user: { select: { name: true } },
           },
         },
@@ -79,7 +115,11 @@ class SettlementEngineService {
     // its discount; damage billed at drop is on that bill — a damage the manager
     // charged in review is already inside totalFinal) + safety deposit held.
     // Money: refund rows are paid back, so they come off what was paid.
-    const [owed, money] = await Promise.all([computeBookingOwed(bookingId), getBookingMoney(bookingId)]);
+    const [owed, money, credit] = await Promise.all([
+      computeBookingOwed(bookingId),
+      getBookingMoney(bookingId),
+      getBookingCreditSummary(bookingId),
+    ]);
     const { totalFinal, totalOwed } = owed;
     const totalCollectedConfirmed = money.netConfirmed;
     const totalCollectedPending = money.pending;
@@ -88,7 +128,13 @@ class SettlementEngineService {
     const rentalPaid = totalCollectedConfirmed.sub(owed.safetyDepositCharged.sub(owed.safetyDepositCredited));
     const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(rentalPaid));
     const netPayable = totalOwed.sub(totalCollectedConfirmed);
-    const isSettled = netPayable.lte(ZERO) && totalCollectedPending.eq(ZERO);
+    // Money on credit stays inside netPayable (the booking isn't settled until it is
+    // cleared) but is collected only on the Customer Credit page (#11)
+    const creditPending = creditOutstanding(owed, totalCollectedConfirmed, credit?.pending ?? ZERO);
+    const payableExcludingCredit = Decimal.max(ZERO, netPayable.sub(creditPending));
+
+    const safetyDepositToRefund = depositToRefund(owed, netPayable, creditPending);
+    const isSettled = netPayable.lte(ZERO) && totalCollectedPending.eq(ZERO) && safetyDepositToRefund.lte(ZERO);
 
     // Confirmed extension charges (taxable + GST). Informational: every
     // extension finalizer already added them to totalFinal.
@@ -114,6 +160,12 @@ class SettlementEngineService {
       safetyDepositHeld: owed.safetyDepositHeld.toString(),
       refunded: money.refundedOut.toString(),
       totalOwed: totalOwed.toString(),
+      creditPending: creditPending.toFixed(2),
+      payableExcludingCredit: payableExcludingCredit.toFixed(2),
+      customerPublicId: booking.customer.publicId,
+      creditCollateral: creditPending.gt(0) ? (credit?.collateral ?? []) : [],
+      safetyDepositHandling: owed.safetyDepositHandling,
+      safetyDepositToRefund: safetyDepositToRefund.toFixed(2),
     };
   }
 

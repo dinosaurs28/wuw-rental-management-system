@@ -14,7 +14,21 @@ import { prisma, Role } from "@repo/database/client";
 import type { CashShift, Prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 
-export type CounterGuardCode = "SHIFT_REQUIRED" | "INVALID_UTR" | "DUPLICATE_UTR";
+export type CounterGuardCode =
+  | "SHIFT_REQUIRED"
+  | "INVALID_UTR"
+  | "DUPLICATE_UTR"
+  // UPI payment-proof photo (#3) — services/payment/payment-proof.service.ts
+  | "PAYMENT_PROOF_REQUIRED"
+  | "INVALID_PAYMENT_PROOF"
+  | "DUPLICATE_PAYMENT_PROOF"
+  // CREDIT payment option (#11) — services/payment/customer-credit.service.ts
+  | "COLLATERAL_REQUIRED"
+  | "CREDIT_NOT_FOR_DEPOSIT"
+  | "INVALID_PAYMENT_METHOD"
+  | "SPLIT_AMOUNT_MISMATCH"
+  // Money on customer credit is collected only by clearing it (Customer Credit page)
+  | "AMOUNT_ON_CREDIT";
 
 export class CounterGuardError extends Error {
   constructor(
@@ -27,7 +41,7 @@ export class CounterGuardError extends Error {
   }
 
   toJSON() {
-    return { message: this.message, code: this.code };
+    return { success: false, message: this.message, code: this.code };
   }
 }
 

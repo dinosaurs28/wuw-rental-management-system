@@ -72,7 +72,10 @@ function renderExtensionChargesSection(
   drawSectionTotals(ctx, section, cgstLabel, sgstLabel);
 }
 
-/** Renders the taxable return charges (extra km, late return, fuel, swap, other). */
+/**
+ * Renders return charges stored with GST (bills computed before item 8 — new
+ * drop charges carry no GST and print under Additional Return Charges).
+ */
 function renderTaxableReturnChargesSection(
   ctx: PDFRenderContext,
   section: InvoiceSection,
@@ -139,7 +142,7 @@ function renderAdditionalChargesSection(
     drawSimpleTableRow(ctx, item.description, item.amount);
   }
 
-  // Non-taxable lines (FASTAG/tolls, grace) — no GST rows
+  // Non-taxable lines (drop / recovery charges since item 8, FASTag/tolls, grace) — no GST rows
   const zeroedSection = { ...section, cgst: 0, sgst: 0, taxTotal: 0 };
   drawSectionTotals(ctx, zeroedSection, "", "");
 }
@@ -152,7 +155,7 @@ function renderDamageCompensationSection(
 ): void {
   drawSectionHeader(
     ctx,
-    `${sectionLabel}  Damage Compensation`,
+    `${sectionLabel}  Damage Charges`,
     C.compensation,
     C.compensationAccent,
     "Non-taxable",

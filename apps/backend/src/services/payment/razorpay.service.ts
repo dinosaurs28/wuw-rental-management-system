@@ -226,3 +226,174 @@ export function verifyWebhookSignature(
 export function isRazorpayOrderId(value: string | null | undefined): boolean {
   return typeof value === "string" && value.startsWith("order_");
 }
+
+// ── Orders: amount lookup ────────────────────────────────────────────────────
+
+export interface RazorpayOrderSummary {
+  id: string;
+  /** Order amount in paise. */
+  amount: number;
+  status: string;
+}
+
+/** Fetches an order's amount and status. Null when Razorpay is unreachable or the order is unknown. */
+export async function fetchRazorpayOrder(orderId: string): Promise<RazorpayOrderSummary | null> {
+  try {
+    const order: any = await getClient().orders.fetch(orderId);
+    return { id: order.id, amount: Number(order.amount), status: String(order.status ?? "") };
+  } catch (error: any) {
+    console.error(
+      `[razorpay] order fetch failed orderId=${orderId}:`,
+      error?.error?.description ?? error?.message,
+    );
+    return null;
+  }
+}
+
+// ── UPI QR Codes (customers paying from another phone) ───────────────────────
+
+export interface UpiQrCode {
+  /** `qr_xxxxxxxxxxxx`. */
+  id: string;
+  /** Razorpay short link that serves the QR image (PNG). */
+  imageUrl: string;
+  status: "active" | "closed";
+  /** `paid` | `on_demand` | null (still open) — anything else means it lapsed at close_by. */
+  closeReason: string | null;
+  /** Unix seconds, or null when the code has no scheduled close. */
+  closeBy: number | null;
+  /** Fixed amount in paise. */
+  paymentAmount: number;
+  paymentsAmountReceived: number;
+  paymentsCountReceived: number;
+}
+
+export interface UpiQrPaymentEntity {
+  /** `pay_xxxxxxxxxxxx`. */
+  id: string;
+  /** Paise. */
+  amount: number;
+  /** created | authorized | captured | refunded | failed */
+  status: string;
+  method: string | null;
+  /** Unix seconds. */
+  createdAt: number | null;
+  /** Payer VPA and bank reference (UTR), when Razorpay reports them. */
+  vpa: string | null;
+  rrn: string | null;
+}
+
+/** Thrown when Razorpay refuses or cannot create a QR code. */
+export class UpiQrGatewayError extends Error {
+  constructor(
+    message: string,
+    /** Razorpay's error description, used to detect a close_by rejection. */
+    public readonly detail: string,
+  ) {
+    super(message);
+    this.name = "UpiQrGatewayError";
+  }
+}
+
+function toUpiQrCode(qr: any): UpiQrCode {
+  return {
+    id: String(qr.id),
+    imageUrl: String(qr.image_url ?? ""),
+    status: qr.status === "closed" ? "closed" : "active",
+    closeReason: qr.close_reason ?? null,
+    closeBy: qr.close_by != null ? Number(qr.close_by) : null,
+    paymentAmount: Number(qr.payment_amount ?? 0),
+    paymentsAmountReceived: Number(qr.payments_amount_received ?? 0),
+    paymentsCountReceived: Number(qr.payments_count_received ?? 0),
+  };
+}
+
+/** Maps a Razorpay payment entity (API or webhook) to the fields we act on. */
+export function toUpiQrPayment(p: any): UpiQrPaymentEntity {
+  return {
+    id: String(p.id),
+    amount: Number(p.amount ?? 0),
+    status: String(p.status ?? ""),
+    method: p.method ?? null,
+    createdAt: p.created_at != null ? Number(p.created_at) : null,
+    vpa: p.vpa ?? p.upi?.vpa ?? null,
+    rrn: p.acquirer_data?.rrn ?? null,
+  };
+}
+
+/** A payment that has actually moved money — the same rule fetchOrderStatus uses. */
+export function isSettledGatewayPayment(p: { status: string }): boolean {
+  return p.status === "captured" || p.status === "authorized";
+}
+
+/**
+ * Creates a single-use, fixed-amount UPI QR code. `closeBy` null leaves the code
+ * open until it is paid or closed on demand (callers then close it themselves).
+ */
+export async function createUpiQrCode(params: {
+  amountInPaise: number;
+  closeBy: Date | null;
+  name: string;
+  description: string;
+  notes: Record<string, string>;
+}): Promise<UpiQrCode> {
+  if (!(params.amountInPaise >= 100)) {
+    throw new UpiQrGatewayError(`Cannot create a UPI QR for ${params.amountInPaise} paise`, "amount");
+  }
+  try {
+    const qr: any = await getClient().qrCode.create({
+      type: "upi_qr",
+      name: params.name.slice(0, 40),
+      usage: "single_use",
+      fixed_amount: true,
+      payment_amount: params.amountInPaise,
+      description: params.description.slice(0, 120),
+      ...(params.closeBy ? { close_by: Math.floor(params.closeBy.getTime() / 1000) } : {}),
+      notes: params.notes,
+    } as any);
+    return toUpiQrCode(qr);
+  } catch (error: any) {
+    if (error instanceof UpiQrGatewayError) throw error;
+    const detail = String(error?.error?.description ?? error?.message ?? "unknown error");
+    console.error("[razorpay] QR create failed:", detail);
+    throw new UpiQrGatewayError(`Failed to create UPI QR: ${detail}`, detail);
+  }
+}
+
+/** Fetches a QR code. Null when Razorpay is unreachable. */
+export async function fetchUpiQrCode(qrId: string): Promise<UpiQrCode | null> {
+  try {
+    return toUpiQrCode(await getClient().qrCode.fetch(qrId));
+  } catch (error: any) {
+    console.error(`[razorpay] QR fetch failed qrId=${qrId}:`, error?.error?.description ?? error?.message);
+    return null;
+  }
+}
+
+/**
+ * Closes a QR code so it accepts no further payment. Null when the call failed
+ * (already closed, or Razorpay unreachable) — callers re-fetch to find out which.
+ */
+export async function closeUpiQrCode(qrId: string): Promise<UpiQrCode | null> {
+  try {
+    return toUpiQrCode(await getClient().qrCode.close(qrId));
+  } catch (error: any) {
+    console.warn(`[razorpay] QR close failed qrId=${qrId}:`, error?.error?.description ?? error?.message);
+    return null;
+  }
+}
+
+/** Payments made against a QR code. Null when Razorpay is unreachable ("unknown", never "unpaid"). */
+export async function fetchUpiQrPayments(qrId: string): Promise<UpiQrPaymentEntity[] | null> {
+  try {
+    const res: any = await getClient().qrCode.fetchAllPayments(qrId, { count: 10 });
+    const items: any[] = res?.items ?? [];
+    return items.map(toUpiQrPayment);
+  } catch (error: any) {
+    console.error(
+      `[razorpay] QR payments fetch failed qrId=${qrId}:`,
+      error?.error?.description ?? error?.message,
+    );
+    return null;
+  }
+}

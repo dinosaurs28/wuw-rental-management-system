@@ -56,6 +56,22 @@ import {
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
 import { lockAndAssertDlFreeForPickup, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import {
+  resolveCounterUpi,
+  claimCounterUpi,
+  resolvePaymentProof,
+  claimPaymentProof,
+  type CounterUpi,
+  type ResolvedProof,
+} from "../../services/payment/payment-proof.service.js";
+import {
+  addFleetCredit,
+  parseCollateral,
+  getBookingCreditSummary,
+  serializeCreditSummary,
+} from "../../services/payment/customer-credit.service.js";
+import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE } from "@repo/schemas";
+import { SAFETY_DEPOSIT_REFUND_REF } from "../../services/payment/safety-deposit.service.js";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -71,8 +87,18 @@ function isUpiGateway(gateway?: string | null): boolean {
   return !g || g.toUpperCase() === "UPI";
 }
 
+/** How the deposit is paid back when the drop bill refunds it in full (REFUND_IN_FULL). */
+const depositRefundSchema = z.object({
+  method: z.enum(["CASH", "UPI", "ONLINE"]),
+  // Optional photo of the UPI transfer to the customer
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
+  notes: z.string().max(500).optional(),
+});
+
 const recordPaymentSchema = z.object({
-  method: z.enum(["CASH", "ONLINE", "SPLIT"]),
+  // UPI = ONLINE with the UPI gateway (merchant QR); CREDIT = the amount stays
+  // owed by the customer against the collateral noted (#11)
+  method: z.enum(["CASH", "ONLINE", "SPLIT", "UPI", "CREDIT"]),
   amount: z.coerce.number().min(0),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
@@ -80,9 +106,15 @@ const recordPaymentSchema = z.object({
   onlineGateway: z.string().optional(),
   cashAmount: z.coerce.number().min(0).optional(),
   onlineAmount: z.coerce.number().min(0).optional(),
+  // Photo of the customer's UPI payment-success screen (#3) — replaces the UTR
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
+  // CREDIT only: what was taken from the customer until the credit is cleared
+  collateral: z.string().optional(),
+  // Drop bill with the safety deposit refunded in full: how it is paid back
+  depositRefund: depositRefundSchema.optional(),
 }).superRefine((d, ctx) => {
-  // UPI refs are checked as UTRs in the handler (INVALID_UTR); other gateways just need a ref
-  if (isUpiGateway(d.onlineGateway)) return;
+  // UPI refs are checked as UTRs (or a proof photo) in the handler; other gateways just need a ref
+  if (d.method === "UPI" || d.method === "CREDIT" || isUpiGateway(d.onlineGateway)) return;
   if (d.method === "ONLINE" && !d.onlineTransactionRef?.trim()) {
     ctx.addIssue({ code: "custom", message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] });
   }
@@ -92,10 +124,12 @@ const recordPaymentSchema = z.object({
 });
 
 const recordRefundSchema = z.object({
-  method: z.enum(["CASH", "ONLINE"]),
+  // UPI = ONLINE paid back by UPI (optionally with a photo of the transfer)
+  method: z.enum(["CASH", "ONLINE", "UPI"]),
   amount: z.coerce.number().positive(),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -131,7 +165,7 @@ async function lockSessionForSettlement(
   session: { id: number; bookingId: number; sessionType: string },
   expectedNetPayable: number,
   allowedStatuses: string[],
-) {
+): Promise<Decimal> {
   await lockBookingForDrop(tx, session.bookingId);
 
   const current = await tx.paymentSession.findUniqueOrThrow({
@@ -157,6 +191,118 @@ async function lockSessionForSettlement(
     !(await isDropBillInSync(session.bookingId, session.id, tx))
   ) {
     throw new SettlementConflict(StatusCode.CONFLICT, DROP_BILL_STALE);
+  }
+
+  // The ledger's own figure (the client's amount may be within the ₹1 tolerance)
+  return check.recomputed;
+}
+
+// ── Counter-money helpers (#3 proof photo, #6 deposit at drop, #11 credit) ────
+
+/** A safety deposit is being charged on this bill (a DEPOSIT line, not a drop credit). */
+function chargesSafetyDeposit(entries: Array<{ entryType: string; classification: string; isVoided?: boolean }>): boolean {
+  return entries.some(
+    (e) =>
+      !e.isVoided &&
+      e.entryType === LedgerEntryType.DEPOSIT &&
+      e.classification === LedgerEntryClassification.NON_TAXABLE,
+  );
+}
+
+/** The safety deposit this drop bill refunds in full (REFUND_IN_FULL), or null. */
+function depositRefundOnBill(
+  entries: Array<{ entryType: string; referenceType: string | null; amount: unknown; isVoided?: boolean }>,
+): Decimal | null {
+  const total = entries
+    .filter((e) => !e.isVoided && e.entryType === LedgerEntryType.REFUND && e.referenceType === SAFETY_DEPOSIT_REFUND_REF)
+    .reduce((sum, e) => sum.add(new Decimal(String(e.amount))), new Decimal(0));
+  return total.gt(0) ? total : null;
+}
+
+type CreditRecorded = { creditEntryPublicId: string; sectionKey: string; amount: string; collateral: string };
+type DepositRefunded = { publicId: string; amount: string; method: string };
+
+interface DepositRefundChoice {
+  method: "CASH" | "ONLINE";
+  isUpi: boolean;
+  proof: ResolvedProof | null;
+  notes: string | null;
+}
+
+/**
+ * Pays the safety deposit back (drop bill REFUND_IN_FULL): an OVERPAYMENT_REFUND
+ * PaymentTransaction (cash comes off the collector's open shift drawer) plus a
+ * RefundRequest under the existing approval rules — cash needs the manager's
+ * acknowledgement, UPI is approved at once (same as record-refund).
+ */
+async function writeDepositRefund(
+  tx: any,
+  p: {
+    session: { id: number; bookingId: number; branchId: number };
+    amount: Decimal;
+    choice: DepositRefundChoice;
+    actorId: number;
+    idempotencyKey: string;
+  },
+): Promise<{ publicId: string; amount: string; method: string }> {
+  if (p.choice.proof) await claimPaymentProof(p.choice.proof, tx);
+  const isCash = p.choice.method === "CASH";
+  const shift = isCash
+    ? await tx.cashShift.findFirst({ where: { employeeId: p.actorId, status: "OPEN" }, select: { id: true } })
+    : null;
+  const now = new Date();
+  const amount = p.amount.toFixed(2);
+  const note = p.choice.notes ?? "Safety deposit refunded in full at drop";
+  const txn = await tx.paymentTransaction.create({
+    data: {
+      publicId: createID(),
+      idempotencyKey: `pt:${p.idempotencyKey}:deposit-refund`,
+      bookingId: p.session.bookingId,
+      branchId: p.session.branchId,
+      purpose: PaymentPurpose.OVERPAYMENT_REFUND,
+      method: p.choice.method,
+      status: "CONFIRMED",
+      totalAmount: amount,
+      cashAmount: isCash ? amount : "0.00",
+      onlineAmount: isCash ? "0.00" : amount,
+      onlineGateway: p.choice.isUpi ? "UPI" : null,
+      proofFileId: p.choice.proof?.id ?? null,
+      collectedById: p.actorId,
+      collectedAt: now,
+      confirmedById: p.actorId,
+      confirmedAt: now,
+      cashShiftId: shift?.id ?? null,
+      notes: note,
+    },
+  });
+  await tx.refundRequest.create({
+    data: {
+      publicId: createID(),
+      bookingId: p.session.bookingId,
+      branchId: p.session.branchId,
+      amount,
+      reason: note,
+      method: p.choice.method,
+      status: isCash ? "PENDING_APPROVAL" : "APPROVED",
+      requestedById: p.actorId,
+      approvedById: isCash ? null : p.actorId,
+      approvedAt: isCash ? null : now,
+    },
+  });
+  await tx.booking.update({
+    where: { id: p.session.bookingId },
+    data: { safetyDepositRefunded: true, safetyDepositRefundedAt: now },
+  });
+  return { publicId: txn.publicId, amount, method: p.choice.isUpi ? "UPI" : p.choice.method };
+}
+
+/** Ledger label + credit label for a session put on credit. */
+function creditLabel(sessionType: PaymentSessionType): string {
+  switch (sessionType) {
+    case PaymentSessionType.PICKUP:    return "Pickup payment on credit";
+    case PaymentSessionType.EXTENSION: return "Extension payment on credit";
+    case PaymentSessionType.RETURN:    return "Drop charges on credit";
+    default:                           return "Payment on credit";
   }
 }
 
@@ -311,7 +457,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
     }
-    const { method, amount, idempotencyKey, notes, onlineTransactionRef, onlineGateway, cashAmount: splitCash, onlineAmount: splitOnline } = validation.data;
+    const { amount, idempotencyKey, notes, onlineTransactionRef, cashAmount: splitCash, onlineAmount: splitOnline, proof_file_id, depositRefund } = validation.data;
+    // "UPI" is a counter UPI (merchant QR) payment: ONLINE through the UPI gateway
+    const method = validation.data.method === "UPI" ? "ONLINE" : validation.data.method;
+    const onlineGateway = validation.data.method === "UPI" ? "UPI" : validation.data.onlineGateway;
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
 
@@ -338,31 +487,97 @@ export const RecordPayment = async (req: Request, res: Response) => {
       return res.status(StatusCode.CONFLICT).json(DROP_BILL_STALE);
     }
 
-    // Counter money: cash and UPI (UTR) need the staff member's open shift, and a UTR
-    // can back only one payment. Zero-balance completions take no money and aren't gated.
+    // CREDIT (#11): the amount stays owed against the collateral noted. Nothing
+    // to credit on a ₹0 bill, and a safety deposit can't be taken on credit.
+    let collateral: string | null = null;
+    if (method === "CREDIT") {
+      if (amount <= 0) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "NOTHING_TO_CREDIT",
+          message: "Nothing is due on this bill, so there is nothing to put on credit.",
+        });
+      }
+      collateral = parseCollateral(validation.data.collateral);
+      if (chargesSafetyDeposit(session.entries)) {
+        throw new CounterGuardError(StatusCode.BAD_REQUEST, "CREDIT_NOT_FOR_DEPOSIT", CREDIT_NOT_FOR_DEPOSIT_MESSAGE);
+      }
+    }
+
+    // A split's cash and UPI parts must add up to the amount collected
+    if (method === "SPLIT" && amount > 0) {
+      const cashPart = splitCash ?? 0;
+      const onlinePart = splitOnline ?? 0;
+      if (Math.abs(cashPart + onlinePart - amount) >= 0.01) {
+        throw new CounterGuardError(
+          StatusCode.BAD_REQUEST,
+          "SPLIT_AMOUNT_MISMATCH",
+          `The cash (₹${cashPart.toFixed(2)}) and UPI (₹${onlinePart.toFixed(2)}) parts must add up to ₹${amount.toFixed(2)}.`,
+        );
+      }
+    }
+
+    // Counter money: cash and UPI need the staff member's open shift. UPI is backed
+    // by a photo of the payment screen (proof_file_id) or, from older builds, a UTR;
+    // either can back only one payment. Zero-balance completions and credit take
+    // no money and aren't gated.
     const hasOnlinePart = method === "ONLINE" || (method === "SPLIT" && (splitOnline ?? 0) > 0);
     const isUpi = hasOnlinePart && isUpiGateway(onlineGateway);
     let onlineRef: string | null = onlineTransactionRef?.trim() || null;
     let gateway: string | null = onlineGateway?.trim() || null;
-    if (amount > 0) {
+    let upi: CounterUpi | null = null;
+    if (amount > 0 && method !== "CREDIT") {
       if (method !== "ONLINE" || isUpi) {
         await assertOpenShift(actor);
       }
       if (isUpi) {
-        onlineRef = await validateNewUtr(onlineTransactionRef);
+        upi = await resolveCounterUpi({ utr: onlineTransactionRef, proofFileId: proof_file_id, branchId: session.branchId });
+        onlineRef = upi.utr;
         gateway = "UPI";
       } else if (hasOnlinePart) {
         await assertUtrUnused(onlineRef!);
       }
     }
+    const proofFileId = upi?.proof?.id ?? null;
+
+    // Drop bill refunding the safety deposit in full (#6): the deposit is paid back
+    // in the same settlement, so staff must say how (cash / UPI).
+    const depositRefundDue = depositRefundOnBill(session.entries);
+    let refundChoice: DepositRefundChoice | null = null;
+    if (depositRefundDue) {
+      if (!depositRefund) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "DEPOSIT_REFUND_METHOD_REQUIRED",
+          message: DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE,
+          depositRefundAmount: depositRefundDue.toFixed(2),
+        });
+      }
+      const refundIsUpi = depositRefund.method !== "CASH";
+      refundChoice = {
+        method: refundIsUpi ? "ONLINE" : "CASH",
+        isUpi: refundIsUpi,
+        proof: refundIsUpi ? await resolvePaymentProof(depositRefund.proof_file_id, session.branchId) : null,
+        notes: depositRefund.notes?.trim() || null,
+      };
+    }
 
     let returnedVehicleIds: number[] = [];
+    let creditRecorded: CreditRecorded | null = null;
+    let depositRefunded: DepositRefunded | null = null;
 
     if (amount === 0) {
       // Zero-balance session: complete immediately without creating a PaymentTransaction.
       // A ₹0 record would pollute financial reports with meaningless rows.
       await prisma.$transaction(async (tx) => {
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+
+        // Nothing to collect, but a deposit refunded in full is still paid back
+        if (refundChoice && depositRefundDue) {
+          depositRefunded = await writeDepositRefund(tx, {
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+          });
+        }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
         await (tx as any).booking.update({
@@ -416,6 +631,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
           },
         });
 
+        if (refundChoice && depositRefundDue) {
+          depositRefunded = await writeDepositRefund(tx, {
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+          });
+        }
+
         // Mark session completed
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
         await (tx as any).booking.update({
@@ -429,8 +650,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
     } else if (method === "ONLINE") {
       await prisma.$transaction(async (tx) => {
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
-        // Race-safe: two staff recording the same UTR serialise here and the second gets DUPLICATE_UTR
-        if (onlineRef) await claimUtr(onlineRef, tx);
+        // Race-safe: two staff recording the same UTR / payment photo serialise here
+        // and the second gets DUPLICATE_UTR / DUPLICATE_PAYMENT_PROOF
+        if (upi) await claimCounterUpi(upi, tx);
+        else if (onlineRef) await claimUtr(onlineRef, tx);
 
         await ledgerService.addEntry(
           session.id,
@@ -472,9 +695,16 @@ export const RecordPayment = async (req: Request, res: Response) => {
             confirmedById: actor.id,
             confirmedAt: new Date(),
             cashShiftId: upiShift?.id ?? null,
+            proofFileId,
             notes: notes ?? null,
           },
         });
+
+        if (refundChoice && depositRefundDue) {
+          depositRefunded = await writeDepositRefund(tx, {
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+          });
+        }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
         await (tx as any).booking.update({
@@ -490,7 +720,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
       await prisma.$transaction(async (tx) => {
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
-        if (hasOnlinePart && onlineRef) await claimUtr(onlineRef, tx);
+        if (upi) await claimCounterUpi(upi, tx);
+        else if (hasOnlinePart && onlineRef) await claimUtr(onlineRef, tx);
 
         await ledgerService.addEntry(
           session.id,
@@ -527,9 +758,82 @@ export const RecordPayment = async (req: Request, res: Response) => {
             collectedById: actor.id,
             collectedAt: new Date(),
             cashShiftId: activeShift?.id ?? null,
+            proofFileId,
             notes: notes ?? null,
           },
         });
+
+        if (refundChoice && depositRefundDue) {
+          depositRefunded = await writeDepositRefund(tx, {
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+          });
+        }
+
+        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
+        await (tx as any).booking.update({
+          where: { id: session.bookingId },
+          data: { activePaymentSessionId: null },
+        });
+
+        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+      }, { timeout: 15000 });
+    } else if (method === "CREDIT" && collateral) {
+      // Credit (#11): no money moves, so no PaymentTransaction — a CREDIT ledger line
+      // settles the bill and the booking's CustomerCreditEntry records what is owed
+      // and the collateral held. The financial state keeps it due until the branch
+      // manager clears it (which records the payment then).
+      const creditCollateral = collateral;
+      await prisma.$transaction(async (tx) => {
+        const owed = await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
+
+        // Re-checked under the lock: a deposit may have been added since the request was read
+        const liveEntries = await tx.ledgerEntry.findMany({
+          where: { sessionId: session.id, isVoided: false },
+          select: { entryType: true, classification: true },
+        });
+        if (chargesSafetyDeposit(liveEntries)) {
+          throw new CounterGuardError(StatusCode.BAD_REQUEST, "CREDIT_NOT_FOR_DEPOSIT", CREDIT_NOT_FOR_DEPOSIT_MESSAGE);
+        }
+
+        const label = creditLabel(session.sessionType as PaymentSessionType);
+        await ledgerService.addEntry(
+          session.id,
+          session.bookingId,
+          LedgerEntryType.CREDIT,
+          LedgerEntryClassification.PAYMENT,
+          owed.negated(),
+          notes ?? `${label}: ₹${owed.toFixed(2)} (collateral: ${creditCollateral})`,
+          actor.id,
+          String(actor.role),
+          {
+            idempotencyKey,
+            referenceType: "CUSTOMER_CREDIT",
+            metadata: { collateral: creditCollateral },
+          },
+          tx as any,
+        );
+
+        const credit = await addFleetCredit(tx, {
+          bookingId: session.bookingId,
+          amount: owed,
+          purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
+          label,
+          collateral: creditCollateral,
+          reference: { type: "PAYMENT_SESSION", publicId: session.publicId },
+          actor: { id: actor.id, name: actor.name },
+        });
+        creditRecorded = {
+          creditEntryPublicId: credit.creditEntryPublicId,
+          sectionKey: credit.sectionKey,
+          amount: owed.toFixed(2),
+          collateral: creditCollateral,
+        };
+
+        if (refundChoice && depositRefundDue) {
+          depositRefunded = await writeDepositRefund(tx, {
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+          });
+        }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
         await (tx as any).booking.update({
@@ -550,9 +854,15 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }
     }
 
-    // Rebuild and regenerate invoice after RETURN session completes
+    // Assigned inside the transaction callbacks (TS can't see that)
+    const credit = creditRecorded as CreditRecorded | null;
+    const refunded = depositRefunded as DepositRefunded | null;
+    const creditSummary = await getBookingCreditSummary(session.bookingId);
+
+    // Rebuild and regenerate invoice after RETURN session completes — it is PAID
+    // only when nothing of the booking is still owed on credit
     if (session.sessionType === PaymentSessionType.RETURN) {
-      finalizeInvoice(session.bookingId).catch((err) =>
+      finalizeInvoice(session.bookingId, { markPaid: !(creditSummary?.pending.gt(0) ?? false) }).catch((err) =>
         console.error("[record-payment] Invoice finalization error:", err),
       );
     } else {
@@ -563,33 +873,63 @@ export const RecordPayment = async (req: Request, res: Response) => {
     }
 
     // Audit + activity outside transaction
+    const methodLabel = validation.data.method === "UPI" || (method === "ONLINE" && isUpi) ? "UPI" : method;
     await auditService.log({
       actorId: actor.id,
       actorName: actor.name,
       actorRole: actor.role,
       actorBranchId: actor.branchId ?? undefined,
-      action: "PAYMENT_RECORDED",
+      action: credit ? "PAYMENT_ON_CREDIT" : "PAYMENT_RECORDED",
       category: AuditCategory.PAYMENT,
-      description: `${method} payment of ₹${amount} recorded on session ${session.publicId}`,
+      description: credit
+        ? `₹${credit.amount} put on credit on session ${session.publicId} (collateral: ${credit.collateral})`
+        : `${methodLabel} payment of ₹${amount} recorded on session ${session.publicId}`,
       entity: "PaymentSession",
       entityId: session.publicId,
-      metadata: { method, amount, sessionType: session.sessionType },
+      metadata: {
+        method: methodLabel,
+        amount,
+        sessionType: session.sessionType,
+        ...(upi?.proof && { proofFileId: upi.proof.publicId }),
+        ...(credit && { credit }),
+        ...(refunded && { depositRefund: refunded }),
+      },
     });
 
     await staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.COLLECTED,
       entityType: StaffEntityType.PAYMENT_SESSION,
       entityRef: session.publicId,
-      description: `Payment ₹${amount} (${method}) recorded on ${session.sessionType} session`,
-      metadata: { amount, method },
+      description: credit
+        ? `₹${credit.amount} put on credit on ${session.sessionType} session (collateral: ${credit.collateral})`
+        : `Payment ₹${amount} (${methodLabel}) recorded on ${session.sessionType} session`,
+      metadata: { amount, method: methodLabel, ...(credit && { collateral: credit.collateral }) },
     });
+
+    if (refunded) {
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.REFUNDED,
+        entityType: StaffEntityType.PAYMENT_SESSION,
+        entityRef: session.publicId,
+        description: `Safety deposit ₹${refunded.amount} refunded in full (${refunded.method})`,
+        metadata: refunded,
+      });
+    }
 
     void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
 
     const updatedSession = await paymentSessionService.getSession(session.publicId);
     return res.status(StatusCode.OK).json({
-      message: "Payment recorded successfully",
-      data: serializeSession(updatedSession!),
+      message: credit
+        ? `₹${credit.amount} put on credit — the branch manager clears it when the customer pays`
+        : "Payment recorded successfully",
+      data: {
+        ...serializeSession(updatedSession!),
+        // Additive: what this settlement put on credit / refunded, and the booking's credit position
+        credit: credit ?? null,
+        depositRefund: refunded ?? null,
+        bookingCredit: serializeCreditSummary(creditSummary),
+      },
     });
   } catch (err: any) {
     if (err instanceof CounterGuardError) {
@@ -611,9 +951,15 @@ export const RecordRefund = async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
     }
-    const { method, amount, idempotencyKey, notes } = validation.data;
+    const { amount, idempotencyKey, notes } = validation.data;
+    // UPI = paid back by UPI (ONLINE through the UPI gateway), optionally with a photo
+    const refundIsUpi = validation.data.method === "UPI";
+    const method = refundIsUpi ? "ONLINE" : validation.data.method;
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
+    const refundProof = method === "ONLINE"
+      ? await resolvePaymentProof(validation.data.proof_file_id, session.branchId)
+      : null;
 
     if (session.status !== PaymentSessionStatus.AWAITING_PAYMENT) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: `Session is not awaiting payment` });
@@ -662,6 +1008,8 @@ export const RecordRefund = async (req: Request, res: Response) => {
           })
         : null;
 
+      if (refundProof) await claimPaymentProof(refundProof, tx);
+
       await tx.paymentTransaction.create({
         data: {
           publicId: createID(),
@@ -674,6 +1022,8 @@ export const RecordRefund = async (req: Request, res: Response) => {
           totalAmount: amount.toFixed(2),
           cashAmount: method === "CASH" ? amount.toFixed(2) : "0.00",
           onlineAmount: method === "ONLINE" ? amount.toFixed(2) : "0.00",
+          onlineGateway: refundIsUpi ? "UPI" : null,
+          proofFileId: refundProof?.id ?? null,
           collectedById: actor.id,
           collectedAt: new Date(),
           confirmedById: actor.id,
@@ -682,6 +1032,14 @@ export const RecordRefund = async (req: Request, res: Response) => {
           notes: notes ?? null,
         },
       });
+
+      // A drop bill's refund is the safety deposit (or what is left of it after the charges)
+      if (session.sessionType === PaymentSessionType.RETURN) {
+        await tx.booking.update({
+          where: { id: session.bookingId },
+          data: { safetyDepositRefunded: true, safetyDepositRefundedAt: new Date() },
+        });
+      }
 
       // Create a RefundRequest so the branch manager can see and acknowledge the refund.
       // CASH refunds need manager acknowledgment (PENDING_APPROVAL); online refunds auto-approve.
@@ -717,9 +1075,11 @@ export const RecordRefund = async (req: Request, res: Response) => {
       }
     }
 
-    // Rebuild and regenerate invoice after RETURN session completes
+    // Rebuild and regenerate invoice after RETURN session completes (PAID unless
+    // something of the booking is still owed on credit)
     if (session.sessionType === PaymentSessionType.RETURN) {
-      finalizeInvoice(session.bookingId).catch((err) =>
+      const creditOpen = (await getBookingCreditSummary(session.bookingId))?.pending.gt(0) ?? false;
+      finalizeInvoice(session.bookingId, { markPaid: !creditOpen }).catch((err) =>
         console.error("[record-refund] Invoice finalization error:", err),
       );
     }
@@ -731,10 +1091,10 @@ export const RecordRefund = async (req: Request, res: Response) => {
       actorBranchId: actor.branchId ?? undefined,
       action: "REFUND_RECORDED",
       category: AuditCategory.PAYMENT,
-      description: `Refund of ₹${amount} (${method}) issued via session ${session.publicId}`,
+      description: `Refund of ₹${amount} (${refundIsUpi ? "UPI" : method}) issued via session ${session.publicId}`,
       entity: "PaymentSession",
       entityId: session.publicId,
-      metadata: { method, amount },
+      metadata: { method: refundIsUpi ? "UPI" : method, amount, ...(refundProof && { proofFileId: refundProof.publicId }) },
     });
 
     void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
@@ -745,6 +1105,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
       data: serializeSession(updatedSession!),
     });
   } catch (err: any) {
+    if (err instanceof CounterGuardError) {
+      return res.status(err.status).json(err.toJSON());
+    }
     if (err instanceof SettlementConflict) {
       return res.status(err.status).json(err.body);
     }

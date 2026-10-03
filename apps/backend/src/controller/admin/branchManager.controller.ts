@@ -7,6 +7,7 @@ import { Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { z } from "zod";
+import { indianMobileLookupVariants, normalizeIndianMobile } from "../../utils/phone.js";
 
 // Emails are stored lowercased: sign-in and password reset look them up that way.
 const createManagerSchema = z.object({
@@ -24,6 +25,45 @@ const updateManagerSchema = z.object({
 const setStatusSchema = z.object({
     isActive: z.boolean(),
 });
+
+// Optional manager mobile number (password reset by SMS goes to it). Omitted
+// → leave as is; "" / null → clear; otherwise any common spelling, stored as
+// the bare 10 digits.
+export function parseOptionalManagerPhone(
+    raw: unknown,
+): { ok: true; phone: string | undefined } | { ok: false } {
+    if (raw === undefined) return { ok: true, phone: undefined };
+    if (raw === null || (typeof raw === "string" && raw.trim() === "")) return { ok: true, phone: "" };
+    const phone = normalizeIndianMobile(typeof raw === "string" ? raw : undefined);
+    return phone ? { ok: true, phone } : { ok: false };
+}
+
+const INVALID_MANAGER_PHONE = {
+    success: false,
+    code: "INVALID_PHONE",
+    message: "Enter a valid 10-digit mobile number for the branch manager.",
+};
+
+// SMS reset finds a manager by phone; a number on two manager accounts would
+// match neither, so it is refused here.
+export async function managerPhoneTaken(phone: string, exceptUserId?: number): Promise<boolean> {
+    const other = await prisma.user.findFirst({
+        where: {
+            role: Role.MANAGER,
+            deletedAt: null,
+            phone: { in: indianMobileLookupVariants(phone) },
+            ...(exceptUserId ? { id: { not: exceptUserId } } : {}),
+        },
+        select: { id: true },
+    });
+    return !!other;
+}
+
+const MANAGER_PHONE_IN_USE = {
+    success: false,
+    code: "PHONE_IN_USE",
+    message: "This mobile number is already on another branch manager account.",
+};
 
 export const GetBranchManagers = async (req: Request, res: Response) => {
     try {
@@ -47,6 +87,7 @@ export const GetBranchManagers = async (req: Request, res: Response) => {
                 publicId: true,
                 name: true,
                 email: true,
+                phone: true,
                 isActive: true,
                 createdAt: true,
             },
@@ -73,6 +114,10 @@ export const CreateBranchManager = async (req: Request, res: Response) => {
         }
 
         const data = validation.data;
+        const phoneInput = parseOptionalManagerPhone(req.body?.phone);
+        if (!phoneInput.ok) {
+            return res.status(StatusCode.BAD_REQUEST).json(INVALID_MANAGER_PHONE);
+        }
 
         const branch = await prisma.branch.findUnique({
             where: { publicId: branchId, deletedAt: null },
@@ -86,6 +131,9 @@ export const CreateBranchManager = async (req: Request, res: Response) => {
         if (existingUser) {
             return res.status(StatusCode.CONFLICT).json({ message: "A user with this email already exists." });
         }
+        if (phoneInput.phone && (await managerPhoneTaken(phoneInput.phone))) {
+            return res.status(StatusCode.CONFLICT).json(MANAGER_PHONE_IN_USE);
+        }
 
         const passwordHash = await hashpassword(data.password);
 
@@ -98,11 +146,13 @@ export const CreateBranchManager = async (req: Request, res: Response) => {
                 branchId: branch.id,
                 publicId: createID(),
                 authProvider: "PASSWORD",
+                ...(phoneInput.phone ? { phone: phoneInput.phone } : {}),
             },
             select: {
                 publicId: true,
                 name: true,
                 email: true,
+                phone: true,
                 createdAt: true,
             },
         });
@@ -130,6 +180,10 @@ export const UpdateBranchManager = async (req: Request, res: Response) => {
         }
 
         const data = validation.data;
+        const phoneInput = parseOptionalManagerPhone(req.body?.phone);
+        if (!phoneInput.ok) {
+            return res.status(StatusCode.BAD_REQUEST).json(INVALID_MANAGER_PHONE);
+        }
 
         const branch = await prisma.branch.findUnique({ where: { publicId: branchId, deletedAt: null } });
         if (!branch) {
@@ -141,21 +195,26 @@ export const UpdateBranchManager = async (req: Request, res: Response) => {
         if (!manager || manager.branchId !== branch.id || manager.role !== Role.MANAGER || manager.deletedAt) {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Manager not found in this branch" });
         }
+        if (phoneInput.phone && (await managerPhoneTaken(phoneInput.phone, manager.id))) {
+            return res.status(StatusCode.CONFLICT).json(MANAGER_PHONE_IN_USE);
+        }
 
         const updateData: Record<string, any> = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
         if (data.password) updateData.passwordHash = await hashpassword(data.password);
+        if (phoneInput.phone !== undefined) updateData.phone = phoneInput.phone;
 
-        await prisma.user.update({
+        const updated = await prisma.user.update({
             where: { id: manager.id },
             data: updateData,
+            select: { publicId: true, name: true, email: true, phone: true },
         });
 
         await redis.del("admin:all_branches");
         await redis.del("branches");
 
-        return res.status(StatusCode.OK).json({ message: "Branch manager updated successfully" });
+        return res.status(StatusCode.OK).json({ message: "Branch manager updated successfully", data: updated });
     } catch (error) {
         console.error("Update Branch Manager Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });

@@ -11,9 +11,10 @@ import {
  * #23). Booking.totalBase / totalTax / BookingItem describe the original
  * rental only, so reports add these separately:
  *   - CONFIRMED extensions: the split stored on BookingExtension when priced
- *   - taxable invoice lines: return charges (extra km, late return, fuel, swap,
- *     other), the drop discount's taxable share, damage penalties — the GST
- *     stored on each InvoiceItem
+ *   - taxable invoice lines: the GST stored on each InvoiceItem. Since item 8
+ *     (Oct 3 2026) drop / recovery charges carry no GST, so only lines billed
+ *     before it count here (return charges, a taxable drop-discount share,
+ *     damage penalties); new ones are non-taxable and never selected
  * Bookings are still selected by the caller (startAt anchor); nothing here is
  * re-taxed.
  */

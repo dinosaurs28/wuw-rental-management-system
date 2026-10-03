@@ -8,9 +8,11 @@ import {
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import {
   assertOpenShift,
-  validateNewUtr,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
+import { resolveCounterUpi } from "../../services/payment/payment-proof.service.js";
+import { parseCollateral } from "../../services/payment/customer-credit.service.js";
+import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
 
 const advanceDepositService = new AdvanceDepositService();
@@ -53,19 +55,26 @@ async function recordOnlineRemaining(
  * POST /employee/pickup/:bookingId/initiate-remaining-payment
  * POST /employee/return/:bookingId/initiate-remaining-payment
  *
- * body: { method: "CASH" | "UPI" | "ONLINE_RAZORPAY", paidDuring: "PICKUP" | "RETURN", utr?: string }
+ * body: { method: "CASH" | "UPI" | "SPLIT" | "CREDIT" | "ONLINE_RAZORPAY",
+ *         paidDuring: "PICKUP" | "RETURN", utr?: string, proof_file_id?: string,
+ *         cashAmount?: number, onlineAmount?: number, collateral?: string }
  *
- * UPI = the customer paid the branch's UPI QR; `utr` (12 digits) is required
- * and the payment settles immediately, like CASH.
+ * UPI = the customer paid the branch's UPI QR, backed by a photo of the payment
+ * screen (`proof_file_id`) or, from older builds, the 12-digit `utr`; it settles
+ * immediately, like CASH. SPLIT = `cashAmount` + `onlineAmount` (= the balance),
+ * the UPI part backed the same way. CREDIT = the balance stays owed against the
+ * `collateral` noted, until the branch manager clears it (#11).
  */
 export const InitiateRemainingPayment = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const { method, paidDuring, utr } = req.body;
   const branchId = req.branch_Id;
 
-  if (!["CASH", "UPI", "ONLINE_RAZORPAY"].includes(method)) {
+  if (!["CASH", "UPI", "SPLIT", "CREDIT", "ONLINE_RAZORPAY"].includes(method)) {
     return res.status(StatusCode.BAD_REQUEST).json({
-      message: "Invalid payment method. Use CASH, UPI, or ONLINE_RAZORPAY.",
+      success: false,
+      code: "INVALID_PAYMENT_METHOD",
+      message: "Invalid payment method. Use CASH, UPI, SPLIT, CREDIT or ONLINE_RAZORPAY.",
     });
   }
 
@@ -105,8 +114,42 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // CASH or UPI: record directly, no payment gateway needed
-    if (method === "CASH" || method === "UPI") {
+    // CREDIT (#11): nothing is paid now — the balance stays owed against the collateral
+    if (method === "CREDIT") {
+      const actor = await prisma.user.findUnique({
+        where: { publicId: req.public_Id },
+        select: { id: true, name: true },
+      });
+      if (!actor) {
+        return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+      }
+      const collateral = parseCollateral(req.body?.collateral);
+      const credit = await advanceDepositService.recordRemainingOnCredit(
+        bookingId as string,
+        paidDuring as "PICKUP" | "RETURN",
+        collateral,
+        actor,
+      );
+      return res.status(StatusCode.OK).json({
+        success: true,
+        message: `Remaining balance of ₹${credit.amount} put on credit — the branch manager clears it when the customer pays.`,
+        data: {
+          amountCollected: "0.00",
+          amountOnCredit: credit.amount,
+          method,
+          paidDuring,
+          credit: {
+            creditEntryPublicId: credit.creditEntryPublicId,
+            sectionKey: credit.sectionKey,
+            amount: credit.amount,
+            collateral,
+          },
+        },
+      });
+    }
+
+    // CASH, UPI or SPLIT: record directly, no payment gateway needed
+    if (method === "CASH" || method === "UPI" || method === "SPLIT") {
       const actor = await prisma.user.findUnique({
         where: { publicId: req.public_Id },
         select: { id: true, role: true },
@@ -117,18 +160,43 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       await assertOpenShift(actor);
 
       const isUpi = method === "UPI";
-      const cleanUtr = isUpi ? await validateNewUtr(utr) : null;
+      const isSplit = method === "SPLIT";
+      const balance = new Decimal(booking.remainingBalance.toString()).toDecimalPlaces(2);
+      let split: { cash: Decimal; online: Decimal } | null = null;
+      if (isSplit) {
+        const cash = new Decimal(Number(req.body?.cashAmount ?? 0) || 0).toDecimalPlaces(2);
+        const online = new Decimal(Number(req.body?.onlineAmount ?? 0) || 0).toDecimalPlaces(2);
+        if (cash.lte(0) || online.lte(0) || !cash.add(online).eq(balance)) {
+          throw new CounterGuardError(
+            StatusCode.BAD_REQUEST,
+            "SPLIT_AMOUNT_MISMATCH",
+            `Enter a cash part and a UPI part that add up to ₹${balance.toFixed(2)}.`,
+          );
+        }
+        split = { cash, online };
+      }
+      // UPI (and a split's UPI part): payment-screen photo or, from older builds, a UTR
+      const backing = isUpi || isSplit
+        ? await resolveCounterUpi({ utr, proofFileId: req.body?.proof_file_id, branchId })
+        : null;
+      // DepositMethod has no split — the cash part is what awaits confirmation
       const depositMethod = isUpi ? DepositMethod.UPI : DepositMethod.CASH;
-      const transactionId = isUpi ? `UPI_REM_${createID()}` : `CASH_REM_${createID()}`;
+      const transactionId = isUpi
+        ? `UPI_REM_${createID()}`
+        : isSplit ? `SPLIT_REM_${createID()}` : `CASH_REM_${createID()}`;
 
       await advanceDepositService.recordRemainingPayment(
         bookingId as string,
         depositMethod,
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
-        cleanUtr ? { utr: cleanUtr, collectedById: actor.id } : undefined,
+        isUpi && backing ? { utr: backing.utr, collectedById: actor.id, proof: backing.proof } : undefined,
         // Counter cash lands in the collector's open shift (asserted above)
-        isUpi ? undefined : { collectedById: actor.id },
+        method === "CASH" ? { collectedById: actor.id } : undefined,
+        undefined,
+        split && backing
+          ? { ...split, utr: backing.utr, proof: backing.proof, collectedById: actor.id }
+          : undefined,
       );
 
       return res.status(StatusCode.OK).json({
@@ -174,7 +242,7 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       return res.status(error.status).json(error.toJSON());
     }
     console.error("InitiateRemainingPayment error:", error);
-    if (error.message?.includes("already collected")) {
+    if (error.message?.includes("already collected") || error.message?.includes("Nothing remains")) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
     }
     // Double-submitted UPI: the per-booking idempotency key already exists
@@ -342,7 +410,9 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
     // Counter (cash / UPI) prefix: already recorded (shouldn't reach here, but handle gracefully)
     if (
       booking.remainingPaymentId.startsWith("CASH_REM_") ||
-      booking.remainingPaymentId.startsWith("UPI_REM_")
+      booking.remainingPaymentId.startsWith("UPI_REM_") ||
+      booking.remainingPaymentId.startsWith("SPLIT_REM_") ||
+      booking.remainingPaymentId.startsWith("CREDIT_REM_")
     ) {
       return res.status(StatusCode.OK).json({ status: "SUCCESS" });
     }

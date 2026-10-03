@@ -1,5 +1,10 @@
 import { StatusCode } from "../../types/statusCode.js";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
+import {
+  signVerifySession,
+  VERIFY_SESSION_COOKIE,
+  VERIFY_SESSION_COOKIE_OPTIONS,
+} from "../../utils/token/verifySession.js";
 
 import { Request, Response } from "express";
 
@@ -28,11 +33,11 @@ export const googleSignIn = async (req: Request, res: Response) => {
     if (!user.emailVerifiedAt) {
       return res
         .status(StatusCode.OK)
-        .cookie("verifySession", user.publicId, {
-          httpOnly: false,
-          secure: true, // Should be true in production
-          sameSite: "strict",
-        })
+        .cookie(
+          VERIFY_SESSION_COOKIE,
+          signVerifySession(user.publicId),
+          VERIFY_SESSION_COOKIE_OPTIONS,
+        )
         .redirect(`${process.env.FRONTEND_REDIRECT_URL}/verify-otp`);
     }
 

@@ -21,7 +21,11 @@ import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
-import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import {
+  PricingEngineService,
+  InclGstTotals,
+  rentInclGstFields,
+} from "../../services/pricing/pricing-engine.service.js";
 import {
   resolveKmAllowance,
   getOdometerSegments,
@@ -29,7 +33,6 @@ import {
   type OdometerSegments,
 } from "../../services/charges/km-allowance.service.js";
 import { getRentalTimeline } from "../../services/charges/rental-timeline.service.js";
-import { getBranchGstRates, computeLineGst, GstRuleMissingError } from "../../services/tax/gst.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import {
   getMissingProfileFields,
@@ -49,14 +52,17 @@ import {
 import { createRazorpayOrder } from "../../services/payment/razorpay.service.js";
 import {
   assertOpenShift,
-  validateNewUtr,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
+import { resolveCounterUpi } from "../../services/payment/payment-proof.service.js";
+import { parseCollateral } from "../../services/payment/customer-credit.service.js";
+import Decimal from "decimal.js";
 import {
   assertDlFree,
   lockAndAssertDlFree,
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
+import { blacklistRefusal } from "../../services/customer/customer-blacklist.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -213,7 +219,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       !customer_public_id ||
       !start ||
       !end ||
-      !["CASH", "ONLINE", "UPI"].includes(payment_type)
+      !["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT"].includes(payment_type)
     ) {
       return res
         .status(StatusCode.BAD_REQUEST)
@@ -233,7 +239,15 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
     // UPI (UTR): checked now so a bad or reused UTR fails before the hold is
     // created; re-checked when the payment-status poll confirms the booking.
-    const upiUtr = payment_type === "UPI" ? await validateNewUtr(utr) : null;
+    // Counter UPI (#3): a photo of the customer's payment screen (proof_file_id)
+    // or, from older builds, the UTR — for UPI and for a split's UPI part.
+    const counterUpi =
+      payment_type === "UPI" || payment_type === "SPLIT"
+        ? await resolveCounterUpi({ utr, proofFileId: req.body.proof_file_id, branchId: req.branch_Id })
+        : null;
+    const upiUtr = counterUpi?.utr ?? null;
+    // CREDIT (#11): the whole booking stays owed against the collateral noted
+    const creditCollateral = payment_type === "CREDIT" ? parseCollateral(req.body.collateral) : null;
 
     const customer = await prisma.user.findUnique({
       where: { publicId: customer_public_id },
@@ -241,6 +255,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     });
     if (!customer || !customer.customerProfile) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Customer not found" });
+    }
+
+    // #13: a blacklisted customer can't get a new booking at the counter either
+    // (403 CUSTOMER_BLACKLISTED; staff get the reason).
+    const blacklisted = blacklistRefusal(customer.customerProfile, "staff");
+    if (blacklisted) {
+      return res.status(blacklisted.status).json(blacklisted.toJSON());
     }
 
     // #1: DL + Aadhaar numbers (and the rest of the profile) are required before
@@ -418,6 +439,14 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Some vehicles not found" });
     }
 
+    // Explicit vehicle ids must belong to this branch, like the group path above:
+    // staff can't place a hold on another branch's vehicle.
+    if (vehiclesData.some((v) => v.branchId !== req.branch_Id)) {
+      return res.status(StatusCode.FORBIDDEN).json({
+        message: "Vehicle not accessible from this branch",
+      });
+    }
+
     // ── Initial availability check (batch) ────────────────────────────────────
 
     const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
@@ -528,6 +557,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     let grandSGSTTotal     = 0;
     let grandDeposit       = 0;
     let grandFinalTotal    = 0;
+    // GST-inclusive totals (item 17) — what the customer sees
+    const inclGst = new InclGstTotals();
 
     for (const v of vehiclesData) {
       const pricingResult = await pricingEngine.calculateBookingPrice(
@@ -580,6 +611,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         cgstRate: Number(pricingResult.cgstRate.toString()),
         sgstRate: Number(pricingResult.sgstRate.toString()),
         finalTotal,
+        // GST-inclusive rent view (item 17): rentInclGst is the price
+        ...rentInclGstFields(pricingResult),
         // Same snapshot shape as the customer path — km-allowance falls back to
         // freeKmLimit/extraKmRate here, and billedAs records the slab charged.
         pricingBreakdown: {
@@ -600,6 +633,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       grandSGSTTotal     += sgstAmount;
       grandDeposit       += deposit;
       grandFinalTotal    += finalTotal;
+      inclGst.add(pricingResult);
     }
 
     grandBaseTotal     = Number(grandBaseTotal.toFixed(2));
@@ -609,6 +643,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     grandSGSTTotal     = Number(grandSGSTTotal.toFixed(2));
     grandDeposit       = Number(grandDeposit.toFixed(2));
     grandFinalTotal    = Number(grandFinalTotal.toFixed(2));
+    const inclGstTotals = inclGst.view();
 
     // ── Final revalidation before DB write (TASK-012) ─────────────────────────
     // Prevents race conditions: re-check availability immediately before persisting.
@@ -664,8 +699,32 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       }
     } else if (payment_type === "UPI") {
       transactionId = `UPI_${createID()}`;
+    } else if (payment_type === "SPLIT") {
+      transactionId = `SPLIT_${createID()}`;
+    } else if (payment_type === "CREDIT") {
+      transactionId = `CREDIT_${createID()}`;
     } else {
       transactionId = `CASH_${createID()}`;
+    }
+
+    // Split (#11): the cash part is sent (cash_amount); the UPI part is the rest of
+    // the total — or, when upi_amount is sent too, both must add up to the total.
+    let splitParts: { cash: number; upi: number } | null = null;
+    if (payment_type === "SPLIT") {
+      const total = new Decimal(grandFinalTotal.toFixed(2));
+      const cashPart = new Decimal(Number(req.body.cash_amount ?? 0) || 0).toDecimalPlaces(2);
+      const upiPart = req.body.upi_amount != null
+        ? new Decimal(Number(req.body.upi_amount) || 0).toDecimalPlaces(2)
+        : total.sub(cashPart);
+      if (cashPart.lte(0) || upiPart.lte(0) || !cashPart.add(upiPart).eq(total)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: "SPLIT_AMOUNT_MISMATCH",
+          message: `Enter a cash part and a UPI part that add up to ₹${total.toFixed(2)}.`,
+          total: total.toFixed(2),
+        });
+      }
+      splitParts = { cash: cashPart.toNumber(), upi: upiPart.toNumber() };
     }
 
     // ── Freeze charge config snapshot ─────────────────────────────────────────
@@ -733,11 +792,14 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           paymentStatus: "CREATED",
           depositMethod:
-            payment_type === "CASH"
+            // Split → CASH (its cash part awaits the manager); credit takes no deposit money
+            payment_type === "CASH" || payment_type === "SPLIT"
               ? DepositMethod.CASH
               : payment_type === "UPI"
                 ? DepositMethod.UPI
-                : DepositMethod.ONLINE_RAZORPAY,
+                : payment_type === "CREDIT"
+                  ? null
+                  : DepositMethod.ONLINE_RAZORPAY,
           // 2-dp strings: Prisma stores a JS number in these unscaled Decimal
           // columns with float noise (8885.2 → 8885.200000000001)
           totalBase:    grandBaseTotal.toFixed(2),
@@ -765,10 +827,19 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
                 items.reduce((s, i) => s + (i.durationDiscountAmount ?? 0), 0).toFixed(2),
               ),
               grandCouponDiscountTotal: 0,
+              // GST-inclusive view (item 17): rent the customer sees, discounts off it
+              ...inclGstTotals,
               durationDiscountLabel: items.find((i) => i.durationDiscountLabel)?.durationDiscountLabel ?? null,
             },
             // Read back by confirmBookingPayment to record the UPI transaction
-            ...(upiUtr && { upi: { utr: upiUtr } }),
+            ...(payment_type === "UPI" && counterUpi && {
+              upi: { utr: upiUtr, proofFileId: counterUpi.proof?.publicId ?? null },
+            }),
+            // Counter split / credit (#11), read back the same way
+            ...(splitParts && counterUpi && {
+              split: { ...splitParts, utr: upiUtr, proofFileId: counterUpi.proof?.publicId ?? null },
+            }),
+            ...(creditCollateral && { credit: { collateral: creditCollateral } }),
           },
           createdById: staff.id,
         },
@@ -792,22 +863,24 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         })),
       });
 
-      // Duration-slab discount on record (summaries, reports, counter-coupon stacking)
+      // Duration-slab discount on record (summaries, reports, counter-coupon stacking) —
+      // on the GST-inclusive rent the slab was taken off (item 17)
       if (grandDiscountTotal > 0) {
-        const durationTotal = items.reduce((s, i) => s + (i.durationDiscountAmount ?? 0), 0);
+        const rentIncl = inclGstTotals.grandRentInclGst;
+        const durationIncl = inclGstTotals.grandDurationDiscountInclGst;
         await tx.discountApplication.create({
           data: {
             publicId: createID(),
             bookingId: newBooking.id,
-            originalAmount: grandBaseTotal.toFixed(2),
-            durationDiscountAmount: durationTotal.toFixed(2),
-            durationDiscountPercent: grandBaseTotal > 0
-              ? ((durationTotal / grandBaseTotal) * 100).toFixed(4)
+            originalAmount: rentIncl.toFixed(2),
+            durationDiscountAmount: durationIncl.toFixed(2),
+            durationDiscountPercent: rentIncl > 0
+              ? ((durationIncl / rentIncl) * 100).toFixed(4)
               : "0",
             durationSlabId: items.find((i) => i.durationSlabId)?.durationSlabId ?? null,
             couponDiscountAmount: "0.00",
-            totalDiscountAmount: grandDiscountTotal.toFixed(2),
-            finalAmount: (grandBaseTotal - grandDiscountTotal).toFixed(2),
+            totalDiscountAmount: inclGstTotals.grandDiscountInclGst.toFixed(2),
+            finalAmount: inclGstTotals.grandRentAfterDiscountInclGst.toFixed(2),
             paymentPlan: "FULL",
           },
         });
@@ -1018,30 +1091,19 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         newVehicle: { select: { regNo: true } },
       },
     });
-    let swapRates: Awaited<ReturnType<typeof getBranchGstRates>> | null = null;
-    let swapGstUnavailableReason: string | null = null;
-    if (chargedSwaps.length > 0) {
-      try {
-        swapRates = await getBranchGstRates(booking.branchId);
-      } catch (ratesErr) {
-        if (!(ratesErr instanceof GstRuleMissingError)) throw ratesErr;
-        swapGstUnavailableReason = ratesErr.code;
-      }
-    }
-    const swapCharges = chargedSwaps.map((swap) => {
-      const gst = swapRates ? computeLineGst(swap.priceDifference.toString(), swapRates) : null;
-      return {
-        swapPublicId: swap.publicId,
-        swappedAt: swap.swappedAt.toISOString(),
-        label: `Vehicle upgrade: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo}`,
-        taxable: swap.priceDifference.toFixed(2),
-        cgst: gst ? gst.cgst.toFixed(2) : null,
-        sgst: gst ? gst.sgst.toFixed(2) : null,
-        gst: gst ? gst.gst.toFixed(2) : null,
-        total: gst ? gst.total.toFixed(2) : null,
-        gstUnavailableReason: swapGstUnavailableReason,
-      };
-    });
+    // A swap difference is a drop charge: billed at face value, no GST (item 8).
+    // `taxable` keeps its name for older clients — it is the amount; total = amount.
+    const swapCharges = chargedSwaps.map((swap) => ({
+      swapPublicId: swap.publicId,
+      swappedAt: swap.swappedAt.toISOString(),
+      label: `Vehicle upgrade: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo}`,
+      taxable: swap.priceDifference.toFixed(2),
+      cgst: "0.00",
+      sgst: "0.00",
+      gst: "0.00",
+      total: swap.priceDifference.toFixed(2),
+      gstUnavailableReason: null,
+    }));
 
     // Customer QR code photo (#4): booking snapshot, else the customer's current one.
     const qrPhotoFields = await getBookingQrPhotoFields({ id: booking.id });
@@ -1062,6 +1124,9 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         kmAllowance: kmAllowance
           ? {
               includedKm: kmAllowance.includedKm,
+              // includedKm = original period's free km + the free km extensions add (#7)
+              freeKmOriginal: kmAllowance.freeKmOriginal,
+              freeKmExtensions: kmAllowance.freeKmExtensions,
               extraKmRate: kmAllowance.extraKmRate.toFixed(2),
               extraKmEnabled: kmAllowance.extraKmEnabled,
               autoKmSkipped: vehicleSwapped ? "VEHICLE_SWAPPED" : null,

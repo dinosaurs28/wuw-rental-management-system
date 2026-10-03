@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { discountApplicationService } from "../../services/discount/discount-application.service.js";
+import { reconcileBookingUpiQrs } from "../../services/payment/upi-qr.service.js";
 
 export const cancelHold = async (req: Request, res: Response) => {
   try {
@@ -44,6 +45,15 @@ export const cancelHold = async (req: Request, res: Response) => {
     if (booking.status !== BookingStatus.HOLD) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "This booking hold is no longer active",
+      });
+    }
+
+    // Close any open UPI QR first — and keep the booking if one already paid it (#2)
+    if (await reconcileBookingUpiQrs(booking.id, { close: "CLOSED" })) {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "UPI_QR_ALREADY_PAID",
+        message: "This booking was already paid by UPI QR and is confirmed.",
       });
     }
 

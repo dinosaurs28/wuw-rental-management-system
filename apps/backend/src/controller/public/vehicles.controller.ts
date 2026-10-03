@@ -5,7 +5,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { getVehicleDetailsSchema, parseUseCasesFilter } from "@repo/schemas";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js";
-import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { DateTime } from "luxon";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
@@ -265,6 +265,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       pricingDetails?: {
         price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string;
         discountAmount?: number; discountPercent?: number; discountLabel?: string | null;
+        // GST inside the GST-inclusive finalPrice (item 17; absent without a branch GST rule)
+        rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
       };
       minDailyPrice: number;
       useCases: Set<string>;
@@ -293,6 +295,13 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
             discountAmount: lp.discountAmount,
             discountPercent: lp.discountPercent,
             discountLabel: lp.discountLabel ?? null,
+          }),
+          // price / finalPrice are GST-inclusive; the GST inside finalPrice (item 17)
+          ...(lp?.rentWithoutGst != null && {
+            rentWithoutGst: lp.rentWithoutGst,
+            gst: lp.gst,
+            cgst: lp.cgst,
+            sgst: lp.sgst,
           }),
         };
       } else {
@@ -501,6 +510,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
             cgstRate:         Number(pricingDetails.cgstRate),
             sgstRate:         Number(pricingDetails.sgstRate),
             finalTotal:       Number(pricingDetails.finalTotal),
+            // GST-inclusive rent view (item 17): rentInclGst is the price
+            ...rentInclGstFields(pricingDetails),
             freeKmLimit:      pricingDetails.freeKmLimit,
             extraKmRate:      Number(pricingDetails.extraKmRate),
             pricingBreakdown: {
@@ -711,6 +722,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         cgstRate:        pricingResult.cgstRate != null ? Number(pricingResult.cgstRate) : null,
         sgstRate:        pricingResult.sgstRate != null ? Number(pricingResult.sgstRate) : null,
         finalTotal:      Number(pricingResult.finalTotal),
+        // GST-inclusive rent view (item 17): rentInclGst is the price
+        ...rentInclGstFields(pricingResult),
         freeKmLimit:     pricingResult.freeKmLimit,
         extraKmRate:     Number(pricingResult.extraKmRate),
         pricingBreakdown: {

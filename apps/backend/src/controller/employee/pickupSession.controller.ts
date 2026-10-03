@@ -168,7 +168,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
 
     // Original licence custody (#3), optional (X1). Old builds send the boolean
     // tick instead (true ⇒ COLLECTED, false ⇒ NOT_COLLECTED); sending neither
-    // records nothing. Throws DlStatusError (DL_DEPOSIT_NOTE_REQUIRED).
+    // records nothing. Throws DlStatusError (DL_STATUS_INVALID for DEPOSIT).
     const dlChoice = resolvePickupDlStatus({ dlStatus, dlDepositNote, licenseCollected });
 
     // A re-initiated session may change the choice; licenseCollectedAt is only
@@ -673,8 +673,9 @@ export const ApplyDiscountToPickupSession = async (req: Request, res: Response) 
       return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found. Initiate a session first." });
     }
 
-    // Full coupon check + amount (pre-GST rental base, GST reduced with it,
-    // capped at the rental/extension still owed — never the safety deposit)
+    // Full coupon check + amount (off the GST-inclusive rent, split into rent
+    // without GST + the GST it takes off, capped at the rental/extension still
+    // owed — never the safety deposit)
     let quoteView: ReturnType<typeof serializeCounterCouponQuote> | null = null;
     await prisma.$transaction(async (tx) => {
       const quote = await quoteCounterCoupon(tx, booking.id, session.id, discountCode);

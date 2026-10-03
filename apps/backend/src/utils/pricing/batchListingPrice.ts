@@ -8,6 +8,7 @@
 
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
+import { splitRentTotal } from "@repo/schemas";
 import { type RentalDuration } from "../../services/pricing/duration-calculator.service.js";
 import { slabDaysFor } from "../../services/discount/duration-discount.service.js";
 import {
@@ -39,6 +40,42 @@ function toPositiveOrNull(val: { toNumber?: () => number } | null | undefined): 
 }
 
 /**
+ * Configured rents are GST-inclusive totals (item 17): the 12 h / 24 h rent is
+ * totalRent* (what the BM form edits), else price* (the same total).
+ */
+type RentRow = {
+  totalRent12Hour?: { toNumber?: () => number } | null;
+  totalRent24Hour?: { toNumber?: () => number } | null;
+  price12Hour: { toNumber?: () => number } | null;
+  price24Hour: { toNumber?: () => number } | number;
+};
+const rent12Hour = (row: RentRow): number | null =>
+  toPositiveOrNull(row.totalRent12Hour) ?? toPositiveOrNull(row.price12Hour);
+const rent24Hour = (row: RentRow): number =>
+  toPositiveOrNull(row.totalRent24Hour) ?? Number(row.price24Hour);
+
+/** The GST inside a GST-inclusive listing price, by the branch rule (absent without one). */
+async function branchRentSplitter(
+  branchIds: number[],
+): Promise<(branchId: number, price: number) => { rentWithoutGst: number; gst: number; cgst: number; sgst: number } | null> {
+  const rules = branchIds.length
+    ? await prisma.gSTRule.findMany({
+        where: { branchId: { in: branchIds } },
+        select: { branchId: true, cgstRate: true, sgstRate: true },
+      })
+    : [];
+  const byBranch = new Map(
+    rules.map((r) => [r.branchId, { cgstRate: Number(r.cgstRate), sgstRate: Number(r.sgstRate) }]),
+  );
+  return (branchId, price) => {
+    const rates = byBranch.get(branchId);
+    if (!rates || price <= 0) return null;
+    const s = splitRentTotal(price, rates);
+    return { rentWithoutGst: s.taxable, gst: s.gst, cgst: s.cgst, sgst: s.sgst };
+  };
+}
+
+/**
  * Same slab rule as PricingEngineService.determineBasePrice (shared
  * base-price-rule.ts): an hourly rate is capped at the 12 h / 24 h slab price,
  * so listing and booking prices always agree. Free km are not needed here.
@@ -60,8 +97,16 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): BasePriceSe
 }
 
 export interface ListingPrice {
-  price: number;      // base price before discount
-  finalPrice: number; // price after duration discount
+  price: number;      // GST-inclusive rent before discount (the price, e.g. 1300)
+  finalPrice: number; // GST-inclusive rent after the duration discount
+  /**
+   * The GST inside finalPrice by the branch rule (item 17): rentWithoutGst + gst
+   * = finalPrice, gst = cgst + sgst. Absent when the branch has no GST rule.
+   */
+  rentWithoutGst?: number;
+  gst?: number;
+  cgst?: number;
+  sgst?: number;
   /** What the price covers, e.g. "5 hours", "12 hours", "1 day" (absent when unpriced). */
   billedAs?: string;
   billedAsType?: BilledAsType;
@@ -93,9 +138,11 @@ export async function getBatchListingPrices(
     where: { vehicleId: { in: vehicleIds }, enabled: true },
     select: {
       vehicleId: true,
-      hourlyRate: true,
+      extraHourRate: true,
       price12Hour: true,
       price24Hour: true,
+      totalRent12Hour: true,
+      totalRent24Hour: true,
       priceMonthly: true,
     },
   });
@@ -103,9 +150,9 @@ export async function getBatchListingPrices(
   const customMap = new Map<number, PricingRow>();
   for (const cp of customPricings) {
     customMap.set(cp.vehicleId, {
-      hourlyRate:   toPositiveOrNull(cp.hourlyRate),
-      price12Hour:  toPositiveOrNull(cp.price12Hour),
-      price24Hour:  Number(cp.price24Hour),
+      hourlyRate:   toPositiveOrNull(cp.extraHourRate),
+      price12Hour:  rent12Hour(cp),
+      price24Hour:  rent24Hour(cp),
       priceMonthly: toPositiveOrNull(cp.priceMonthly),
     });
   }
@@ -131,18 +178,20 @@ export async function getBatchListingPrices(
       select: {
         branchId: true,
         categoryId: true,
-        hourlyRate: true,
+        extraHourRate: true,
         price12Hour: true,
         price24Hour: true,
+        totalRent12Hour: true,
+        totalRent24Hour: true,
         priceMonthly: true,
       },
     });
 
     for (const bd of branchDefaults) {
       defaultMap.set(`${bd.branchId}:${bd.categoryId}`, {
-        hourlyRate:   toPositiveOrNull(bd.hourlyRate),
-        price12Hour:  toPositiveOrNull(bd.price12Hour),
-        price24Hour:  Number(bd.price24Hour),
+        hourlyRate:   toPositiveOrNull(bd.extraHourRate),
+        price12Hour:  rent12Hour(bd),
+        price24Hour:  rent24Hour(bd),
         priceMonthly: toPositiveOrNull(bd.priceMonthly),
       });
     }
@@ -198,6 +247,9 @@ export async function getBatchListingPrices(
     }
   }
 
+  // Query 5: branch GST rules — the GST inside each inclusive price
+  const gstSplit = await branchRentSplitter(uniqueBranchIds);
+
   // Build final result with discounts applied
   const result = new Map<number, ListingPrice>();
   for (const v of vehicles) {
@@ -207,7 +259,7 @@ export async function getBatchListingPrices(
     const billed = billedAsMap.get(v.id);
 
     if (!slab || basePrice === 0) {
-      result.set(v.id, { price: basePrice, finalPrice: basePrice, ...billed });
+      result.set(v.id, { price: basePrice, finalPrice: basePrice, ...billed, ...gstSplit(v.branchId, basePrice) });
       continue;
     }
 
@@ -227,6 +279,7 @@ export async function getBatchListingPrices(
       price: basePrice,
       finalPrice,
       ...billed,
+      ...gstSplit(v.branchId, finalPrice),
       ...(discount > 0 && {
         discountAmount: Math.round((basePrice - finalPrice) * 100) / 100,
         discountPercent: Math.round(((basePrice - finalPrice) / basePrice) * 10000) / 100,
@@ -251,14 +304,17 @@ export async function getBatchFallbackPrices(
 
   const customPricings = await prisma.vehicleCustomPricing.findMany({
     where: { vehicleId: { in: vehicleIds }, enabled: true },
-    select: { vehicleId: true, hourlyRate: true, price12Hour: true, price24Hour: true },
+    select: {
+      vehicleId: true, extraHourRate: true, price12Hour: true, price24Hour: true,
+      totalRent12Hour: true, totalRent24Hour: true,
+    },
   });
   const customMap = new Map<number, PricingRow>();
   for (const cp of customPricings) {
     customMap.set(cp.vehicleId, {
-      hourlyRate:   toPositiveOrNull(cp.hourlyRate),
-      price12Hour:  toPositiveOrNull(cp.price12Hour),
-      price24Hour:  Number(cp.price24Hour),
+      hourlyRate:   toPositiveOrNull(cp.extraHourRate),
+      price12Hour:  rent12Hour(cp),
+      price24Hour:  rent24Hour(cp),
       priceMonthly: null,
     });
   }
@@ -279,13 +335,16 @@ export async function getBatchFallbackPrices(
           categoryId: v.categoryId,
         })),
       },
-      select: { branchId: true, categoryId: true, hourlyRate: true, price12Hour: true, price24Hour: true },
+      select: {
+        branchId: true, categoryId: true, extraHourRate: true, price12Hour: true, price24Hour: true,
+        totalRent12Hour: true, totalRent24Hour: true,
+      },
     });
     for (const bd of branchDefaults) {
       defaultMap.set(`${bd.branchId}:${bd.categoryId}`, {
-        hourlyRate:   toPositiveOrNull(bd.hourlyRate),
-        price12Hour:  toPositiveOrNull(bd.price12Hour),
-        price24Hour:  Number(bd.price24Hour),
+        hourlyRate:   toPositiveOrNull(bd.extraHourRate),
+        price12Hour:  rent12Hour(bd),
+        price24Hour:  rent24Hour(bd),
         priceMonthly: null,
       });
     }

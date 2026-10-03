@@ -86,6 +86,7 @@ async function fetchCustomerTypeClassConflicts(
   neededClasses: Set<VehicleTypeClass>,
   startDate: Date,
   endDate: Date,
+  excludeBookingId?: number,
 ): Promise<TypeClassConflict[]> {
   if (neededClasses.size === 0) return [];
 
@@ -94,6 +95,7 @@ async function fetchCustomerTypeClassConflicts(
   const conflictingItems = await client.bookingItem.findMany({
     where: {
       booking: {
+        ...(excludeBookingId !== undefined && { id: { not: excludeBookingId } }),
         customerId,
         status: { in: ACTIVE_STATUSES },
         startAt: { lt: endDate },
@@ -149,12 +151,14 @@ async function fetchCustomerAnyVehicleConflict(
   branchId: number,
   startDate: Date,
   endDate: Date,
+  excludeBookingId?: number,
 ): Promise<TypeClassConflict | null> {
   const now = new Date();
 
   const item = await client.bookingItem.findFirst({
     where: {
       booking: {
+        ...(excludeBookingId !== undefined && { id: { not: excludeBookingId } }),
         customerId,
         branchId,
         status: { in: ACTIVE_STATUSES },
@@ -208,6 +212,8 @@ export interface CheckLimitOpts {
   restrictionMode?: BookingRestrictionMode;
   /** Required when restrictionMode is ANY_VEHICLE. */
   branchId?: number;
+  /** A booking being moved (reschedule) — never its own conflict. */
+  excludeBookingId?: number;
 }
 
 export async function checkCustomerTypeClassLimits(
@@ -231,6 +237,7 @@ export async function checkCustomerTypeClassLimits(
       opts.branchId,
       startDate,
       endDate,
+      opts.excludeBookingId,
     );
     return { conflicts: conflict ? [conflict] : [] };
   }
@@ -246,6 +253,7 @@ export async function checkCustomerTypeClassLimits(
     needed,
     startDate,
     endDate,
+    opts.excludeBookingId,
   );
 
   return { conflicts: dbConflicts };
@@ -277,6 +285,7 @@ export async function checkCustomerTypeClassLimitsInTx(
       opts.branchId,
       startDate,
       endDate,
+      opts.excludeBookingId,
     );
     return { conflicts: conflict ? [conflict] : [] };
   }
@@ -292,6 +301,7 @@ export async function checkCustomerTypeClassLimitsInTx(
     needed,
     startDate,
     endDate,
+    opts.excludeBookingId,
   );
 
   return { conflicts: dbConflicts };

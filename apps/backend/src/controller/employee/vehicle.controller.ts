@@ -7,7 +7,7 @@ import { checkVehicleAvailability } from "../../utils/availability/checkAvailabi
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
-import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import {
   getBatchListingPrices,
@@ -157,7 +157,11 @@ export const searchVehicles = async (req: Request, res: Response) => {
       availableCount: number;
       imageUrl: any[];
       pricing: { daily: number; hourly?: number; halfDay?: number };
-      pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string };
+      pricingDetails?: {
+        price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string;
+        // GST inside the GST-inclusive finalPrice (item 17; absent without a branch GST rule)
+        rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
+      };
       minDailyPrice: number;
     }
 
@@ -179,6 +183,13 @@ export const searchVehicles = async (req: Request, res: Response) => {
           finalPrice: daily,
           type: durationInfo.periodType,
           ...(lp?.billedAs && { billedAs: lp.billedAs, billedAsType: lp.billedAsType }),
+          // price / finalPrice are GST-inclusive; the GST inside finalPrice (item 17)
+          ...(lp?.rentWithoutGst != null && {
+            rentWithoutGst: lp.rentWithoutGst,
+            gst: lp.gst,
+            cgst: lp.cgst,
+            sgst: lp.sgst,
+          }),
         };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
@@ -376,6 +387,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
             cgstRate:         Number(pr.cgstRate),
             sgstRate:         Number(pr.sgstRate),
             finalTotal:       Number(pr.finalTotal),
+            // GST-inclusive rent view (item 17): rentInclGst is the price
+            ...rentInclGstFields(pr),
             freeKmLimit:      pr.freeKmLimit,
             extraKmRate:      Number(pr.extraKmRate),
             pricingBreakdown: {
@@ -525,6 +538,8 @@ export const getEmployeeVehicleDetails = async (
         cgstRate: Number(pricingResult.cgstRate),
         sgstRate: Number(pricingResult.sgstRate),
         finalTotal: Number(pricingResult.finalTotal),
+        // GST-inclusive rent view (item 17): rentInclGst is the price
+        ...rentInclGstFields(pricingResult),
         freeKmLimit: pricingResult.freeKmLimit,
         extraKmRate: Number(pricingResult.extraKmRate),
         pricingBreakdown: {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
+import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, CreditStatus } from "@repo/database/client";
+import { prisma, BookingStatus, CreditStatus, PaymentPurpose } from "@repo/database/client";
 
 import {
   searchCustomersSchema,
@@ -10,6 +11,32 @@ import {
 } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import {
+  recalcCreditAggregates,
+  lockBookingCredit,
+  type CreditSection,
+} from "../../services/payment/customer-credit.service.js";
+import {
+  resolveCounterUpi,
+  claimCounterUpi,
+  proofPhotoFields,
+  PROOF_FILE_RELATION_SELECT,
+  type CounterUpi,
+} from "../../services/payment/payment-proof.service.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import {
+  computeBookingOwed,
+  getBookingMoney,
+  unpaidBesideDepositRemainder,
+} from "../../services/payment/booking-owed.service.js";
+import { settlementEngineService } from "../../services/payment/settlement-engine.service.js";
+import { finalizeInvoice, syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
+import {
+  staffActivityService,
+  StaffActionType,
+  StaffEntityType,
+} from "../../services/staffActivity/staffActivity.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -28,24 +55,71 @@ const buildActorContext = async (req: Request) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type Section = {
-  sectionKey: string;
-  label: string;
-  amount: number;
-  isCleared: boolean;
-  clearedAt?: string | null;
-  clearedRef?: string | null;
-  isCustom?: boolean;
-};
+// Sections now also carry Fleet credits (#11): source FLEET_CREDIT, purpose,
+// collateral, reference — see services/payment/customer-credit.service.ts.
+type Section = CreditSection;
 
+/** Totals to the paisa (summing plain numbers drifted, e.g. 0.1 + 0.2). */
 function recalcAggregates(sections: Section[]) {
-  const totalAmount = sections.reduce((sum, s) => sum + s.amount, 0);
-  const clearedAmount = sections.filter((s) => s.isCleared).reduce((sum, s) => sum + s.amount, 0);
-  const pendingAmount = totalAmount - clearedAmount;
-  let status: CreditStatus = CreditStatus.PENDING;
-  if (pendingAmount === 0) status = CreditStatus.CLEARED;
-  else if (clearedAmount > 0) status = CreditStatus.PARTIALLY_CLEARED;
-  return { totalAmount, clearedAmount, pendingAmount, status };
+  return recalcCreditAggregates(sections);
+}
+
+/** idempotencyKey prefix of the PaymentTransactions a credit clearance records. */
+const CREDIT_CLEAR_KEY_PREFIX = "credit-clear:";
+
+/** The payments each clearance recorded (with the UPI proof photo), keyed by clearance publicId. */
+async function clearancePayments(clearancePublicIds: string[]) {
+  const out = new Map<string, any[]>();
+  if (clearancePublicIds.length === 0) return out;
+  const txns = await prisma.paymentTransaction.findMany({
+    where: {
+      OR: clearancePublicIds.map((id) => ({ idempotencyKey: { startsWith: `${CREDIT_CLEAR_KEY_PREFIX}${id}:` } })),
+    },
+    select: {
+      publicId: true,
+      idempotencyKey: true,
+      purpose: true,
+      method: true,
+      status: true,
+      totalAmount: true,
+      cashAmount: true,
+      onlineAmount: true,
+      onlineGateway: true,
+      onlineTransactionRef: true,
+      createdAt: true,
+      proofFile: PROOF_FILE_RELATION_SELECT,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  for (const t of txns) {
+    const clearanceId = t.idempotencyKey.slice(CREDIT_CLEAR_KEY_PREFIX.length).split(":")[0]!;
+    const list = out.get(clearanceId) ?? [];
+    list.push({
+      publicId: t.publicId,
+      purpose: t.purpose,
+      method: t.method,
+      status: t.status,
+      totalAmount: new Decimal(t.totalAmount.toString()).toFixed(2),
+      cashAmount: new Decimal(t.cashAmount.toString()).toFixed(2),
+      onlineAmount: new Decimal(t.onlineAmount.toString()).toFixed(2),
+      onlineGateway: t.onlineGateway,
+      onlineTransactionRef: t.onlineTransactionRef,
+      createdAt: t.createdAt,
+      ...(await proofPhotoFields(t.proofFile)),
+    });
+    out.set(clearanceId, list);
+  }
+  return out;
+}
+
+/** Adds `payments` (with proof photos) to each clearance of the given entries. */
+async function withClearancePayments<T extends { clearances?: Array<{ publicId: string }> }>(entries: T[]) {
+  const ids = entries.flatMap((e) => (e.clearances ?? []).map((c) => c.publicId));
+  const payments = await clearancePayments(ids);
+  return entries.map((e) => ({
+    ...e,
+    clearances: (e.clearances ?? []).map((c) => ({ ...c, payments: payments.get(c.publicId) ?? [] })),
+  }));
 }
 
 // ─── Controllers ──────────────────────────────────────────────────────────────
@@ -225,7 +299,8 @@ export const GetCustomerCreditEntries = async (req: Request, res: Response): Pro
       }),
     ]);
 
-    res.status(StatusCode.OK).json({ data: entries, total, page, limit });
+    // Each clearance carries the payments it recorded (and their UPI proof photos)
+    res.status(StatusCode.OK).json({ data: await withClearancePayments(entries), total, page, limit });
   } catch (error) {
     console.error("GetCustomerCreditEntries Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -317,7 +392,7 @@ export const GetBookingChargesForCredit = async (req: Request, res: Response): P
       return;
     }
 
-    const existingSections: Section[] = (booking.creditEntry?.sections as Section[]) ?? [];
+    const existingSections: Section[] = (booking.creditEntry?.sections as unknown as Section[]) ?? [];
     const creditedKeys = new Set(existingSections.map((s) => s.sectionKey));
 
     const sections = booking.chargeEntries.map((ce) => ({
@@ -397,7 +472,7 @@ export const AddOrAppendCredit = async (req: Request, res: Response): Promise<vo
       let mergedSections: Section[];
 
       if (existing) {
-        const existingSections: Section[] = existing.sections as Section[];
+        const existingSections: Section[] = existing.sections as unknown as Section[];
         const existingKeys = new Set(existingSections.map((s) => s.sectionKey));
         const duplicates = newSections.filter((s) => existingKeys.has(s.sectionKey));
         if (duplicates.length > 0) {
@@ -421,14 +496,14 @@ export const AddOrAppendCredit = async (req: Request, res: Response): Promise<vo
           bookingId: booking.id,
           branchId: req.branch_Id,
           createdById: actor.actorId,
-          sections: mergedSections,
+          sections: mergedSections as any,
           totalAmount,
           clearedAmount,
           pendingAmount,
           status,
         },
         update: {
-          sections: mergedSections,
+          sections: mergedSections as any,
           totalAmount,
           clearedAmount,
           pendingAmount,
@@ -478,7 +553,8 @@ export const GetCreditEntry = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    res.status(StatusCode.OK).json({ data: entry });
+    const [withPayments] = await withClearancePayments([entry]);
+    res.status(StatusCode.OK).json({ data: withPayments });
   } catch (error) {
     console.error("GetCreditEntry Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -494,37 +570,40 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
     }
 
     const actor = await buildActorContext(req);
-    const { sectionKeys, paymentMethod, transactionRef } = parsed.data;
+    const { sectionKeys, transactionRef, notes } = parsed.data;
+    // ONLINE is the older name for a UPI payment
+    const method = parsed.data.paymentMethod === "ONLINE" ? "UPI" : parsed.data.paymentMethod;
+
+    // The money arrives now (#11): UPI (and a split's UPI part) is backed by a photo
+    // of the customer's payment screen or a 12-digit UTR, like every counter UPI.
+    const upi: CounterUpi | null =
+      method === "UPI" || method === "SPLIT"
+        ? await resolveCounterUpi({ utr: transactionRef, proofFileId: parsed.data.proof_file_id, branchId: req.branch_Id })
+        : null;
 
     const result = await prisma.$transaction(async (tx) => {
-      const entry = await tx.customerCreditEntry.findUnique({
+      const found = await tx.customerCreditEntry.findUnique({
         where: { publicId: req.params.creditId },
+        select: { id: true, bookingId: true, branchId: true },
       });
-
-      if (!entry || entry.branchId !== req.branch_Id) {
+      if (!found || found.branchId !== req.branch_Id) {
         throw Object.assign(new Error("Not found"), { code: "NOT_FOUND" });
       }
+      // One credit change at a time per booking (Fleet credits and clearances)
+      await lockBookingCredit(tx, found.bookingId);
+      const entry = await tx.customerCreditEntry.findUniqueOrThrow({ where: { id: found.id } });
 
-      const sections: Section[] = entry.sections as Section[];
-      let amountCleared = 0;
-      const nowISO = new Date().toISOString();
-
-      const updatedSections = sections.map((s) => {
-        if (!sectionKeys.includes(s.sectionKey)) return s;
-        if (s.isCleared) {
-          throw Object.assign(new Error("Section already cleared"), {
-            code: "ALREADY_CLEARED",
-            key: s.sectionKey,
-          });
-        }
-        amountCleared += s.amount;
-        return {
-          ...s,
-          isCleared: true,
-          clearedAt: nowISO,
-          clearedRef: transactionRef ?? null,
-        };
+      // A cancelled booking owes nothing — its pending credit is closed, never
+      // collected (a payment recorded here would be money for a rental that didn't happen)
+      const creditBooking = await tx.booking.findUniqueOrThrow({
+        where: { id: entry.bookingId },
+        select: { status: true },
       });
+      if (creditBooking.status === BookingStatus.CANCELLED || creditBooking.status === BookingStatus.HOLD_EXPIRED) {
+        throw Object.assign(new Error("Booking cancelled"), { code: "BOOKING_CANCELLED" });
+      }
+
+      const sections: Section[] = entry.sections as unknown as Section[];
 
       // Validate all requested keys exist
       const sectionMap = new Map(sections.map((s) => [s.sectionKey, s]));
@@ -537,40 +616,238 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
         }
       }
 
-      const { totalAmount, clearedAmount, pendingAmount, status } = recalcAggregates(updatedSections);
+      // What is cleared, grouped by what it pays for (sections the BM added
+      // by hand have no purpose: return charges → REMAINING_BALANCE)
+      let amountCleared = new Decimal(0);
+      const byPurpose = new Map<PaymentPurpose, Decimal>();
+      for (const s of sections) {
+        if (!sectionKeys.includes(s.sectionKey)) continue;
+        if (s.isCleared) {
+          throw Object.assign(new Error("Section already cleared"), {
+            code: "ALREADY_CLEARED",
+            key: s.sectionKey,
+          });
+        }
+        const amount = new Decimal(String(s.amount)).toDecimalPlaces(2);
+        amountCleared = amountCleared.add(amount);
+        const purpose = s.purpose ?? PaymentPurpose.REMAINING_BALANCE;
+        byPurpose.set(purpose, (byPurpose.get(purpose) ?? new Decimal(0)).add(amount));
+      }
 
-      await tx.creditClearance.create({
+      // Split: the parts must add up to what is cleared
+      let cashTotal = method === "CASH" ? amountCleared : new Decimal(0);
+      if (method === "SPLIT") {
+        const cash = new Decimal(parsed.data.cashAmount ?? 0).toDecimalPlaces(2);
+        const online = new Decimal(parsed.data.onlineAmount ?? 0).toDecimalPlaces(2);
+        if (!cash.add(online).eq(amountCleared)) {
+          throw Object.assign(new Error("Split mismatch"), {
+            code: "SPLIT_AMOUNT_MISMATCH",
+            amount: amountCleared.toFixed(2),
+          });
+        }
+        cashTotal = cash;
+      }
+
+      // Never record more than the booking still owes (credit stays inside what is
+      // due; money awaiting confirmation counts as paid here). A legacy drop's
+      // SET_OFF deposit counts against the return charges only, never against money
+      // on credit (what is left of it is refunded in Settlements).
+      const [owed, money] = await Promise.all([
+        computeBookingOwed(entry.bookingId, tx),
+        getBookingMoney(entry.bookingId, tx),
+      ]);
+      const due = Decimal.max(0, unpaidBesideDepositRemainder(owed, money.netConfirmed).sub(money.pending));
+      // A section the BM added by hand (bookkeeping before credit recorded money)
+      // whose charge was already paid through the booking's payments: nothing is
+      // owed any more, so it is cleared without recording the money a second time.
+      const selected = sections.filter((s) => sectionKeys.includes(s.sectionKey));
+      const alreadyPaid = due.lte(0.005) && selected.every((s) => s.source !== "FLEET_CREDIT");
+      if (!alreadyPaid && amountCleared.gt(due.add(0.01))) {
+        throw Object.assign(new Error("Exceeds due"), {
+          code: "CREDIT_EXCEEDS_DUE",
+          due: due.toFixed(2),
+          amount: amountCleared.toFixed(2),
+        });
+      }
+
+      if (upi && !alreadyPaid) await claimCounterUpi(upi, tx as any);
+
+      const clearance = await tx.creditClearance.create({
         data: {
           publicId: createID(),
           creditEntryId: entry.id,
           clearedSectionKeys: sectionKeys,
-          amountCleared,
-          paymentMethod,
-          transactionRef: transactionRef ?? null,
+          amountCleared: amountCleared.toFixed(2),
+          // ALREADY_PAID: no money recorded (the booking's payments already cover it)
+          paymentMethod: alreadyPaid ? "ALREADY_PAID" : method,
+          transactionRef: alreadyPaid ? null : (upi?.utr ?? transactionRef?.trim() ?? null),
           clearedById: actor.actorId,
         },
       });
 
+      // The money arrives with the manager now: CONFIRMED PaymentTransaction(s) —
+      // one per purpose, cash allocated first — on the manager's open shift if any,
+      // so the financial state, settlement, shifts and reports see it.
+      const shift = await tx.cashShift.findFirst({
+        where: { employeeId: actor.actorId, status: "OPEN" },
+        select: { id: true },
+      });
+      const now = new Date();
+      let cashLeft = cashTotal;
+      const payments: Array<{ publicId: string; purpose: string; method: string; totalAmount: string }> = [];
+      for (const [purpose, amount] of alreadyPaid ? [] : byPurpose) {
+        const cashPart = Decimal.min(cashLeft, amount);
+        cashLeft = cashLeft.sub(cashPart);
+        const onlinePart = amount.sub(cashPart);
+        const txnMethod = cashPart.gt(0) && onlinePart.gt(0) ? "SPLIT" : cashPart.gt(0) ? "CASH" : "ONLINE";
+        const txn = await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            idempotencyKey: `${CREDIT_CLEAR_KEY_PREFIX}${clearance.publicId}:${purpose}`,
+            bookingId: entry.bookingId,
+            branchId: entry.branchId,
+            purpose,
+            method: txnMethod,
+            status: "CONFIRMED",
+            totalAmount: amount.toFixed(2),
+            cashAmount: cashPart.toFixed(2),
+            onlineAmount: onlinePart.toFixed(2),
+            onlineTransactionRef: onlinePart.gt(0) ? (upi?.utr ?? null) : null,
+            onlineGateway: onlinePart.gt(0) ? "UPI" : null,
+            proofFileId: onlinePart.gt(0) ? (upi?.proof?.id ?? null) : null,
+            collectedById: actor.actorId,
+            collectedAt: now,
+            confirmedById: actor.actorId,
+            confirmedAt: now,
+            cashShiftId: shift?.id ?? null,
+            notes: notes?.trim() || `Customer credit cleared (${clearance.publicId})`,
+          },
+        });
+        payments.push({ publicId: txn.publicId, purpose, method: txnMethod, totalAmount: amount.toFixed(2) });
+      }
+
+      const nowISO = now.toISOString();
+      const paymentIds = payments.map((p) => p.publicId);
+      const updatedSections = sections.map((s) =>
+        sectionKeys.includes(s.sectionKey)
+          ? {
+              ...s,
+              isCleared: true,
+              clearedAt: nowISO,
+              clearedRef: alreadyPaid ? "ALREADY_PAID" : (upi?.utr ?? transactionRef?.trim() ?? clearance.publicId),
+              clearedPaymentPublicIds: paymentIds,
+            }
+          : s,
+      );
+      const { clearedAmount, pendingAmount, status } = recalcAggregates(updatedSections);
+
       const updated = await tx.customerCreditEntry.update({
         where: { id: entry.id },
         data: {
-          sections: updatedSections,
+          sections: updatedSections as any,
           clearedAmount,
           pendingAmount,
           status,
         },
         include: {
           clearances: { orderBy: { clearedAt: "desc" } },
+          booking: { select: { publicId: true, status: true, isAdvancePayment: true } },
         },
       });
 
-      return updated;
-    });
+      return { updated, payments, amountCleared, alreadyPaid, clearancePublicId: clearance.publicId };
+    }, { timeout: 15000 });
 
-    res.status(StatusCode.OK).json({ message: "Credit cleared successfully", data: result });
+    const { updated, payments, amountCleared, alreadyPaid } = result;
+    const bookingId = updated.bookingId;
+
+    // The invoice follows the money: a returned booking's invoice is rebuilt (PAID
+    // once settled); before return, a fully paid booking's PENDING invoice turns PAID.
+    (async () => {
+      if (updated.booking.status === BookingStatus.RETURNED) {
+        const legacy = await syncLegacyReturnInvoice(bookingId);
+        if (!legacy) {
+          const { isSettled } = await settlementEngineService.calculateSettlement(bookingId);
+          await finalizeInvoice(bookingId, { markPaid: isSettled });
+        }
+      } else if (updated.status === CreditStatus.CLEARED && !updated.booking.isAdvancePayment) {
+        const { isSettled } = await settlementEngineService.calculateSettlement(bookingId);
+        if (isSettled) {
+          await prisma.invoice.updateMany({ where: { bookingId, status: "PENDING" }, data: { status: "PAID" } });
+        }
+      }
+    })().catch((err) => console.error("[ClearCreditSections] Invoice sync failed:", err));
+
+    await auditService.log({
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      actorBranchId: req.branch_Id,
+      action: "CUSTOMER_CREDIT_CLEARED",
+      category: AuditCategory.PAYMENT,
+      description: alreadyPaid
+        ? `Customer credit ₹${amountCleared.toFixed(2)} cleared on booking ${updated.booking.publicId} — already paid through the booking's payments, no new payment recorded`
+        : `Customer credit ₹${amountCleared.toFixed(2)} cleared by ${method} on booking ${updated.booking.publicId}`,
+      entity: "CustomerCreditEntry",
+      entityId: updated.publicId,
+      entityLabel: updated.booking.publicId,
+      metadata: {
+        sectionKeys,
+        method: alreadyPaid ? "ALREADY_PAID" : method,
+        amount: amountCleared.toFixed(2),
+        payments,
+        ...(upi?.proof && !alreadyPaid && { proofFileId: upi.proof.publicId }),
+      },
+    });
+    staffActivityService
+      .logFromRequest(req, {
+        actionType: StaffActionType.SETTLED,
+        entityType: StaffEntityType.PAYMENT,
+        entityRef: updated.booking.publicId,
+        description: `Customer credit ₹${amountCleared.toFixed(2)} cleared (${alreadyPaid ? "already paid" : method})`,
+        metadata: { sectionKeys, method: alreadyPaid ? "ALREADY_PAID" : method, payments },
+      })
+      .catch(() => {});
+
+    const [withPayments] = await withClearancePayments([updated]);
+    res.status(StatusCode.OK).json({
+      message: alreadyPaid
+        ? "Credit cleared — the booking's payments already cover it, so no new payment was recorded."
+        : "Credit cleared successfully",
+      data: { ...withPayments, payments, alreadyPaid },
+    });
   } catch (error: any) {
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     if (error?.code === "NOT_FOUND") {
       res.status(StatusCode.NOT_FOUND).json({ message: "Credit entry not found" });
+      return;
+    }
+    if (error?.code === "BOOKING_CANCELLED") {
+      res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "BOOKING_CANCELLED",
+        message: "This booking was cancelled, so nothing is owed on it — its credit can't be collected.",
+      });
+      return;
+    }
+    if (error?.code === "SPLIT_AMOUNT_MISMATCH") {
+      res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "SPLIT_AMOUNT_MISMATCH",
+        message: `The cash and UPI parts must add up to ₹${error.amount} (the sections being cleared).`,
+      });
+      return;
+    }
+    if (error?.code === "CREDIT_EXCEEDS_DUE") {
+      res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "CREDIT_EXCEEDS_DUE",
+        message: `This booking only has ₹${error.due} still due — clearing ₹${error.amount} would record more than is owed. Check the booking's payments first.`,
+        due: error.due,
+      });
       return;
     }
     if (error?.code === "ALREADY_CLEARED") {

@@ -30,6 +30,8 @@ import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
+import { claimCounterUpi, type CounterUpi } from "../payment/payment-proof.service.js";
+import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
 import { assertExtensionWindow } from "../../utils/booking/bookingWindow.js";
@@ -40,6 +42,13 @@ import {
 } from "../../utils/booking/branchScheduleValidator.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.js";
+import { assertExtensionQrsClosedForCancel } from "../payment/upi-qr.service.js";
+import {
+  extensionFreeKm,
+  extensionMinutes,
+  loadFreeKmRates,
+  type ExtensionFreeKm,
+} from "../charges/extension-km.js";
 
 export interface ActorContext {
   actorId: number;
@@ -59,6 +68,8 @@ export interface EvaluationResolutionOption {
   partialNewEndAt?: string;
   additionalAmount: string;
   newTotalFinal: string;
+  /** Free km this option's extension adds (#7) — for a partial option, up to partialNewEndAt. */
+  extensionFreeKm?: ExtensionFreeKm | null;
 }
 
 export interface ExtensionEvaluation {
@@ -82,6 +93,12 @@ export interface ExtensionEvaluation {
     taxRate: string;
     originalHours: number;
     extensionHours: number;
+    /**
+     * Free km the extension adds to the drop allowance (#7): whole 24 h →
+     * freeKm24Hour, a remaining ≥ 12 h → freeKm12Hour, other hours → 0.
+     * null when the vehicle's free km can't be read.
+     */
+    extensionFreeKm: ExtensionFreeKm | null;
   };
   resolutionOptions: EvaluationResolutionOption[];
   recommendedResolution: string;
@@ -105,8 +122,14 @@ export interface CommitExtensionResult {
 }
 
 export interface CollectExtensionOptions {
-  /** "UPI" for a counter UPI payment — `onlineTransactionRef` is then a validated UTR. */
+  /** "UPI" for a counter UPI payment — `onlineTransactionRef` is then a validated UTR (or null with a proof photo). */
   onlineGateway?: string;
+  /** Counter UPI backing (photo / UTR) already validated by the caller; claimed in the write (#3). */
+  upi?: CounterUpi | null;
+  /** SPLIT: the cash and UPI parts (they add up to the extension amount). */
+  split?: { cash: Decimal; online: Decimal };
+  /** CREDIT: the collateral held until the branch manager clears it (#11). */
+  collateral?: string;
 }
 
 export interface CollectExtensionResult {
@@ -114,6 +137,8 @@ export interface CollectExtensionResult {
     extension: string;
   };
   payment: "pending" | "confirmed";
+  /** Set when the extension was put on customer credit (it is confirmed; the amount stays owed). */
+  credit?: { creditEntryPublicId: string; sectionKey: string; amount: string; collateral: string } | null;
 }
 
 export interface PaginatedExtensions {
@@ -362,6 +387,18 @@ class ExtensionService {
     const additionalAmountStr = pricing.additionalAmount.toFixed(2);
     const newTotalFinalStr = pricing.newTotalFinal.toFixed(2);
 
+    // Free km the extension adds (#7), at the current vehicle's slab free km.
+    // Shown on the quote only — the price above is unaffected.
+    const freeKmRates = await loadFreeKmRates(
+      { vehicleId: currentVehicle.id, categoryId: currentVehicle.categoryId },
+      booking.branchId,
+    ).catch((err) => {
+      console.warn(`[extension] Free km rates unavailable for booking ${bookingPublicId}:`, err);
+      return null;
+    });
+    const freeKmUntil = (end: Date) =>
+      freeKmRates ? extensionFreeKm(extensionMinutes(booking.endAt, end), freeKmRates) : null;
+
     return {
       extensionPublicId: extension.publicId,
       bookingPublicId: booking.publicId,
@@ -376,6 +413,7 @@ class ExtensionService {
         ...extensionSplitView(pricing),
         originalHours: pricing.originalHours,
         extensionHours: pricing.extensionHours,
+        extensionFreeKm: freeKmUntil(newEndAt),
       },
       resolutionOptions: resolutionOptions.options.map(opt => ({
         type: opt.type,
@@ -399,6 +437,7 @@ class ExtensionService {
         partialNewEndAt: opt.partialNewEndAt?.toISOString(),
         additionalAmount: additionalAmountStr,
         newTotalFinal: newTotalFinalStr,
+        extensionFreeKm: opt.type === "NO_RESOLUTION" ? null : freeKmUntil(opt.partialNewEndAt ?? newEndAt),
       })),
       recommendedResolution: resolutionOptions.recommendedOption,
     };
@@ -819,6 +858,12 @@ class ExtensionService {
       );
     }
 
+    // The customer may be paying it by UPI QR (#2): close those codes first. A
+    // captured QR payment confirms the extension instead (409 UPI_QR_ALREADY_PAID);
+    // a code Razorpay wouldn't close keeps it open (502 GATEWAY_UNAVAILABLE).
+    // Throws UpiQrError — callers answer with its status + toJSON().
+    await assertExtensionQrsClosedForCancel(extension.id);
+
     await prisma.$transaction(async (tx) => {
       await tx.bookingExtension.update({
         where: { id: extension.id },
@@ -886,7 +931,7 @@ class ExtensionService {
    */
   async collect(
     extensionPublicId: string,
-    method: "CASH" | "ONLINE",
+    method: "CASH" | "ONLINE" | "SPLIT" | "CREDIT",
     actor: ActorContext,
     onlineTransactionRef?: string,
     options: CollectExtensionOptions = {},
@@ -989,24 +1034,120 @@ class ExtensionService {
       return { remainAmount: { extension: "0.00" }, payment: "confirmed" };
     }
 
-    const isOnline = method === "ONLINE";
+    // CREDIT (#11): the extension is confirmed now (its time is already held) and
+    // its amount stays owed against the collateral — no PaymentTransaction. The
+    // branch manager clears it on the Customer Credit page when the money arrives.
+    if (method === "CREDIT") {
+      const collateral = options.collateral;
+      if (!collateral) throw new Error("Collateral is required to put an extension on credit");
+      const credit = await prisma.$transaction(async (tx) => {
+        const { count } = await tx.bookingExtension.updateMany({
+          where: { id: extension.id, extensionStatus: ExtensionStatus.PENDING_PAYMENT },
+          data: {
+            extensionStatus: ExtensionStatus.CONFIRMED,
+            actualNewEndAt: extension.requestedEndAt,
+          },
+        });
+        if (count === 0) {
+          throw new Error("Extension is already in a closed status — credit not recorded");
+        }
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            endAt: extension.requestedEndAt,
+            activeExtensionId: null,
+            extensionCount: { increment: 1 },
+            lastExtendedAt: new Date(),
+            totalFinal: { increment: extension.additionalAmount },
+            ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
+          },
+        });
+        await refreshBookingPeriodFields(booking.id, tx);
+        return addFleetCredit(tx, {
+          bookingId: booking.id,
+          amount: additionalAmount,
+          purpose: PaymentPurpose.EXTENSION,
+          label: "Extension on credit",
+          collateral,
+          reference: { type: "EXTENSION", publicId: extension.publicId },
+          actor: { id: actor.actorId, name: actor.actorName },
+        });
+      });
+
+      await Promise.all([
+        auditService.log({
+          actorId: actor.actorId,
+          actorName: actor.actorName,
+          actorRole: actor.actorRole,
+          actorBranchId: actor.actorBranchId,
+          action: "Extension confirmed on credit",
+          category: AuditCategory.PAYMENT,
+          severity: AuditSeverity.INFO,
+          entity: "BookingExtension",
+          entityId: extension.publicId,
+          description: `Extension ${extension.publicId} confirmed with ₹${additionalAmount.toFixed(2)} on customer credit (collateral: ${collateral})`,
+          metadata: { collateral, creditEntryPublicId: credit.creditEntryPublicId },
+        }),
+        staffActivityService.log({
+          actorPublicId: actor.actorPublicId,
+          actorName: actor.actorName,
+          actorRole: actor.actorRole,
+          branchId: actor.actorBranchId,
+          branchName: actor.branchName,
+          actionType: StaffActionType.CONFIRMED,
+          entityType: StaffEntityType.BOOKING_EXTENSION,
+          entityRef: extension.publicId,
+          description: `Extension ₹${additionalAmount.toFixed(2)} put on credit (collateral: ${collateral})`,
+        }),
+      ]);
+
+      void notifyEvents.extensionConfirmed({ extensionId: extension.id, actorUserId: actor.actorId });
+      refreshInvoiceTotals(booking.id, { forceRegenerate: true }).catch((err) =>
+        console.error("[extension.collect] Invoice refresh error:", err),
+      );
+
+      return {
+        remainAmount: { extension: additionalAmount.toFixed(2) },
+        payment: "confirmed",
+        credit: {
+          creditEntryPublicId: credit.creditEntryPublicId,
+          sectionKey: credit.sectionKey,
+          amount: additionalAmount.toFixed(2),
+          collateral,
+        },
+      };
+    }
+
+    // Counter money waits for the branch manager: cash, a counter UPI (merchant QR)
+    // payment (#12) and a split are COLLECTED and the extension PAYMENT_COLLECTED
+    // until the BM confirms it in Cash Confirmations (confirmCash finalizes it).
+    // Only an online gateway other than counter UPI confirms at once.
+    const isOnline = method === "ONLINE" && !isUpi;
+    const isSplit = method === "SPLIT";
+    const cashPart = isSplit
+      ? (options.split?.cash ?? new Decimal(0))
+      : method === "CASH" ? additionalAmount : new Decimal(0);
+    const onlinePart = additionalAmount.sub(cashPart);
+    const upiPart = isUpi || (isSplit && onlinePart.gt(0));
 
     await prisma.$transaction(async (tx) => {
-      // The UTR was validated by the caller; re-check here so two collections
-      // can't claim the same transfer.
-      if (isUpi && onlineTransactionRef) {
+      // The UTR / payment photo was validated by the caller; re-checked here so
+      // two collections can't claim the same transfer.
+      if (options.upi) {
+        await claimCounterUpi(options.upi, tx);
+      } else if (upiPart && onlineTransactionRef) {
         await claimUtr(onlineTransactionRef, tx);
       }
 
-      // Money taken at the counter lands in the collector's open cash shift
-      const activeShift = !isOnline || isUpi
+      // Money taken at the counter (cash or UPI) lands in the collector's open shift
+      const activeShift = !isOnline
         ? await tx.cashShift.findFirst({
             where: { employeeId: actor.actorId, status: "OPEN" },
             select: { id: true },
           })
         : null;
 
-      // Create PaymentTransaction — COLLECTED for cash (manager confirms later), CONFIRMED for online
+      // COLLECTED for counter money (manager confirms later), CONFIRMED for a gateway payment
       const txn = await (tx as any).paymentTransaction.create({
         data: {
           publicId: createID(),
@@ -1017,10 +1158,11 @@ class ExtensionService {
           method,
           status: isOnline ? "CONFIRMED" : "COLLECTED",
           totalAmount: additionalAmount.toFixed(2),
-          cashAmount: isOnline ? "0.00" : additionalAmount.toFixed(2),
-          onlineAmount: isOnline ? additionalAmount.toFixed(2) : "0.00",
-          onlineTransactionRef: onlineTransactionRef ?? null,
-          onlineGateway: isOnline ? (options.onlineGateway ?? null) : null,
+          cashAmount: cashPart.toFixed(2),
+          onlineAmount: onlinePart.toFixed(2),
+          onlineTransactionRef: onlinePart.gt(0) ? (onlineTransactionRef ?? null) : null,
+          onlineGateway: onlinePart.gt(0) ? (upiPart ? "UPI" : (options.onlineGateway ?? null)) : null,
+          proofFileId: options.upi?.proof?.id ?? null,
           collectedById: actor.actorId,
           collectedAt: new Date(),
           cashShiftId: activeShift?.id ?? null,
@@ -1042,7 +1184,7 @@ class ExtensionService {
         throw new Error("Extension is already in a closed status — payment not recorded");
       }
 
-      // For online payment: immediately finalize booking
+      // Gateway payment: immediately finalize booking
       if (isOnline) {
         await (tx as any).booking.update({
           where: { id: booking.id },
@@ -1065,12 +1207,14 @@ class ExtensionService {
         actorName: actor.actorName,
         actorRole: actor.actorRole,
         actorBranchId: actor.actorBranchId,
-        action: isOnline ? "Extension payment confirmed (online)" : "Extension payment collected (cash — pending manager confirmation)",
+        action: isOnline
+          ? "Extension payment confirmed (online)"
+          : `Extension payment collected (${isUpi ? "UPI" : isSplit ? "cash + UPI" : "cash"} — pending manager confirmation)`,
         category: AuditCategory.PAYMENT,
         severity: AuditSeverity.INFO,
         entity: "BookingExtension",
         entityId: extension.publicId,
-        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${isUpi ? "UPI (UTR)" : method}`,
+        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${isUpi ? (options.upi?.proof ? "UPI (payment photo)" : "UPI (UTR)") : isSplit ? `split (₹${cashPart.toFixed(2)} cash + ₹${onlinePart.toFixed(2)} UPI)` : method}`,
       }),
       staffActivityService.log({
         actorPublicId: actor.actorPublicId,
@@ -1081,14 +1225,14 @@ class ExtensionService {
         actionType: StaffActionType.COLLECTED,
         entityType: StaffEntityType.BOOKING_EXTENSION,
         entityRef: extension.publicId,
-        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI (UTR)" : method}`,
+        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI" : isSplit ? "cash + UPI" : method}`,
       }),
     ]);
 
     if (isOnline) void notifyEvents.extensionConfirmed({ extensionId: extension.id, actorUserId: actor.actorId });
 
-    // Confirmed now (online / UPI): its taxable value and GST join the invoice.
-    // Cash waits for the manager's confirmation, which refreshes it then.
+    // Confirmed now (gateway): its taxable value and GST join the invoice.
+    // Counter money waits for the manager's confirmation, which refreshes it then.
     if (isOnline) {
       refreshInvoiceTotals(booking.id).catch((err) =>
         console.error("[extension.collect] Invoice refresh error:", err),
@@ -1296,6 +1440,8 @@ class ExtensionService {
 
       // Cancelled for a business reason (vehicle displaced) — give the coupon use back
       await discountApplicationService.releaseUsage(booking.id, tx);
+      // Nothing is owed on a cancelled booking — close any credit pending on it (#11)
+      await voidPendingCreditOnCancel(tx, booking.id, "Booking cancelled: vehicle displaced by an extension");
 
       // Free up the vehicle
       const items = await tx.bookingItem.findMany({

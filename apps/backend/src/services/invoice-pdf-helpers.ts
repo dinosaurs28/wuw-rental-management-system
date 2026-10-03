@@ -488,7 +488,8 @@ export function drawSectionTotals(
     ctx.advance(18);
   };
 
-  row("Subtotal (before GST):", fmt(section.subtotalBeforeTax));
+  // Non-taxable sections (no tax labels — drop charges, damage, FASTag) carry no GST
+  row(cgstLabel || sgstLabel ? "Subtotal (before GST):" : "Subtotal:", fmt(section.subtotalBeforeTax));
 
   if (section.discount > 0) {
     row("Discount:", `-${fmt(section.discount)}`);
@@ -621,7 +622,7 @@ export function drawSummaryTable(ctx: PDFRenderContext): void {
 
     for (const sec of d.nonTaxableSections) {
       const label =
-        sec.type === "DAMAGE_COMPENSATION" ? "Damage Compensation" : sec.title;
+        sec.type === "DAMAGE_COMPENSATION" ? "Damage Charges" : sec.title;
       row(sec.discount > 0 ? `${label} (after discount)` : label, fmt(sec.subtotalBeforeTax - sec.discount));
     }
 

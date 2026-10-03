@@ -7,6 +7,7 @@ import {
   financialStateService,
 } from "../../services/payment/index.js";
 import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { proofPhotoFields } from "../../services/payment/payment-proof.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -29,6 +30,16 @@ export const RecordPayment = async (req: Request, res: Response): Promise<void> 
     const validation = recordPaymentSchema.safeParse(req.body);
     if (!validation.success) {
       res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
+      return;
+    }
+    // Branch-scoped like the settlements pay endpoint: staff and managers can
+    // only record money against their own branch's bookings
+    const booking = await prisma.booking.findUnique({
+      where: { publicId: validation.data.bookingPublicId },
+      select: { branchId: true },
+    });
+    if (!booking || booking.branchId !== req.branch_Id) {
+      res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
       return;
     }
     const actor = await buildActorContext(req);
@@ -68,11 +79,20 @@ export const RecordPayment = async (req: Request, res: Response): Promise<void> 
 export const GetPaymentTransaction = async (req: Request, res: Response): Promise<void> => {
   try {
     const txn = await paymentTransactionService.getByPublicId(req.params.publicId!);
-    if (!txn) {
+    // Branch-scoped like every other payment read: another branch's transaction
+    // (and its customer's private payment-screen photo) is not found here
+    if (!txn || txn.branchId !== req.branch_Id) {
       res.status(StatusCode.NOT_FOUND).json({ message: "Transaction not found" });
       return;
     }
-    res.status(StatusCode.OK).json({ data: txn });
+    // Additive: the UPI payment-screen photo (#3), as a 15-minute URL
+    const proofFile = txn.proofFileId
+      ? await prisma.fileObject.findUnique({
+          where: { id: txn.proofFileId },
+          select: { id: true, publicId: true, key: true, mime: true, size: true, createdAt: true },
+        })
+      : null;
+    res.status(StatusCode.OK).json({ data: { ...txn, ...(await proofPhotoFields(proofFile)) } });
   } catch (error) {
     console.error("GetPaymentTransaction Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

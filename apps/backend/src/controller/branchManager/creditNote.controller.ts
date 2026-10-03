@@ -4,7 +4,6 @@ import { StatusCode } from "../../types/statusCode.js";
 import { randomUUID } from "crypto";
 import Decimal from "decimal.js";
 import {
-  splitInclusiveGst,
   isGstRuleMissing,
   GST_RULE_MISSING,
   GST_RULE_MISSING_MESSAGE,
@@ -15,10 +14,16 @@ const ZERO = new Decimal(0);
 
 /**
  * GST inside a credit note. The credit is GST-inclusive and reverses the
- * invoice's taxable supply first (split at the booking's frozen CGST/SGST
- * rates); whatever exceeds the taxable value + GST still uncredited on the
- * invoice is a non-taxable refund (deposit, FASTag, compensation). Without an
+ * invoice's taxable supply first; whatever exceeds the taxable value + GST still
+ * uncredited on the invoice is a non-taxable refund (deposit, FASTag,
+ * compensation, drop charges — they carry no GST since item 8). Without an
  * invoice there is no taxable supply to reverse.
+ *
+ * The taxable part is split in the invoice's own taxable : GST proportion, so a
+ * full credit reverses exactly what was charged whichever way the GST was
+ * worked out — GST-inclusive rent (item 17: ₹1,300 = ₹1,066 + ₹234) or a GST
+ * added on top (older bookings: ₹1,180 = ₹1,000 + ₹180). CGST/SGST follow the
+ * booking's frozen rates.
  */
 async function creditNoteGstSplit(bookingId: number, invoiceId: number | undefined, amount: number) {
   if (!invoiceId) return { taxable: ZERO, cgst: ZERO, sgst: ZERO };
@@ -29,9 +34,9 @@ async function creditNoteGstSplit(bookingId: number, invoiceId: number | undefin
     where: { invoiceId, status: "APPROVED" },
     _sum: { taxableAmount: true, cgstAmount: true, sgstAmount: true },
   });
-  const alreadyCredited = new Decimal(String(earlier._sum.taxableAmount ?? 0))
-    .add(String(earlier._sum.cgstAmount ?? 0))
-    .add(String(earlier._sum.sgstAmount ?? 0));
+  const earlierTaxable = new Decimal(String(earlier._sum.taxableAmount ?? 0));
+  const earlierGst = new Decimal(String(earlier._sum.cgstAmount ?? 0)).add(String(earlier._sum.sgstAmount ?? 0));
+  const alreadyCredited = earlierTaxable.add(earlierGst);
   const room = Decimal.max(ZERO, taxableGross.sub(alreadyCredited));
   const gstPortion = Decimal.min(new Decimal(amount), room);
   if (gstPortion.lte(0)) return { taxable: ZERO, cgst: ZERO, sgst: ZERO };
@@ -40,8 +45,23 @@ async function creditNoteGstSplit(bookingId: number, invoiceId: number | undefin
     where: { id: bookingId },
     select: { branchId: true, pricingSnapshot: true, items: { select: { taxRate: true } } },
   });
-  const split = splitInclusiveGst(gstPortion, await bookingGstRates(booking));
-  return { taxable: split.taxable, cgst: split.cgst, sgst: split.sgst };
+  const rates = await bookingGstRates(booking);
+
+  // GST share of the reversed part: the rest of the invoice GST when the credit
+  // takes all that is left, else in the invoice's proportion (half-up to paise)
+  const gstLeft = Decimal.max(ZERO, totals.tax.sub(earlierGst));
+  const gst = gstPortion.eq(room)
+    ? Decimal.min(gstLeft, gstPortion)
+    : Decimal.min(
+        gstLeft,
+        taxableGross.gt(0)
+          ? gstPortion.mul(totals.tax).div(taxableGross).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+          : ZERO,
+      );
+  const cgst = rates.rate > 0
+    ? gst.mul(rates.cgstRate).div(rates.rate).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+    : ZERO;
+  return { taxable: gstPortion.sub(gst), cgst, sgst: gst.sub(cgst) };
 }
 
 /** Credit-note GST fields for responses (numbers, like `amount`). */

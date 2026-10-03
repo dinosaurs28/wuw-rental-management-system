@@ -2,6 +2,9 @@ import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, Pay
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
+import { claimPaymentProof, type ResolvedProof } from "../payment/payment-proof.service.js";
+import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
+import Decimal from "decimal.js";
 import { paymentSessionService } from "../payment/paymentSession.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
@@ -86,9 +89,18 @@ export class AdvanceDepositService {
     method: DepositMethod,
     transactionId: string,
     paidDuring: "PICKUP" | "RETURN",
-    upi?: { utr: string; collectedById: number },
+    // Counter UPI: the UTR (older builds) and/or the payment-screen photo (#3)
+    upi?: { utr: string | null; collectedById: number; proof?: ResolvedProof | null },
     cash?: { collectedById: number },
     online?: { collectedById?: number | null; gatewayPaymentId?: string | null },
+    // Split at the counter: cash + UPI (backed like `upi`); one COLLECTED SPLIT transaction
+    split?: {
+      cash: Decimal;
+      online: Decimal;
+      utr: string | null;
+      proof: ResolvedProof | null;
+      collectedById: number;
+    },
   ): Promise<Booking> {
     const booking = await prisma.booking.findUnique({
       where: { publicId: bookingPublicId },
@@ -152,7 +164,7 @@ export class AdvanceDepositService {
           data: {
             isVoided: true,
             voidedAt: new Date(),
-            voidedById: upi?.collectedById ?? cash?.collectedById ?? null,
+            voidedById: upi?.collectedById ?? cash?.collectedById ?? split?.collectedById ?? null,
             voidReason: `Remaining balance paid separately (${transactionId})`,
           },
         });
@@ -162,8 +174,9 @@ export class AdvanceDepositService {
       }
 
       if (upi) {
-        // Claim inside the transaction so two submissions can't share a UTR
-        await claimUtr(upi.utr, tx);
+        // Claim inside the transaction so two submissions can't share a UTR / photo
+        if (upi.utr) await claimUtr(upi.utr, tx);
+        if (upi.proof) await claimPaymentProof(upi.proof, tx);
 
         const activeShift = await tx.cashShift.findFirst({
           where: { employeeId: upi.collectedById, status: "OPEN" },
@@ -186,12 +199,45 @@ export class AdvanceDepositService {
             onlineAmount: booking.remainingBalance,
             onlineTransactionRef: upi.utr,
             onlineGateway: "UPI",
+            proofFileId: upi.proof?.id ?? null,
             collectedById: upi.collectedById,
             collectedAt: now,
             confirmedById: upi.collectedById,
             confirmedAt: now,
             cashShiftId: activeShift?.id ?? null,
             notes: `Remaining balance collected at ${paidDuring.toLowerCase()} (${transactionId})`,
+          },
+        });
+      }
+
+      if (split) {
+        if (split.utr) await claimUtr(split.utr, tx);
+        if (split.proof) await claimPaymentProof(split.proof, tx);
+        const splitShift = await tx.cashShift.findFirst({
+          where: { employeeId: split.collectedById, status: "OPEN" },
+          select: { id: true },
+        });
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            // One counter split remaining payment per booking — a double submit hits this key
+            idempotencyKey: `remaining:split:${booking.publicId}`,
+            bookingId: booking.id,
+            branchId: booking.branchId,
+            purpose: PaymentPurpose.REMAINING_BALANCE,
+            method: PaymentMethod.SPLIT,
+            // The cash part waits for the manager's confirmation, like other counter cash
+            status: "COLLECTED",
+            totalAmount: split.cash.add(split.online).toFixed(2),
+            cashAmount: split.cash.toFixed(2),
+            onlineAmount: split.online.toFixed(2),
+            onlineTransactionRef: split.utr,
+            onlineGateway: "UPI",
+            proofFileId: split.proof?.id ?? null,
+            collectedById: split.collectedById,
+            collectedAt: new Date(),
+            cashShiftId: splitShift?.id ?? null,
+            notes: `Remaining balance collected at ${paidDuring.toLowerCase()}: ₹${split.cash.toFixed(2)} cash + ₹${split.online.toFixed(2)} UPI (${transactionId})`,
           },
         });
       }
@@ -271,6 +317,101 @@ export class AdvanceDepositService {
     });
   }
 
+  /**
+   * The remaining balance put on customer CREDIT at the counter (#11): the
+   * counter step is settled (remainingPaidAt, so pickup / return can go ahead and
+   * no session charges it again) but nothing is paid — no PaymentTransaction, no
+   * invoice payment, the invoice stays PENDING. The booking's CustomerCreditEntry
+   * gets a section with the collateral; the financial state keeps the amount due
+   * until the branch manager clears it (which records the payment then).
+   */
+  async recordRemainingOnCredit(
+    bookingPublicId: string,
+    paidDuring: "PICKUP" | "RETURN",
+    collateral: string,
+    actor: { id: number; name: string },
+  ): Promise<{ booking: Booking; creditEntryPublicId: string; sectionKey: string; amount: string }> {
+    const booking = await prisma.booking.findUnique({ where: { publicId: bookingPublicId } });
+    if (!booking) throw new Error("Booking not found");
+    if (!booking.isAdvancePayment) throw new Error("Booking is not an advance payment booking");
+    if (booking.remainingPaidAt) throw new Error("Remaining payment already collected");
+    if (
+      booking.status !== BookingStatus.CONFIRMED &&
+      booking.status !== BookingStatus.PICKED_UP
+    ) {
+      throw new Error("Booking must be CONFIRMED or PICKED_UP to collect remaining payment");
+    }
+    const amount = new Decimal(booking.remainingBalance.toString()).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    if (amount.lte(0)) throw new Error("Nothing remains to be paid on this booking");
+
+    const transactionId = `CREDIT_REM_${createID()}`;
+    return prisma.$transaction(async (tx) => {
+      // Conditional: a concurrent payment of the balance wins and this throws
+      const { count } = await tx.booking.updateMany({
+        where: { id: booking.id, remainingPaidAt: null },
+        data: {
+          remainingPaidAt: new Date(),
+          remainingPaymentId: transactionId,
+          remainingPaymentMode: null,
+          remainingPaidDuring: paidDuring,
+        },
+      });
+      if (count === 0) throw new Error("Remaining payment already collected");
+
+      // A pickup/return session opened before this still carries the balance — void it
+      const staleLines = await tx.ledgerEntry.findMany({
+        where: {
+          bookingId: booking.id,
+          referenceType: "BOOKING_REMAINING",
+          isVoided: false,
+          session: { status: { in: ["OPEN", "COMPUTING", "AWAITING_PAYMENT"] } },
+        },
+        select: { id: true, sessionId: true },
+      });
+      for (const line of staleLines) {
+        await tx.ledgerEntry.update({
+          where: { id: line.id },
+          data: {
+            isVoided: true,
+            voidedAt: new Date(),
+            voidedById: actor.id,
+            voidReason: `Remaining balance put on credit (${transactionId})`,
+          },
+        });
+      }
+      for (const sessionId of new Set(staleLines.map((l) => l.sessionId))) {
+        await paymentSessionService.recomputeTotals(sessionId, tx);
+      }
+
+      const credit = await addFleetCredit(tx, {
+        bookingId: booking.id,
+        amount,
+        purpose: PaymentPurpose.REMAINING_BALANCE,
+        label: `Remaining balance on credit (${paidDuring === "PICKUP" ? "pickup" : "drop"})`,
+        collateral,
+        reference: { type: "REMAINING_PAYMENT", publicId: transactionId },
+        actor,
+      });
+
+      const actorRow = await tx.user.findUnique({ where: { id: actor.id }, select: { role: true, branchId: true } });
+      await auditService.log({
+        actorId: actor.id,
+        actorName: actor.name,
+        actorRole: actorRow?.role ?? Role.STAFF,
+        actorBranchId: actorRow?.branchId ?? undefined,
+        action: `REMAINING_PAYMENT_ON_CREDIT_AT_${paidDuring}`,
+        category: AuditCategory.PAYMENT,
+        description: `Remaining balance of ₹${amount.toFixed(2)} put on credit at ${paidDuring} for booking ${booking.publicId} (collateral: ${collateral})`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        after: { remainingPaidDuring: paidDuring, method: "CREDIT", amount: amount.toFixed(2), collateral },
+      }, tx);
+
+      const updated = await tx.booking.findUniqueOrThrow({ where: { id: booking.id } });
+      return { booking: updated, creditEntryPublicId: credit.creditEntryPublicId, sectionKey: credit.sectionKey, amount: amount.toFixed(2) };
+    });
+  }
+
   // ========================================
   // SAFETY DEPOSIT METHODS
   // ========================================
@@ -335,6 +476,9 @@ export class AdvanceDepositService {
           cancellationReason: reason,
         }
       });
+
+      // A walk-in on credit (#11) owes nothing once cancelled — close its pending credit
+      await voidPendingCreditOnCancel(tx, bookingId, `Booking cancelled: ${reason}`);
 
       const invoiceNumber = await this.generateInvoiceNumber();
       const advanceAmount = Number(booking.advanceAmount || 0);

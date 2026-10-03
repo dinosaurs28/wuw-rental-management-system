@@ -8,6 +8,7 @@ import {
   getMissingProfileFields,
   profileFieldsOf,
 } from "../../../utils/customer/identity.js";
+import { CUSTOMER_SEARCH_CACHE_PREFIX } from "../../../services/customer/customer-blacklist.service.js";
 
 export const SearchCustomer = async (req: Request, res: Response) => {
   try {
@@ -28,7 +29,8 @@ export const SearchCustomer = async (req: Request, res: Response) => {
 
     const trimmedQuery = q.trim();
     // v2: entries carry missingFields / masked identity numbers (#1).
-    const cacheKey = `customer_search:v2:${trimmedQuery.toLowerCase()}`;
+    // v3: + the blacklist flag (#13); a blacklist change drops every v3 entry.
+    const cacheKey = `${CUSTOMER_SEARCH_CACHE_PREFIX}${trimmedQuery.toLowerCase()}`;
 
     // Check Cache
     const cachedResult = await redis.get(cacheKey);
@@ -68,6 +70,9 @@ export const SearchCustomer = async (req: Request, res: Response) => {
             country: true,
             drivingLicenceNumber: true,
             aadhaarNumber: true,
+            isBlacklisted: true,
+            blacklistReason: true,
+            blacklistedAt: true,
           },
         },
       },
@@ -85,6 +90,10 @@ export const SearchCustomer = async (req: Request, res: Response) => {
         name: u.name,
         email: displayEmail(u.email),
         phone: u.phone,
+        // Blacklisted customers can't be booked (#13) — staff see why.
+        isBlacklisted: p?.isBlacklisted ?? false,
+        blacklistReason: p?.isBlacklisted ? (p.blacklistReason ?? null) : null,
+        blacklistedAt: p?.isBlacklisted && p.blacklistedAt ? p.blacklistedAt.toISOString() : null,
         customerProfile: p
           ? {
               isProfileCompleted: missingFields.length === 0,
@@ -92,6 +101,7 @@ export const SearchCustomer = async (req: Request, res: Response) => {
               missingFields,
               drivingLicenceNumber: p.drivingLicenceNumber ?? null,
               aadhaarNumberMasked: p.aadhaarNumber ? maskAadhaar(p.aadhaarNumber) : null,
+              isBlacklisted: p.isBlacklisted,
             }
           : null,
       };

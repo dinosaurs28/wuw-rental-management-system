@@ -2,9 +2,12 @@
  * Km allowance — how many km a booking includes and what each extra km costs.
  *
  * The included km is the pricing engine's plan-based free-km limit for the
- * booking's (first) vehicle over the booked period [startAt, endAt]. endAt
- * already carries confirmed extensions, so an extended booking earns the
- * allowance of the longer plan.
+ * booking's (first) vehicle over the ORIGINAL booked period [startAt, end
+ * before any extension], plus the free km each extension adds by the #7 rule
+ * (extension-km.ts): whole 24 h blocks → freeKm24Hour each, a remaining ≥ 12 h
+ * block → freeKm12Hour, other hours → 0. An extension by a few hours therefore
+ * adds no km. The extensions counted are the ones on the drop's rental
+ * timeline (isLiveExtension), so the timeline's per-extension km add up to it.
  *
  * Used by the drop (return session compute) to bill extra km and by the
  * employee booking detail endpoints to preview it — one source for both.
@@ -14,20 +17,27 @@
  * start reading (getOdometerSegments). Older swaps recorded without readings
  * can't be measured, so extra km falls back to a staff-entered figure.
  */
-import { prisma, BookingPhotoType, BookingStatus } from "@repo/database/client";
+import { prisma, BookingPhotoType, BookingStatus, ExtensionStatus } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
 import { PricingEngineService } from "../pricing/pricing-engine.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
+import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
+import { extensionFreeKm, extensionMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
 
 const pricingEngine = new PricingEngineService();
 
 export interface KmAllowance {
+  /** freeKmOriginal + freeKmExtensions */
   includedKm: number;
   extraKmRate: Decimal;
   extraKmEnabled: boolean;
   /** booking.endAt the allowance was worked out for */
   periodEndAt: Date;
+  /** Free km of the original booked period (never below what the confirmation promised). */
+  freeKmOriginal: number;
+  /** Σ free km the extensions add (#7 rule). */
+  freeKmExtensions: number;
 }
 
 /** Why the extra-km charge wasn't calculated automatically (null = it was). */
@@ -52,6 +62,9 @@ export interface KmCharge {
   /** Extra km typed by staff — only after a swap recorded without readings. */
   manualExtraKm: number | null;
   kmSource: KmSource;
+  /** includedKm = freeKmOriginal + freeKmExtensions (see KmAllowance). */
+  freeKmOriginal: number;
+  freeKmExtensions: number;
 }
 
 export interface OdometerSegment {
@@ -94,21 +107,15 @@ function snapshotFreeKm(pricingSnapshot: unknown): number | null {
   return typeof freeKm === "number" && Number.isFinite(freeKm) ? freeKm : null;
 }
 
-/**
- * Resolves the km allowance for a booking (internal Booking.id).
- * extraKmRate comes from VehicleCustomPricing ?? BranchPricingDefaults (via the
- * pricing engine); extraKmEnabled from BranchChargeConfig (default true).
- * A booking that was never extended never gets fewer free km than its
- * confirmation promised (pricingSnapshot), even if the plan rules changed since.
- */
-export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
-  const booking = await prisma.booking.findUnique({
+/** Booking fields the allowance is worked out from (extensions as the rental timeline loads them). */
+function loadAllowanceBooking(bookingId: number) {
+  return prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
       startAt: true,
       endAt: true,
       branchId: true,
-      extensionCount: true,
+      activeExtensionId: true,
       pricingSnapshot: true,
       items: {
         orderBy: { id: "asc" },
@@ -116,17 +123,83 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
         select: { vehicleId: true, vehicle: { select: { categoryId: true } } },
       },
       branch: { select: { chargeConfig: { select: { extraKmEnabled: true } } } },
+      extensions: {
+        where: {
+          extensionStatus: {
+            in: [ExtensionStatus.CONFIRMED, ExtensionStatus.PAYMENT_COLLECTED, ExtensionStatus.PENDING_PAYMENT],
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          publicId: true,
+          oldEndAt: true,
+          requestedEndAt: true,
+          actualNewEndAt: true,
+          extensionStatus: true,
+          resolutionType: true,
+          extensionTrigger: true,
+          additionalAmount: true,
+          taxAmount: true,
+          createdAt: true,
+        },
+      },
     },
   });
+}
+
+type AllowanceBooking = NonNullable<Awaited<ReturnType<typeof loadAllowanceBooking>>>;
+
+/**
+ * The booked period split the way the drop's rental timeline splits it: the
+ * original end is the earliest extension's old end, and each extension that is
+ * part of the booked window (isLiveExtension) adds its own minutes. With no
+ * such extension the whole booked period is the original one.
+ */
+function splitBookedPeriod(booking: AllowanceBooking): { originalEndAt: Date; extensionMinutes: number[] } {
+  const live = (booking.extensions as TimelineExtensionInput[]).filter((e) =>
+    isLiveExtension(e, booking.activeExtensionId),
+  );
+  if (live.length === 0) return { originalEndAt: booking.endAt, extensionMinutes: [] };
+  const earliestOldEnd = Math.min(...live.map((e) => e.oldEndAt.getTime()));
+  return {
+    originalEndAt: new Date(Math.min(earliestOldEnd, booking.endAt.getTime())),
+    extensionMinutes: live.map((e) => extensionMinutes(e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt)),
+  };
+}
+
+/** Σ free km the extensions add at the vehicle's slab rates (throws when the rates are missing). */
+async function sumExtensionFreeKm(booking: AllowanceBooking, extensionMinutesList: number[]): Promise<number> {
+  if (extensionMinutesList.length === 0) return 0;
+  const item = booking.items[0];
+  const rates: FreeKmRates | null = item
+    ? await loadFreeKmRates({ vehicleId: item.vehicleId, categoryId: item.vehicle.categoryId }, booking.branchId)
+    : null;
+  if (!rates) throw new Error("The vehicle's free-km rates aren't configured");
+  return extensionMinutesList.reduce((sum, minutes) => sum + extensionFreeKm(minutes, rates).km, 0);
+}
+
+/**
+ * Resolves the km allowance for a booking (internal Booking.id).
+ * extraKmRate comes from VehicleCustomPricing ?? BranchPricingDefaults (via the
+ * pricing engine); extraKmEnabled from BranchChargeConfig (default true).
+ * includedKm = the engine's free km for the original booked period — never
+ * fewer than the confirmation promised (pricingSnapshot, which describes that
+ * period), even if the plan rules changed since — plus the free km of every
+ * extension by the #7 rule.
+ */
+export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
+  const booking = await loadAllowanceBooking(bookingId);
   if (!booking) throw new Error("Booking not found");
 
   const item = booking.items[0];
   if (!item) throw new Error("Booking has no vehicle assigned");
 
+  const period = splitBookedPeriod(booking);
   const pricing = await pricingEngine.calculateBookingPrice(
     item.vehicleId,
     DateTime.fromJSDate(booking.startAt, { zone: "Asia/Kolkata" }),
-    DateTime.fromJSDate(booking.endAt, { zone: "Asia/Kolkata" }),
+    DateTime.fromJSDate(period.originalEndAt, { zone: "Asia/Kolkata" }),
     booking.branchId,
     undefined,
     undefined,
@@ -135,21 +208,25 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
     item.vehicle.categoryId,
   );
 
-  const promisedFreeKm = booking.extensionCount === 0 ? snapshotFreeKm(booking.pricingSnapshot) : null;
+  const freeKmOriginal = Math.max(pricing.freeKmLimit, snapshotFreeKm(booking.pricingSnapshot) ?? 0);
+  const freeKmExtensions = await sumExtensionFreeKm(booking, period.extensionMinutes);
 
   return {
-    includedKm: Math.max(pricing.freeKmLimit, promisedFreeKm ?? 0),
+    includedKm: freeKmOriginal + freeKmExtensions,
     extraKmRate: new Decimal(pricing.extraKmRate.toString()),
     extraKmEnabled: booking.branch.chargeConfig?.extraKmEnabled ?? true,
     periodEndAt: booking.endAt,
+    freeKmOriginal,
+    freeKmExtensions,
   };
 }
 
 /**
  * getKmAllowance, falling back to the free km + rate frozen in the booking's
  * pricingSnapshot when the pricing engine can't price the booking (e.g. the
- * pricing config was removed). The snapshot describes the period as booked,
- * so it is only used while the booking has never been extended.
+ * pricing config was removed). The snapshot describes the original booked
+ * period; extensions add their free km on top when the vehicle's slab free
+ * km can still be read.
  * Throws KmAllowanceUnavailableError when neither source works.
  */
 export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance> {
@@ -158,32 +235,33 @@ export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance
   } catch (pricingErr) {
     console.warn(`[km-allowance] Pricing engine failed for booking ${bookingId}:`, pricingErr);
 
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: {
-        endAt: true,
-        extensionCount: true,
-        pricingSnapshot: true,
-        branch: { select: { chargeConfig: { select: { extraKmEnabled: true } } } },
-      },
-    });
+    const booking = await loadAllowanceBooking(bookingId);
     const snapshotItem = ((booking?.pricingSnapshot as any)?.items ?? [])[0];
     const freeKmLimit = snapshotItem?.pricingBreakdown?.freeKmLimit;
     const extraKmRate = snapshotItem?.pricingBreakdown?.extraKmRate;
 
     if (
       booking &&
-      booking.extensionCount === 0 &&
       typeof freeKmLimit === "number" &&
       extraKmRate != null &&
       !Number.isNaN(Number(extraKmRate))
     ) {
-      return {
-        includedKm: freeKmLimit,
-        extraKmRate: new Decimal(String(extraKmRate)),
-        extraKmEnabled: booking.branch.chargeConfig?.extraKmEnabled ?? true,
-        periodEndAt: booking.endAt,
-      };
+      let freeKmExtensions: number | null = null;
+      try {
+        freeKmExtensions = await sumExtensionFreeKm(booking, splitBookedPeriod(booking).extensionMinutes);
+      } catch (extensionErr) {
+        console.warn(`[km-allowance] Extension free km unavailable for booking ${bookingId}:`, extensionErr);
+      }
+      if (freeKmExtensions != null) {
+        return {
+          includedKm: freeKmLimit + freeKmExtensions,
+          extraKmRate: new Decimal(String(extraKmRate)),
+          extraKmEnabled: booking.branch.chargeConfig?.extraKmEnabled ?? true,
+          periodEndAt: booking.endAt,
+          freeKmOriginal: freeKmLimit,
+          freeKmExtensions,
+        };
+      }
     }
 
     throw new KmAllowanceUnavailableError(
@@ -371,6 +449,8 @@ export function calculateKmCharge(
     autoKmSkipped: vehicleSwapped ? "VEHICLE_SWAPPED" : null,
     manualExtraKm,
     kmSource: !vehicleSwapped ? "ODOMETER" : manualExtraKm != null ? "STAFF_ENTERED" : "NONE",
+    freeKmOriginal: allowance.freeKmOriginal,
+    freeKmExtensions: allowance.freeKmExtensions,
   };
 }
 
@@ -389,6 +469,9 @@ export function serializeKmCharge(km: KmCharge, segments?: OdometerSegments | nu
     autoKmSkipped: km.autoKmSkipped,
     manualExtraKm: km.manualExtraKm,
     kmSource: km.kmSource,
+    // includedKm = free km of the original period + free km the extensions add (#7)
+    freeKmOriginal: km.freeKmOriginal,
+    freeKmExtensions: km.freeKmExtensions,
     swapCount: segments?.swapCount ?? 0,
     segments: (segments?.segments ?? []).map((s) => ({
       endedBySwapPublicId: s.endedBySwapPublicId,

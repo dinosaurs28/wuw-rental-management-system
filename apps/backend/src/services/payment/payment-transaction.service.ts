@@ -11,7 +11,14 @@ import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { fraudDetectionService } from "./fraud-detection.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
-import { assertOpenShift, claimUtr, normalizeUtr } from "./counter-guard.service.js";
+import { assertOpenShift, claimUtr } from "./counter-guard.service.js";
+import {
+  resolveCounterUpi,
+  claimCounterUpi,
+  proofPhotoFields,
+  PROOF_FILE_RELATION_SELECT,
+  type CounterUpi,
+} from "./payment-proof.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { refreshInvoiceTotals } from "../invoice-totals.service.js";
@@ -29,6 +36,8 @@ export interface RecordPaymentInput {
   onlineGateway?: string;
   idempotencyKey: string;
   notes?: string;
+  /** Photo of the customer's UPI payment screen (#3) — backs the UPI part instead of a UTR */
+  proof_file_id?: string;
 }
 
 interface ActorContext {
@@ -119,10 +128,17 @@ class PaymentTransactionService {
     // reference can back only one live payment (claimed in the insert below).
     let onlineRef: string | null = null;
     let onlineGateway: string | null = input.onlineGateway?.trim() || null;
+    let upi: CounterUpi | null = null;
     if (onlineAmount.gt(ZERO) || input.method === "ONLINE") {
       const isUpi = !onlineGateway || onlineGateway.toUpperCase() === "UPI";
       if (isUpi) {
-        onlineRef = normalizeUtr(input.onlineTransactionRef);
+        // A photo of the payment screen (#3) or, from older builds, the UTR
+        upi = await resolveCounterUpi({
+          utr: input.onlineTransactionRef,
+          proofFileId: input.proof_file_id,
+          branchId,
+        });
+        onlineRef = upi.utr;
         onlineGateway = "UPI";
       } else {
         onlineRef = input.onlineTransactionRef?.trim() || null;
@@ -155,7 +171,7 @@ class PaymentTransactionService {
     // Link to the active cash shift: cash/split for the drawer, UPI (UTR) for
     // the shift's UPI-collected figure
     let cashShiftId: number | null = null;
-    if ((input.method !== "ONLINE" && cashAmount.gt(ZERO)) || (onlineRef && onlineGateway === "UPI")) {
+    if ((input.method !== "ONLINE" && cashAmount.gt(ZERO)) || onlineGateway === "UPI") {
       const activeShift = await prisma.cashShift.findFirst({
         where: { employeeId: actor.actorId, status: "OPEN" },
         select: { id: true },
@@ -164,7 +180,8 @@ class PaymentTransactionService {
     }
 
     const txn = await prisma.$transaction(async (tx) => {
-      if (onlineRef) await claimUtr(onlineRef, tx);
+      if (upi) await claimCounterUpi(upi, tx);
+      else if (onlineRef) await claimUtr(onlineRef, tx);
       return tx.paymentTransaction.create({
         data: {
           publicId: createID(),
@@ -178,7 +195,8 @@ class PaymentTransactionService {
           cashAmount,
           onlineAmount,
           onlineTransactionRef: onlineRef,
-          onlineGateway: onlineRef ? onlineGateway : null,
+          onlineGateway: onlineRef || upi ? onlineGateway : null,
+          proofFileId: upi?.proof?.id ?? null,
           collectedById: input.method !== "ONLINE" ? actor.actorId : null,
           collectedAt: input.method !== "ONLINE" ? now : null,
           confirmedById: status === "CONFIRMED" ? actor.actorId : null,
@@ -537,6 +555,7 @@ class PaymentTransactionService {
           },
           collectedBy: { select: { publicId: true, name: true } },
           confirmedBy: { select: { publicId: true, name: true } },
+          proofFile: PROOF_FILE_RELATION_SELECT,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -545,7 +564,9 @@ class PaymentTransactionService {
       prisma.paymentTransaction.count({ where }),
     ]);
 
-    const mapped = (transactions as any[]).map((t) => ({
+    const mapped = await Promise.all((transactions as any[]).map(async (t) => ({
+      // Additive (Oct 2026): UPI payment-screen photo (#3)
+      ...(await proofPhotoFields(t.proofFile)),
       transactionPublicId: t.publicId,
       bookingPublicId: t.booking.publicId,
       customerName: t.booking.customer?.user?.name ?? "Unknown",
@@ -559,7 +580,10 @@ class PaymentTransactionService {
       collectedAt: t.collectedAt?.toISOString() ?? t.createdAt.toISOString(),
       confirmedAt: t.confirmedAt?.toISOString() ?? null,
       createdAt: t.createdAt.toISOString(),
-    }));
+      onlineGateway: t.onlineGateway ?? null,
+      cashAmount: Number(t.cashAmount).toFixed(2),
+      onlineAmount: Number(t.onlineAmount).toFixed(2),
+    })));
 
     return { transactions: mapped as any, total, page, pageSize };
   }
@@ -593,6 +617,7 @@ class PaymentTransactionService {
             },
           },
           collectedBy: { select: { publicId: true, name: true } },
+          proofFile: PROOF_FILE_RELATION_SELECT,
         },
         orderBy: { collectedAt: "asc" },
         skip,
@@ -601,8 +626,9 @@ class PaymentTransactionService {
       prisma.paymentTransaction.count({ where }),
     ]);
 
-    // Map to PendingCashItem format expected by frontend
-    const mapped = (transactions as any[]).map((t) => ({
+    // Map to PendingCashItem format expected by frontend. Counter UPI (and split)
+    // payments wait here too (#12) — the BM checks the payment-screen photo (#3).
+    const mapped = await Promise.all((transactions as any[]).map(async (t) => ({
       transactionPublicId: t.publicId,
       bookingPublicId: t.booking.publicId,
       customerName: t.booking.customer.user.name,
@@ -610,7 +636,16 @@ class PaymentTransactionService {
       employeeName: t.collectedBy?.name ?? "Unknown",
       collectedAt: t.collectedAt?.toISOString() ?? t.createdAt.toISOString(),
       purpose: t.purpose,
-    }));
+      // Additive (Oct 2026): how it was paid and the proof photo for UPI
+      method: t.method,
+      isUpi: String(t.onlineGateway ?? "").toUpperCase() === "UPI",
+      cashAmount: Number(t.cashAmount).toFixed(2),
+      onlineAmount: Number(t.onlineAmount).toFixed(2),
+      onlineGateway: t.onlineGateway ?? null,
+      onlineTransactionRef: t.onlineTransactionRef ?? null,
+      notes: t.notes ?? null,
+      ...(await proofPhotoFields(t.proofFile)),
+    })));
 
     return { transactions: mapped as any, total, page, pageSize };
   }

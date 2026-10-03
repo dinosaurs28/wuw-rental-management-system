@@ -2,14 +2,15 @@
  * Drop bill GST — classifies each drop charge line under the canonical GST rule
  * and works out its CGST/SGST once, when the line is created.
  *
- *   Taxable     : extra km, late return (EXTRA_TIME), fuel, vehicle-swap
- *                 difference, free-form "other charges"
- *   Not taxable : damage compensation, FASTag/tolls, deposits, grace
+ * Since the Oct 3 2026 client instructions (item 8) only RENT carries GST:
+ * every drop / recovery charge — extra km, late return (EXTRA_TIME), fuel,
+ * FASTag, damage, vehicle-swap difference, free-form "other charges" — is billed
+ * at face value with NO GST. So no drop line is taxable any more, the bill needs
+ * no GST rule, and the drop discount comes off non-taxable charges only.
  *
- * Taxable lines are billed GST-exclusive: the ledger amount is the taxable value
- * and the GST sits in gstAmount on top. The drop discount is a pre-tax trade
- * discount: it is split pro-rata between the taxable and non-taxable charges,
- * and the taxable share takes its GST off with it (a negative-GST discount line).
+ * The taxable machinery below is kept (a taxable line would be billed
+ * GST-exclusive with the GST in gstAmount, and the discount split pro-rata with
+ * its GST reversed) so bills computed before the change still read back.
  */
 import Decimal from "decimal.js";
 import type { LedgerEntryType } from "@repo/database/client";
@@ -27,7 +28,7 @@ export const VEHICLE_SWAP_REF = "VEHICLE_SWAP";
 export interface DropChargeLine {
   type: LedgerEntryType;
   label: string;
-  /** Taxable value for a taxable line, the full amount otherwise. */
+  /** The charge at face value (no drop line is taxable — item 8). */
   amount: Decimal;
   referenceType: string;
   referenceId?: string;
@@ -73,11 +74,46 @@ export interface DropBill {
 
 const ZERO = new Decimal(0);
 
-/** Canonical GST classification of a drop line. */
+/**
+ * Canonical GST classification of a drop line: drop / recovery charges carry no
+ * GST (item 8) — only rent (BOOKING_BASE / EXTENSION) is taxable, and those are
+ * never drop lines.
+ */
 export function isTaxableDropLine(line: Pick<DropChargeLine, "type" | "referenceType">): boolean {
   if (line.referenceType === DROP_DAMAGE_REF) return false; // damage compensation
-  if (line.referenceType === OTHER_CHARGE_REF) return true; // free-form service charge
-  return isTaxableChargeType(String(line.type));
+  if (line.referenceType === OTHER_CHARGE_REF) return false; // free-form other charge
+  if (line.referenceType === LATE_RETURN_REF || line.referenceType === VEHICLE_SWAP_REF) return false;
+  return isTaxableChargeType(String(line.type)) && !DROP_CHARGE_TYPES.has(String(line.type));
+}
+
+/** Ledger types a drop bill bills — all non-taxable (item 8). */
+const DROP_CHARGE_TYPES = new Set([
+  "EXTRA_KM",
+  "EXTRA_TIME",
+  "FUEL",
+  "FASTAG",
+  "DAMAGE",
+  "VEHICLE_SWAP",
+  "GRACE_ADJUSTMENT",
+  "OTHER",
+]);
+
+/**
+ * A RETURN session computed before drop charges lost their GST (item 8): a live
+ * charge or discount line of it still carries GST. Such an open bill is stale —
+ * GET marks it billStale and payment is refused until staff compute it again,
+ * which rebuilds every line without GST. Completed bills are left as they were.
+ */
+export function dropBillHasGst(
+  entries: Array<{ entryType: unknown; gstAmount: unknown; isVoided?: boolean | null }>,
+): boolean {
+  return entries.some(
+    (e) =>
+      !e.isVoided &&
+      String(e.entryType) !== "BOOKING_BASE" &&
+      String(e.entryType) !== "EXTENSION" &&
+      !new Decimal(String(e.gstAmount ?? 0)).isZero(),
+  );
 }
 
 /** Pre-tax split of the drop discount between taxable and non-taxable charges. */

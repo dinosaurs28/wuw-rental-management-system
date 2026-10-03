@@ -81,6 +81,7 @@ import {
 import {
   buildDropBill,
   serializeDropBill,
+  dropBillHasGst,
   isTaxableDropLine,
   OTHER_CHARGE_REF,
   LATE_RETURN_REF,
@@ -88,11 +89,19 @@ import {
   type DropChargeLine,
 } from "../../services/charges/drop-bill.service.js";
 import { getRentalTimeline, activeExtensionState } from "../../services/charges/rental-timeline.service.js";
+import { closeExtensionUpiQrs } from "../../services/payment/upi-qr.service.js";
 import {
   getBranchGstRates,
   GstRuleMissingError,
   type BranchGstRates,
 } from "../../services/tax/gst.service.js";
+import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
+import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import {
+  SAFETY_DEPOSIT_CREDIT_REF,
+  SAFETY_DEPOSIT_REFUND_REF,
+  recordDepositHandling,
+} from "../../services/payment/safety-deposit.service.js";
 
 // Extra km is computed on the server from the plan's free-km allowance — a
 // client-sent `extraKmCharge` is stripped by zod and ignored.
@@ -131,10 +140,17 @@ const computeReturnSessionSchema = z.object({
     .max(100000, "Extra km looks too large — check the figure")
     .nullable()
     .optional(),
+  // Safety deposit at drop (#6): SET_OFF (default) credits it against the charges;
+  // REFUND_IN_FULL pays it all back and the charges are collected on their own.
+  // Send it on every compute while it should stay.
+  safetyDepositHandling: z
+    .enum(SAFETY_DEPOSIT_HANDLING, { message: "safetyDepositHandling must be SET_OFF or REFUND_IN_FULL" })
+    .nullable()
+    .optional(),
 });
 
 /** Request fields whose validation message is shown to staff as-is. */
-const MESSAGE_FIELDS = new Set(["discount", "waiveLateCharge", "manualExtraKm"]);
+const MESSAGE_FIELDS = new Set(["discount", "waiveLateCharge", "manualExtraKm", "safetyDepositHandling"]);
 
 /** A precondition that failed inside the compute transaction — sent to the client as-is. */
 class ComputeRejection extends Error {
@@ -153,7 +169,7 @@ function extensionPendingBody(extension: { publicId: string; extensionStatus: Ex
     code: "EXTENSION_PENDING",
     message:
       extension.extensionStatus === ExtensionStatus.PAYMENT_COLLECTED
-        ? "The extension's cash payment is waiting for the branch manager to confirm it. Ask them to confirm it, then compute the drop bill."
+        ? "The extension's payment (cash or UPI) is waiting for the branch manager to confirm it. Ask them to confirm it, then compute the drop bill."
         : "Collect or cancel the pending extension before computing the drop bill.",
     pendingExtensionPublicId: extension.publicId,
     pendingExtensionStatus: extension.extensionStatus,
@@ -204,6 +220,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       waiveLateCharge,
       manualExtraKm,
     } = validation.data;
+    const depositHandling = validation.data.safetyDepositHandling ?? "SET_OFF";
     // The moment the vehicle came back, unless an earlier compute of this bill already fixed it
     const requestTime = new Date();
 
@@ -331,7 +348,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
     if (fastagAmount && fastagAmount > 0) {
       requestCharges.push({ type: LedgerEntryType.FASTAG, label: fastagNotes ? `FASTag: ${fastagNotes}` : "FASTag charges", amount: new Decimal(fastagAmount).toDecimalPlaces(2), referenceType: LedgerEntryType.FASTAG });
     }
-    // Free-form "other charges" are service charges (taxable), kept on the DAMAGE ledger
+    // Free-form "other charges" (no GST, like every drop charge — item 8), kept on the DAMAGE ledger
     // type for older readers but told apart from real damage by their reference type
     for (const other of otherCharges ?? []) {
       if (other.amount > 0) {
@@ -625,23 +642,82 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         );
       }
 
-      // Apply safety deposit credit — reduces netPayable
-      if (safetyDeposit.gt(0)) {
+      // Safety deposit (#6) — what is actually held: taken at pickup (session line or
+      // standalone SAFETY_DEPOSIT payment) and not credited back on another bill. Read
+      // after this bill's old lines were voided, through the same computation the
+      // financial state and settlement use, so the deposit is never counted twice.
+      const heldDeposit = Decimal.min(
+        safetyDeposit,
+        (await computeBookingOwed(booking.id, tx as any)).safetyDepositHeld,
+      );
+      const depositData = {
+        handling: depositHandling,
+        held: heldDeposit.toFixed(2),
+        // SET_OFF: the part of the deposit used against the charges
+        setOff: (depositHandling === "SET_OFF" ? Decimal.min(heldDeposit, netDropCharges) : new Decimal(0)).toFixed(2),
+        // Deposit going back to the customer
+        refund: (depositHandling === "SET_OFF"
+          ? Decimal.max(0, heldDeposit.minus(netDropCharges))
+          : heldDeposit
+        ).toFixed(2),
+        // Drop charges (after the discount, incl. any GST) and what is left to collect
+        charges: netDropCharges.toFixed(2),
+        toCollect: (depositHandling === "SET_OFF"
+          ? Decimal.max(0, netDropCharges.minus(heldDeposit))
+          : netDropCharges
+        ).toFixed(2),
+        // How the refund is paid: record-refund (SET_OFF remainder) or `depositRefund`
+        // on record-payment (REFUND_IN_FULL)
+        refundVia: heldDeposit.lte(0)
+          ? null
+          : depositHandling === "REFUND_IN_FULL"
+            ? "PAYMENT_DEPOSIT_REFUND"
+            : heldDeposit.gt(netDropCharges)
+              ? "RECORD_REFUND"
+              : null,
+      };
+
+      // The deposit is credited back on this bill — reduces netPayable
+      if (heldDeposit.gt(0)) {
         await ledgerService.addEntry(
           session.id,
           booking.id,
           LedgerEntryType.DEPOSIT,
           LedgerEntryClassification.PAYMENT,
-          safetyDeposit.negated(),
-          `Safety deposit credit (₹${safetyDeposit.toFixed(2)})`,
+          heldDeposit.negated(),
+          `Safety deposit credit (₹${heldDeposit.toFixed(2)})`,
           actor.id,
           String(actor.role),
           {
             idempotencyKey: `return:${booking.id}:deposit-credit:${session.id}:${computeRef}`,
-            referenceType: "SAFETY_DEPOSIT_CREDIT",
+            referenceType: SAFETY_DEPOSIT_CREDIT_REF,
+            metadata: { handling: depositHandling },
           },
           tx as any,
         );
+
+        // Refund in full: the whole deposit is paid back (with the payment's
+        // `depositRefund` choice), so the charges are collected on their own
+        if (depositHandling === "REFUND_IN_FULL") {
+          await ledgerService.addEntry(
+            session.id,
+            booking.id,
+            LedgerEntryType.REFUND,
+            LedgerEntryClassification.PAYMENT,
+            heldDeposit,
+            `Safety deposit refunded in full (₹${heldDeposit.toFixed(2)})`,
+            actor.id,
+            String(actor.role),
+            {
+              idempotencyKey: `return:${booking.id}:deposit-refund:${session.id}:${computeRef}`,
+              referenceType: SAFETY_DEPOSIT_REFUND_REF,
+              metadata: { handling: depositHandling },
+            },
+            tx as any,
+          );
+        }
+
+        await recordDepositHandling(tx as any, booking.id, depositHandling, "DROP_BILL", actor.id);
       }
 
       // Store chargeBreakdown / bill / km / late / discount in session metadata for page-reload
@@ -659,6 +735,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
             applyGrace: applyGrace === true,
             bookingEndAt: locked.endAt.toISOString(),
             returnedAt: returnedAt.toISOString(),
+            deposit: depositData,
           },
         },
       });
@@ -694,7 +771,8 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         totalManualCharges,
         discountData,
         netDropCharges,
-        safetyDeposit,
+        safetyDeposit: heldDeposit,
+        depositData,
         chargeBreakdown,
         billData,
         lateData,
@@ -714,12 +792,28 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       discountData,
       netDropCharges,
       safetyDeposit,
+      depositData,
       chargeBreakdown,
       billData,
       lateData,
       chargedSwaps,
       releasedQuoteId,
     } = computed;
+
+    // The released quote's UPI QR would stay payable until it expires — close it
+    // now (best-effort: never fails the drop; a payment that already landed on it
+    // is refunded by the QR settlement, as for any cancelled extension)
+    if (releasedQuoteId != null) {
+      closeExtensionUpiQrs(releasedQuoteId)
+        .then(({ unresolved }) => {
+          if (unresolved) {
+            console.warn(`[returnSession] Released extension ${releasedQuoteId} (booking ${booking.publicId}): a UPI QR could not be closed`);
+          }
+        })
+        .catch((err) =>
+          console.error(`[returnSession] Closing UPI QRs of released extension ${releasedQuoteId} (booking ${booking.publicId}) failed:`, err),
+        );
+    }
 
     if (booking.fuelRecord && returnFuelLevel) {
       await prisma.fuelRecord.update({
@@ -770,6 +864,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         gstAmount: billData.gst,
         finalTotal: netDropCharges.toFixed(2),
         safetyDepositCredit: safetyDeposit.toFixed(2),
+        deposit: depositData,
         chargeCount: manualCharges.length,
         km: kmData,
         late: lateData,
@@ -878,6 +973,8 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         late: lateData,
         bill: billData,
         rentalTimeline,
+        // Safety deposit at drop (#6): handling, held, set-off, refund, left to collect
+        deposit: depositData,
       },
     });
   } catch (err: any) {
@@ -940,8 +1037,14 @@ export const GetReturnSession = async (req: Request, res: Response) => {
     // (may be null for sessions computed before they were stored)
     const meta = session.metadata as any;
     const chargeBreakdown = meta?.chargeBreakdown ?? null;
-    // The bill is stale once endAt moved (an extension) — the client must recompute
-    const billStale = meta?.bookingEndAt != null && new Date(meta.bookingEndAt).getTime() !== booking.endAt.getTime();
+    // The bill is stale once endAt moved (an extension) — the client must recompute.
+    // So is one computed while drop charges still carried GST (item 8): the
+    // recompute rebuilds it without GST.
+    const periodChanged =
+      meta?.bookingEndAt != null && new Date(meta.bookingEndAt).getTime() !== booking.endAt.getTime();
+    const gstOnDropCharges = dropBillHasGst(session.entries);
+    const billStale = periodChanged || gstOnDropCharges;
+    const billStaleReason = periodChanged ? "PERIOD_CHANGED" : gstOnDropCharges ? "DROP_GST_REMOVED" : null;
     const rentalTimeline = await getRentalTimeline(booking.id, { late: billStale ? null : meta?.late ?? null });
 
     return res.status(StatusCode.OK).json({
@@ -955,7 +1058,12 @@ export const GetReturnSession = async (req: Request, res: Response) => {
         bill: meta?.bill ?? null,
         returnedAt: meta?.returnedAt ?? null,
         billStale,
+        // Why it is stale: PERIOD_CHANGED (an extension) | DROP_GST_REMOVED (computed
+        // with GST on drop charges, item 8) | null
+        billStaleReason,
         rentalTimeline,
+        // Safety deposit at drop (#6) as last computed (null for bills computed before it)
+        deposit: meta?.deposit ?? null,
       },
     });
   } catch (err: any) {

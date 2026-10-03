@@ -165,6 +165,18 @@ export async function isDropBillInSync(
     return false;
   }
 
+  // A bill computed while drop charges still carried GST (before item 8) must be
+  // computed again — that rebuilds every line without GST
+  const linesWithGst = await db.ledgerEntry.count({
+    where: {
+      sessionId,
+      isVoided: false,
+      entryType: { notIn: [LedgerEntryType.BOOKING_BASE, LedgerEntryType.EXTENSION] },
+      NOT: { gstAmount: 0 },
+    },
+  });
+  if (linesWithGst > 0) return false;
+
   if (reports.length !== entries.length) return false;
 
   const billed = new Map(
