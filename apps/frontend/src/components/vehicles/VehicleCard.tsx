@@ -230,20 +230,22 @@ export const VehicleCard = ({
             </div>
 
             {/* Price */}
-            <div className="flex items-baseline gap-[9px]">
-              <span className="text-[34px] font-extrabold tracking-[-0.02em] leading-none">
-                ₹{getDisplayPrice() as number}
-              </span>
-              <span className="text-[17px] font-semibold text-[#c5c7cb]">
-                {getPriceLabel()}
-              </span>
+            <div>
+              <div className="flex items-baseline gap-[9px]">
+                <span className="text-[34px] font-extrabold tracking-[-0.02em] leading-none">
+                  ₹{getDisplayPrice() as number}
+                </span>
+                <span className="text-[17px] font-semibold text-[#c5c7cb]">
+                  {getPriceLabel()}
+                </span>
+              </div>
+              {gstNote && (
+                <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{gstNote}</p>
+              )}
+              {slabNote && (
+                <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
+              )}
             </div>
-            {gstNote && (
-              <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{gstNote}</p>
-            )}
-            {slabNote && (
-              <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
-            )}
           </div>
         </div>
 
