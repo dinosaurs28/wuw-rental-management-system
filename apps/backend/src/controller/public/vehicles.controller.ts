@@ -254,7 +254,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, { startAt: startDate, endAt: endDate });
+      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, {
+        startAt: TimezoneService.toPrisma(startDate),
+        endAt: TimezoneService.toPrisma(endDate),
+      });
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }

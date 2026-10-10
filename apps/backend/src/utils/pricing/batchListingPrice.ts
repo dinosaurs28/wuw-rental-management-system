@@ -9,7 +9,8 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { splitRentTotal } from "@repo/schemas";
-import type { DateTime } from "luxon";
+import { DateTime } from "luxon";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
 import {
   DurationCalculatorService,
@@ -137,20 +138,25 @@ export interface ListingPrice {
 export async function getBatchListingPrices(
   vehicles: VehicleRef[],
   duration: RentalDuration,
-  window?: { startAt: DateTime; endAt: DateTime },
+  window?: { startAt: Date; endAt: Date },
 ): Promise<Map<number, ListingPrice>> {
   if (vehicles.length === 0) return new Map();
 
-  const clampedBranches = window
+  const windowStartRaw = window?.startAt;
+  const windowEndRaw = window?.endAt;
+  const windowStart = windowStartRaw ? TimezoneService.fromPrisma(windowStartRaw) : null;
+  const windowEnd = windowEndRaw ? TimezoneService.fromPrisma(windowEndRaw) : null;
+
+  const clampedBranches = windowStart && windowEnd && windowStartRaw && windowEndRaw
     ? await clampedHalfDayBranchIds(
         vehicles.map((v) => v.branchId),
-        window.startAt.toJSDate(),
-        window.endAt.toJSDate(),
+        windowStartRaw,
+        windowEndRaw,
       )
     : new Set<number>();
   const halfDayDuration =
-    window && clampedBranches.size > 0
-      ? DurationCalculatorService.calculate(window.startAt, window.startAt.plus({ hours: HALF_DAY_PACKAGE_HOURS }))
+    windowStart && clampedBranches.size > 0
+      ? DurationCalculatorService.calculate(windowStart, windowStart.plus({ hours: HALF_DAY_PACKAGE_HOURS }))
       : null;
 
   const vehicleIds = vehicles.map((v) => v.id);

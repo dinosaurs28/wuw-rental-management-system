@@ -37,11 +37,29 @@ function normalizeStr(s: string): string {
   return s.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
-function buildGroupKey(make: string, model: string, categoryId: number, branchId: number): string {
-  return `${normalizeStr(make)}__${normalizeStr(model)}__${categoryId}__${branchId}`;
+function dailyPriceToPaise(price: number): number {
+  return Math.round(Number(price || 0) * 100);
 }
 
-function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
+function buildGroupKey(
+  make: string,
+  model: string,
+  categoryId: number,
+  branchId: number,
+  dailyPricePaise?: number,
+): string {
+  const base = `${normalizeStr(make)}__${normalizeStr(model)}__${categoryId}__${branchId}`;
+  if (dailyPricePaise == null) return base;
+  return `${base}__D${dailyPricePaise}`;
+}
+
+function parseGroupKey(groupKey: string): {
+  make: string;
+  model: string;
+  categoryId: number;
+  branchId: number;
+  dailyPricePaise?: number;
+} | null {
   const idx = groupKey.indexOf("__");
   if (idx === -1) return null;
   const rest1 = groupKey.slice(idx + 2);
@@ -50,12 +68,28 @@ function parseGroupKey(groupKey: string): { make: string; model: string; categor
   const rest2 = rest1.slice(idx2 + 2);
   const idx3 = rest2.indexOf("__");
   if (idx3 === -1) return null;
+
   const make = groupKey.slice(0, idx);
   const model = rest1.slice(0, idx2);
   const categoryId = parseInt(rest2.slice(0, idx3), 10);
-  const branchId = parseInt(rest2.slice(idx3 + 2), 10);
+
+  const branchAndMaybePrice = rest2.slice(idx3 + 2);
+  const idx4 = branchAndMaybePrice.indexOf("__");
+  const branchRaw = idx4 === -1 ? branchAndMaybePrice : branchAndMaybePrice.slice(0, idx4);
+  const branchId = parseInt(branchRaw, 10);
+
   if (isNaN(categoryId) || isNaN(branchId)) return null;
-  return { make, model, categoryId, branchId };
+
+  if (idx4 === -1) {
+    return { make, model, categoryId, branchId };
+  }
+
+  const suffix = branchAndMaybePrice.slice(idx4 + 2);
+  if (!suffix.startsWith("D")) return null;
+  const dailyPricePaise = parseInt(suffix.slice(1), 10);
+  if (isNaN(dailyPricePaise)) return null;
+
+  return { make, model, categoryId, branchId, dailyPricePaise };
 }
 
 export { parseGroupKey, normalizeStr };
@@ -162,12 +196,15 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, { startAt: startDate, endAt: endDate });
+      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, {
+        startAt: TimezoneService.toPrisma(startDate),
+        endAt: TimezoneService.toPrisma(endDate),
+      });
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }
 
-    // Group by make+model+category+branch
+    // Group by make+model+category+branch+dailyPrice
     interface GroupEntry {
       groupKey: string;
       make: string;
@@ -189,8 +226,6 @@ export const searchVehicles = async (req: Request, res: Response) => {
     const groupMap = new Map<string, GroupEntry>();
 
     for (const v of availableVehicles) {
-      const gk = buildGroupKey(v.make, v.model, v.categoryId, v.branchId);
-
       let daily = 0;
       let hourly: number | undefined;
       let halfDay: number | undefined;
@@ -219,6 +254,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
         halfDay = fp?.halfDay;
       }
 
+      const gk = buildGroupKey(v.make, v.model, v.categoryId, v.branchId, dailyPriceToPaise(daily));
       const existing = groupMap.get(gk);
       if (!existing) {
         groupMap.set(gk, {
@@ -285,7 +321,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
     if (!parsed) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key format" });
     }
-    const { make, model, categoryId, branchId } = parsed;
+    const { make, model, categoryId, branchId, dailyPricePaise } = parsed;
 
     // Scoped to the employee's branch
     if (branchId !== req.branch_Id) {
@@ -347,16 +383,44 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
     }
 
+    let priceMatchedVehicles = groupVehicles;
+    if (dailyPricePaise != null) {
+      let listingDailyMap: Map<number, number>;
+      if (startDate && endDate) {
+        const durationInfo = DurationCalculatorService.calculate(startDate, endDate);
+        const durationPrices = await getBatchListingPrices(groupVehicles, durationInfo, {
+          startAt: TimezoneService.toPrisma(startDate),
+          endAt: TimezoneService.toPrisma(endDate),
+        });
+        listingDailyMap = new Map(
+          groupVehicles.map((v) => [v.id, Number(durationPrices.get(v.id)?.finalPrice ?? 0)]),
+        );
+      } else {
+        const fallbackPrices = await getBatchFallbackPrices(groupVehicles);
+        listingDailyMap = new Map(
+          groupVehicles.map((v) => [v.id, Number(fallbackPrices.get(v.id)?.daily ?? 0)]),
+        );
+      }
+
+      priceMatchedVehicles = groupVehicles.filter(
+        (v) => dailyPriceToPaise(listingDailyMap.get(v.id) ?? 0) === dailyPricePaise,
+      );
+
+      if (priceMatchedVehicles.length === 0) {
+        return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this pricing group" });
+      }
+    }
+
     // Listable units free for the dates (without dates: not blocked for every
     // window) — the same rule as the customer group page and booking creation
     const { representative, available } = await pickGroupRepresentative(
-      groupVehicles,
+      priceMatchedVehicles,
       startDate && endDate ? TimezoneService.toPrisma(startDate) : null,
       startDate && endDate ? TimezoneService.toPrisma(endDate) : null,
     );
     const availableCount = available.length;
     const representativeVehicle =
-      representative ?? groupVehicles.find((v) => isListableStatus(v.status)) ?? groupVehicles[0]!;
+      representative ?? priceMatchedVehicles.find((v) => isListableStatus(v.status)) ?? priceMatchedVehicles[0]!;
 
     const allImages: string[] = representativeVehicle.images.map((img) => img.file.url);
 
@@ -414,8 +478,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       }
     }
 
-    const firstCat = groupVehicles[0]!.category;
-    const firstBranch = groupVehicles[0]!.branch;
+    const firstCat = (priceMatchedVehicles[0] ?? groupVehicles[0])!.category;
+    const firstBranch = (priceMatchedVehicles[0] ?? groupVehicles[0])!.branch;
 
     const data = {
       groupKey,
@@ -424,7 +488,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       category:         firstCat.name,
       branch:           firstBranch.name,
       availableCount,
-      totalCount:       groupVehicles.length,
+      totalCount:       priceMatchedVehicles.length,
       images:           allImages,
       pricing:          { daily: pricingDetails?.pricingBreakdown?.applicablePrice ?? null },
       deposit,
@@ -761,7 +825,10 @@ export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
     const [fallbackPrices, prices, dated] = await Promise.all([
       // The 24 h rent the car is billed with (0 = no pricing set)
       getBatchFallbackPrices(vehicles),
-      getBatchListingPrices(vehicles, durationInfo, { startAt: startDate, endAt: endDate }),
+      getBatchListingPrices(vehicles, durationInfo, {
+        startAt: TimezoneService.toPrisma(startDate),
+        endAt: TimezoneService.toPrisma(endDate),
+      }),
       // The dated checks for the cars the static rule lets through
       explainUnavailableVehicles(
         vehicles.filter((v) => isListableStatus(v.status)).map((v) => v.id),

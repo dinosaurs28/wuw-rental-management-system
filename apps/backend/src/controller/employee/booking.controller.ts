@@ -28,6 +28,8 @@ import { MONTHLY_MIN_DAYS } from "@repo/schemas";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
+import { getBatchListingPrices } from "../../utils/pricing/batchListingPrice.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
@@ -75,6 +77,10 @@ import {
 import { blacklistRefusal } from "../../services/customer/customer-blacklist.service.js";
 
 const pricingEngine = new PricingEngineService();
+
+function dailyPriceToPaise(price: number): number {
+  return Math.round(Number(price || 0) * 100);
+}
 
 // ── Booking list (GET /bookings) ──────────────────────────────────────────────
 
@@ -404,7 +410,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       if (!parsed) {
         return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key format" });
       }
-      const { make, model, categoryId, branchId } = parsed;
+      const { make, model, categoryId, branchId, dailyPricePaise } = parsed;
 
       // Ensure the group belongs to this branch
       if (branchId !== req.branch_Id) {
@@ -416,18 +422,26 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       // availability check below blocks a car's out period and overdue rentals
       const branchVehicles = await prisma.vehicle.findMany({
         where: { categoryId, branchId, ...listableVehicleWhere() },
-        select: { id: true, publicId: true, make: true, model: true, status: true },
+        select: { id: true, publicId: true, make: true, model: true, status: true, branchId: true, categoryId: true },
         orderBy: { odo: "asc" },
       });
 
       const targetMake = normalizeStr(make);
       const targetModel = normalizeStr(model);
-      const candidates = branchVehicles.filter(
+      let candidates = branchVehicles.filter(
         (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
       );
 
+      if (dailyPricePaise != null && candidates.length > 0) {
+        const durationInfo = DurationCalculatorService.calculate(startDateDt, endDateDt);
+        const listingPriceMap = await getBatchListingPrices(candidates, durationInfo);
+        candidates = candidates.filter(
+          (v) => dailyPriceToPaise(Number(listingPriceMap.get(v.id)?.finalPrice ?? 0)) === dailyPricePaise,
+        );
+      }
+
       if (candidates.length === 0) {
-        return res.status(StatusCode.CONFLICT).json({ message: "No vehicles available in this group" });
+        return res.status(StatusCode.CONFLICT).json({ message: "No vehicles available in this pricing group" });
       }
 
       const vehicleIdToPublicId = new Map(candidates.map((v) => [v.id, v.publicId]));
