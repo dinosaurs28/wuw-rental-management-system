@@ -40,8 +40,9 @@ import { rangeLengthLabel, startOfDay } from '../../lib/dates';
 import {
   BOOKING_PACKAGE_REQUIRED,
   BOOKING_PACKAGE_REQUIRED_MESSAGE,
-  customerPackageFor,
+  HALF_DAY_PACKAGE_HOURS,
 } from '../../lib/bookingWindow';
+import { bookedPackageFor, heldReturnNote } from '../../lib/packages';
 import { useAuthStore } from '../../store/auth';
 import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
@@ -111,10 +112,25 @@ function askToContinue(title: string, message: string, okText: string): Promise<
 // X2 — KYC photos are optional at checkout. NO_KYC = "don't attach a document".
 const NO_KYC = '__none__';
 
-/** The KYC document to attach: the chosen one, else the first uploaded; null for none. */
+/**
+ * Documents that can be attached: the FRONT of a licence or Aadhaar whose BACK
+ * is uploaded too (same rule as the web and the walk-in screen). PAN is no
+ * longer accepted, so an older PAN upload isn't offered.
+ */
+function attachableKycDocs(docs: KycDocument[] | undefined): KycDocument[] {
+  const uploaded = (docs ?? []).filter((d) => !!d.file?.publicId);
+  return uploaded.filter(
+    (d) =>
+      (d.type === 'DL' || d.type === 'AADHAAR') &&
+      d.side === 'FRONT' &&
+      uploaded.some((b) => b.type === d.type && b.side === 'BACK'),
+  );
+}
+
+/** The KYC document to attach: the chosen one, else the first attachable; null for none. */
 function pickKyc(docs: KycDocument[] | undefined, selectedId: string | null): KycDocument | null {
   if (selectedId === NO_KYC) return null;
-  const usable = (docs ?? []).filter((d) => !!d.file?.publicId);
+  const usable = attachableKycDocs(docs);
   return usable.find((d) => d.publicId === selectedId) ?? usable[0] ?? null;
 }
 
@@ -269,7 +285,11 @@ export default function Checkout() {
 
   // Customers book packages only (BRIEF4 P2): 12 hours or whole days. The
   // vehicle page always sends one; anything else (an old link) can't be booked.
-  const bookedPackage = customerPackageFor(startDate, endDate);
+  // 12 hours held to closing on the pickup day (client item 6) is one too;
+  // without the branch hours a range under 12 h is left to the server.
+  const bookedPackage = bookedPackageFor(startDate, endDate, schedule);
+  const packageUnknown =
+    !bookedPackage && !schedule && endDate.getTime() - startDate.getTime() < HALF_DAY_PACKAGE_HOURS * 3_600_000;
 
   // Back to the vehicle page to pick new times.
   const changeTimes = () => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`));
@@ -528,7 +548,7 @@ export default function Checkout() {
       return;
     }
     // Not a 12-hour / whole-day package — the server would refuse it (P2).
-    if (!bookedPackage) {
+    if (!bookedPackage && !packageUnknown) {
       Alert.alert('Choose a package', BOOKING_PACKAGE_REQUIRED_MESSAGE, [
         { text: 'Not now', style: 'cancel' },
         { text: 'Change times', onPress: changeTimes },
@@ -793,7 +813,7 @@ export default function Checkout() {
   const total = couponPricing ? couponPricing.payableTotal : Math.max(0, baseTotal - couponDiscount);
 
   // Uploaded documents that can be attached (X2: optional), and the one that will be.
-  const kycDocs = (kyc ?? []).filter((d) => !!d.file?.publicId);
+  const kycDocs = attachableKycDocs(kyc);
   const chosenKyc = pickKyc(kyc, selectedKycId);
   // Advance only (item 18): the one plan the server allows for this total
   // ("Pay ₹X now · ₹Y at pickup"); handleBook sends the same plan.
@@ -846,9 +866,12 @@ export default function Checkout() {
           {bookedPackage ? (
             <View style={styles.packageRow}>
               <Ionicons name="pricetag-outline" size={14} color={Colors.ink3} />
-              <Text style={styles.packageText}>{bookedPackage.label} package</Text>
+              <Text style={styles.packageText}>
+                {bookedPackage.label} package
+                {bookedPackage.heldToClosing ? ` · ${heldReturnNote(endDate)}` : ''}
+              </Text>
             </View>
-          ) : (
+          ) : packageUnknown ? null : (
             <TimesNotice notice={{ tone: 'error', text: BOOKING_PACKAGE_REQUIRED_MESSAGE }} />
           )}
           <BranchHoursLine text={rangeHoursLine(schedule, startDate, endDate)} />
@@ -884,7 +907,9 @@ export default function Checkout() {
             <Ionicons name="document-outline" size={18} color={Colors.ink3} />
             <View style={styles.kycNoteBody}>
               <Text style={styles.kycNoteText}>
-                No document uploaded. You can book without one — bring your original driving licence to pickup.
+                {(kyc ?? []).length > 0
+                  ? 'To attach a document, upload both sides of your licence or Aadhaar. You can book without one — bring your original driving licence to pickup.'
+                  : 'No document uploaded. You can book without one — bring your original driving licence to pickup.'}
               </Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
                 <Text style={styles.editLink}>Upload in Profile</Text>
@@ -1110,7 +1135,7 @@ export default function Checkout() {
           <RazorpayPayOptions
             payLabel="Confirm & pay"
             onPay={handleBook}
-            disabled={loading || !terms || !pd || couponBusy || !bookedPackage}
+            disabled={loading || !terms || !pd || couponBusy || (!bookedPackage && !packageUnknown)}
             busyMode={loading ? payMode : null}
             busyLabel={checkingPayment ? CHECKING_PAYMENT_TEXT : undefined}
             // Item 2 — with the server's UPI QR on, the QR option opens the QR
@@ -1180,7 +1205,7 @@ const styles = StyleSheet.create({
   datesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hoursWrap: { marginTop: 8, gap: 8 },
   packageRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  packageText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
+  packageText: { flexShrink: 1, fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2 },
   dateInput: {
     flex: 1,
     backgroundColor: Colors.surface,

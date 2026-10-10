@@ -106,8 +106,22 @@ export interface SwapContext {
 }
 
 // available-vehicles response. swapContext is absent on servers older than #13.
+// A same-type car of the branch that can't take over the booking, with the
+// server's reason (shown collapsed under the candidates). Absent from older servers.
+export interface SwapExcludedVehicle {
+  id: number;
+  publicId: string;
+  make: string;
+  model: string;
+  regNo: string;
+  categoryName: string;
+  code: string;
+  reason: string;
+}
+
 export interface SwapCandidates {
   vehicles: SwapCandidate[];
+  excluded: SwapExcludedVehicle[];
   context: SwapContext | null;
 }
 

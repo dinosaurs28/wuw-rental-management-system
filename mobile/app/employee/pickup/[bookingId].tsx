@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -35,7 +35,7 @@ import {
   type DlCollectionStatus,
   type DlStatusFields,
 } from '../../../lib/dlStatus';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +50,8 @@ import {
   handleShiftRequired,
 } from '../../../lib/counterErrors';
 import type { ReturnSession } from '../../../types/api';
+import { usePickupDraft } from '../../../hooks/usePickupDraft';
+import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 import type { KmAllowance } from '../../../types/return';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -110,6 +112,10 @@ const KYC_TYPE_LABEL: Record<string, string> = {
   PAN: 'PAN',
   STUDENT_ID: 'Student ID',
 };
+// GET /employee/kyc/:bookingId presigns document links for 15 minutes.
+const KYC_URL_REFRESH_MS = 12 * 60_000;
+const KYC_URL_MAX_AGE_MS = 14 * 60_000;
+
 // "Driving licence · Front" — never the stored filename.
 function kycDocLabel(doc: KycDoc) {
   const base = KYC_TYPE_LABEL[doc.type] ?? doc.type.replace(/_/g, ' ');
@@ -163,6 +169,16 @@ function InfoRow({ icon, label, value }: { icon: IoniconName; label: string; val
       <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
+}
+
+// The free km the drop bills against, as the server split it (#7): e.g.
+// "300 km (150 + 150 from extension)" once an extension added km, else "150 km".
+function freeKmText(a: KmAllowance): string {
+  const total = `${a.includedKm.toLocaleString('en-IN')} km`;
+  const added = a.freeKmExtensions ?? 0;
+  if (a.freeKmOriginal == null || added <= 0) return total;
+  const from = (a.extensionCount ?? 1) > 1 ? 'extensions' : 'extension';
+  return `${total} (${a.freeKmOriginal.toLocaleString('en-IN')} + ${added.toLocaleString('en-IN')} from ${from})`;
 }
 
 // The pickup bill: session ledger lines and what's left to collect.
@@ -316,7 +332,7 @@ export default function PickupScreen() {
     return () => sub.remove();
   }, []);
 
-  const { data: booking, isLoading, isError, refetch } = useQuery<BookingDetail>({
+  const { data: booking, isLoading, refetch } = useQuery<BookingDetail>({
     queryKey: ['employee', 'pickup', bookingId],
     queryFn: async () => {
       const res = await employeeApi.getPickupDetails(bookingId as string);
@@ -326,6 +342,19 @@ export default function PickupScreen() {
     staleTime: 30_000,
     retry: false,
   });
+
+  // Back from the extension screen: reload the booking — the new return, total
+  // and the free km the extension added (#7). The first focus is the initial load.
+  const pickupFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!pickupFocusedOnceRef.current) {
+        pickupFocusedOnceRef.current = true;
+        return;
+      }
+      refetch();
+    }, [refetch]),
+  );
 
   const { data: captureFields = [] } = useQuery<CaptureField[]>({
     queryKey: ['employee', 'pickup', 'capture-config', bookingId],
@@ -339,7 +368,12 @@ export default function PickupScreen() {
     retry: false,
   });
 
-  const { data: kycData, isLoading: kycLoading } = useQuery({
+  const {
+    data: kycData,
+    isLoading: kycLoading,
+    refetch: refetchKyc,
+    dataUpdatedAt: kycUpdatedAt,
+  } = useQuery({
     queryKey: ['employee', 'kyc', bookingId],
     queryFn: async () => {
       const res = await employeeApi.getBookingKyc(bookingId as string);
@@ -347,6 +381,9 @@ export default function PickupScreen() {
     },
     enabled: !!bookingId,
     staleTime: 30_000,
+    // Document links are presigned for 15 minutes: keep them fresh while a
+    // long pickup keeps this screen open.
+    refetchInterval: KYC_URL_REFRESH_MS,
     retry: false,
   });
 
@@ -380,6 +417,30 @@ export default function PickupScreen() {
       }
     })();
   }, [bookingId, booking?.usePaymentSessions, booking?.status]);
+
+  // Pause / resume (client item 2): everything entered here is saved on the
+  // server as it changes and comes back when the pickup is opened again.
+  const draft = usePickupDraft({
+    bookingId: bookingId as string | undefined,
+    enabled: !!booking && booking.status === 'CONFIRMED' && !booking.requiresManagerConfirmation && !done,
+    vehicleKey: booking?.items[0]?.vehicle?.regNo ?? null,
+    odoPrefill: odoPrefillRef.current?.value ?? null,
+    fields: {
+      odo, fuelLevel, dlStatus, dlNumberEditing, dlNumberInput, requireManager, requestDeposit,
+      depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
+    },
+    setters: {
+      setOdo, setFuelLevel, setDlStatus, setDlNumberEditing, setDlNumberInput, setRequireManager,
+      setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
+      setSDepositAmt, setSDepositReason,
+    },
+    photos,
+    setPhotos,
+    pendingPhotos,
+    pay,
+    refundPay,
+    onGone: () => { refetch(); },
+  });
 
   const handoverBody = () => {
     const labeled = photos.filter((p) => p.label);
@@ -431,6 +492,8 @@ export default function PickupScreen() {
   };
 
   const onPickupDone = (settled: { amount: number; method: string; credit?: boolean } | null) => {
+    // Explicitly completed: the server dropped the saved draft with it.
+    draft.completed();
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
     qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
     qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
@@ -442,8 +505,10 @@ export default function PickupScreen() {
 
   // Legacy (no payment sessions): one call hands the vehicle over.
   const mutation = useMutation({
-    mutationFn: () =>
-      employeeApi.completePickup(bookingId as string, {
+    mutationFn: async () => {
+      // No draft save may land while (or after) the pickup completes.
+      await draft.beginCompletion();
+      return employeeApi.completePickup(bookingId as string, {
         ...handoverBody(),
         // Escalate to manager confirmation instead of completing directly (#50)
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
@@ -457,9 +522,11 @@ export default function PickupScreen() {
         ...dlBody(),
         // DL number typed at the counter (X2) — saved to the customer.
         ...dlNumberBody(),
-      }),
+      });
+    },
     onSuccess: () => onPickupDone(null),
     onError: (err: any) => {
+      draft.abortCompletion();
       setShowConfirm(false);
       // An auto-approved safety deposit is counter money — it needs an open shift.
       if (handleShiftRequired(err)) return;
@@ -650,6 +717,8 @@ export default function PickupScreen() {
     setSettling(true);
     setErrorMsg(null);
     try {
+      // No draft save may land while (or after) the pickup completes.
+      await draft.beginCompletion();
       let res;
       if (net < 0 && refundChoice) {
         res = await employeeApi.recordSessionRefund(session.publicId, {
@@ -690,6 +759,7 @@ export default function PickupScreen() {
       const updated = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
       if (updated && updated.status !== 'COMPLETED') {
+        draft.abortCompletion();
         setSession(updated);
         setErrorMsg('Payment recorded — waiting for the session to complete.');
         return;
@@ -702,6 +772,7 @@ export default function PickupScreen() {
             : null,
       );
     } catch (err: any) {
+      draft.abortCompletion();
       if (!mountedRef.current) return;
       if (handleShiftRequired(err)) return;
       // Photo / split / collateral / deposit-on-credit problems show under the picker.
@@ -737,7 +808,8 @@ export default function PickupScreen() {
     );
   }
 
-  if (isError || !booking) {
+  // A failed background refetch (e.g. on focus) keeps the last loaded booking.
+  if (!booking) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.header}>
@@ -791,7 +863,7 @@ export default function PickupScreen() {
   const fuelModuleEnabled = !!booking.frozenChargeConfig?.fuelModuleEnabled;
   const fastagModuleEnabled = !!booking.frozenChargeConfig?.fastagModuleEnabled;
   const termsLine = allowance
-    ? `Free km: ${allowance.includedKm.toLocaleString('en-IN')} · Extra km: ${
+    ? `Free km: ${freeKmText(allowance)} · Extra km: ${
       allowance.extraKmEnabled ? `${inr(num(allowance.extraKmRate))}/km` : 'not charged'
     }`
     : null;
@@ -974,7 +1046,14 @@ export default function PickupScreen() {
     setShowConfirm(true);
   };
 
-  const openKycDoc = (doc: KycDoc) => {
+  const openKycDoc = async (tapped: KycDoc) => {
+    let doc = tapped;
+    // A link that has (nearly) lapsed is refreshed first — opening it gave
+    // "Failed to load photo".
+    if (Date.now() - kycUpdatedAt > KYC_URL_MAX_AGE_MS) {
+      const fresh = await refetchKyc();
+      doc = fresh.data?.kyc?.find((d) => d.publicId === tapped.publicId) ?? tapped;
+    }
     if (doc.file.mime?.startsWith('image/')) {
       setKycViewer({ url: doc.file.url, label: kycDocLabel(doc) });
       return;
@@ -1000,7 +1079,9 @@ export default function PickupScreen() {
         <View style={styles.headerText}>
           <Text style={styles.title}>Pickup</Text>
           <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
+          <DraftSaveStatus draft={draft} />
         </View>
+        <ContinueLaterButton draft={draft} />
       </View>
 
       <ScrollView
@@ -1011,6 +1092,7 @@ export default function PickupScreen() {
         keyboardDismissMode="interactive"
       >
         <View ref={contentRef} collapsable={false} style={styles.contentInner}>
+        <ResumedBanner draft={draft} />
         {/* Remaining balance collection (legacy — unblocks pickup once paid) */}
         {hasRemainingBalance && (
           <RemainingBalanceCollect
@@ -1336,7 +1418,7 @@ export default function PickupScreen() {
                   <InfoRow
                     icon="gift-outline"
                     label="Free km"
-                    value={`${allowance.includedKm.toLocaleString('en-IN')} km`}
+                    value={freeKmText(allowance)}
                   />
                   <View style={styles.divider} />
                   <InfoRow
@@ -1895,7 +1977,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   back: { width: 36, height: 36, justifyContent: 'center' },
-  headerText: { gap: 2 },
+  headerText: { flex: 1, gap: 2 },
   title: { fontFamily: Fonts.displayBold, fontSize: 20, color: Colors.ink, letterSpacing: -0.4 },
   subtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
 

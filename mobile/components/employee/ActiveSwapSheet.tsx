@@ -31,6 +31,7 @@ import {
   type VehicleSwapRecord,
 } from '../../types/vehicleSwap';
 import {
+  SwapExcludedList,
   SwapFuelBars,
   SwapPriceDifference,
   SwapReasonChips,
@@ -378,6 +379,9 @@ export default function ActiveSwapSheet({
                     <Ionicons name="refresh" size={16} color={Colors.ink2} />
                     <Text style={styles.secondaryBtnText}>{isFetching ? 'Checking…' : 'Check again'}</Text>
                   </TouchableOpacity>
+                  <View style={{ alignSelf: 'stretch' }}>
+                    <SwapExcludedList excluded={data?.excluded ?? []} />
+                  </View>
                 </View>
               ) : (
                 <>
@@ -390,6 +394,7 @@ export default function ActiveSwapSheet({
                   ) : null}
                   <SwapVehiclePicker vehicles={vehicles} selectedId={selected?.id ?? null} onSelect={pickVehicle} disabled={swapping} />
                   {errors.vehicle ? <Text style={styles.fieldError}>{errors.vehicle}</Text> : null}
+                  <SwapExcludedList excluded={data?.excluded ?? []} />
 
                   <Text style={[styles.label, { marginTop: 14 }]}>Reason</Text>
                   <SwapReasonChips value={reason} onChange={pickReason} disabled={swapping} />

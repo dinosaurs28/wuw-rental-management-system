@@ -21,11 +21,10 @@ import { employeeApi } from '../../lib/api';
 import { apiErrorMessage } from '../../lib/counterErrors';
 import { isSameDay, startOfDay, withTime, type TimeSlot } from '../../lib/dates';
 import { isClosedDay, rangeHoursLine, toScheduleConfig } from '../../lib/branchSchedule';
-import { istMinuteIso, rescheduleSlots, shiftLabel } from '../../lib/reschedule';
+import { istMinuteIso, rescheduleReturn, rescheduleSlots, shiftLabel } from '../../lib/reschedule';
 import { BranchHoursLine } from '../booking/BranchHours';
 import type { RescheduleResult } from '../../types/api';
 
-const MINUTE_MS = 60_000;
 const REASON_MAX = 500;
 
 function fmtWhen(d: Date | string) {
@@ -103,7 +102,8 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
   }, [daySlots, time]);
 
   const newStart = day && time ? withTime(day, time) : null;
-  const newEnd = newStart && data ? new Date(newStart.getTime() + data.durationMinutes * MINUTE_MS) : null;
+  // pickup + the length, or a 12-hour package's return for the new pickup (item 6)
+  const newEnd = newStart && data ? rescheduleReturn(newStart, data, config) : null;
   const shiftMs = newStart && data ? newStart.getTime() - new Date(data.startAt).getTime() : 0;
 
   const submit = async () => {
@@ -182,7 +182,9 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
                       {fmtWhen(data.startAt)} → {fmtWhen(data.endAt)}
                     </Text>
                     <Text style={styles.currentSub}>
-                      {data.durationLabel} · the return moves with the pickup, the price stays the same
+                      {data.halfDayPackage
+                        ? '12-hour package · the return is 12 hours after pickup (or closing that day), the price stays the same'
+                        : `${data.durationLabel} · the return moves with the pickup, the price stays the same`}
                     </Text>
                   </View>
 
@@ -255,8 +257,8 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
                       <PreviewRow label="New pickup" value={fmtWhen(newStart)} />
                       <PreviewRow label="New return" value={fmtWhen(newEnd)} strong />
                       <Text style={styles.previewNote}>
-                        {shiftMs > 0 ? 'Later' : 'Earlier'} by {shiftLabel(shiftMs)} · same length ({data.durationLabel})
-                        — price unchanged
+                        {shiftMs > 0 ? 'Later' : 'Earlier'} by {shiftLabel(shiftMs)} ·{' '}
+                        {data.halfDayPackage ? '12-hour package' : `same length (${data.durationLabel})`} — price unchanged
                       </Text>
                     </View>
                   ) : null}

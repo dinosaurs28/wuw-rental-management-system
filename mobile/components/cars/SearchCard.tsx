@@ -80,12 +80,13 @@ export default function SearchCard({
   // "15 days". The return is pickup + the package — shown, never picked.
   const [pkg, setPkg] = useState(() => initialPackageRange(initialStart, initialEnd));
   const start = pkg.start;
-  const end = packageRangeEnd(pkg);
 
   // The branch's office hours (#2) and the 15-day limit (#15): pickers only
   // offer accepted pickups, a pickup outside them moves back in, and a package
-  // whose return the branch wouldn't take becomes the nearest one it would.
+  // whose return the branch wouldn't take becomes the nearest one it would
+  // (12 hours past closing returns at closing — client item 6).
   const { data: schedule } = useBranchSchedule(branch?.publicId);
+  const end = packageRangeEnd(pkg, 0, schedule);
   const fit = useCallback((r: PackageRange) => fitPackageRange(r, { config: schedule }), [schedule]);
   useEffect(() => {
     setPkg((r) => fit(r));
@@ -128,7 +129,7 @@ export default function SearchCard({
       branchId: branch.publicId,
       branchName: branch.name,
       start: next.start.toISOString(),
-      end: packageRangeEnd(next).toISOString(),
+      end: packageRangeEnd(next, 0, schedule).toISOString(),
     });
   };
 
@@ -221,7 +222,7 @@ export default function SearchCard({
         startDate={start}
         endDate={end}
         pickupOnly
-        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours })}
+        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule)}
         onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setDateOpen(false)}
         maxStartDay={bookingWindowLastDay()}
@@ -232,7 +233,7 @@ export default function SearchCard({
       <TimeFieldPicker
         visible={pickupOpen}
         value={timeOf(start)}
-        slots={slotsWithinHours(start, schedule, 'pickup', { before: latestPackagePickup() })}
+        slots={slotsWithinHours(start, schedule, 'pickup', { before: latestPackagePickup(new Date(), schedule) })}
         emptyText={closedDayText(schedule, start)}
         title="Pickup time"
         onSelect={(t) => setPkg((r) => ({ ...r, start: withTime(r.start, t) }))}

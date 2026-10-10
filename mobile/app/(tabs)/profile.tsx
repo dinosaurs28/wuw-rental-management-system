@@ -39,7 +39,6 @@ const DOC_TYPES: {
 }[] = [
   { type: 'DL',         label: "Driver's License", icon: 'card-outline',          sides: ['FRONT', 'BACK'] },
   { type: 'AADHAAR',    label: 'Aadhaar',           icon: 'finger-print-outline', sides: ['FRONT', 'BACK'] },
-  { type: 'PAN',        label: 'PAN Card',          icon: 'document-text-outline', sides: ['FRONT'] },
   { type: 'STUDENT_ID', label: 'Student ID',        icon: 'school-outline',         sides: ['FRONT'] },
 ];
 

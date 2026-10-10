@@ -2,6 +2,7 @@
 // Monthly tabs and #8 overdue / no-show returns.
 import type { RentalPeriodType } from './api';
 import type { DlCollectionStatus } from '../lib/dlStatus';
+import type { OperationDraftSummary } from '../lib/operationDraft';
 
 // Monthly = rentalPeriodType MONTHLY; everything else (NULL included) is Daily.
 export type BookingListType = 'DAILY' | 'MONTHLY';
@@ -22,6 +23,8 @@ export interface QueueBooking {
   dlDepositNote?: string | null;
   customer: { user: { name: string; phone: string | null } };
   items: Array<{ vehicle: { make: string; model: string; regNo: string } }>;
+  // A pickup / drop paused half-way (client item 2); absent on older servers.
+  draft?: OperationDraftSummary | null;
 }
 
 // counts.daily follows the request's date; counts.monthly has no date.
@@ -82,6 +85,8 @@ export interface OverdueReturn {
     regNo: string;
     imageUrl: string | null;
   }>;
+  // A drop paused half-way (client item 2); absent on older servers.
+  draft?: OperationDraftSummary | null;
 }
 
 export interface OverdueReturnsResponse {

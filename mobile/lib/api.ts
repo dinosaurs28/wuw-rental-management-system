@@ -11,6 +11,23 @@ import type { RescheduleOptions, RescheduleResult } from '../types/api';
 import type { PublicOffersResponse } from '../types/offers';
 import type { UpiQrTarget, UpiQrView } from '../types/upiQr';
 import type { CounterRefundMethod, PaymentProof, SafetyDepositHandling } from './counterPayment';
+import type {
+  OperationDraft,
+  OperationDraftKind,
+  OperationDraftMeta,
+  OperationDraftType,
+  PausedOperation,
+  SaveOperationDraftBody,
+} from './operationDraft';
+import type {
+  BlacklistResult,
+  CustomerBookingDetail,
+  CustomerDetail,
+  CustomerFilter,
+  CustomerListResponse,
+  RentBucket,
+  RentsPage,
+} from '../types/customers';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -421,6 +438,20 @@ export const employeeApi = {
     // manager's settlement). Omitted = SET_OFF. Response adds `safetyDeposit`.
     safetyDepositHandling?: SafetyDepositHandling;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
+
+  // ── paused pickup / drop (client item 2) — lib/operationDraft.ts ─────────
+  // { data: OperationDraft | null }; a draft whose booking moved on is dropped.
+  getOperationDraft: (kind: OperationDraftKind, bookingId: string) =>
+    api.get<{ data: OperationDraft | null }>(`/api/employee/${kind}/${bookingId}/draft`),
+  // 409 DRAFT_CONFLICT (+ the current `draft`) when baseVersion is stale;
+  // 409 DRAFT_NOT_ALLOWED once the booking is past that step.
+  saveOperationDraft: (kind: OperationDraftKind, bookingId: string, body: SaveOperationDraftBody) =>
+    api.put<{ data: OperationDraftMeta }>(`/api/employee/${kind}/${bookingId}/draft`, body),
+  discardOperationDraft: (kind: OperationDraftKind, bookingId: string) =>
+    api.delete(`/api/employee/${kind}/${bookingId}/draft`),
+  // The branch's paused operations, newest first.
+  listOperationDrafts: (params?: { type?: OperationDraftType }) =>
+    api.get<{ data: PausedOperation[] }>('/api/employee/operation-drafts', { params }),
   getBookingKyc: (bookingId: string) =>
     api.get(`/api/employee/kyc/${bookingId}`),
   verifyKyc: (kycId: string, status: 'APPROVED' | 'REJECTED') =>
@@ -584,6 +615,10 @@ export const employeeApi = {
     api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
   vehicleDetail: (id: string, params?: { start?: string; end?: string }) =>
     api.get(`/api/employee/vehicles/${id}`, { params }),
+  // Cars whose registration number contains q (spaces / hyphens ignored), one
+  // row each, priced for the dates; unbookable ones come with the reason.
+  searchVehiclesByRegNo: (params: { q: string; start: string; end: string }) =>
+    api.get('/api/employee/vehicles/search-reg', { params }),
 
   // ── walk-in booking create / hold / pay ───────────────────────────────────
   createBooking: (body: {
@@ -854,6 +889,40 @@ export const employeeApi = {
   // A fresh 15-minute URL for a proof of this branch; 404 PAYMENT_PROOF_NOT_FOUND.
   getPaymentProof: (proofFileId: string) =>
     api.get<{ success: boolean; data: PaymentProof }>(`/api/employee/payment/proof/${encodeURIComponent(proofFileId)}`),
+};
+
+// ─── Customers tab (Fleet) ─────────────────────────────────────────────────
+// The branch manager's Customers tab, same handlers / data / rules
+// (types/customers.ts). customerId = Customer publicId (User publicId works too).
+// Errors carry { code, message }: 404 CUSTOMER_NOT_FOUND / BOOKING_NOT_FOUND,
+// 400 INVALID_QUERY / BLACKLIST_REASON_REQUIRED / BLACKLIST_REASON_TOO_LONG,
+// 409 CUSTOMER_ALREADY_BLACKLISTED / CUSTOMER_NOT_BLACKLISTED.
+const customersBase = (customerId: string) => `/api/employee/customers/${encodeURIComponent(customerId)}`;
+
+export const employeeCustomersApi = {
+  // Every registered customer, newest first; search = name or phone (≤100 chars).
+  list: (params: { search?: string; filter?: CustomerFilter; page?: number; limit?: number }) =>
+    api.get<CustomerListResponse>('/api/employee/customers', { params }),
+  // Profile, blacklist, pending credit and the first 20 rents per bucket.
+  get: (customerId: string) =>
+    api.get<{ success: boolean; data: CustomerDetail }>(customersBase(customerId)),
+  rents: (customerId: string, params: { bucket: RentBucket; page: number; limit?: number }) =>
+    api.get<RentsPage>(`${customersBase(customerId)}/rents`, { params }),
+  booking: (customerId: string, bookingId: string) =>
+    api.get<{ success: boolean; data: CustomerBookingDetail }>(
+      `${customersBase(customerId)}/bookings/${encodeURIComponent(bookingId)}`,
+    ),
+  // reason: 3–500 chars. Existing bookings are not cancelled.
+  blacklist: (customerId: string, reason: string) =>
+    api.post<{ success: boolean; message: string; data: BlacklistResult }>(
+      `${customersBase(customerId)}/blacklist`,
+      { reason },
+    ),
+  unblacklist: (customerId: string, note?: string) =>
+    api.post<{ success: boolean; message: string }>(
+      `${customersBase(customerId)}/unblacklist`,
+      note ? { note } : {},
+    ),
 };
 
 // Legacy remaining balance (#3 / #11) — POST …/initiate-remaining-payment.

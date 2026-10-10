@@ -17,7 +17,8 @@ interface Props {
 // Booking packages as one-tap chips: "12 hours", "1 day" … "15 days" (or
 // "+12 hours", "+1 day" … for an extension). A package the branch can't take
 // (its return falls outside office hours) is greyed out with the reason
-// underneath; chips sharing a reason share one line.
+// underneath; chips sharing a reason share one line. A 12-hour package held to
+// closing (client item 6) says when it returns.
 export default function PackagePicker({ choices, selectedHours, onSelect, tone = 'light', emptyText }: Props) {
   const dark = tone === 'dark';
   const listRef = useRef<FlatList<PackageChoice>>(null);
@@ -61,7 +62,7 @@ export default function PackagePicker({ choices, selectedHours, onSelect, tone =
               disabled={blocked}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel={blocked ? `${c.label}, unavailable` : c.label}
+              accessibilityLabel={blocked ? `${c.label}, unavailable` : c.note ? `${c.label}, ${c.note}` : c.label}
               accessibilityState={{ selected: active, disabled: blocked }}
               // Bring the chosen package into view once it lays out.
               onLayout={(e) => {
@@ -83,6 +84,13 @@ export default function PackagePicker({ choices, selectedHours, onSelect, tone =
           );
         }}
       />
+      {choices
+        .filter((c) => c.note && !c.issue)
+        .map((c) => (
+          <Text key={`note-${c.hours}`} style={[styles.issue, dark ? styles.issueDark : styles.issueLight]}>
+            {c.label} — {c.note}
+          </Text>
+        ))}
       {reasons.map((r) => (
         <Text key={r.issue} style={[styles.issue, dark ? styles.issueDark : styles.issueLight]}>
           {r.labels.join(', ')} unavailable — {r.issue}

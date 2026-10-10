@@ -9,6 +9,11 @@ export interface EmployeeBookingCustomer {
 
 export interface EmployeeBookingVehicle {
   groupKey: string;
+  // Set when staff picked one car by its registration number (client item 5):
+  // the booking is created for exactly this car (vehicles: [publicId]) instead
+  // of any free unit of groupKey.
+  vehiclePublicId?: string | null;
+  regNo?: string | null;
   make: string;
   model: string;
   category: string;

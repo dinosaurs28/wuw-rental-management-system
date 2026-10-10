@@ -22,6 +22,8 @@ import { callPhone } from '../../components/employee/recovery/recoveryUtils';
 import { useRecoveryCount } from '../../components/employee/recovery/useRecovery';
 import { fmtDurationMinutes } from '../../lib/dates';
 import { DlStatusLine } from '../../components/employee/DlStatus';
+import { PausedChip } from '../../components/employee/OperationDraftParts';
+import PausedOperations from '../../components/employee/PausedOperations';
 import type {
   BookingListType,
   QueueBooking,
@@ -129,6 +131,8 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
         </View>
         {/* Original driving licence status (#3, D6) — pickups show it only once set */}
         <DlStatusLine status={booking.dlStatus} note={booking.dlDepositNote} showUnrecorded={type === 'returns'} />
+        {/* Started and left for later (client item 2) — tapping resumes it */}
+        <PausedChip draft={booking.draft} />
       </View>
 
       <View style={styles.cardFooter}>
@@ -385,9 +389,12 @@ export default function BookingsQueue() {
             <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={Colors.orange} />
           }
           ListHeaderComponent={
-            // The Daily return list covers one day; rentals still out from
-            // earlier days live on the Recovery tab.
-            activeTab === 'returns' && overdueCount > 0 ? (
+            <>
+            {/* Paused pickups / drops of any day (client item 2) */}
+            <PausedOperations type={activeTab === 'pickups' ? 'PICKUP' : 'RETURN'} />
+            {/* The Daily return list covers one day; rentals still out from
+                earlier days live on the Recovery tab. */}
+            {activeTab === 'returns' && overdueCount > 0 ? (
               <TouchableOpacity style={styles.overdueBanner} onPress={() => router.navigate('/(employee)/recovery' as Href)} activeOpacity={0.85}>
                 <Ionicons name="alarm-outline" size={16} color={Colors.availNone} />
                 <Text style={styles.overdueBannerText}>
@@ -396,7 +403,8 @@ export default function BookingsQueue() {
                 <Text style={styles.overdueBannerLink}>open Recovery</Text>
                 <Ionicons name="chevron-forward" size={14} color={Colors.availNone} />
               </TouchableOpacity>
-            ) : null
+            ) : null}
+            </>
           }
           ListEmptyComponent={
             <View style={styles.empty}>

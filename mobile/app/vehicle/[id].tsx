@@ -91,7 +91,12 @@ export default function VehicleDetail() {
   // length read as a package); otherwise the next 5-minute mark and 1 day.
   const [pkg, setPkg] = useState(() => initialPackageRange(startParam, endParam));
   const startDate = pkg.start;
-  const endDate = packageRangeEnd(pkg);
+  // Office hours (#2) of the searched branch until the payload names its own —
+  // kept while a new pickup's payload loads, so the return below doesn't flicker.
+  const [hoursBranch, setHoursBranch] = useState<string | null>(branchParam ?? null);
+  const { data: schedule } = useBranchSchedule(hoursBranch);
+  // 12 hours past closing returns at closing that day (client item 6)
+  const endDate = packageRangeEnd(pkg, 0, schedule);
 
   // Coming back from checkout (or the background) can leave the pickup in the
   // past. While focused — on focus, on return to the foreground and every
@@ -160,7 +165,9 @@ export default function VehicleDetail() {
   // the branch accepts, a pickup outside them moves back in, and a package
   // whose return the branch wouldn't take becomes the nearest one it would.
   const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
-  const { data: schedule } = useBranchSchedule(branchPublicId);
+  useEffect(() => {
+    if (branchPublicId) setHoursBranch(branchPublicId);
+  }, [branchPublicId]);
   const fit = useCallback((r: PackageRange) => fitPackageRange(r, { config: schedule }), [schedule]);
   useEffect(() => {
     setPkg((r) => fit(r));
@@ -496,8 +503,8 @@ export default function VehicleDetail() {
               params: {
                 vehicleId: vehicle.publicId,
                 start: next.start.toISOString(),
-                // Always pickup + the package (12 h or N × 24 h, P2).
-                end: packageRangeEnd(next).toISOString(),
+                // Always pickup + the package (12 h or N × 24 h, P2; 12 h held to closing — item 6).
+                end: packageRangeEnd(next, 0, schedule).toISOString(),
                 ...(branchPublicId ? { branch: branchPublicId } : {}),
               },
             });
@@ -516,7 +523,7 @@ export default function VehicleDetail() {
         startDate={startDate}
         endDate={endDate}
         pickupOnly
-        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours })}
+        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule)}
         onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setShowPicker(false)}
         maxStartDay={bookingWindowLastDay()}
@@ -530,7 +537,7 @@ export default function VehicleDetail() {
       <TimeFieldPicker
         visible={pickupTimeOpen}
         value={timeOf(startDate)}
-        slots={slotsWithinHours(startDate, schedule, 'pickup', { before: latestPackagePickup() })}
+        slots={slotsWithinHours(startDate, schedule, 'pickup', { before: latestPackagePickup(new Date(), schedule) })}
         emptyText={closedDayText(schedule, startDate)}
         title="Pickup time"
         onSelect={(t) => setPkg((r) => ({ ...r, start: withTime(r.start, t) }))}

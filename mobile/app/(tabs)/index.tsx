@@ -30,6 +30,8 @@ import type { PublicOffer } from '../../types/offers';
 
 const { height } = Dimensions.get('window');
 const HERO_HEIGHT = Math.min(0.52 * height, 440);
+// Cards in the Recommended rail; "See all (n)" opens the full list.
+const RAIL_SIZE = 8;
 // Generated studio hero — edges feathered to exactly #0e0f13 so it melts
 // into the screen background with no visible frame.
 const CAR = require('../../assets/hero-dark.jpg');
@@ -135,7 +137,7 @@ export default function Home() {
   const browseStart = useMemo(() => new Date(Date.now() + 86_400_000).toISOString(), [today]);
   const browseEnd = useMemo(() => new Date(Date.now() + 2 * 86_400_000).toISOString(), [today]);
 
-  const { data: recommended, isLoading: recommendedLoading } = useQuery({
+  const { data: recommendedData, isLoading: recommendedLoading } = useQuery({
     queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today],
     queryFn: () =>
       vehiclesApi.list({
@@ -144,10 +146,27 @@ export default function Home() {
         end: browseEnd,
         branch: selectedBranch?.publicId,
       }),
-    select: (res) => normalizeGroups((res.data?.data ?? []) as any[]).slice(0, 8),
+    // The rail shows the first few cards; total = every card for the window
+    select: (res) => ({
+      cards: normalizeGroups((res.data?.data ?? []) as any[]).slice(0, RAIL_SIZE),
+      total: Number(res.data?.count ?? 0),
+    }),
     staleTime: 30_000,
     enabled: !!selectedBranch,
   });
+  const recommended = recommendedData?.cards;
+  const recommendedTotal = recommendedData?.total ?? 0;
+
+  // "See all (n)": the full list for the same window (client item 7)
+  const seeAllRecommended = () =>
+    router.push({
+      pathname: '/search',
+      params: {
+        ...(selectedBranch ? { branch: selectedBranch.publicId, branchName: selectedBranch.name } : {}),
+        start: browseStart,
+        end: browseEnd,
+      },
+    });
 
   const onSearch = (q: SearchQuery) =>
     router.push({
@@ -209,7 +228,14 @@ export default function Home() {
         </View>
 
         {/* ── Recommended for you ── */}
-        <Text style={styles.sectionTitle}>Recommended for you</Text>
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>Recommended for you</Text>
+          {recommendedTotal > (recommended?.length ?? 0) ? (
+            <TouchableOpacity onPress={seeAllRecommended} hitSlop={8} activeOpacity={0.8}>
+              <Text style={styles.seeAll}>See all ({recommendedTotal})</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
         {recommendedLoading ? (
           <ActivityIndicator style={{ marginTop: 24 }} color={Colors.orange} size="large" />
         ) : (recommended?.length ?? 0) > 0 ? (
@@ -284,6 +310,14 @@ const styles = StyleSheet.create({
     marginTop: 32,
     marginBottom: 16,
   },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    paddingRight: 20,
+  },
+  sectionTitleInRow: { flexShrink: 1 },
+  seeAll: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
   rail: { paddingHorizontal: 20, gap: 12 },
   emptyText: {
     fontFamily: Fonts.body,

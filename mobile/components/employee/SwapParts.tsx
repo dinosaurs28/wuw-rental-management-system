@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +12,7 @@ import {
   type SwapCandidate,
   type SwapCandidates,
   type SwapContext,
+  type SwapExcludedVehicle,
   type SwapPickerVehicle,
   type SwapReason,
 } from '../../types/vehicleSwap';
@@ -32,6 +34,7 @@ export function useSwapCandidates(bookingId: string, enabled: boolean) {
       const res = await employeeApi.getAvailableVehicles(bookingId);
       return {
         vehicles: (res.data?.data ?? []) as SwapCandidate[],
+        excluded: (res.data?.excluded ?? []) as SwapExcludedVehicle[],
         context: (res.data?.swapContext ?? null) as SwapContext | null,
       };
     },
@@ -110,6 +113,36 @@ export function SwapCandidateList<T extends SwapPickerVehicle>({
         );
       })}
     </>
+  );
+}
+
+// Same-type cars that can't take over this booking, with the server's reason —
+// collapsed under the candidates so staff aren't left guessing (client item 7).
+export function SwapExcludedList({ excluded }: { excluded: SwapExcludedVehicle[] }) {
+  const [open, setOpen] = useState(false);
+  if (excluded.length === 0) return null;
+  return (
+    <View style={styles.excludedWrap}>
+      <TouchableOpacity
+        style={styles.excludedToggle}
+        onPress={() => setOpen((v) => !v)}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <Text style={styles.excludedToggleText}>Not available ({excluded.length})</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.ink3} />
+      </TouchableOpacity>
+      {open &&
+        excluded.map((v) => (
+          <View key={v.id} style={styles.excludedRow}>
+            <Text style={styles.excludedName} numberOfLines={1}>
+              {v.make} {v.model} · {v.regNo}
+            </Text>
+            <Text style={styles.excludedReason}>{v.reason}</Text>
+          </View>
+        ))}
+    </View>
   );
 }
 
@@ -251,6 +284,13 @@ const styles = StyleSheet.create({
   upgradeBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.orange, letterSpacing: 0.2 },
   vehPrice: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.ink3 },
   vehPriceUp: { color: Colors.ink2 },
+
+  excludedWrap: { marginTop: 2, marginBottom: 8 },
+  excludedToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  excludedToggleText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
+  excludedRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.hairline },
+  excludedName: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
+  excludedReason: { fontFamily: Fonts.body, fontSize: 12, color: '#b45309', marginTop: 2, lineHeight: 17 },
 
   reasonWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   reasonChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline },

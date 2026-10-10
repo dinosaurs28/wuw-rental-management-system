@@ -52,6 +52,23 @@ interface SlideProps {
 function ZoomSlide({ url, width, height, active, onZoomChange }: SlideProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  // Bumped to remount the image: one silent retry, then the Retry button.
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = () => {
+    setError(false);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  };
+
+  const onLoadError = () => {
+    if (attempt === 0) {
+      retry();
+      return;
+    }
+    setLoading(false);
+    setError(true);
+  };
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -157,17 +174,25 @@ function ZoomSlide({ url, width, height, active, onZoomChange }: SlideProps) {
           <View style={styles.errorInner}>
             <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.3)" />
             <Text style={styles.errorText}>Failed to load photo</Text>
+            <TouchableOpacity
+              onPress={retry}
+              style={styles.retryBtn}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading photo"
+            >
+              <Ionicons name="refresh" size={16} color="#fff" />
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <Animated.Image
+            key={attempt}
             source={{ uri: url }}
             style={[{ width, height }, animatedStyle]}
             resizeMode="contain"
-            onLoadEnd={() => setLoading(false)}
-            onError={() => {
-              setLoading(false);
-              setError(true);
-            }}
+            onLoad={() => setLoading(false)}
+            onError={onLoadError}
           />
         )}
       </View>
@@ -327,4 +352,14 @@ const styles = StyleSheet.create({
   centerOverlay: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   errorInner: { alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontFamily: Fonts.body, fontSize: 14, color: 'rgba(255,255,255,0.6)' },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  retryText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#fff' },
 });

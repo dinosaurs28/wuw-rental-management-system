@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
@@ -25,9 +25,12 @@ import { TimesNotice } from '../components/booking/BranchHours';
 import { useBranchSchedule } from '../hooks/useBranchSchedule';
 import { bookingTimesNotice } from '../lib/branchSchedule';
 import { timeLabel, timeOf } from '../lib/dates';
-import { customerPackageFor } from '../lib/bookingWindow';
+import { bookedPackageFor } from '../lib/packages';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Cards per page; further pages load on scroll until the server's count is reached.
+const PAGE_SIZE = 40;
 
 // "12 Jul | 6:05 PM"
 function fmtStamp(iso?: string | null): string | null {
@@ -69,19 +72,32 @@ export default function Search() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: results, isLoading } = useQuery({
+  // Every matching card (client item 7): pages of PAGE_SIZE by the server's count
+  const {
+    data: results,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', useCases.join(','), start ?? '', end ?? ''],
-    queryFn: () =>
-      vehiclesApi.list({
+    queryFn: async ({ pageParam }) => {
+      const res = await vehiclesApi.list({
         branch: branchId || undefined,
         category: categoryId || undefined,
         sort: (sort as any) || undefined,
         useCases: useCases.length ? useCases.join(',') : undefined,
         start: start || undefined,
         end: end || undefined,
-        limit: 40,
-      }),
-    select: (res) => normalizeGroups((res.data?.data ?? []) as any[]),
+        limit: PAGE_SIZE,
+        offset: pageParam,
+      });
+      return { rows: (res.data?.data ?? []) as any[], count: Number(res.data?.count ?? 0), offset: pageParam };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (last) =>
+      last.rows.length > 0 && last.offset + last.rows.length < last.count ? last.offset + last.rows.length : undefined,
+    select: (data) => normalizeGroups(data.pages.flatMap((p) => p.rows)),
   });
 
   const applyEdit = (q: SearchQuery) => {
@@ -94,14 +110,14 @@ export default function Search() {
 
   const startStamp = fmtStamp(start);
   const endStamp = fmtStamp(end);
-  // The package searched (P1), e.g. "1 day" — the search card only sends packages.
-  const searchedPackage = start && end ? customerPackageFor(start, end)?.label ?? null : null;
-
   // Searched times the branch won't accept (outside office hours, past the
   // 15-day limit) — flagged above the offers so it isn't a checkout surprise.
   const { data: schedule } = useBranchSchedule(branchId);
   const startD = start ? new Date(start) : null;
   const endD = end ? new Date(end) : null;
+  // The package searched (P1), e.g. "1 day" — the search card only sends
+  // packages (12 hours may be held to closing — client item 6).
+  const searchedPackage = startD && endD ? bookedPackageFor(startD, endD, schedule)?.label ?? null : null;
   const timesNotice =
     startD && endD && !isNaN(startD.getTime()) && !isNaN(endD.getTime())
       ? bookingTimesNotice(schedule, startD, endD)
@@ -157,6 +173,13 @@ export default function Search() {
           keyExtractor={(v, i) => (v.publicId ? `${v.publicId}-${i}` : String(i))}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          ListFooterComponent={
+            isFetchingNextPage ? <ActivityIndicator style={styles.footerLoader} color={Colors.orange} /> : null
+          }
           ListEmptyComponent={
             <View style={styles.noResults}>
               <Text style={styles.noResultsText}>No vehicles match your search.</Text>
@@ -266,6 +289,7 @@ const styles = StyleSheet.create({
   noticeWrap: { paddingHorizontal: 16, marginTop: 12 },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32, gap: 14 },
   loader: { marginTop: 60 },
+  footerLoader: { marginVertical: 20 },
   noResults: { alignItems: 'center', paddingTop: 48 },
   noResultsText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.onDarkMuted },
 

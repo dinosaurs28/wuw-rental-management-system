@@ -32,15 +32,15 @@ interface WalkinKyc {
 const TYPES: { type: KycType; label: string }[] = [
   { type: 'DL', label: 'License' },
   { type: 'AADHAAR', label: 'Aadhaar' },
-  { type: 'PAN', label: 'PAN' },
   { type: 'STUDENT_ID', label: 'Student' },
 ];
 const SIDES: KycSide[] = ['FRONT', 'BACK'];
 // Documents are optional (X2) — the customer's DL number is what's required.
 // To attach one to the booking it needs BOTH sides of one of these (same rule
-// as the web); a student ID can be uploaded but can't be attached.
-const BOOKABLE_TYPES: KycType[] = ['DL', 'AADHAAR', 'PAN'];
-const TYPE_LABEL: Record<string, string> = { DL: 'Licence', AADHAAR: 'Aadhaar', PAN: 'PAN' };
+// as the web); a student ID can be uploaded but can't be attached. PAN is no
+// longer accepted — an older PAN upload still lists but can't be attached.
+const BOOKABLE_TYPES: KycType[] = ['DL', 'AADHAAR'];
+const TYPE_LABEL: Record<string, string> = { DL: 'Licence', AADHAAR: 'Aadhaar' };
 const STATUS_COLOR: Record<string, string> = { PENDING: '#d97706', APPROVED: '#059669', REJECTED: '#dc2626' };
 
 export default function WalkinKycScreen() {
@@ -274,7 +274,7 @@ export default function WalkinKycScreen() {
           <View style={styles.emptyCard}>
             <Ionicons name="document-outline" size={22} color={Colors.ink4} />
             <Text style={styles.emptyCardText}>
-              No documents yet. They&apos;re optional — to attach one, add the front and back of a licence, Aadhaar or PAN.
+              No documents yet. They&apos;re optional — to attach one, add the front and back of a licence or Aadhaar.
             </Text>
           </View>
         ) : (
@@ -320,7 +320,7 @@ export default function WalkinKycScreen() {
           <Text style={styles.footerHint}>
             {BOOKABLE_TYPES.includes(selectedType)
               ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to attach it, or continue without a document.`
-              : 'A student ID can\'t be attached. Select a licence, Aadhaar or PAN, or continue without a document.'}
+              : 'Only a licence or Aadhaar can be attached. Select one, or continue without a document.'}
           </Text>
         ) : (
           <Text style={styles.footerNote}>

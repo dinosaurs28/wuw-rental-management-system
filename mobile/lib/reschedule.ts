@@ -2,11 +2,13 @@
 // can move to, from GET /api/employee/bookings/:publicId/reschedule. The same
 // checks the server makes (contract PK §6.5); the server re-checks on submit.
 import {
+  halfDayReturnFor,
   hasOfficeHours,
   isPickupTimeAllowed,
   isReturnTimeAllowed,
   slotsWithinHours,
   toScheduleConfig,
+  type BranchScheduleConfig,
 } from './branchSchedule';
 import { timeLabel, timeOf, withTime, type TimeSlot } from './dates';
 import type { RescheduleOptions } from '../types/api';
@@ -32,17 +34,30 @@ export function shiftLabel(ms: number): string {
 }
 
 /**
+ * The return a move to `start` gives: pickup + the booking's length, or — for a
+ * 12-hour package (client item 6) — the package's return for that pickup
+ * (pickup + 12 h, or closing that day). null when no 12-hour return fits.
+ */
+export function rescheduleReturn(
+  start: Date,
+  opts: Pick<RescheduleOptions, 'durationMinutes' | 'halfDayPackage'>,
+  config: BranchScheduleConfig | null,
+): Date | null {
+  if (opts.halfDayPackage && hasOfficeHours(config)) return halfDayReturnFor(config, start)?.endAt ?? null;
+  return new Date(start.getTime() + opts.durationMinutes * MINUTE_MS);
+}
+
+/**
  * The pickup times on `day` a booking can move to: the slots the branch takes
  * for a pickup (30-minute grid, opening and last pickup), plus the booking's
  * own clock time — kept only when
  *  1. the pickup is inside the pickup hours (open … close − cutoff);
- *  2. the return (pickup + the booking's length) is inside the return hours;
+ *  2. the return (pickup + the booking's length, or a 12-hour package's return) is inside the return hours;
  *  3. it is within earliest − tolerance … latest and not the current pickup;
  *  4. no other booking / hold on the vehicle or the customer's licence overlaps.
  */
 export function rescheduleSlots(day: Date, opts: RescheduleOptions, now: Date = new Date()): TimeSlot[] {
   const config = toScheduleConfig(opts.officeHours);
-  const duration = opts.durationMinutes * MINUTE_MS;
   const earliest = new Date(opts.earliestStartAt).getTime() - opts.pastToleranceMinutes * MINUTE_MS;
   const latest = new Date(opts.latestStartAt);
   const current = new Date(opts.startAt);
@@ -64,7 +79,9 @@ export function rescheduleSlots(day: Date, opts: RescheduleOptions, now: Date = 
   }));
   return slots.filter((s) => {
     const t = withTime(day, s.value).getTime();
-    const r = t + duration;
+    const returnAt = rescheduleReturn(new Date(t), opts, config);
+    if (!returnAt) return false;
+    const r = returnAt.getTime();
     if (t < earliest || t > latest.getTime()) return false;
     if (Math.abs(t - current.getTime()) < MINUTE_MS) return false;
     if (hasOfficeHours(config) && !isReturnTimeAllowed(config, new Date(r))) return false;

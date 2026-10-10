@@ -6,22 +6,31 @@
 // booking create's BOOKING_PACKAGE_REQUIRED can't be hit from the app.
 // Self-extensions add +12 hours or + N days. Fleet walk-ins use the same
 // packages plus 0–11 extra hours (the server takes any length from staff).
+// When pickup + 12 h is outside office hours, the 12-hour package returns at
+// closing on the pickup day (client item 6) — still the 12-hour package,
+// priced as 12 hours by the server — and the screens say so.
 import {
   CUSTOMER_PACKAGES,
+  HALF_DAY_CLAMP_MIN_MINUTES,
   HALF_DAY_PACKAGE_HOURS,
   MAX_BOOKING_DAYS,
   bookingWindowEnd,
   customerPackageEnd,
+  customerPackageFor,
   customerPackagesForPickup,
   extensionPackageOptions,
   matchPackageHours,
   packageLabel,
+  type CustomerPackage,
 } from './bookingWindow';
 import {
   bookingTimesNotice,
   firstAllowedFrom,
   getBranchLocalTime,
+  getDayWindow,
+  halfDayReturnFor,
   hasOfficeHours,
+  isClampedHalfDay,
   isPickupTimeAllowed,
   minutesToDisplay,
   validateReturnTime,
@@ -44,6 +53,8 @@ export interface PackageChoice {
   label: string;
   endAt: Date;
   issue: string | null;
+  /** The 12-hour package held to closing: when it returns, e.g. "return by 10:30 PM today, when the branch closes". */
+  note?: string;
 }
 
 /** A pickup and the package booked from it (the return is derived). */
@@ -52,7 +63,16 @@ export interface PackageRange {
   hours: number;
 }
 
-export function packageRangeEnd(r: PackageRange, extraHours = 0): Date {
+/**
+ * Return of a pickup + package (+ extra hours). Given the branch hours, the
+ * 12-hour package (no extra hours) whose return they wouldn't take is held to
+ * closing on the pickup day (client item 6).
+ */
+export function packageRangeEnd(r: PackageRange, extraHours = 0, config?: BranchScheduleConfig | null): Date {
+  if (r.hours === HALF_DAY_PACKAGE_HOURS && extraHours === 0 && hasOfficeHours(config)) {
+    const half = halfDayReturnFor(config, r.start);
+    if (half?.clamped) return half.endAt;
+  }
   return customerPackageEnd(r.start, r.hours + extraHours);
 }
 
@@ -97,9 +117,27 @@ export function refreshPackageRange<R extends PackageRange>(r: R, now: Date = ne
   return r.start.getTime() > now.getTime() ? r : { ...r, start: nextFiveMinuteMark(now) };
 }
 
-/** Latest pickup that still leaves the 12-hour package inside the 15-day window. */
-export function latestPackagePickup(now: Date = new Date()): Date {
-  return new Date(bookingWindowEnd(now).getTime() - HALF_DAY_PACKAGE_HOURS * HOUR_MS);
+/**
+ * Latest pickup that still leaves the 12-hour package inside the 15-day window:
+ * window end − 12 h, or — given the branch hours — an hour before closing on
+ * the window's last day, where 12 hours is held to closing (client item 6).
+ */
+export function latestPackagePickup(now: Date = new Date(), config?: BranchScheduleConfig | null): Date {
+  const windowEnd = bookingWindowEnd(now);
+  const plain = new Date(windowEnd.getTime() - HALF_DAY_PACKAGE_HOURS * HOUR_MS);
+  const lastDay = hasOfficeHours(config) ? getDayWindow(config, windowEnd) : null;
+  if (!lastDay?.isOpen) return plain;
+  // windowEnd is 23:59:59.999 IST on the last day
+  const lastDayStart = windowEnd.getTime() + 1 - 24 * HOUR_MS;
+  const held = new Date(lastDayStart + (lastDay.closeMin - HALF_DAY_CLAMP_MIN_MINUTES) * 60_000);
+  return held.getTime() > plain.getTime() ? held : plain;
+}
+
+/** The 12-hour return held to closing for this pickup (item 6), when the branch hours hold it. */
+function heldHalfDayEnd(config: BranchScheduleConfig | null | undefined, start: Date): Date | undefined {
+  if (!hasOfficeHours(config)) return undefined;
+  const half = halfDayReturnFor(config, start);
+  return half?.clamped ? half.endAt : undefined;
 }
 
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -107,6 +145,12 @@ const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function clockLabel(at: Date): string {
   const { hours, minutes } = getBranchLocalTime(at);
   return minutesToDisplay(hours * 60 + minutes);
+}
+
+/** "return by 10:30 PM today, when the branch closes" — a 12-hour package held to closing. */
+export function heldReturnNote(endAt: Date, now: Date = new Date()): string {
+  const day = istDayLabel(endAt);
+  return `return by ${clockLabel(endAt)} ${day === istDayLabel(now) ? 'today' : `on ${day}`}, when the branch closes`;
 }
 
 /**
@@ -140,12 +184,33 @@ export function customerPackageChoices(
   config: BranchScheduleConfig | null | undefined,
   now: Date = new Date(),
 ): PackageChoice[] {
-  return customerPackagesForPickup(start, now).map((p) => ({
-    hours: p.hours,
-    label: p.label,
-    endAt: p.endAt,
-    issue: returnIssue(config, p.endAt),
-  }));
+  return customerPackagesForPickup(start, now, heldHalfDayEnd(config, start)).map((p) => {
+    const endAt = packageRangeEnd({ start, hours: p.hours }, 0, config);
+    return {
+      hours: p.hours,
+      label: p.label,
+      endAt,
+      issue: returnIssue(config, endAt),
+      ...(endAt.getTime() !== p.endAt.getTime() && { note: heldReturnNote(endAt, now) }),
+    };
+  });
+}
+
+/**
+ * The package a pickup → return books (checkout): a 12-hour / whole-day
+ * package, or the 12-hour package held to closing on the pickup day
+ * (heldToClosing). null for anything else — the server would refuse it.
+ */
+export function bookedPackageFor(
+  start: Date,
+  end: Date,
+  config: BranchScheduleConfig | null | undefined,
+): (CustomerPackage & { heldToClosing: boolean }) | null {
+  const exact = customerPackageFor(start, end);
+  if (exact) return { ...exact, heldToClosing: false };
+  if (!hasOfficeHours(config) || !isClampedHalfDay(config, start, end)) return null;
+  const halfDay = customerPackageFor(start, customerPackageEnd(start, HALF_DAY_PACKAGE_HOURS));
+  return halfDay ? { ...halfDay, heldToClosing: true } : null;
 }
 
 /** The usable package nearest to `hours`: itself, else the next longer one, else the longest shorter one. */
@@ -173,7 +238,7 @@ export function fitPackageRange<R extends PackageRange>(
   const config = hasOfficeHours(opts.config) ? opts.config : null;
   let start = r.start.getTime() > now.getTime() ? r.start : nextFiveMinuteMark(now);
   if (config && !isPickupTimeAllowed(config, start)) {
-    const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now) });
+    const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now, config) });
     if (next) start = next;
   }
   const hours = nearestUsablePackage(customerPackageChoices(start, config, now), r.hours) ?? r.hours;
@@ -197,7 +262,7 @@ export function packageTimesNotice(
   r: PackageRange,
   now: Date = new Date(),
 ): BookingTimesNotice | null {
-  if (customerPackagesForPickup(r.start, now).length === 0) {
+  if (customerPackagesForPickup(r.start, now, heldHalfDayEnd(config, r.start)).length === 0) {
     return {
       tone: 'error',
       text: `Bookings can run up to ${MAX_BOOKING_DAYS} days from today (return by ${istDayLabel(
@@ -205,7 +270,7 @@ export function packageTimesNotice(
       )}), so even the 12-hour package from this pickup is too long. Choose an earlier pickup.`,
     };
   }
-  return bookingTimesNotice(config, r.start, packageRangeEnd(r), { now });
+  return bookingTimesNotice(config, r.start, packageRangeEnd(r, 0, config), { now });
 }
 
 // ── Fleet walk-in: package + extra hours (P4a) ─────────────────────────────
@@ -218,7 +283,7 @@ export function walkinExtraIssue(
   extra: number,
   now: Date = new Date(),
 ): string | null {
-  const end = customerPackageEnd(start, packageHours + extra);
+  const end = packageRangeEnd({ start, hours: packageHours }, extra, config);
   if (end.getTime() > maxReturnFor(start, now).getTime()) return `past the ${MAX_BOOKING_DAYS}-day limit`;
   return returnIssue(config, end);
 }
@@ -230,12 +295,18 @@ export function walkinPackageChoices(
   config: BranchScheduleConfig | null | undefined,
   now: Date = new Date(),
 ): PackageChoice[] {
-  return customerPackagesForPickup(start, now).map((p) => ({
-    hours: p.hours,
-    label: p.label,
-    endAt: customerPackageEnd(start, p.hours + extra),
-    issue: walkinExtraIssue(config, start, p.hours, extra, now),
-  }));
+  return customerPackagesForPickup(start, now, extra === 0 ? heldHalfDayEnd(config, start) : undefined).map((p) => {
+    const endAt = packageRangeEnd({ start, hours: p.hours }, extra, config);
+    return {
+      hours: p.hours,
+      label: p.label,
+      endAt,
+      issue: walkinExtraIssue(config, start, p.hours, extra, now),
+      ...(endAt.getTime() !== customerPackageEnd(start, p.hours + extra).getTime() && {
+        note: heldReturnNote(endAt, now),
+      }),
+    };
+  });
 }
 
 export interface WalkinPackage extends PackageRange {
@@ -255,12 +326,12 @@ export function fitWalkinPackage(
   const config = hasOfficeHours(opts.config) ? opts.config : null;
   let start = r.start.getTime() > now.getTime() ? r.start : nextFiveMinuteMark(now);
   if (config && !isPickupTimeAllowed(config, start)) {
-    const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now) });
+    const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now, config) });
     if (next) start = next;
   }
   let hours = r.hours;
   let extra = r.extra;
-  const inWindow = customerPackagesForPickup(start, now).some((p) => p.hours === hours);
+  const inWindow = customerPackagesForPickup(start, now, heldHalfDayEnd(config, start)).some((p) => p.hours === hours);
   if (!inWindow || walkinExtraIssue(config, start, hours, extra, now)) {
     const extras = inWindow
       ? WALKIN_EXTRA_HOURS.filter((e) => !walkinExtraIssue(config, start, hours, e, now)).sort(

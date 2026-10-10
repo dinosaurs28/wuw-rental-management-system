@@ -58,6 +58,8 @@ import DropBillCard, {
   LegacyReturnChargesCard,
   SwapChargesCard,
 } from '../../../components/employee/drop/DropBillCard';
+import { useReturnDraft } from '../../../hooks/useReturnDraft';
+import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -382,6 +384,30 @@ export default function ReturnScreen() {
       }
     })();
   }, [bookingId, booking?.usePaymentSessions]);
+
+  // Pause / resume (client item 2): everything entered here is saved on the
+  // server as it changes and comes back when the drop is opened again.
+  const draft = useReturnDraft({
+    bookingId: bookingId as string | undefined,
+    enabled: !!booking && booking.status === 'PICKED_UP' && !booking.requiresManagerConfirmation && !done,
+    vehicleKey: booking ? `${booking.items[0]?.vehicle.publicId ?? ''}|${booking.kmSegments?.swapCount ?? 0}` : null,
+    fuelDefault: booking?.pickupFuelLevel ?? '',
+    fields: {
+      endOdo, fuelLevel, chargeFuel, fuelAmt, chargeFastag, fastagAmt, fastagNote, chargeOther, otherLines,
+      damageDecision, discount, depositHandling, applyGrace, waiveLate, waiveReason, manualKm, requireManager,
+    },
+    setters: {
+      setEndOdo, setFuelLevel, setChargeFuel, setFuelAmt, setChargeFastag, setFastagAmt, setFastagNote,
+      setChargeOther, setOtherLines, setDamageDecision, setDiscount, setDepositHandling, setApplyGrace,
+      setWaiveLate, setWaiveReason, setManualKm, setRequireManager,
+    },
+    photos: returnPhotos,
+    setPhotos: setReturnPhotos,
+    pendingPhotos: photosPending,
+    pay,
+    refundPay,
+    onGone: () => { refetch(); },
+  });
 
   const vehicle = booking?.items[0]?.vehicle;
   const customer = booking?.customer.user;
@@ -768,6 +794,8 @@ export default function ReturnScreen() {
   };
 
   const onSettled = () => {
+    // Explicitly completed: the server dropped the saved draft with it.
+    draft.completed();
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
     qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
     qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking?.publicId] });
@@ -801,6 +829,8 @@ export default function ReturnScreen() {
     setSettling(true);
     setErrorMsg(null);
     try {
+      // No draft save may land while (or after) the drop completes.
+      await draft.beginCompletion();
       if (net < 0 && refundChoice) {
         await employeeApi.recordSessionRefund(session.publicId, {
           method: refundChoice.method,
@@ -851,6 +881,7 @@ export default function ReturnScreen() {
       if (mountedRef.current) setSettledNote(notes.length ? notes.join('\n') : null);
       onSettled();
     } catch (err: any) {
+      draft.abortCompletion();
       if (!mountedRef.current) return;
       if (handleShiftRequired(err)) return;
       // Photo / split / collateral problems show under the picker they belong to:
@@ -921,6 +952,8 @@ export default function ReturnScreen() {
     setSettling(true);
     setErrorMsg(null);
     try {
+      // No draft save may land while (or after) the drop completes.
+      await draft.beginCompletion();
       const res = await employeeApi.completeReturn(bookingId as string, {
         returnImageIds: returnPhotos.map((p) => p.fileId),
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
@@ -932,6 +965,7 @@ export default function ReturnScreen() {
       if (mountedRef.current) setLegacyResult((res.data ?? null) as CompleteReturnResponse | null);
       onSettled();
     } catch (err: any) {
+      draft.abortCompletion();
       if (!mountedRef.current) return;
       // 409: the branch now uses payment sessions (or pricing / GST isn't set
       // up) — refetch so the screen shows the current state.
@@ -1037,10 +1071,16 @@ export default function ReturnScreen() {
           <View style={styles.headerText}>
             <Text style={styles.title}>Return</Text>
             <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
+            <DraftSaveStatus draft={draft} />
           </View>
-          <View style={styles.returnBadge}>
-            <Text style={styles.returnBadgeText}>RETURN</Text>
-          </View>
+          {/* "Continue later" takes the badge's place while the drop can be paused */}
+          {draft.canPause ? (
+            <ContinueLaterButton draft={draft} />
+          ) : (
+            <View style={styles.returnBadge}>
+              <Text style={styles.returnBadgeText}>RETURN</Text>
+            </View>
+          )}
         </View>
 
         <ScrollView
@@ -1050,6 +1090,7 @@ export default function ReturnScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <ResumedBanner draft={draft} />
           {/* Remaining rental balance — must be collected first */}
           {hasRemainingBalance && (
             <RemainingBalanceCollect

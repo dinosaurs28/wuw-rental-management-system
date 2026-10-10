@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { fmtDurationMinutes, fmtIstDateTime } from '../../../lib/dates';
 import { DlStatusLine } from '../DlStatus';
+import { PausedChip } from '../OperationDraftParts';
 import {
   STATE_LOOK,
   callPhone,
@@ -124,6 +125,8 @@ export function RecoveryCard({ row, now }: { row: RecoveryRow; now: number }) {
             <Text style={styles.extTagText}>Extension pending</Text>
           </View>
         ) : null}
+        {/* Drop started and left for later (client item 2) — tapping resumes it */}
+        <PausedChip draft={row.draft} />
         {state === 'RETURN_IN_PROGRESS' ? (
           <Text style={styles.metaSub}>The vehicle is back. The drop bill is being settled.</Text>
         ) : state === 'AWAITING_MANAGER_CONFIRMATION' ? (

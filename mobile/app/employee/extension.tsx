@@ -570,6 +570,13 @@ export default function ExtensionScreen() {
               <Text style={styles.newEndPillText}>New return · {fmt(heldUntil)}</Text>
             </View>
           )}
+          {/* Free km this extension adds to the drop allowance (#7) */}
+          {heldFreeKm && heldFreeKm.km > 0 && (
+            <View style={styles.newEndPill}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.orange} />
+              <Text style={styles.newEndPillText}>Adds {heldFreeKm.km.toLocaleString('en-IN')} free km</Text>
+            </View>
+          )}
           <Text style={styles.successSub}>{doneMsg}</Text>
           <TouchableOpacity style={[styles.primaryBtn, styles.successBtn]} onPress={() => router.back()} activeOpacity={0.85}>
             <Text style={styles.primaryBtnText}>Back</Text>

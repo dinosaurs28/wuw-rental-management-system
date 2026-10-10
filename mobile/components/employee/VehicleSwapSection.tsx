@@ -13,6 +13,7 @@ import {
 } from '../../types/vehicleSwap';
 import SwapVehiclePicker from './SwapVehiclePicker';
 import {
+  SwapExcludedList,
   SwapPriceDifference,
   SwapReasonChips,
   chargeDifferenceToSend,
@@ -117,7 +118,10 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
           ) : isError ? (
             <Text style={styles.emptyText}>{apiErrorMessage(error, 'Could not load alternatives.')}</Text>
           ) : vehicles.length === 0 ? (
-            <Text style={styles.emptyText}>No alternative vehicles of the same or a higher category are free in this branch.</Text>
+            <>
+              <Text style={styles.emptyText}>No alternative vehicles of the same or a higher category are free in this branch.</Text>
+              <SwapExcludedList excluded={data?.excluded ?? []} />
+            </>
           ) : (
             <>
               {context?.pricingError ? (
@@ -129,6 +133,7 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
                 onSelect={(v) => setSelectedId(v.id)}
                 disabled={swapping}
               />
+              <SwapExcludedList excluded={data?.excluded ?? []} />
 
               <Text style={styles.fieldLabel}>Reason</Text>
               <SwapReasonChips value={reason} onChange={pickReason} disabled={swapping} />

@@ -251,7 +251,10 @@ export default function WalkinSummaryScreen() {
     const newEnd = toLocalMinuteIso(new Date(adjustedIso));
     setRequoting(true);
     try {
-      const res = await employeeApi.vehicleGroupDetail(vehicle.groupKey, { start, end: newEnd });
+      // A car picked by its registration number is re-priced by itself
+      const res = vehicle.vehiclePublicId
+        ? await employeeApi.vehicleDetail(vehicle.vehiclePublicId, { start, end: newEnd })
+        : await employeeApi.vehicleGroupDetail(vehicle.groupKey, { start, end: newEnd });
       const d = res.data?.data;
       setVehicle({
         ...vehicle,
@@ -331,7 +334,8 @@ export default function WalkinSummaryScreen() {
     setStatusText('Creating booking…');
     try {
       const res = await employeeApi.createBooking({
-        group_key: vehicle.groupKey,
+        // Exactly the car picked by registration number, else any free unit of the group
+        ...(vehicle.vehiclePublicId ? { vehicles: [vehicle.vehiclePublicId] } : { group_key: vehicle.groupKey }),
         customer_public_id: customer.publicId,
         // Omitted when no document was attached (X2).
         ...(customerKycId ? { customer_kyc_id: customerKycId } : {}),
@@ -689,7 +693,9 @@ export default function WalkinSummaryScreen() {
         {/* Vehicle + dates */}
         <View style={styles.card}>
           <Text style={styles.cardName}>{vehicle.make} {vehicle.model}</Text>
-          <Text style={styles.cardMeta}>{vehicle.category} · {vehicle.branch}</Text>
+          <Text style={styles.cardMeta}>
+            {vehicle.regNo ? `${vehicle.regNo} · ` : ''}{vehicle.category} · {vehicle.branch}
+          </Text>
           <View style={styles.divider} />
           <Line label="Pickup" value={fmtDateTime(start)} />
           <Line label="Return" value={fmtDateTime(end)} />

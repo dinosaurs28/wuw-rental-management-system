@@ -82,6 +82,31 @@ interface VehicleCard {
   pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string };
 }
 
+// GET /api/employee/vehicles/search-reg — one car per row (client item 5).
+// A car that can't be booked for the dates comes with available false and the
+// server's reason (on rent, maintenance, insurance expired …).
+interface RegVehicle {
+  publicId: string;
+  regNo: string;
+  make: string;
+  model: string;
+  year: number | null;
+  category: string;
+  typeClass?: string;
+  imageUrl: string | null;
+  // The car's make/model group — booked by publicId, not by this key
+  groupKey: string;
+  pricing: { daily: number | null };
+  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string } | null;
+  available: boolean;
+  unavailableReason: { code: string; message: string } | null;
+}
+
+type SearchMode = 'model' | 'reg';
+
+// Letters and digits typed into the registration search (the server ignores the rest).
+const regSearchTerm = (q: string) => q.replace(/[^a-z0-9]/gi, '');
+
 type TypeClass = 'TWO_WHEELER' | 'FOUR_WHEELER';
 const TYPE_LABEL: Record<TypeClass, string> = { TWO_WHEELER: 'two-wheeler', FOUR_WHEELER: 'four-wheeler' };
 
@@ -169,7 +194,6 @@ export default function WalkinVehiclesScreen() {
   // days — plus 0–11 extra hours at the counter. The return is computed.
   const [std, setStd] = useState<WalkinPackage>(() => ({ ...initialPackageRange(), extra: 0 }));
   const startDate = monthly ? range.start : std.start;
-  const endDate = monthly ? range.end : packageRangeEnd(std, std.extra);
   const [showDates, setShowDates] = useState(false);
 
   // Office hours of the staff member's branch (#2): pickers offer only times
@@ -177,6 +201,8 @@ export default function WalkinVehiclesScreen() {
   // whenever a change lands outside them. Fleet staff can't bypass hours.
   const branchPublicId = useAuthStore((s) => s.user?.branchPublicId ?? null);
   const { data: schedule } = useBranchSchedule(branchPublicId);
+  // 12 hours past closing (no extra hours) returns at closing that day (client item 6)
+  const endDate = monthly ? range.end : packageRangeEnd(std, std.extra, schedule);
   const maxEnd = useCallback((s: Date) => (monthly ? monthlyReturnMax(s) : maxReturnFor(s)), [monthly]);
   const fit = useCallback(
     (r: { start: Date; end: Date }) =>
@@ -202,7 +228,7 @@ export default function WalkinVehiclesScreen() {
     : WALKIN_EXTRA_HOURS.map((e) => ({
         hours: e,
         label: e === 0 ? 'None' : `+${e} h`,
-        endAt: packageRangeEnd(std, e),
+        endAt: packageRangeEnd(std, e, schedule),
         issue: walkinExtraIssue(schedule, std.start, std.hours, e),
       }));
   const presetIssue = (hours: number) => {
@@ -224,6 +250,11 @@ export default function WalkinVehiclesScreen() {
   };
 
   const [category, setCategory] = useState<string>('all');
+  // Model = the grouped cards below; Reg. no = single cars by registration number
+  const [searchMode, setSearchMode] = useState<SearchMode>('model');
+  const regMode = searchMode === 'reg';
+  const [regQuery, setRegQuery] = useState('');
+  const regTerm = regSearchTerm(regQuery);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'default' | 'price_low_to_high' | 'price_high_to_low'>('default');
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -255,7 +286,21 @@ export default function WalkinVehiclesScreen() {
       });
       return (res.data?.data ?? []) as VehicleCard[];
     },
-    enabled: !!customer,
+    enabled: !!customer && !regMode,
+  });
+
+  const {
+    data: regVehicles = [],
+    isLoading: regLoading,
+    isError: regError,
+    refetch: refetchReg,
+  } = useQuery({
+    queryKey: ['employee', 'walkin-reg-search', startISO, endISO, regTerm],
+    queryFn: async () => {
+      const res = await employeeApi.searchVehiclesByRegNo({ q: regTerm, start: startISO, end: endISO });
+      return (res.data?.data ?? []) as RegVehicle[];
+    },
+    enabled: !!customer && regMode && regTerm.length >= 2,
   });
 
   // Same check the web listing runs up front, so staff see the block before
@@ -275,18 +320,18 @@ export default function WalkinVehiclesScreen() {
   const limitSlots: LimitSlot[] = blockedAll
     ? (limits?.anyVehicleConflict ? [limits.anyVehicleConflict] : [])
     : usedTypes.map((t) => limits!.usedTypeClasses![t]!).filter(Boolean);
-  const blockedReason = (card: VehicleCard): string | null => {
+  const blockedReason = (card: { typeClass?: string }): string | null => {
     if (blockedAll) return 'Blocked — customer already has a booking for these dates';
     const tc = card.typeClass as TypeClass | undefined;
     return tc && usedTypes.includes(tc) ? `Blocked — customer already has a ${TYPE_LABEL[tc]} booking` : null;
   };
 
-  const selectGroup = async (card: VehicleCard) => {
-    if (blockedReason(card)) return;
+  // The times to book with, or null after telling staff why they can't be used.
+  const confirmTimes = (): { start: string; end: string } | null => {
     // The screen may have sat open past the pickup time — bump it first.
     const nextStd = monthly ? null : fitStd(std);
     const next = nextStd
-      ? { start: nextStd.start, end: packageRangeEnd(nextStd, nextStd.extra) }
+      ? { start: nextStd.start, end: packageRangeEnd(nextStd, nextStd.extra, schedule) }
       : fit(normalizeRange(startDate, endDate));
     const start = toLocalISO(next.start);
     const end = toLocalISO(next.end);
@@ -301,8 +346,16 @@ export default function WalkinVehiclesScreen() {
       : bookingTimesNotice(schedule, next.start, next.end, { monthly });
     if (blocking?.tone === 'error') {
       Alert.alert('Change the rental period', blocking.text);
-      return;
+      return null;
     }
+    return { start, end };
+  };
+
+  const selectGroup = async (card: VehicleCard) => {
+    if (blockedReason(card)) return;
+    const times = confirmTimes();
+    if (!times) return;
+    const { start, end } = times;
     setSelecting(card.groupKey);
     try {
       const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start, end });
@@ -318,6 +371,45 @@ export default function WalkinVehiclesScreen() {
         deposit: Number(d?.deposit ?? 0),
         dailyPrice: d?.pricing?.daily ?? card.pricing?.daily ?? null,
         image: card.imageUrl?.[0]?.file?.url ?? d?.images?.[0] ?? null,
+        pricingDetails: d?.pricingDetails ?? null,
+        advancePayAmount: Number(d?.advancePayAmount ?? 0),
+      });
+      router.push('/employee/booking/kyc');
+    } catch (err: any) {
+      Alert.alert('Unavailable', err?.response?.data?.message ?? 'Could not load this vehicle for the selected dates.');
+    } finally {
+      setSelecting(null);
+    }
+  };
+
+  // Reg. no search (client item 5): book exactly this car.
+  const selectRegVehicle = async (car: RegVehicle) => {
+    if (!car.available || blockedReason(car)) return;
+    const times = confirmTimes();
+    if (!times) return;
+    const { start, end } = times;
+    setSelecting(car.publicId);
+    try {
+      const res = await employeeApi.vehicleDetail(car.publicId, { start, end });
+      const d = res.data?.data;
+      // Re-checked for the (possibly bumped) times: taken meanwhile → stop here
+      if (d?.availability === false) {
+        Alert.alert('Unavailable', `${car.regNo} is not available for the selected dates.`);
+        return;
+      }
+      setDates(start, end);
+      setStorePlan(plan);
+      setVehicle({
+        groupKey: car.groupKey,
+        vehiclePublicId: car.publicId,
+        regNo: car.regNo,
+        make: d?.make ?? car.make,
+        model: d?.model ?? car.model,
+        category: d?.category ?? car.category,
+        branch: d?.branch ?? '',
+        deposit: Number(d?.deposit ?? 0),
+        dailyPrice: d?.pricing?.daily ?? car.pricing?.daily ?? null,
+        image: car.imageUrl ?? d?.images?.[0] ?? null,
         pricingDetails: d?.pricingDetails ?? null,
         advancePayAmount: Number(d?.advancePayAmount ?? 0),
       });
@@ -409,7 +501,7 @@ export default function WalkinVehiclesScreen() {
           <Text style={styles.timeLabel}>Pickup time</Text>
           <TimeRow
             value={timeOf(startDate)}
-            slots={slotsWithinHours(startDate, schedule, 'pickup', monthly ? {} : { before: latestPackagePickup() })}
+            slots={slotsWithinHours(startDate, schedule, 'pickup', monthly ? {} : { before: latestPackagePickup(new Date(), schedule) })}
             emptyText={closedDayText(schedule, startDate)}
             onChange={setPickupTime}
           />
@@ -489,58 +581,163 @@ export default function WalkinVehiclesScreen() {
         </View>
       )}
 
-      {/* Category tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-        <TouchableOpacity
-          style={[styles.catPill, category === 'all' && styles.catPillActive]}
-          onPress={() => setCategory('all')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.catText, category === 'all' && styles.catTextActive]}>All</Text>
-        </TouchableOpacity>
-        {categories.map((c) => (
+      {/* Search by model (grouped cards) or by registration number (single cars) */}
+      <View style={styles.planRow}>
+        {(['model', 'reg'] as const).map((m) => (
           <TouchableOpacity
-            key={c.publicId}
-            style={[styles.catPill, category === c.publicId && styles.catPillActive]}
-            onPress={() => setCategory(c.publicId)}
-            activeOpacity={0.8}
+            key={m}
+            style={[styles.planBtn, searchMode === m && styles.planBtnActive]}
+            onPress={() => setSearchMode(m)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: searchMode === m }}
           >
-            <Text style={[styles.catText, category === c.publicId && styles.catTextActive]}>{c.name}</Text>
+            <Text style={[styles.planText, searchMode === m && styles.planTextActive]}>
+              {m === 'model' ? 'Model' : 'Reg. no'}
+            </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
+
+      {/* Category tabs */}
+      {!regMode && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
+          <TouchableOpacity
+            style={[styles.catPill, category === 'all' && styles.catPillActive]}
+            onPress={() => setCategory('all')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.catText, category === 'all' && styles.catTextActive]}>All</Text>
+          </TouchableOpacity>
+          {categories.map((c) => (
+            <TouchableOpacity
+              key={c.publicId}
+              style={[styles.catPill, category === c.publicId && styles.catPillActive]}
+              onPress={() => setCategory(c.publicId)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.catText, category === c.publicId && styles.catTextActive]}>{c.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Search + sort */}
       <View style={styles.searchRow}>
         <View style={styles.searchWrap}>
           <Ionicons name="search-outline" size={16} color={Colors.ink3} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Make or model"
-            placeholderTextColor={Colors.ink4}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
+          {regMode ? (
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Registration number"
+              placeholderTextColor={Colors.ink4}
+              value={regQuery}
+              onChangeText={setRegQuery}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+          ) : (
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Make or model"
+              placeholderTextColor={Colors.ink4}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
+          )}
         </View>
-        <TouchableOpacity
-          style={styles.sortBtn}
-          onPress={() =>
-            setSort((s) =>
-              s === 'default' ? 'price_low_to_high' : s === 'price_low_to_high' ? 'price_high_to_low' : 'default',
-            )
-          }
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name={sort === 'price_high_to_low' ? 'arrow-down' : sort === 'price_low_to_high' ? 'arrow-up' : 'swap-vertical'}
-            size={16}
-            color={sort === 'default' ? Colors.ink3 : Colors.orange}
-          />
-        </TouchableOpacity>
+        {!regMode && (
+          <TouchableOpacity
+            style={styles.sortBtn}
+            onPress={() =>
+              setSort((s) =>
+                s === 'default' ? 'price_low_to_high' : s === 'price_low_to_high' ? 'price_high_to_low' : 'default',
+              )
+            }
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={sort === 'price_high_to_low' ? 'arrow-down' : sort === 'price_low_to_high' ? 'arrow-up' : 'swap-vertical'}
+              size={16}
+              color={sort === 'default' ? Colors.ink3 : Colors.orange}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
+
+  const regEmpty =
+    regTerm.length < 2 ? (
+      <View style={styles.empty}>
+        <Ionicons name="search-outline" size={40} color={Colors.ink4} />
+        <Text style={styles.emptyTitle}>Search by registration</Text>
+        <Text style={styles.emptySub}>Type at least 2 letters or digits of the number.</Text>
+      </View>
+    ) : regLoading ? (
+      <ActivityIndicator style={{ marginTop: 40 }} color={Colors.orange} size="large" />
+    ) : regError ? (
+      <View style={styles.empty}>
+        <Text style={styles.emptyTitle}>Could not search vehicles</Text>
+        <TouchableOpacity onPress={() => refetchReg()}><Text style={styles.retry}>Tap to retry</Text></TouchableOpacity>
+      </View>
+    ) : (
+      <View style={styles.empty}>
+        <Ionicons name="car-outline" size={40} color={Colors.ink4} />
+        <Text style={styles.emptyTitle}>No vehicle with that number</Text>
+        <Text style={styles.emptySub}>Check the number, or search by model.</Text>
+      </View>
+    );
+
+  const renderRegRow = (car: RegVehicle) => {
+    const busy = selecting === car.publicId;
+    const limit = blockedReason(car);
+    const reason = car.unavailableReason?.message ?? limit;
+    const disabled = !car.available || !!limit;
+    const price = car.pricingDetails?.finalPrice ?? car.pricing?.daily ?? null;
+    return (
+      <TouchableOpacity
+        style={[styles.card, disabled && styles.cardBlocked]}
+        onPress={() => selectRegVehicle(car)}
+        disabled={busy || disabled}
+        activeOpacity={0.85}
+      >
+        {car.imageUrl ? (
+          <Image source={{ uri: car.imageUrl }} style={styles.cardImg} resizeMode="cover" />
+        ) : (
+          <View style={[styles.cardImg, styles.cardImgPlaceholder]}>
+            <Ionicons name="car-outline" size={24} color={Colors.ink4} />
+          </View>
+        )}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardName}>{car.regNo}</Text>
+          <Text style={styles.cardMeta}>
+            {car.make} {car.model}{car.year ? ` · ${car.year}` : ''} · {car.category}
+          </Text>
+          {price != null ? (
+            <Text style={styles.cardPrice}>
+              ₹{Number(price).toLocaleString('en-IN')} total
+              {car.pricingDetails?.billedAs ? ` · ${car.pricingDetails.billedAs}` : ''}
+              {/* Rents are GST-inclusive (item 17) */}
+              {' · incl. GST'}
+            </Text>
+          ) : null}
+          {reason ? (
+            <Text style={styles.cardBlockedText}>{reason}</Text>
+          ) : (
+            <Text style={styles.cardAvailText}>Available for these dates</Text>
+          )}
+        </View>
+        {busy ? (
+          <ActivityIndicator size="small" color={Colors.orange} />
+        ) : (
+          <Ionicons name={disabled ? 'lock-closed' : 'chevron-forward'} size={disabled ? 16 : 18} color={Colors.ink4} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -551,15 +748,15 @@ export default function WalkinVehiclesScreen() {
         <Text style={styles.title}>Select Vehicle</Text>
       </View>
 
-      <FlatList
-        data={vehicles}
-        keyExtractor={(item) => item.groupKey}
+      <FlatList<VehicleCard | RegVehicle>
+        data={regMode ? regVehicles : vehicles}
+        keyExtractor={(item) => ('regNo' in item ? item.publicId : item.groupKey)}
         ListHeaderComponent={header}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          isLoading ? (
+          regMode ? regEmpty : isLoading ? (
             <ActivityIndicator style={{ marginTop: 40 }} color={Colors.orange} size="large" />
           ) : isError ? (
             <View style={styles.empty}>
@@ -575,6 +772,7 @@ export default function WalkinVehiclesScreen() {
           )
         }
         renderItem={({ item }) => {
+          if ('regNo' in item) return renderRegRow(item);
           const price = item.pricingDetails?.finalPrice ?? item.pricing?.daily ?? 0;
           const busy = selecting === item.groupKey;
           const blocked = blockedReason(item);
@@ -624,7 +822,7 @@ export default function WalkinVehiclesScreen() {
         endDate={endDate}
         // Standard: only the pickup day — the return follows the package + extra hours.
         pickupOnly={!monthly}
-        returnFor={(p) => packageRangeEnd({ start: p, hours: std.hours }, std.extra)}
+        returnFor={(p) => packageRangeEnd({ start: p, hours: std.hours }, std.extra, schedule)}
         onConfirm={(s, e) =>
           monthly
             ? setRange((r) => normalizeRange(withTime(s, timeOf(r.start)), withTime(e, timeOf(r.end))))
@@ -721,6 +919,7 @@ const styles = StyleSheet.create({
   },
   cardBlocked: { opacity: 0.55 },
   cardBlockedText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#b45309', marginTop: 2 },
+  cardAvailText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.availGood, marginTop: 2 },
   cardImg: { width: 76, height: 56, borderRadius: 10, backgroundColor: Colors.bg },
   cardImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   cardInfo: { flex: 1, gap: 2 },

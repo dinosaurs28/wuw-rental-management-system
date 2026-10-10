@@ -78,10 +78,15 @@ export interface ProofController {
   upload: (localUri: string, width: number) => void;
   retry: () => void;
   clear: () => void;
+  /** Brings back a proof uploaded earlier (a resumed pickup / drop) unless a newer shot exists. */
+  restore: (proofFileId: string) => void;
+  /** The proof being brought back by restore(), until it lands. */
+  restoringId: string | null;
 }
 
 export function useProofShot(onTouched?: () => void): ProofController {
   const [shot, setShot] = useState<ProofShot | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   // Bumped per shot / clear, so a slow upload can't overwrite a newer one.
   const seqRef = useRef(0);
   const mountedRef = useRef(true);
@@ -135,6 +140,23 @@ export function useProofShot(onTouched?: () => void): ProofController {
       setShot(null);
       touchedRef.current?.();
     },
+    restore: (proofFileId) => {
+      const seq = ++seqRef.current;
+      setRestoringId(proofFileId);
+      // A fresh link for the stored proof (branch-scoped on the server).
+      employeeApi
+        .getPaymentProof(proofFileId)
+        .then((res) => {
+          const proof = res.data?.data;
+          if (!mountedRef.current || seq !== seqRef.current || !proof?.proofFileId) return;
+          setShot((cur) => cur ?? { status: 'ready', localUri: proof.url, width: 0, proof });
+        })
+        .catch(() => { /* gone, or another branch's: staff take it again */ })
+        .finally(() => {
+          if (mountedRef.current) setRestoringId((cur) => (cur === proofFileId ? null : cur));
+        });
+    },
+    restoringId,
   };
 }
 

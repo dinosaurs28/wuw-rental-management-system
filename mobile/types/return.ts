@@ -152,6 +152,8 @@ export interface KmAllowance {
   // includedKm = free km of the original period + free km the extensions add (#7)
   freeKmOriginal?: number;
   freeKmExtensions?: number;
+  // extensions counted in freeKmExtensions — absent from older servers
+  extensionCount?: number;
 }
 
 // ── Rental timeline (#7) and late return (#12) ─────────────────────────────

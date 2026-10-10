@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -204,12 +204,23 @@ export default function CustomerDetailScreen() {
       {customer && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
           {customer.isBlacklisted ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="ban-outline" size={16} color="#ef4444" />
-              <Text style={[styles.footerNoteText, { color: '#ef4444' }]}>
-                This customer is blacklisted and can't make new bookings. A branch manager can remove the blacklist from the Customers tab.
-              </Text>
-            </View>
+            <>
+              <View style={styles.footerNote}>
+                <Ionicons name="ban-outline" size={16} color="#ef4444" />
+                <Text style={[styles.footerNoteText, { color: '#ef4444' }]}>
+                  This customer is blacklisted and can't make new bookings. The blacklist can be removed from the Customers tab.
+                </Text>
+              </View>
+              {/* The Customers tab takes the User publicId too */}
+              <TouchableOpacity
+                style={styles.bookBtn}
+                onPress={() => router.push(`/employee/customers/${publicId}` as Href)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="people-outline" size={20} color={Colors.white} />
+                <Text style={styles.bookBtnText}>Open in Customers</Text>
+              </TouchableOpacity>
+            </>
           ) : customer.isProfileCompleted ? (
             <TouchableOpacity style={styles.bookBtn} onPress={startBooking} activeOpacity={0.85}>
               <Ionicons name="add-circle-outline" size={20} color={Colors.white} />
