@@ -4,7 +4,6 @@ import {
   prisma,
   BookingStatus,
   PaymentStatus,
-  VehicleStatus,
   DepositMethod,
   InvoiceStatus,
   Role,
@@ -112,14 +111,7 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
         data: bookingUpdateData,
       });
 
-      await tx.vehicle.updateMany({
-        where: {
-          id: { in: booking.items.map((i) => i.vehicleId) },
-        },
-        data: {
-          status: VehicleStatus.AVAILABLE,
-        },
-      });
+      // Confirming never touches the vehicle's status (it may be out on another rental)
 
       if (booking.totalDeposit.gt(0)) {
         await tx.deposit.create({

@@ -4,7 +4,7 @@ import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
-import { generatePresignedUrl } from "../../services/r2-upload.js";
+import { resolveFileUrl } from "../../utils/file-url.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -44,7 +44,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         type: true,
         side: true,
         status: true,
-        file: { select: { key: true, mime: true } },
+        file: { select: { key: true, url: true, mime: true } },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -57,8 +57,11 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
           type: k.type || "UNKNOWN",
           side: k.side,
           status: k.status || "UNKNOWN",
-          // Employees get a 15-minute window to view the document
-          file: { url: await generatePresignedUrl(k.file!.key, 900), mime: k.file!.mime },
+          // Employees get a 15-minute window to view the document. KYC uploaded
+          // before the private bucket (Jun 2026) still lives in the public one
+          // and keeps its public URL; presigning it against the private bucket
+          // gave a dead link.
+          file: { url: await resolveFileUrl(k.file!, { ttlSeconds: 900 }), mime: k.file!.mime },
         })),
     );
 

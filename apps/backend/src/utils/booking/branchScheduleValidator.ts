@@ -5,6 +5,14 @@
 // Keep in sync with apps/frontend/src/utils/branchScheduleValidator.ts and
 // mobile/lib/branchSchedule.ts (same rules, same verdicts).
 import { prisma } from "@repo/database/client";
+import {
+  HALF_DAY_CLAMP_MIN_MINUTES,
+  HALF_DAY_PACKAGE_HOURS,
+  PACKAGE_TOLERANCE_MS,
+  halfDayPackageReturn,
+  isClampedHalfDayReturn,
+  type HalfDayReturn,
+} from "@repo/schemas";
 
 /**
  * Hours that apply to any day a branch has no saved row for (including a branch
@@ -416,6 +424,77 @@ export async function loadBranchScheduleConfig(branchId: number): Promise<Branch
   });
   if (!branch) return null;
   return { schedules: branch.schedules, graceMinutes: branch.graceMinutes, is24Hours: branch.is24Hours };
+}
+
+// ── 12 hours from a late pickup (client item 6) ─────────────────────────────
+
+/** Closing time on the branch-local day of `at`; null on a closed day or for a 24-hour branch. */
+function closingOnDayOf(config: BranchScheduleConfig, at: Date): Date | null {
+  if (config.is24Hours) return null;
+  const { dayOfWeek, hours, minutes } = getBranchLocalTime(at);
+  const day = getScheduleForDay(config, dayOfWeek);
+  if (!day.isOpen) return null;
+  const minuteStart = Math.floor(at.getTime() / 60_000) * 60_000;
+  return new Date(minuteStart + (day.closeMinutes - (hours * 60 + minutes)) * 60_000);
+}
+
+/**
+ * The 12-hour package's return for a pickup at this branch: pickup + 12 h, or —
+ * when the branch won't take a return then — its closing time on the pickup
+ * day (clamped). null = only whole-day packages fit this pickup.
+ */
+export function halfDayReturnFor(config: BranchScheduleConfig, pickupLocal: Date): HalfDayReturn | null {
+  return halfDayPackageReturn(pickupLocal, {
+    returnAllowed: (at) => validateReturnTime(config, at).status !== "RETURN_OUTSIDE_HOURS",
+    closingAt: closingOnDayOf(config, pickupLocal),
+  });
+}
+
+/** Is pickup → return the 12-hour package held to closing on the pickup day? */
+export function isClampedHalfDay(config: BranchScheduleConfig, pickupLocal: Date, returnLocal: Date): boolean {
+  return isClampedHalfDayReturn(halfDayReturnFor(config, pickupLocal), returnLocal);
+}
+
+const HALF_DAY_MS = HALF_DAY_PACKAGE_HOURS * 60 * 60 * 1000;
+
+/** Only a window this long can be a held-to-closing 12-hour package (cheap pre-check before reading hours). */
+function mayBeClampedHalfDay(startAt: Date, endAt: Date): boolean {
+  const span = endAt.getTime() - startAt.getTime();
+  return (
+    span >= HALF_DAY_CLAMP_MIN_MINUTES * 60_000 - PACKAGE_TOLERANCE_MS &&
+    span < HALF_DAY_MS - PACKAGE_TOLERANCE_MS
+  );
+}
+
+/**
+ * Pricing: a window that is the 12-hour package held to the branch's closing is
+ * billed as the full 12 hours (price + free km). Reads the branch hours only
+ * for a window shorter than 12 h.
+ */
+export async function isClampedHalfDayWindow(branchId: number, startAt: Date, endAt: Date): Promise<boolean> {
+  if (!mayBeClampedHalfDay(startAt, endAt)) return false;
+  const config = await loadBranchScheduleConfig(branchId);
+  return !!config && isClampedHalfDay(config, startAt, endAt);
+}
+
+/** isClampedHalfDayWindow for several branches at once (listing): the branch ids where it holds. */
+export async function clampedHalfDayBranchIds(branchIds: number[], startAt: Date, endAt: Date): Promise<Set<number>> {
+  const result = new Set<number>();
+  if (branchIds.length === 0 || !mayBeClampedHalfDay(startAt, endAt)) return result;
+  const branches = await prisma.branch.findMany({
+    where: { id: { in: [...new Set(branchIds)] } },
+    select: {
+      id: true,
+      graceMinutes: true,
+      is24Hours: true,
+      schedules: { select: { dayOfWeek: true, isOpen: true, openTime: true, closeTime: true } },
+    },
+  });
+  for (const b of branches) {
+    const config = { schedules: b.schedules, graceMinutes: b.graceMinutes, is24Hours: b.is24Hours };
+    if (isClampedHalfDay(config, startAt, endAt)) result.add(b.id);
+  }
+  return result;
 }
 
 /**

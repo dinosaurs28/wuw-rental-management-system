@@ -37,8 +37,11 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
-import { PricingEngineService } from "../pricing/pricing-engine.service.js";
-import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import { PricingEngineService, heldToClosingOf } from "../pricing/pricing-engine.service.js";
+import {
+  explainUnavailableVehicles,
+  getUnavailableVehicleIds,
+} from "../../utils/availability/availabilityBatch.js";
 import {
   invalidateVehicleAvailability,
   invalidateGroupListingCache,
@@ -188,8 +191,36 @@ export interface SwapContext {
   chargeDifferenceDefaults: Record<SwapReason, boolean>;
 }
 
+/**
+ * A car of the same type at the branch that can't take over this booking, with
+ * the rule it fails (shown collapsed under the candidates, so staff aren't left
+ * guessing why a car is missing).
+ */
+export interface SwapExcludedVehicle {
+  id: number;
+  publicId: string;
+  make: string;
+  model: string;
+  regNo: string;
+  categoryName: string;
+  code:
+    | "STATUS_OUT_FOR_RENTAL"
+    | "MANUAL_OUT_FOR_RENTAL"
+    | "STATUS_MAINTENANCE"
+    | "STATUS_INACTIVE"
+    | "DAMAGE_REVIEW_PENDING"
+    | "INSURANCE_EXPIRES"
+    | "LOWER_CATEGORY"
+    | "STILL_OUT"
+    | "BOOKED"
+    | "ON_HOLD";
+  reason: string;
+}
+
 export interface SwapCandidatesResult {
   vehicles: SwapCandidate[];
+  /** Same-type cars of the branch that fail a rule below, with the reason. */
+  excluded: SwapExcludedVehicle[];
   context: SwapContext;
 }
 
@@ -304,7 +335,8 @@ export class VehicleSwapService {
    * [max(now, startAt), endAt). Same-category cars first, then upgrades.
    *
    * Refuses (VehicleSwapError) exactly like the swap itself would, so the
-   * screen can show why before staff pick a car.
+   * screen can show why before staff pick a car. The other same-type cars of
+   * the branch come back in `excluded` with the rule each one fails.
    */
   async getAvailableVehiclesForSwap(
     bookingId: string,
@@ -318,19 +350,14 @@ export class VehicleSwapService {
     const windowStart = new Date(Math.max(now.getTime(), booking.startAt.getTime()));
     const windowEnd = booking.endAt;
 
-    const vehicles = await prisma.vehicle.findMany({
+    // Every same-type car of the branch; the rules above are applied below so
+    // the ones that fail come back in `excluded` with the reason
+    const fleet = await prisma.vehicle.findMany({
       where: {
         branchId: booking.branchId,
-        status: VehicleStatus.AVAILABLE,
         deletedAt: null,
         id: { not: currentVehicle.id },
-        insuranceExpiry: { gt: windowEnd },
-        category: {
-          rank: { gte: currentVehicle.category.rank },
-          typeClass: currentVehicle.category.typeClass,
-        },
-        // Still out with a customer (incl. overdue rentals past their endAt)
-        bookingItems: { none: { booking: { status: BookingStatus.PICKED_UP } } },
+        category: { typeClass: currentVehicle.category.typeClass },
       },
       include: {
         category: true,
@@ -341,14 +368,75 @@ export class VehicleSwapService {
         },
       },
     });
+    // Still out with a customer (incl. overdue rentals past their endAt)
+    const outOnRental = new Set(
+      (
+        await prisma.bookingItem.findMany({
+          where: { vehicleId: { in: fleet.map((v) => v.id) }, booking: { status: BookingStatus.PICKED_UP } },
+          select: { vehicleId: true },
+        })
+      ).map((i) => i.vehicleId),
+    );
 
-    const unavailable = await getUnavailableVehicleIds(
+    const excluded: SwapExcludedVehicle[] = [];
+    const exclude = (v: (typeof fleet)[number], code: SwapExcludedVehicle["code"], reason: string) =>
+      excluded.push({
+        id: v.id,
+        publicId: v.publicId,
+        make: v.make,
+        model: v.model,
+        regNo: v.regNo,
+        categoryName: v.category.name,
+        code,
+        reason,
+      });
+
+    const vehicles = fleet.filter((v) => {
+      if (v.status !== VehicleStatus.AVAILABLE) {
+        if (v.status === VehicleStatus.OUT_FOR_RENTAL) {
+          if (outOnRental.has(v.id)) exclude(v, "STATUS_OUT_FOR_RENTAL", "Out on another rental");
+          else exclude(v, "MANUAL_OUT_FOR_RENTAL", "Set Out for Rental by the branch manager");
+        } else if (v.status === VehicleStatus.MAINTENANCE) exclude(v, "STATUS_MAINTENANCE", "In maintenance");
+        else if (v.status === VehicleStatus.MANAGER_REPORTED) {
+          exclude(v, "DAMAGE_REVIEW_PENDING", "Damage review pending with the branch manager");
+        } else exclude(v, "STATUS_INACTIVE", "Inactive");
+        return false;
+      }
+      if (v.insuranceExpiry.getTime() <= windowEnd.getTime()) {
+        exclude(v, "INSURANCE_EXPIRES", `Insurance expires on ${formatIst(v.insuranceExpiry)}, before this rental ends`);
+        return false;
+      }
+      if (v.category.rank < currentVehicle.category.rank) {
+        exclude(v, "LOWER_CATEGORY", `Lower category (${v.category.name})`);
+        return false;
+      }
+      if (outOnRental.has(v.id)) {
+        exclude(v, "STILL_OUT", "Still out on another rental");
+        return false;
+      }
+      return true;
+    });
+
+    // Bookings and checkout holds in the rest of the rental (the same checks as
+    // getUnavailableVehicleIds, with the reason)
+    const unavailable = await explainUnavailableVehicles(
       vehicles.map((v) => v.id),
       windowStart,
       windowEnd,
       new Map(vehicles.map((v) => [v.id, v.publicId])),
     );
-    const free = vehicles.filter((v) => !unavailable.has(v.id));
+    const free = vehicles.filter((v) => {
+      const why = unavailable.get(v.id);
+      if (!why) return true;
+      if (why.code === "ON_HOLD") exclude(v, "ON_HOLD", "Being booked by a customer for part of this rental");
+      else if (why.code === "BOOKED") {
+        exclude(v, "BOOKED", `Booked ${formatIst(why.startAt)} – ${formatIst(why.endAt)}, during this rental`);
+      } else exclude(v, "STILL_OUT", "Still out on another rental");
+      return false;
+    });
+    excluded.sort(
+      (a, b) => a.make.localeCompare(b.make) || a.model.localeCompare(b.model) || a.regNo.localeCompare(b.regNo),
+    );
 
     // Price difference preview — the same computation the swap stores
     const fraction = remainingFraction(booking.startAt, booking.endAt, now);
@@ -406,6 +494,7 @@ export class VehicleSwapService {
 
     return {
       vehicles: candidates,
+      excluded,
       context: {
         bookingId: booking.publicId,
         bookingStatus: booking.status,
@@ -1199,6 +1288,8 @@ export class VehicleSwapService {
         paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
         excludeBookingId: booking.id,
         couponLockedIn: Boolean(booking.couponCode),
+        // Booked as 12 hours held to closing (item 6): both cars billed as 12 h
+        heldToClosing: heldToClosingOf(booking.pricingSnapshot),
       },
     );
     // finalTotal = the post-discount rent incl. GST (what the customer pays for it)

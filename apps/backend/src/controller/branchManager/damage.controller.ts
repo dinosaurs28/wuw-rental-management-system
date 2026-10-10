@@ -25,11 +25,12 @@ import { auditService, AuditCategory, AuditSeverity } from "../../services/audit
 import { closeDamageReportSchema } from "@repo/schemas";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import { publicFileUrl, withCurrentNotePhotoUrls } from "../../utils/file-url.js";
 import {
   createRazorpayOrder,
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
-import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import {
   billedOnCompletedDrop,
   dropDamageBilling,
@@ -335,6 +336,8 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
           select: {
             file: {
               select: {
+                publicId: true,
+                key: true,
                 url: true,
               },
             },
@@ -400,8 +403,8 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
         model: report.vehicle.model,
         currentStatus: report.vehicle.status,
       },
-      damageDetails: report.notes,
-      images: report.photos.map((p) => ({ url: p.file.url })),
+      damageDetails: withCurrentNotePhotoUrls(report.notes, report.photos.map((p) => p.file)),
+      images: report.photos.map((p) => ({ url: publicFileUrl(p.file) })),
       financialHint: {
         deposit: safetyDeposit,
         additionalCharges,
@@ -539,7 +542,11 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
       if (vehicleStatus) {
         try {
-          await invalidateVehicleAvailability(redis, [damageReport.vehicleId]);
+          // The car's status changed: listings show (or hide) it now, not after the cache TTL
+          await Promise.all([
+            invalidateVehicleAvailability(redis, [damageReport.vehicleId]),
+            invalidateGroupListingCache(redis),
+          ]);
         } catch (redisErr) {
           console.warn("[damage-close] Cache invalidation failed (non-fatal):", redisErr);
         }
@@ -917,6 +924,9 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       }
 
     }, { timeout: 30000 });
+
+    // The car's status may have changed: listings follow now, not after the cache TTL
+    await invalidateGroupListingCache(redis);
 
     // Activity log and audit are non-critical — run outside transaction to avoid timeout
     await staffActivityService.logFromRequest(req, {

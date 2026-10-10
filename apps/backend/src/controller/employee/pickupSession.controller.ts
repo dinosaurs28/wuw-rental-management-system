@@ -55,6 +55,7 @@ import {
   PickupDlNumberError,
 } from "../../services/booking/pickup-dl-number.service.js";
 import { assertDlFree, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -182,6 +183,17 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       mode: "pickup",
       excludeBookingId: booking.id,
     });
+
+    // The car must be here and AVAILABLE before any money is taken: 409
+    // VEHICLE_STILL_OUT (another rental hasn't come back) / VEHICLE_NOT_READY
+    // (damage review, maintenance …). Re-checked when the session completes.
+    const pickupVehicleIds = (
+      await prisma.bookingItem.findMany({ where: { bookingId: booking.id }, select: { vehicleId: true } })
+    ).map((i) => i.vehicleId);
+    const notReady = await checkVehiclesReadyForPickup(pickupVehicleIds, booking.id);
+    if (notReady) {
+      return res.status(StatusCode.CONFLICT).json(notReady);
+    }
 
     // A DL number sent with the request is saved to the customer (X2) once the
     // request is known to be valid, so a retry finds it on file.

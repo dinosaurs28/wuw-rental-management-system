@@ -9,6 +9,9 @@
  *   POST /api/branchManager/customers/:customerId/blacklist   { reason }
  *   POST /api/branchManager/customers/:customerId/unblacklist { note? }
  *
+ * Fleet Executives get the same handlers at /api/employee/customers (EmployeeCheck);
+ * "my branch" is req.branch_Id and the actor is req.public_Id in both portals.
+ *
  * Every registered customer is listed (not only the branch's own), and rents
  * cover every branch with the branch named, so a manager sees the whole history
  * before blacklisting. `:customerId` is the Customer publicId (the id the

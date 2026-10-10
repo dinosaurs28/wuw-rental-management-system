@@ -41,7 +41,7 @@ export const GetAvailableVehiclesForEmployee = async (
   }
 
   try {
-    const { vehicles, context } =
+    const { vehicles, excluded, context } =
       await vehicleSwapService.getAvailableVehiclesForSwap(bookingId, branchId);
 
     return res.status(StatusCode.OK).json({
@@ -49,6 +49,8 @@ export const GetAvailableVehiclesForEmployee = async (
       message: "Available vehicles fetched successfully",
       data: vehicles,
       swapContext: context,
+      // Same-type cars that can't take over the booking, with the reason
+      excluded,
     });
   } catch (error: unknown) {
     console.error("Error fetching available vehicles for swap:", error);
@@ -356,6 +358,10 @@ export const GetPickupPricingRules = async (req: Request, res: Response) => {
       kmAllowance: allowance
         ? {
             includedKm: allowance.includedKm,
+            // includedKm = original period's free km + the free km extensions add (#7)
+            freeKmOriginal: allowance.freeKmOriginal,
+            freeKmExtensions: allowance.freeKmExtensions,
+            extensionCount: allowance.extensionCount,
             extraKmRate: allowance.extraKmRate.toFixed(2),
             extraKmEnabled: allowance.extraKmEnabled,
           }

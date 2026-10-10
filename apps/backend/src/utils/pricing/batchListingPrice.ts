@@ -9,7 +9,13 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { splitRentTotal } from "@repo/schemas";
-import { type RentalDuration } from "../../services/pricing/duration-calculator.service.js";
+import type { DateTime } from "luxon";
+import { HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
+import {
+  DurationCalculatorService,
+  type RentalDuration,
+} from "../../services/pricing/duration-calculator.service.js";
+import { clampedHalfDayBranchIds } from "../booking/branchScheduleValidator.js";
 import { slabDaysFor } from "../../services/discount/duration-discount.service.js";
 import {
   selectBasePrice,
@@ -123,13 +129,29 @@ export interface ListingPrice {
  *
  * @param vehicles  Minimal vehicle objects (id, branchId, categoryId already in memory)
  * @param duration  Pre-computed RentalDuration — same for all vehicles in a single search
+ * @param window    The searched pickup → return: at a branch where it is the 12-hour
+ *                  package held to closing (client item 6) the price is the full 12 hours,
+ *                  as the booking engine bills it
  * @returns Map<vehicleId, ListingPrice>
  */
 export async function getBatchListingPrices(
   vehicles: VehicleRef[],
   duration: RentalDuration,
+  window?: { startAt: DateTime; endAt: DateTime },
 ): Promise<Map<number, ListingPrice>> {
   if (vehicles.length === 0) return new Map();
+
+  const clampedBranches = window
+    ? await clampedHalfDayBranchIds(
+        vehicles.map((v) => v.branchId),
+        window.startAt.toJSDate(),
+        window.endAt.toJSDate(),
+      )
+    : new Set<number>();
+  const halfDayDuration =
+    window && clampedBranches.size > 0
+      ? DurationCalculatorService.calculate(window.startAt, window.startAt.plus({ hours: HALF_DAY_PACKAGE_HOURS }))
+      : null;
 
   const vehicleIds = vehicles.map((v) => v.id);
 
@@ -206,7 +228,10 @@ export async function getBatchListingPrices(
       basePriceMap.set(v.id, 0);
       continue;
     }
-    const selection = selectPrice(pricing, duration);
+    const selection = selectPrice(
+      pricing,
+      halfDayDuration && clampedBranches.has(v.branchId) ? halfDayDuration : duration,
+    );
     basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));
     billedAsMap.set(v.id, { billedAs: selection.billedAs, billedAsType: selection.billedAsType });
   }

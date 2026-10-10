@@ -7,12 +7,13 @@ import {
   BookingPhotoType,
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
-import { fileCleanupQueue } from "../../lib/queue.client.js";
+import { deleteUploadedPhoto } from "../../services/booking-photo-file.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
+import { publicFileUrl } from "../../utils/file-url.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -73,7 +74,7 @@ export const UploadPickupImage = async (req: Request, res: Response) => {
     return res.status(StatusCode.CREATED).json({
       message: "Pickup Image Uploaded Successfully",
       fileId: fileRecord.publicId,
-      url: fileRecord.url,
+      url: publicFileUrl(fileRecord),
     });
   } catch (error) {
     console.error("Error uploading pickup image:", error);
@@ -91,25 +92,23 @@ export const DeletePickupImage = async (req: Request, res: Response) => {
   const { publicId } = req.params;
 
   try {
-    const file = await prisma.fileObject.findUnique({
-      where: { publicId },
-    });
+    const result = await deleteUploadedPhoto(publicId!);
 
-    if (!file) {
+    if (result === "NOT_FOUND") {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "File not found",
       });
     }
 
-    // Add to cleanup queue
-    await fileCleanupQueue.add("cleanup", {
-      key: file.key,
-    });
-
-    // Hard delete from DB
-    await prisma.fileObject.delete({
-      where: { id: file.id },
-    });
+    // Already saved with the pickup (payment session started): keep it, so
+    // the booking's photo still opens.
+    if (result === "IN_USE") {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "FILE_IN_USE",
+        message: "This photo is already saved with the pickup and can't be removed.",
+      });
+    }
 
     return res.status(StatusCode.OK).json({
       message: "File deleted successfully",

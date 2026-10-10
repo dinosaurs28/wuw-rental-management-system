@@ -48,6 +48,17 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     });
   }
 
+  // PAN is no longer accepted. The enum value stays so older PAN uploads still
+  // load, but no new ones (or replacements) are taken.
+  if (kyc_type === KycType.PAN) {
+    await discardTemp();
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "KYC_TYPE_NOT_ACCEPTED",
+      message: "PAN card is no longer accepted. Please upload your driving licence or Aadhaar.",
+    });
+  }
+
   if (!side || !Object.values(KycSide).includes(side as KycSide)) {
     await discardTemp();
     return res.status(StatusCode.BAD_REQUEST).json({

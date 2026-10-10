@@ -8,7 +8,7 @@ import {
   ExtensionStatus,
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
-import { fileCleanupQueue } from "../../lib/queue.client.js";
+import { deleteUploadedPhoto } from "../../services/booking-photo-file.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { r2 } from "../../lib/r2.client.js";
@@ -18,7 +18,9 @@ import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
+import { publicFileUrl } from "../../utils/file-url.js";
 import { vehicleStatusAfterDrop, lockBookingForDrop } from "../../services/damage/drop-damage.service.js";
+import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 import { activeExtensionState } from "../../services/charges/rental-timeline.service.js";
 import { closeExtensionUpiQrs } from "../../services/payment/upi-qr.service.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
@@ -189,7 +191,7 @@ export const UploadReturnImage = async (req: Request, res: Response) => {
     return res.status(StatusCode.CREATED).json({
       message: "Return Image Uploaded Successfully",
       fileId: fileRecord.publicId,
-      url: fileRecord.url,
+      url: publicFileUrl(fileRecord),
     });
   } catch (error) {
     console.error("Error uploading return image:", error);
@@ -544,6 +546,10 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         await recordDepositHandling(tx as any, booking.id, depositHandling, "LEGACY", actingUser.id);
       }
 
+      // The drop is submitted (completed, or sent to a manager): drop the paused
+      // form saved for it (client item 2).
+      await discardOperationDraft(booking.id, "RETURN", tx);
+
       if (requireManagerConfirmation) {
         await tx.booking.update({
           where: { id: booking.id },
@@ -769,25 +775,23 @@ export const DeleteReturnImage = async (req: Request, res: Response) => {
   const { publicId } = req.params;
 
   try {
-    const file = await prisma.fileObject.findUnique({
-      where: { publicId },
-    });
+    const result = await deleteUploadedPhoto(publicId!);
 
-    if (!file) {
+    if (result === "NOT_FOUND") {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "File not found",
       });
     }
 
-    // Add to cleanup queue
-    await fileCleanupQueue.add("cleanup", {
-      key: file.key,
-    });
-
-    // Hard delete from DB
-    await prisma.fileObject.delete({
-      where: { id: file.id },
-    });
+    // Already saved with the booking (return or damage recorded): keep it, so
+    // the booking's photo still opens.
+    if (result === "IN_USE") {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "FILE_IN_USE",
+        message: "This photo is already saved with the booking and can't be removed.",
+      });
+    }
 
     return res.status(StatusCode.OK).json({
       message: "File deleted successfully",

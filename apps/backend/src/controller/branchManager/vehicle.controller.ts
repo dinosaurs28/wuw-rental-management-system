@@ -11,6 +11,9 @@ import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS } from "@rep
 import { z } from "zod";
 import Decimal from "decimal.js";
 import { branchRentRates, rentColumns } from "../../services/pricing/rent-columns.service.js";
+import { ACTIVE_RENTAL_ITEM_WHERE, findActiveRental } from "../../utils/availability/outForRental.js";
+import { vehicleHiddenReasons } from "../../utils/availability/vehicleEligibility.js";
+import { getBatchFallbackPrices } from "../../utils/pricing/batchListingPrice.js";
 const updateVehicleFastagSchema = z.object({
   fastagNumber: z.string().min(1).nullable(),
   hasFastag: z.boolean(),
@@ -265,6 +268,26 @@ export const EditVehicle = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "Vehicle not found or access denied",
       });
+    }
+
+    // A vehicle out on a rental (a picked-up booking holds it) leaves Out For
+    // Rental only at the drop, so the manager can't move it to another status.
+    // Only a real change is blocked: the form always posts status, and a car on
+    // a rental may still be stored as AVAILABLE / MAINTENANCE from before.
+    if (
+      data.status &&
+      data.status !== vehicle.status &&
+      data.status !== VehicleStatus.OUT_FOR_RENTAL
+    ) {
+      const activeRental = await findActiveRental(vehicle.id);
+      if (activeRental) {
+        return res.status(StatusCode.CONFLICT).json({
+          code: "VEHICLE_ON_RENTAL",
+          message: activeRental.awaitingReturnConfirmation
+            ? "This vehicle's return is waiting for manager confirmation. Confirm the return to release it."
+            : "This vehicle is out on a rental. It becomes available automatically after the drop.",
+        });
+      }
     }
 
     if (data.regNo && data.regNo !== vehicle.regNo) {
@@ -688,11 +711,15 @@ export const GetVehicles = async (req: Request, res: Response) => {
         skip: Number(offset),
         orderBy: { createdAt: "desc" },
         select: {
+          id: true,
+          branchId: true,
+          categoryId: true,
           publicId: true,
           make: true,
           model: true,
           regNo: true,
           status: true,
+          insuranceExpiry: true,
           images: {
             where: { isThumbnail: true },
             take: 1,
@@ -709,9 +736,42 @@ export const GetVehicles = async (req: Request, res: Response) => {
       }),
     ]);
 
+    // Why a car doesn't show to customers (item 7) — the listing rule's facts:
+    // status (a hand-set Out for Rental has no rental behind it), an overdue
+    // rental (no window is free until it is back), insurance through its
+    // expiry day, and the rent the pricing engine bills it with
+    const [activeRentals, rents] = await Promise.all([
+      prisma.bookingItem.findMany({
+        where: { vehicleId: { in: data.map((v) => v.id) }, ...ACTIVE_RENTAL_ITEM_WHERE },
+        select: { vehicleId: true, booking: { select: { publicId: true, endAt: true } } },
+      }),
+      getBatchFallbackPrices(data),
+    ]);
+    const onRental = new Set(activeRentals.map((i) => i.vehicleId));
+    const now = new Date();
+    const overdueOf = new Map(
+      activeRentals
+        .filter((i) => i.booking.endAt.getTime() <= now.getTime())
+        .map((i) => [i.vehicleId, { bookingId: i.booking.publicId, endAt: i.booking.endAt }]),
+    );
+
     return res.status(StatusCode.OK).json({
       count,
-      data,
+      data: data.map(({ id, branchId: _branchId, categoryId: _categoryId, ...v }) => ({
+        ...v,
+        hiddenReasons: vehicleHiddenReasons(
+          {
+            status: v.status,
+            insuranceExpiry: v.insuranceExpiry,
+            onActiveRental: onRental.has(id),
+            overdueRental: overdueOf.has(id),
+            rent24Hour: rents.get(id)?.daily ?? null,
+          },
+          now,
+        ),
+        // The overdue rental behind OVERDUE_RETURN (booking publicId + due time); null otherwise
+        overdueRental: overdueOf.get(id) ?? null,
+      })),
     });
   } catch (error) {
     console.error("GetVehicles Error:", error);
@@ -751,11 +811,12 @@ export const DeleteVehicle = async (req: Request, res: Response) => {
       await redis.del(keys);
     }
 
-    // Targeted cache invalidation for deleted vehicle (TASK-021)
+    // Targeted cache invalidation for deleted vehicle (TASK-021); listings drop it now
     try {
       await Promise.all([
         invalidateVehicleAvailability(redis, [vehicle.id]),
         invalidateVehiclePricing(redis, [vehicle.id]),
+        invalidateGroupListingCache(redis),
       ]);
     } catch (redisErr) {
       console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);

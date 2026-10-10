@@ -1,7 +1,7 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { PricingEngineService, type PricingResult } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, heldToClosingOf, type PricingResult } from "../pricing/pricing-engine.service.js";
 import { getBranchGstRates, splitRentGross } from "../tax/gst.service.js";
 
 export interface ExtensionPricingResult {
@@ -137,6 +137,8 @@ class ExtensionPricingService {
               paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
               excludeBookingId: booking.id,
               couponLockedIn: Boolean(booking.couponCode),
+              // Booked as 12 hours held to closing (item 6): both windows bill at least 12 h
+              heldToClosing: heldToClosingOf(booking.pricingSnapshot),
             },
           ),
         ),

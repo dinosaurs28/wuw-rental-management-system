@@ -140,6 +140,9 @@ class ExtensionConflictResolverService {
     const result = [];
 
     for (const conflict of conflictingBookings) {
+      // A checkout in progress isn't a booking to reassign — only waited out
+      if (conflict.kind === "HOLD") return null;
+
       // Get category rank for the conflicting booking's vehicle
       const vehicle = await prisma.vehicle.findUnique({
         where: { id: conflict.vehicleId },

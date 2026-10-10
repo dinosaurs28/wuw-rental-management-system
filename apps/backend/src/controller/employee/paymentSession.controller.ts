@@ -56,6 +56,8 @@ import {
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
 import { lockAndAssertDlFreeForPickup, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
+import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import {
   resolveCounterUpi,
   claimCounterUpi,
@@ -1150,6 +1152,12 @@ async function runPostCompletionHooks(
     });
     const vehicleIds = booking.items.map((i: any) => i.vehicleId);
 
+    // The car still out on another rental (returned late) or not AVAILABLE can't
+    // be handed over: 409 VEHICLE_STILL_OUT / VEHICLE_NOT_READY, and the payment
+    // rolls back (also checked when the session is opened)
+    const notReady = await checkVehiclesReadyForPickup(vehicleIds, bookingId, tx);
+    if (notReady) throw new SettlementConflict(StatusCode.CONFLICT, { ...notReady });
+
     // Keep when/where the balance was actually paid if it was settled earlier
     // (e.g. initiate-remaining-payment before the handover)
     await tx.booking.update({
@@ -1167,6 +1175,9 @@ async function runPostCompletionHooks(
       where: { id: { in: vehicleIds } },
       data: { status: VehicleStatus.OUT_FOR_RENTAL },
     });
+
+    // Handed over: the paused pickup form is done with (client item 2).
+    await discardOperationDraft(bookingId, "PICKUP", tx);
 
     // An extension paid in cash before this session (PAYMENT_COLLECTED) is NOT
     // confirmed here: it waits for the manager's cash confirmation, which adds
@@ -1281,6 +1292,9 @@ async function runPostCompletionHooks(
       where: { id: bookingId },
       data: { status: BookingStatus.RETURNED, returnedAt },
     });
+
+    // Taken back: the paused drop form is done with (client item 2).
+    await discardOperationDraft(bookingId, "RETURN", tx);
 
     // Damage recorded at drop holds that vehicle for the manager's disposition
     // (MANAGER_REPORTED); every other vehicle is back in the fleet.

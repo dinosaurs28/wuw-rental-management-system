@@ -33,6 +33,7 @@ import {
 } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { createID } from "../../utils/nanoID.js";
+import { publicFileUrl } from "../../utils/file-url.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import {
@@ -61,7 +62,7 @@ const dropDamageInclude = {
   photos: {
     where: { type: BookingPhotoType.DAMAGE },
     orderBy: { createdAt: "asc" as const },
-    select: { file: { select: { publicId: true, url: true } } },
+    select: { file: { select: { publicId: true, key: true, url: true } } },
   },
   vehicle: { select: { publicId: true, make: true, model: true, regNo: true } },
 };
@@ -444,7 +445,7 @@ function serializeDropDamage(report: any) {
           regNo: report.vehicle.regNo,
         }
       : null,
-    photos: (report.photos ?? []).map((p: any) => ({ publicId: p.file.publicId, url: p.file.url })),
+    photos: (report.photos ?? []).map((p: any) => ({ publicId: p.file.publicId, url: publicFileUrl(p.file) })),
     createdAt: report.createdAt,
   };
 }

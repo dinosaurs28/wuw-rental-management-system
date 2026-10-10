@@ -4,6 +4,7 @@ import { prisma, KycType, KycSide, KycStatus, Role } from "@repo/database/client
 import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { uploadKycToR2, generatePresignedUrl } from "../../services/r2-upload.js";
+import { resolveFileUrl } from "../../utils/file-url.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
 import { PRIVATE_BUCKET } from "../../lib/r2.client.js";
 import fs from "fs/promises";
@@ -35,7 +36,7 @@ export const GetKycDocuments = async (req: Request, res: Response) => {
 
     const documents = await prisma.customerKyc.findMany({
       where: { customerId },
-      include: { file: { select: { id: true, publicId: true, key: true, mime: true, size: true } } },
+      include: { file: { select: { id: true, publicId: true, key: true, url: true, mime: true, size: true } } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -46,7 +47,8 @@ export const GetKycDocuments = async (req: Request, res: Response) => {
         file: doc.file
           ? {
               ...doc.file,
-              url: await generatePresignedUrl(doc.file.key),
+              // KYC from before the private bucket (Jun 2026) keeps its public URL
+              url: await resolveFileUrl(doc.file, { ttlSeconds: 300 }),
             }
           : null,
       })),
@@ -86,6 +88,16 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
       await fs.unlink(file.path).catch(() => {});
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid or missing KYC document type",
+      });
+    }
+
+    // PAN is no longer accepted. The enum value stays so older PAN uploads
+    // still load, but no new ones are taken.
+    if (type === KycType.PAN) {
+      await fs.unlink(file.path).catch(() => {});
+      return res.status(StatusCode.BAD_REQUEST).json({
+        code: "KYC_TYPE_NOT_ACCEPTED",
+        message: "PAN card is no longer accepted. Please upload your driving licence or Aadhaar.",
       });
     }
 

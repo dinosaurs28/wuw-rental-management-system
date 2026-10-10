@@ -92,7 +92,8 @@ export async function invalidateVehiclePricing(
 }
 
 /**
- * Invalidate all grouped listing caches.
+ * Invalidate all grouped listing caches — customer and walk-in listings, and
+ * the walk-in category lists (a category shows while it has a listable car).
  * Call after any vehicle status/availability change so listing availableCount stays accurate.
  * Uses SCAN to avoid KEYS issues on Redis Cluster.
  */
@@ -103,7 +104,11 @@ export async function invalidateGroupListingCache(
   try {
     const patterns = [
       "public:vehicles:grouped:*",
-      ...(groupKey ? [`public:vehicles:group:${groupKey}:*`] : ["public:vehicles:group:*"]),
+      "employee:vehicles:grouped:*",
+      "employee:branch:*:categories",
+      ...(groupKey
+        ? [`public:vehicles:group:${groupKey}:*`, `employee:vehicles:group:${groupKey}:*`]
+        : ["public:vehicles:group:*", "employee:vehicles:group:*"]),
     ];
 
     for (const pattern of patterns) {

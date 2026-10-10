@@ -4,7 +4,20 @@ import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
-import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  explainUnavailableVehicles,
+  getBlockedForAnyWindowIds,
+  getUnavailableVehicleIds,
+  type UnavailableReason,
+} from "../../utils/availability/availabilityBatch.js";
+import {
+  insuranceValidFrom,
+  isInsuranceValid,
+  isListableStatus,
+  listableVehicleWhere,
+  normalizeRegNo,
+  regNoMatches,
+} from "../../utils/availability/vehicleEligibility.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
@@ -16,6 +29,7 @@ import {
 } from "../../utils/pricing/batchListingPrice.js";
 import { DateTime } from "luxon";
 import { isGstRuleMissing } from "../../services/tax/gst.service.js";
+import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -56,7 +70,9 @@ export const searchVehicles = async (req: Request, res: Response) => {
       sort,
       start,
       end,
-      limit = "20",
+      // Every card of a branch in one page by default (the walk-in screens show
+      // one list; mobile asks for 100)
+      limit = "100",
       offset = "0",
     } = req.query as any;
 
@@ -80,11 +96,12 @@ export const searchVehicles = async (req: Request, res: Response) => {
     const cached = await redis.get(cacheKey);
     if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
 
+    // Listable cars (vehicleEligibility): AVAILABLE or OUT_FOR_RENTAL, insurance
+    // valid through its expiry day; the availability check blocks the dates a
+    // car is out on a rental
     const where: any = {
       branchId,
-      status: "AVAILABLE",
-      deletedAt: null,
-      insuranceExpiry: { gt: new Date() },
+      ...listableVehicleWhere(),
     };
 
     if (search) {
@@ -128,6 +145,10 @@ export const searchVehicles = async (req: Request, res: Response) => {
         vehicleIdToPublicId,
       );
       availableVehicles = vehicles.filter((v) => !unavailableIds.has(v.id));
+    } else {
+      // No dates: leave out cars free at no time (set Out for Rental by hand, overdue)
+      const blocked = await getBlockedForAnyWindowIds(vehicles.map((v) => v.id));
+      availableVehicles = vehicles.filter((v) => !blocked.has(v.id));
     }
 
     if (availableVehicles.length === 0) {
@@ -141,7 +162,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo);
+      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, { startAt: startDate, endAt: endDate });
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }
@@ -292,7 +313,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
     } catch { /* non-fatal */ }
 
     const branchVehicles = await prisma.vehicle.findMany({
-      where: { categoryId, branchId, deletedAt: null, insuranceExpiry: { gt: new Date() } },
+      where: { categoryId, branchId, deletedAt: null, insuranceExpiry: { gte: insuranceValidFrom() } },
       select: {
         id: true,
         publicId: true,
@@ -326,26 +347,16 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
     }
 
-    const bookableVehicles = groupVehicles.filter((v) => v.status === "AVAILABLE");
-    let availableCount: number;
-    let representativeVehicle = bookableVehicles[0] ?? groupVehicles[0]!;
-
-    if (startDate && endDate) {
-      const startPrisma = TimezoneService.toPrisma(startDate);
-      const endPrisma   = TimezoneService.toPrisma(endDate);
-      const vehicleIdToPublicId = new Map(bookableVehicles.map((v) => [v.id, v.publicId]));
-      const unavailableIds = await getUnavailableVehicleIds(
-        bookableVehicles.map((v) => v.id),
-        startPrisma,
-        endPrisma,
-        vehicleIdToPublicId,
-      );
-      availableCount = bookableVehicles.filter((v) => !unavailableIds.has(v.id)).length;
-      const firstAvailable = bookableVehicles.find((v) => !unavailableIds.has(v.id));
-      if (firstAvailable) representativeVehicle = firstAvailable;
-    } else {
-      availableCount = bookableVehicles.length;
-    }
+    // Listable units free for the dates (without dates: not blocked for every
+    // window) — the same rule as the customer group page and booking creation
+    const { representative, available } = await pickGroupRepresentative(
+      groupVehicles,
+      startDate && endDate ? TimezoneService.toPrisma(startDate) : null,
+      startDate && endDate ? TimezoneService.toPrisma(endDate) : null,
+    );
+    const availableCount = available.length;
+    const representativeVehicle =
+      representative ?? groupVehicles.find((v) => isListableStatus(v.status)) ?? groupVehicles[0]!;
 
     const allImages: string[] = representativeVehicle.images.map((img) => img.file.url);
 
@@ -355,8 +366,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
 
     if (startDate && endDate) {
       availability = availableCount > 0;
-      const isInsuranceValid = new Date(representativeVehicle.insuranceExpiry) > new Date();
-      if (isInsuranceValid && availability) {
+      if (isInsuranceValid(representativeVehicle.insuranceExpiry) && availability) {
         try {
           const pr = await pricingEngine.calculateBookingPrice(
             representativeVehicle.id,
@@ -490,15 +500,15 @@ export const getEmployeeVehicleDetails = async (
     let availability: boolean | null = null;
     let pricingDetails: any = null;
 
-    // Check insurance expiry
-    const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
+    // Bookable at all (vehicleEligibility): listable status, insurance valid
+    // through its expiry day; the dated check adds bookings, holds, overdue
+    // rentals and a hand-set Out for Rental
+    const isInsuranceOk = isInsuranceValid(vehicleData.insuranceExpiry);
+    const isBookable = isInsuranceOk && isListableStatus(vehicleData.status);
 
     if (startDate && endDate) {
-      const isBookableStatus = ["AVAILABLE", "OUT_FOR_RENTAL"].includes(
-        vehicleData.status,
-      );
-      if (!isInsuranceValid || !isBookableStatus) {
-        availability = false; // Not available if insurance expired or status not bookable
+      if (!isBookable) {
+        availability = false;
       } else {
         availability = await checkVehicleAvailability(
           vehicleData.id,
@@ -555,7 +565,7 @@ export const getEmployeeVehicleDetails = async (
       };
 
       if (pricingDetails) deposit = pricingDetails.deposit;
-    } else if (!isInsuranceValid) {
+    } else if (!isInsuranceOk) {
       // If no dates provided but insurance expired, mark as explicitly unavailable
       availability = false;
     }
@@ -576,6 +586,8 @@ export const getEmployeeVehicleDetails = async (
         publicId: vehicleData.publicId,
         make: vehicleData.make,
         model: vehicleData.model,
+        regNo: vehicleData.regNo,
+        year: vehicleData.year,
         status: vehicleData.status,
         category: vehicleData.category.name,
         branch: vehicleData.branch.name,
@@ -590,6 +602,7 @@ export const getEmployeeVehicleDetails = async (
         pricingDetails,
         deposit,
         availability,
+        advancePayAmount: Number(vehicleData.advancePayAmount ?? 0),
       },
     });
   } catch (error) {
@@ -613,14 +626,13 @@ export const getEmployeeVehicleCategories = async (req: Request, res: Response) 
       });
     }
 
-    // Only return categories that have at least one active vehicle in this branch
+    // Only return categories that have at least one listable vehicle in this branch
     const categories = await prisma.vehicleCategory.findMany({
       where: {
         vehicles: {
           some: {
             branchId,
-            status: { in: ["AVAILABLE", "OUT_FOR_RENTAL"] },
-            deletedAt: null,
+            ...listableVehicleWhere(),
           },
         },
       },
@@ -641,6 +653,182 @@ export const getEmployeeVehicleCategories = async (req: Request, res: Response) 
     });
   } catch (error) {
     console.error("[getEmployeeVehicleCategories] Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+// ── Walk-in search by registration number (client item 5) ────────────────────
+
+/** Most rows the registration search answers with (best matches first). */
+const REG_SEARCH_LIMIT = 30;
+
+const displayIst = (d: Date): string =>
+  TimezoneService.formatForDisplay(TimezoneService.fromJSDate(d), "full");
+
+/** Staff-facing text for why a car can't be booked for the dates. */
+function unavailableReasonMessage(r: UnavailableReason): string {
+  switch (r.code) {
+    case "MANUAL_OUT_FOR_RENTAL":
+      return "Set Out for Rental by the branch manager";
+    case "OVERDUE_RENTAL":
+      return `Not back from a rental (was due ${displayIst(r.endAt)})`;
+    case "ON_RENT":
+      return `On rent until ${displayIst(r.endAt)}`;
+    case "BOOKED":
+      return `Booked ${displayIst(r.startAt)} – ${displayIst(r.endAt)}`;
+    case "ON_HOLD":
+      return "A customer is booking it right now";
+  }
+}
+
+/**
+ * GET /api/employee/vehicles/search-reg?q=&start=&end=
+ *
+ * The branch's cars whose registration number contains q (case-insensitive,
+ * spaces / hyphens ignored; at least 2 letters or digits), one row per car,
+ * priced for the dates. Cars that can't be booked for the dates are still
+ * listed with available: false and the reason, taken from the same rule as the
+ * walk-in listing (vehicleEligibility + getUnavailableVehicleIds). Booking one
+ * goes through POST /employee/booking/create with vehicles: [publicId].
+ */
+export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
+  try {
+    const { q, start, end } = req.query as { q?: string; start?: string; end?: string };
+    const branchId = req.branch_Id;
+    const query = normalizeRegNo(q);
+    if (query.length < 2) {
+      return res.status(StatusCode.OK).json({ data: [], total: 0 });
+    }
+    if (!start) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Choose the rental dates first" });
+    }
+
+    const startDate = TimezoneService.parseISO(start);
+    let endDate = end ? TimezoneService.parseISO(end) : startDate.plus({ hours: 24 });
+    if (startDate.toMillis() === endDate.toMillis()) endDate = startDate.plus({ hours: 24 });
+    if (!startDate.isValid || !endDate.isValid) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid date format" });
+    }
+    if (endDate <= startDate) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Return must be after pickup" });
+    }
+    const startPrisma = TimezoneService.toPrisma(startDate);
+    const endPrisma = TimezoneService.toPrisma(endDate);
+
+    // Registration numbers are stored as typed (spaces, hyphens), so they are
+    // compared in their normalised form; a branch fleet is small enough to scan.
+    const fleet = await prisma.vehicle.findMany({
+      where: { branchId, deletedAt: null },
+      select: { id: true, regNo: true },
+    });
+    const matches = fleet
+      .filter((v) => regNoMatches(v.regNo, query))
+      .sort((a, b) => {
+        // Numbers that start with what was typed first, then alphabetical
+        const aStarts = normalizeRegNo(a.regNo).startsWith(query);
+        const bStarts = normalizeRegNo(b.regNo).startsWith(query);
+        return Number(bStarts) - Number(aStarts) || a.regNo.localeCompare(b.regNo);
+      });
+    if (matches.length === 0) {
+      return res.status(StatusCode.OK).json({ data: [], total: 0 });
+    }
+
+    const order = new Map(matches.slice(0, REG_SEARCH_LIMIT).map((v, i) => [v.id, i]));
+    const vehicles = await prisma.vehicle.findMany({
+      where: { id: { in: [...order.keys()] } },
+      select: {
+        id: true,
+        publicId: true,
+        regNo: true,
+        make: true,
+        model: true,
+        year: true,
+        status: true,
+        insuranceExpiry: true,
+        branchId: true,
+        categoryId: true,
+        category: { select: { name: true, typeClass: true } },
+        images: {
+          where: { isThumbnail: true },
+          take: 1,
+          select: { file: { select: { url: true } } },
+        },
+      },
+    });
+    vehicles.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+
+    const durationInfo = DurationCalculatorService.calculate(startDate, endDate);
+    const [fallbackPrices, prices, dated] = await Promise.all([
+      // The 24 h rent the car is billed with (0 = no pricing set)
+      getBatchFallbackPrices(vehicles),
+      getBatchListingPrices(vehicles, durationInfo, { startAt: startDate, endAt: endDate }),
+      // The dated checks for the cars the static rule lets through
+      explainUnavailableVehicles(
+        vehicles.filter((v) => isListableStatus(v.status)).map((v) => v.id),
+        startPrisma,
+        endPrisma,
+        new Map(vehicles.map((v) => [v.id, v.publicId])),
+      ),
+    ]);
+
+    const data = vehicles.map((v) => {
+      const priced = (fallbackPrices.get(v.id)?.daily ?? 0) > 0;
+      const lp = priced ? prices.get(v.id) : undefined;
+      const datedReason = dated.get(v.id);
+
+      // First reason that applies, in the order the listing rule checks them
+      let reason: { code: string; message: string } | null = null;
+      if (v.status === "MAINTENANCE") reason = { code: "STATUS_MAINTENANCE", message: "In maintenance" };
+      else if (v.status === "INACTIVE") reason = { code: "STATUS_INACTIVE", message: "Inactive" };
+      else if (v.status === "MANAGER_REPORTED") {
+        reason = { code: "DAMAGE_REVIEW_PENDING", message: "Damage review pending with the branch manager" };
+      } else if (!isListableStatus(v.status)) reason = { code: "STATUS_UNAVAILABLE", message: `Status: ${v.status}` };
+      else if (!isInsuranceValid(v.insuranceExpiry)) {
+        reason = {
+          code: "INSURANCE_EXPIRED",
+          message: `Insurance expired on ${TimezoneService.formatForDisplay(TimezoneService.fromJSDate(v.insuranceExpiry), "date")}`,
+        };
+      } else if (!priced) reason = { code: "NO_PRICE", message: "No price set for this car" };
+      else if (datedReason) reason = { code: datedReason.code, message: unavailableReasonMessage(datedReason) };
+
+      return {
+        publicId: v.publicId,
+        regNo: v.regNo,
+        make: v.make,
+        model: v.model,
+        year: v.year,
+        category: v.category.name,
+        typeClass: v.category.typeClass,
+        imageUrl: v.images[0]?.file.url ?? null,
+        // The car's make/model group — informational; book the car itself
+        groupKey: buildGroupKey(v.make, v.model, v.categoryId, v.branchId),
+        pricing: { daily: lp?.finalPrice ?? null },
+        pricingDetails: lp
+          ? {
+              price: lp.price,
+              finalPrice: lp.finalPrice,
+              type: durationInfo.periodType,
+              ...(lp.billedAs && { billedAs: lp.billedAs, billedAsType: lp.billedAsType }),
+              // price / finalPrice are GST-inclusive; the GST inside finalPrice (item 17)
+              ...(lp.rentWithoutGst != null && {
+                rentWithoutGst: lp.rentWithoutGst,
+                gst: lp.gst,
+                cgst: lp.cgst,
+                sgst: lp.sgst,
+              }),
+            }
+          : null,
+        available: reason === null,
+        unavailableReason: reason,
+      };
+    });
+
+    // Bookable cars first, keeping the match order within each part
+    data.sort((a, b) => Number(b.available) - Number(a.available));
+
+    return res.status(StatusCode.OK).json({ data, total: matches.length });
+  } catch (error) {
+    console.error("Employee reg-no vehicle search error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

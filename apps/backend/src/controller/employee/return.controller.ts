@@ -9,6 +9,7 @@ import {
   INVALID_BOOKING_TYPE,
 } from "../../utils/booking/bookingTypeFilter.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 
 // Return queue. The day is the IST business day (a return due 00:00–05:29 IST
 // belongs to that day, not the previous UTC one). `?type=DAILY|MONTHLY` splits
@@ -114,6 +115,8 @@ export const returnController = async (req: Request, res: Response) => {
         endAt: "asc",
       },
     });
+    // A drop paused half-way (client item 2) shows as "Paused" on its card.
+    const draftOf = await draftSummaryLookup(rows.map((row) => row.publicId), "RETURN");
     const bookings = rows.map((row) => ({
       ...row,
       // Walk-in placeholder emails never leave the server (#1): null instead.
@@ -122,6 +125,7 @@ export const returnController = async (req: Request, res: Response) => {
         user: { ...row.customer.user, email: displayEmail(row.customer.user.email) },
       },
       bookingType: bookingListTypeOf(row.rentalPeriodType),
+      draft: draftOf(row.publicId),
     }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
 

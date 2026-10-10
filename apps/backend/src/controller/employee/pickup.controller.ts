@@ -30,6 +30,8 @@ import {
   lockAndAssertDlFreeForPickup,
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
+import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
+import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { z } from "zod";
 const chargePickupDataSchema = z.object({
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
@@ -115,6 +117,15 @@ export const PickupController = async (req: Request, res: Response) => {
     const dlChoice = resolvePickupDlStatus(parsedVehicleDetails);
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
+
+    // The car is listed for dates after its current rental, so a late return can
+    // leave it still out: 409 VEHICLE_STILL_OUT until it is back (or swapped).
+    // Only an AVAILABLE car is handed over: 409 VEHICLE_NOT_READY for damage
+    // review, maintenance, inactive or a hand-set Out for Rental.
+    const notReady = await checkVehiclesReadyForPickup(vehicleIds, booking.id);
+    if (notReady) {
+      return res.status(StatusCode.CONFLICT).json(notReady);
+    }
 
     // One vehicle per driving licence (X3): refused while another booking on
     // this DL is out. Re-checked under a lock when the status flips below.
@@ -210,6 +221,11 @@ export const PickupController = async (req: Request, res: Response) => {
           },
         });
       }
+
+      // The pickup is submitted (handed over, or sent to a manager): drop the
+      // paused form saved for it (client item 2). After the booking update, so
+      // a draft save racing this waits on the booking row lock.
+      await discardOperationDraft(booking.id, "PICKUP", tx);
 
       // Unlabeled photos (legacy / fallback)
       if (

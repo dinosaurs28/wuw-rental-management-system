@@ -5,6 +5,7 @@ import { managerConfirmPickupSchema } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -25,6 +26,7 @@ import {
 import { listOverdueReturns, parseOverduePaging } from "../../services/booking/overdue-returns.service.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import { publicFileUrl } from "../../utils/file-url.js";
 import {
   assertDlFree,
   lockAndAssertDlFreeForPickup,
@@ -694,6 +696,13 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);
 
+    // The car still out on another rental (returned late), or not AVAILABLE
+    // (damage review, maintenance …), can't be handed over
+    const notReady = await checkVehiclesReadyForPickup(vehicleIds, booking.id);
+    if (notReady) {
+      return res.status(StatusCode.CONFLICT).json(notReady);
+    }
+
     // One vehicle per driving licence (X3): not while another booking on this
     // DL is out. Re-checked under a lock below.
     await assertDlFree({ customerId: booking.customerId, mode: "pickup", excludeBookingId: booking.id });
@@ -1046,6 +1055,7 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
             captureLabel: true,
             file: {
               select: {
+                key: true,
                 url: true,
                 mime: true,
               },
@@ -1069,10 +1079,14 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     // only; a return confirmation keeps every photo (pickup, return, damage),
     // each carrying its type / captureLabel so the dialog can label it.
     const { pricingSnapshot, ...bookingFields } = booking;
-    const photos =
+    const photos = (
       booking.status === BookingStatus.CONFIRMED
         ? booking.photos.filter((photo) => photo.type === "PRE_DELIVERY")
-        : booking.photos;
+        : booking.photos
+    ).map(({ file, ...photo }) => ({
+      ...photo,
+      file: { url: publicFileUrl(file), mime: file.mime },
+    }));
 
     // How staff chose to return the safety deposit at the drop (#6): SET_OFF /
     // REFUND_IN_FULL, refunded through Settlements (LEGACY) or on the drop bill

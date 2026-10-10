@@ -4,7 +4,11 @@
  * Customers book packages only; when one asks to come earlier or later, Fleet
  * (STAFF, own branch) or the Branch Manager moves the booking: a new pickup
  * time, the return shifted by the same amount. Length, price, GST, discounts,
- * free km and payments are unchanged — nothing is re-priced.
+ * free km and payments are unchanged — nothing is re-priced. A 12-hour package
+ * that hasn't been extended (client item 6) instead takes the package's return
+ * for the new pickup — pickup + 12 h, or the branch's closing that day when
+ * that is outside hours (pricingSnapshot.heldToClosing follows) — still billed
+ * as the 12 hours it was sold as.
  *
  *   GET  …/bookings/:publicId/reschedule   what the picker needs (hours, limits,
  *                                           busy windows) and whether it can move
@@ -36,7 +40,7 @@ import {
 } from "@repo/database/client";
 import type { Prisma } from "@repo/database/client";
 import { DateTime } from "luxon";
-import { bookingWindowEnd, MAX_BOOKING_DAYS } from "@repo/schemas";
+import { bookingWindowEnd, HALF_DAY_PACKAGE_HOURS, MAX_BOOKING_DAYS } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { TimezoneService } from "../timezone/timezone.service.js";
 import { redis } from "../../lib/redisconfig.js";
@@ -56,6 +60,13 @@ import {
   validateReturnTime,
   type ScheduleVerdict,
 } from "../../utils/booking/branchScheduleValidator.js";
+import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import {
+  heldToClosingOf,
+  isHalfDayPackageBooking,
+  rescheduledReturn,
+  withHeldToClosing,
+} from "../../utils/booking/halfDayPackage.js";
 import { checkCustomerTypeClassLimits } from "../../utils/booking/customerTypeClassLimits.js";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
 import { invalidateGroupListingCache, invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
@@ -152,6 +163,7 @@ async function loadBooking(bookingPublicId: string, branchId: number) {
       rentalPeriodType: true,
       requiresManagerConfirmation: true,
       activeExtensionId: true,
+      pricingSnapshot: true,
       branch: { select: { publicId: true, bookingRestrictionMode: true } },
       customer: { select: { drivingLicenceNumber: true, user: { select: { name: true } } } },
       items: {
@@ -286,6 +298,11 @@ async function findBlocker(
 
   return { blocker: null, releasableQuoteId };
 }
+
+// ── 12-hour packages (client item 6) ─────────────────────────────────────────
+
+// Rules: utils/booking/halfDayPackage.ts (isHalfDayPackageBooking, rescheduledReturn)
+const HALF_DAY_MS = HALF_DAY_PACKAGE_HOURS * 60 * MINUTE_MS;
 
 // ── Window rules ─────────────────────────────────────────────────────────────
 
@@ -508,10 +525,13 @@ export async function getRescheduleOptions(req: Request, bookingPublicId: string
 
   const durationMs = booking.endAt.getTime() - booking.startAt.getTime();
   const durationMinutes = Math.round(durationMs / MINUTE_MS);
+  // A 12-hour package's return depends on the new pickup (up to pickup + 12 h)
+  const halfDayPackage = isHalfDayPackageBooking(booking);
+  const reachMs = halfDayPackage ? Math.max(durationMs, HALF_DAY_MS) : durationMs;
   const earliestStartAt = new Date(Math.floor(now.getTime() / MINUTE_MS) * MINUTE_MS);
-  const latestStartAt = latestStartFor(booking, durationMs, now);
+  const latestStartAt = latestStartFor(booking, reachMs, now);
   const rangeStart = new Date(earliestStartAt.getTime() - RESCHEDULE_PAST_TOLERANCE_MINUTES * MINUTE_MS);
-  const rangeEnd = new Date(Math.max(latestStartAt.getTime(), earliestStartAt.getTime()) + durationMs);
+  const rangeEnd = new Date(Math.max(latestStartAt.getTime(), earliestStartAt.getTime()) + reachMs);
 
   const schedule = await loadBranchScheduleConfig(booking.branchId);
 
@@ -550,6 +570,9 @@ export async function getRescheduleOptions(req: Request, bookingPublicId: string
     endAt: booking.endAt.toISOString(),
     durationMinutes,
     durationLabel: durationLabel(durationMinutes),
+    // 12-hour package (item 6): the new return is the package's return for the
+    // new pickup (halfDayReturnFor), not pickup + durationMinutes
+    halfDayPackage,
     isMonthly: booking.rentalPeriodType === RentalPeriodType.MONTHLY,
     rentalPeriodType: booking.rentalPeriodType,
     earliestStartAt: earliestStartAt.toISOString(),
@@ -643,9 +666,27 @@ export async function rescheduleBooking(
       "The new pickup time has already passed. Choose a time from now on.",
     );
   }
-  const durationMs = booking.endAt.getTime() - booking.startAt.getTime();
+  const schedule = await loadBranchScheduleConfig(booking.branchId);
+  // Shifted by the same amount — or, for a 12-hour package (item 6), the
+  // package's return for the new pickup (pickup + 12 h, or closing that day);
+  // null = only whole days fit from there
+  const nextWindow = rescheduledReturn(booking, newStart, schedule);
+  if (!nextWindow) {
+    throw (
+      hoursError(schedule, newStart, newStart) ??
+      new RescheduleError(
+        StatusCode.BAD_REQUEST,
+        "BRANCH_SCHEDULE_VIOLATION",
+        "This is a 12-hour booking, and from this pickup its return would be outside branch hours with less than an hour left before closing. Choose an earlier pickup time.",
+      )
+    );
+  }
+  const halfDay = nextWindow.halfDayPackage;
+  const newEnd = nextWindow.endAt;
+  const wasHeld = heldToClosingOf(booking.pricingSnapshot);
+  const nowHeld = nextWindow.heldToClosing;
+  const durationMs = newEnd.getTime() - newStart.getTime();
   const durationMinutes = Math.round(durationMs / MINUTE_MS);
-  const newEnd = new Date(booking.endAt.getTime() + shiftMs);
   const isMonthly = booking.rentalPeriodType === RentalPeriodType.MONTHLY;
 
   // 15-day window (a monthly booking: its pickup inside the window)
@@ -653,13 +694,13 @@ export async function rescheduleBooking(
     assertBookingWindow(newStart, newEnd, { monthly: isMonthly, now });
   } catch (err) {
     if (err instanceof BookingWindowError) {
-      throw windowError(err, latestStartFor(booking, durationMs, now), durationMinutes);
+      throw windowError(err, latestStartFor(booking, halfDay ? Math.max(durationMs, HALF_DAY_MS) : durationMs, now), durationMinutes);
     }
     throw err;
   }
 
   // Office hours: pickup slot (last pickup 30 min before closing) and the return window
-  const hoursProblem = hoursError(await loadBranchScheduleConfig(booking.branchId), newStart, newEnd);
+  const hoursProblem = hoursError(schedule, newStart, newEnd);
   if (hoursProblem) throw hoursProblem;
 
   // One vehicle per driving licence — re-checked under a lock below
@@ -752,6 +793,10 @@ export async function rescheduleBooking(
             endAt: newEnd,
             ...(booking.originalEndAt ? { originalEndAt: shift(booking.originalEndAt) } : {}),
             ...(releasableQuoteId !== null ? { activeExtensionId: null } : {}),
+            // A 12-hour package's clock length may change (8 h 30 m ↔ 12 h): period
+            // columns follow, and the held-to-closing flag the re-prices bill by
+            ...(halfDay ? bookingPeriodFields(newStart, newEnd) : {}),
+            ...(nowHeld !== wasHeld ? { pricingSnapshot: withHeldToClosing(booking.pricingSnapshot, nowHeld) } : {}),
           },
         });
         if (updated.count === 0) {

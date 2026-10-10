@@ -2,7 +2,6 @@ import {
   prisma,
   BookingStatus,
   PaymentStatus,
-  VehicleStatus,
   DepositMethod,
   InvoiceStatus,
   Role,
@@ -225,14 +224,8 @@ export async function confirmBookingPayment(
           }
         }
 
-        await tx.vehicle.updateMany({
-          where: {
-            id: { in: booking.items.map((i) => i.vehicleId) },
-          },
-          data: {
-            status: VehicleStatus.AVAILABLE,
-          },
-        });
+        // Confirming never touches the vehicle's status: the car may be out on
+        // another rental, in maintenance or set Out For Rental by the BM.
 
         // Credit: no deposit money was taken
         if (booking.totalDeposit.gt(0) && method) {

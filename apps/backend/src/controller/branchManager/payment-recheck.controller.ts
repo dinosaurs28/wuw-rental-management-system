@@ -268,10 +268,7 @@ export const RecheckPaymentWithGateway = async (req: Request, res: Response) => 
           },
         });
 
-        await tx.vehicle.updateMany({
-          where: { id: { in: booking.items.map((i) => i.vehicleId) } },
-          data: { status: VehicleStatus.AVAILABLE },
-        });
+        // Confirming never touches the vehicle's status (it may be out on another rental)
 
         if (booking.totalDeposit.gt(0)) {
           await tx.deposit.create({
@@ -452,10 +449,7 @@ export const ManualConfirmPayment = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.vehicle.updateMany({
-        where: { id: { in: booking.items.map((i) => i.vehicleId) } },
-        data: { status: VehicleStatus.AVAILABLE },
-      });
+      // Confirming never touches the vehicle's status (it may be out on another rental)
 
       if (booking.totalDeposit.gt(0)) {
         await tx.deposit.create({

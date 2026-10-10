@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingPhotoType } from "@repo/database/client";
+import { resolveFileUrl } from "../../utils/file-url.js";
 
 /**
  * GET /employee/pickup/:bookingId/capture-config
@@ -62,17 +63,19 @@ export const GetPickupCaptures = async (req: Request, res: Response) => {
 
     const photos = await prisma.bookingPhoto.findMany({
       where: { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY },
-      include: { file: { select: { url: true, mime: true } } },
+      include: { file: { select: { key: true, url: true, mime: true } } },
       orderBy: { createdAt: "asc" },
     });
 
     // Return as array (some may have captureLabel, some may not)
-    const result = photos.map((p) => ({
-      publicId: p.publicId,
-      captureLabel: p.captureLabel ?? null,
-      url: p.file.url,
-      mime: p.file.mime,
-    }));
+    const result = await Promise.all(
+      photos.map(async (p) => ({
+        publicId: p.publicId,
+        captureLabel: p.captureLabel ?? null,
+        url: await resolveFileUrl(p.file),
+        mime: p.file.mime,
+      })),
+    );
 
     return res.status(StatusCode.OK).json({ photos: result });
   } catch (error) {

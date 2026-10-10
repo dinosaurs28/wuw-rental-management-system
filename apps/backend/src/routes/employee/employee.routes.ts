@@ -13,6 +13,7 @@ import {
 import { Role } from "@repo/database/client";
 import {
   searchVehicles,
+  searchVehiclesByRegNo,
   getEmployeeVehicleDetails,
   getEmployeeVehicleGroupDetails,
 } from "../../controller/employee/vehicle.controller.js";
@@ -98,8 +99,15 @@ import {
 import sessionRouter from "./session.routes.js";
 import dashboardRouter from "./dashboard.routes.js";
 import { makeNotificationRouter } from "../notification/notification.routes.js";
+import { makeCustomersRouter } from "../branchManger/customers.routes.js";
 import { UpdateBookingDlStatus } from "../../controller/employee/dlStatus.controller.js";
 import { GetRescheduleOptions, RescheduleBooking } from "../../controller/employee/reschedule.controller.js";
+import {
+  ListOperationDrafts,
+  makeDiscardOperationDraft,
+  makeGetOperationDraft,
+  makeSaveOperationDraft,
+} from "../../controller/employee/operationDraft.controller.js";
 
 const router: Router = Router();
 
@@ -144,6 +152,14 @@ router.get("/return/:bookingId", EmployeeCheck, GetBookingDetails);
 router.post("/return/:bookingId/initiate-remaining-payment", EmployeeCheck, InitiateRemainingPayment);
 router.get("/return/:bookingId/remaining-payment/status", EmployeeCheck, CheckRemainingPaymentStatus);
 router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn);
+// Paused pickup / drop (client item 2): what was entered so far, resumable on any phone
+router.get("/operation-drafts", EmployeeCheck, ListOperationDrafts);
+router.get("/pickup/:bookingId/draft", EmployeeCheck, makeGetOperationDraft("PICKUP"));
+router.put("/pickup/:bookingId/draft", EmployeeCheck, makeSaveOperationDraft("PICKUP"));
+router.delete("/pickup/:bookingId/draft", EmployeeCheck, makeDiscardOperationDraft("PICKUP"));
+router.get("/return/:bookingId/draft", EmployeeCheck, makeGetOperationDraft("RETURN"));
+router.put("/return/:bookingId/draft", EmployeeCheck, makeSaveOperationDraft("RETURN"));
+router.delete("/return/:bookingId/draft", EmployeeCheck, makeDiscardOperationDraft("RETURN"));
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin);
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp);
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile);
@@ -160,6 +176,8 @@ router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus);
 router.delete("/walkin/kyc", EmployeeCheck, DeleteKycDocument);
 router.get("/vehicles/categories", EmployeeCheck, getEmployeeVehicleCategories);
 router.get("/vehicles/search", EmployeeCheck, searchVehicles);
+// Walk-in: one row per car whose registration number matches (client item 5)
+router.get("/vehicles/search-reg", EmployeeCheck, searchVehiclesByRegNo);
 router.get("/vehicles/group/:groupKey", EmployeeCheck, getEmployeeVehicleGroupDetails);
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails);
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking);
@@ -196,6 +214,8 @@ router.use("/payment", paymentRouter);
 router.use("/discount", discountRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/notifications", makeNotificationRouter(EmployeeCheck));
+// Customers tab for Fleet (same handlers and rules as the branch manager's)
+router.use("/customers", makeCustomersRouter(EmployeeCheck));
 router.use("/", sessionRouter);
 
 // ── Vehicle Swap (Employee) ────────────────────────────────────────────────────

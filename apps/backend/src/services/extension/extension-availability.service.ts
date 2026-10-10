@@ -1,4 +1,5 @@
 import { prisma, BookingStatus, Vehicle, VehicleStatus } from "@repo/database/client";
+import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
 
 export interface ConflictingBooking {
   bookingId: number;
@@ -6,6 +7,11 @@ export interface ConflictingBooking {
   startAt: Date;
   endAt: Date;
   vehicleId: number;
+  /**
+   * HOLD = a checkout in progress (an unexpired HOLD booking or a customer's
+   * Redis hold) — it can't be moved to another car, only waited out.
+   */
+  kind?: "BOOKING" | "HOLD";
 }
 
 export interface AvailabilityResult {
@@ -27,7 +33,10 @@ export interface AlternativeVehicle {
 class ExtensionAvailabilityService {
   /**
    * Check if a specific vehicle is available for the given window,
-   * excluding the booking that is being extended.
+   * excluding the booking that is being extended. Checkouts in progress count:
+   * the car is listed for dates right after a rental, so a customer may be
+   * paying for that window (unexpired HOLD booking / Redis hold) while the
+   * renter extends over it.
    */
   async checkVehicleAvailability(
     vehicleId: number,
@@ -35,12 +44,16 @@ class ExtensionAvailabilityService {
     toAt: Date,
     excludeBookingId: number,
   ): Promise<AvailabilityResult> {
+    const now = new Date();
     const conflicts = await prisma.bookingItem.findMany({
       where: {
         vehicleId,
         booking: {
           id: { not: excludeBookingId },
-          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
+          OR: [
+            { status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] } },
+            { status: BookingStatus.HOLD, holdExpiresAt: { gt: now } },
+          ],
           // Overlap condition: NOT (booking.endAt <= fromAt OR booking.startAt >= toAt)
           AND: [
             { endAt: { gt: fromAt } },
@@ -50,10 +63,12 @@ class ExtensionAvailabilityService {
       },
       select: {
         vehicleId: true,
+        vehicle: { select: { publicId: true } },
         booking: {
           select: {
             id: true,
             publicId: true,
+            status: true,
             startAt: true,
             endAt: true,
           },
@@ -67,7 +82,41 @@ class ExtensionAvailabilityService {
       startAt: item.booking.startAt,
       endAt: item.booking.endAt,
       vehicleId: item.vehicleId,
+      kind: item.booking.status === BookingStatus.HOLD ? "HOLD" : "BOOKING",
     }));
+
+    // Customer checkouts (Redis holds) — never the extended booking's own
+    const [vehicle, extended] = await Promise.all([
+      conflicts[0]?.vehicle ?? prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { publicId: true } }),
+      prisma.booking.findUnique({ where: { id: excludeBookingId }, select: { publicId: true } }),
+    ]);
+    if (vehicle) {
+      const holds = await listOverlappingHolds(
+        new Map([[vehicleId, vehicle.publicId]]),
+        fromAt,
+        toAt,
+        new Set(extended ? [extended.publicId] : []),
+      );
+      const known = new Set(conflictingBookings.map((c) => c.bookingPublicId));
+      const fresh = holds.filter((h) => !known.has(h.holdId));
+      if (fresh.length > 0) {
+        const rows = await prisma.booking.findMany({
+          where: { publicId: { in: fresh.map((h) => h.holdId) } },
+          select: { id: true, publicId: true },
+        });
+        const idOf = new Map(rows.map((r) => [r.publicId, r.id]));
+        for (const h of fresh) {
+          conflictingBookings.push({
+            bookingId: idOf.get(h.holdId) ?? 0,
+            bookingPublicId: h.holdId,
+            startAt: h.startAt,
+            endAt: h.endAt,
+            vehicleId,
+            kind: "HOLD",
+          });
+        }
+      }
+    }
 
     return {
       available: conflictingBookings.length === 0,
@@ -134,7 +183,11 @@ class ExtensionAvailabilityService {
         vehicleId,
         booking: {
           id: { not: excludeBookingId },
-          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
+          OR: [
+            { status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] } },
+            // A checkout in progress for a later window
+            { status: BookingStatus.HOLD, holdExpiresAt: { gt: new Date() } },
+          ],
           startAt: { gt: fromAt },
         },
       },

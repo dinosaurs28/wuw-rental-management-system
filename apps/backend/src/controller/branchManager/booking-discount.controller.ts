@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import PricingEngineService, {
   InclGstTotals,
   allocateByWeights,
+  heldToClosingOf,
   type PricingResult,
 } from "../../services/pricing/pricing-engine.service.js";
 import { discountApplicationService } from "../../services/discount/index.js";
@@ -207,7 +208,8 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
         index === 0 && manual ? manual.id : undefined,
         item.vehicle.categoryId,
         undefined,
-        { paymentPlan: plan, excludeBookingId: booking.id },
+        // Booked as 12 hours held to closing (item 6): billed as 12 h, as at booking
+        { paymentPlan: plan, excludeBookingId: booking.id, heldToClosing: heldToClosingOf(booking.pricingSnapshot) },
       ),
     ),
   );

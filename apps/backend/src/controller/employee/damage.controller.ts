@@ -18,6 +18,8 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
+import { publicFileUrl } from "../../utils/file-url.js";
+import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -67,7 +69,7 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
     return res.status(StatusCode.CREATED).json({
       message: "Damage Image Uploaded Successfully",
       fileId: fileRecord.publicId,
-      url: fileRecord.url,
+      url: publicFileUrl(fileRecord),
     });
   } catch (error) {
     console.error("Error uploading damage image:", error);
@@ -246,6 +248,8 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
           },
         });
       }
+      // The vehicle is back: the paused drop form is done with (client item 2).
+      await discardOperationDraft(booking.id, "RETURN", tx);
 
       // Abandon any open RETURN payment session — manager will handle full settlement
       const openReturnSession = await tx.paymentSession.findFirst({

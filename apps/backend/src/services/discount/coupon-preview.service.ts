@@ -16,6 +16,7 @@ import {
   normalizeGroupStr,
   pickGroupRepresentative,
 } from "../../utils/booking/groupRepresentative.js";
+import { listableVehicleWhere } from "../../utils/availability/vehicleEligibility.js";
 
 /**
  * Coupon preview shared by POST /api/user/discount/validate (signed-in
@@ -74,9 +75,8 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
         where: {
           branchId: parsed.branchId,
           categoryId: parsed.categoryId,
-          status: "AVAILABLE",
-          deletedAt: null,
-          insuranceExpiry: { gt: new Date() },
+          // Listable units (vehicleEligibility), as booking create resolves them
+          ...listableVehicleWhere(),
         },
         select: {
           id: true, publicId: true, status: true, make: true, model: true,

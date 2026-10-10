@@ -30,7 +30,7 @@ export const GetAvailableVehicles = async (req: Request, res: Response) => {
   }
 
   try {
-    const { vehicles, context } =
+    const { vehicles, excluded, context } =
       await vehicleSwapService.getAvailableVehiclesForSwap(
         bookingId,
         branchId,
@@ -41,6 +41,8 @@ export const GetAvailableVehicles = async (req: Request, res: Response) => {
       message: "Available vehicles fetched successfully",
       data: vehicles,
       swapContext: context,
+      // Same-type cars that can't take over the booking, with the reason
+      excluded,
     });
   } catch (error: unknown) {
     console.error("Error fetching available vehicles for swap:", error);

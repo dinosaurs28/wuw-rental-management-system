@@ -17,6 +17,7 @@ import {
   bookingTypeWhere,
   type BookingListType,
 } from "../../utils/booking/bookingTypeFilter.js";
+import { draftSummaryLookup, type OperationDraftSummary } from "./operation-draft.service.js";
 
 /**
  * Overdue / no-show return list (#8) shared by Fleet (STAFF) and the Branch
@@ -100,6 +101,8 @@ export interface OverdueReturnRow {
     regNo: string;
     imageUrl: string | null;
   }>;
+  /** A drop paused half-way by Fleet (client item 2); null when none. */
+  draft: OperationDraftSummary | null;
 }
 
 export interface OverdueReturnsResult {
@@ -315,6 +318,7 @@ export const listOverdueReturns = async (
 
   // findMany with `in` loses the order — restore most-overdue-first.
   details.sort((a, b) => position.get(a.id)! - position.get(b.id)!);
+  const draftOf = await draftSummaryLookup(details.map((booking) => booking.publicId), "RETURN");
 
   const data: OverdueReturnRow[] = details.map((booking) => {
     const state = byId.get(booking.id)!;
@@ -365,6 +369,7 @@ export const listOverdueReturns = async (
         regNo: item.vehicle.regNo,
         imageUrl: item.vehicle.images[0]?.file?.url ?? null,
       })),
+      draft: draftOf(booking.publicId),
     };
   });
 

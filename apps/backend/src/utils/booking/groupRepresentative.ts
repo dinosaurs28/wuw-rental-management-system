@@ -1,4 +1,5 @@
-import { getUnavailableVehicleIds } from "../availability/availabilityBatch.js";
+import { getBlockedForAnyWindowIds, getUnavailableVehicleIds } from "../availability/availabilityBatch.js";
+import { isListableStatus } from "../availability/vehicleEligibility.js";
 
 /** Make/model comparison form used in group keys. */
 export function normalizeGroupStr(s: string): string {
@@ -27,14 +28,20 @@ export function parseGroupKey(
 
 /**
  * One rule for "which unit of a make/model group do we price and quote the
- * advance from", shared by the public group-details endpoint and customer
- * booking creation so the advance shown is the advance charged:
+ * advance from", shared by the group-details endpoints and booking creation
+ * so the advance shown is the advance charged:
  *
- *   the lowest-odometer AVAILABLE vehicle that is free for the dates
- *   (CONFIRMED/PICKED_UP bookings and Redis holds both count as busy).
+ *   the lowest-odometer listable vehicle (AVAILABLE or OUT_FOR_RENTAL — see
+ *   vehicleEligibility.ts) that is free for the dates (CONFIRMED/PICKED_UP
+ *   bookings, overdue rentals, hand-set OUT_FOR_RENTAL and Redis holds all
+ *   count as busy), one at the branch (AVAILABLE) before one still out.
  *
- * Without dates, the lowest-odometer AVAILABLE vehicle. Callers pass the group's
- * vehicles already filtered to the make/model and sorted by odometer ascending.
+ * A car out on a rental qualifies for a window after that rental ends — only
+ * when no unit at the branch is free, so a late return rarely holds up the
+ * next pickup; one that is overdue never does. Without dates, the same order
+ * over the listable vehicles not blocked for every window. Callers pass the
+ * group's vehicles already filtered to the make/model and sorted by odometer
+ * ascending.
  */
 export async function pickGroupRepresentative<
   T extends { id: number; publicId: string; status: string },
@@ -43,9 +50,14 @@ export async function pickGroupRepresentative<
   start: Date | null,
   end: Date | null,
 ): Promise<{ representative: T | null; available: T[] }> {
-  const bookable = groupVehicles.filter((v) => v.status === "AVAILABLE");
-  if (!start || !end || bookable.length === 0) {
-    return { representative: bookable[0] ?? null, available: bookable };
+  const bookable = groupVehicles.filter((v) => isListableStatus(v.status));
+  if (bookable.length === 0) return { representative: null, available: [] };
+
+  if (!start || !end) {
+    const blocked = await getBlockedForAnyWindowIds(bookable.map((v) => v.id));
+    const available = bookable.filter((v) => !blocked.has(v.id));
+    const representative = available.find((v) => v.status === "AVAILABLE") ?? available[0] ?? null;
+    return { representative, available };
   }
 
   const unavailable = await getUnavailableVehicleIds(
@@ -55,5 +67,6 @@ export async function pickGroupRepresentative<
     new Map(bookable.map((v) => [v.id, v.publicId])),
   );
   const available = bookable.filter((v) => !unavailable.has(v.id));
-  return { representative: available[0] ?? null, available };
+  const representative = available.find((v) => v.status === "AVAILABLE") ?? available[0] ?? null;
+  return { representative, available };
 }

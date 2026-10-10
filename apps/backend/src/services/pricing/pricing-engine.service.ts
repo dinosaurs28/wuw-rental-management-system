@@ -20,6 +20,9 @@ import {
   depositSettingKey,
 } from "../../utils/cache/vehicleCacheKeys.js";
 import { getBranchGstRatesCached, splitRentGross } from "../tax/gst.service.js";
+import { isClampedHalfDayWindow } from "../../utils/booking/branchScheduleValidator.js";
+import { heldBillingEnd } from "../../utils/booking/halfDayPackage.js";
+import { HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
 
 const PRICING_TTL = 300; // 5 minutes
 
@@ -191,7 +194,23 @@ export interface PricingDiscountOptions {
    * couponValidationService.checkPaymentPlan against it afterwards.
    */
   deferPaymentPlanCheck?: boolean;
+  /**
+   * The 12-hour package held to closing (client item 6). true = an EXISTING
+   * booking created as one (heldToClosingOf(pricingSnapshot)): billed as at
+   * least pickup + 12 h, whatever its window is now (rescheduled, branch hours
+   * changed, a short staff extension). false = an existing booking created as
+   * anything else: billed by its clock length, never re-detected. Omitted = a
+   * NEW quote / booking: recognised from the window and the branch's hours.
+   */
+  heldToClosing?: boolean;
 }
+
+/**
+ * Whether a booking was created as the 12-hour package held to closing — the
+ * flag booking create / walk-in create store in pricingSnapshot. Every path
+ * that re-prices an existing booking passes this as `heldToClosing`.
+ */
+export { heldToClosingOf } from "../../utils/booking/halfDayPackage.js";
 
 /**
  * Rent GST result: the GST-inclusive rent before / after discounts split into
@@ -248,8 +267,11 @@ export class PricingEngineService {
   ): Promise<PricingResult> {
     console.time(`[perf] details:pricing:${vehicleId}`);
     try {
-      // 1. Calculate rental duration
-      const duration = DurationCalculatorService.calculate(startAt, endAt);
+      // 1. Calculate rental duration (a 12-hour package held to closing is billed as 12 hours)
+      const duration = DurationCalculatorService.calculate(
+        startAt,
+        await this.billingEndAt(startAt, endAt, branchId, discountOptions?.heldToClosing),
+      );
 
       // 2. Resolve categoryId once — either from caller or a single DB lookup
       const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
@@ -388,7 +410,7 @@ export class PricingEngineService {
     billedAs: string;
     billedAsType: BilledAsType;
   }> {
-    const duration = DurationCalculatorService.calculate(startAt, endAt);
+    const duration = DurationCalculatorService.calculate(startAt, await this.billingEndAt(startAt, endAt, branchId));
     const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
     const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
     const { basePrice, billedAs, billedAsType } =
@@ -417,6 +439,23 @@ export class PricingEngineService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * The end the price is worked out to. A 12-hour package held to the branch's
+   * closing on the pickup day (client item 6 — e.g. 2 PM → 10:30 PM) is still
+   * the 12-hour package: billed as pickup + 12 h (12-hour price and free km),
+   * never as the shorter clock time by the hour. `held` (see
+   * PricingDiscountOptions.heldToClosing): true → at least pickup + 12 h;
+   * false → the window's end; omitted → recognised from the window (new quotes).
+   */
+  private async billingEndAt(startAt: DateTime, endAt: DateTime, branchId: number, held?: boolean): Promise<DateTime> {
+    if (held === true) {
+      return DateTime.fromJSDate(heldBillingEnd(startAt.toJSDate(), endAt.toJSDate()), { zone: startAt.zone });
+    }
+    if (held === false) return endAt;
+    const clamped = await isClampedHalfDayWindow(branchId, startAt.toJSDate(), endAt.toJSDate());
+    return clamped ? startAt.plus({ hours: HALF_DAY_PACKAGE_HOURS }) : endAt;
+  }
 
   private async getVehicleCategoryId(vehicleId: number): Promise<number> {
     const vehicle = await prisma.vehicle.findUnique({

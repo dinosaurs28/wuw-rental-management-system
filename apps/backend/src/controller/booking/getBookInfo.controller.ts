@@ -3,7 +3,11 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
-import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  getUnavailableVehicleIds,
+  lockAndFindBlockedVehicleIds,
+} from "../../utils/availability/availabilityBatch.js";
+import { listableVehicleWhere } from "../../utils/availability/vehicleEligibility.js";
 import {
   checkCustomerTypeClassLimits,
   checkCustomerTypeClassLimitsInTx,
@@ -12,6 +16,8 @@ import {
 import {
   validateBookingSchedule,
   buildScheduleErrorMessage,
+  isClampedHalfDay,
+  loadBranchScheduleConfig,
   type BranchScheduleConfig,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
@@ -97,7 +103,10 @@ function parseGroupKey(groupKey: string): { make: string; model: string; categor
 
 /**
  * Atomically resolves a groupKey to the best available vehicle within a Prisma transaction.
- * Checks only DB-level CONFIRMED/PICKED_UP conflicts — Redis holds are checked outside.
+ * The candidates are locked and re-checked (lockAndFindBlockedVehicleIds: blocking
+ * bookings with turnaround grace, overdue rentals, a hand-set Out for Rental,
+ * other checkouts' live HOLD rows) — Redis holds are checked outside. Listable
+ * units only (vehicleEligibility).
  * Selects the lowest-odometer candidate to distribute fleet wear evenly, trying
  * the pre-priced representative (preferredVehicleId) first so the unit booked
  * is the one whose price and advance were quoted.
@@ -115,7 +124,7 @@ async function resolveVehicleFromGroup(
   const { make, model, categoryId, branchId } = parsed;
 
   const branchVehicles = await tx.vehicle.findMany({
-    where: { categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
+    where: { categoryId, branchId, ...listableVehicleWhere() },
     include: {
       category: true,
       branch: { include: { pricingSetting: true } },
@@ -129,27 +138,21 @@ async function resolveVehicleFromGroup(
   const targetModel = normalizeStr(model);
   const candidates = branchVehicles
     .filter((v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel)
-    .sort((a, b) => Number(b.id === preferredVehicleId) - Number(a.id === preferredVehicleId))
+    // The quoted unit first, then cars at the branch before ones still out (stable: odometer order)
+    .sort(
+      (a, b) =>
+        Number(b.id === preferredVehicleId) - Number(a.id === preferredVehicleId) ||
+        Number(b.status === "AVAILABLE") - Number(a.status === "AVAILABLE"),
+    )
     .slice(0, 10);
 
   if (candidates.length === 0) {
     throw Object.assign(new Error("No vehicles available for this group"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
   }
 
-  for (const candidate of candidates) {
-    const conflict = await tx.bookingItem.findFirst({
-      where: {
-        vehicleId: candidate.id,
-        booking: {
-          status: { in: ["CONFIRMED", "PICKED_UP"] },
-          startAt: { lt: endDate },
-          endAt:   { gt: startDate },
-        },
-      },
-      select: { id: true },
-    });
-    if (!conflict) return candidate as any;
-  }
+  const blocked = await lockAndFindBlockedVehicleIds(tx, candidates.map((c) => c.id), startDate, endDate);
+  const free = candidates.find((c) => !blocked.has(c.id));
+  if (free) return free as any;
 
   throw Object.assign(new Error("All vehicles in this group are booked for the selected dates"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
 }
@@ -190,7 +193,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     if (file_public_id) {
       const sentKycFile = await prisma.fileObject.findUnique({
         where: { publicId: file_public_id },
-        select: { id: true, customerKycs: { select: { customer: { select: { userId: true } } } } },
+        select: { id: true, customerKycs: { select: { type: true, customer: { select: { userId: true } } } } },
       });
 
       if (!sentKycFile) {
@@ -214,7 +217,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           message: "KYC document does not belong to your account",
         });
       }
-      kycFile = { id: sentKycFile.id };
+      // PAN is no longer accepted: an older PAN upload (old app builds still
+      // offer it) is left off the booking instead of failing the checkout.
+      if (!sentKycFile.customerKycs.every((k) => k.type === "PAN")) {
+        kycFile = { id: sentKycFile.id };
+      }
     }
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -261,12 +268,26 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     // adjust a booking afterwards (extension, reschedule). A 12-hour request
     // whose return falls outside office hours is still answered below with
     // BRANCH_SCHEDULE_RETURN_ADJUSTED (pickup + k × 24 h — a package too).
+    // The 12-hour package held to closing (client item 6, e.g. 2 PM → 10:30 PM)
+    // is a package as well: accepted when pickup + 12 h is outside the branch's
+    // hours and the return is exactly its closing time on the pickup day. It is
+    // priced as the full 12 hours and stored as pricingSnapshot.heldToClosing,
+    // which every later re-price (extension, coupon, km, swap) bills by.
+    let heldToClosing = false;
     if (!isCustomerPackageDuration(startDate, endDate)) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        success: false,
-        code: BOOKING_PACKAGE_REQUIRED,
-        message: BOOKING_PACKAGE_REQUIRED_MESSAGE,
-      });
+      const packageBranchId =
+        (vehicles.length > 0
+          ? (await prisma.vehicle.findFirst({ where: { publicId: vehicles[0] }, select: { branchId: true } }))?.branchId
+          : undefined) ?? (groupKeys?.length ? parseGroupKey(groupKeys[0]!)?.branchId : undefined);
+      const packageSchedule = packageBranchId ? await loadBranchScheduleConfig(packageBranchId) : null;
+      if (!packageSchedule || !isClampedHalfDay(packageSchedule, startDate, endDate)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          code: BOOKING_PACKAGE_REQUIRED,
+          message: BOOKING_PACKAGE_REQUIRED_MESSAGE,
+        });
+      }
+      heldToClosing = true;
     }
 
     // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
@@ -287,11 +308,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     // ── Fetch directly-referenced vehicles ────────────────────────────────────
+    // Listable cars only (vehicleEligibility) — insurance included, like a group
+    // key's units; the availability check below blocks their busy dates
     const vehiclesData = await prisma.vehicle.findMany({
       where: {
         publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] },
-        status: "AVAILABLE",
-        deletedAt: null,
+        ...listableVehicleWhere(),
       },
       include: {
         category: true,
@@ -513,7 +535,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         undefined,
         undefined,
         undefined,
-        { deferPaymentPlanCheck: true },
+        { deferPaymentPlanCheck: true, heldToClosing },
       );
       // A coupon that no longer applies is rejected, never silently dropped
       rejectIfCouponInvalid(pricingResult, itemCoupon);
@@ -601,9 +623,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           where: {
             categoryId: gkParsed.categoryId,
             branchId: gkParsed.branchId,
-            status: "AVAILABLE",
-            deletedAt: null,
-            insuranceExpiry: { gt: new Date() },
+            ...listableVehicleWhere(),
           },
           select: { id: true, publicId: true, status: true, make: true, model: true, branchId: true, advancePayAmount: true },
           orderBy: { odo: "asc" },
@@ -630,7 +650,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         if (groupCoupon) groupCouponIndex = gkIndex;
         const pr = await pricingEngine.calculateBookingPrice(
           repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, groupCoupon,
-          undefined, undefined, undefined, undefined, { deferPaymentPlanCheck: true },
+          undefined, undefined, undefined, undefined, { deferPaymentPlanCheck: true, heldToClosing },
         );
         rejectIfCouponInvalid(pr, groupCoupon);
         console.log(`[booking] pricing for vehicle ${repVehicle.id}: base:${pr.basePrice} discount:${pr.discountAmount} tax:${pr.taxAmount} deposit:${pr.deposit} finalTotal:${pr.finalTotal}`);
@@ -750,6 +770,21 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         tx,
       );
 
+      // A car booked by itself: locked and re-checked here, so two checkouts
+      // racing for it can't both hold it (the later one sees the first's HOLD)
+      if (vehiclesData.length > 0) {
+        const blocked = await lockAndFindBlockedVehicleIds(
+          tx, vehiclesData.map((v) => v.id), startDate, endDate,
+        );
+        const taken = vehiclesData.find((v) => blocked.has(v.id));
+        if (taken) {
+          throw Object.assign(
+            new Error(`Vehicle ${taken.make} ${taken.model} is not available for the selected dates. Please try different dates or refresh to see current availability.`),
+            { code: "NO_VEHICLE_AVAILABLE", status: 409 },
+          );
+        }
+      }
+
       // Atomically resolve each groupKey to a specific vehicle within the transaction
       for (const [gkIndex, gk] of resolvedGroupKeys.entries()) {
         try {
@@ -783,7 +818,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           undefined,
           undefined,
           undefined,
-          { paymentPlan: effectiveFlow.flow },
+          { paymentPlan: effectiveFlow.flow, heldToClosing },
         );
         rejectIfCouponInvalid(pricingResult, groupCoupon);
 
@@ -890,6 +925,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           ...(frozenChargeConfig ? { frozenChargeConfig: frozenChargeConfig as any } : {}),
           pricingSnapshot: {
             items,
+            // 12-hour package held to closing (client item 6): re-prices bill it as 12 hours
+            ...(heldToClosing && { heldToClosing: true }),
             totals: {
               grandBaseTotal,
               grandDiscountTotal,

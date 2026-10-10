@@ -2,7 +2,15 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
-import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  getUnavailableVehicleIds,
+  lockAndFindBlockedVehicleIds,
+} from "../../utils/availability/availabilityBatch.js";
+import {
+  isInsuranceValid,
+  isListableStatus,
+  listableVehicleWhere,
+} from "../../utils/availability/vehicleEligibility.js";
 import {
   checkCustomerTypeClassLimits,
   checkCustomerTypeClassLimitsInTx,
@@ -10,12 +18,14 @@ import {
 import {
   validateBookingSchedule,
   buildScheduleErrorMessage,
+  isClampedHalfDay,
   type BranchScheduleConfig,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { parseGroupKey, normalizeStr } from "./vehicle.controller.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { MONTHLY_MIN_DAYS } from "@repo/schemas";
+import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -171,7 +181,13 @@ export const BookingController = async (req: Request, res: Response) => {
       },
       orderBy: { startAt: "asc" },
     });
-    const bookings = rows.map((row) => ({ ...row, bookingType: bookingListTypeOf(row.rentalPeriodType) }));
+    // A pickup paused half-way (client item 2) shows as "Paused" on its card.
+    const draftOf = await draftSummaryLookup(rows.map((row) => row.publicId), "PICKUP");
+    const bookings = rows.map((row) => ({
+      ...row,
+      bookingType: bookingListTypeOf(row.rentalPeriodType),
+      draft: draftOf(row.publicId),
+    }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
@@ -300,7 +316,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         typeof kycIdInput === "string"
           ? await prisma.customerKyc.findUnique({
               where: { publicId: kycIdInput },
-              select: { fileId: true, customerId: true },
+              select: { fileId: true, customerId: true, type: true },
             })
           : null;
       if (!kycRecord || !kycRecord.fileId) {
@@ -316,7 +332,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           message: "This KYC document belongs to a different customer. Select one of this customer's documents.",
         });
       }
-      kycFileId = kycRecord.fileId;
+      // PAN is no longer accepted: an older PAN upload (old app builds still
+      // offer it) is left off the booking instead of failing the booking.
+      if (kycRecord.type !== "PAN") kycFileId = kycRecord.fileId;
     }
 
     // Parse dates (IST) — used as Luxon DateTime for pricing engine
@@ -393,10 +411,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         return res.status(StatusCode.FORBIDDEN).json({ message: "Group not accessible from this branch" });
       }
 
-      // Find an available vehicle from the group for the requested dates
+      // Find an available vehicle from the group for the requested dates —
+      // listable units (AVAILABLE / OUT_FOR_RENTAL — vehicleEligibility); the
+      // availability check below blocks a car's out period and overdue rentals
       const branchVehicles = await prisma.vehicle.findMany({
-        where: { categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
-        select: { id: true, publicId: true, make: true, model: true },
+        where: { categoryId, branchId, ...listableVehicleWhere() },
+        select: { id: true, publicId: true, make: true, model: true, status: true },
         orderBy: { odo: "asc" },
       });
 
@@ -423,7 +443,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         return res.status(StatusCode.CONFLICT).json({ message: "No vehicles in this group are available for the selected dates" });
       }
 
-      resolvedVehicleIds = [available[0]!.publicId];
+      // A car at the branch before one still out on a rental (pickGroupRepresentative)
+      resolvedVehicleIds = [(available.find((v) => v.status === "AVAILABLE") ?? available[0]!).publicId];
     }
 
     const vehiclesData = await prisma.vehicle.findMany({
@@ -447,6 +468,26 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       });
     }
 
+    // A car chosen by itself (walk-in search by registration number) must pass
+    // the listing rule too (vehicleEligibility): not removed, AVAILABLE or
+    // OUT_FOR_RENTAL, insurance valid through its expiry day
+    for (const v of vehiclesData) {
+      const problem = v.deletedAt
+        ? "it has been removed from the fleet"
+        : !isListableStatus(v.status)
+          ? `its status is ${v.status}`
+          : !isInsuranceValid(v.insuranceExpiry)
+            ? "its insurance has expired"
+            : null;
+      if (problem) {
+        return res.status(StatusCode.CONFLICT).json({
+          success: false,
+          code: "VEHICLE_NOT_BOOKABLE",
+          message: `${v.regNo} can't be booked: ${problem}.`,
+        });
+      }
+    }
+
     // ── Initial availability check (batch) ────────────────────────────────────
 
     const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
@@ -468,6 +509,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     // Fleet Executives (the only role this route admits) are always bound by
     // the branch's office hours — there is no bypass.
     let branchRestrictionMode: "NONE" | "SAME_CATEGORY" | "ANY_VEHICLE" = "SAME_CATEGORY";
+    // 12 hours (no extra hours) held to closing on the pickup day (client item 6):
+    // priced as 12 hours and stored as pricingSnapshot.heldToClosing for re-prices
+    let heldToClosing = false;
 
     {
       const branchData = await prisma.branch.findUnique({
@@ -490,6 +534,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         };
 
         const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+        heldToClosing = !isMonthlyPlan && isClampedHalfDay(scheduleConfig, startDate, endDate);
 
         if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
           return res.status(StatusCode.BAD_REQUEST).json({
@@ -571,6 +616,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         undefined,  // no manualDiscountAmount
         undefined,  // no manualDiscountId
         v.categoryId,  // TASK-001: categoryId already in memory, skip DB lookup
+        undefined,
+        { heldToClosing },
       );
 
       const baseTotal      = Number(pricingResult.basePrice);
@@ -744,6 +791,18 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         tx,
       );
 
+      // The car(s) locked and re-checked: two counters (or a counter and a
+      // customer checkout) racing for one car can't both hold it — the later
+      // one sees the first's HOLD row
+      const blocked = await lockAndFindBlockedVehicleIds(tx, vehiclesData.map((v) => v.id), startDate, endDate);
+      const taken = vehiclesData.find((v) => blocked.has(v.id));
+      if (taken) {
+        throw Object.assign(
+          new Error(`${taken.regNo} (${taken.make} ${taken.model}) was just booked. Please select different dates or vehicle.`),
+          { code: "VEHICLE_UNAVAILABLE" },
+        );
+      }
+
       // Race-condition guard: re-check inside transaction before committing
       if (!bypassLimit) {
         const { conflicts: txTypeClassConflicts } = await checkCustomerTypeClassLimitsInTx(
@@ -811,6 +870,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           frozenChargeConfig: frozenChargeConfig as any,
           pricingSnapshot: {
             items,
+            // 12-hour package held to closing (client item 6): re-prices bill it as 12 hours
+            ...(heldToClosing && { heldToClosing: true }),
             totals: {
               grandBaseTotal,
               grandDiscountTotal,
@@ -956,6 +1017,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     // Staff see which booking holds the licence (conflictingBooking)
     if (error instanceof DlInUseError) {
       return res.status(error.status).json(error.toJSON("staff"));
+    }
+    if (error?.code === "VEHICLE_UNAVAILABLE") {
+      return res.status(StatusCode.CONFLICT).json({ code: "VEHICLE_UNAVAILABLE", message: error.message });
     }
     if (error?.code === "VEHICLE_TYPE_LIMIT_EXCEEDED") {
       return res.status(StatusCode.CONFLICT).json({
@@ -1127,6 +1191,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
               // includedKm = original period's free km + the free km extensions add (#7)
               freeKmOriginal: kmAllowance.freeKmOriginal,
               freeKmExtensions: kmAllowance.freeKmExtensions,
+              extensionCount: kmAllowance.extensionCount,
               extraKmRate: kmAllowance.extraKmRate.toFixed(2),
               extraKmEnabled: kmAllowance.extraKmEnabled,
               autoKmSkipped: vehicleSwapped ? "VEHICLE_SWAPPED" : null,

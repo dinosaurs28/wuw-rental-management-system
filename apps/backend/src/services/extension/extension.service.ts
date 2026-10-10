@@ -6,7 +6,6 @@ import {
   ExtensionResolutionType,
   Role,
   PaymentPurpose,
-  VehicleStatus,
   RentalPeriodType,
 } from "@repo/database/client";
 import type { BookingExtension } from "@repo/database/client";
@@ -1443,17 +1442,8 @@ class ExtensionService {
       // Nothing is owed on a cancelled booking — close any credit pending on it (#11)
       await voidPendingCreditOnCancel(tx, booking.id, "Booking cancelled: vehicle displaced by an extension");
 
-      // Free up the vehicle
-      const items = await tx.bookingItem.findMany({
-        where: { bookingId: booking.id },
-        select: { vehicleId: true },
-      });
-      if (items.length > 0) {
-        await tx.vehicle.updateMany({
-          where: { id: { in: items.map((i) => i.vehicleId) } },
-          data: { status: VehicleStatus.AVAILABLE },
-        });
-      }
+      // The vehicle's status is left alone: the displaced booking never picked
+      // it up, and the car is still out with the extending customer.
 
       if (action === "CANCEL_WITH_REFUND" && refundAmount && refundMethod) {
         await tx.refundRequest.create({

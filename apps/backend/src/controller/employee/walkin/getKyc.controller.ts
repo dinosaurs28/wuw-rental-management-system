@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { generatePresignedUrl } from "../../../services/r2-upload.js";
+import { resolveFileUrl } from "../../../utils/file-url.js";
 
 export const GetCustomerKyc = async (req: Request, res: Response) => {
   const { customerPublicId } = req.params;
@@ -68,7 +68,8 @@ export const GetCustomerKyc = async (req: Request, res: Response) => {
           id: kyc.file.id,
           publicId: kyc.file.publicId,
           key: kyc.file.key,
-          url: await generatePresignedUrl(kyc.file.key, 900),
+          // KYC from before the private bucket (Jun 2026) keeps its public URL
+          url: await resolveFileUrl(kyc.file, { ttlSeconds: 900 }),
           mime: kyc.file.mime,
           size: kyc.file.size,
         },

@@ -8,8 +8,14 @@ import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js"
 import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { DateTime } from "luxon";
-import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import { getBlockedForAnyWindowIds, getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import {
+  insuranceValidFrom,
+  isInsuranceValid,
+  isListableStatus,
+  listableVehicleWhere,
+} from "../../utils/availability/vehicleEligibility.js";
 import {
   getBatchListingPrices,
   getBatchFallbackPrices,
@@ -126,11 +132,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     // ── Resolve category/branch filters ──────────────────────────────────────
 
-    const filters: any = {
-      status: "AVAILABLE",
-      deletedAt: null,
-      insuranceExpiry: { gt: new Date() },
-    };
+    // Listable cars (vehicleEligibility): AVAILABLE or OUT_FOR_RENTAL, insurance
+    // valid through its expiry day. A car out on a rental shows for dates after
+    // its return — the availability check below blocks the out period.
+    const filters: any = listableVehicleWhere();
 
     // TASK-014: Parallelise category + branch filter resolution
     const [categoryObj, branchObj] = await Promise.all([
@@ -225,6 +230,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       availableVehicles = filteredVehicles.filter(
         (v) => !unavailableIds.has(v.id),
       );
+    } else {
+      // No dates: a car set Out for Rental by hand, or overdue on its rental, is
+      // free at no time; one out on a rental stays (booking needs dates, and the
+      // dated check blocks the out period)
+      const blocked = await getBlockedForAnyWindowIds(filteredVehicles.map((v) => v.id));
+      availableVehicles = filteredVehicles.filter((v) => !blocked.has(v.id));
     }
 
     if (availableVehicles.length === 0) {
@@ -243,7 +254,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo);
+      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, { startAt: startDate, endAt: endDate });
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }
@@ -417,7 +428,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
 
     // Fetch all vehicles in this group
     const branchVehicles = await prisma.vehicle.findMany({
-      where: { categoryId, branchId, deletedAt: null, insuranceExpiry: { gt: new Date() } },
+      where: { categoryId, branchId, deletedAt: null, insuranceExpiry: { gte: insuranceValidFrom() } },
       select: {
         id: true,
         publicId: true,
@@ -452,24 +463,18 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
     }
 
-    // Only AVAILABLE vehicles can be booked; exclude INACTIVE, OUT_FOR_RENTAL, MAINTENANCE, etc.
-    const bookableVehicles = groupVehicles.filter((v) => v.status === "AVAILABLE");
-    let availableCount: number;
-    let representativeVehicle = bookableVehicles[0] ?? groupVehicles[0]!;
-
-    if (startDate && endDate) {
-      // Same rule as booking creation (pickGroupRepresentative), so the price and
-      // advance quoted here come from the unit the booking will price and charge
-      const { representative, available } = await pickGroupRepresentative(
-        groupVehicles,
-        TimezoneService.toPrisma(startDate),
-        TimezoneService.toPrisma(endDate),
-      );
-      availableCount = available.length;
-      if (representative) representativeVehicle = representative;
-    } else {
-      availableCount = bookableVehicles.length;
-    }
+    // Listable units (AVAILABLE / OUT_FOR_RENTAL) free for the dates — the same
+    // rule as booking creation (pickGroupRepresentative), so the price and
+    // advance quoted here come from the unit the booking will price and charge.
+    // Without dates: the listable units not blocked for every window.
+    const { representative, available } = await pickGroupRepresentative(
+      groupVehicles,
+      startDate && endDate ? TimezoneService.toPrisma(startDate) : null,
+      startDate && endDate ? TimezoneService.toPrisma(endDate) : null,
+    );
+    const availableCount = available.length;
+    const representativeVehicle =
+      representative ?? groupVehicles.find((v) => isListableStatus(v.status)) ?? groupVehicles[0]!;
 
     // Use images from the representative vehicle only
     const allImages: string[] = representativeVehicle.images.map((img: any) => img.file.url);
@@ -481,8 +486,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       availability = availableCount > 0;
-      const isInsuranceValid = new Date(representativeVehicle.insuranceExpiry) > new Date();
-      if (isInsuranceValid && availability) {
+      if (isInsuranceValid(representativeVehicle.insuranceExpiry) && availability) {
         try {
           pricingDetails = await pricingEngine.calculateBookingPrice(
             representativeVehicle.id,
@@ -649,10 +653,12 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     let availability: boolean | null = null;
     let pricingDetails: any = null;
 
-    const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
+    // Bookable at all (vehicleEligibility): listable status and insurance valid
+    // through its expiry day; the dated check below adds bookings and holds
+    const isBookable = isListableStatus(vehicleData.status) && isInsuranceValid(vehicleData.insuranceExpiry);
 
     if (startDate && endDate) {
-      if (!isInsuranceValid) {
+      if (!isBookable) {
         availability = false;
       } else {
         // TASK-023: uses checkVehicleAvailability which delegates to getUnavailableVehicleIds
@@ -739,7 +745,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
 
       // TASK-005: read deposit from pricingResult — eliminates duplicate DB fetch
       deposit = pricingDetails?.deposit ?? 0;
-    } else if (!isInsuranceValid) {
+    } else if (!isBookable) {
       availability = false;
     }
 

@@ -20,7 +20,7 @@
 import { prisma, BookingPhotoType, BookingStatus, ExtensionStatus } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { PricingEngineService } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, heldToClosingOf } from "../pricing/pricing-engine.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
 import { extensionFreeKm, extensionMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
@@ -38,6 +38,8 @@ export interface KmAllowance {
   freeKmOriginal: number;
   /** Σ free km the extensions add (#7 rule). */
   freeKmExtensions: number;
+  /** Extensions counted in freeKmExtensions (the live ones on the rental timeline). */
+  extensionCount: number;
 }
 
 /** Why the extra-km charge wasn't calculated automatically (null = it was). */
@@ -206,6 +208,9 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
     undefined,
     undefined,
     item.vehicle.categoryId,
+    undefined,
+    // Booked as 12 hours held to closing (item 6): the 12-hour free km
+    { heldToClosing: heldToClosingOf(booking.pricingSnapshot) },
   );
 
   const freeKmOriginal = Math.max(pricing.freeKmLimit, snapshotFreeKm(booking.pricingSnapshot) ?? 0);
@@ -218,6 +223,7 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
     periodEndAt: booking.endAt,
     freeKmOriginal,
     freeKmExtensions,
+    extensionCount: period.extensionMinutes.length,
   };
 }
 
@@ -246,9 +252,10 @@ export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance
       extraKmRate != null &&
       !Number.isNaN(Number(extraKmRate))
     ) {
+      const { extensionMinutes: extensionMinutesList } = splitBookedPeriod(booking);
       let freeKmExtensions: number | null = null;
       try {
-        freeKmExtensions = await sumExtensionFreeKm(booking, splitBookedPeriod(booking).extensionMinutes);
+        freeKmExtensions = await sumExtensionFreeKm(booking, extensionMinutesList);
       } catch (extensionErr) {
         console.warn(`[km-allowance] Extension free km unavailable for booking ${bookingId}:`, extensionErr);
       }
@@ -260,6 +267,7 @@ export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance
           periodEndAt: booking.endAt,
           freeKmOriginal: freeKmLimit,
           freeKmExtensions,
+          extensionCount: extensionMinutesList.length,
         };
       }
     }
