@@ -2,17 +2,18 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Ban, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
-import {
-  managerCustomersService,
-  type CustomerFilter,
-} from "@/services/managerCustomers.service";
+import { type CustomerFilter } from "@/services/managerCustomers.service";
 import { apiMessage, inr, isPositive, istDate } from "@/components/manager/customers/format";
+import {
+  MANAGER_CUSTOMERS_PORTAL,
+  customersTabKey,
+  type CustomersPortal,
+} from "@/components/manager/customers/portal";
 
 const FILTERS: { key: CustomerFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -23,7 +24,9 @@ const FILTERS: { key: CustomerFilter; label: string }[] = [
 
 const PAGE_SIZE = 20;
 
-export const CustomersPage = () => {
+// Shared by the branch manager (/manager/customers) and Fleet (/employee/customers).
+export const CustomersPage = ({ portal = MANAGER_CUSTOMERS_PORTAL }: { portal?: CustomersPortal }) => {
+  const { Layout, service } = portal;
   const [searchInput, setSearchInput] = useState("");
   const search = useDebounce(searchInput.trim(), 400);
   const [filter, setFilter] = useState<CustomerFilter>("all");
@@ -34,9 +37,9 @@ export const CustomersPage = () => {
   }, [search, filter]);
 
   const query = useQuery({
-    queryKey: ["manager-customers", search, filter, page],
+    queryKey: customersTabKey(portal, "list", search, filter, page),
     queryFn: () =>
-      managerCustomersService.list({
+      service.list({
         search: search || undefined,
         filter,
         page,
@@ -50,7 +53,7 @@ export const CustomersPage = () => {
   const totalPages = query.data?.totalPages ?? 1;
 
   return (
-    <ManagerLayout>
+    <Layout>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
         <div>
           <h1 className="text-xl font-bold">Customers</h1>
@@ -112,7 +115,7 @@ export const CustomersPage = () => {
             {rows.map((c) => (
               <Link
                 key={c.customerPublicId}
-                to={`/manager/customers/${c.customerPublicId}`}
+                to={`${portal.customersPath}/${c.customerPublicId}`}
                 className="block rounded-xl border bg-white p-4 hover:shadow-md hover:border-orange-200 transition"
               >
                 <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -190,6 +193,6 @@ export const CustomersPage = () => {
           </div>
         )}
       </div>
-    </ManagerLayout>
+    </Layout>
   );
 };

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
-import { managerCustomersService } from "@/services/managerCustomers.service";
+import type { CustomersService } from "@/services/managerCustomers.service";
 import { apiMessage, inr, isPositive, istDateTime } from "./format";
 
 function Row({
@@ -51,10 +51,16 @@ const methodLabel = (m: string) =>
   m === "CASH" ? "Cash" : m === "ONLINE" ? "Online" : m === "SPLIT" ? "Split" : m;
 
 export function BookingDrawer({
+  service,
+  queryKey,
   customerId,
   bookingId,
   onClose,
 }: {
+  /** The portal's customers client (branch manager or Fleet). */
+  service: CustomersService;
+  /** The portal's react-query key for booking drawers (customersTabKey(portal, "booking")). */
+  queryKey: readonly unknown[];
   customerId: string;
   bookingId: string | null;
   onClose: () => void;
@@ -62,8 +68,8 @@ export function BookingDrawer({
   const [proof, setProof] = useState<{ url: string; mime: string; label: string } | null>(null);
 
   const query = useQuery({
-    queryKey: ["manager-customer-booking", customerId, bookingId],
-    queryFn: () => managerCustomersService.booking(customerId, bookingId!),
+    queryKey: [...queryKey, customerId, bookingId],
+    queryFn: () => service.booking(customerId, bookingId!),
     enabled: !!bookingId,
     staleTime: 0,
   });

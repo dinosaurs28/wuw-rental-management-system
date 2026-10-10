@@ -5,9 +5,10 @@
 // earliestStartAt − pastToleranceMinutes and latestStartAt, it isn't the
 // current pickup, and the moved booking overlaps no other booking / hold on
 // the vehicle and no other booking on the customer's licence. The server
-// re-checks everything (incl. holds the GET may have missed).
+// re-checks everything (incl. holds the GET may have missed). A 12-hour
+// package's return is the package's return for the pickup (client item 6).
 import type { RescheduleOptions } from "@/services/reschedule.service";
-import { isPickupSlotAllowed, isReturnSlotAllowed } from "@/utils/branchScheduleValidator";
+import { halfDayReturnFor, isPickupSlotAllowed, isReturnSlotAllowed } from "@/utils/branchScheduleValidator";
 import { istCalendarParts, istInstant } from "@/utils/bookingPickers";
 
 const MINUTE_MS = 60_000;
@@ -68,11 +69,14 @@ export function rescheduleDays(options: RescheduleOptions, stepMinutes = RESCHED
       const t = startAt.getTime();
       if (t < earliest || t > latest) continue;
       if (Math.abs(t - current) < MINUTE_MS) continue;
-      const returnAt = new Date(t + durationMs);
+      const returnAt = options.halfDayPackage
+        ? halfDayReturnFor(hours, startAt)?.endAt
+        : new Date(t + durationMs);
+      if (!returnAt) continue;
       const ret = istCalendarParts(returnAt);
       const [rh, rm] = ret.time.split(":").map(Number);
       if (!isReturnSlotAllowed(hours, ret.day, (rh ?? 0) * 60 + (rm ?? 0))) continue;
-      if (overlaps(t, t + durationMs, busy)) continue;
+      if (overlaps(t, returnAt.getTime(), busy)) continue;
       slots.push({ startAt, time, returnAt });
     }
     days.push({ day, slots, closed: !anyPickupHour });

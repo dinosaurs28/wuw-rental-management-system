@@ -139,7 +139,7 @@ export const InlineKycUpload = ({
     [removeDocument, setDeletingDocumentId],
   );
 
-  const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR", "PAN"];
+  const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR"];
 
   const fullyUploadedTypes = KYC_TYPES.filter((type) => {
     const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT");

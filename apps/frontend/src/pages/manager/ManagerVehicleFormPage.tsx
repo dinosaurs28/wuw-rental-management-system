@@ -74,6 +74,26 @@ import { splitRentTotal, type GstRates } from "@repo/schemas";
 import { formatInrExact, formatGstRate } from "@/lib/gst";
 
 /**
+ * Insurance is valid through the end of its expiry day; customers stop seeing
+ * the vehicle the day after (item 7). Warns on a date that is today or past.
+ */
+function InsuranceExpiryWarning({ date }: { date: Date | undefined }) {
+  if (!date) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  if (day.getTime() > today.getTime()) return null;
+  return (
+    <p className="text-[11px] leading-snug text-amber-700">
+      {day.getTime() === today.getTime()
+        ? "Insurance expires today — customers won't see this vehicle from tomorrow."
+        : "This date has passed — customers won't see this vehicle until the insurance is renewed."}
+    </p>
+  );
+}
+
+/**
  * Live preview of a GST-inclusive rent (item 17): "Rent without GST ₹1,066 +
  * GST ₹234 (CGST 9% + SGST 9%)" with the branch GST rule, the same split the
  * server stores (splitRentTotal). rates: undefined = loading, null = no rule.
@@ -358,8 +378,11 @@ export const ManagerVehicleFormPage = () => {
       navigate("/manager/vehicles");
     } catch (error) {
       console.error(error);
+      // e.g. VEHICLE_ON_RENTAL: a vehicle out on a rental can't be moved off Out for Rental
+      const serverMessage = (error as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
       toast.error(
-        isEditMode ? "Failed to update vehicle" : "Failed to create vehicle",
+        serverMessage || (isEditMode ? "Failed to update vehicle" : "Failed to create vehicle"),
       );
     } finally {
       setIsLoading(false);
@@ -770,6 +793,11 @@ export const ManagerVehicleFormPage = () => {
                           />
                         </div>
                         <RentGstPreview total={form.watch("price24Hour")} rates={gstRates} />
+                        {!(Number(form.watch("price24Hour")) > 0) && (
+                          <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+                            Without a 24-hour rent, customers can't book this vehicle.
+                          </p>
+                        )}
                       </div>
 
                       {/* Monthly */}
@@ -980,6 +1008,7 @@ export const ManagerVehicleFormPage = () => {
                               />
                             </PopoverContent>
                           </Popover>
+                          <InsuranceExpiryWarning date={field.value} />
                           <FormMessage />
                         </FormItem>
                       )}

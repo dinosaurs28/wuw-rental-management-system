@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -82,6 +82,10 @@ interface VehicleFiltersProps {
    * hours. The return is computed and shown read-only.
    */
   packageMode?: "customer" | "fleet";
+  /** Search box placeholder (default: make or model). */
+  searchPlaceholder?: string;
+  /** Shown before the search box, e.g. the walk-in "Model | Reg. no" toggle. */
+  searchAddon?: ReactNode;
 }
 
 const SORT_OPTIONS = [
@@ -119,6 +123,8 @@ export const VehicleFilters = ({
   onUseCasesChange,
   monthly = false,
   packageMode,
+  searchPlaceholder,
+  searchAddon,
 }: VehicleFiltersProps) => {
   // Local state for immediate input response
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -524,12 +530,13 @@ export const VehicleFilters = ({
 
       {/* Search and Reset Row */}
       <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-zinc-200 relative z-10">
+        {searchAddon}
         {/* Search Input */}
         <div className="flex-1 relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-zinc-400" />
           <Input
             type="text"
-            placeholder="Search by make or model..."
+            placeholder={searchPlaceholder ?? "Search by make or model..."}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="h-14 pl-14 bg-white border-zinc-200 text-zinc-900 rounded-full focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all placeholder:text-zinc-400 text-base"

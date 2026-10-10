@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
-import { LogOut, LayoutDashboard, History } from "lucide-react";
+import { LogOut, LayoutDashboard, History, Contact } from "lucide-react";
 import { ShiftBanner } from "@/components/manager/payment/ShiftBanner";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -18,6 +18,8 @@ export function DashboardNavbar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const onShifts = pathname.startsWith("/employee/shifts");
+  const onCustomers = pathname.startsWith("/employee/customers");
+  const onDashboard = !onShifts && !onCustomers;
   const activeLink = { color: "#FF5F00", background: "rgba(255,95,0,0.08)" };
 
   const handleLogout = () => {
@@ -43,10 +45,17 @@ export function DashboardNavbar() {
             <nav className="hidden lg:flex items-center gap-1">
               <Link
                 to="/employee/dashboard"
-                className={`text-sm font-semibold px-3 py-1 rounded-md transition-colors ${onShifts ? "text-[#666666] hover:text-black" : ""}`}
-                style={onShifts ? undefined : activeLink}
+                className={`text-sm font-semibold px-3 py-1 rounded-md transition-colors ${onDashboard ? "" : "text-[#666666] hover:text-black"}`}
+                style={onDashboard ? activeLink : undefined}
               >
                 Dashboard
+              </Link>
+              <Link
+                to="/employee/customers"
+                className={`text-sm font-semibold px-3 py-1 rounded-md transition-colors ${onCustomers ? "" : "text-[#666666] hover:text-black"}`}
+                style={onCustomers ? activeLink : undefined}
+              >
+                Customers
               </Link>
               <Link
                 to="/employee/shifts"
@@ -101,6 +110,13 @@ export function DashboardNavbar() {
               >
                 <History className="mr-2 h-4 w-4" />
                 My Shifts
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate("/employee/customers")}
+                className="cursor-pointer"
+              >
+                <Contact className="mr-2 h-4 w-4" />
+                Customers
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -10,7 +10,9 @@ import {
   ArrowLeft,
   Car,
   Receipt,
+  EyeOff,
 } from "lucide-react";
+import { format } from "date-fns";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +37,7 @@ import {
   fetchManagerVehicles,
   fetchVehicleCategories,
   deleteVehicle,
+  VEHICLE_HIDDEN_REASON_LABEL,
   type ManagerVehicle,
   type Category,
 } from "@/services/vehicle.service";
@@ -54,6 +57,8 @@ export const ManagerVehiclesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  // "hidden" = only cars customers can't see or book (item 7)
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "hidden">("all");
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [activeTab, setActiveTab] = useState("vehicles");
@@ -69,12 +74,21 @@ export const ManagerVehiclesPage = () => {
   const loadVehicles = async () => {
     setIsLoading(true);
     try {
-      const response = await fetchManagerVehicles({
-        limit: 100,
-        search: searchTerm || undefined,
-        category: categoryFilter !== "all" ? categoryFilter : undefined,
-      });
-      setVehicles(response.data);
+      // Every car of the branch, page by page (the list and the hidden filter
+      // must not stop at the first page)
+      const PAGE_SIZE = 100;
+      const all: ManagerVehicle[] = [];
+      for (let offset = 0; ; offset += PAGE_SIZE) {
+        const response = await fetchManagerVehicles({
+          limit: PAGE_SIZE,
+          offset,
+          search: searchTerm || undefined,
+          category: categoryFilter !== "all" ? categoryFilter : undefined,
+        });
+        all.push(...response.data);
+        if (response.data.length < PAGE_SIZE || all.length >= response.count) break;
+      }
+      setVehicles(all);
     } catch (error) {
       toast.error("Failed to load vehicles");
     } finally {
@@ -82,12 +96,17 @@ export const ManagerVehiclesPage = () => {
     }
   };
 
-  const filteredVehicles = vehicles;
+  const filteredVehicles =
+    visibilityFilter === "hidden"
+      ? vehicles.filter((v) => (v.hiddenReasons?.length ?? 0) > 0)
+      : vehicles;
 
   const getStatusBadgeStyles = (status: string) => {
     switch (status) {
       case "AVAILABLE":
         return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200";
+      case "OUT_FOR_RENTAL":
+        return "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200";
       case "MAINTENANCE":
         return "bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200";
       case "INACTIVE":
@@ -210,6 +229,18 @@ export const ManagerVehiclesPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select
+                value={visibilityFilter}
+                onValueChange={(v) => setVisibilityFilter(v as "all" | "hidden")}
+              >
+                <SelectTrigger className="w-full sm:w-56 h-11 bg-white">
+                  <SelectValue placeholder="All vehicles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All vehicles</SelectItem>
+                  <SelectItem value="hidden">Hidden from customers</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Results count */}
@@ -233,7 +264,7 @@ export const ManagerVehiclesPage = () => {
                 </div>
                 <p className="text-neutral-700 font-medium mb-1">No vehicles found</p>
                 <p className="text-sm text-neutral-400 mb-4">
-                  {searchTerm || categoryFilter !== "all"
+                  {searchTerm || categoryFilter !== "all" || visibilityFilter !== "all"
                     ? "Try adjusting your filters"
                     : "Add your first vehicle to get started"}
                 </p>
@@ -328,6 +359,11 @@ export const ManagerVehiclesPage = () => {
                           <p className="text-xs text-neutral-400 mt-0.5 font-mono tracking-wide">
                             {vehicle.regNo || "—"}
                           </p>
+                          {vehicle.insuranceExpiry && (
+                            <p className="text-[11px] text-neutral-400 mt-0.5">
+                              Insurance till {format(new Date(vehicle.insuranceExpiry), "d MMM yyyy")}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           {/* GST-inclusive daily total (item 17) */}
@@ -342,6 +378,27 @@ export const ManagerVehiclesPage = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* Why customers can't see or book it (item 7) */}
+                      {(vehicle.hiddenReasons?.length ?? 0) > 0 && (
+                        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2">
+                          <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                            <EyeOff className="w-3.5 h-3.5" />
+                            {vehicle.hiddenReasons!.every((r) => r === "NO_PRICE")
+                              ? "Customers can't book it"
+                              : "Hidden from customers"}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-snug text-amber-700">
+                            {vehicle.hiddenReasons!
+                              .map((r) =>
+                                r === "OVERDUE_RETURN" && vehicle.overdueRental
+                                  ? `${VEHICLE_HIDDEN_REASON_LABEL[r]} — booking ${vehicle.overdueRental.bookingId}, due ${format(new Date(vehicle.overdueRental.endAt), "d MMM, h:mm a")}`
+                                  : VEHICLE_HIDDEN_REASON_LABEL[r] ?? r,
+                              )
+                              .join(" · ")}
+                          </p>
+                        </div>
+                      )}
 
                       <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
                         <Badge

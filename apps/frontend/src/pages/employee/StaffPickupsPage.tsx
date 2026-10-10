@@ -66,6 +66,7 @@ import { StepCard } from "@/components/employee/StepCard";
 import { ExtendBookingModal as UpcomingExtendModal } from "@/components/employee/extension/ExtendBookingModal";
 import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
 import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
+import { SwapExcludedList } from "@/components/swap/SwapExcludedList";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 
 import apiClient from "@/lib/axios";
@@ -227,6 +228,10 @@ function RentalTermsBox({
     pricingRules.pricing?.extraKmEnabled ?? pricingRules.kmAllowance?.extraKmEnabled;
   const extraKmRate =
     pricingRules.pricing?.extraKmRate ?? pricingRules.kmAllowance?.extraKmRate ?? null;
+  // The free km an extension added (#7), as the server split the allowance
+  const freeKmOriginal = pricingRules.kmAllowance?.freeKmOriginal;
+  const freeKmExtensions = pricingRules.kmAllowance?.freeKmExtensions ?? 0;
+  const extensionCount = pricingRules.kmAllowance?.extensionCount ?? 1;
 
   return (
     <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3">
@@ -240,6 +245,12 @@ function RentalTermsBox({
             <p className="font-semibold text-gray-800">
               {includedKm.toLocaleString("en-IN")} km
             </p>
+            {freeKmOriginal != null && freeKmExtensions > 0 && (
+              <p className="text-muted-foreground">
+                {freeKmOriginal.toLocaleString("en-IN")} + {freeKmExtensions.toLocaleString("en-IN")} from{" "}
+                {extensionCount > 1 ? "extensions" : "extension"}
+              </p>
+            )}
           </div>
         )}
         {(extraKmEnabled === false || extraKmRate != null) && (
@@ -363,6 +374,9 @@ export default function StaffPickupsPage() {
     queryKey: ["booking-kyc", bookingId],
     queryFn: () => (bookingId ? kycService.getBookingKyc(bookingId) : null),
     enabled: !!bookingId,
+    // Document links are presigned for 15 minutes — keep them fresh while the
+    // pickup stays open.
+    refetchInterval: 12 * 60_000,
     retry: false,
   });
 
@@ -382,19 +396,21 @@ export default function StaffPickupsPage() {
     return slot ? [{ url: slot.url, label: f.name }] : [];
   });
 
-  // Available vehicles for swap (only when vehicleAvailable === false)
+  // Available vehicles for swap (only when vehicleAvailable === false), plus
+  // the same-type cars that can't take the booking, with the reason
   const {
-    data: availableVehicles,
+    data: swapCandidates,
     isLoading: isLoadingVehicles,
     refetch: refetchVehicles,
   } = useQuery({
     queryKey: ["employee-swap-vehicles", bookingId],
     queryFn: () =>
       bookingId
-        ? employeeVehicleSwapService.getAvailableVehicles(bookingId)
-        : Promise.resolve([]),
+        ? employeeVehicleSwapService.getSwapCandidates(bookingId)
+        : Promise.resolve({ vehicles: [], excluded: [], swapContext: null }),
     enabled: vehicleAvailable === false,
   });
+  const availableVehicles = swapCandidates?.vehicles;
 
   // Rental terms — shown on the inspection step (and the legacy confirm dialog),
   // so staff always see this booking's free km and ₹/km at handover (#21)
@@ -786,8 +802,9 @@ export default function StaffPickupsPage() {
     try {
       await bookingService.deletePickupImage(fileId);
       setCaptureSlots((prev) => ({ ...prev, [fieldName]: null }));
-    } catch {
-      toast.error(`Failed to remove photo for ${fieldName}`);
+    } catch (error: any) {
+      // 409 FILE_IN_USE: already saved with the pickup session — kept on purpose
+      toast.error(error?.response?.data?.message || `Failed to remove photo for ${fieldName}`);
     }
   };
 
@@ -1158,6 +1175,7 @@ export default function StaffPickupsPage() {
                         }}
                         selectedVehicleId={selectedVehicle?.id}
                       />
+                      <SwapExcludedList excluded={swapCandidates?.excluded ?? []} className="mt-3" />
                     </div>
                   </div>
                 ) : (
@@ -1179,6 +1197,10 @@ export default function StaffPickupsPage() {
                       <RefreshCw className="h-3.5 w-3.5" />
                       Retry
                     </Button>
+                    <SwapExcludedList
+                      excluded={swapCandidates?.excluded ?? []}
+                      className="mt-3 bg-white text-left"
+                    />
                   </div>
                 )}
               </div>
@@ -1281,7 +1303,8 @@ export default function StaffPickupsPage() {
                   const imageIdx = kycImageDocs.findIndex(
                     (d: any) => d.publicId === doc.publicId,
                   );
-                  const imageBroken = brokenKycImages.has(doc.publicId);
+                  // Keyed by link, so a refreshed (re-presigned) link gets another try
+                  const imageBroken = brokenKycImages.has(doc.file.url);
                   const sideLabel =
                     doc.side === "FRONT" ? "Front" : doc.side === "BACK" ? "Back" : null;
 
@@ -1309,7 +1332,7 @@ export default function StaffPickupsPage() {
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={() =>
-                                setBrokenKycImages((prev) => new Set(prev).add(doc.publicId))
+                                setBrokenKycImages((prev) => new Set(prev).add(doc.file.url))
                               }
                             />
                           </button>

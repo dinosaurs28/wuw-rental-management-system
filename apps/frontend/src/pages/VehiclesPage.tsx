@@ -181,6 +181,14 @@ export const VehiclesPage = () => {
   const vehicles = vehiclesData?.data || [];
   const vehicleCount = vehiclesData?.count || 0;
 
+  // A page past the end (the list shrank after a date change): back to page 1
+  // so every card stays reachable
+  useEffect(() => {
+    if (!vehiclesLoading && vehicleCount > 0 && currentPage > Math.ceil(vehicleCount / ITEMS_PER_PAGE)) {
+      setCurrentPage(1);
+    }
+  }, [vehiclesLoading, vehicleCount, currentPage]);
+
   // Handlers
   const handleBranchChange = useCallback(
     (branch: string) => {

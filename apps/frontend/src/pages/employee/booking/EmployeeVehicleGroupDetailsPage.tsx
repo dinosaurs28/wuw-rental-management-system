@@ -174,7 +174,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
 
       // Auto-select only complete document types (both FRONT and BACK present)
       const docs = response.data;
-      const completeTypeFront = ["DL", "AADHAAR", "PAN"].reduce<KycDocument | null>((found, type) => {
+      const completeTypeFront = ["DL", "AADHAAR"].reduce<KycDocument | null>((found, type) => {
         if (found) return found;
         const front = docs.find((d) => d.type === type && d.side === "FRONT");
         const back = docs.find((d) => d.type === type && d.side === "BACK");
@@ -232,7 +232,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
   // is the FRONT of a type with both sides uploaded.
   const hasCompleteKyc = (() => {
     if (!selectedKycId) return false;
-    return ["DL", "AADHAAR", "PAN"].some((type) => {
+    return ["DL", "AADHAAR"].some((type) => {
       const front = kycDocuments.find((d) => d.type === type && d.side === "FRONT");
       const back = kycDocuments.find((d) => d.type === type && d.side === "BACK");
       return front && back && front.publicId === selectedKycId;

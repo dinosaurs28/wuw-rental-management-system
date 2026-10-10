@@ -319,7 +319,11 @@ function RescheduleForm({
               <ArrowRight className="size-3.5 text-zinc-400" />
               <span className="font-semibold">New return:</span> {formatPackageReturn(slot.returnAt)}
             </p>
-            <p className="text-xs text-zinc-600">Same length ({options.durationLabel}) — price unchanged.</p>
+            <p className="text-xs text-zinc-600">
+              {options.halfDayPackage
+                ? "12-hour package — the return is 12 hours after pickup, or the branch's closing time that day if 12 hours would run past it. Price unchanged."
+                : `Same length (${options.durationLabel}) — price unchanged.`}
+            </p>
           </div>
         )}
 

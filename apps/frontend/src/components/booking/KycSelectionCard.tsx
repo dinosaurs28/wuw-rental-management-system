@@ -23,10 +23,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 const KYC_TYPE_LABELS: Record<string, string> = {
   DL: "Driver's License",
   AADHAAR: "Aadhaar Card",
-  PAN: "PAN Card",
 };
 
-const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR", "PAN"];
+const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR"];
 
 interface DocGroup {
   type: KycDocumentType;

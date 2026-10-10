@@ -25,6 +25,7 @@ import {
   type SwapDetailsData,
 } from "@/components/manager/vehicle-swap/SwapDetailsForm";
 import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
+import { SwapExcludedList } from "@/components/swap/SwapExcludedList";
 import {
   SWAP_PICK_AGAIN_CODES,
   swapAmount,
@@ -70,6 +71,7 @@ export function ActiveRentalSwapDialog({
     refetchOnWindowFocus: false,
   });
   const vehicles = candidatesQuery.data?.vehicles ?? [];
+  const excluded = candidatesQuery.data?.excluded ?? [];
   const swapContext = candidatesQuery.data?.swapContext ?? null;
   const current = swapContext?.currentVehicle;
   const activeRental = swapContext?.stage === "ACTIVE_RENTAL";
@@ -285,6 +287,7 @@ export function ActiveRentalSwapDialog({
                   A replacement must be in this branch, the same vehicle type, the same or a higher
                   category, available until the booking ends and insured past it.
                 </p>
+                <SwapExcludedList excluded={excluded} className="mt-3 text-left" />
               </div>
             ) : (
               <>
@@ -298,6 +301,7 @@ export function ActiveRentalSwapDialog({
                   onSelectVehicle={pick}
                   autoOpen
                 />
+                <SwapExcludedList excluded={excluded} />
               </>
             )}
           </div>

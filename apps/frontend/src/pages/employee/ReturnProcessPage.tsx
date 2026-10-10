@@ -529,7 +529,8 @@ export default function ReturnProcessPage() {
       setReturnPhotos((prev) => prev.filter((img) => img.publicId !== publicId));
       toast.success("Photo removed");
     },
-    onError: () => toast.error("Failed to remove photo"),
+    // 409 FILE_IN_USE: already saved with the booking — kept on purpose
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to remove photo"),
   });
 
   const buildComputePayload = (discountToSend: DropDiscountInput | null, late: LateReturnOptions) => {

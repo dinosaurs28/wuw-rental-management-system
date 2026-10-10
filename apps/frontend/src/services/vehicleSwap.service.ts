@@ -49,6 +49,7 @@ export const employeeVehicleSwapService = {
     );
     return {
       vehicles: response.data.data ?? [],
+      excluded: response.data.excluded ?? [],
       swapContext: response.data.swapContext ?? null,
     };
   },
@@ -97,6 +98,7 @@ export const vehicleSwapService = {
     );
     return {
       vehicles: response.data.data ?? [],
+      excluded: response.data.excluded ?? [],
       swapContext: response.data.swapContext ?? null,
     };
   },

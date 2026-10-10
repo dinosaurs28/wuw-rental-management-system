@@ -34,9 +34,15 @@ export interface RescheduleOptions {
   reason: string | null;
   startAt: string;
   endAt: string;
-  /** Fixed: the new return = the new pickup + this. */
+  /** Fixed: the new return = the new pickup + this (except a 12-hour package). */
   durationMinutes: number;
   durationLabel: string;
+  /**
+   * A 12-hour package (client item 6): the new return is the package's return
+   * for the new pickup — pickup + 12 h, or closing that day (halfDayReturnFor).
+   * Absent from older servers.
+   */
+  halfDayPackage?: boolean;
   isMonthly: boolean;
   rentalPeriodType: string | null;
   /** Now (to the minute) — slots from here, less pastToleranceMinutes. */

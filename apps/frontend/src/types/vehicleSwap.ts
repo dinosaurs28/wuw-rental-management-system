@@ -78,8 +78,24 @@ export interface SwapContext {
   chargeDifferenceDefaults: Record<SwapReason, boolean>;
 }
 
+/**
+ * A same-type car of the branch that can't take over the booking, with the
+ * server's reason (shown collapsed under the candidates). Absent from older servers.
+ */
+export interface SwapExcludedVehicle {
+  id: number;
+  publicId: string;
+  make: string;
+  model: string;
+  regNo: string;
+  categoryName: string;
+  code: string;
+  reason: string;
+}
+
 export interface SwapCandidates {
   vehicles: AvailableVehicle[];
+  excluded: SwapExcludedVehicle[];
   swapContext: SwapContext | null;
 }
 

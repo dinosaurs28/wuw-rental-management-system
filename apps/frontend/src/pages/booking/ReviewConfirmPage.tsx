@@ -19,10 +19,14 @@ import {
 import { useCustomerBookingLimits } from "@/hooks/useCustomerBookingLimits";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
+import { isClampedHalfDay } from "@/utils/branchScheduleValidator";
+import { formatClampedReturn } from "@/components/booking/PackagePicker";
 import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanner";
 import {
   BOOKING_PACKAGE_REQUIRED_MESSAGE,
+  HALF_DAY_PACKAGE_HOURS,
   isCustomerPackageDuration,
+  packageLabel,
   validateBookingWindow,
 } from "@repo/schemas";
 import { formatRentalLength } from "@/utils/formatters";
@@ -178,11 +182,22 @@ export const ReviewConfirmPage = () => {
 
   // Customers book packages only — 12 hours or whole days (same rule and
   // message as the server's BOOKING_PACKAGE_REQUIRED). A range from before the
-  // package pickers goes back to the vehicle page to pick one.
+  // package pickers goes back to the vehicle page to pick one. The 12-hour
+  // package held to closing (client item 6, e.g. 2 PM → 10:30 PM) is one too;
+  // while the branch hours aren't known, a range under 12 h is left to the server.
+  const halfDayHeld =
+    !!schedule && !!startISO && !!endISO && isClampedHalfDay(schedule, new Date(startISO), new Date(endISO));
+  const halfDayUnknown =
+    !schedule &&
+    !!startISO &&
+    !!endISO &&
+    new Date(endISO).getTime() - new Date(startISO).getTime() < HALF_DAY_PACKAGE_HOURS * 3_600_000;
   const packageError =
-    startISO && endISO && !windowError && !isCustomerPackageDuration(startISO, endISO)
+    startISO && endISO && !windowError && !isCustomerPackageDuration(startISO, endISO) && !halfDayHeld && !halfDayUnknown
       ? BOOKING_PACKAGE_REQUIRED_MESSAGE
       : null;
+  // Billed as the 12-hour package, whatever its clock length
+  const rentalLengthText = halfDayHeld ? packageLabel(HALF_DAY_PACKAGE_HOURS) : formatRentalLength(startISO, endISO);
   const vehiclePagePath = selectedGroupKey
     ? `/vehicle/group/${encodeURIComponent(selectedGroupKey)}`
     : selectedVehicleId
@@ -370,7 +385,13 @@ export const ReviewConfirmPage = () => {
                 )}
 
                 {/* Vehicle Summary */}
-                <VehicleSummaryCard />
+                <VehicleSummaryCard
+                  lengthBadge={
+                    halfDayHeld && endISO
+                      ? `${rentalLengthText} rental · ${formatClampedReturn(new Date(endISO))}, when the branch closes`
+                      : undefined
+                  }
+                />
 
                 {/* KYC Selection */}
                 <KycSelectionCard />
@@ -407,7 +428,7 @@ export const ReviewConfirmPage = () => {
                     <div className="space-y-2.5">
                       {/* Rent for the period — GST-inclusive (item 17) */}
                       <div className="flex justify-between text-sm text-zinc-600">
-                        <span>Rent incl. GST ({formatRentalLength(startISO, endISO)})</span>
+                        <span>Rent incl. GST ({rentalLengthText})</span>
                         <span className="font-medium text-zinc-900">₹{rentView.rent.toFixed(2)}</span>
                       </div>
 

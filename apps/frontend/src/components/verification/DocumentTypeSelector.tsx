@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { KycDocumentType } from "@/services/kyc.service";
-import { CreditCard, FileText, User } from "lucide-react";
+import { CreditCard, User } from "lucide-react";
 
 interface DocumentTypeOption {
   type: KycDocumentType;
@@ -22,12 +22,6 @@ const documentTypes: DocumentTypeOption[] = [
     description: "Valid government-issued ID",
     icon: <User className="w-6 h-6" />,
   },
-  {
-    type: "PAN",
-    label: "PAN Card",
-    description: "Tax identification card",
-    icon: <FileText className="w-6 h-6" />,
-  },
 ];
 
 interface DocumentTypeSelectorProps {
@@ -44,7 +38,7 @@ export const DocumentTypeSelector = ({
   partialTypes = [],
 }: DocumentTypeSelectorProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       {documentTypes.map((docType) => {
         const isSelected = selectedType === docType.type;
         const isDisabled = disabledTypes.includes(docType.type);

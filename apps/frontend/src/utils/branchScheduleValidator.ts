@@ -3,6 +3,7 @@
 // branch-local (IST for v1).
 
 import type { BranchScheduleConfig, BranchScheduleRow } from "@/services/branch.service";
+import { halfDayPackageReturn, isClampedHalfDayReturn, type HalfDayReturn } from "@repo/schemas";
 
 /**
  * Hours a branch keeps on any day it has no saved row for — including every
@@ -318,6 +319,35 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
     };
   }
   return { status: "OK" };
+}
+
+// ── 12 hours from a late pickup (client item 6) ─────────────────────────────
+
+/** Closing time on the branch-local day of `at`; null on a closed day or for a 24-hour branch. */
+function closingOnDayOf(config: BranchScheduleConfig, at: Date): Date | null {
+  if (config.is24Hours) return null;
+  const { dayOfWeek, hours, minutes } = getBranchLocalTime(at);
+  const day = getScheduleForDay(config, dayOfWeek);
+  if (!day.isOpen) return null;
+  const minuteStart = Math.floor(at.getTime() / 60_000) * 60_000;
+  return new Date(minuteStart + (day.closeMinutes - (hours * 60 + minutes)) * 60_000);
+}
+
+/**
+ * The 12-hour package's return for a pickup at this branch: pickup + 12 h, or —
+ * when the branch won't take a return then — its closing time on the pickup
+ * day (clamped). null = only whole-day packages fit this pickup.
+ */
+export function halfDayReturnFor(config: BranchScheduleConfig, pickupLocal: Date): HalfDayReturn | null {
+  return halfDayPackageReturn(pickupLocal, {
+    returnAllowed: (at) => validateReturnTime(config, at).status !== "RETURN_OUTSIDE_HOURS",
+    closingAt: closingOnDayOf(config, pickupLocal),
+  });
+}
+
+/** Is pickup → return the 12-hour package held to closing on the pickup day? */
+export function isClampedHalfDay(config: BranchScheduleConfig, pickupLocal: Date, returnLocal: Date): boolean {
+  return isClampedHalfDayReturn(halfDayReturnFor(config, pickupLocal), returnLocal);
 }
 
 export function buildScheduleUserMessage(verdict: ScheduleVerdict): string {

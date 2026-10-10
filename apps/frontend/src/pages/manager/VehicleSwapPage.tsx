@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { vehicleSwapService } from "@/services/vehicleSwap.service";
 import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
+import { SwapExcludedList } from "@/components/swap/SwapExcludedList";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 import { SwapHistoryTable } from "@/components/manager/vehicle-swap/SwapHistoryTable";
 import type { SwapDetailsData } from "@/components/manager/vehicle-swap/SwapDetailsForm";
@@ -69,6 +70,7 @@ export const VehicleSwapPage = () => {
   });
 
   const availableVehicles = candidatesQuery.data?.vehicles ?? [];
+  const excludedVehicles = candidatesQuery.data?.excluded ?? [];
   const swapContext = candidatesQuery.data?.swapContext ?? null;
   const activeRental = swapContext?.stage === "ACTIVE_RENTAL";
   const remainingPct = swapContext
@@ -301,6 +303,9 @@ export const VehicleSwapPage = () => {
             </AlertDescription>
           </Alert>
         )}
+        {!loading && !candidatesQuery.isError && availableVehicles.length === 0 && (
+          <SwapExcludedList excluded={excludedVehicles} className="bg-white" />
+        )}
 
         {/* Available Vehicles List */}
         {!loading && availableVehicles.length > 0 && (
@@ -320,6 +325,7 @@ export const VehicleSwapPage = () => {
                 onSelectVehicle={handleSelectVehicle}
                 selectedVehicleId={selectedVehicle?.id}
               />
+              <SwapExcludedList excluded={excludedVehicles} className="mt-4" />
             </CardContent>
           </Card>
         )}

@@ -97,6 +97,7 @@ import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
 import { CustomersPage } from "./pages/manager/CustomersPage";
 import { CustomerDetailPage } from "./pages/manager/CustomerDetailPage";
+import { EMPLOYEE_CUSTOMERS_PORTAL } from "./components/manager/customers/portal";
 import { PeriodReportPage } from "./pages/manager/PeriodReportPage";
 import { ConfirmationsPage } from "./pages/manager/ConfirmationsPage";
 import { ManagerOffersPage } from "./pages/manager/ManagerOffersPage";
@@ -409,6 +410,15 @@ function App() {
             element={<RemainingPaymentStatusPage />}
           />
           <Route path="/employee/shifts" element={<EmployeeShiftHistoryPage />} />
+          {/* Customers tab — the branch manager's pages on the Fleet API */}
+          <Route
+            path="/employee/customers"
+            element={<CustomersPage portal={EMPLOYEE_CUSTOMERS_PORTAL} />}
+          />
+          <Route
+            path="/employee/customers/:customerId"
+            element={<CustomerDetailPage portal={EMPLOYEE_CUSTOMERS_PORTAL} />}
+          />
         </Route>
 
         {/* Catch all */}

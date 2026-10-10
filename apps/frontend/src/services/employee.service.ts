@@ -29,6 +29,25 @@ export interface EmployeeDashboardStats {
   overdueReturns?: number;
 }
 
+/** One car from the walk-in registration-number search. */
+export interface RegNoVehicle {
+  publicId: string;
+  regNo: string;
+  make: string;
+  model: string;
+  year: number | null;
+  category: string;
+  typeClass?: string;
+  imageUrl: string | null;
+  /** The car's make/model group — booked by publicId, not by this key. */
+  groupKey: string;
+  pricing: { daily: number | null };
+  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string } | null;
+  available: boolean;
+  /** Why it can't be booked for the dates (on rent, maintenance, insurance …). */
+  unavailableReason: { code: string; message: string } | null;
+}
+
 export const employeeService = {
   login: async (data: SignInInput): Promise<EmployeeAuthResponse> => {
     const response = await apiClient.post<EmployeeAuthResponse>(
@@ -72,6 +91,21 @@ export const employeeService = {
     const response = await apiClient.get("/employee/vehicles/search", {
       params,
     });
+    return response.data;
+  },
+
+  /**
+   * Walk-in search by registration number (client item 5): the branch's cars
+   * whose number contains q (spaces / hyphens ignored), one row each, priced
+   * for the dates; a car that can't be booked comes with available false and
+   * the server's reason. GET /employee/vehicles/search-reg
+   */
+  searchVehiclesByRegNo: async (params: {
+    q: string;
+    start: string;
+    end: string;
+  }): Promise<{ data: RegNoVehicle[]; total: number }> => {
+    const response = await apiClient.get("/employee/vehicles/search-reg", { params });
     return response.data;
   },
 

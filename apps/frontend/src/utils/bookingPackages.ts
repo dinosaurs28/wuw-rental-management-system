@@ -4,7 +4,9 @@
 // "1 day" … "15 days". The return is the pickup + 12 h / N × 24 h, computed
 // here and shown read-only — there is no free return picker, so odd lengths
 // (6 PM → 8 AM = 14 h) can't be asked for. The server refuses anything else
-// with BOOKING_PACKAGE_REQUIRED.
+// with BOOKING_PACKAGE_REQUIRED. When pickup + 12 h is outside office hours the
+// 12-hour package is held to closing on the pickup day (client item 6) — still
+// the 12-hour package, priced as 12 hours by the server — and shown as such.
 //
 // Fleet walk-ins use the same packages plus 0–11 extra hours (priced by the
 // engine at the Extra Hour Rate); the server accepts any length there.
@@ -13,6 +15,7 @@
 // an "HH:mm" IST wall-clock time.
 import {
   CUSTOMER_PACKAGES,
+  HALF_DAY_PACKAGE_HOURS,
   MAX_BOOKING_DAYS,
   PACKAGE_TOLERANCE_MS,
   packageLabel,
@@ -20,6 +23,7 @@ import {
 import type { BranchScheduleConfig } from "@/services/branch.service";
 import {
   getBranchLocalTime,
+  halfDayReturnFor,
   minutesToDisplay,
   validateReturnTime,
 } from "@/utils/branchScheduleValidator";
@@ -38,8 +42,13 @@ export interface PackageOption {
   hours: number;
   /** "12 hours", "1 day", "2 days" … */
   label: string;
-  /** pickup + the package (without extra hours). */
+  /** pickup + the package (without extra hours) — or closing time when clampedReturn. */
   returnAt: Date;
+  /**
+   * The 12-hour package held to the branch's closing on the pickup day, because
+   * pickup + 12 h is outside office hours (client item 6). Still billed as 12 hours.
+   */
+  clampedReturn: boolean;
   /** Why it can't be picked (return outside office hours); null = can be picked. */
   disabledReason: string | null;
 }
@@ -163,6 +172,10 @@ interface Built {
   maxExtra: number;
   options: PackageOption[];
   extrasFor: (packageHours: number) => ExtraHoursOption[];
+  /** Return of a package + extra hours (the 12-hour package alone may be held to closing). */
+  returnOf: (packageHours: number, extraHours: number) => Date;
+  /** The held-to-closing 12-hour return for this pickup; null when 12 hours isn't clamped. */
+  clampedHalfDayAt: Date | null;
 }
 
 function build(input: PackageRangeInput & { pickupDate: Date }): Built {
@@ -171,9 +184,17 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
   const maxReturnAt = maxReturnFor(start, { now });
   const maxExtra = input.allowExtraHours ? MAX_EXTRA_HOURS : 0;
 
+  // pickup + 12 h outside office hours: 12 hours returns at closing that day (client item 6)
+  const halfDay = input.schedule ? halfDayReturnFor(input.schedule, start) : null;
+  const clampedHalfDayAt = halfDay?.clamped ? halfDay.endAt : null;
+  const returnOf = (packageHours: number, extra: number): Date =>
+    clampedHalfDayAt && packageHours === HALF_DAY_PACKAGE_HOURS && extra === 0
+      ? clampedHalfDayAt
+      : new Date(start.getTime() + (packageHours + extra) * HOUR_MS);
+
   const extrasFor = (packageHours: number): ExtraHoursOption[] =>
     Array.from({ length: maxExtra + 1 }, (_, extra) => {
-      const returnAt = new Date(start.getTime() + (packageHours + extra) * HOUR_MS);
+      const returnAt = returnOf(packageHours, extra);
       return {
         hours: extra,
         returnAt,
@@ -181,11 +202,9 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
       };
     });
 
-  const options = CUSTOMER_PACKAGES.map((pkg) => ({
-    pkg,
-    returnAt: new Date(start.getTime() + pkg.hours * HOUR_MS),
-  }))
-    // Capped by the 15-day window (from today) and the 15-day length
+  const options = CUSTOMER_PACKAGES.map((pkg) => ({ pkg, returnAt: returnOf(pkg.hours, 0) }))
+    // Capped by the 15-day window (from today) and the 15-day length — on the
+    // actual return (12 hours held to closing fits the window's last afternoon)
     .filter(({ returnAt }) => returnAt.getTime() <= maxReturnAt.getTime())
     .map(({ pkg, returnAt }) => {
       let disabledReason = packageReturnProblem(input.schedule, returnAt, null);
@@ -193,10 +212,11 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
       if (disabledReason && maxExtra > 0 && extrasFor(pkg.hours).some((e) => !e.disabledReason)) {
         disabledReason = null;
       }
-      return { id: pkg.id, hours: pkg.hours, label: pkg.label, returnAt, disabledReason };
+      const clampedReturn = !!clampedHalfDayAt && pkg.hours === HALF_DAY_PACKAGE_HOURS;
+      return { id: pkg.id, hours: pkg.hours, label: pkg.label, returnAt, clampedReturn, disabledReason };
     });
 
-  return { start, maxReturnAt, maxExtra, options, extrasFor };
+  return { start, maxReturnAt, maxExtra, options, extrasFor, returnOf, clampedHalfDayAt };
 }
 
 function resolve(built: Built, preferred: PackageChoice): (PackageChoice & { option: PackageOption; extras: ExtraHoursOption[] }) | null {
@@ -237,7 +257,10 @@ export function packageRangeState(input: PackageRangeInput): PackageRangeState {
   if (!input.pickupDate) return EMPTY;
   const built = build({ ...input, pickupDate: input.pickupDate });
   const end = input.returnDate ? istInstant(input.returnDate, input.returnTime || "10:00") : null;
+  const isClampedEnd =
+    !!end && !!built.clampedHalfDayAt && Math.abs(end.getTime() - built.clampedHalfDayAt.getTime()) <= PACKAGE_TOLERANCE_MS;
   const preferred: PackageChoice =
+    (isClampedEnd ? { packageHours: HALF_DAY_PACKAGE_HOURS, extraHours: 0 } : null) ??
     (end && splitPackageSpan(built.start, end, built.maxExtra)) ?? {
       packageHours: end ? nearestPackageHours(built.start, end) : DEFAULT_PACKAGE_HOURS,
       extraHours: 0,
@@ -246,7 +269,7 @@ export function packageRangeState(input: PackageRangeInput): PackageRangeState {
   if (!choice) {
     return { ...EMPTY, options: built.options, noneAvailable: built.options.length > 0 };
   }
-  const returnAt = new Date(built.start.getTime() + (choice.packageHours + choice.extraHours) * HOUR_MS);
+  const returnAt = built.returnOf(choice.packageHours, choice.extraHours);
   const parts = istCalendarParts(returnAt);
   const correction =
     end && Math.abs(end.getTime() - returnAt.getTime()) < 60_000
@@ -275,9 +298,7 @@ export function returnForPackage(
   const built = build({ ...input, pickupDate: input.pickupDate, returnDate: null, returnTime: "" });
   const resolved = resolve(built, choice);
   if (!resolved) return null;
-  const parts = istCalendarParts(
-    new Date(built.start.getTime() + (resolved.packageHours + resolved.extraHours) * HOUR_MS),
-  );
+  const parts = istCalendarParts(built.returnOf(resolved.packageHours, resolved.extraHours));
   return { returnDate: parts.day, returnTime: parts.time };
 }
 

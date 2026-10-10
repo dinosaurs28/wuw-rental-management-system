@@ -192,7 +192,7 @@ export const KycVerificationPage = () => {
     [removeDocument, setDeletingDocumentId, navigate],
   );
 
-  const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR", "PAN"];
+  const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR"];
 
   // Types where BOTH sides are uploaded → disabled in selector
   const fullyUploadedTypes = KYC_TYPES.filter((type) => {

@@ -752,8 +752,19 @@ export const bookingService = {
       extraKmEnabled?: boolean;
       source?: "vehicle_custom" | "branch_default";
     } | null;
-    /** This booking's allowance (same as booking details' kmAllowance). */
-    kmAllowance?: { includedKm: number; extraKmRate: string; extraKmEnabled: boolean } | null;
+    /**
+     * This booking's allowance (same as booking details' kmAllowance).
+     * includedKm = freeKmOriginal + freeKmExtensions (#7); the split and the
+     * extensions counted are absent from older servers.
+     */
+    kmAllowance?: {
+      includedKm: number;
+      extraKmRate: string;
+      extraKmEnabled: boolean;
+      freeKmOriginal?: number;
+      freeKmExtensions?: number;
+      extensionCount?: number;
+    } | null;
     frozenChargeConfig: FrozenChargeConfig | null;
     rentalPeriod: { start: string; end: string };
   }> => {

@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios";
 
-// BM Customers tab (G9). Money = 2-dp strings, dates = ISO UTC.
+// Customers tab (G9) — branch manager and Fleet Executive portals. Money = 2-dp strings, dates = ISO UTC.
 
 export type CustomerFilter = "all" | "blacklisted" | "credit" | "branch";
 export type RentBucket = "upcoming" | "active" | "past";
@@ -298,9 +298,11 @@ export interface BlacklistResult {
   openRents?: { upcoming: number; active: number };
 }
 
-const base = "/branchManager/customers";
-
-export const managerCustomersService = {
+/**
+ * One client per portal: the branch manager and the Fleet Executive hit the
+ * same handlers (same data, rules and shapes) under their own API prefix.
+ */
+export const makeCustomersService = (base: string) => ({
   list: async (params: {
     search?: string;
     filter?: CustomerFilter;
@@ -352,4 +354,9 @@ export const managerCustomersService = {
     );
     return res.data;
   },
-};
+});
+
+export type CustomersService = ReturnType<typeof makeCustomersService>;
+
+export const managerCustomersService = makeCustomersService("/branchManager/customers");
+export const employeeCustomersService = makeCustomersService("/employee/customers");

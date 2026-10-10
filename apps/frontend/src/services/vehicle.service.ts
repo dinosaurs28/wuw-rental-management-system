@@ -155,12 +155,38 @@ export interface VehicleGroupDetailsResponse {
 }
 
 // Manager vehicle (from /branchManager/dashboard/vehicles)
+/** Why customers don't see a car (BM vehicles list; item 7). */
+export type VehicleHiddenReason =
+  | "INSURANCE_EXPIRED"
+  | "DAMAGE_REVIEW_PENDING"
+  | "STATUS_MAINTENANCE"
+  | "STATUS_INACTIVE"
+  | "NO_PRICE"
+  | "MANUAL_OUT_FOR_RENTAL"
+  | "OVERDUE_RETURN";
+
+export const VEHICLE_HIDDEN_REASON_LABEL: Record<VehicleHiddenReason, string> = {
+  INSURANCE_EXPIRED: "Insurance expired",
+  DAMAGE_REVIEW_PENDING: "Damage review pending",
+  STATUS_MAINTENANCE: "In maintenance",
+  STATUS_INACTIVE: "Inactive",
+  NO_PRICE: "No 24-hour price set",
+  MANUAL_OUT_FOR_RENTAL: "Set Out for Rental by hand (no rental behind it)",
+  OVERDUE_RETURN: "Not back from a rental (overdue)",
+};
+
 export interface ManagerVehicle {
   publicId: string;
   make: string;
   model: string;
   regNo: string;
   status: string;
+  /** Absent from older servers. */
+  insuranceExpiry?: string;
+  /** Why customers can't see or book it; empty = listed. Absent from older servers. */
+  hiddenReasons?: VehicleHiddenReason[];
+  /** The overdue rental behind OVERDUE_RETURN; null / absent otherwise. */
+  overdueRental?: { bookingId: string; endAt: string } | null;
   useCases?: VehicleUseCase[];
   category: {
     name: string;

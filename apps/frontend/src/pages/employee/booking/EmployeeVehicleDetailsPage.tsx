@@ -160,20 +160,32 @@ export const EmployeeVehicleDetailsPage = () => {
       );
       setKycDocuments(response.data);
 
-      // Auto-select approved document if available and no selection made
+      // Only the FRONT of a licence / Aadhaar with both sides uploaded can be
+      // attached (same rule as the group page; PAN is no longer accepted).
+      const docs = response.data;
+      const completeFronts = ["DL", "AADHAAR"]
+        .map((type) => {
+          const front = docs.find((d) => d.type === type && d.side === "FRONT");
+          const back = docs.find((d) => d.type === type && d.side === "BACK");
+          return front && back ? front : null;
+        })
+        .filter((d): d is KycDocument => d !== null);
+
+      // Auto-select the first attachable document if no selection made
       if (!customerKycId) {
-        const approvedDoc = response.data.find((d) => d.status === "APPROVED");
-        if (approvedDoc) {
-          setSelectedKycId(approvedDoc.publicId);
-          setCustomerKycId(approvedDoc.publicId);
+        const firstDoc = completeFronts[0];
+        if (firstDoc) {
+          setSelectedKycId(firstDoc.publicId);
+          setCustomerKycId(firstDoc.publicId);
         }
       } else {
-        // Sync local UI state from store
-        const storedDoc = response.data.find(
-          (d) => d.publicId === customerKycId,
-        );
+        // Sync local UI state from store; drop a stored pick that can't be attached
+        const storedDoc = completeFronts.find((d) => d.publicId === customerKycId);
         if (storedDoc) {
           setSelectedKycId(storedDoc.publicId);
+        } else {
+          setSelectedKycId(null);
+          setCustomerKycId(null);
         }
       }
     } catch (error: any) {

@@ -4,7 +4,12 @@ import { Car, Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { formatRentalLength } from "@/utils/formatters";
 
-export const VehicleSummaryCard = () => {
+interface VehicleSummaryCardProps {
+  /** Replaces the "<length> rental" badge (e.g. the 12-hour package held to closing). */
+  lengthBadge?: string;
+}
+
+export const VehicleSummaryCard = ({ lengthBadge }: VehicleSummaryCardProps = {}) => {
   const {
     name,
     make,
@@ -114,7 +119,7 @@ export const VehicleSummaryCard = () => {
           {rentalLength !== "-" && (
             <div className="pt-3 border-t border-zinc-100">
               <span className="inline-flex items-center px-3 py-1.5 text-xs font-semibold bg-secondary text-secondary-foreground rounded-full">
-                {rentalLength} rental
+                {lengthBadge ?? `${rentalLength} rental`}
               </span>
             </div>
           )}

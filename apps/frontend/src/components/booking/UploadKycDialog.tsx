@@ -37,7 +37,7 @@ const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 const ACEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const uploadKycSchema = z.object({
-  type: z.enum(["DL", "AADHAAR", "PAN"], {
+  type: z.enum(["DL", "AADHAAR"], {
     required_error: "Please select document type",
   }),
   side: z.enum(["FRONT", "BACK"], {
@@ -166,7 +166,6 @@ export const UploadKycDialog = ({
                     <SelectContent>
                       <SelectItem value="DL">Driver's License</SelectItem>
                       <SelectItem value="AADHAAR">Aadhaar Card</SelectItem>
-                      <SelectItem value="PAN">PAN Card</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

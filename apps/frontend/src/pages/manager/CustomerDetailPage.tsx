@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Ban, CalendarClock, Loader2, ShieldCheck } from "lucide-react";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +26,12 @@ import {
 import { BookingDrawer } from "@/components/manager/customers/BookingDrawer";
 import { apiMessage, inr, isPositive, istDate, istDateTime } from "@/components/manager/customers/format";
 import {
-  managerCustomersService,
+  MANAGER_CUSTOMERS_PORTAL,
+  customersTabKey,
+  type CustomersPortal,
+} from "@/components/manager/customers/portal";
+import {
+  type CustomersService,
   type RentBucket,
   type RentRow,
 } from "@/services/managerCustomers.service";
@@ -122,6 +126,7 @@ function RentCard({ r, onOpen }: { r: RentRow; onOpen: (id: string) => void }) {
 }
 
 function RentList({
+  service,
   customerId,
   bucket,
   initial,
@@ -129,6 +134,7 @@ function RentList({
   hasMore,
   onOpen,
 }: {
+  service: CustomersService;
   customerId: string;
   bucket: RentBucket;
   initial: RentRow[];
@@ -148,7 +154,7 @@ function RentList({
   const loadMore = async () => {
     setLoading(true);
     try {
-      const next = await managerCustomersService.rents(customerId, bucket, page + 1);
+      const next = await service.rents(customerId, bucket, page + 1);
       setExtra((e) => [...e, ...next.data]);
       setPage(next.page);
       setMoreLeft(next.page < next.totalPages);
@@ -184,7 +190,9 @@ function RentList({
   );
 }
 
-export const CustomerDetailPage = () => {
+// Shared by the branch manager and Fleet; the portal sets the API prefix and chrome.
+export const CustomerDetailPage = ({ portal = MANAGER_CUSTOMERS_PORTAL }: { portal?: CustomersPortal }) => {
+  const { Layout, service } = portal;
   const { customerId } = useParams<{ customerId: string }>();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<RentBucket>("upcoming");
@@ -195,18 +203,24 @@ export const CustomerDetailPage = () => {
   const [note, setNote] = useState("");
 
   const query = useQuery({
-    queryKey: ["manager-customer", customerId],
-    queryFn: () => managerCustomersService.get(customerId!),
+    queryKey: customersTabKey(portal, "detail", customerId),
+    queryFn: () => service.get(customerId!),
     enabled: !!customerId,
   });
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["manager-customer", customerId] });
-    queryClient.invalidateQueries({ queryKey: ["manager-customers"] });
+    // The tab's list, this customer and their bookings, plus the portal's other customer caches.
+    queryClient.invalidateQueries({ queryKey: customersTabKey(portal) });
+    const userPublicId = query.data?.customer.userPublicId;
+    if (userPublicId) {
+      for (const key of portal.relatedKeys?.(userPublicId) ?? []) {
+        queryClient.invalidateQueries({ queryKey: key });
+      }
+    }
   };
 
   const blacklistMutation = useMutation({
-    mutationFn: () => managerCustomersService.blacklist(customerId!, reason.trim()),
+    mutationFn: () => service.blacklist(customerId!, reason.trim()),
     onSuccess: (res) => {
       const open = res.data.openRents;
       toast.success(res.message || "Customer blacklisted.");
@@ -231,7 +245,7 @@ export const CustomerDetailPage = () => {
   });
 
   const unblacklistMutation = useMutation({
-    mutationFn: () => managerCustomersService.unblacklist(customerId!, note.trim() || undefined),
+    mutationFn: () => service.unblacklist(customerId!, note.trim() || undefined),
     onSuccess: (res) => {
       toast.success(res.message || "Blacklist removed.");
       setRemoveOpen(false);
@@ -261,19 +275,19 @@ export const CustomerDetailPage = () => {
     : "";
 
   return (
-    <ManagerLayout>
+    <Layout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/manager/dashboard">Dashboard</Link>
+                <Link to={portal.dashboardPath}>Dashboard</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/manager/customers">Customers</Link>
+                <Link to={portal.customersPath}>Customers</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -378,12 +392,14 @@ export const CustomerDetailPage = () => {
                   <div className="text-right">
                     <p className="text-xs text-zinc-500">At your branch</p>
                     <p className="text-base font-semibold tabular-nums">{inr(data.credit.pendingAtBranch)}</p>
-                    <Link
-                      to={`/manager/ledger/${c.customerPublicId}`}
-                      className="text-xs text-orange-600 hover:underline"
-                    >
-                      Open credit ledger
-                    </Link>
+                    {portal.ledgerPath && (
+                      <Link
+                        to={portal.ledgerPath(c.customerPublicId)}
+                        className="text-xs text-orange-600 hover:underline"
+                      >
+                        Open credit ledger
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>
@@ -421,6 +437,7 @@ export const CustomerDetailPage = () => {
               {BUCKETS.map((b) => (
                 <TabsContent key={b.key} value={b.key} className="mt-4">
                   <RentList
+                    service={service}
                     customerId={customerId!}
                     bucket={b.key}
                     initial={data.rents[b.key]}
@@ -436,6 +453,8 @@ export const CustomerDetailPage = () => {
       </div>
 
       <BookingDrawer
+        service={service}
+        queryKey={customersTabKey(portal, "booking")}
         customerId={customerId ?? ""}
         bookingId={openBooking}
         onClose={() => setOpenBooking(null)}
@@ -506,6 +525,6 @@ export const CustomerDetailPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </ManagerLayout>
+    </Layout>
   );
 };

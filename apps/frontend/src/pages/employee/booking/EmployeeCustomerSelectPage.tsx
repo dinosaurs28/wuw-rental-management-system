@@ -281,7 +281,7 @@ export default function EmployeeCustomerSelectPage() {
                       <span>
                         <span className="font-semibold uppercase tracking-wide">Blacklisted</span>
                         {customer.blacklistReason ? ` — ${customer.blacklistReason}` : ""}
-                        . Booking is blocked; a branch manager can remove the blacklist from the Customers tab.
+                        . Booking is blocked; the blacklist can be removed from the Customers tab.
                       </span>
                     </div>
                   )}

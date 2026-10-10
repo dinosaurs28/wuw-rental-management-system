@@ -24,6 +24,18 @@ export function formatPackageReturn(at: Date | null): string {
   return `${format(day, "EEE, d MMM")} · ${formatScheduleTime(time)}`;
 }
 
+/**
+ * "return by 10:30 PM today" / "return by 10:30 PM on Tue, 7 Oct" — the
+ * 12-hour package held to closing on the pickup day (client item 6).
+ */
+export function formatClampedReturn(at: Date, now: Date = new Date()): string {
+  const { day, time } = istCalendarParts(at);
+  const today = istCalendarParts(now).day;
+  return `return by ${formatScheduleTime(time)} ${
+    day.getTime() === today.getTime() ? "today" : `on ${format(day, "EEE, d MMM")}`
+  }`;
+}
+
 interface PackageSelectProps {
   state: PackageRangeState;
   onSelect: (packageHours: number) => void;
@@ -61,7 +73,10 @@ export function PackageSelect({ state, onSelect, disabled, triggerClassName, ico
             <div className="flex flex-col items-start">
               <span className="font-medium">{opt.label}</span>
               <span className="text-[11px] text-zinc-500">
-                {opt.disabledReason ?? `Return ${formatPackageReturn(opt.returnAt)}`}
+                {opt.disabledReason ??
+                  (opt.clampedReturn
+                    ? `${upperFirst(formatClampedReturn(opt.returnAt))}, when the branch closes`
+                    : `Return ${formatPackageReturn(opt.returnAt)}`)}
               </span>
             </div>
           </SelectItem>
@@ -90,7 +105,10 @@ export function PackageQuickChips({ state, onSelect, className }: PackageQuickCh
             key={chip.id}
             type="button"
             disabled={!!chip.disabledReason}
-            title={chip.disabledReason ?? undefined}
+            title={
+              chip.disabledReason ??
+              (chip.clampedReturn ? `${chip.label} · ${formatClampedReturn(chip.returnAt)}` : undefined)
+            }
             aria-pressed={active}
             onClick={() => onSelect(chip.hours)}
             className={cn(
@@ -163,7 +181,8 @@ interface PackageHintsProps {
 /**
  * Why a quick-chip length ("12 hours", "1 day") can't be picked for this
  * pickup, and when no package fits at all. Day packages keep the pickup's
- * clock time, so "1 day" only needs a line when the next day is closed.
+ * clock time, so "1 day" only needs a line when the next day is closed. A
+ * 12-hour package held to closing (client item 6) says when it returns.
  */
 export function PackageHints({ state, showExtraHoursNote, className }: PackageHintsProps) {
   const lines: string[] = [];
@@ -173,6 +192,13 @@ export function PackageHints({ state, showExtraHoursNote, className }: PackageHi
     for (const opt of state.options) {
       if ((opt.hours === 12 || opt.hours === 24) && opt.disabledReason) {
         lines.push(`${opt.label} isn't available for this pickup: ${lowerFirst(opt.disabledReason)}.`);
+      } else if (opt.clampedReturn && !opt.disabledReason) {
+        const dayOption = state.options.find((o) => o.hours === 24 && !o.disabledReason);
+        lines.push(
+          `${opt.label} · ${formatClampedReturn(opt.returnAt)}, when the branch closes (12 hours would run past closing).${
+            dayOption ? ` Choose ${dayOption.label} to keep it overnight.` : ""
+          }`,
+        );
       }
     }
   }
@@ -196,4 +222,8 @@ export function PackageHints({ state, showExtraHoursNote, className }: PackageHi
 
 function lowerFirst(text: string): string {
   return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+function upperFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
