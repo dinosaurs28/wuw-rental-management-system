@@ -111,7 +111,7 @@ const vehicleSchema = z.object({
   licensePlate: z.string().min(1, "License Plate (Reg No) is required"),
   odo: z.coerce.number().min(0, "Odometer reading is required"),
   category: z.string().min(1, "Category is required"),
-  status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]),
+  status: z.enum(["AVAILABLE", "OUT_FOR_RENTAL", "MAINTENANCE", "INACTIVE"]),
   price12Hour: z.coerce.number().min(0, "12-hour price must be non-negative").optional(),
   freeKm12Hour: z.coerce.number().min(0, "Free KM for 12 hours must be non-negative").optional(),
   price24Hour: z.coerce.number().min(0, "24-hour price must be non-negative"),
@@ -231,7 +231,7 @@ export const ManagerVehicleFormPage = () => {
             licensePlate: vehicle.regNo,
             odo: vehicle.odo || 0,
             category: String(vehicle.categoryId || ""),
-            status: vehicle.status as "AVAILABLE" | "MAINTENANCE" | "INACTIVE",
+            status: vehicle.status as "AVAILABLE" | "OUT_FOR_RENTAL" | "MAINTENANCE" | "INACTIVE",
             price12Hour: total12 ? Number(total12) : 0,
             freeKm12Hour: vehicle.customPricing?.freeKm12Hour ?? 100,
             price24Hour: total24 ? Number(total24) : 0,
@@ -551,6 +551,12 @@ export const ManagerVehicleFormPage = () => {
                                   <span className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                     Available
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="OUT_FOR_RENTAL">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                    Out for Rental
                                   </span>
                                 </SelectItem>
                                 <SelectItem value="MAINTENANCE">

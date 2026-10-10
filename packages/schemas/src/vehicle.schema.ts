@@ -126,7 +126,7 @@ export const createVehicleSchema = z.object({
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
-  status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]).optional(),
+  status: z.enum(["AVAILABLE", "OUT_FOR_RENTAL", "MAINTENANCE", "INACTIVE"]).optional(),
   deleteImageIds: z.union([z.string(), z.array(z.string())]).optional(),
   thumbnailImageId: z.string().optional(),
 });
