@@ -171,7 +171,8 @@ jobs:
             for migration in \
               20260927090000_licence_drop_damage_utr \
               20261001090000_client_batch_oct \
-              20261003090000_todo17_batch
+              20261003090000_todo17_batch \
+              20261010090000_operation_drafts
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

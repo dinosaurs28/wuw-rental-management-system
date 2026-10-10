@@ -270,6 +270,7 @@ model User {
   creditNotesIssued     CreditNote[]           @relation("CreditNoteIssuer")
   notifications         Notification[]
   pushTokens            PushToken[]
+  operationDraftsSaved  OperationDraft[]       @relation("OperationDraftUpdater")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -1001,6 +1002,8 @@ model Booking {
   creditNotes            CreditNote[]
   notifications          Notification[]
   upiQrPayments          UpiQrPayment[]
+  // Paused Fleet pickup / drop forms (one per type)
+  operationDrafts        OperationDraft[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2483,4 +2486,35 @@ model UpiQrPayment {
 
   @@index([bookingId])
   @@index([status])
+}
+
+// ── Paused pickup / drop (Fleet Executive) ───────────────────────────────────
+
+enum OperationDraftType {
+  PICKUP
+  RETURN
+}
+
+// Everything a Fleet Executive entered on a pickup or drop that isn't finished
+// yet (readings, photo file ids, choices), so the form can be left and resumed
+// later — on any phone. Only the explicit completion hands the vehicle over /
+// takes it back; that completion deletes the draft. `data` is opaque to the
+// server (versioned by the app with its own schemaVersion); photos are file
+// publicIds whose URLs are looked up fresh on every read.
+model OperationDraft {
+  id          Int                @id @default(autoincrement())
+  publicId    String             @unique
+  bookingId   Int
+  booking     Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type        OperationDraftType
+  data        Json
+  // Bumped on every save; a save sent with an older baseVersion is refused (409).
+  version     Int                @default(1)
+  updatedById Int?
+  updatedBy   User?              @relation("OperationDraftUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([bookingId, type])
+  @@index([updatedById])
 }

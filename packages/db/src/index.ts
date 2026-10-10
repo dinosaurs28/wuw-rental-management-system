@@ -68,7 +68,8 @@ export {
   Prisma,
   KycSide,
   VehicleTypeClass,
-  BookingRestrictionMode
+  BookingRestrictionMode,
+  OperationDraftType
 } from "./generated/client/index.js";
 
 // Export types
