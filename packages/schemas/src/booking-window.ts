@@ -156,7 +156,8 @@ export function validateExtensionWindow(input: {
  * 24-hour blocks). The return is the pickup + the package length — customers
  * never pick a free return time, so odd lengths (e.g. 6 PM → 8 AM = 14 h) can't
  * be booked. Customer booking create refuses any other length with
- * BOOKING_PACKAGE_REQUIRED (±1 minute tolerance).
+ * BOOKING_PACKAGE_REQUIRED (±1 minute tolerance) — except the 12-hour package
+ * held to closing on the pickup day (halfDayPackageReturn, client item 6).
  *
  * Customer self-extensions add +12 h or + N × 24 h (EXTENSION_PACKAGE_REQUIRED
  * otherwise). Fleet / Branch Manager walk-ins and extensions keep any length.
@@ -258,18 +259,71 @@ export function isExtensionPackageDuration(currentEndAt: Date | string, newEndAt
 /**
  * Packages a customer can pick for a pickup, each with its return, stopping at
  * the 15-day window (return ≤ 23:59 IST on today + 15). Office hours are checked
- * separately: a 12-hour return can fall outside them, while whole-day packages
- * keep the pickup's clock time.
+ * separately: a 12-hour return outside them is held to closing on the pickup
+ * day (halfDayPackageReturn), while whole-day packages keep the pickup's clock
+ * time. Pass that held return as `halfDayEndAt` so the 12-hour package is
+ * listed — and checked against the window — with the return it really has
+ * (an afternoon pickup on the window's last day returns at closing, in time).
  */
 export function customerPackagesForPickup(
   startAt: Date | string,
   now: Date = new Date(),
+  halfDayEndAt?: Date | null,
 ): Array<CustomerPackage & { endAt: Date }> {
   const start = new Date(startAt);
   const windowEnd = bookingWindowEnd(now).getTime();
-  return CUSTOMER_PACKAGES.map((p) => ({ ...p, endAt: customerPackageEnd(start, p) })).filter(
-    (p) => p.endAt.getTime() <= windowEnd,
-  );
+  return CUSTOMER_PACKAGES.map((p) => ({
+    ...p,
+    endAt: p.hours === HALF_DAY_PACKAGE_HOURS && halfDayEndAt ? halfDayEndAt : customerPackageEnd(start, p),
+  })).filter((p) => p.endAt.getTime() <= windowEnd);
+}
+
+// ── 12 hours from a late pickup (client item 6) ─────────────────────────────
+/**
+ * The 12-hour package stays bookable when pickup + 12 h would fall outside
+ * office hours (after closing, past midnight, before opening, a closed day):
+ * its return is then held to the branch's closing time on the pickup day —
+ * "12 hours · return by 10:30 PM today" — as long as that still leaves
+ * HALF_DAY_CLAMP_MIN_MINUTES after pickup. It is still the 12-hour package:
+ * billed at the 12-hour price with the 12-hour free km, never by the hour,
+ * and the customer can pick 1 day instead. Branch hours live in the schedule
+ * validators (backend, web, mobile), which pass `returnAllowed` / `closingAt`.
+ */
+export const HALF_DAY_CLAMP_MIN_MINUTES = 60;
+
+export interface HalfDayReturn {
+  endAt: Date;
+  /** true = held to closing on the pickup day (shorter than 12 h on the clock). */
+  clamped: boolean;
+}
+
+/** The 12-hour package's return for a pickup, or null when only whole days fit. */
+export function halfDayPackageReturn(
+  startAt: Date | string,
+  hours: {
+    /** Does the branch take a return at this instant (open day, opening … closing + grace)? */
+    returnAllowed: (at: Date) => boolean;
+    /** Closing time on the pickup day; null on a closed day or with no hours (24-hour branch). */
+    closingAt: Date | null;
+  },
+): HalfDayReturn | null {
+  const start = new Date(startAt);
+  const full = customerPackageEnd(start, HALF_DAY_PACKAGE_HOURS);
+  if (hours.returnAllowed(full)) return { endAt: full, clamped: false };
+  const closing = hours.closingAt?.getTime();
+  if (
+    closing !== undefined &&
+    closing < full.getTime() &&
+    closing - start.getTime() >= HALF_DAY_CLAMP_MIN_MINUTES * 60 * 1000
+  ) {
+    return { endAt: new Date(closing), clamped: true };
+  }
+  return null;
+}
+
+/** Is endAt the held-to-closing 12-hour return (±1 minute)? */
+export function isClampedHalfDayReturn(half: HalfDayReturn | null, endAt: Date | string): boolean {
+  return !!half?.clamped && Math.abs(new Date(endAt).getTime() - half.endAt.getTime()) <= PACKAGE_TOLERANCE_MS;
 }
 
 /**
