@@ -449,6 +449,8 @@ model Branch {
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
+  // Days billed at the weekend rents (ISO weekday 1 = Mon … 7 = Sun)
+  weekendDays             Int[]                    @default([6, 7])
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -742,6 +744,12 @@ model VehicleCustomPricing {
   totalRent24Hour      Decimal? @db.Decimal(10, 2)
   rentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
   rentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
+  // Weekend rents (GST-inclusive, optional — null = the weekday rent) and their
+  // derived "without GST" parts; weekend days are Branch.weekendDays
+  weekendTotalRent12Hour      Decimal? @db.Decimal(10, 2)
+  weekendTotalRent24Hour      Decimal? @db.Decimal(10, 2)
+  weekendRentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
+  weekendRentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
   freeKm24Hour  Int      @default(150)
   priceMonthly  Decimal?
   freeKmMonthly Int      @default(1500)
@@ -771,6 +779,11 @@ model BranchPricingDefaults {
   totalRent24Hour      Decimal? @db.Decimal(10, 2)
   rentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
   rentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
+  // Weekend rents, optional (see VehicleCustomPricing)
+  weekendTotalRent12Hour      Decimal? @db.Decimal(10, 2)
+  weekendTotalRent24Hour      Decimal? @db.Decimal(10, 2)
+  weekendRentWithoutGst12Hour Decimal? @db.Decimal(10, 2)
+  weekendRentWithoutGst24Hour Decimal? @db.Decimal(10, 2)
   freeKm24Hour   Int      @default(150)
   priceMonthly   Decimal?
   freeKmMonthly  Int      @default(1500)
