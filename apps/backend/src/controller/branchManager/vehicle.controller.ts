@@ -10,7 +10,7 @@ import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS } from "@repo/schemas";
 import { z } from "zod";
 import Decimal from "decimal.js";
-import { branchRentRates, rentColumns } from "../../services/pricing/rent-columns.service.js";
+import { branchRentRates, rentColumns, weekendRentColumns } from "../../services/pricing/rent-columns.service.js";
 import { ACTIVE_RENTAL_ITEM_WHERE, findActiveRental } from "../../utils/availability/outForRental.js";
 import { vehicleHiddenReasons } from "../../utils/availability/vehicleEligibility.js";
 import { getBatchFallbackPrices } from "../../utils/pricing/batchListingPrice.js";
@@ -107,6 +107,8 @@ export const AddVehicle = async (req: Request, res: Response) => {
       freeKm24Hour,
       priceMonthly,
       freeKmMonthly,
+      weekendTotalRent12Hour,
+      weekendTotalRent24Hour,
       extraKmRate,
       extraHourRate,
       isCustomPricingEnabled,
@@ -158,6 +160,11 @@ export const AddVehicle = async (req: Request, res: Response) => {
             freeKm12Hour: freeKm12Hour ?? 100,
             // price12Hour / totalRent12Hour / rentWithoutGst12Hour and the 24 h trio
             ...rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour }, rentRates),
+            // Optional weekend rents (weekend-wise pricing)
+            ...weekendRentColumns(
+              { weekendTotal12Hour: weekendTotalRent12Hour, weekendTotal24Hour: weekendTotalRent24Hour },
+              rentRates,
+            ),
             price24Hour: new Decimal(rent24Hour).toFixed(2),
             freeKm24Hour: freeKm24Hour ?? 150,
             priceMonthly: priceMonthly ?? null,
@@ -379,6 +386,8 @@ export const EditVehicle = async (req: Request, res: Response) => {
     delete updateData.freeKm24Hour;
     delete updateData.priceMonthly;
     delete updateData.freeKmMonthly;
+    delete updateData.weekendTotalRent12Hour;
+    delete updateData.weekendTotalRent24Hour;
     delete updateData.extraKmRate;
     delete updateData.extraHourRate;
     delete updateData.isCustomPricingEnabled;
@@ -406,6 +415,11 @@ export const EditVehicle = async (req: Request, res: Response) => {
     if (rent24Hour !== undefined || data.isCustomPricingEnabled !== undefined) {
       const rentRates = await branchRentRates(vehicle.branchId);
       const rentCols = rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour }, rentRates);
+      // Weekend rents (weekend-wise pricing): written when sent (blank / 0 clears), else kept
+      const weekendCols = weekendRentColumns(
+        { weekendTotal12Hour: data.weekendTotalRent12Hour, weekendTotal24Hour: data.weekendTotalRent24Hour },
+        rentRates,
+      );
       updateData.customPricing = {
         upsert: {
           create: {
@@ -413,6 +427,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
             hourlyRate: data.extraHourRate ?? 100.00,
             freeKm12Hour: data.freeKm12Hour ?? 100,
             ...rentColumns({ total12Hour: rent12Hour ?? null, total24Hour: rent24Hour ?? 0 }, rentRates),
+            ...weekendCols,
             price24Hour: new Decimal(rent24Hour ?? 0).toFixed(2),
             freeKm24Hour: data.freeKm24Hour ?? 150,
             priceMonthly: data.priceMonthly ?? null,
@@ -425,6 +440,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
             ...(data.extraHourRate !== undefined && { hourlyRate: data.extraHourRate }),
             // 12 h trio always (null clears it, as before); the 24 h trio when sent
             ...rentCols,
+            ...weekendCols,
             ...(data.freeKm12Hour !== undefined && { freeKm12Hour: data.freeKm12Hour }),
             ...(data.freeKm24Hour !== undefined && { freeKm24Hour: data.freeKm24Hour }),
             priceMonthly: data.priceMonthly ?? null,

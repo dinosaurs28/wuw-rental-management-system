@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { prisma, BookingRestrictionMode } from "@repo/database/client";
+import { branchWeekendDaysSchema } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
 import { validateScheduleRows, buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
+import { normalizeWeekendDays } from "../../utils/pricing/weekendRule.js";
+import { invalidateBranchWeekendDays } from "../../services/pricing/branch-weekend-days.service.js";
+import { invalidateGroupListingCache, invalidateVehiclePricing } from "../../utils/cache/vehicleCacheKeys.js";
 
 /**
  * GET /branchManager/dashboard/branch/schedule
@@ -171,6 +175,71 @@ export const updateManagerBranchGrace = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("[updateManagerBranchGrace] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /branchManager/dashboard/branch/weekend-days
+ * The days the manager's branch bills at the weekend rents (weekend-wise
+ * pricing): { weekendDays: number[] } — ISO weekdays, 1 = Mon … 7 = Sun.
+ */
+export const getManagerWeekendDays = async (req: Request, res: Response) => {
+  try {
+    const branch = await prisma.branch.findUnique({
+      where: { id: req.branch_Id },
+      select: { weekendDays: true },
+    });
+    if (!branch) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
+    }
+    return res.status(StatusCode.OK).json({ weekendDays: normalizeWeekendDays(branch.weekendDays) });
+  } catch (error) {
+    console.error("[getManagerWeekendDays] error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /branchManager/dashboard/branch/weekend-days
+ * Body: { weekendDays: number[] } — 0–7 distinct ISO weekdays (empty = no
+ * weekend rates). New quotes and bookings use them at once; a booking already
+ * made keeps the days it was priced with (pricingSnapshot.weekendDays).
+ */
+export const updateManagerWeekendDays = async (req: Request, res: Response) => {
+  try {
+    const branchId = req.branch_Id;
+    const parsed = branchWeekendDaysSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_WEEKEND_DAYS",
+        message: parsed.error.issues[0]?.message ?? "Invalid weekend days",
+      });
+    }
+
+    const updated = await prisma.branch.update({
+      where: { id: branchId },
+      data: { weekendDays: normalizeWeekendDays(parsed.data.weekendDays) },
+      select: { weekendDays: true },
+    });
+
+    // Prices for any window may change: the cached days, listing and detail prices
+    await invalidateBranchWeekendDays(branchId);
+    try {
+      const vehicles = await prisma.vehicle.findMany({ where: { branchId }, select: { id: true } });
+      await invalidateVehiclePricing(redis, vehicles.map((v) => v.id));
+      await invalidateGroupListingCache(redis);
+    } catch (cacheErr) {
+      console.warn("[updateManagerWeekendDays] cache invalidation failed (non-fatal):", cacheErr);
+    }
+
+    return res.status(StatusCode.OK).json({
+      message: "Weekend days updated",
+      weekendDays: normalizeWeekendDays(updated.weekendDays),
+    });
+  } catch (error) {
+    console.error("[updateManagerWeekendDays] error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

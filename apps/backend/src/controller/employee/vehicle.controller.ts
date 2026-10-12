@@ -26,7 +26,9 @@ import {
   getBatchListingPrices,
   getBatchFallbackPrices,
   type ListingPrice,
+  type FallbackPrice,
 } from "../../utils/pricing/batchListingPrice.js";
+import type { WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
 import { DateTime } from "luxon";
 import { isGstRuleMissing } from "../../services/tax/gst.service.js";
 import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
@@ -192,7 +194,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
     // Batch pricing
     let durationInfo: ReturnType<typeof DurationCalculatorService.calculate> | null = null;
     let durationPriceMap: Map<number, ListingPrice> | null = null;
-    let fallbackPriceMap: Map<number, { daily: number; hourly: number; halfDay: number }> | null = null;
+    let fallbackPriceMap: Map<number, FallbackPrice> | null = null;
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
@@ -214,11 +216,14 @@ export const searchVehicles = async (req: Request, res: Response) => {
       branch: string;
       availableCount: number;
       imageUrl: any[];
-      pricing: { daily: number; hourly?: number; halfDay?: number };
+      // weekendDaily: the weekend 24-hour rent without dates, only when set and different
+      pricing: { daily: number; hourly?: number; halfDay?: number; weekendDaily?: number };
       pricingDetails?: {
         price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string;
         // GST inside the GST-inclusive finalPrice (item 17; absent without a branch GST rule)
         rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
+        // Weekend rates inside price (weekend-wise pricing; absent when none)
+        weekend?: WeekendBreakdown;
       };
       minDailyPrice: number;
     }
@@ -229,6 +234,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
       let daily = 0;
       let hourly: number | undefined;
       let halfDay: number | undefined;
+      let weekendDaily: number | undefined;
       let pricingDetails: GroupEntry["pricingDetails"];
 
       if (durationPriceMap && durationInfo) {
@@ -246,12 +252,14 @@ export const searchVehicles = async (req: Request, res: Response) => {
             cgst: lp.cgst,
             sgst: lp.sgst,
           }),
+          ...(lp?.weekend && { weekend: lp.weekend }),
         };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
         daily = fp?.daily ?? 0;
         hourly = fp?.hourly;
         halfDay = fp?.halfDay;
+        weekendDaily = fp?.weekendDaily;
       }
 
       const gk = buildGroupKey(v.make, v.model, v.categoryId, v.branchId, dailyPriceToPaise(daily));
@@ -266,7 +274,12 @@ export const searchVehicles = async (req: Request, res: Response) => {
           branch: v.branch.name,
           availableCount: 1,
           imageUrl: v.images,
-          pricing: { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) },
+          pricing: {
+            daily,
+            ...(hourly !== undefined ? { hourly } : {}),
+            ...(halfDay !== undefined ? { halfDay } : {}),
+            ...(weekendDaily !== undefined ? { weekendDaily } : {}),
+          },
           pricingDetails,
           minDailyPrice: daily,
         });
@@ -275,7 +288,12 @@ export const searchVehicles = async (req: Request, res: Response) => {
         if (daily < existing.minDailyPrice) {
           existing.minDailyPrice = daily;
           existing.imageUrl = v.images;
-          existing.pricing = { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) };
+          existing.pricing = {
+            daily,
+            ...(hourly !== undefined ? { hourly } : {}),
+            ...(halfDay !== undefined ? { halfDay } : {}),
+            ...(weekendDaily !== undefined ? { weekendDaily } : {}),
+          };
           existing.pricingDetails = pricingDetails;
         }
       }
@@ -472,6 +490,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
               priceSource:     pr.pricingBreakdown.priceSource,
               billedAs:        pr.pricingBreakdown.billedAs,
               billedAsType:    pr.pricingBreakdown.billedAsType,
+              // Weekend rates inside the price (weekend-wise pricing; absent when none)
+              ...(pr.pricingBreakdown.weekend && { weekend: pr.pricingBreakdown.weekend }),
             },
           };
         } catch { /* pricing failure is non-fatal */ }
@@ -625,6 +645,8 @@ export const getEmployeeVehicleDetails = async (
           priceSource: pricingResult.pricingBreakdown.priceSource,
           billedAs: pricingResult.pricingBreakdown.billedAs,
           billedAsType: pricingResult.pricingBreakdown.billedAsType,
+          // Weekend rates inside the price (weekend-wise pricing; absent when none)
+          ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
         },
       };
 
@@ -636,7 +658,7 @@ export const getEmployeeVehicleDetails = async (
 
     const imageUrls = vehicleData.images.map((img) => img.file.url);
 
-    let fallbackPricing: { daily: number; hourly: number; halfDay: number } | null = null;
+    let fallbackPricing: FallbackPrice | null = null;
     if (!pricingDetails) {
       const fp = await getBatchFallbackPrices([
         { id: vehicleData.id, branchId: vehicleData.branchId, categoryId: vehicleData.categoryId },
@@ -662,6 +684,7 @@ export const getEmployeeVehicleDetails = async (
               daily:   fallbackPricing!.daily,
               hourly:  fallbackPricing!.hourly,
               halfDay: fallbackPricing!.halfDay,
+              ...(fallbackPricing!.weekendDaily !== undefined && { weekendDaily: fallbackPricing!.weekendDaily }),
             },
         pricingDetails,
         deposit,
@@ -883,6 +906,7 @@ export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
                 cgst: lp.cgst,
                 sgst: lp.sgst,
               }),
+              ...(lp.weekend && { weekend: lp.weekend }),
             }
           : null,
         available: reason === null,

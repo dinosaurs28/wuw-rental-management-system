@@ -20,7 +20,9 @@ import {
   getBatchListingPrices,
   getBatchFallbackPrices,
   ListingPrice,
+  type FallbackPrice,
 } from "../../utils/pricing/batchListingPrice.js";
+import type { WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
 import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
 import {
   getCustomerPaymentMode,
@@ -246,10 +248,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     console.time("[perf] listing:pricing");
     let durationPriceMap: Map<number, ListingPrice> | null = null;
-    let fallbackPriceMap: Map<
-      number,
-      { daily: number; hourly: number; halfDay: number }
-    > | null = null;
+    let fallbackPriceMap: Map<number, FallbackPrice> | null = null;
     let durationInfo: ReturnType<typeof DurationCalculatorService.calculate> | null = null;
 
     if (startDate && endDate) {
@@ -275,12 +274,15 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       branchPublicId: string;
       availableCount: number;
       imageUrl: any[];
-      pricing: { daily: number; hourly?: number; halfDay?: number };
+      // weekendDaily: the weekend 24-hour rent without dates, only when set and different
+      pricing: { daily: number; hourly?: number; halfDay?: number; weekendDaily?: number };
       pricingDetails?: {
         price: number; finalPrice: number; type: string; billedAs?: string; billedAsType?: string;
         discountAmount?: number; discountPercent?: number; discountLabel?: string | null;
         // GST inside the GST-inclusive finalPrice (item 17; absent without a branch GST rule)
         rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
+        // Weekend rates inside price (weekend-wise pricing; absent when none)
+        weekend?: WeekendBreakdown;
       };
       minDailyPrice: number;
       useCases: Set<string>;
@@ -294,6 +296,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       let daily = 0;
       let hourly: number | undefined;
       let halfDay: number | undefined;
+      let weekendDaily: number | undefined;
       let pricingDetails: GroupEntry["pricingDetails"];
 
       if (durationPriceMap && durationInfo) {
@@ -317,12 +320,14 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
             cgst: lp.cgst,
             sgst: lp.sgst,
           }),
+          ...(lp?.weekend && { weekend: lp.weekend }),
         };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
         daily   = fp?.daily   ?? 0;
         hourly  = fp?.hourly;
         halfDay = fp?.halfDay;
+        weekendDaily = fp?.weekendDaily;
       }
 
       const existing = groupMap.get(gk);
@@ -337,7 +342,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           branchPublicId: v.branch.publicId,
           availableCount: 1,
           imageUrl: v.images,
-          pricing: { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) },
+          pricing: {
+            daily,
+            ...(hourly !== undefined ? { hourly } : {}),
+            ...(halfDay !== undefined ? { halfDay } : {}),
+            ...(weekendDaily !== undefined ? { weekendDaily } : {}),
+          },
           pricingDetails,
           minDailyPrice: daily,
           useCases: new Set(v.useCases),
@@ -349,7 +359,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         if (daily < existing.minDailyPrice) {
           existing.minDailyPrice = daily;
           existing.imageUrl = v.images;
-          existing.pricing = { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) };
+          existing.pricing = {
+            daily,
+            ...(hourly !== undefined ? { hourly } : {}),
+            ...(halfDay !== undefined ? { halfDay } : {}),
+            ...(weekendDaily !== undefined ? { weekendDaily } : {}),
+          };
           existing.pricingDetails = pricingDetails;
         }
       }
@@ -528,6 +543,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
               priceSource:     pricingDetails.pricingBreakdown.priceSource,
               billedAs:        pricingDetails.pricingBreakdown.billedAs,
               billedAsType:    pricingDetails.pricingBreakdown.billedAsType,
+              // Weekend rates inside the price (weekend-wise pricing; absent when none)
+              ...(pricingDetails.pricingBreakdown.weekend && { weekend: pricingDetails.pricingBreakdown.weekend }),
             },
           };
         } catch {
@@ -743,6 +760,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
           // absent only on a pricing result cached before these fields existed (60 s)
           billedAs:        pricingResult.pricingBreakdown.billedAs,
           billedAsType:    pricingResult.pricingBreakdown.billedAsType,
+          // Weekend rates inside the price (weekend-wise pricing; absent when none)
+          ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
         },
       };
 

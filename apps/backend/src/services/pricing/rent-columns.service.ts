@@ -13,6 +13,10 @@
  * The pricing engine always splits GST out of the rent live with the branch
  * rule; rentWithoutGst* is a stored convenience for lists and reports, so it is
  * recomputed for the whole branch whenever the GST rule is saved.
+ *
+ * The optional weekend rents (weekend-wise pricing) are stored the same way:
+ * weekendTotalRent12Hour / 24Hour + weekendRentWithoutGst12Hour / 24Hour, null
+ * = the weekday rent applies on weekend days too.
  */
 import Decimal from "decimal.js";
 import { prisma, Prisma } from "@repo/database/client";
@@ -67,11 +71,47 @@ export function rentColumns(
 }
 
 /**
+ * The weekend rent columns to write. A slab left undefined is not written
+ * (edit: keep what is stored); null or 0 clears it (the weekday rent applies).
+ */
+export function weekendRentColumns(
+  input: { weekendTotal12Hour?: number | null; weekendTotal24Hour?: number | null },
+  rates: GstRates | null,
+): {
+  weekendTotalRent12Hour?: string | null;
+  weekendRentWithoutGst12Hour?: string | null;
+  weekendTotalRent24Hour?: string | null;
+  weekendRentWithoutGst24Hour?: string | null;
+} {
+  const out: ReturnType<typeof weekendRentColumns> = {};
+  const slab = (total: number | null) => {
+    const set = total != null && total > 0;
+    return {
+      total: set ? new Decimal(total).toFixed(2) : null,
+      withoutGst: set ? rentWithoutGstOf(total, rates) : null,
+    };
+  };
+  if (input.weekendTotal12Hour !== undefined) {
+    const s = slab(input.weekendTotal12Hour);
+    out.weekendTotalRent12Hour = s.total;
+    out.weekendRentWithoutGst12Hour = s.withoutGst;
+  }
+  if (input.weekendTotal24Hour !== undefined) {
+    const s = slab(input.weekendTotal24Hour);
+    out.weekendTotalRent24Hour = s.total;
+    out.weekendRentWithoutGst24Hour = s.withoutGst;
+  }
+  return out;
+}
+
+/**
  * Recompute rentWithoutGst* for every vehicle of the branch and every
  * BranchPricingDefaults row of the branch from the GST-inclusive totals
  * (totalRent*, else price*), with the given rates — same arithmetic as
  * splitRentTotal: CGST and SGST each rounded half-up to paise. Rows priced
- * before totalRent* existed get it filled from price*. Returns rows updated.
+ * before totalRent* existed get it filled from price*. The weekend rents'
+ * weekendRentWithoutGst* follow (null while no weekend rent is set). Returns
+ * rows updated.
  */
 export async function recomputeBranchRentWithoutGst(
   branchId: number,
@@ -90,6 +130,12 @@ export async function recomputeBranchRentWithoutGst(
            "rentWithoutGst12Hour" = COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2))
              - ROUND(COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2)) * ${c} / 100, 2)
              - ROUND(COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2)) * ${s} / 100, 2),
+           "weekendRentWithoutGst24Hour" = p."weekendTotalRent24Hour"
+             - ROUND(p."weekendTotalRent24Hour" * ${c} / 100, 2)
+             - ROUND(p."weekendTotalRent24Hour" * ${s} / 100, 2),
+           "weekendRentWithoutGst12Hour" = p."weekendTotalRent12Hour"
+             - ROUND(p."weekendTotalRent12Hour" * ${c} / 100, 2)
+             - ROUND(p."weekendTotalRent12Hour" * ${s} / 100, 2),
            "updatedAt" = NOW()
       FROM "Vehicle" v
      WHERE v."id" = p."vehicleId" AND v."branchId" = ${branchId}`;
@@ -103,6 +149,12 @@ export async function recomputeBranchRentWithoutGst(
            "rentWithoutGst12Hour" = COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2))
              - ROUND(COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2)) * ${c} / 100, 2)
              - ROUND(COALESCE(p."totalRent12Hour", ROUND(p."price12Hour"::numeric, 2)) * ${s} / 100, 2),
+           "weekendRentWithoutGst24Hour" = p."weekendTotalRent24Hour"
+             - ROUND(p."weekendTotalRent24Hour" * ${c} / 100, 2)
+             - ROUND(p."weekendTotalRent24Hour" * ${s} / 100, 2),
+           "weekendRentWithoutGst12Hour" = p."weekendTotalRent12Hour"
+             - ROUND(p."weekendTotalRent12Hour" * ${c} / 100, 2)
+             - ROUND(p."weekendTotalRent12Hour" * ${s} / 100, 2),
            "updatedAt" = NOW()
      WHERE p."branchId" = ${branchId}`;
   return { vehicles, defaults };

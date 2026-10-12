@@ -22,7 +22,10 @@ import {
   selectBasePrice,
   type BasePriceSelection,
   type BilledAsType,
+  type WeekendBreakdown,
+  type WeekendContext,
 } from "../../services/pricing/base-price-rule.js";
+import { getBranchesWeekendDays } from "../../services/pricing/branch-weekend-days.service.js";
 
 interface VehicleRef {
   id: number;
@@ -35,6 +38,9 @@ interface PricingRow {
   price12Hour: number | null;
   price24Hour: number;
   priceMonthly: number | null;
+  /** Weekend rents (GST-inclusive); null = the weekday rent */
+  weekendPrice12Hour: number | null;
+  weekendPrice24Hour: number | null;
 }
 
 /** Converts a Prisma Decimal to a number, returning null if the value is 0 or unset.
@@ -61,6 +67,16 @@ const rent12Hour = (row: RentRow): number | null =>
 const rent24Hour = (row: RentRow): number =>
   toPositiveOrNull(row.totalRent24Hour) ?? Number(row.price24Hour);
 
+/** The optional weekend rents (weekend-wise pricing; null / 0 = the weekday rent). */
+type WeekendRentRow = {
+  weekendTotalRent12Hour?: { toNumber?: () => number } | null;
+  weekendTotalRent24Hour?: { toNumber?: () => number } | null;
+};
+const weekendRents = (row: WeekendRentRow) => ({
+  weekendPrice12Hour: toPositiveOrNull(row.weekendTotalRent12Hour),
+  weekendPrice24Hour: toPositiveOrNull(row.weekendTotalRent24Hour),
+});
+
 /** The GST inside a GST-inclusive listing price, by the branch rule (absent without one). */
 async function branchRentSplitter(
   branchIds: number[],
@@ -85,9 +101,10 @@ async function branchRentSplitter(
 /**
  * Same slab rule as PricingEngineService.determineBasePrice (shared
  * base-price-rule.ts): an hourly rate is capped at the 12 h / 24 h slab price,
- * so listing and booking prices always agree. Free km are not needed here.
+ * and weekend blocks take the weekend rents, so listing and booking prices
+ * always agree. Free km are not needed here.
  */
-function selectPrice(pricing: PricingRow, duration: RentalDuration): BasePriceSelection {
+function selectPrice(pricing: PricingRow, duration: RentalDuration, weekend?: WeekendContext): BasePriceSelection {
   const toDecimal = (n: number | null) => (n != null && n > 0 ? new Decimal(n) : null);
   return selectBasePrice(
     {
@@ -98,8 +115,11 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): BasePriceSe
       freeKm12Hour: 0,
       freeKm24Hour: 0,
       freeKmMonthly: 0,
+      weekendPrice12Hour: toDecimal(pricing.weekendPrice12Hour),
+      weekendPrice24Hour: toDecimal(pricing.weekendPrice24Hour),
     },
     duration,
+    weekend,
   );
 }
 
@@ -122,6 +142,8 @@ export interface ListingPrice {
   discountPercent?: number;
   /** The slab's manager-set label, e.g. "Weekly" (null when the slab has none). */
   discountLabel?: string | null;
+  /** Weekend rates inside price (absent when none applies). */
+  weekend?: WeekendBreakdown;
 }
 
 /**
@@ -132,7 +154,8 @@ export interface ListingPrice {
  * @param duration  Pre-computed RentalDuration — same for all vehicles in a single search
  * @param window    The searched pickup → return: at a branch where it is the 12-hour
  *                  package held to closing (client item 6) the price is the full 12 hours,
- *                  as the booking engine bills it
+ *                  as the booking engine bills it; it also places the blocks on the
+ *                  calendar for the branch's weekend rents
  * @returns Map<vehicleId, ListingPrice>
  */
 export async function getBatchListingPrices(
@@ -160,6 +183,9 @@ export async function getBatchListingPrices(
       : null;
 
   const vehicleIds = vehicles.map((v) => v.id);
+  const weekendDaysByBranch = window
+    ? await getBranchesWeekendDays(vehicles.map((v) => v.branchId))
+    : new Map<number, number[]>();
 
   // Query 1: custom pricing (enabled vehicles override branch defaults)
   const customPricings = await prisma.vehicleCustomPricing.findMany({
@@ -171,6 +197,8 @@ export async function getBatchListingPrices(
       price24Hour: true,
       totalRent12Hour: true,
       totalRent24Hour: true,
+      weekendTotalRent12Hour: true,
+      weekendTotalRent24Hour: true,
       priceMonthly: true,
     },
   });
@@ -182,6 +210,7 @@ export async function getBatchListingPrices(
       price12Hour:  rent12Hour(cp),
       price24Hour:  rent24Hour(cp),
       priceMonthly: toPositiveOrNull(cp.priceMonthly),
+      ...weekendRents(cp),
     });
   }
 
@@ -211,6 +240,8 @@ export async function getBatchListingPrices(
         price24Hour: true,
         totalRent12Hour: true,
         totalRent24Hour: true,
+        weekendTotalRent12Hour: true,
+        weekendTotalRent24Hour: true,
         priceMonthly: true,
       },
     });
@@ -221,13 +252,14 @@ export async function getBatchListingPrices(
         price12Hour:  rent12Hour(bd),
         price24Hour:  rent24Hour(bd),
         priceMonthly: toPositiveOrNull(bd.priceMonthly),
+        ...weekendRents(bd),
       });
     }
   }
 
   // Build base price map
   const basePriceMap = new Map<number, number>();
-  const billedAsMap = new Map<number, { billedAs: string; billedAsType: BilledAsType }>();
+  const billedAsMap = new Map<number, { billedAs: string; billedAsType: BilledAsType; weekend?: WeekendBreakdown }>();
   for (const v of vehicles) {
     const pricing = customMap.get(v.id) ?? defaultMap.get(`${v.branchId}:${v.categoryId}`);
     if (!pricing) {
@@ -237,9 +269,18 @@ export async function getBatchListingPrices(
     const selection = selectPrice(
       pricing,
       halfDayDuration && clampedBranches.has(v.branchId) ? halfDayDuration : duration,
+      window && {
+        startAt: window.startAt.toJSDate(),
+        endAt: window.endAt.toJSDate(),
+        weekendDays: weekendDaysByBranch.get(v.branchId) ?? [],
+      },
     );
     basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));
-    billedAsMap.set(v.id, { billedAs: selection.billedAs, billedAsType: selection.billedAsType });
+    billedAsMap.set(v.id, {
+      billedAs: selection.billedAs,
+      billedAsType: selection.billedAsType,
+      ...(selection.weekend && { weekend: selection.weekend }),
+    });
   }
 
   // ── Apply duration discounts (2 extra queries for all branches) ────────────
@@ -322,13 +363,22 @@ export async function getBatchListingPrices(
   return result;
 }
 
+/** Listing prices without dates: the weekday rates (+ the weekend 24-hour rent when it differs). */
+export interface FallbackPrice {
+  daily: number;
+  hourly: number;
+  halfDay: number;
+  /** Weekend 24-hour rent — only when set and different from `daily` */
+  weekendDaily?: number;
+}
+
 /**
  * Fallback: fetch base 24-hour prices for vehicles when no date range is selected.
  * Used for the listing page "browse without dates" mode.
  */
 export async function getBatchFallbackPrices(
   vehicles: VehicleRef[],
-): Promise<Map<number, { daily: number; hourly: number; halfDay: number }>> {
+): Promise<Map<number, FallbackPrice>> {
   if (vehicles.length === 0) return new Map();
 
   const vehicleIds = vehicles.map((v) => v.id);
@@ -337,7 +387,7 @@ export async function getBatchFallbackPrices(
     where: { vehicleId: { in: vehicleIds }, enabled: true },
     select: {
       vehicleId: true, extraHourRate: true, price12Hour: true, price24Hour: true,
-      totalRent12Hour: true, totalRent24Hour: true,
+      totalRent12Hour: true, totalRent24Hour: true, weekendTotalRent12Hour: true, weekendTotalRent24Hour: true,
     },
   });
   const customMap = new Map<number, PricingRow>();
@@ -347,6 +397,7 @@ export async function getBatchFallbackPrices(
       price12Hour:  rent12Hour(cp),
       price24Hour:  rent24Hour(cp),
       priceMonthly: null,
+      ...weekendRents(cp),
     });
   }
 
@@ -368,7 +419,7 @@ export async function getBatchFallbackPrices(
       },
       select: {
         branchId: true, categoryId: true, extraHourRate: true, price12Hour: true, price24Hour: true,
-        totalRent12Hour: true, totalRent24Hour: true,
+        totalRent12Hour: true, totalRent24Hour: true, weekendTotalRent12Hour: true, weekendTotalRent24Hour: true,
       },
     });
     for (const bd of branchDefaults) {
@@ -377,18 +428,27 @@ export async function getBatchFallbackPrices(
         price12Hour:  rent12Hour(bd),
         price24Hour:  rent24Hour(bd),
         priceMonthly: null,
+        ...weekendRents(bd),
       });
     }
   }
 
-  const result = new Map<number, { daily: number; hourly: number; halfDay: number }>();
+  // A weekend rent is only shown where the branch has weekend days to charge it on
+  const anyWeekendRent = [...customMap.values(), ...defaultMap.values()].some((p) => p.weekendPrice24Hour != null);
+  const weekendDaysByBranch = anyWeekendRent
+    ? await getBranchesWeekendDays(vehicles.map((v) => v.branchId))
+    : new Map<number, number[]>();
+
+  const result = new Map<number, FallbackPrice>();
   for (const v of vehicles) {
     const p = customMap.get(v.id) ?? defaultMap.get(`${v.branchId}:${v.categoryId}`);
     const daily = p?.price24Hour ?? 0;
+    const weekendDaily = (weekendDaysByBranch.get(v.branchId)?.length ?? 0) > 0 ? p?.weekendPrice24Hour : null;
     result.set(v.id, {
       daily,
       hourly:  p?.hourlyRate  ?? daily / 24,
       halfDay: p?.price12Hour ?? daily / 2,
+      ...(weekendDaily != null && weekendDaily !== daily && { weekendDaily }),
     });
   }
 

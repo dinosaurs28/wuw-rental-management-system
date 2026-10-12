@@ -3,9 +3,10 @@ import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
-import type { DiscountRule, DiscountScope, DiscountType, Role } from "@repo/database/client";
+import type { DiscountRule, DiscountScope, DiscountType, Prisma, Role } from "@repo/database/client";
 import { DateTime } from "luxon";
 import { discountRuleIssues } from "@repo/schemas";
+import { couponValidationService } from "./coupon-validation.service.js";
 
 type DiscountRuleWithMeta = DiscountRule & {
   createdBy: { name: string; publicId: string };
@@ -76,6 +77,111 @@ export const istEndOfDay = (d: Date): Date => DateTime.fromJSDate(d).setZone(IST
 
 const isUniqueViolation = (err: unknown) => (err as { code?: string } | null)?.code === "P2002";
 
+/** A typed coupon code that can't be saved — answered as 409 { code, message }. */
+export class CouponCodeConflictError extends Error {
+  constructor(public readonly code: "COUPON_CODE_TAKEN" | "COUPON_CODE_LOCKED") {
+    super(
+      code === "COUPON_CODE_TAKEN"
+        ? "This coupon code is already in use. Choose another."
+        : "This coupon has already been used, so its code can't be changed.",
+    );
+    this.name = "CouponCodeConflictError";
+  }
+}
+
+/** Throws COUPON_CODE_TAKEN when another rule already has this code, in any letter case. */
+export async function assertCouponCodeFree(
+  code: string,
+  excludeRuleId?: number,
+  db: Pick<typeof prisma, "discountRule"> = prisma,
+): Promise<void> {
+  const clash = await db.discountRule.findFirst({
+    where: {
+      code: { equals: code, mode: "insensitive" },
+      ...(excludeRuleId !== undefined && { id: { not: excludeRuleId } }),
+    },
+    select: { id: true },
+  });
+  if (clash) throw new CouponCodeConflictError("COUPON_CODE_TAKEN");
+}
+
+/**
+ * Rules whose code can no longer change: the coupon is on a booking or a bill
+ * (CouponUsageLog, Booking, DiscountApplication, or a live counter-coupon line
+ * on a pickup bill), so customers, invoices and the ledger already know it.
+ */
+export async function codeLockedRuleIds(
+  rules: { id: number; publicId: string }[],
+  db: Pick<typeof prisma, "couponUsageLog" | "booking" | "discountApplication" | "ledgerEntry"> = prisma,
+): Promise<Set<number>> {
+  if (rules.length === 0) return new Set();
+  const ids = rules.map((r) => r.id);
+  const where = { discountRuleId: { in: ids } };
+  const [logs, bookings, applications, counterLines] = await Promise.all([
+    db.couponUsageLog.findMany({ where, select: { discountRuleId: true }, distinct: ["discountRuleId"] }),
+    db.booking.findMany({ where, select: { discountRuleId: true }, distinct: ["discountRuleId"] }),
+    db.discountApplication.findMany({ where, select: { discountRuleId: true }, distinct: ["discountRuleId"] }),
+    db.ledgerEntry.findMany({
+      // referenceType = COUNTER_COUPON_REF (counter-coupon.service), referenceId = rule publicId
+      where: { referenceType: "DISCOUNT_RULE", referenceId: { in: rules.map((r) => r.publicId) }, isVoided: false },
+      select: { referenceId: true },
+      distinct: ["referenceId"],
+    }),
+  ]);
+  const locked = new Set<number>();
+  for (const row of [...logs, ...bookings, ...applications]) {
+    if (row.discountRuleId != null) locked.add(row.discountRuleId);
+  }
+  const counterRefs = new Set(counterLines.map((l) => l.referenceId));
+  for (const r of rules) if (counterRefs.has(r.publicId)) locked.add(r.id);
+  return locked;
+}
+
+/**
+ * Saves a rule update that may also change its code. A new code is checked
+ * under the rule's row lock (the lock a booking takes before recording a use):
+ * the coupon must still be unused and the code free. Offer posters store the
+ * code string, so they move to the new code in the same transaction.
+ */
+export async function updateRuleWithCode(
+  rule: { id: number; publicId: string; code: string },
+  newCode: string | undefined,
+  data: Prisma.DiscountRuleUpdateInput,
+): Promise<DiscountRule> {
+  if (!newCode || newCode === rule.code) {
+    return prisma.discountRule.update({ where: { id: rule.id }, data });
+  }
+
+  const { updated, posterBranches } = await prisma
+    .$transaction(async (tx) => {
+      await couponValidationService.lockRule(tx, rule.id);
+      if ((await codeLockedRuleIds([rule], tx)).has(rule.id)) {
+        throw new CouponCodeConflictError("COUPON_CODE_LOCKED");
+      }
+      await assertCouponCodeFree(newCode, rule.id, tx);
+      const updated = await tx.discountRule.update({ where: { id: rule.id }, data: { ...data, code: newCode } });
+      const posters = await tx.promoBanner.findMany({
+        where: { couponCode: rule.code },
+        select: { branch: { select: { publicId: true } } },
+      });
+      if (posters.length > 0) {
+        await tx.promoBanner.updateMany({ where: { couponCode: rule.code }, data: { couponCode: newCode } });
+      }
+      return { updated, posterBranches: posters.map((p) => p.branch?.publicId ?? null) };
+    })
+    .catch((err) => {
+      if (isUniqueViolation(err)) throw new CouponCodeConflictError("COUPON_CODE_TAKEN");
+      throw err;
+    });
+
+  if (posterBranches.length > 0) {
+    // Imported here so this service doesn't load the poster image/R2 stack at startup
+    const { invalidatePublicOffers } = await import("../promo-banner/promo-banner.service.js");
+    for (const branchPublicId of new Set(posterBranches)) await invalidatePublicOffers(branchPublicId);
+  }
+  return updated;
+}
+
 const num = (v: { toString(): string } | number | null | undefined): number | undefined =>
   v == null ? undefined : Number(v.toString());
 
@@ -118,12 +224,7 @@ function assertRuleIsValid(r: {
 class DiscountRuleService {
   async createRule(input: CreateDiscountRuleInput, actor: ActorContext): Promise<DiscountRule> {
     const code = input.code.toUpperCase().trim();
-    const existing = await prisma.discountRule.findUnique({
-      where: { code },
-    });
-    if (existing) {
-      throw new Error(`Coupon code "${code}" already exists.`);
-    }
+    await assertCouponCodeFree(code);
 
     assertRuleIsValid({
       ...input,
@@ -169,7 +270,7 @@ class DiscountRuleService {
         createdById: actor.actorId,
       },
     }).catch((err) => {
-      if (isUniqueViolation(err)) throw new Error(`Coupon code "${code}" already exists.`);
+      if (isUniqueViolation(err)) throw new CouponCodeConflictError("COUPON_CODE_TAKEN");
       throw err;
     });
 
@@ -209,13 +310,9 @@ class DiscountRuleService {
     const existing = await prisma.discountRule.findUnique({ where: { publicId } });
     if (!existing) throw new Error("Discount rule not found.");
 
-    // If updating the code, ensure uniqueness
-    if (input.code && input.code.toUpperCase() !== existing.code) {
-      const codeConflict = await prisma.discountRule.findUnique({
-        where: { code: input.code.toUpperCase().trim() },
-      });
-      if (codeConflict) throw new Error(`Coupon code "${input.code}" already exists.`);
-    }
+    // A new code — allowed only while the coupon is unused, and it must be free
+    // in any letter case — is checked and saved by updateRuleWithCode
+    const newCode = input.code ? input.code.toUpperCase().trim() : undefined;
 
     // Validate the rule as it will be after the patch, not just the fields sent
     // (e.g. value 500 on a PERCENTAGE rule, or Valid To moved before Valid From)
@@ -239,53 +336,46 @@ class DiscountRuleService {
       maxBookingCount: pick("maxBookingCount", existing.maxBookingCount) as any,
     });
 
-    const updated = await prisma.discountRule.update({
-      where: { publicId },
-      data: {
-        ...(input.code && { code: input.code.toUpperCase().trim() }),
-        ...(input.name && { name: input.name }),
-        ...(input.description !== undefined && { description: input.description }),
-        ...(input.discountType && { discountType: input.discountType }),
-        ...(input.value != null && { value: new Decimal(input.value) }),
-        ...(input.maxDiscountCap !== undefined && {
-          maxDiscountCap: input.maxDiscountCap != null ? new Decimal(input.maxDiscountCap) : null,
-        }),
-        ...(input.scope && { scope: input.scope }),
-        ...(input.applicableBranchIds && { applicableBranchIds: input.applicableBranchIds }),
-        ...(input.targetCustomerIds && { targetCustomerIds: input.targetCustomerIds }),
-        ...(input.newCustomersOnly !== undefined && { newCustomersOnly: input.newCustomersOnly }),
-        ...(input.minBookingCount !== undefined && { minBookingCount: input.minBookingCount }),
-        ...(input.maxBookingCount !== undefined && { maxBookingCount: input.maxBookingCount }),
-        ...(input.minBookingAmount !== undefined && {
-          minBookingAmount: input.minBookingAmount != null ? new Decimal(input.minBookingAmount) : null,
-        }),
-        ...(input.maxBookingAmount !== undefined && {
-          maxBookingAmount: input.maxBookingAmount != null ? new Decimal(input.maxBookingAmount) : null,
-        }),
-        ...(input.applicableVehicleCategoryIds && { applicableVehicleCategoryIds: input.applicableVehicleCategoryIds }),
-        ...(input.minRentalDays !== undefined && { minRentalDays: input.minRentalDays }),
-        ...(input.maxRentalDays !== undefined && { maxRentalDays: input.maxRentalDays }),
-        ...(input.applicablePaymentPlans && { applicablePaymentPlans: input.applicablePaymentPlans }),
-        ...(input.allowPartialPayment !== undefined && { allowPartialPayment: input.allowPartialPayment }),
-        ...(input.minAdvanceAfterDiscount !== undefined && {
-          minAdvanceAfterDiscount: input.minAdvanceAfterDiscount != null ? new Decimal(input.minAdvanceAfterDiscount) : null,
-        }),
-        ...(input.allowPostBooking !== undefined && { allowPostBooking: input.allowPostBooking }),
-        ...(input.allowPostInvoice !== undefined && { allowPostInvoice: input.allowPostInvoice }),
-        ...(input.totalUsageLimit !== undefined && { totalUsageLimit: input.totalUsageLimit }),
-        ...(input.perUserLimit !== undefined && { perUserLimit: input.perUserLimit }),
-        ...(input.perBranchLimit !== undefined && { perBranchLimit: input.perBranchLimit }),
-        ...(input.perDayLimit !== undefined && { perDayLimit: input.perDayLimit }),
-        ...(input.stackable !== undefined && { stackable: input.stackable }),
-        ...(input.priority !== undefined && { priority: input.priority }),
-        ...(input.startDate && { startDate }),
-        ...(input.endDate && { endDate }),
-        // Reactivation only — deactivating goes through deactivateRule
-        ...(input.isActive === true && { isActive: true }),
-      },
-    }).catch((err) => {
-      if (isUniqueViolation(err)) throw new Error(`Coupon code "${input.code}" already exists.`);
-      throw err;
+    const updated = await updateRuleWithCode(existing, newCode, {
+      ...(input.name && { name: input.name }),
+      ...(input.description !== undefined && { description: input.description }),
+      ...(input.discountType && { discountType: input.discountType }),
+      ...(input.value != null && { value: new Decimal(input.value) }),
+      ...(input.maxDiscountCap !== undefined && {
+        maxDiscountCap: input.maxDiscountCap != null ? new Decimal(input.maxDiscountCap) : null,
+      }),
+      ...(input.scope && { scope: input.scope }),
+      ...(input.applicableBranchIds && { applicableBranchIds: input.applicableBranchIds }),
+      ...(input.targetCustomerIds && { targetCustomerIds: input.targetCustomerIds }),
+      ...(input.newCustomersOnly !== undefined && { newCustomersOnly: input.newCustomersOnly }),
+      ...(input.minBookingCount !== undefined && { minBookingCount: input.minBookingCount }),
+      ...(input.maxBookingCount !== undefined && { maxBookingCount: input.maxBookingCount }),
+      ...(input.minBookingAmount !== undefined && {
+        minBookingAmount: input.minBookingAmount != null ? new Decimal(input.minBookingAmount) : null,
+      }),
+      ...(input.maxBookingAmount !== undefined && {
+        maxBookingAmount: input.maxBookingAmount != null ? new Decimal(input.maxBookingAmount) : null,
+      }),
+      ...(input.applicableVehicleCategoryIds && { applicableVehicleCategoryIds: input.applicableVehicleCategoryIds }),
+      ...(input.minRentalDays !== undefined && { minRentalDays: input.minRentalDays }),
+      ...(input.maxRentalDays !== undefined && { maxRentalDays: input.maxRentalDays }),
+      ...(input.applicablePaymentPlans && { applicablePaymentPlans: input.applicablePaymentPlans }),
+      ...(input.allowPartialPayment !== undefined && { allowPartialPayment: input.allowPartialPayment }),
+      ...(input.minAdvanceAfterDiscount !== undefined && {
+        minAdvanceAfterDiscount: input.minAdvanceAfterDiscount != null ? new Decimal(input.minAdvanceAfterDiscount) : null,
+      }),
+      ...(input.allowPostBooking !== undefined && { allowPostBooking: input.allowPostBooking }),
+      ...(input.allowPostInvoice !== undefined && { allowPostInvoice: input.allowPostInvoice }),
+      ...(input.totalUsageLimit !== undefined && { totalUsageLimit: input.totalUsageLimit }),
+      ...(input.perUserLimit !== undefined && { perUserLimit: input.perUserLimit }),
+      ...(input.perBranchLimit !== undefined && { perBranchLimit: input.perBranchLimit }),
+      ...(input.perDayLimit !== undefined && { perDayLimit: input.perDayLimit }),
+      ...(input.stackable !== undefined && { stackable: input.stackable }),
+      ...(input.priority !== undefined && { priority: input.priority }),
+      ...(input.startDate && { startDate }),
+      ...(input.endDate && { endDate }),
+      // Reactivation only — deactivating goes through deactivateRule
+      ...(input.isActive === true && { isActive: true }),
     });
 
     await auditService.log({
@@ -378,8 +468,24 @@ class DiscountRuleService {
    * All limits (value cap, validity, usage limit, daily count) come from
    * BranchDiscountConfig — managers cannot exceed them regardless of input.
    */
+  /** A free branch-prefixed code (e.g. MANI-7KQ2XP) — what a manager gets when they don't type one. */
+  async generateManagerCouponCode(branchId: number): Promise<string> {
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { name: true },
+    });
+    // Import generator inline to avoid circular dep
+    const { couponCodeGeneratorService, branchCouponPrefix } = await import("./coupon-code-generator.service.js");
+    return couponCodeGeneratorService.generateCode({
+      pattern: "BRANCH_PREFIX",
+      branchCode: branchCouponPrefix(branch?.name),
+      length: 6,
+    });
+  }
+
   async createManagerCoupon(
     input: {
+      code?: string;
       discountType: "PERCENTAGE" | "FLAT";
       value: number;
       name: string;
@@ -439,20 +545,10 @@ class DiscountRuleService {
       );
     }
 
-    // ── Generate a unique branch-prefixed code ──────────────────────────────
-    const branch = await prisma.branch.findUnique({
-      where: { id: branchId },
-      select: { name: true },
-    });
-    const branchPrefix = (branch?.name ?? "BR").replace(/\s+/g, "").toUpperCase().slice(0, 4);
-
-    // Import generator inline to avoid circular dep
-    const { couponCodeGeneratorService } = await import("./coupon-code-generator.service.js");
-    const code = await couponCodeGeneratorService.generateCode({
-      pattern: "BRANCH_PREFIX",
-      branchCode: branchPrefix,
-      length: 6,
-    });
+    // ── Code: the one the manager typed (already normalised + pattern-checked
+    // by the request schema), or — older clients send none — a generated one ──
+    const code = input.code ?? (await this.generateManagerCouponCode(branchId));
+    if (input.code) await assertCouponCodeFree(code);
 
     // Valid from now through the end (23:59:59.999 IST) of the last validity day
     const now = new Date();
@@ -490,6 +586,9 @@ class DiscountRuleService {
         isActive: true,
         createdById: actor.actorId,
       },
+    }).catch((err) => {
+      if (isUniqueViolation(err)) throw new CouponCodeConflictError("COUPON_CODE_TAKEN");
+      throw err;
     });
 
     await auditService.log({

@@ -11,6 +11,22 @@ type Db = Pick<typeof prisma, "discountRule" | "booking" | "couponUsageLog" | "$
 /** Canonical form of a coupon code as stored on DiscountRule.code. */
 export const normalizeCouponCode = (code: string): string => code.trim().toUpperCase();
 
+/**
+ * The code to re-price a booking's own coupon with: its rule's current code,
+ * found by discountRuleId (so a coupon whose code changed still resolves),
+ * else the code stored on the booking.
+ */
+export async function bookingCouponCode(
+  booking: { couponCode: string | null; discountRuleId: number | null },
+  db: Pick<typeof prisma, "discountRule"> = prisma,
+): Promise<string | undefined> {
+  if (booking.discountRuleId != null) {
+    const rule = await db.discountRule.findUnique({ where: { id: booking.discountRuleId }, select: { code: true } });
+    if (rule) return rule.code;
+  }
+  return booking.couponCode ?? undefined;
+}
+
 export interface CouponValidationContext {
   branchId: number;
   customerId: number;
@@ -54,6 +70,17 @@ class CouponValidationService {
    */
   async lockRule(tx: Pick<typeof prisma, "$queryRaw">, ruleId: number): Promise<void> {
     await tx.$queryRaw`SELECT id FROM "DiscountRule" WHERE id = ${ruleId} FOR UPDATE`;
+  }
+
+  /**
+   * lockRule that also returns the rule's code as of the lock (null when the
+   * rule is gone). A booking written in the same transaction stores this code:
+   * a code change (allowed only while the coupon is unused, under this same
+   * lock) has then either committed already or waits and sees the booking.
+   */
+  async lockRuleCode(tx: Pick<typeof prisma, "$queryRaw">, ruleId: number): Promise<string | null> {
+    const rows = await tx.$queryRaw<{ code: string }[]>`SELECT code FROM "DiscountRule" WHERE id = ${ruleId} FOR UPDATE`;
+    return rows[0]?.code ?? null;
   }
 
   async validate(

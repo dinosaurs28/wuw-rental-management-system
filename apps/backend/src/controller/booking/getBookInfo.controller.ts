@@ -376,6 +376,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     const items: any = [];
+    // The branch's weekend days the items were priced with (stored in pricingSnapshot)
+    let weekendDays: number[] | null = null;
 
     // GST Rule Fetching — branchId is resolved from either directly-referenced vehicles
     // or from the parsed groupKey (for pure group-key bookings)
@@ -633,8 +635,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           extraKmRate: Number(pricingResult.extraKmRate.toString()),
           billedAs: pricingResult.pricingBreakdown.billedAs,
           billedAsType: pricingResult.pricingBreakdown.billedAsType,
+          // Weekend rates charged (weekend-wise pricing; absent when none)
+          ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
         },
       });
+      weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
 
       grandBaseTotal += baseTotal;
       grandDiscountTotal += discountAmount;
@@ -928,8 +933,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             extraKmRate:   Number(pricingResult.extraKmRate.toString()),
             billedAs:      pricingResult.pricingBreakdown.billedAs,
             billedAsType:  pricingResult.pricingBreakdown.billedAsType,
+            ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
           },
         });
+        weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
       }
 
       // Race-condition guard: re-validate type-class limit inside the transaction
@@ -952,6 +959,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           code: "VEHICLE_TYPE_LIMIT_EXCEEDED",
           conflicts: txTypeClassConflicts,
         });
+      }
+
+      // Lock the coupon's rule before the booking names it, and keep the code read
+      // under that lock: a code change takes the same lock and goes through only
+      // while no booking uses the coupon, so it has either committed already (this
+      // booking stores the new code) or waits and then sees this booking.
+      const couponLine = couponItem();
+      if (couponLine?.couponRuleId) {
+        const lockedCode = await couponValidationService.lockRuleCode(tx, couponLine.couponRuleId);
+        if (lockedCode) couponLine.appliedCouponCode = lockedCode;
       }
 
       const newBooking = await tx.booking.create({
@@ -991,6 +1008,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             items,
             // 12-hour package held to closing (client item 6): re-prices bill it as 12 hours
             ...(heldToClosing && { heldToClosing: true }),
+            // The weekend days it was priced with: re-prices bill weekend blocks by them
+            weekendDays: weekendDays ?? [],
             totals: {
               grandBaseTotal,
               grandDiscountTotal,

@@ -15,13 +15,20 @@ export const vehiclePricingKey = (vehicleId: number): string =>
 
 // ── Pricing config cache keys (TASK-006) ──────────────────────────────────────
 
-/** VehicleCustomPricing record for a vehicle. TTL 300s. Invalidate on vehicleCustomPricing update. */
+/**
+ * VehicleCustomPricing record for a vehicle. TTL 300s. Invalidate on vehicleCustomPricing update.
+ * "v2": the row carries the weekend rents — a row cached without them is never read back.
+ */
 export const vehiclePricingConfigKey = (vehicleId: number): string =>
-  `pricing-config:vehicle:${vehicleId}`;
+  `pricing-config:vehicle:${vehicleId}:v2`;
 
-/** BranchPricingDefaults for a branch+category combination. TTL 300s. */
+/** BranchPricingDefaults for a branch+category combination. TTL 300s. "v2": with the weekend rents. */
 export const branchPricingDefaultsKey = (branchId: number, categoryId: number): string =>
-  `pricing-defaults:branch:${branchId}:cat:${categoryId}`;
+  `pricing-defaults:branch:${branchId}:cat:${categoryId}:v2`;
+
+/** Branch.weekendDays (weekend-wise pricing). TTL 300s. Invalidate when the branch saves them. */
+export const branchWeekendDaysKey = (branchId: number): string =>
+  `weekend-days:branch:${branchId}`;
 
 /** GSTRule for a branch. TTL 600s. Invalidate on GST rule update. */
 export const gstRuleKey = (branchId: number): string =>
@@ -42,11 +49,11 @@ export const durationDiscountSlabKey = (branchId: number, days: number): string 
 /**
  * Full PricingResult for a vehicle+time window. TTL 60s. Invalidate on booking change. (TASK-017)
  * "v2": results priced on the GST-inclusive rent (item 17); "v3": the Extra Hour
- * Rate became the one hourly rate — a result cached by an older release is never
- * read back.
+ * Rate became the one hourly rate; "v4": weekend rates (pricingBreakdown.weekend)
+ * — a result cached by an older release is never read back.
  */
 export const vehicleDetailsPricingKey = (vehicleId: number, startIso: string, endIso: string): string =>
-  `pricing-result:vehicle:${vehicleId}:v3:${startIso}:${endIso}`;
+  `pricing-result:vehicle:${vehicleId}:v4:${startIso}:${endIso}`;
 
 /**
  * TASK-019: Delete availability cache for a set of vehicles.

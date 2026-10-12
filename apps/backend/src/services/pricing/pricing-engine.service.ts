@@ -13,7 +13,13 @@ import {
   type DiscountEvaluationResult,
 } from "../discount/discount-evaluation-engine.service.js";
 import { redis } from "../../lib/redisconfig.js";
-import { selectBasePrice, type BilledAsType } from "./base-price-rule.js";
+import {
+  selectBasePrice,
+  type BilledAsType,
+  type WeekendBreakdown,
+  type WeekendContext,
+} from "./base-price-rule.js";
+import { getBranchWeekendDays } from "./branch-weekend-days.service.js";
 import {
   vehiclePricingConfigKey,
   branchPricingDefaultsKey,
@@ -40,6 +46,9 @@ export interface VehiclePricing {
   freeKmMonthly: number;
   extraKmRate: Decimal;
   extraHourRate: Decimal;
+  /** Weekend 12 h / 24 h rent (GST-inclusive); null = the weekday rent */
+  weekendPrice12Hour: Decimal | null;
+  weekendPrice24Hour: Decimal | null;
 }
 
 /**
@@ -65,6 +74,14 @@ function inclusiveRent(
 ): Decimal | null {
   const total = optionalRate((slab === "12" ? row.totalRent12Hour : row.totalRent24Hour) as any);
   return total ?? optionalRate((slab === "12" ? row.price12Hour : row.price24Hour) as any);
+}
+
+/** The optional weekend 12 h / 24 h rent of a pricing row (null / 0 / absent = the weekday rent). */
+function weekendRent(
+  row: { weekendTotalRent12Hour?: unknown; weekendTotalRent24Hour?: unknown },
+  slab: "12" | "24",
+): Decimal | null {
+  return optionalRate((slab === "12" ? row.weekendTotalRent12Hour : row.weekendTotalRent24Hour) as any);
 }
 
 const ZERO_DEC = new Decimal(0);
@@ -177,6 +194,10 @@ export interface PricingResult {
     /** What the price actually covers, e.g. "5 hours", "12 hours", "1 day", "2 days + 12 hours". */
     billedAs: string;
     billedAsType: BilledAsType;
+    /** The weekend days the window was priced with (ISO 1 = Mon … 7 = Sun; empty = none) */
+    weekendDays: number[];
+    /** Weekend rates in the price (absent when no block was billed at one) */
+    weekend?: WeekendBreakdown;
   };
 }
 
@@ -203,6 +224,13 @@ export interface PricingDiscountOptions {
    * NEW quote / booking: recognised from the window and the branch's hours.
    */
   heldToClosing?: boolean;
+  /**
+   * Weekend-wise pricing: the weekend days an EXISTING booking is re-priced
+   * with (weekendDaysOf(pricingSnapshot) — empty for a booking made before
+   * weekend rates, which keeps its weekday prices). Omitted = a NEW quote /
+   * booking: the branch's current weekend days.
+   */
+  weekendDays?: number[];
 }
 
 /**
@@ -211,6 +239,14 @@ export interface PricingDiscountOptions {
  * that re-prices an existing booking passes this as `heldToClosing`.
  */
 export { heldToClosingOf } from "../../utils/booking/halfDayPackage.js";
+
+/**
+ * The weekend days an existing booking is re-priced with (pricingSnapshot.
+ * weekendDays, stored at create; none for a booking made before weekend
+ * rates). Every path that re-prices an existing booking passes this as
+ * `weekendDays`.
+ */
+export { weekendDaysOf } from "../../utils/pricing/weekendRule.js";
 
 /**
  * Rent GST result: the GST-inclusive rent before / after discounts split into
@@ -282,9 +318,13 @@ export class PricingEngineService {
         this.getDepositAmount(vehicleId, branchId, resolvedCategoryId),
       ]);
 
-      // 4. Determine base price based on duration
-      const { basePrice, freeKmLimit, priceSource, billedAs, billedAsType } =
-        await this.determineBasePrice(pricing, duration, vehicleId, branchId);
+      // 4. Determine base price based on duration (weekend blocks at the weekend rents)
+      //    — classified on the real return: a 12-hour package held to closing is
+      //    billed to pickup + 12 h but is weekday / weekend by its real hours
+      const weekendDays = discountOptions?.weekendDays ?? await getBranchWeekendDays(branchId);
+      const weekendContext = { startAt: startAt.toJSDate(), endAt: endAt.toJSDate(), weekendDays };
+      const { basePrice, freeKmLimit, priceSource, billedAs, billedAsType, weekend } =
+        await this.determineBasePrice(pricing, duration, vehicleId, branchId, weekendContext);
 
       // 5. Evaluate all discounts (duration + coupon + manual) in strict order.
       //    Duration discount runs for ALL requests (no customer context needed).
@@ -386,6 +426,8 @@ export class PricingEngineService {
           priceSource: pricing.source as any,
           billedAs,
           billedAsType,
+          weekendDays,
+          ...(weekend && { weekend }),
         },
       };
     } finally {
@@ -409,12 +451,18 @@ export class PricingEngineService {
     type: RentalPeriodType;
     billedAs: string;
     billedAsType: BilledAsType;
+    weekend?: WeekendBreakdown;
   }> {
     const duration = DurationCalculatorService.calculate(startAt, await this.billingEndAt(startAt, endAt, branchId));
     const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
     const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
-    const { basePrice, billedAs, billedAsType } =
-      await this.determineBasePrice(pricing, duration, vehicleId, branchId);
+    const weekendDays = await getBranchWeekendDays(branchId);
+    const { basePrice, billedAs, billedAsType, weekend } =
+      await this.determineBasePrice(pricing, duration, vehicleId, branchId, {
+        startAt: startAt.toJSDate(),
+        endAt: endAt.toJSDate(),
+        weekendDays,
+      });
 
     // Apply duration discount only (no coupon on listing)
     const evalInput: DiscountEvaluationInput = {
@@ -435,7 +483,37 @@ export class PricingEngineService {
       type: duration.periodType,
       billedAs,
       billedAsType,
+      ...(weekend && { weekend }),
     };
+  }
+
+  /**
+   * The rent incl. GST before discounts of one window and its weekend
+   * breakdown — no discounts, GST or deposit. Reschedule compares the old and
+   * the new window with it (weekend pricing must not change the rent).
+   * `options` as for calculateBookingPrice (an existing booking's flags).
+   */
+  async calculateRent(
+    vehicleId: number,
+    startAt: DateTime,
+    endAt: DateTime,
+    branchId: number,
+    options: Pick<PricingDiscountOptions, "heldToClosing" | "weekendDays"> = {},
+    categoryId?: number,
+  ): Promise<{ rent: Decimal; weekend?: WeekendBreakdown }> {
+    const duration = DurationCalculatorService.calculate(
+      startAt,
+      await this.billingEndAt(startAt, endAt, branchId, options.heldToClosing),
+    );
+    const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
+    const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
+    const weekendDays = options.weekendDays ?? await getBranchWeekendDays(branchId);
+    const { basePrice, weekend } = await this.determineBasePrice(pricing, duration, vehicleId, branchId, {
+      startAt: startAt.toJSDate(),
+      endAt: endAt.toJSDate(),
+      weekendDays,
+    });
+    return { rent: basePrice, ...(weekend && { weekend }) };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -512,6 +590,8 @@ export class PricingEngineService {
         freeKmMonthly: customPricing.freeKmMonthly,
         extraKmRate: new Decimal(customPricing.extraKmRate.toString()),
         extraHourRate: new Decimal(customPricing.extraHourRate.toString()),
+        weekendPrice12Hour: weekendRent(customPricing, "12"),
+        weekendPrice24Hour: weekendRent(customPricing, "24"),
         source: "vehicle_custom",
       };
     }
@@ -555,6 +635,8 @@ export class PricingEngineService {
       freeKmMonthly: branchDefaults.freeKmMonthly,
       extraKmRate: new Decimal(branchDefaults.extraKmRate.toString()),
       extraHourRate: new Decimal(branchDefaults.extraHourRate.toString()),
+      weekendPrice12Hour: weekendRent(branchDefaults, "12"),
+      weekendPrice24Hour: weekendRent(branchDefaults, "24"),
       source: "branch_default",
     };
   }
@@ -564,12 +646,14 @@ export class PricingEngineService {
     duration: RentalDuration,
     vehicleId: number,
     branchId: number,
+    weekendContext?: WeekendContext,
   ): Promise<{
     basePrice: Decimal;
     freeKmLimit: number;
     priceSource: string;
     billedAs: string;
     billedAsType: BilledAsType;
+    weekend?: WeekendBreakdown;
   }> {
     /**
      * Slab billing, with an hourly rate (when configured) capped at the slab
@@ -579,14 +663,17 @@ export class PricingEngineService {
      * Example: 5 hours, hourly ₹150, 12-hour ₹900 → 5 × 150 = ₹750 ("5 hours")
      * Example: 8 hours, hourly ₹150, 12-hour ₹900 → ₹900 ("12 hours")
      * Example: 29 hours, no hourly rate → 1 day + 12-hour slab ("1 day + 12 hours")
+     * Example: Fri 18:00 → Sat 18:00, weekend 24-hour ₹1,600 → ₹1,600 (18 of
+     *          the 24 h fall on Saturday — weekendRule.ts)
      */
-    const selection = selectBasePrice(pricing, duration);
+    const selection = selectBasePrice(pricing, duration, weekendContext);
     return {
       basePrice: selection.basePrice,
       freeKmLimit: selection.freeKmLimit,
       priceSource: pricing.source,
       billedAs: selection.billedAs,
       billedAsType: selection.billedAsType,
+      ...(selection.weekend && { weekend: selection.weekend }),
     };
   }
 

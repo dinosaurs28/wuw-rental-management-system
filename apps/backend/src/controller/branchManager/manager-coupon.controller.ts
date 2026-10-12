@@ -3,12 +3,25 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createManagerCouponSchema, updateManagerCouponSchema } from "@repo/schemas";
 import { discountRuleService } from "../../services/discount/index.js";
-import { istEndOfDay } from "../../services/discount/discount-rule.service.js";
+import {
+  istEndOfDay,
+  CouponCodeConflictError,
+  codeLockedRuleIds,
+  updateRuleWithCode,
+} from "../../services/discount/discount-rule.service.js";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
 
 /** Creator roles of the coupons a branch manager may edit (matches ListManagerCoupons). */
 const MANAGER_COUPON_CREATOR_ROLES: string[] = ["MANAGER", "STAFF"];
+
+/** 400 body for a failed request parse — a bad coupon code gets its own message for the form. */
+const invalidInputBody = (error: { issues: { path: PropertyKey[]; message: string }[]; format(): unknown }) => {
+  const codeIssue = error.issues.find((i) => i.path[0] === "code");
+  return codeIssue
+    ? { code: "INVALID_COUPON_CODE", message: codeIssue.message, errors: error.format() }
+    : { message: "Invalid input", errors: error.format() };
+};
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -38,10 +51,7 @@ export const CreateManagerCoupon = async (req: Request, res: Response) => {
   try {
     const validation = createManagerCouponSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid input",
-        errors: validation.error.format(),
-      });
+      return res.status(StatusCode.BAD_REQUEST).json(invalidInputBody(validation.error));
     }
 
     const actor = await buildActorContext(req);
@@ -63,6 +73,9 @@ export const CreateManagerCoupon = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("CreateManagerCoupon Error:", error);
 
+    if (error instanceof CouponCodeConflictError) {
+      return res.status(StatusCode.CONFLICT).json({ code: error.code, message: error.message });
+    }
     if (error.message?.includes("not enabled")) {
       return res.status(StatusCode.FORBIDDEN).json({ message: error.message });
     }
@@ -91,6 +104,7 @@ export const ListManagerCoupons = async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: "desc" },
       select: {
+        id: true,
         publicId: true,
         code: true,
         name: true,
@@ -108,7 +122,11 @@ export const ListManagerCoupons = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(StatusCode.OK).json({ data: coupons });
+    // codeLocked: the coupon is on a booking or bill, so its code can't change any more
+    const locked = await codeLockedRuleIds(coupons);
+    return res.status(StatusCode.OK).json({
+      data: coupons.map(({ id, ...c }) => ({ ...c, codeLocked: locked.has(id) })),
+    });
   } catch (error) {
     console.error("ListManagerCoupons Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -129,14 +147,15 @@ export const UpdateManagerCoupon = async (req: Request, res: Response) => {
 
     const validation = updateManagerCouponSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(invalidInputBody(validation.error));
     }
     const input = validation.data;
 
     const rule = await prisma.discountRule.findUnique({
       where: { publicId },
       select: {
-        id: true, applicableBranchIds: true, isActive: true, discountType: true, endDate: true, totalUsageLimit: true,
+        id: true, publicId: true, code: true,
+        applicableBranchIds: true, isActive: true, discountType: true, endDate: true, totalUsageLimit: true,
         createdBy: { select: { role: true } },
       },
     });
@@ -207,11 +226,18 @@ export const UpdateManagerCoupon = async (req: Request, res: Response) => {
       }),
     };
 
-    const updated = await prisma.discountRule.update({ where: { publicId }, data: updateData });
+    // A new code is saved only while the coupon is unused and the code is free (409 otherwise)
+    const updated = await updateRuleWithCode(rule, input.code, updateData);
 
-    return res.status(StatusCode.OK).json({ message: "Coupon updated successfully", data: { publicId: updated.publicId } });
+    return res.status(StatusCode.OK).json({
+      message: "Coupon updated successfully",
+      data: { publicId: updated.publicId, code: updated.code },
+    });
   } catch (error: any) {
     console.error("UpdateManagerCoupon Error:", error);
+    if (error instanceof CouponCodeConflictError) {
+      return res.status(StatusCode.CONFLICT).json({ code: error.code, message: error.message });
+    }
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
@@ -358,6 +384,22 @@ export const GetManagerCouponLimits = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("GetManagerCouponLimits Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/branchManager/discount/coupons/generate-code
+ *
+ * A free branch-prefixed code (e.g. MANI-7KQ2XP) for the create form's
+ * "Generate" button. Nothing is reserved — the create request is checked again.
+ */
+export const GenerateManagerCouponCode = async (req: Request, res: Response) => {
+  try {
+    const code = await discountRuleService.generateManagerCouponCode(req.branch_Id);
+    return res.status(StatusCode.OK).json({ data: { code } });
+  } catch (error) {
+    console.error("GenerateManagerCouponCode Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

@@ -37,7 +37,8 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
-import { PricingEngineService, heldToClosingOf } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, heldToClosingOf, weekendDaysOf } from "../pricing/pricing-engine.service.js";
+import { bookingCouponCode } from "../discount/coupon-validation.service.js";
 import {
   explainUnavailableVehicles,
   getUnavailableVehicleIds,
@@ -1270,16 +1271,18 @@ export class VehicleSwapService {
    * own usage row isn't counted against it, its validity window / usage limits
    * aren't re-checked, and it is checked against the booking's payment plan —
    * otherwise a single-use or since-expired coupon would drop out of both
-   * prices and the difference would be the undiscounted one.
+   * prices and the difference would be the undiscounted one. The coupon is
+   * found by its rule id, so a code changed since the booking still resolves.
    */
   private async taxableRental(booking: SwapBooking, vehicleId: number, categoryId: number): Promise<Decimal> {
+    const couponCode = await bookingCouponCode(booking);
     const result = await pricingEngine.calculateBookingPrice(
       vehicleId,
       DateTime.fromJSDate(booking.startAt),
       DateTime.fromJSDate(booking.endAt),
       booking.branchId,
       booking.customerId,
-      booking.couponCode ?? undefined,
+      couponCode,
       undefined,
       undefined,
       categoryId,
@@ -1287,9 +1290,11 @@ export class VehicleSwapService {
       {
         paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
         excludeBookingId: booking.id,
-        couponLockedIn: Boolean(booking.couponCode),
+        couponLockedIn: Boolean(couponCode),
         // Booked as 12 hours held to closing (item 6): both cars billed as 12 h
         heldToClosing: heldToClosingOf(booking.pricingSnapshot),
+        // Weekend blocks by the weekend days it was booked with (none before weekend rates)
+        weekendDays: weekendDaysOf(booking.pricingSnapshot),
       },
     );
     // finalTotal = the post-discount rent incl. GST (what the customer pays for it)

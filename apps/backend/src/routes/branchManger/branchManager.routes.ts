@@ -128,6 +128,8 @@ import {
   updateManagerBranchGrace,
   getBookingRestrictionConfig,
   updateBookingRestrictionMode,
+  getManagerWeekendDays,
+  updateManagerWeekendDays,
 } from "../../controller/branchManager/branchSchedule.controller.js";
 import { UpdateBookingDlStatusByManager } from "../../controller/branchManager/dlStatus.controller.js";
 import {
@@ -153,6 +155,9 @@ router.patch("/dashboard/branch/schedule", ManagerCheck, upsertManagerBranchSche
 router.patch("/dashboard/branch/grace", ManagerCheck, updateManagerBranchGrace);
 router.get("/dashboard/branch/booking-restriction", ManagerCheck, getBookingRestrictionConfig);
 router.patch("/dashboard/branch/booking-restriction", ManagerCheck, updateBookingRestrictionMode);
+// Weekend-wise pricing: the days the branch bills at the weekend rents
+router.get("/dashboard/branch/weekend-days", ManagerCheck, getManagerWeekendDays);
+router.patch("/dashboard/branch/weekend-days", ManagerCheck, updateManagerWeekendDays);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 // Period tab (#14): own-branch report for an IST date range.

@@ -3,6 +3,10 @@ import { randomBytes } from "crypto";
 
 export type CouponPattern = "BRANCH_PREFIX" | "EMPLOYEE_LINKED" | "PROMOTIONAL";
 
+/** Branch part of a manager coupon code: up to 4 of A–Z 0–9 from the branch name ("BR" if none). */
+export const branchCouponPrefix = (branchName: string | null | undefined): string =>
+  (branchName ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "BR";
+
 export interface GenerateCodeOptions {
   pattern: CouponPattern;
   branchCode?: string;   // e.g. "MUM" — used in BRANCH_PREFIX
@@ -53,8 +57,9 @@ class CouponCodeGeneratorService {
   async generateCode(opts: GenerateCodeOptions): Promise<string> {
     for (let attempt = 0; attempt < 10; attempt++) {
       const candidate = this.buildCandidate(opts);
-      const existing = await prisma.discountRule.findUnique({
-        where: { code: candidate },
+      // Codes are unique in any letter case
+      const existing = await prisma.discountRule.findFirst({
+        where: { code: { equals: candidate, mode: "insensitive" } },
         select: { id: true },
       });
       if (!existing) return candidate;

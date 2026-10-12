@@ -20,7 +20,7 @@
 import { prisma, BookingPhotoType, BookingStatus, ExtensionStatus } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { PricingEngineService, heldToClosingOf } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, heldToClosingOf, weekendDaysOf } from "../pricing/pricing-engine.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
 import { extensionFreeKm, extensionMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
@@ -210,7 +210,7 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
     item.vehicle.categoryId,
     undefined,
     // Booked as 12 hours held to closing (item 6): the 12-hour free km
-    { heldToClosing: heldToClosingOf(booking.pricingSnapshot) },
+    { heldToClosing: heldToClosingOf(booking.pricingSnapshot), weekendDays: weekendDaysOf(booking.pricingSnapshot) },
   );
 
   const freeKmOriginal = Math.max(pricing.freeKmLimit, snapshotFreeKm(booking.pricingSnapshot) ?? 0);

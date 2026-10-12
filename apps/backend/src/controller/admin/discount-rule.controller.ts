@@ -9,11 +9,23 @@ import {
   updateBranchDiscountConfigAdminSchema,
 } from "@repo/schemas";
 import { discountRuleService, couponCodeGeneratorService } from "../../services/discount/index.js";
-import { DiscountRuleValidationError } from "../../services/discount/discount-rule.service.js";
+import {
+  DiscountRuleValidationError,
+  CouponCodeConflictError,
+  codeLockedRuleIds,
+} from "../../services/discount/discount-rule.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { branchDiscountConfigKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import Decimal from "decimal.js";
+
+/** 400 body for a failed request parse — a bad coupon code gets its own message for the form. */
+const invalidInputBody = (error: { issues: { path: PropertyKey[]; message: string }[]; format(): unknown }) => {
+  const codeIssue = error.issues.find((i) => i.path[0] === "code");
+  return codeIssue
+    ? { code: "INVALID_COUPON_CODE", message: codeIssue.message, errors: error.format() }
+    : { message: "Invalid input", errors: error.format() };
+};
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -38,7 +50,11 @@ export const ListDiscountRules = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid query", errors: query.error.format() });
     }
     const result = await discountRuleService.listRules(query.data);
-    return res.status(StatusCode.OK).json({ data: result });
+    // codeLocked: the coupon is on a booking or bill, so its code can't change any more
+    const locked = await codeLockedRuleIds(result.rules);
+    return res.status(StatusCode.OK).json({
+      data: { ...result, rules: result.rules.map((r) => ({ ...r, codeLocked: locked.has(r.id) })) },
+    });
   } catch (error) {
     console.error("ListDiscountRules Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -60,7 +76,7 @@ export const CreateDiscountRule = async (req: Request, res: Response) => {
   try {
     const validation = createDiscountRuleSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(invalidInputBody(validation.error));
     }
     const actor = await buildActorContext(req);
     const rule = await discountRuleService.createRule(
@@ -77,8 +93,8 @@ export const CreateDiscountRule = async (req: Request, res: Response) => {
     if (error instanceof DiscountRuleValidationError) {
       return res.status(StatusCode.BAD_REQUEST).json({ code: "INVALID_DISCOUNT_RULE", message: error.message, errors: error.issues });
     }
-    if (error.message?.includes("already exists")) {
-      return res.status(StatusCode.CONFLICT).json({ code: "COUPON_CODE_EXISTS", message: error.message });
+    if (error instanceof CouponCodeConflictError) {
+      return res.status(StatusCode.CONFLICT).json({ code: error.code, message: error.message });
     }
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
@@ -88,7 +104,7 @@ export const UpdateDiscountRule = async (req: Request, res: Response) => {
   try {
     const validation = updateDiscountRuleSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(invalidInputBody(validation.error));
     }
     const actor = await buildActorContext(req);
     const data: any = { ...validation.data };
@@ -102,7 +118,9 @@ export const UpdateDiscountRule = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ code: "INVALID_DISCOUNT_RULE", message: error.message, errors: error.issues });
     }
     if (error.message?.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message?.includes("already exists")) return res.status(StatusCode.CONFLICT).json({ code: "COUPON_CODE_EXISTS", message: error.message });
+    if (error instanceof CouponCodeConflictError) {
+      return res.status(StatusCode.CONFLICT).json({ code: error.code, message: error.message });
+    }
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

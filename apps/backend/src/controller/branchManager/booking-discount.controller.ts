@@ -7,6 +7,7 @@ import PricingEngineService, {
   InclGstTotals,
   allocateByWeights,
   heldToClosingOf,
+  weekendDaysOf,
   type PricingResult,
 } from "../../services/pricing/pricing-engine.service.js";
 import { discountApplicationService } from "../../services/discount/index.js";
@@ -208,8 +209,14 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
         index === 0 && manual ? manual.id : undefined,
         item.vehicle.categoryId,
         undefined,
-        // Booked as 12 hours held to closing (item 6): billed as 12 h, as at booking
-        { paymentPlan: plan, excludeBookingId: booking.id, heldToClosing: heldToClosingOf(booking.pricingSnapshot) },
+        // Booked as 12 hours held to closing (item 6): billed as 12 h, as at booking;
+        // weekend blocks by the weekend days it was booked with (none before weekend rates)
+        {
+          paymentPlan: plan,
+          excludeBookingId: booking.id,
+          heldToClosing: heldToClosingOf(booking.pricingSnapshot),
+          weekendDays: weekendDaysOf(booking.pricingSnapshot),
+        },
       ),
     ),
   );
@@ -315,9 +322,11 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
     }
 
     // Two bookings can't both take a limited coupon's last use: lock the rule
-    // and count again (this booking's own use is excluded)
+    // and count again (this booking's own use is excluded). The booking stores
+    // the code read under the lock, which a code change also takes.
     if (evaluation.couponValid && evaluation.couponRule) {
-      await couponValidationService.lockRule(tx, evaluation.couponRule.id);
+      const lockedCode = await couponValidationService.lockRuleCode(tx, evaluation.couponRule.id);
+      if (lockedCode) first.appliedCouponCode = lockedCode;
       const usage = await couponValidationService.checkUsageLimits(
         evaluation.couponRule,
         { customerId: booking.customerId, branchId: booking.branchId, bookingId: booking.id },

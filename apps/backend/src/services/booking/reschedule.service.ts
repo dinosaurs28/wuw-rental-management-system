@@ -8,7 +8,10 @@
  * that hasn't been extended (client item 6) instead takes the package's return
  * for the new pickup — pickup + 12 h, or the branch's closing that day when
  * that is outside hours (pricingSnapshot.heldToClosing follows) — still billed
- * as the 12 hours it was sold as.
+ * as the 12 hours it was sold as. With weekend pricing (pricingSnapshot.
+ * weekendDays) a move that would change the rent — onto or off the weekend —
+ * is refused (RESCHEDULE_PRICE_CHANGE); otherwise the items' weekend
+ * breakdowns follow the new window.
  *
  *   GET  …/bookings/:publicId/reschedule   what the picker needs (hours, limits,
  *                                           busy windows) and whether it can move
@@ -40,6 +43,7 @@ import {
 } from "@repo/database/client";
 import type { Prisma } from "@repo/database/client";
 import { DateTime } from "luxon";
+import Decimal from "decimal.js";
 import { bookingWindowEnd, HALF_DAY_PACKAGE_HOURS, MAX_BOOKING_DAYS } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { TimezoneService } from "../timezone/timezone.service.js";
@@ -72,6 +76,9 @@ import { listOverlappingHolds } from "../../utils/availability/availabilityBatch
 import { invalidateGroupListingCache, invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { extensionLockService } from "../extension/extension-lock.service.js";
 import { assertDlFree, cleanDl, lockAndAssertDlFree } from "./dl-in-use.service.js";
+import { PricingEngineService } from "../pricing/pricing-engine.service.js";
+import type { WeekendBreakdown } from "../pricing/base-price-rule.js";
+import { formatRupees, weekendDaysOf, withItemWeekendBreakdowns } from "../../utils/pricing/weekendRule.js";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 export type RescheduleActorRole = "STAFF" | "MANAGER";
@@ -103,7 +110,8 @@ export type RescheduleErrorCode =
   | "VEHICLE_UNAVAILABLE"
   | "VEHICLE_TYPE_LIMIT_EXCEEDED"
   | "RESCHEDULE_BUSY"
-  | "RESCHEDULE_CONFLICT";
+  | "RESCHEDULE_CONFLICT"
+  | "RESCHEDULE_PRICE_CHANGE";
 
 export class RescheduleError extends Error {
   constructor(
@@ -176,6 +184,7 @@ async function loadBooking(bookingPublicId: string, branchId: number) {
               make: true,
               model: true,
               regNo: true,
+              categoryId: true,
               category: { select: { typeClass: true } },
             },
           },
@@ -467,6 +476,62 @@ function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConfli
   });
 }
 
+// ── Weekend pricing ───────────────────────────────────────────────────────────
+
+const pricingEngine = new PricingEngineService();
+
+/**
+ * A reschedule never re-prices, so with weekend pricing in effect it may not
+ * change the rent. The old and the new window are priced now, with the
+ * booking's stored weekend days and the same rates — only the weekday /
+ * weekend mix differs. A different rent → RESCHEDULE_PRICE_CHANGE (no money
+ * moves on a reschedule); the same → the new window's weekend breakdown per
+ * vehicle, stored on the items. null = no check: the booking was made before
+ * weekend rates (no stored weekend days), or it can't be priced.
+ */
+async function checkWeekendRent(
+  booking: RescheduleBooking,
+  newStart: Date,
+  newEnd: Date,
+  held: { was: boolean; now: boolean },
+): Promise<{ vehicleId: number; weekend?: WeekendBreakdown }[] | null> {
+  const weekendDays = weekendDaysOf(booking.pricingSnapshot);
+  if (weekendDays.length === 0) return null;
+  const at = (d: Date) => DateTime.fromJSDate(d, { zone: "Asia/Kolkata" });
+
+  let priced: { vehicleId: number; before: Decimal; after: Decimal; weekend?: WeekendBreakdown }[];
+  try {
+    priced = await Promise.all(
+      booking.items.map(async ({ vehicle }) => {
+        const [before, after] = await Promise.all([
+          pricingEngine.calculateRent(vehicle.id, at(booking.startAt), at(booking.endAt), booking.branchId,
+            { weekendDays, heldToClosing: held.was }, vehicle.categoryId),
+          pricingEngine.calculateRent(vehicle.id, at(newStart), at(newEnd), booking.branchId,
+            { weekendDays, heldToClosing: held.now }, vehicle.categoryId),
+        ]);
+        return { vehicleId: vehicle.id, before: before.rent, after: after.rent, weekend: after.weekend };
+      }),
+    );
+  } catch (err) {
+    console.warn(`[reschedule] weekend rent check skipped for ${booking.publicId}:`, err);
+    return null;
+  }
+
+  const total = (key: "before" | "after") =>
+    priced.reduce((sum, p) => sum.add(p[key]), new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  const currentRent = total("before");
+  const newRent = total("after");
+  if (!currentRent.eq(newRent)) {
+    throw new RescheduleError(
+      StatusCode.CONFLICT,
+      "RESCHEDULE_PRICE_CHANGE",
+      `These dates change the rent from ${formatRupees(currentRent.toNumber())} to ${formatRupees(newRent.toNumber())} (weekend pricing). Choose dates with the same weekday/weekend mix, or cancel and rebook.`,
+      { currentRent: currentRent.toNumber(), newRent: newRent.toNumber() },
+    );
+  }
+  return priced.map((p) => ({ vehicleId: p.vehicleId, ...(p.weekend && { weekend: p.weekend }) }));
+}
+
 // ── Request parsing ───────────────────────────────────────────────────────────
 
 /**
@@ -741,6 +806,15 @@ export async function rescheduleBooking(
     );
   }
 
+  // Weekend pricing: the move may not change the rent (nothing is re-priced)
+  const weekendBreakdowns = await checkWeekendRent(booking, newStart, newEnd, { was: wasHeld, now: nowHeld });
+  // The held-to-closing flag re-prices bill by and the items' weekend breakdowns follow the new window
+  let nextSnapshot: Prisma.InputJsonValue | null =
+    nowHeld !== wasHeld ? withHeldToClosing(booking.pricingSnapshot, nowHeld) : null;
+  if (weekendBreakdowns) {
+    nextSnapshot = withItemWeekendBreakdowns(nextSnapshot ?? booking.pricingSnapshot, weekendBreakdowns) as Prisma.InputJsonValue;
+  }
+
   // Vehicle(s) free in the new window — serialised with extension commits on
   // the same vehicles (they hold the same Redis locks)
   const vehicleIds = booking.items.map((i) => i.vehicle.id);
@@ -796,7 +870,7 @@ export async function rescheduleBooking(
             // A 12-hour package's clock length may change (8 h 30 m ↔ 12 h): period
             // columns follow, and the held-to-closing flag the re-prices bill by
             ...(halfDay ? bookingPeriodFields(newStart, newEnd) : {}),
-            ...(nowHeld !== wasHeld ? { pricingSnapshot: withHeldToClosing(booking.pricingSnapshot, nowHeld) } : {}),
+            ...(nextSnapshot ? { pricingSnapshot: nextSnapshot } : {}),
           },
         });
         if (updated.count === 0) {

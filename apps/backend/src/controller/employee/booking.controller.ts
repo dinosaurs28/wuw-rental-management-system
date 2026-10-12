@@ -618,6 +618,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     let grandFinalTotal    = 0;
     // GST-inclusive totals (item 17) — what the customer sees
     const inclGst = new InclGstTotals();
+    // The branch's weekend days the items were priced with (stored in pricingSnapshot)
+    let weekendDays: number[] | null = null;
 
     for (const v of vehiclesData) {
       const pricingResult = await pricingEngine.calculateBookingPrice(
@@ -684,8 +686,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           actualHours:   pricingResult.pricingBreakdown.duration.actualDuration,
           freeKmLimit:   pricingResult.freeKmLimit,
           extraKmRate:   Number(pricingResult.extraKmRate.toString()),
+          // Weekend rates charged (weekend-wise pricing; absent when none)
+          ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
         },
       });
+      weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
 
       grandBaseTotal    += baseTotal;
       grandDiscountTotal += discountAmount;
@@ -886,6 +891,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             items,
             // 12-hour package held to closing (client item 6): re-prices bill it as 12 hours
             ...(heldToClosing && { heldToClosing: true }),
+            // The weekend days it was priced with: re-prices bill weekend blocks by them
+            weekendDays: weekendDays ?? [],
             totals: {
               grandBaseTotal,
               grandDiscountTotal,

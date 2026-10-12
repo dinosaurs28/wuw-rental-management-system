@@ -1,8 +1,9 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { PricingEngineService, heldToClosingOf, type PricingResult } from "../pricing/pricing-engine.service.js";
+import { PricingEngineService, heldToClosingOf, weekendDaysOf, type PricingResult } from "../pricing/pricing-engine.service.js";
 import { getBranchGstRates, splitRentGross } from "../tax/gst.service.js";
+import { bookingCouponCode } from "../discount/coupon-validation.service.js";
 
 export interface ExtensionPricingResult {
   newDays: number;
@@ -118,7 +119,9 @@ class ExtensionPricingService {
     // The booking's own coupon is locked in: its use isn't counted against it and
     // its validity window / usage limits aren't re-checked, so an expired or
     // used-up coupon still prices both windows the same way. It applies once per
-    // booking (first vehicle), as at booking creation.
+    // booking (first vehicle), as at booking creation. Found by its rule id, so a
+    // code changed since the booking was made still resolves.
+    const couponCode = await bookingCouponCode(booking);
     const priceAllItems = (to: DateTime) =>
       Promise.all(
         booking.items.map((item, index) =>
@@ -128,7 +131,7 @@ class ExtensionPricingService {
             to,
             booking.branchId,
             customerId,
-            index === 0 ? booking.couponCode ?? undefined : undefined,
+            index === 0 ? couponCode : undefined,
             undefined,
             undefined,
             item.vehicle.categoryId,
@@ -136,9 +139,11 @@ class ExtensionPricingService {
             {
               paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
               excludeBookingId: booking.id,
-              couponLockedIn: Boolean(booking.couponCode),
+              couponLockedIn: Boolean(couponCode),
               // Booked as 12 hours held to closing (item 6): both windows bill at least 12 h
               heldToClosing: heldToClosingOf(booking.pricingSnapshot),
+              // Weekend blocks by the weekend days it was booked with (none before weekend rates)
+              weekendDays: weekendDaysOf(booking.pricingSnapshot),
             },
           ),
         ),
