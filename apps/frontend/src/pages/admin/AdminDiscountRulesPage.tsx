@@ -64,6 +64,7 @@ import {
   type CouponPaymentPlan,
   type DiscountScope,
 } from "@/services/discount.service";
+import { COUPON_CODE_MAX_LENGTH, couponCodeIssue, normalizeCouponCode } from "@repo/schemas";
 
 const fmtAmt = (v: string | number) =>
   `₹ ${parseFloat(String(v)).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
@@ -193,6 +194,8 @@ interface RuleFormProps {
 
 function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
   const isEdit = !!initial;
+  // A coupon already on a booking or bill keeps its code (older servers: any recorded use)
+  const codeLocked = isEdit && (initial!.codeLocked ?? initial!._count.usageLogs > 0);
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [name, setName] = useState(initial?.name ?? "");
@@ -258,6 +261,11 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
   });
 
   const effectiveType = isEdit ? initial!.discountType : discountType;
+
+  // Code: always checked on create; on edit only when changed (legacy codes stay as they are)
+  const normalizedCode = normalizeCouponCode(code);
+  const codeChanged = !codeLocked && normalizedCode !== (initial?.code ?? "");
+  const codeIssue = !isEdit || codeChanged ? couponCodeIssue(normalizedCode) : null;
 
   // Client-side mirror of the server rules, so the admin sees the problem
   // before saving (the server re-checks the merged rule).
@@ -330,6 +338,7 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
         scope === "USER" ? {} : { scope, applicableBranchIds: scope === "BRANCH" ? branchIds : [] };
       if (isEdit) {
         return adminDiscountService.updateRule(initial!.publicId, {
+          ...(codeChanged && { code: normalizedCode }),
           name: name.trim(),
           description: description.trim(),
           value: parseFloat(value),
@@ -344,7 +353,7 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
           Object.entries(limits).filter(([, v]) => v !== null),
         ) as { [K in keyof typeof limits]?: Exclude<(typeof limits)[K], null> };
         return adminDiscountService.createRule({
-          code: code.trim().toUpperCase(),
+          code: normalizedCode,
           name: name.trim(),
           ...(description.trim() ? { description: description.trim() } : {}),
           discountType,
@@ -394,7 +403,7 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
   };
 
   const isValid =
-    (isEdit || code.trim().length >= 3) &&
+    !codeIssue &&
     name.trim().length >= 1 &&
     parseFloat(value) > 0 &&
     startDate &&
@@ -409,8 +418,8 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Code — only on create */}
-          {!isEdit && (
+          {/* Code — editable until the coupon is first used */}
+          {!codeLocked && (
             <div className="space-y-2">
               <Label>Coupon Code</Label>
               <div className="flex gap-2">
@@ -419,6 +428,8 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="font-mono uppercase"
                   placeholder="e.g. SUMMER25"
+                  maxLength={COUPON_CODE_MAX_LENGTH}
+                  aria-invalid={!!(code && codeIssue)}
                 />
                 <Button
                   type="button"
@@ -431,14 +442,15 @@ function RuleFormModal({ initial, onClose, onSaved }: RuleFormProps) {
                   <Shuffle className="w-4 h-4" />
                 </Button>
               </div>
+              {code && codeIssue && <p className="text-xs text-red-500">{codeIssue}</p>}
             </div>
           )}
 
-          {isEdit && (
+          {codeLocked && (
             <div className="flex items-center gap-2 px-3 py-2 bg-neutral-50 rounded border text-sm font-mono text-neutral-700">
               <Tag className="w-3.5 h-3.5 text-neutral-400" />
               {initial!.code}
-              <span className="ml-auto text-xs text-neutral-400">Code cannot be changed</span>
+              <span className="ml-auto text-xs text-neutral-400">Already used — code can't change</span>
             </div>
           )}
 

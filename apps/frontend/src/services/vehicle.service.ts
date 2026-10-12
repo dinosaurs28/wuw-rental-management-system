@@ -48,6 +48,8 @@ export interface PublicVehicle {
     daily: number;
     hourly?: number;
     halfDay?: number;
+    /** Without dates: the weekend 24-hour rent, only when set and different from `daily`. */
+    weekendDaily?: number;
   };
   pricingDetails?: {
     /** Period total (not a per-day rate). */
@@ -67,7 +69,26 @@ export interface PublicVehicle {
     gst?: number;
     cgst?: number;
     sgst?: number;
+    /** Weekend rates inside price (absent when none applies). */
+    weekend?: WeekendPricing;
   };
+}
+
+/**
+ * Weekend rates inside a price (weekend-wise pricing): blocks of the window
+ * with at least half their time on the branch's weekend days are billed at the weekend rent.
+ */
+export interface WeekendPricing {
+  weekendBlocks: number;
+  weekdayBlocks: number;
+  /** The vehicle's weekend 12 h / 24 h rents (GST-inclusive); null = same as weekday */
+  weekendPrice12Hour: number | null;
+  weekendPrice24Hour: number | null;
+  /** What the weekend blocks cost, and the same blocks at weekday rates */
+  weekendAmount: number;
+  weekdayAmount: number;
+  /** e.g. "Includes 1 weekend day at ₹1,600" */
+  label: string;
 }
 
 /**
@@ -145,6 +166,8 @@ export interface VehicleGroupDetails {
       /** What the price covers, e.g. "5 hours", "1 day + 2 hours" (absent on stale cached quotes). */
       billedAs?: string;
       billedAsType?: BilledAsType;
+      /** Weekend rates inside the price (absent when none applies). */
+      weekend?: WeekendPricing;
     };
   }) | null;
 }
@@ -334,6 +357,11 @@ export interface VehicleDetails {
     totalRent24Hour?: number | string | null;
     rentWithoutGst12Hour?: number | string | null;
     rentWithoutGst24Hour?: number | string | null;
+    // Weekend rents (weekend-wise pricing), GST-inclusive; null = the weekday rent
+    weekendTotalRent12Hour?: number | string | null;
+    weekendTotalRent24Hour?: number | string | null;
+    weekendRentWithoutGst12Hour?: number | string | null;
+    weekendRentWithoutGst24Hour?: number | string | null;
   } | null;
   /** BM GET vehicle: the branch GST rule for the form's live preview (null = no rule). */
   gstRates?: { cgstRate: number; sgstRate: number } | null;
@@ -385,6 +413,8 @@ export interface VehicleDetails {
       /** What the price covers, e.g. "5 hours", "1 day + 2 hours" (absent on stale cached quotes). */
       billedAs?: string;
       billedAsType?: BilledAsType;
+      /** Weekend rates inside the price (absent when none applies). */
+      weekend?: WeekendPricing;
     };
   }) | null;
 }

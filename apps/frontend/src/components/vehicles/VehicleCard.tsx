@@ -74,6 +74,18 @@ export const VehicleCard = ({
     return `${durationDiscountTitle(vehicle.pricingDetails.discountLabel)} −₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} included`;
   })();
 
+  // Weekend-wise pricing: with dates, the weekend part of the listed price; without
+  // dates, the weekend day rent next to the weekday one (only when it differs)
+  const weekendNote = (() => {
+    if (!("pricing" in vehicle)) return null;
+    const pd = "pricingDetails" in vehicle ? vehicle.pricingDetails : undefined;
+    if (pd) return pd.weekend?.label ?? null;
+    const weekendDaily = vehicle.pricing.weekendDaily;
+    return weekendDaily != null
+      ? `Weekend ₹${weekendDaily.toLocaleString("en-IN", { maximumFractionDigits: 2 })}/day`
+      : null;
+  })();
+
   // Listed rents are GST-inclusive (item 17); with dates the server also sends
   // the GST inside the price (absent when the branch has no GST rule).
   const gstNote = (() => {
@@ -242,6 +254,9 @@ export const VehicleCard = ({
               {gstNote && (
                 <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{gstNote}</p>
               )}
+              {weekendNote && (
+                <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{weekendNote}</p>
+              )}
               {slabNote && (
                 <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
               )}
@@ -362,6 +377,9 @@ export const VehicleCard = ({
             </div>
             {gstNote && (
               <p className="mt-1 text-[11px] font-medium text-gray-500">{gstNote}</p>
+            )}
+            {weekendNote && (
+              <p className="mt-1 text-[11px] font-medium text-gray-500">{weekendNote}</p>
             )}
             {slabNote && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">{slabNote}</p>

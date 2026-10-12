@@ -92,6 +92,8 @@ interface BookingResponse {
   rentalDays?: number;
   /** What the base price covers, e.g. "12 hours" (#5). */
   billedAs?: string;
+  /** Weekend-wise pricing: e.g. "Includes 1 weekend day at ₹1,600", one per vehicle priced so. */
+  weekendLabels?: string[];
   /** The rent incl. GST, its discounts and the GST inside it (item 17). */
   rentIncl: ReturnType<typeof bookingTotalsInclGst>;
 }
@@ -236,6 +238,13 @@ export const BookingConfirmationPage = () => {
           endDate: response.data.endDate,
           rentalDays: response.data.items[0]?.days,
           billedAs: response.data.items[0]?.pricingBreakdown?.billedAs,
+          weekendLabels: [
+            ...new Set(
+              response.data.items
+                .map((item) => item.pricingBreakdown?.weekend?.label)
+                .filter((label): label is string => !!label),
+            ),
+          ],
           rentIncl: bookingTotalsInclGst(response.data.totals),
         });
         // Keep the plan actually charged (the server may have converted it)
@@ -835,6 +844,10 @@ export const BookingConfirmationPage = () => {
                   {formatPrice(bookingData.rentIncl.rent)}
                 </span>
               </div>
+              {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+              {bookingData.weekendLabels?.map((label) => (
+                <p key={label} className="-mt-2 text-xs text-muted-foreground">{label}</p>
+              ))}
 
               {bookingData.rentIncl.discount > 0 &&
                 (bookingData.grandDurationDiscountTotal !== undefined &&

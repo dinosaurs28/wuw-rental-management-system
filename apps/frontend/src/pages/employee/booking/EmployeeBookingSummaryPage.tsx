@@ -563,6 +563,10 @@ export const EmployeeBookingSummaryPage = () => {
                 </span>
               )}
             </div>
+            {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+            {vehicle.pricingBreakdown?.weekend?.label && (
+              <div className="mt-1 text-xs text-muted-foreground">{vehicle.pricingBreakdown.weekend.label}</div>
+            )}
           </div>
         </div>
 

@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Clock, Save, Loader2, Users, Info } from "lucide-react";
+import { Clock, Save, Loader2, Users, Info, CalendarRange } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import apiClient from "@/lib/axios";
+import { ISO_WEEKDAYS } from "@repo/schemas";
+import { fetchWeekendDays, saveWeekendDays } from "@/services/weekendDays.service";
 import {
   DEFAULT_BRANCH_HOURS,
   formatScheduleTime,
@@ -133,6 +135,99 @@ function PreviewPanel({ rows, graceMinutes }: { rows: DayScheduleRow[]; graceMin
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Weekend days (weekend-wise pricing): the days a vehicle's weekend rents
+ * apply on. Saved on its own; bookings already made keep their prices.
+ */
+function WeekendDaysCard() {
+  const queryClient = useQueryClient();
+  const { data: savedDays, isLoading } = useQuery({
+    queryKey: ["branch-weekend-days-manager"],
+    queryFn: fetchWeekendDays,
+    throwOnError: false,
+    retry: false,
+  });
+  const [days, setDays] = useState<number[] | null>(null);
+  useEffect(() => {
+    if (savedDays) setDays(savedDays);
+  }, [savedDays]);
+
+  const mutation = useMutation({
+    mutationFn: saveWeekendDays,
+    onSuccess: (saved) => {
+      toast.success("Weekend days saved");
+      setDays(saved);
+      queryClient.invalidateQueries({ queryKey: ["branch-weekend-days-manager"] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || "Failed to save weekend days"),
+  });
+
+  const picked = days ?? [];
+  const changed =
+    !!savedDays && (picked.length !== savedDays.length || picked.some((d) => !savedDays.includes(d)));
+  const toggle = (day: number) =>
+    setDays((prev) => {
+      const current = prev ?? [];
+      return current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort((a, b) => a - b);
+    });
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base flex items-center gap-2">
+          <CalendarRange className="size-4 text-primary" />
+          Weekend Days
+        </CardTitle>
+        <CardDescription>
+          Days billed at a vehicle's weekend rents (set them on the vehicle's pricing). A day or
+          12 hours of a trip counts as weekend when at least half of it falls on these days. Bookings
+          already made keep their prices.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading || days === null ? (
+          <Loader2 className="size-4 animate-spin text-zinc-400" />
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {ISO_WEEKDAYS.map((d) => {
+              const selected = picked.includes(d.value);
+              return (
+                <button
+                  key={d.value}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected}
+                  onClick={() => toggle(d.value)}
+                  className={`min-w-14 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                    selected
+                      ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/30"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-300"
+                  }`}
+                >
+                  {d.short}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {days !== null && picked.length === 0 && (
+          <p className="text-xs text-amber-700">No weekend days: weekend rents won't be charged.</p>
+        )}
+        <div className="pt-3 border-t border-zinc-100">
+          <Button
+            onClick={() => mutation.mutate(picked)}
+            disabled={mutation.isPending || !changed}
+            variant="outline"
+          >
+            {mutation.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Save className="size-4 mr-2" />}
+            Save Weekend Days
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -538,6 +633,8 @@ export default function BranchSchedulePage() {
                 </div>
               </CardContent>
             </Card>
+
+            <WeekendDaysCard />
           </div>
 
           {/* Live preview — takes 2 cols */}

@@ -176,6 +176,8 @@ export interface ManagerCoupon {
   createdAt: string;
   createdBy: { publicId: string; name: string; role: string };
   _count: { usageLogs: number };
+  /** Already on a booking or bill, so the code can't change (absent from older servers). */
+  codeLocked?: boolean;
 }
 
 export type DiscountScope = "GLOBAL" | "BRANCH" | "USER";
@@ -213,6 +215,8 @@ export interface AdminDiscountRule {
   priority: number;
   createdBy: { name: string; publicId: string };
   _count: { usageLogs: number };
+  /** Already on a booking or bill, so the code can't change (absent from older servers). */
+  codeLocked?: boolean;
 }
 
 /** Restriction fields shared by create and update (null clears a limit on update). */
@@ -274,7 +278,7 @@ export const adminDiscountService = {
 
   /**
    * Dates are whole IST days: send `${day}T00:00:00+05:30` / `${day}T23:59:59.999+05:30`.
-   * 400 INVALID_DISCOUNT_RULE (with errors[]) / 409 COUPON_CODE_EXISTS carry a message.
+   * 400 INVALID_DISCOUNT_RULE (with errors[]) / INVALID_COUPON_CODE / 409 COUPON_CODE_TAKEN carry a message.
    */
   createRule: async (data: {
     code: string;
@@ -290,9 +294,12 @@ export const adminDiscountService = {
     return res.data;
   },
 
+  /** 409 COUPON_CODE_TAKEN / COUPON_CODE_LOCKED (code of a used coupon) carry a message. */
   updateRule: async (
     publicId: string,
     data: Partial<DiscountRuleLimits & {
+      /** Only while the coupon has never been used. */
+      code: string;
       name: string;
       description: string;
       value: number;
@@ -463,7 +470,15 @@ export const managerDiscountService = {
     return res.data;
   },
 
+  /** A free branch-prefixed code suggestion (nothing is reserved). */
+  generateCouponCode: async (): Promise<{ data: { code: string } }> => {
+    const res = await apiClient.post("/branchManager/discount/coupons/generate-code");
+    return res.data;
+  },
+
+  /** 400 INVALID_COUPON_CODE / 409 COUPON_CODE_TAKEN carry a message. */
   createCoupon: async (data: {
+    code: string;
     name: string;
     discountType: "PERCENTAGE" | "FLAT";
     value: number;
@@ -481,6 +496,8 @@ export const managerDiscountService = {
   updateCoupon: async (
     publicId: string,
     data: {
+      /** Only while the coupon has never been used (409 COUPON_CODE_LOCKED otherwise). */
+      code?: string;
       name?: string;
       value?: number;
       usageLimit?: number;

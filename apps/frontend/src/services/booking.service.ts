@@ -13,6 +13,7 @@ import type {
 } from "@/types/drop";
 import type { ReturnKmSummary } from "@/services/paymentSession.service";
 import type { PaymentFlowReason, PaymentOptions } from "@/lib/paymentPlan";
+import type { WeekendPricing } from "@/services/vehicle.service";
 
 // Existing Customer Interfaces...
 // Types for booking summary request
@@ -57,6 +58,8 @@ export interface BookingItem {
     periodType?: string;
     billedAs?: string;
     billedAsType?: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
+    /** Weekend rates charged (weekend-wise pricing; absent when none). */
+    weekend?: WeekendPricing;
   };
 }
 

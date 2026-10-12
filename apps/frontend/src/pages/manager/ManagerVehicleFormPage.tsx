@@ -18,6 +18,7 @@ import {
   Timer,
   Sun,
   CalendarDays,
+  CalendarRange,
   MapPin,
   Zap,
 } from "lucide-react";
@@ -70,6 +71,7 @@ import {
 } from "@/services/vehicle.service";
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
 import { fetchGSTRule } from "@/services/gst.service";
+import { fetchWeekendDays, weekendDaysLabel } from "@/services/weekendDays.service";
 import { splitRentTotal, type GstRates } from "@repo/schemas";
 import { formatInrExact, formatGstRate } from "@/lib/gst";
 
@@ -98,7 +100,16 @@ function InsuranceExpiryWarning({ date }: { date: Date | undefined }) {
  * GST ₹234 (CGST 9% + SGST 9%)" with the branch GST rule, the same split the
  * server stores (splitRentTotal). rates: undefined = loading, null = no rule.
  */
-function RentGstPreview({ total, rates }: { total: unknown; rates: GstRates | null | undefined }) {
+function RentGstPreview({
+  total,
+  rates,
+  label,
+}: {
+  total: unknown;
+  rates: GstRates | null | undefined;
+  /** Which rent it splits, when a card has two (e.g. "12 h") */
+  label?: string;
+}) {
   const n = Number(total);
   if (!Number.isFinite(n) || n <= 0 || rates === undefined) return null;
   if (rates === null) {
@@ -111,6 +122,7 @@ function RentGstPreview({ total, rates }: { total: unknown; rates: GstRates | nu
   const split = splitRentTotal(n, rates);
   return (
     <p className="mt-1.5 text-[11px] leading-snug text-neutral-600">
+      {label && <span className="font-medium text-neutral-700">{label}: </span>}
       Rent without GST <span className="font-semibold">{formatInrExact(split.taxable)}</span> + GST{" "}
       <span className="font-semibold">{formatInrExact(split.gst)}</span>{" "}
       <span className="text-neutral-400">
@@ -138,6 +150,9 @@ const vehicleSchema = z.object({
   freeKm24Hour: z.coerce.number().min(0, "Free KM for 24 hours must be non-negative").optional(),
   priceMonthly: z.coerce.number().min(0, "Monthly price must be non-negative").optional(),
   freeKmMonthly: z.coerce.number().min(0, "Free KM for month must be non-negative").optional(),
+  // Weekend-wise pricing: optional, 0 = the weekday rent applies on weekend days too
+  weekendPrice12Hour: z.coerce.number().min(0, "Weekend 12-hour rent must be non-negative").optional(),
+  weekendPrice24Hour: z.coerce.number().min(0, "Weekend 24-hour rent must be non-negative").optional(),
   extraKmRate: z.coerce.number().min(0, "Extra KM rate must be non-negative"),
   extraHourRate: z.coerce.number().min(0, "Extra Hour rate must be non-negative"),
   isCustomPricingEnabled: z.boolean(),
@@ -168,6 +183,8 @@ export const ManagerVehicleFormPage = () => {
   const [originalImages, setOriginalImages] = useState<any[]>([]);
   // Branch GST rule for the rent preview (item 17): undefined while loading, null = none
   const [gstRates, setGstRates] = useState<GstRates | null | undefined>(undefined);
+  // The branch's weekend days (weekend rents apply on them); null while loading / unknown
+  const [weekendDays, setWeekendDays] = useState<number[] | null>(null);
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema) as any,
@@ -185,6 +202,8 @@ export const ManagerVehicleFormPage = () => {
       freeKm24Hour: 150,
       priceMonthly: 0,
       freeKmMonthly: 1500,
+      weekendPrice12Hour: 0,
+      weekendPrice24Hour: 0,
       extraKmRate: 8,
       extraHourRate: 100,
       isCustomPricingEnabled: true,
@@ -210,6 +229,12 @@ export const ManagerVehicleFormPage = () => {
       }
     };
     loadCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchWeekendDays()
+      .then(setWeekendDays)
+      .catch(() => setWeekendDays(null));
   }, []);
 
   // New vehicle: the branch GST rule for the preview (edit mode gets it with the vehicle)
@@ -258,6 +283,8 @@ export const ManagerVehicleFormPage = () => {
             freeKm24Hour: vehicle.customPricing?.freeKm24Hour ?? 150,
             priceMonthly: vehicle.customPricing?.priceMonthly ? Number(vehicle.customPricing.priceMonthly) : 0,
             freeKmMonthly: vehicle.customPricing?.freeKmMonthly ?? 1500,
+            weekendPrice12Hour: cp?.weekendTotalRent12Hour ? Number(cp.weekendTotalRent12Hour) : 0,
+            weekendPrice24Hour: cp?.weekendTotalRent24Hour ? Number(cp.weekendTotalRent24Hour) : 0,
             extraKmRate: vehicle.customPricing?.extraKmRate ? Number(vehicle.customPricing.extraKmRate) : 8,
             extraHourRate: vehicle.customPricing?.extraHourRate ? Number(vehicle.customPricing.extraHourRate) : 100,
             isCustomPricingEnabled: vehicle.customPricing?.enabled ?? true,
@@ -327,6 +354,9 @@ export const ManagerVehicleFormPage = () => {
       formData.append("freeKm24Hour", data.freeKm24Hour?.toString() || "150");
       formData.append("priceMonthly", data.priceMonthly?.toString() || "0");
       formData.append("freeKmMonthly", data.freeKmMonthly?.toString() || "1500");
+      // Weekend rents (GST-inclusive); "0" clears one — the weekday rent then applies
+      formData.append("weekendTotalRent12Hour", data.weekendPrice12Hour?.toString() || "0");
+      formData.append("weekendTotalRent24Hour", data.weekendPrice24Hour?.toString() || "0");
       formData.append("extraKmRate", data.extraKmRate.toString());
       formData.append("extraHourRate", data.extraHourRate.toString());
       formData.append("isCustomPricingEnabled", data.isCustomPricingEnabled.toString());
@@ -835,6 +865,63 @@ export const ManagerVehicleFormPage = () => {
                           />
                         </div>
                         <RentGstPreview total={form.watch("priceMonthly")} rates={gstRates} />
+                      </div>
+
+                      {/* Weekend (weekend-wise pricing) */}
+                      <div className="rounded-lg border border-neutral-200 p-4 bg-neutral-50/40">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CalendarRange className="w-4 h-4 text-neutral-500" />
+                          <span className="text-sm font-medium text-neutral-700">Weekend</span>
+                          <span className="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded font-medium ml-auto">Optional</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="weekendPrice12Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Weekend 12-hour rent incl. GST (₹)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="weekendPrice24Hour"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-neutral-500">Weekend 24-hour rent incl. GST (₹)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="0" className="h-10" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <RentGstPreview total={form.watch("weekendPrice12Hour")} rates={gstRates} label="12 h" />
+                        <RentGstPreview total={form.watch("weekendPrice24Hour")} rates={gstRates} label="24 h" />
+                        <p className="mt-2 text-[11px] leading-snug text-neutral-500">
+                          Charged for each day (or 12 hours) of a trip with at least half its time on the
+                          branch's weekend days
+                          {weekendDays && weekendDays.length > 0 ? ` (${weekendDaysLabel(weekendDays)})` : ""}. Leave 0
+                          to charge the weekday rent.{" "}
+                          <button
+                            type="button"
+                            onClick={() => navigate("/manager/branch-schedule")}
+                            className="font-medium text-neutral-700 underline underline-offset-2"
+                          >
+                            Change weekend days
+                          </button>
+                        </p>
+                        {weekendDays && weekendDays.length === 0 && (
+                          <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+                            No weekend days are set for this branch, so weekend rents aren't charged.
+                          </p>
+                        )}
                       </div>
                     </div>
 

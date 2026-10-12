@@ -251,6 +251,10 @@ export const VehicleBookingPanel = ({
                     {fmt(rent.rent)}
                   </span>
                 </div>
+                {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+                {pd.pricingBreakdown.weekend && (
+                  <p className="-mt-2 text-xs text-zinc-400">{pd.pricingBreakdown.weekend.label}</p>
+                )}
                 {rent.discount > 0 && (
                   <div className="flex justify-between">
                     <span className="flex items-center gap-1.5 text-emerald-600">
@@ -328,19 +332,24 @@ export const VehicleBookingPanel = ({
       {/* Sticky price + CTA footer */}
       <div className="border-t border-zinc-200 p-6 lg:p-8 bg-white">
         {pd ? (
-          <div className="mb-4 flex items-baseline gap-3">
-            <span className="text-3xl font-serif font-black tracking-tight text-zinc-900">
-              {fmt(group.pricing.daily ?? 0)}
-            </span>
-            <span className="text-sm font-bold uppercase tracking-wider text-zinc-400">
-              {/* The base for the picked period, not a per-day rate */}
-              {pd.pricingBreakdown.billedAs ? `/ ${pd.pricingBreakdown.billedAs}` : "/day"}
-            </span>
-            <span className="ml-auto text-sm text-zinc-500">
-              <span className="font-bold text-zinc-900">{fmt(rent.rentAfterDiscount)}</span>{" "}
-              total incl. GST
-            </span>
-          </div>
+          <>
+            <div className="mb-4 flex items-baseline gap-3">
+              <span className="text-3xl font-serif font-black tracking-tight text-zinc-900">
+                {fmt(group.pricing.daily ?? 0)}
+              </span>
+              <span className="text-sm font-bold uppercase tracking-wider text-zinc-400">
+                {/* The base for the picked period, not a per-day rate */}
+                {pd.pricingBreakdown.billedAs ? `/ ${pd.pricingBreakdown.billedAs}` : "/day"}
+              </span>
+              <span className="ml-auto text-sm text-zinc-500">
+                <span className="font-bold text-zinc-900">{fmt(rent.rentAfterDiscount)}</span>{" "}
+                total incl. GST
+              </span>
+            </div>
+            {pd.pricingBreakdown.weekend && (
+              <p className="-mt-3 mb-4 text-xs text-zinc-500">{pd.pricingBreakdown.weekend.label}</p>
+            )}
+          </>
         ) : (
           <p className="mb-4 text-center text-sm font-medium text-zinc-500">
             Select dates &amp; times to see pricing

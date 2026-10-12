@@ -454,6 +454,10 @@ export const EmployeeVehiclePricingCard = ({
                   {formatCurrency(rent.rent)}
                 </span>
               </div>
+              {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+              {pd.pricingBreakdown.weekend && (
+                <p className="-mt-1 text-xs text-zinc-500">{pd.pricingBreakdown.weekend.label}</p>
+              )}
 
               {rent.discount > 0 && (
                 <div className="flex justify-between text-sm">

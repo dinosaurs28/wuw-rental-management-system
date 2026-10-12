@@ -594,6 +594,9 @@ function RegNoResults({
                   <span className="ml-1 text-xs font-normal text-zinc-500">incl. GST</span>
                 </p>
               )}
+              {price != null && car.pricingDetails?.weekend && (
+                <p className="text-xs text-zinc-500">{car.pricingDetails.weekend.label}</p>
+              )}
               {reason ? (
                 <p className="mt-0.5 text-xs font-medium text-amber-700">{reason}</p>
               ) : (

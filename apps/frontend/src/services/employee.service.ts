@@ -6,6 +6,7 @@ import type {
   OverdueReturnsResponse,
   OverdueReturnsSnapshot,
 } from "@/types/overdueReturns";
+import type { WeekendPricing } from "@/services/vehicle.service";
 
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 
@@ -42,7 +43,14 @@ export interface RegNoVehicle {
   /** The car's make/model group — booked by publicId, not by this key. */
   groupKey: string;
   pricing: { daily: number | null };
-  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string } | null;
+  pricingDetails: {
+    price: number;
+    finalPrice: number;
+    type: string;
+    billedAs?: string;
+    /** Weekend rates inside price (weekend-wise pricing; absent when none). */
+    weekend?: WeekendPricing;
+  } | null;
   available: boolean;
   /** Why it can't be booked for the dates (on rent, maintenance, insurance …). */
   unavailableReason: { code: string; message: string } | null;

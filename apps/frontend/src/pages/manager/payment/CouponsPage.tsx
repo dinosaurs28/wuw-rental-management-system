@@ -15,7 +15,15 @@ import {
   UserCheck,
   AlertTriangle,
   Pencil,
+  Shuffle,
+  Lock,
 } from "lucide-react";
+import {
+  COUPON_CODE_MAX_LENGTH,
+  COUPON_CODE_MIN_LENGTH,
+  couponCodeIssue,
+  normalizeCouponCode,
+} from "@repo/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +47,70 @@ import { managerDiscountService, type ManagerCoupon } from "@/services/discount.
 
 const fmt = (v: string | number) =>
   `₹ ${parseFloat(String(v)).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
+
+/** Server message for a coupon code the save rejected (invalid / taken / locked), else null. */
+const couponCodeErrorOf = (err: any): string | null => {
+  const data = err?.response?.data;
+  return typeof data?.code === "string" && data.code.includes("COUPON_CODE") ? data.message ?? null : null;
+};
+
+// ── Coupon Code Field ─────────────────────────────────────────────────────────
+
+/** The code customers type — uppercased as typed; "Generate" fills a free branch-prefixed suggestion. */
+function CouponCodeField({
+  value,
+  onChange,
+  serverError,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+  /** Why the last save rejected the code (taken / locked / invalid). */
+  serverError: string | null;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const normalized = normalizeCouponCode(value);
+  const error = serverError ?? (normalized ? couponCodeIssue(normalized) : null);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await managerDiscountService.generateCouponCode();
+      onChange(res.data.code);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Couldn't generate a code. Type one instead.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-neutral-600">Coupon Code <span className="text-red-500">*</span></Label>
+      <div className="flex gap-2">
+        <Input
+          className="h-10 font-mono uppercase"
+          value={value}
+          maxLength={COUPON_CODE_MAX_LENGTH}
+          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          placeholder="e.g. FRIENDS10"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={!!error}
+        />
+        <Button type="button" variant="outline" className="h-10 gap-1.5 text-xs shrink-0" onClick={generate} disabled={generating}>
+          <Shuffle className="w-3.5 h-3.5" /> {generating ? "Generating…" : "Generate"}
+        </Button>
+      </div>
+      {error ? (
+        <p className="text-xs text-red-500">{error}</p>
+      ) : (
+        <p className="text-xs text-neutral-400">
+          Customers enter this at checkout. {COUPON_CODE_MIN_LENGTH}–{COUPON_CODE_MAX_LENGTH} letters, numbers or hyphens.
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Deactivate Confirm Dialog ─────────────────────────────────────────────────
 
@@ -181,6 +253,10 @@ function CustomerRestrictionPicker({
 // ── Edit Coupon Modal ─────────────────────────────────────────────────────────
 
 function EditCouponModal({ coupon, onClose, onSaved }: { coupon: ManagerCoupon; onClose: () => void; onSaved: () => void }) {
+  // A coupon already on a booking or bill keeps its code (older servers: any recorded use)
+  const codeLocked = coupon.codeLocked ?? coupon._count.usageLogs > 0;
+  const [code, setCode] = useState(coupon.code);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [name, setName] = useState(coupon.name);
   const [value, setValue] = useState(String(parseFloat(coupon.value)));
   const [usageLimit, setUsageLimit] = useState(String(coupon.totalUsageLimit ?? ""));
@@ -192,6 +268,7 @@ function EditCouponModal({ coupon, onClose, onSaved }: { coupon: ManagerCoupon; 
   const mutation = useMutation({
     mutationFn: () => {
       const payload: Parameters<typeof managerDiscountService.updateCoupon>[1] = {};
+      if (codeChanged) payload.code = normalizedCode;
       if (name.trim() !== coupon.name) payload.name = name.trim();
       if (parseFloat(value) !== parseFloat(coupon.value)) payload.value = parseFloat(value);
       if (usageLimit !== "" && parseInt(usageLimit) !== coupon.totalUsageLimit) payload.usageLimit = parseInt(usageLimit);
@@ -202,13 +279,19 @@ function EditCouponModal({ coupon, onClose, onSaved }: { coupon: ManagerCoupon; 
       return managerDiscountService.updateCoupon(coupon.publicId, payload);
     },
     onSuccess: () => { toast.success("Coupon updated."); onSaved(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || "Failed to update coupon."); },
+    onError: (err: any) => {
+      setCodeError(couponCodeErrorOf(err));
+      toast.error(err?.response?.data?.message || "Failed to update coupon.");
+    },
   });
 
+  const normalizedCode = normalizeCouponCode(code);
+  const codeChanged = !codeLocked && normalizedCode !== coupon.code;
   const currentUsage = coupon._count.usageLogs;
   const usageLimitNum = usageLimit !== "" ? parseInt(usageLimit) : null;
   const usageLimitError = usageLimitNum !== null && usageLimitNum < currentUsage ? `Cannot be below current usage (${currentUsage})` : null;
-  const isValid = name.trim().length >= 1 && parseFloat(value) > 0 && !usageLimitError;
+  const isValid =
+    name.trim().length >= 1 && parseFloat(value) > 0 && !usageLimitError && (!codeChanged || !couponCodeIssue(normalizedCode));
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -226,6 +309,20 @@ function EditCouponModal({ coupon, onClose, onSaved }: { coupon: ManagerCoupon; 
               <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
               This coupon has been used <strong>{currentUsage}</strong> time(s). Existing usage records are preserved.
             </div>
+          )}
+
+          {codeLocked ? (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-neutral-600">Coupon Code</Label>
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-neutral-200 bg-neutral-50 text-sm font-mono text-neutral-700">
+                {coupon.code}
+                <span className="ml-auto flex items-center gap-1 font-sans text-xs text-neutral-400">
+                  <Lock className="w-3 h-3" /> Already used — code can't change
+                </span>
+              </div>
+            </div>
+          ) : (
+            <CouponCodeField value={code} onChange={(c) => { setCode(c); setCodeError(null); }} serverError={codeError} />
           )}
 
           <div className="space-y-1.5">
@@ -287,6 +384,8 @@ function EditCouponModal({ coupon, onClose, onSaved }: { coupon: ManagerCoupon; 
 // ── Create Coupon Modal ───────────────────────────────────────────────────────
 
 function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FLAT">("PERCENTAGE");
   const [discountValue, setDiscountValue] = useState("");
@@ -299,6 +398,7 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const mutation = useMutation({
     mutationFn: () =>
       managerDiscountService.createCoupon({
+        code: normalizedCode,
         name: name.trim(),
         discountType,
         value: parseFloat(discountValue),
@@ -309,10 +409,18 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
         targetCustomerIds: targetCustomers.map((c) => c.customerProfileId),
       }),
     onSuccess: () => { toast.success("Coupon created."); onCreated(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || "Failed to create coupon."); },
+    onError: (err: any) => {
+      setCodeError(couponCodeErrorOf(err));
+      toast.error(err?.response?.data?.message || "Failed to create coupon.");
+    },
   });
 
-  const isValid = name.trim().length >= 1 && parseFloat(discountValue) > 0 && reason.trim().length >= 5;
+  const normalizedCode = normalizeCouponCode(code);
+  const isValid =
+    !couponCodeIssue(normalizedCode) &&
+    name.trim().length >= 1 &&
+    parseFloat(discountValue) > 0 &&
+    reason.trim().length >= 5;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -325,6 +433,8 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </div>
 
         <div className="px-6 py-5 space-y-4">
+          <CouponCodeField value={code} onChange={(c) => { setCode(c); setCodeError(null); }} serverError={codeError} />
+
           <div className="space-y-1.5">
             <Label className="text-xs text-neutral-600">Coupon Name</Label>
             <Input className="h-10" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Summer Sale 2026" />
