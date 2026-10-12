@@ -40,6 +40,13 @@ const isTab = (t?: string): t is Tab => t === 'pickups' || t === 'returns';
 function ymd(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+// A YYYY-MM-DD route param as local midnight; undefined when absent or malformed.
+function parseYmd(s?: string): Date | undefined {
+  const m = s ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null;
+  if (!m) return undefined;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? undefined : d;
+}
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface QueueResult {
@@ -153,15 +160,22 @@ export default function BookingsQueue() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isFocused = useIsFocused();
-  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const { tab, view, date } = useLocalSearchParams<{ tab?: string; view?: string; date?: string }>();
   const [activeTab, setActiveTab] = useState<Tab>(isTab(tab) ? tab : 'pickups');
   // Daily / Monthly split of the Pickups and Returns queues (#17).
   const [listType, setListType] = useState<BookingListType>('DAILY');
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   // This tab screen stays mounted, so apply the dashboard's Pickup / Return
   // choice whenever it arrives, then clear it — the next shortcut tap applies
-  // again, and a plain tab-bar visit keeps the last-used tab. The old
-  // `?tab=overdue` deep link now opens the Recovery tab.
+  // again, and a plain tab-bar visit keeps the last-used tab, Daily / Monthly
+  // and day. The shortcuts also send view=daily and today's date, so the list
+  // matches their badge. The old `?tab=overdue` deep link now opens the
+  // Recovery tab.
   useEffect(() => {
     if (tab === 'overdue') {
       router.setParams({ tab: undefined });
@@ -170,13 +184,12 @@ export default function BookingsQueue() {
     }
     if (!isTab(tab)) return;
     setActiveTab(tab);
-    router.setParams({ tab: undefined });
-  }, [tab]);
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+    if (view === 'daily') setListType('DAILY');
+    else if (view === 'monthly') setListType('MONTHLY');
+    const day = parseYmd(date);
+    if (day) setSelectedDate(day);
+    router.setParams({ tab: undefined, view: undefined, date: undefined });
+  }, [tab, view, date]);
   const dateParam = ymd(selectedDate);
 
   // Date strip: 3 days back → 13 days ahead (Daily tab). Rentals still out

@@ -345,7 +345,6 @@ export const employeeApi = {
     api.post('/api/employee/auth/sms/forgot-password', { identifier }),
   smsResetPassword: (identifier: string, otp: string, password: string) =>
     api.post('/api/employee/auth/sms/reset-password', { identifier, otp, password }),
-  dashboardStats: () => api.get('/api/employee/dashboard/stats'),
   // { data: null | ActiveShift } (types/shift.ts).
   getActiveShift: () => api.get('/api/employee/payment/shifts/me/active'),
   // openingCash: the float counted into the drawer (0–10,00,000, 2 dp); omitted = 0.

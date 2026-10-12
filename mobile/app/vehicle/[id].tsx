@@ -419,6 +419,8 @@ export default function VehicleDetail() {
               {/* Rent is GST-inclusive (item 17): rent → discounts → rent after
                   discount, with the GST inside it → deposit (no GST) → total */}
               <PriceLine label={`Rent (${billedAs ?? realDuration ?? rangeLength}, incl. GST)`} value={inrExact(rent.rent)} />
+              {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+              {pb?.weekend ? <Text style={styles.priceNote}>{pb.weekend.label}</Text> : null}
               {/* Duration slab named (#24), e.g. "Weekly discount (10%)" — off the inclusive rent */}
               {quoteDiscountLines({ ...pd, discountAmount: rent.discount, durationDiscountAmount: rent.durationDiscount }).map((l) => (
                 <PriceLine key={l.label} label={l.label} value={`-${inrExact(l.amount)}`} valueColor={Colors.availGood} />

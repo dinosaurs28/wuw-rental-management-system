@@ -495,7 +495,6 @@ export default function PickupScreen() {
     // Explicitly completed: the server dropped the saved draft with it.
     draft.completed();
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
     qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
     qc.invalidateQueries({ queryKey: ['employee', 'financial-state', bookingId] });
     if (!mountedRef.current) return;

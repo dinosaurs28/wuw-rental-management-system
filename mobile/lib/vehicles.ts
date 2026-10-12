@@ -21,6 +21,7 @@ export function normalizeGroup(g: any): Vehicle {
       daily: g.pricing?.daily ?? null,
       hourly: g.pricing?.hourly ?? null,
       halfDay: g.pricing?.halfDay ?? null,
+      weekendDaily: g.pricing?.weekendDaily ?? null,
     },
     priceInfo: g.pricingDetails ?? null,
     availability: true,

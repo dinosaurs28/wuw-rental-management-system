@@ -26,6 +26,24 @@ export interface ListPricing {
   gst?: number;
   cgst?: number;
   sgst?: number;
+  // Weekend rates inside price (weekend-wise pricing) — absent when none apply.
+  weekend?: WeekendPricing;
+}
+
+// Weekend-wise pricing: the blocks of a window (each 24 h, the remainder, or a
+// single trip of up to 24 h) with at least half their time on the branch's weekend days are
+// billed at the vehicle's weekend rent. Sent only when a weekend rate applied.
+export interface WeekendPricing {
+  weekendBlocks: number;
+  weekdayBlocks: number;
+  // The vehicle's weekend 12 h / 24 h rents (GST-inclusive); null = same as weekday.
+  weekendPrice12Hour: number | null;
+  weekendPrice24Hour: number | null;
+  // What the weekend blocks cost, and the same blocks at weekday rates.
+  weekendAmount: number;
+  weekdayAmount: number;
+  // e.g. "Includes 1 weekend day at ₹1,600"
+  label: string;
 }
 
 // ── Customer payment plan (#6, advance only since item 18) ──────────────────
@@ -70,7 +88,9 @@ export interface Vehicle {
   category: string;
   branch: string;
   images: string[];
-  pricing: { daily: number | null; hourly?: number | null; halfDay?: number | null };
+  // weekendDaily: without dates, the weekend 24-hour rent — only when set and
+  // different from daily (weekend-wise pricing).
+  pricing: { daily: number | null; hourly?: number | null; halfDay?: number | null; weekendDaily?: number | null };
   // present only when the list was queried with start/end
   priceInfo?: ListPricing | null;
   availability: boolean | null;
@@ -138,6 +158,8 @@ export interface PricingDetails extends RentInclGstFields {
     // billed as "12 hours" or a 13 h one as "1 day". Optional (cached payloads).
     billedAs?: string;
     billedAsType?: RentalPeriodType;
+    // Weekend rates inside the price (weekend-wise pricing) — absent when none apply.
+    weekend?: WeekendPricing;
   };
 }
 

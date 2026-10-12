@@ -11,7 +11,7 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
@@ -19,15 +19,30 @@ import { employeeApi } from '../../lib/api';
 import { SHIFT_REQUIRED_MESSAGE } from '../../lib/counterErrors';
 import { useAuthStore } from '../../store/auth';
 import NotificationBell from '../../components/notifications/NotificationBell';
+import { useRecoveryCount } from '../../components/employee/recovery/useRecovery';
+import type { QueueListResponse } from '../../types/queue';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type QueueKind = 'pickups' | 'returns';
 
-interface DashboardStats {
-  todaysPickups: number;
-  todaysReturns: number;
-  activeRentals: number;
-  // Rentals past their return time and not back yet (#8). Absent on older servers.
-  overdueReturns?: number;
+// Local YYYY-MM-DD, as the Queue tab sends and reads it.
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Size of today's Daily list — what the Queue tab shows when a shortcut opens
+// it. Servers older than #17 send no counts, so fall back to the rows.
+async function fetchQueueCount(kind: QueueKind, date: string): Promise<number> {
+  const params = { date, type: 'DAILY' as const };
+  try {
+    const res = kind === 'pickups' ? await employeeApi.listPickups(params) : await employeeApi.listReturns(params);
+    const body = res.data as QueueListResponse;
+    return body?.counts?.daily ?? body?.data?.length ?? 0;
+  } catch (err: any) {
+    // Older servers answer an empty queue with 404.
+    if (err.response?.status === 404) return 0;
+    throw err;
+  }
 }
 
 interface Shift {
@@ -42,37 +57,37 @@ interface Shift {
   pendingCash?: string | null;
 }
 
-function StatCard({ label, value, icon, color }: { label: string; value: number; icon: IoniconName; color: string }) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIconWrap, { backgroundColor: color + '15' }]}>
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 function QuickAction({
   label,
   icon,
   onPress,
   accent,
+  count = 0,
+  countNoun = 'waiting',
 }: {
   label: string;
   icon: IoniconName;
   onPress: () => void;
   accent?: boolean;
+  // Small badge on the icon; hidden at 0.
+  count?: number;
+  countNoun?: string;
 }) {
   return (
     <TouchableOpacity
       style={[styles.quickAction, accent && styles.quickActionAccent]}
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={count > 0 ? `${label}, ${count} ${countNoun}` : label}
     >
       <View style={[styles.qaIcon, accent && styles.qaIconAccent]}>
         <Ionicons name={icon} size={20} color={accent ? Colors.white : Colors.ink2} />
+        {count > 0 ? (
+          <View style={styles.qaBadge}>
+            <Text style={styles.qaBadgeText}>{count > 99 ? '99+' : count}</Text>
+          </View>
+        ) : null}
       </View>
       <Text style={[styles.qaLabel, accent && styles.qaLabelAccent]}>{label}</Text>
     </TouchableOpacity>
@@ -94,28 +109,44 @@ export default function EmployeeDashboard() {
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
   const isFocused = useIsFocused();
-  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, refetch: refetchStats } = useQuery<DashboardStats>({
-    queryKey: ['employee', 'dashboard-stats'],
-    queryFn: async () => {
-      const res = await employeeApi.dashboardStats();
-      return res.data as DashboardStats;
-    },
+  const qc = useQueryClient();
+  // Badges on the Pickup / Return Queue shortcuts. The keys sit under
+  // ['employee', 'pickups'] / ['employee', 'returns'], so finishing a pickup
+  // or drop refreshes them too; the 60 s poll keeps them current on screen.
+  const today = ymd(new Date());
+  const { data: pickupCount = 0, isFetching: pickupCountFetching, refetch: refetchPickupCount } = useQuery({
+    queryKey: ['employee', 'pickups', 'count', today],
+    queryFn: () => fetchQueueCount('pickups', today),
     staleTime: 60_000,
-    // Keeps the overdue count current while the dashboard is on screen.
     refetchInterval: isFocused ? 60_000 : false,
+    retry: false,
   });
-  const overdueReturns = stats?.overdueReturns ?? 0;
+  const { data: returnCount = 0, isFetching: returnCountFetching, refetch: refetchReturnCount } = useQuery({
+    queryKey: ['employee', 'returns', 'count', today],
+    queryFn: () => fetchQueueCount('returns', today),
+    staleTime: 60_000,
+    refetchInterval: isFocused ? 60_000 : false,
+    retry: false,
+  });
+  // Same number as the Recovery tab badge, so the two always agree.
+  const overdueReturns = useRecoveryCount();
+  const refetchOverdueCount = useCallback(
+    () => qc.refetchQueries({ queryKey: ['employee', 'returns', 'overdue-count'], exact: true }),
+    [qc],
+  );
 
   // Back from another screen: refresh the counts. The first focus is the initial load.
-  const statsFocusedOnceRef = useRef(false);
+  const countsFocusedOnceRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (!statsFocusedOnceRef.current) {
-        statsFocusedOnceRef.current = true;
+      if (!countsFocusedOnceRef.current) {
+        countsFocusedOnceRef.current = true;
         return;
       }
-      refetchStats();
-    }, [refetchStats]),
+      refetchPickupCount();
+      refetchReturnCount();
+      refetchOverdueCount();
+    }, [refetchPickupCount, refetchReturnCount, refetchOverdueCount]),
   );
 
   const { data: shiftData, isLoading: shiftLoading, isFetching: shiftFetching, refetch: refetchShift } = useQuery<Shift | null>({
@@ -127,10 +158,10 @@ export default function EmployeeDashboard() {
     staleTime: 30_000,
   });
 
-  // The pull-to-refresh spinner follows the pull only, so the 60 s overdue
-  // poll and the on-focus refresh run quietly in the background.
+  // The pull-to-refresh spinner follows the pull only, so the 60 s count
+  // polls and the on-focus refresh run quietly in the background.
   const [pulling, setPulling] = useState(false);
-  const refreshing = pulling && (statsFetching || shiftFetching);
+  const refreshing = pulling && (pickupCountFetching || returnCountFetching || shiftFetching);
 
   // Staff can't take a booking without an open cash shift (the server rejects
   // it with SHIFT_REQUIRED). With no shift cached, re-check before blocking in
@@ -155,7 +186,7 @@ export default function EmployeeDashboard() {
 
   const onRefresh = async () => {
     setPulling(true);
-    await Promise.all([refetchStats(), refetchShift()]);
+    await Promise.all([refetchPickupCount(), refetchReturnCount(), refetchOverdueCount(), refetchShift()]);
     setPulling(false);
   };
 
@@ -291,35 +322,6 @@ export default function EmployeeDashboard() {
         </TouchableOpacity>
       )}
 
-      {/* Stats */}
-      <Text style={styles.sectionTitle}>Today</Text>
-      {statsLoading ? (
-        <View style={styles.statsLoader}>
-          <ActivityIndicator color={Colors.orange} />
-        </View>
-      ) : (
-        <View style={styles.statsRow}>
-          <StatCard
-            label="Pickups"
-            value={stats?.todaysPickups ?? 0}
-            icon="arrow-up-circle-outline"
-            color="#ff6a1f"
-          />
-          <StatCard
-            label="Returns"
-            value={stats?.todaysReturns ?? 0}
-            icon="arrow-down-circle-outline"
-            color="#3b82f6"
-          />
-          <StatCard
-            label="Active"
-            value={stats?.activeRentals ?? 0}
-            icon="car-outline"
-            color="#10b981"
-          />
-        </View>
-      )}
-
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionsGrid}>
@@ -332,17 +334,21 @@ export default function EmployeeDashboard() {
         <QuickAction
           label="Pickup Queue"
           icon="arrow-up-circle-outline"
-          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'pickups' } })}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'pickups', view: 'daily', date: today } })}
+          count={pickupCount}
         />
         <QuickAction
           label="Return Queue"
           icon="arrow-down-circle-outline"
-          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns' } })}
+          onPress={() => router.push({ pathname: '/(employee)/bookings', params: { tab: 'returns', view: 'daily', date: today } })}
+          count={returnCount}
         />
         <QuickAction
-          label={overdueReturns > 0 ? `Recovery (${overdueReturns})` : 'Recovery'}
+          label="Recovery"
           icon="alarm-outline"
           onPress={() => router.navigate('/(employee)/recovery' as Href)}
+          count={overdueReturns}
+          countNoun="overdue"
         />
         <QuickAction
           label="Scan Booking"
@@ -552,7 +558,7 @@ const styles = StyleSheet.create({
   overdueAlertTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.availNone },
   overdueAlertSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink2 },
 
-  /* Stats */
+  /* Quick Actions */
   sectionTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
@@ -562,43 +568,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
   },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 28,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    gap: 6,
-  },
-  statIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontFamily: Fonts.displayBold,
-    fontSize: 26,
-    color: Colors.ink,
-    letterSpacing: -0.8,
-  },
-  statLabel: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.ink3,
-  },
-  statsLoader: { height: 100, justifyContent: 'center', alignItems: 'center' },
-
-  /* Quick Actions */
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -627,6 +596,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qaIconAccent: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  // Same look as the tab-bar badges, pinned to the icon's top-right corner.
+  qaBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: Colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qaBadgeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 10,
+    color: Colors.white,
+    includeFontPadding: false,
+  },
   qaLabel: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 14,

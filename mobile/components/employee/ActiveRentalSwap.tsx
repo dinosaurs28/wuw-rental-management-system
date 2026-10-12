@@ -23,7 +23,6 @@ export default function ActiveRentalSwap({ bookingId, canSwap }: { bookingId: st
     qc.invalidateQueries({ queryKey: swapCandidatesKey(bookingId) });
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
   };
 
   return (

@@ -280,7 +280,6 @@ export default function ExtensionScreen() {
   const refreshQueues = () => {
     qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
-    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
   };
 
   // An evaluated/committed extension blocks any new one until it is paid or

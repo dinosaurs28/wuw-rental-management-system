@@ -1,6 +1,6 @@
 // Shared rental-pricing display helpers.
 // Mirrors the web VehicleCard typeMaps exactly so mobile labels match the site.
-import type { RentalDuration } from '../types/api';
+import type { ListPricing, RentalDuration } from '../types/api';
 import { rentalLengthLabel } from './dates';
 
 // Short PER-PERIOD unit suffix shown next to a per-period rate (e.g. "₹1,200 / day").
@@ -35,6 +35,20 @@ export function priceUnitFor(info?: { billedAs?: string | null; type?: string | 
 // server sends it, else the period type ("Half day").
 export function billedBadge(info?: { billedAs?: string | null; type?: string | null } | null): string | null {
   return info?.billedAs ?? periodLabel(info?.type);
+}
+
+// Weekend-wise pricing note for a listed price: with dates, the weekend part of
+// the price ("Includes 1 weekend day at ₹1,600"); without dates, the weekend day
+// rent next to the weekday one ("Weekend ₹1,600/day" — sent only when it differs).
+export function weekendNote(vehicle: {
+  priceInfo?: ListPricing | null;
+  pricing?: { weekendDaily?: number | null } | null;
+}): string | null {
+  if (vehicle.priceInfo) return vehicle.priceInfo.weekend?.label ?? null;
+  const weekendDaily = vehicle.pricing?.weekendDaily;
+  return weekendDaily != null && weekendDaily > 0
+    ? `Weekend ₹${weekendDaily.toLocaleString('en-IN', { maximumFractionDigits: 2 })}/day`
+    : null;
 }
 
 // Human label for the rental period type (e.g. shown as a badge).

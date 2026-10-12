@@ -1027,6 +1027,10 @@ export default function Checkout() {
             label={pd ? `Rent (${pd.pricingBreakdown?.billedAs ?? durationText}, incl. GST)` : `₹${daily.toLocaleString('en-IN')} × ${days} day${days > 1 ? 's' : ''}`}
             value={rentView ? inrExact(rentView.rent) : `₹${(daily * days).toLocaleString('en-IN')}`}
           />
+          {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+          {pd?.pricingBreakdown?.weekend ? (
+            <Text style={styles.priceNote}>{pd.pricingBreakdown.weekend.label}</Text>
+          ) : null}
           {/* Duration slab named (#24). With a coupon, the server's re-priced
               layers — a slab the coupon replaced (no stacking) is not shown. */}
           {couponPricing && rentView

@@ -37,6 +37,7 @@ import {
   type WalkinPackage,
 } from '../../../lib/packages';
 import { useBranchSchedule } from '../../../hooks/useBranchSchedule';
+import type { WeekendPricing } from '../../../types/api';
 import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
 import {
   bookingTimesNotice,
@@ -77,9 +78,11 @@ interface VehicleCard {
   branch: string;
   availableCount: number;
   imageUrl: Array<{ file: { url: string } }>;
-  pricing: { daily: number };
-  // billedAs (#5): what the total covers, e.g. "12 hours", "1 month + 5 days"
-  pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string };
+  // weekendDaily: without dates, the weekend 24-hour rent (only when it differs)
+  pricing: { daily: number; weekendDaily?: number };
+  // billedAs (#5): what the total covers, e.g. "12 hours", "1 month + 5 days";
+  // weekend: the weekend rates inside it (weekend-wise pricing, absent when none)
+  pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string; weekend?: WeekendPricing };
 }
 
 // GET /api/employee/vehicles/search-reg — one car per row (client item 5).
@@ -97,7 +100,7 @@ interface RegVehicle {
   // The car's make/model group — booked by publicId, not by this key
   groupKey: string;
   pricing: { daily: number | null };
-  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string } | null;
+  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string; weekend?: WeekendPricing } | null;
   available: boolean;
   unavailableReason: { code: string; message: string } | null;
 }
@@ -724,6 +727,9 @@ export default function WalkinVehiclesScreen() {
               {' · incl. GST'}
             </Text>
           ) : null}
+          {price != null && car.pricingDetails?.weekend ? (
+            <Text style={styles.cardMeta}>{car.pricingDetails.weekend.label}</Text>
+          ) : null}
           {reason ? (
             <Text style={styles.cardBlockedText}>{reason}</Text>
           ) : (
@@ -805,6 +811,14 @@ export default function WalkinVehiclesScreen() {
                     {' · incl. GST'}
                   </Text>
                 )}
+                {/* Weekend-wise pricing: the weekend part of the total / the weekend day rent */}
+                {!blocked && (item.pricingDetails ? item.pricingDetails.weekend : item.pricing.weekendDaily != null) ? (
+                  <Text style={styles.cardMeta}>
+                    {item.pricingDetails
+                      ? item.pricingDetails.weekend?.label
+                      : `Weekend ₹${Number(item.pricing.weekendDaily).toLocaleString('en-IN')}/day`}
+                  </Text>
+                ) : null}
               </View>
               {busy ? (
                 <ActivityIndicator size="small" color={Colors.orange} />

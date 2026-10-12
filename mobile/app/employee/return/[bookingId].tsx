@@ -797,7 +797,6 @@ export default function ReturnScreen() {
     // Explicitly completed: the server dropped the saved draft with it.
     draft.completed();
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
-    qc.invalidateQueries({ queryKey: ['employee', 'dashboard-stats'] });
     qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking?.publicId] });
     if (mountedRef.current) setDone(true);
   };

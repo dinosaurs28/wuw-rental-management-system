@@ -715,6 +715,10 @@ export default function WalkinSummaryScreen() {
           {/* Rent is GST-inclusive (item 17): rent → discounts (off the
               inclusive rent) → rent after discount, with the GST inside it */}
           <Line label={rent ? `Rent (${billedText}, incl. GST)` : `Base (${billedText})`} value={inrExact(rent ? rent.rent : base)} />
+          {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
+          {pd?.pricingBreakdown?.weekend ? (
+            <Text style={styles.priceNote}>{pd.pricingBreakdown.weekend.label}</Text>
+          ) : null}
           {/* Duration slab named (#24), e.g. "Weekly discount (10%)" */}
           {pd && rent
             ? quoteDiscountLines({ ...pd, discountAmount: rent.discount, durationDiscountAmount: rent.durationDiscount }).map((l) => (

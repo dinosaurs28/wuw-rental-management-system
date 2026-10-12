@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
-import { billedBadge, priceUnitFor } from '../../lib/pricing';
+import { billedBadge, priceUnitFor, weekendNote } from '../../lib/pricing';
 import { availabilityLabel, availabilityColor } from '../../lib/availability';
 import StudioImage from './StudioImage';
 import Chip from '../ui/Chip';
@@ -29,6 +29,7 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
   const price = rawPrice && rawPrice > 0 ? rawPrice : null;
   const priceUnit = vehicle.priceInfo ? priceUnitFor(vehicle.priceInfo) : '/ day';
   const badge = vehicle.priceInfo ? billedBadge(vehicle.priceInfo) : null;
+  const weekend = price != null ? weekendNote(vehicle) : null;
   const availLabel = availabilityLabel(vehicle.availableCount);
 
   return (
@@ -72,6 +73,12 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
         </View>
         {/* Listed rents are the GST-inclusive totals the customer pays (item 17) */}
         {price != null ? <Text style={styles.gstNote}>incl. GST</Text> : null}
+        {/* Weekend-wise pricing: the weekend part of the price / the weekend day rent */}
+        {weekend ? (
+          <Text style={styles.gstNote} numberOfLines={2}>
+            {weekend}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
