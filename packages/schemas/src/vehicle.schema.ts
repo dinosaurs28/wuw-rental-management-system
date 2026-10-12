@@ -106,6 +106,11 @@ export const createVehicleSchema = z.object({
   freeKm24Hour: z.coerce.number().min(0).optional(),
   priceMonthly: z.coerce.number().min(0).optional(),
   freeKmMonthly: z.coerce.number().min(0).optional(),
+  // Weekend rents (weekend-wise pricing), GST-inclusive and optional: blank / 0
+  // = the weekday rent applies on the branch's weekend days too. Omitted = keep
+  // what is stored.
+  weekendTotalRent12Hour: z.coerce.number().min(0).optional(),
+  weekendTotalRent24Hour: z.coerce.number().min(0).optional(),
   extraKmRate: chargeRateField("extra km rate"),
   extraHourRate: chargeRateField("extra hour rate"),
   isCustomPricingEnabled: z

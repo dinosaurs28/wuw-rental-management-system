@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { couponCodeSchema } from "./coupon-code.js";
 
 // ─── Discount Rule ────────────────────────────────────────────────────────────
 
 // Base object (no refinements) — allows calling .partial()/.omit() for update schema
 const createDiscountRuleBase = z.object({
-  code: z.string().min(3).max(32).regex(/^[A-Z0-9_\-]+$/i, "Code must be alphanumeric with hyphens/underscores only"),
+  // Trimmed + uppercased; 4–20 of A–Z 0–9 and hyphens (unique across all rules, any case)
+  code: couponCodeSchema,
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   discountType: z.enum(["PERCENTAGE", "FLAT"]),
@@ -91,10 +93,12 @@ export const createDiscountRuleSchema = createDiscountRuleBase
 // Derived from base (not the refined schema) so .partial()/.omit() work on ZodObject.
 // isActive lets an admin reactivate a deactivated rule. The optional limits
 // accept null on update so an admin can clear one (the service stores null).
+// code can change only while the coupon has never been used (checked by the service).
 export const updateDiscountRuleSchema = createDiscountRuleBase
   .partial()
   .omit({ code: true })
   .extend({
+    code: couponCodeSchema.optional(),
     isActive: z.boolean().optional(),
     description: z.string().max(500).nullable().optional(),
     maxDiscountCap: z.number().positive().nullable().optional(),
@@ -178,6 +182,9 @@ export const updateBranchDiscountConfigAdminSchema = updateBranchDiscountConfigS
 
 export const createManagerCouponSchema = z
   .object({
+    // The code customers type. Omitted (older clients) = auto-generated with
+    // the branch prefix, as before.
+    code: couponCodeSchema.optional(),
     // Manager only picks type and value — all caps are enforced server-side
     discountType: z.enum(["PERCENTAGE", "FLAT"]),
     value: z.number().positive(),
@@ -205,6 +212,8 @@ export const createManagerCouponSchema = z
 // ─── Manager Coupon Edit ──────────────────────────────────────────────────────
 
 export const updateManagerCouponSchema = z.object({
+  // Only while the coupon has never been used (409 COUPON_CODE_LOCKED otherwise)
+  code: couponCodeSchema.optional(),
   name: z.string().min(1).max(100).optional(),
   value: z.number().positive().optional(),
   usageLimit: z.number().int().min(1).max(100).optional(),
