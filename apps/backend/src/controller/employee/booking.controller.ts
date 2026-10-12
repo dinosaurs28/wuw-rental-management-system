@@ -434,7 +434,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
       if (dailyPricePaise != null && candidates.length > 0) {
         const durationInfo = DurationCalculatorService.calculate(startDateDt, endDateDt);
-        const listingPriceMap = await getBatchListingPrices(candidates, durationInfo);
+        // Same window as the walk-in listing that built the key, so weekend
+        // rents and the 12 h package held to closing price the same way
+        const listingPriceMap = await getBatchListingPrices(candidates, durationInfo, {
+          startAt: startDate,
+          endAt: endDate,
+        });
         candidates = candidates.filter(
           (v) => dailyPriceToPaise(Number(listingPriceMap.get(v.id)?.finalPrice ?? 0)) === dailyPricePaise,
         );

@@ -270,8 +270,8 @@ export async function getBatchListingPrices(
       pricing,
       halfDayDuration && clampedBranches.has(v.branchId) ? halfDayDuration : duration,
       window && {
-        startAt: window.startAt.toJSDate(),
-        endAt: window.endAt.toJSDate(),
+        startAt: window.startAt,
+        endAt: window.endAt,
         weekendDays: weekendDaysByBranch.get(v.branchId) ?? [],
       },
     );
