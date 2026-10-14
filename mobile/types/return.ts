@@ -338,6 +338,45 @@ export interface DropBill {
   total: string; // drop charges incl. GST, before the deposit credit
 }
 
+// FASTag balances (Oct 15 2026): read at pickup, at mid-rental swaps and at the
+// drop for cars with a FASTag; the usage in between is the drop bill's FASTag
+// line (no GST). Absent on older servers.
+//  - READINGS  every reading so far is there: the server works the charge out
+//              (staff enter the balance now when the car coming back has a FASTag)
+//  - MANUAL    a reading is missing (older booking / app build): the typed charge
+//  - NONE      no car on the booking has a FASTag
+export interface FastagBeforeDrop {
+  mode: 'READINGS' | 'MANUAL' | 'NONE';
+  currentHasFastag: boolean;
+  currentStartBalance: string | null; // balance when the customer got the car coming back
+  priorUsage: string; // usage on cars already handed back at swaps
+  priorRecharged: boolean;
+  swapCount: number;
+}
+
+export interface FastagUsageLeg {
+  regNo: string | null;
+  hasFastag: boolean;
+  startBalance: string | null;
+  endBalance: string | null;
+  endedBySwapPublicId: string | null;
+  usage: string | null;
+  recharged: boolean;
+}
+
+// `fastag` on the drop-bill compute / GET and the legacy complete response.
+export interface FastagUsageSummary {
+  // COMPUTED: billed from the balances · READINGS_MISSING: the typed charge was used
+  status: 'COMPUTED' | 'READINGS_MISSING' | 'NO_FASTAG';
+  amount: string;
+  label: string | null; // e.g. "FASTag usage: ₹480 → ₹215"
+  recharged: boolean;
+  notes: string[];
+  legs: FastagUsageLeg[];
+  pickupBalance?: string | null;
+  returnBalance?: string | null;
+}
+
 // Legacy (no Unified Payments) complete: charges the branch manager collects.
 export interface LegacyReturnChargeLine {
   type: 'EXTRA_KM' | 'EXTRA_TIME' | 'VEHICLE_SWAP' | string;
@@ -358,6 +397,7 @@ export interface CompleteReturnResponse {
   returnedAt?: string;
   km?: ReturnKmSummary | null; // null when endOdometer wasn't sent
   late?: ReturnLateSummary | null;
+  fastag?: FastagUsageSummary | null;
   returnCharges?: {
     collectedBy: 'BRANCH_MANAGER' | string;
     gstRates: GstRates | null;
@@ -387,6 +427,9 @@ export interface ReturnBooking {
   days: number | null;
   startOdometer: number | null;
   pickupFuelLevel: string | null;
+  // FASTag balance read at pickup (null = not read) and how the drop bills FASTag
+  pickupFastagBalance?: string | null;
+  fastag?: FastagBeforeDrop | null;
   safetyDeposit: string | number | null;
   usePaymentSessions: boolean;
   frozenChargeConfig: { fuelModuleEnabled?: boolean; fastagModuleEnabled?: boolean } | null;

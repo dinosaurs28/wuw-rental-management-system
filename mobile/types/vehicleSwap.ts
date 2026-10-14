@@ -56,6 +56,18 @@ export interface SwapCandidate {
   isUpgrade?: boolean;
   // Difference of the GST-inclusive rents for the rest of the rental, ≥ 0; null = couldn't be priced.
   priceDifference?: string | null;
+  // Has a FASTag: its opening balance is entered at a mid-rental swap.
+  hasFastag?: boolean;
+  // Photos of this car a mid-rental swap needs (context.photosRequired). Absent on older servers.
+  photoRequirement?: SwapPhotoRequirement;
+}
+
+// Photos of the replacement a mid-rental swap needs (client item 2): every
+// required shot of the branch's pickup capture config for its category, and at
+// least minPhotos photos in all (4 when the branch has no config).
+export interface SwapPhotoRequirement {
+  fields: { name: string; required: boolean }[];
+  minPhotos: number;
 }
 
 // What the swap picker sheet (#4) reads. A SwapCandidate fits as is; the
@@ -95,7 +107,11 @@ export interface SwapContext {
     // Percent; fuelBars is the same reading as bars "1".."10" (null = unknown).
     fuelLevel: number | null;
     fuelBars?: string | null;
+    // Has a FASTag: its closing balance is entered at a mid-rental swap.
+    hasFastag?: boolean;
   };
+  // Photos of the replacement + FASTag balances are required (ACTIVE_RENTAL). Absent on older servers.
+  photosRequired?: boolean;
   // Reading the returning car started this rental segment at (pickup, or the
   // last mid-rental swap); its end odometer can't be lower. null = skip the check.
   currentVehicleStartOdometer: number | null;
@@ -151,6 +167,13 @@ export interface VehicleSwapRecord {
   priceDifference: string | number | null;
   // false with a priceDifference > 0 ⇒ the difference was waived.
   chargeDifference: boolean;
+  // FASTag balances (₹, Decimal strings) at a mid-rental swap: returning car / replacement.
+  oldVehicleFastagBalance?: string | null;
+  newVehicleFastagBalance?: string | null;
+  // Photos of the replacement taken at the swap.
+  photos?: { publicId: string; captureLabel: string | null; url: string; mime: string }[];
+  // A mid-rental swap with no photo of the replacement (older app build).
+  photosMissing?: boolean;
   originalVehicle: SwapVehicleSummary;
   newVehicle: SwapVehicleSummary;
   swappedBy: { publicId: string; name: string | null; role?: string } | null;
@@ -169,6 +192,12 @@ export interface SwapVehicleBody {
   newVehicleFuelLevel?: string; // fuel bars "1".."10"
   // Bill the price difference at drop; omitted ⇒ not billed (old builds).
   chargeDifference?: boolean;
+  // Photos of the replacement (pickup photo uploads). Sent (even empty) ⇒ the
+  // server requires them and the FASTag balances mid-rental; old builds omit it.
+  replacementPhotos?: { fileId: string; label?: string }[];
+  // FASTag balances (₹, ≥ 0, 2 dp) at a mid-rental swap, for cars with a FASTag.
+  oldVehicleFastagBalance?: number;
+  newVehicleFastagBalance?: number;
 }
 
 // Error codes of available-vehicles / swap-vehicle (`{ success:false, code, message, ...extra }`).
@@ -191,7 +220,10 @@ export type SwapErrorCode =
   | 'CATEGORY_DOWNGRADE'
   | 'VEHICLE_BUSY'
   | 'BOOKING_CHANGED'
-  | 'PRICE_DIFFERENCE_UNAVAILABLE';
+  | 'PRICE_DIFFERENCE_UNAVAILABLE'
+  | 'SWAP_PHOTOS_REQUIRED'
+  | 'SWAP_PHOTOS_INVALID'
+  | 'FASTAG_BALANCE_REQUIRED';
 
 // Fuel is recorded in bars, "1".."10".
 export const SWAP_FUEL_BARS = Array.from({ length: 10 }, (_, i) => String(i + 1));

@@ -24,6 +24,7 @@ import {
   defaultChargeDifference,
   fuelBarsValue,
   priceDifferenceOf,
+  type SwapPhotoRequirement,
   type SwapCandidate,
   type SwapErrorCode,
   type SwapReason,
@@ -40,6 +41,8 @@ import {
   useSwapCandidates,
 } from './SwapParts';
 import SwapVehiclePicker from './SwapVehiclePicker';
+import PhotoCaptureSection, { type CapturedPhoto } from './PhotoCaptureSection';
+import { cleanFastagInput, fastagBalanceError, parseFastagBalance } from '../../lib/fastag';
 
 // #13 — swap the car during an active rental (booking PICKED_UP), from the drop
 // screen. Same server rules as the pickup swap, plus the handover readings: the
@@ -47,16 +50,35 @@ import SwapVehiclePicker from './SwapVehiclePicker';
 // fuel. The pro-rated price difference (of the GST-inclusive rents, item 17) is
 // not collected here — when "Charge customer" is on it goes on the drop bill
 // at face value, no GST (item 8).
+// Item 2: the replacement is photographed (the branch's pickup capture shots,
+// else at least 4 photos) and both cars' FASTag balances are entered (cars
+// with a FASTag) before the swap completes; the drop is checked against them.
 
-type Field = 'vehicle' | 'reason' | 'endOdo' | 'endFuel' | 'startOdo' | 'startFuel' | 'maintNotes';
+type Field =
+  | 'vehicle' | 'reason' | 'endOdo' | 'endFuel' | 'startOdo' | 'startFuel' | 'maintNotes'
+  | 'oldFastag' | 'newFastag' | 'photos';
 
-// READINGS_REQUIRED `missing` names → the input they belong to.
+// READINGS_REQUIRED / FASTAG_BALANCE_REQUIRED `missing` names → the input they belong to.
 const MISSING_FIELD: Record<string, Field> = {
   originalVehicleEndOdometer: 'endOdo',
   originalVehicleFuelLevel: 'endFuel',
   newVehicleStartOdometer: 'startOdo',
   newVehicleFuelLevel: 'startFuel',
+  oldVehicleFastagBalance: 'oldFastag',
+  newVehicleFastagBalance: 'newFastag',
 };
+
+// Without a capture config the server asks for this many photos (it also sends it per car).
+const NO_CONFIG_REQUIREMENT: SwapPhotoRequirement = { fields: [], minPhotos: 4 };
+
+/** Required shots still missing, and how many photos short of the minimum. */
+function photoShortfall(photos: CapturedPhoto[], requirement: SwapPhotoRequirement) {
+  const taken = new Set(photos.map((p) => p.label?.toLowerCase()).filter(Boolean));
+  const missingLabels = requirement.fields
+    .filter((f) => f.required && !taken.has(f.name.toLowerCase()))
+    .map((f) => f.name);
+  return { missingLabels, short: Math.max(0, requirement.minPhotos - photos.length) };
+}
 
 const km = (n: number) => `${n.toLocaleString('en-IN')} km`;
 const parseOdo = (s: string): number | null => (/^\d+$/.test(s.trim()) ? Number(s.trim()) : null);
@@ -87,6 +109,8 @@ export default function ActiveSwapSheet({
   const readingsRequired = context ? context.readingsRequired : true;
   const segmentStart = context?.currentVehicleStartOdometer ?? null;
   const current = context?.currentVehicle ?? null;
+  // Older servers don't report it: no photos / FASTag balances asked for.
+  const photosRequired = context?.photosRequired === true;
 
   const [selected, setSelected] = useState<SwapCandidate | null>(null);
   const [reason, setReason] = useState<SwapReason | null>(null);
@@ -98,6 +122,10 @@ export default function ActiveSwapSheet({
   const [startFuel, setStartFuel] = useState('');
   const [markMaint, setMarkMaint] = useState(false);
   const [maintNotes, setMaintNotes] = useState('');
+  const [oldFastag, setOldFastag] = useState('');
+  const [newFastag, setNewFastag] = useState('');
+  const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
@@ -119,9 +147,34 @@ export default function ActiveSwapSheet({
     setStartFuel('');
     setMarkMaint(false);
     setMaintNotes('');
+    setOldFastag('');
     setErrors({});
     setSubmitError(null);
   }, [visible]);
+
+  // Uploaded photos the swap hasn't saved: deleted (best-effort) when removed,
+  // retaken, or the sheet is reset / closed without swapping. The delete keeps
+  // any photo already saved with a booking.
+  const photosRef = useRef<CapturedPhoto[]>([]);
+  const discardUploads = (list: CapturedPhoto[]) =>
+    list.forEach((p) => { employeeApi.deletePickupImage(p.fileId).catch(() => {}); });
+  const updatePhotos = (next: CapturedPhoto[]) => {
+    const kept = new Set(next.map((p) => p.fileId));
+    discardUploads(photosRef.current.filter((p) => !kept.has(p.fileId)));
+    photosRef.current = next;
+    setPhotos(next);
+  };
+  useEffect(() => () => discardUploads(photosRef.current), []);
+
+  // Photos and FASTag balance belong to one car: a different pick starts them over.
+  useEffect(() => {
+    discardUploads(photosRef.current);
+    photosRef.current = [];
+    setPhotos([]);
+    setPendingPhotos(0);
+    setNewFastag('');
+    setErrors((e) => (e.photos || e.newFastag ? { ...e, photos: undefined, newFastag: undefined } : e));
+  }, [selected?.id, visible]);
 
   // A reload can drop the picked car (taken meanwhile) or re-price it.
   useEffect(() => {
@@ -155,6 +208,22 @@ export default function ActiveSwapSheet({
   }, [visible]);
 
   const clearError = (f: Field) => setErrors((e) => (e[f] ? { ...e, [f]: undefined } : e));
+
+  const requirement = selected?.photoRequirement ?? NO_CONFIG_REQUIREMENT;
+  const oldHasFastag = photosRequired && current?.hasFastag === true;
+  const newHasFastag = photosRequired && selected?.hasFastag === true;
+  const shortfall = photoShortfall(photos, requirement);
+  const photosIncomplete = photosRequired && (shortfall.missingLabels.length > 0 || shortfall.short > 0);
+  // Why "Swap vehicle" is still off because of the photos (shown above it).
+  const photoBlocker = !photosRequired || !selected
+    ? null
+    : pendingPhotos > 0
+      ? 'Wait for the photos to upload (retry or remove failed ones).'
+      : shortfall.missingLabels.length > 0
+        ? `Take the required photo${shortfall.missingLabels.length > 1 ? 's' : ''} of ${selected.regNo}: ${shortfall.missingLabels.join(', ')}.`
+        : shortfall.short > 0
+          ? `Take at least ${requirement.minPhotos} photos of ${selected.regNo} (${photos.length} taken).`
+          : null;
 
   const pickVehicle = (v: SwapCandidate) => {
     setSelected(v);
@@ -201,6 +270,15 @@ export default function ActiveSwapSheet({
         if (!fuelBarsValue(startFuel)) next.startFuel = 'Pick its fuel level.';
       }
     }
+    if (oldHasFastag) {
+      const err = fastagBalanceError(oldFastag);
+      if (err) next.oldFastag = err;
+    }
+    if (newHasFastag) {
+      const err = fastagBalanceError(newFastag);
+      if (err) next.newFastag = err;
+    }
+    if (photosIncomplete) next.photos = photoBlocker ?? 'Take the photos of the replacement.';
     if (markMaint && !maintNotes.trim()) next.maintNotes = 'Say what needs fixing.';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -223,6 +301,16 @@ export default function ActiveSwapSheet({
           }
         : {}),
       chargeDifference,
+      // Mid-rental: sending the photos (and balances) makes the server require them.
+      ...(photosRequired
+        ? { replacementPhotos: photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) })) }
+        : {}),
+      ...(oldHasFastag && parseFastagBalance(oldFastag) != null
+        ? { oldVehicleFastagBalance: parseFastagBalance(oldFastag)! }
+        : {}),
+      ...(newHasFastag && parseFastagBalance(newFastag) != null
+        ? { newVehicleFastagBalance: parseFastagBalance(newFastag)! }
+        : {}),
     };
     setSwapping(true);
     setSubmitError(null);
@@ -238,6 +326,8 @@ export default function ActiveSwapSheet({
             : ` The ${swapInr(diff)} price difference was waived.`
           : '';
       Keyboard.dismiss();
+      // Saved with the swap now — closing the sheet must not delete them.
+      photosRef.current = [];
       onSwapped(swap);
       // iOS drops an alert presented while the sheet is still sliding away.
       setTimeout(
@@ -249,11 +339,28 @@ export default function ActiveSwapSheet({
       const code = res?.code as SwapErrorCode | undefined;
       const message = apiErrorMessage(err, 'Could not swap the vehicle.');
       switch (code) {
-        case 'READINGS_REQUIRED': {
+        case 'READINGS_REQUIRED':
+        case 'FASTAG_BALANCE_REQUIRED': {
           const missing: string[] = Array.isArray(res?.missing) ? res.missing : [];
           const next: Partial<Record<Field, string>> = {};
           missing.forEach((m) => { const f = MISSING_FIELD[m]; if (f) next[f] = 'Required for a swap during the rental.'; });
           setErrors((e) => ({ ...e, ...next }));
+          break;
+        }
+        case 'SWAP_PHOTOS_REQUIRED': {
+          const missingLabels: string[] = Array.isArray(res?.missingLabels) ? res.missingLabels : [];
+          setErrors((e) => ({
+            ...e,
+            photos: missingLabels.length > 0 ? `Still needed: ${missingLabels.join(', ')}.` : message,
+          }));
+          break;
+        }
+        case 'SWAP_PHOTOS_INVALID': {
+          // Drop the photos the server can't use, so they can be taken again.
+          const bad: string[] = Array.isArray(res?.fileIds) ? res.fileIds : [];
+          photosRef.current = photosRef.current.filter((p) => !bad.includes(p.fileId));
+          setPhotos(photosRef.current);
+          setErrors((e) => ({ ...e, photos: message }));
           break;
         }
         case 'ODOMETER_BELOW_START':
@@ -319,7 +426,7 @@ export default function ActiveSwapSheet({
     router.push({ pathname: '/employee/extension', params: { bookingId, endAt: overdueEndAt } });
   };
 
-  const canSubmit = !!selected && !!reason && !swapping;
+  const canSubmit = !!selected && !!reason && !swapping && !photoBlocker;
 
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={close}>
@@ -432,6 +539,22 @@ export default function ActiveSwapSheet({
                       <Text style={styles.subLabel}>Fuel now (bars)</Text>
                       <SwapFuelBars value={endFuel} onChange={(v) => { setEndFuel(v); clearError('endFuel'); }} disabled={swapping} />
                       {errors.endFuel ? <Text style={styles.fieldError}>{errors.endFuel}</Text> : null}
+                      {oldHasFastag && (
+                        <>
+                          <Text style={styles.subLabel}>FASTag balance now (₹)</Text>
+                          <TextInput
+                            style={[styles.input, styles.inputTight, !!errors.oldFastag && styles.inputError]}
+                            value={oldFastag}
+                            onChangeText={(t) => { setOldFastag(cleanFastagInput(t)); clearError('oldFastag'); }}
+                            placeholder="e.g. 450.00"
+                            placeholderTextColor={Colors.ink4}
+                            keyboardType="decimal-pad"
+                            maxLength={9}
+                            editable={!swapping}
+                          />
+                          {errors.oldFastag ? <Text style={styles.fieldError}>{errors.oldFastag}</Text> : null}
+                        </>
+                      )}
 
                       {selected && (
                         <>
@@ -454,8 +577,50 @@ export default function ActiveSwapSheet({
                           <Text style={styles.subLabel}>Fuel at handover (bars)</Text>
                           <SwapFuelBars value={startFuel} onChange={(v) => { setStartFuel(v); clearError('startFuel'); }} disabled={swapping} />
                           {errors.startFuel ? <Text style={styles.fieldError}>{errors.startFuel}</Text> : null}
+                          {newHasFastag && (
+                            <>
+                              <Text style={styles.subLabel}>FASTag balance at handover (₹)</Text>
+                              <TextInput
+                                style={[styles.input, styles.inputTight, !!errors.newFastag && styles.inputError]}
+                                value={newFastag}
+                                onChangeText={(t) => { setNewFastag(cleanFastagInput(t)); clearError('newFastag'); }}
+                                placeholder="e.g. 450.00"
+                                placeholderTextColor={Colors.ink4}
+                                keyboardType="decimal-pad"
+                                maxLength={9}
+                                editable={!swapping}
+                              />
+                              {errors.newFastag ? <Text style={styles.fieldError}>{errors.newFastag}</Text> : null}
+                            </>
+                          )}
                         </>
                       )}
+                    </>
+                  )}
+
+                  {/* Photos of the replacement (item 2) — required before the swap completes */}
+                  {photosRequired && selected && (
+                    <>
+                      <Text style={[styles.label, { marginTop: 18 }]}>Photos of {selected.regNo}</Text>
+                      <Text style={styles.hintTop}>
+                        {requirement.fields.length > 0
+                          ? 'Take every required shot before handing it over — the drop is checked against these.'
+                          : `Take at least ${requirement.minPhotos} photos before handing it over — the drop is checked against these.`}
+                      </Text>
+                      <PhotoCaptureSection
+                        key={selected.id}
+                        fields={requirement.fields}
+                        allowGeneric
+                        value={photos}
+                        onChange={(next) => { updatePhotos(next); clearError('photos'); }}
+                        upload={async (form) => {
+                          const res = await employeeApi.uploadPickupImage(form);
+                          return { fileId: res.data.fileId, url: res.data.url };
+                        }}
+                        genericLabel="Add"
+                        onPendingChange={setPendingPhotos}
+                      />
+                      {errors.photos ? <Text style={styles.fieldError}>{errors.photos}</Text> : null}
                     </>
                   )}
 
@@ -496,6 +661,8 @@ export default function ActiveSwapSheet({
                       {errors.maintNotes ? <Text style={styles.fieldError}>{errors.maintNotes}</Text> : null}
                     </>
                   )}
+
+                  {photoBlocker && !errors.photos ? <Text style={styles.blockerHint}>{photoBlocker}</Text> : null}
 
                   {submitError ? (
                     <View style={styles.errorBox}>
@@ -556,6 +723,7 @@ const styles = StyleSheet.create({
   hint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 6 },
   warn: { fontFamily: Fonts.body, fontSize: 12, color: '#d97706', marginBottom: 10, lineHeight: 17 },
   fieldError: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e', marginTop: 6 },
+  blockerHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 16, lineHeight: 17 },
 
   input: {
     backgroundColor: Colors.bg, borderRadius: 12, borderWidth: 1, borderColor: Colors.hairline,

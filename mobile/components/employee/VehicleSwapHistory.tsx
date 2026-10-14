@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,10 @@ import {
   type VehicleSwapRecord,
 } from '../../types/vehicleSwap';
 import { swapHistoryKey, swapInr } from './SwapParts';
+import ImageViewer from '../ui/ImageViewer';
+
+export const SWAP_PHOTOS_MISSING_NOTE =
+  'No photos were taken of the replacement vehicle at the swap — check its condition carefully.';
 
 const km = (n: number) => `${n.toLocaleString('en-IN')} km`;
 const fuel = (level: string | null) => (level == null ? null : fuelBarsValue(level) ? `${level}/10` : level);
@@ -33,6 +37,10 @@ function reading(odo: number | null, fuelLevel: string | null) {
 }
 
 function SwapRow({ swap }: { swap: VehicleSwapRecord }) {
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const photos = swap.photos ?? [];
+  const oldFastag = priceDifferenceOf(swap.oldVehicleFastagBalance);
+  const newFastag = priceDifferenceOf(swap.newVehicleFastagBalance);
   const from = swap.originalVehicle;
   const to = swap.newVehicle;
   const stage = swap.bookingStatusAtSwap ? STAGE_LABEL[swap.bookingStatusAtSwap] : undefined;
@@ -65,6 +73,40 @@ function SwapRow({ swap }: { swap: VehicleSwapRecord }) {
           {out && <Text style={styles.reading}>Handed over at {out}</Text>}
         </View>
       )}
+      {(oldFastag != null || newFastag != null) && (
+        <Text style={styles.meta}>
+          FASTag at swap: {[
+            oldFastag != null ? `${from.regNo} ${swapInr(oldFastag)}` : null,
+            newFastag != null ? `${to.regNo} ${swapInr(newFastag)}` : null,
+          ].filter(Boolean).join(' · ')}
+        </Text>
+      )}
+      {swap.photosMissing ? (
+        <View style={styles.missing}>
+          <Ionicons name="warning-outline" size={14} color="#b45309" />
+          <Text style={styles.missingText}>{SWAP_PHOTOS_MISSING_NOTE}</Text>
+        </View>
+      ) : photos.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+          {photos.map((p, i) => (
+            <TouchableOpacity
+              key={p.publicId}
+              onPress={() => setViewerIndex(i)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${p.captureLabel ?? 'swap'} photo`}
+            >
+              <Image source={{ uri: p.url }} style={styles.photo} resizeMethod="resize" />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      ) : null}
+      <ImageViewer
+        visible={viewerIndex !== null}
+        images={photos.map((p, i) => ({ url: p.url, label: `${to.regNo} at swap: ${p.captureLabel ?? `photo ${i + 1}`}` }))}
+        startIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+      />
       {diff > 0 && (
         <Text style={[styles.price, !swap.chargeDifference && styles.priceWaived]}>
           {swap.chargeDifference
@@ -159,5 +201,9 @@ const styles = StyleSheet.create({
   price: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.ink, marginTop: 2 },
   priceWaived: { color: Colors.ink3 },
   by: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginTop: 2 },
+  photoStrip: { gap: 6, paddingTop: 6 },
+  photo: { width: 56, height: 44, borderRadius: 6, backgroundColor: Colors.bg },
+  missing: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
+  missingText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: '#b45309', lineHeight: 17 },
   link: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange },
 });

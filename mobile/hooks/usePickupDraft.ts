@@ -15,6 +15,8 @@ type Setter<T> = (value: T) => void;
 export interface PickupDraftFields {
   odo: string;
   fuelLevel: number | null;
+  // FASTag balance typed for the car (cars with a FASTag)
+  fastagBalance: string;
   dlStatus: DlCollectionStatus | null;
   dlNumberEditing: boolean;
   dlNumberInput: string;
@@ -64,6 +66,7 @@ export function usePickupDraft({
   const isEmpty =
     photos.length === 0 &&
     f.fuelLevel == null &&
+    !f.fastagBalance &&
     f.dlStatus == null &&
     !f.dlNumberEditing &&
     !f.dlNumberInput.trim() &&
@@ -106,6 +109,7 @@ export function usePickupDraft({
         if (odo) s.setOdo(odo);
         const fuel = draftNumber(d, 'fuelLevel');
         s.setFuelLevel(fuel != null && fuel >= 1 && fuel <= 10 ? fuel : null);
+        s.setFastagBalance(draftString(d, 'fastagBalance'));
         setPhotos(savedPhotos);
       } else {
         Alert.alert(

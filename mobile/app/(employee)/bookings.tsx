@@ -52,6 +52,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface QueueResult {
   rows: QueueBooking[];
   counts: QueueCounts | null; // null on servers older than #17
+  // Done for the day (client item 1); empty on older servers.
+  completed: QueueBooking[];
 }
 
 function PhoneLink({ phone, label }: { phone: string; label?: string }) {
@@ -88,9 +90,12 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
   const dateLabel = type === 'pickups' ? 'Pickup' : 'Return';
   const dateValue = type === 'pickups' ? booking.startAt : booking.endAt;
   const monthly = (booking.bookingType ?? (booking.rentalPeriodType === 'MONTHLY' ? 'MONTHLY' : 'DAILY')) === 'MONTHLY';
+  // Done (client item 1): opens the read-only summary, never the workflow.
+  const completed = booking.completed ?? null;
+  const phase = type === 'pickups' ? 'pickup' : 'return';
   // Still out past its return time: live "Overdue · 1d 19h" instead of "Return".
   const [now, setNow] = useState(() => Date.now());
-  const overdueMs = type === 'returns' && booking.status === 'PICKED_UP' ? now - new Date(booking.endAt).getTime() : 0;
+  const overdueMs = type === 'returns' && booking.status === 'PICKED_UP' && !completed ? now - new Date(booking.endAt).getTime() : 0;
   const isOverdue = overdueMs > 0;
   useEffect(() => {
     if (!isOverdue) return;
@@ -100,13 +105,13 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, completed && styles.cardCompleted]}
       activeOpacity={0.85}
       onPress={() =>
         router.push(
-          type === 'pickups'
-            ? `/employee/pickup/${booking.publicId}`
-            : `/employee/return/${booking.publicId}`,
+          (completed
+            ? `/employee/${phase}/summary/${booking.publicId}`
+            : `/employee/${phase}/${booking.publicId}`) as Href,
         )
       }
     >
@@ -117,11 +122,15 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
           </Text>
           {vehicle?.regNo && <Text style={styles.regNo} numberOfLines={1}>{vehicle.regNo}</Text>}
         </View>
-        <View style={[styles.statusBadge, type === 'pickups' ? styles.statusPickup : isOverdue ? styles.statusOverdue : styles.statusReturn]}>
-          <Text style={[styles.statusText, type === 'pickups' ? styles.statusPickupText : isOverdue ? styles.statusOverdueText : styles.statusReturnText]}>
-            {type === 'pickups' ? 'Pickup' : isOverdue ? `Overdue · ${fmtDurationMinutes(overdueMs / 60000)}` : 'Return'}
-          </Text>
-        </View>
+        {completed ? (
+          <CompletedTag awaitingManager={!!booking.awaitingManager} />
+        ) : (
+          <View style={[styles.statusBadge, type === 'pickups' ? styles.statusPickup : isOverdue ? styles.statusOverdue : styles.statusReturn]}>
+            <Text style={[styles.statusText, type === 'pickups' ? styles.statusPickupText : isOverdue ? styles.statusOverdueText : styles.statusReturnText]}>
+              {type === 'pickups' ? 'Pickup' : isOverdue ? `Overdue · ${fmtDurationMinutes(overdueMs / 60000)}` : 'Return'}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardMeta}>
@@ -136,8 +145,23 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
             {dateLabel}: {formatDate(dateValue)}
           </Text>
         </View>
+        {/* Who completed it and when (client item 1) */}
+        {completed && (completed.at || completed.byName) ? (
+          <View style={styles.metaRow}>
+            <Ionicons
+              name={booking.awaitingManager ? 'time-outline' : 'checkmark-done-outline'}
+              size={13}
+              color={booking.awaitingManager ? Colors.availLow : Colors.availGood}
+            />
+            <Text style={styles.metaText}>
+              {booking.awaitingManager ? 'Sent to manager' : 'Completed'}
+              {completed.at ? ` ${formatDate(completed.at)}` : ''}
+              {completed.byName ? ` · by ${completed.byName}` : ''}
+            </Text>
+          </View>
+        ) : null}
         {/* Original driving licence status (#3, D6) — pickups show it only once set */}
-        <DlStatusLine status={booking.dlStatus} note={booking.dlDepositNote} showUnrecorded={type === 'returns'} />
+        <DlStatusLine status={booking.dlStatus} note={booking.dlDepositNote} showUnrecorded={type === 'returns' && !completed} />
         {/* Started and left for later (client item 2) — tapping resumes it */}
         <PausedChip draft={booking.draft} />
       </View>
@@ -147,12 +171,36 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
           <Text style={styles.bookingId}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
           {monthly ? <MonthlyPill days={booking.days} /> : null}
         </View>
-        <View style={styles.amountRow}>
-          <Text style={styles.amount}>₹{Number(booking.totalFinal).toLocaleString('en-IN')}</Text>
-          <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
-        </View>
+        {completed ? (
+          /* The only way back into a completed pickup / drop */
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => router.push(`/employee/${phase}/edit/${booking.publicId}` as Href)}
+            hitSlop={8}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create-outline" size={14} color={Colors.orange} />
+            <Text style={styles.actionText}>{type === 'pickups' ? 'Edit Pickup' : 'Edit Return'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.amountRow}>
+            <Text style={styles.amount}>₹{Number(booking.totalFinal).toLocaleString('en-IN')}</Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
+  );
+}
+
+// "Completed" (green) or "Awaiting manager" (amber) on a done pickup / drop.
+function CompletedTag({ awaitingManager }: { awaitingManager: boolean }) {
+  return (
+    <View style={[styles.statusBadge, awaitingManager ? styles.statusAwaiting : styles.statusCompleted]}>
+      <Text style={[styles.statusText, awaitingManager ? styles.statusAwaitingText : styles.statusCompletedText]}>
+        {awaitingManager ? 'Awaiting manager' : 'Completed'}
+      </Text>
+    </View>
   );
 }
 
@@ -207,15 +255,16 @@ export default function BookingsQueue() {
 
   // Monthly ignores the date server-side. The date is still sent so that
   // counts.daily (the Daily chip) matches the selected day.
+  // includeCompleted: the day's done pickups / returns stay listed (client item 1).
   const fetchQueue = async (kind: ListTab): Promise<QueueResult> => {
-    const params = { date: dateParam, type: listType };
+    const params = { date: dateParam, type: listType, includeCompleted: 1 as const };
     try {
       const res = kind === 'pickups' ? await employeeApi.listPickups(params) : await employeeApi.listReturns(params);
       const body = res.data as QueueListResponse;
-      return { rows: body?.data ?? [], counts: body?.counts ?? null };
+      return { rows: body?.data ?? [], counts: body?.counts ?? null, completed: body?.completed ?? [] };
     } catch (err: any) {
       // Older servers answer an empty queue with 404.
-      if (err.response?.status === 404) return { rows: [], counts: err.response?.data?.counts ?? null };
+      if (err.response?.status === 404) return { rows: [], counts: err.response?.data?.counts ?? null, completed: [] };
       throw err;
     }
   };
@@ -264,6 +313,7 @@ export default function BookingsQueue() {
   const isLoading = activeTab === 'pickups' ? pickupsLoading : returnsLoading;
   const isError = activeTab === 'pickups' ? pickupsError : returnsError;
   const data = activeTab === 'pickups' ? (pickups?.rows ?? []) : (returns?.rows ?? []);
+  const completedRows = activeTab === 'pickups' ? (pickups?.completed ?? []) : (returns?.completed ?? []);
   const counts = activeTab === 'pickups' ? pickups?.counts : returns?.counts;
   const monthly = listType === 'MONTHLY';
 
@@ -420,15 +470,39 @@ export default function BookingsQueue() {
             </>
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons
-                name={activeTab === 'pickups' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'}
-                size={44}
-                color={Colors.ink4}
-              />
-              <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-              <Text style={styles.emptySub}>Check back after a refresh.</Text>
-            </View>
+            completedRows.length > 0 ? (
+              /* Everything for the day is done — the completed ones follow */
+              <View style={styles.allDone}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={Colors.availGood} />
+                <Text style={styles.allDoneText}>
+                  {activeTab === 'pickups' ? 'No pickups waiting' : 'No returns waiting'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Ionicons
+                  name={activeTab === 'pickups' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'}
+                  size={44}
+                  color={Colors.ink4}
+                />
+                <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+                <Text style={styles.emptySub}>Check back after a refresh.</Text>
+              </View>
+            )
+          }
+          ListFooterComponent={
+            completedRows.length > 0 ? (
+              /* Done for the day (client item 1): kept here, tagged Completed */
+              <View style={styles.completedSection}>
+                <Text style={styles.completedHeader}>
+                  Completed · {completedRows.length}
+                  {monthly ? ` · ${selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+                </Text>
+                {completedRows.map((item) => (
+                  <BookingCard key={item.publicId} booking={item} type={activeTab as ListTab} />
+                ))}
+              </View>
+            ) : null
           }
           renderItem={({ item }) => <BookingCard booking={item} type={activeTab as ListTab} />}
         />
@@ -562,6 +636,29 @@ const styles = StyleSheet.create({
   statusReturnText: { color: '#3b82f6' },
   statusOverdue: { backgroundColor: Colors.availNone + '1f' },
   statusOverdueText: { color: Colors.availNone },
+  statusCompleted: { backgroundColor: Colors.availGoodSoft },
+  statusCompletedText: { color: Colors.availGood },
+  statusAwaiting: { backgroundColor: Colors.availLowSoft },
+  statusAwaitingText: { color: Colors.availLow },
+  cardCompleted: { backgroundColor: '#fbfbfa' },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  completedSection: { gap: 10, marginTop: 6 },
+  completedHeader: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.ink3,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  allDone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  allDoneText: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
 
   cardMeta: { gap: 6 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

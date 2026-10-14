@@ -27,6 +27,8 @@ export interface ReturnDraftFields {
   chargeFastag: boolean;
   fastagAmt: string;
   fastagNote: string;
+  // FASTag balance now, typed for the car coming back (cars with a FASTag)
+  fastagNow: string;
   chargeOther: boolean;
   otherLines: Array<{ id: string; label: string; amount: string }>;
   damageDecision: (typeof DAMAGE_DECISIONS)[number] | null;
@@ -102,6 +104,7 @@ export function useReturnDraft({
     !f.chargeFastag &&
     !f.fastagAmt &&
     !f.fastagNote &&
+    !f.fastagNow &&
     !f.chargeOther &&
     f.otherLines.every((l) => !l.label.trim() && !l.amount) &&
     f.damageDecision == null &&
@@ -145,6 +148,7 @@ export function useReturnDraft({
         s.setChargeFuel(draftBool(d, 'chargeFuel'));
         s.setFuelAmt(draftString(d, 'fuelAmt'));
         s.setManualKm(draftString(d, 'manualKm'));
+        s.setFastagNow(draftString(d, 'fastagNow'));
         setPhotos(savedPhotos);
       } else {
         Alert.alert(

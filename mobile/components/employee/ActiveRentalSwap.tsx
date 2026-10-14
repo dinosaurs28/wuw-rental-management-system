@@ -19,6 +19,8 @@ export default function ActiveRentalSwap({ bookingId, canSwap }: { bookingId: st
     // The drop screen's booking (new car, km segments, swap charges), the
     // history and the Fleet queues all changed.
     qc.invalidateQueries({ queryKey: ['employee', 'return'] });
+    // The drop's reference photos are now the replacement's photos at this swap
+    qc.invalidateQueries({ queryKey: ['employee', 'pickup-captures', bookingId] });
     qc.invalidateQueries({ queryKey: swapHistoryKey(bookingId) });
     qc.invalidateQueries({ queryKey: swapCandidatesKey(bookingId) });
     qc.invalidateQueries({ queryKey: ['employee', 'returns'] });

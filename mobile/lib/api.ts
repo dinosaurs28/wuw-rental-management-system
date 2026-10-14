@@ -1,6 +1,13 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
 import type { DropDamageInput } from '../types/return';
+import type {
+  EditOperationResponse,
+  EditPickupBody,
+  EditReturnBody,
+  PickupSummary,
+  ReturnSummary,
+} from '../types/completedOperation';
 import type { AppNotification, NotificationAudience, NotificationPage } from '../types/notifications';
 import type { MyShiftsParams } from '../types/shift';
 import type { DlCollectionStatus, UpdateDlStatusBody } from './dlStatus';
@@ -362,10 +369,24 @@ export const employeeApi = {
   // `type` splits the queue into Daily / Monthly tabs (#17): Monthly ignores
   // `date` and lists every monthly booking. With `type` an empty list is 200 [];
   // both add { type, counts: { daily, monthly } }.
-  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY' }) =>
+  // includeCompleted=1 (client item 1) adds the day's done pickups / returns in
+  // `completed` (QueueListResponse); the list and counts then hold waiting ones only.
+  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1 }) =>
     api.get('/api/employee/booking', { params }),
-  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY' }) =>
+  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1 }) =>
     api.get('/api/employee/return', { params }),
+  // ── completed pickup / return (client item 1) — types/completedOperation.ts ──
+  // Read-only summary: { data: PickupSummary | ReturnSummary }.
+  getPickupSummary: (bookingId: string) =>
+    api.get<{ data: PickupSummary }>(`/api/employee/pickup/${bookingId}/summary`),
+  getReturnSummary: (bookingId: string) =>
+    api.get<{ data: ReturnSummary }>(`/api/employee/return/${bookingId}/summary`),
+  // Edit Pickup / Edit Return: only the fields sent change. 409 EDIT_CHANGES_CHARGES
+  // (+ field) when a reading would change charges already computed or settled.
+  editPickup: (bookingId: string, body: EditPickupBody) =>
+    api.patch<EditOperationResponse<PickupSummary>>(`/api/employee/pickup/${bookingId}`, body),
+  editReturn: (bookingId: string, body: EditReturnBody) =>
+    api.patch<EditOperationResponse<ReturnSummary>>(`/api/employee/return/${bookingId}`, body),
   // PICKED_UP bookings past their return time, most overdue first (#8). Always
   // 200 — OverdueReturnsResponse (types/queue.ts). limit defaults 50, max 200.
   listOverdueReturns: (params?: { page?: number; limit?: number; type?: 'DAILY' | 'MONTHLY' }) =>
@@ -396,6 +417,8 @@ export const employeeApi = {
     // "1".."10"; required by backend only when the branch fuel module is enabled,
     // optional otherwise — mobile always sends it to be safe.
     pickupFuelLevel?: string;
+    // ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage
+    pickupFastagBalance?: number;
     pickupImageIds?: string[];
     captureImages?: { fileId: string; label: string }[];
     requireManagerConfirmation?: boolean;
@@ -436,6 +459,12 @@ export const employeeApi = {
     // #6 — how the held safety deposit is settled (recorded for the branch
     // manager's settlement). Omitted = SET_OFF. Response adds `safetyDeposit`.
     safetyDepositHandling?: SafetyDepositHandling;
+    // FASTag balance now (car with a FASTag): the usage since pickup is recorded
+    // for the branch manager to collect when every reading is there.
+    returnFastagBalance?: number;
+    // Typed FASTag charge — used only when a reading is missing.
+    fastagAmount?: number;
+    fastagNotes?: string;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
 
   // ── paused pickup / drop (client item 2) — lib/operationDraft.ts ─────────
@@ -484,6 +513,9 @@ export const employeeApi = {
       fuelCharge?: number;
       fastagAmount?: number;
       fastagNotes?: string;
+      // FASTag balance now (booking.fastag.mode READINGS): the server bills the
+      // usage from the balances and ignores fastagAmount. data.fastag: FastagUsageSummary.
+      returnFastagBalance?: number;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
       // re-applied on every compute — resend it on recomputes. Drop charges carry no GST (item 8).
@@ -680,6 +712,11 @@ export const employeeApi = {
       newVehicleFuelLevel?: string;
       // Bill the price difference at drop (face value, no GST — item 8); omitted ⇒ server default for the reason.
       chargeDifference?: boolean;
+      // Mid-rental (item 2): photos of the replacement (pickup photo uploads) and
+      // the FASTag balances. Sending replacementPhotos makes the server require them.
+      replacementPhotos?: { fileId: string; label?: string }[];
+      oldVehicleFastagBalance?: number;
+      newVehicleFastagBalance?: number;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/swap-vehicle`, body),
   // This booking's swaps, newest first (VehicleSwapRecord[] in types/vehicleSwap).
@@ -838,6 +875,8 @@ export const employeeApi = {
       fuelLevel?: number;
       // "1".."10" bars; used when the branch fuel module is enabled
       pickupFuelLevel?: string;
+      // ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage
+      pickupFastagBalance?: number;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
       // Original driving licence status (#3), optional (X1); re-initiating applies a changed choice.

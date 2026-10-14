@@ -27,8 +27,11 @@ import CounterPaymentPicker, {
 } from '../../../components/employee/CounterPaymentPicker';
 import SafetyDepositAtDrop from '../../../components/employee/SafetyDepositAtDrop';
 import ActiveRentalSwap from '../../../components/employee/ActiveRentalSwap';
+import HandoverConditionPhotos, {
+  type ReturnConditionCaptures,
+} from '../../../components/employee/drop/HandoverConditionPhotos';
 import { DlStatusCard } from '../../../components/employee/DlStatus';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,9 +52,11 @@ import type { DropDamage, DropDiscount, ReturnBooking, ReturnKmSummary } from '.
 import type {
   CompleteReturnResponse,
   DropBill,
+  FastagUsageSummary,
   RentalTimeline,
   ReturnLateSummary,
 } from '../../../types/return';
+import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
 import RentalTimeBlock from '../../../components/employee/drop/RentalTimeBlock';
 import LateReturnCard from '../../../components/employee/drop/LateReturnCard';
 import DropBillCard, {
@@ -175,6 +180,9 @@ export default function ReturnScreen() {
   const [chargeFastag, setChargeFastag] = useState(false);
   const [fastagAmt, setFastagAmt] = useState('');
   const [fastagNote, setFastagNote] = useState('');
+  // FASTag balance now (car with a FASTag, every earlier reading present): the
+  // drop bill charges the usage since pickup instead of a typed toll charge.
+  const [fastagNow, setFastagNow] = useState('');
   const [chargeOther, setChargeOther] = useState(false);
   const [otherLines, setOtherLines] = useState<OtherChargeLine[]>(() => [newOtherLine()]);
   // Explicit damage check, required before settling / completing (like the web).
@@ -202,6 +210,8 @@ export default function ReturnScreen() {
   // Drop bill (no GST on drop charges, item 8) and the late line's summary, from the compute.
   const [bill, setBill] = useState<DropBill | null>(null);
   const [lateSummary, setLateSummary] = useState<ReturnLateSummary | null>(null);
+  // FASTag usage the bill was computed with (readings, recharge notes).
+  const [fastagSummary, setFastagSummary] = useState<FastagUsageSummary | null>(null);
   // Rental timeline from the last compute / restore (late part measured to the
   // bill's frozen return time); the booking's own copy otherwise.
   const [serverTimeline, setServerTimeline] = useState<RentalTimeline | null>(null);
@@ -285,12 +295,13 @@ export default function ReturnScreen() {
     s.sectionKey.startsWith('credit:remaining_payment:'),
   );
 
-  // Pre-delivery reference photos captured at pickup (#55) — for condition comparison.
-  const { data: pickupCaptures = [] } = useQuery({
+  // Reference photos for condition comparison (#55): the handover photos of the
+  // car being returned — pickup, or its mid-rental swap (item 2).
+  const { data: pickupCaptures } = useQuery({
     queryKey: ['employee', 'pickup-captures', bookingId],
     queryFn: async () => {
       const res = await employeeApi.getPickupCaptures(bookingId as string);
-      return (res.data?.photos ?? []) as Array<{ publicId: string; captureLabel: string | null; url: string; mime: string }>;
+      return { photos: [], ...res.data } as ReturnConditionCaptures;
     },
     enabled: !!bookingId,
     staleTime: 5 * 60_000,
@@ -362,20 +373,26 @@ export default function ReturnScreen() {
         // Keep the deposit choice the bill was computed with (#6); null on older bills.
         const dep = (data?.deposit ?? null) as DropDeposit | null;
         if (dep?.handling) setDepositHandling(dep.handling);
-        // An extension moved the end time since this bill was computed, or the
-        // bill still carries GST on drop charges (computed before item 8) — the
-        // server refuses payment on it, so start from the charges form.
+        // An extension moved the end time since this bill was computed, the
+        // bill still carries GST on drop charges (computed before item 8) or
+        // the pickup FASTag balance was corrected — the server refuses payment
+        // on it, so start from the charges form.
         if (data?.billStale) {
           setNotice(
             data?.billStaleReason === 'DROP_GST_REMOVED'
               ? 'Drop charges no longer carry GST — enter the return details and compute the charges again to update the bill.'
-              : 'The rental period changed since the drop bill was computed — enter the return details and compute the charges again.',
+              : data?.billStaleReason === 'FASTAG_CHANGED'
+                ? 'The FASTag balance at pickup changed since the drop bill was computed — enter the return details and compute the charges again.'
+                : data?.billStaleReason === 'PICKUP_ODOMETER_CHANGED'
+                  ? 'The pickup odometer reading was corrected since the drop bill was computed — enter the return details and compute the charges again.'
+                  : 'The rental period changed since the drop bill was computed — enter the return details and compute the charges again.',
           );
           return;
         }
         setSession(s);
         applyKm((data?.km ?? null) as ReturnKmSummary | null);
         setBill((data?.bill ?? null) as DropBill | null);
+        setFastagSummary((data?.fastag ?? null) as FastagUsageSummary | null);
         setLateSummary(late);
         setServerDiscount(d);
         setDropDeposit(dep);
@@ -393,12 +410,12 @@ export default function ReturnScreen() {
     vehicleKey: booking ? `${booking.items[0]?.vehicle.publicId ?? ''}|${booking.kmSegments?.swapCount ?? 0}` : null,
     fuelDefault: booking?.pickupFuelLevel ?? '',
     fields: {
-      endOdo, fuelLevel, chargeFuel, fuelAmt, chargeFastag, fastagAmt, fastagNote, chargeOther, otherLines,
+      endOdo, fuelLevel, chargeFuel, fuelAmt, chargeFastag, fastagAmt, fastagNote, fastagNow, chargeOther, otherLines,
       damageDecision, discount, depositHandling, applyGrace, waiveLate, waiveReason, manualKm, requireManager,
     },
     setters: {
       setEndOdo, setFuelLevel, setChargeFuel, setFuelAmt, setChargeFastag, setFastagAmt, setFastagNote,
-      setChargeOther, setOtherLines, setDamageDecision, setDiscount, setDepositHandling, setApplyGrace,
+      setFastagNow, setChargeOther, setOtherLines, setDamageDecision, setDiscount, setDepositHandling, setApplyGrace,
       setWaiveLate, setWaiveReason, setManualKm, setRequireManager,
     },
     photos: returnPhotos,
@@ -500,8 +517,25 @@ export default function ReturnScreen() {
   };
 
   const fuelModuleEnabled = !!booking?.frozenChargeConfig?.fuelModuleEnabled;
-  // FASTag tolls only when the branch module is on AND the vehicle has a tag.
-  const fastagEnabled = !!booking?.frozenChargeConfig?.fastagModuleEnabled && !!vehicle?.hasFastag;
+  // FASTag balances (Oct 15 2026): with every reading so far (READINGS) the bill
+  // charges the usage from the balance now — no typed toll charge; MANUAL (a
+  // reading is missing) or an older server keeps the typed toll charge.
+  const fastagInfo = booking?.fastag ?? null;
+  const fastagFromReadings = fastagInfo?.mode === 'READINGS';
+  // Typed FASTag / toll charge (the fallback when the balances can't measure the
+  // usage): a booking with a FASTag car is charged whatever the branch module; for
+  // a car without a FASTag the branch FASTag module decides.
+  const fastagManualShown = !fastagFromReadings && (
+    !!vehicle?.hasFastag || fastagInfo?.mode === 'MANUAL' || !!booking?.frozenChargeConfig?.fastagModuleEnabled
+  );
+  const fastagNowNeeded = fastagFromReadings && !!fastagInfo?.currentHasFastag;
+  const fastagNowValue = fastagNowNeeded ? parseFastagBalance(fastagNow) : null;
+  const fastagStart = fastagInfo?.currentStartBalance != null ? num(fastagInfo.currentStartBalance) : null;
+  // Same formula as the server: earlier cars' usage + max(0, start − now)
+  const fastagPreview = fastagFromReadings && fastagInfo
+    ? num(fastagInfo.priorUsage) + (fastagNowValue != null && fastagStart != null ? Math.max(0, fastagStart - fastagNowValue) : 0)
+    : null;
+  const fastagNowRecharged = fastagNowValue != null && fastagStart != null && fastagNowValue > fastagStart;
 
   // Fuel: return level defaults to the pickup level; a lower level is a deficit,
   // priced at the vehicle's ₹-per-bar rate (still editable) — same as the web.
@@ -535,6 +569,7 @@ export default function ReturnScreen() {
     setFuelLevel(startFuel && fuelBars(startFuel) != null ? startFuel : '');
     setChargeFuel(false);
     setFuelAmt('');
+    setFastagNow('');
     setNotice('Vehicle swapped — enter the end odometer and fuel level of the vehicle being returned now.');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicleSig]);
@@ -565,6 +600,7 @@ export default function ReturnScreen() {
     setKmSummary(null);
     setServerDiscount(null);
     setBill(null);
+    setFastagSummary(null);
     setDropDeposit(null);
     setLateSummary(null);
     setBillStale(false);
@@ -591,6 +627,10 @@ export default function ReturnScreen() {
       setErrorMsg('Select the return fuel level.');
       return false;
     }
+    if (fastagNowNeeded && fastagNowValue == null) {
+      setErrorMsg(fastagBalanceError(fastagNow) ?? 'Enter the FASTag balance.');
+      return false;
+    }
     if (returnPhotos.length === 0) {
       setErrorMsg('Take at least one return photo.');
       return false;
@@ -611,7 +651,10 @@ export default function ReturnScreen() {
       };
       if (fuelBars(fuelLevel) != null) body.returnFuelLevel = fuelLevel;
       if (chargeFuel && num(fuelAmt) > 0) body.fuelCharge = num(fuelAmt);
-      if (chargeFastag && num(fastagAmt) > 0) {
+      if (fastagFromReadings) {
+        // The server bills the usage from the balances
+        if (fastagNowValue != null) body.returnFastagBalance = fastagNowValue;
+      } else if (fastagManualShown && chargeFastag && num(fastagAmt) > 0) {
         body.fastagAmount = num(fastagAmt);
         if (fastagNote.trim()) body.fastagNotes = fastagNote.trim();
       }
@@ -634,6 +677,7 @@ export default function ReturnScreen() {
         setSession(data?.session as ReturnSession);
         applyKm((data?.km ?? null) as ReturnKmSummary | null);
         setBill((data?.bill ?? null) as DropBill | null);
+        setFastagSummary((data?.fastag ?? null) as FastagUsageSummary | null);
         setLateSummary((data?.late ?? null) as ReturnLateSummary | null);
         if (data?.rentalTimeline) setServerTimeline(data.rentalTimeline as RentalTimeline);
         setServerDiscount((data?.discount ?? null) as DropDiscount | null);
@@ -929,6 +973,11 @@ export default function ReturnScreen() {
       setErrorMsg('Enter the end odometer reading in whole km.');
       return;
     }
+    // …and the FASTag usage from the balance now
+    if (fastagNowNeeded && fastagNowValue == null) {
+      setErrorMsg(fastagBalanceError(fastagNow) ?? 'Enter the FASTag balance.');
+      return;
+    }
     const extras = dropExtras();
     if ('error' in extras) {
       setErrorMsg(extras.error);
@@ -958,6 +1007,11 @@ export default function ReturnScreen() {
         ...(requireManager ? { requireManagerConfirmation: true } : {}),
         endOdometer: Number(endOdo.trim()),
         ...extras,
+        ...(fastagNowValue != null ? { returnFastagBalance: fastagNowValue } : {}),
+        // Typed FASTag charge (a reading is missing) — the branch manager collects it
+        ...(fastagManualShown && chargeFastag && num(fastagAmt) > 0
+          ? { fastagAmount: num(fastagAmt), ...(fastagNote.trim() ? { fastagNotes: fastagNote.trim() } : {}) }
+          : {}),
         // #6 — recorded for the branch manager's settlement when a deposit is held
         ...(depositHeldBefore > 0 ? { safetyDepositHandling: depositHandling } : {}),
       });
@@ -1024,6 +1078,9 @@ export default function ReturnScreen() {
           {/* Credit / refunds recorded with the drop bill (#6 / #11) */}
           {settledNote && <Text style={styles.settledNote}>{settledNote}</Text>}
           {legacyResult && <LegacyReturnChargesCard result={legacyResult} />}
+          {!!legacyResult?.fastag?.notes?.length && (
+            <Text style={styles.settledNote}>{legacyResult.fastag.notes.join('\n')}</Text>
+          )}
           {legacyResult?.safetyDeposit && (
             <Text style={styles.settledNote}>
               Safety deposit {inr(num(legacyResult.safetyDeposit.amount))}:{' '}
@@ -1037,6 +1094,12 @@ export default function ReturnScreen() {
         </View>
       </View>
     );
+  }
+
+  // Done (returned, or sent to a manager): the read-only summary, never the
+  // workflow — changes go through Edit Return (client item 1).
+  if (booking.status === 'RETURNED' || awaitingManager) {
+    return <Redirect href={`/employee/return/summary/${booking.publicId}` as Href} />;
   }
 
   const net = session ? num(session.netPayable) : 0;
@@ -1054,6 +1117,29 @@ export default function ReturnScreen() {
   const showDamages = !hasRemainingBalance && !sessionDone && !awaitingManager;
   // The bill on screen may not include the latest damages yet.
   const billBusy = computing || billStale || damagesFetching || !!deletingDamageId;
+  // Typed FASTag / toll charge — drop bill (Additional Charges) and legacy drop (Return Inspection)
+  const fastagManualToggle = (
+    <ChargeToggle label="FASTag / toll charge" enabled={chargeFastag} onToggle={setChargeFastag}>
+      <TextInput
+        style={styles.input}
+        value={fastagAmt}
+        onChangeText={setFastagAmt}
+        placeholder="Amount ₹"
+        placeholderTextColor={Colors.ink4}
+        keyboardType="numeric"
+      />
+      <TextInput
+        style={[styles.input, { marginTop: 8 }]}
+        value={fastagNote}
+        onChangeText={setFastagNote}
+        placeholder="Note (optional)"
+        placeholderTextColor={Colors.ink4}
+      />
+      <Text style={styles.hintTight}>
+        Tolls are passed on at cost — no GST.{booking.usePaymentSessions ? '' : ' The branch manager collects it.'}
+      </Text>
+    </ChargeToggle>
+  );
 
   return (
     <>
@@ -1216,7 +1302,7 @@ export default function ReturnScreen() {
           <CounterPaymentPanel bookingPublicId={booking.publicId} />
 
           {/* State at pickup */}
-          {(pickupOdo != null || booking.pickupFuelLevel) && (
+          {(pickupOdo != null || booking.pickupFuelLevel || booking.pickupFastagBalance != null) && (
             <>
               <SectionHeader title="State at Pickup" />
               <View style={styles.card}>
@@ -1235,6 +1321,12 @@ export default function ReturnScreen() {
                     </>
                   ) : null;
                 })()}
+                {booking.pickupFastagBalance != null && (
+                  <>
+                    {(pickupOdo != null || !!booking.pickupFuelLevel) && <View style={styles.divider} />}
+                    <InfoRow icon="card-outline" label="FASTag balance" value={fastagInr(booking.pickupFastagBalance)} />
+                  </>
+                )}
                 {/* Mid-rental swap (#13): km is measured per vehicle */}
                 {swappedMidRental && kmSegments && (
                   kmSegments.complete ? (
@@ -1274,41 +1366,11 @@ export default function ReturnScreen() {
             </>
           )}
 
-          {/* Pre-delivery reference photos (#55) */}
-          {pickupCaptures.length > 0 && (
-            <>
-              <SectionHeader title="Pre-delivery Condition" />
-              <View style={styles.card}>
-                <Text style={styles.hint}>Photos from pickup — compare against the vehicle's current condition.</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.captureStrip}
-                >
-                  {pickupCaptures.map((p, i) => (
-                    <TouchableOpacity
-                      key={p.publicId}
-                      style={styles.captureThumbWrap}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel="View pickup photo"
-                      onPress={() =>
-                        setPhotoViewer({
-                          images: pickupCaptures.map((c) => ({ url: c.url, label: c.captureLabel })),
-                          index: i,
-                        })
-                      }
-                    >
-                      <Image source={{ uri: p.url }} style={styles.captureThumb} resizeMode="cover" />
-                      {p.captureLabel ? (
-                        <Text style={styles.captureLabel} numberOfLines={1}>{p.captureLabel}</Text>
-                      ) : null}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            </>
-          )}
+          {/* Reference photos (#55): the returning car's handover — pickup, or its swap (item 2) */}
+          <HandoverConditionPhotos
+            data={pickupCaptures}
+            onOpen={(images, index) => setPhotoViewer({ images, index })}
+          />
 
           {/* Return condition photos — required before compute / complete (like the web) */}
           {!hasRemainingBalance && !session && !awaitingManager && (
@@ -1430,6 +1492,48 @@ export default function ReturnScreen() {
                     )}
                   </>
                 )}
+
+                {/* FASTag balance now — the usage since pickup is billed from the balances (no GST) */}
+                {fastagNowNeeded && fastagInfo && (
+                  <>
+                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>FASTag balance now (₹)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={fastagNow}
+                      onChangeText={(t) => setFastagNow(cleanFastagInput(t))}
+                      placeholder="e.g. 215"
+                      placeholderTextColor={Colors.ink4}
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                    />
+                    {fastagNow.trim() !== '' && fastagNowValue == null ? (
+                      <Text style={styles.fieldError}>{fastagBalanceError(fastagNow)}</Text>
+                    ) : (
+                      <Text style={styles.hint}>
+                        {fastagStart != null ? `${swappedMidRental ? 'At swap' : 'At pickup'} ${fastagInr(fastagStart)}` : ''}
+                        {num(fastagInfo.priorUsage) > 0
+                          ? ` · ${fastagInr(fastagInfo.priorUsage)} used on the swapped-out vehicle${fastagInfo.swapCount > 1 ? 's' : ''}`
+                          : ''}
+                        {fastagPreview != null && fastagNowValue != null
+                          ? ` · FASTag usage ${fastagInr(fastagPreview)} (no GST${booking.usePaymentSessions ? '' : ', the branch manager collects it'})`
+                          : ''}
+                      </Text>
+                    )}
+                    {(fastagNowRecharged || fastagInfo.priorRecharged) && (
+                      <Text style={styles.hintWarn}>FASTag balance went up (recharged?) — no charge for that part.</Text>
+                    )}
+                  </>
+                )}
+                {/* Swapped onto a car without a FASTag: the usage is already known */}
+                {fastagFromReadings && fastagInfo && !fastagInfo.currentHasFastag && num(fastagInfo.priorUsage) > 0 && (
+                  <Text style={styles.hint}>
+                    FASTag usage on the swapped-out vehicle{fastagInfo.swapCount > 1 ? 's' : ''}: {fastagInr(fastagInfo.priorUsage)} — billed automatically (no GST).
+                  </Text>
+                )}
+                {/* Legacy drop: the typed FASTag charge (a reading is missing), for the manager to collect */}
+                {!booking.usePaymentSessions && fastagManualShown && (
+                  <View style={{ marginTop: 16 }}>{fastagManualToggle}</View>
+                )}
               </View>
 
               {/* Late return without an extension — billed automatically (#12) */}
@@ -1487,26 +1591,9 @@ export default function ReturnScreen() {
                 )}
                 <View style={styles.divider} />
 
-                {fastagEnabled && (
+                {fastagManualShown && (
                   <>
-                    <ChargeToggle label="FASTag / toll charge" enabled={chargeFastag} onToggle={setChargeFastag}>
-                      <TextInput
-                        style={styles.input}
-                        value={fastagAmt}
-                        onChangeText={setFastagAmt}
-                        placeholder="Amount ₹"
-                        placeholderTextColor={Colors.ink4}
-                        keyboardType="numeric"
-                      />
-                      <TextInput
-                        style={[styles.input, { marginTop: 8 }]}
-                        value={fastagNote}
-                        onChangeText={setFastagNote}
-                        placeholder="Note (optional)"
-                        placeholderTextColor={Colors.ink4}
-                      />
-                      <Text style={styles.hintTight}>Tolls are passed on at cost — no GST.</Text>
-                    </ChargeToggle>
+                    {fastagManualToggle}
                     <View style={styles.divider} />
                   </>
                 )}
@@ -1822,6 +1909,24 @@ export default function ReturnScreen() {
               ) : (
                 <LedgerSummaryCard session={session} />
               )}
+              {/* FASTag usage from the balances: each car's readings (after swaps) and recharge notes */}
+              {bill && fastagSummary?.status === 'COMPUTED' && (
+                fastagSummary.legs.filter((l) => l.hasFastag).length > 1 || fastagSummary.notes.length > 0
+              ) && (
+                <View style={[styles.card, { marginTop: 8 }]}>
+                  {fastagSummary.legs.filter((l) => l.hasFastag).length > 1 && fastagSummary.legs
+                    .filter((l) => l.hasFastag)
+                    .map((l, i) => (
+                      <Text key={`${l.regNo}-${i}`} style={styles.hintTight}>
+                        FASTag {l.regNo ?? ''}: {fastagInr(l.startBalance)} → {fastagInr(l.endBalance)}
+                        {l.recharged ? ' (recharged — no charge)' : ` = ${fastagInr(l.usage)}`}
+                      </Text>
+                    ))}
+                  {fastagSummary.notes.map((n) => (
+                    <Text key={n} style={styles.hintTight}>{n}</Text>
+                  ))}
+                </View>
+              )}
 
               {/* Drop discount — part of the compute body, re-sent on every recompute */}
               {!sessionDone && (
@@ -1949,6 +2054,7 @@ export default function ReturnScreen() {
                     setKmSummary(null);
                     setServerDiscount(null);
                     setBill(null);
+                    setFastagSummary(null);
                     setDropDeposit(null);
                     setLateSummary(null);
                     setDiscountOpen(false);
@@ -2083,7 +2189,9 @@ export default function ReturnScreen() {
         message={(damages.length > 0
           ? `Confirm that ${customer.name} has returned the vehicle? The recorded damage goes to the branch manager, who charges it and sets the vehicle's status.`
           : `Confirm that ${customer.name} has returned the vehicle with no new damage?`)
-          + ' Any extra km or late-return charge is billed at face value (no GST) and collected by the branch manager.'}
+          + (fastagFromReadings
+            ? ' Any extra km, late-return or FASTag usage charge is billed at face value (no GST) and collected by the branch manager.'
+            : ' Any extra km or late-return charge is billed at face value (no GST) and collected by the branch manager.')}
         confirmLabel="Complete Return"
         confirmColor="#3b82f6"
         onConfirm={() => { setShowConfirm(false); completeLegacy(); }}
@@ -2175,11 +2283,6 @@ const styles = StyleSheet.create({
   link: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange },
   linkDanger: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#dc3545' },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-
-  captureStrip: { gap: 10, paddingTop: 12, paddingRight: 4 },
-  captureThumbWrap: { width: 110, gap: 4 },
-  captureThumb: { width: 110, height: 84, borderRadius: 10, backgroundColor: Colors.bg },
-  captureLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3 },
 
   depositNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17, marginTop: 4, paddingHorizontal: 4 },
 

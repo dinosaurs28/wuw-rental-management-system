@@ -35,7 +35,7 @@ import {
   type DlCollectionStatus,
   type DlStatusFields,
 } from '../../../lib/dlStatus';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +53,7 @@ import type { ReturnSession } from '../../../types/api';
 import { usePickupDraft } from '../../../hooks/usePickupDraft';
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 import type { KmAllowance } from '../../../types/return';
+import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -73,6 +74,8 @@ interface BookingDetail extends DlStatusFields {
   startOdometer: number | null;
   // "1".."10", recorded when the branch fuel module is enabled
   pickupFuelLevel?: string | null;
+  // FASTag balance saved with the handover (null = not read; absent on older servers)
+  pickupFastagBalance?: string | null;
   requiresManagerConfirmation?: boolean;
   safetyDeposit?: number | null;
   // Branch "Unified Payments": pickup money goes through a payment session.
@@ -94,6 +97,7 @@ interface BookingDetail extends DlStatusFields {
       model: string;
       regNo: string;
       odo: number | null;
+      hasFastag?: boolean;
     };
   }>;
 }
@@ -254,6 +258,8 @@ export default function PickupScreen() {
   const [odo, setOdo] = useState('');
   // No default — staff must read the gauge and pick a level (1..10).
   const [fuelLevel, setFuelLevel] = useState<number | null>(null);
+  // ₹ balance on the car's FASTag — required when the car has one (the drop bills the usage).
+  const [fastagBalance, setFastagBalance] = useState('');
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   // Shots still uploading (or failed) — they aren't in `photos` yet.
   const [pendingPhotos, setPendingPhotos] = useState(0);
@@ -426,11 +432,11 @@ export default function PickupScreen() {
     vehicleKey: booking?.items[0]?.vehicle?.regNo ?? null,
     odoPrefill: odoPrefillRef.current?.value ?? null,
     fields: {
-      odo, fuelLevel, dlStatus, dlNumberEditing, dlNumberInput, requireManager, requestDeposit,
+      odo, fuelLevel, fastagBalance, dlStatus, dlNumberEditing, dlNumberInput, requireManager, requestDeposit,
       depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
     },
     setters: {
-      setOdo, setFuelLevel, setDlStatus, setDlNumberEditing, setDlNumberInput, setRequireManager,
+      setOdo, setFuelLevel, setFastagBalance, setDlStatus, setDlNumberEditing, setDlNumberInput, setRequireManager,
       setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
       setSDepositAmt, setSDepositReason,
     },
@@ -446,12 +452,15 @@ export default function PickupScreen() {
     const labeled = photos.filter((p) => p.label);
     const generic = photos.filter((p) => !p.label);
     const level = fuelLevel ?? 0;
+    const fastag = booking?.items[0]?.vehicle?.hasFastag ? parseFastagBalance(fastagBalance) : null;
     return {
       odo: Number(odo),
       // fuelLevel is stored on the vehicle as a percent; derive it from the 1..10 scale.
       fuelLevel: level * 10,
       // 1..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
       pickupFuelLevel: String(level),
+      // FASTag balance at the handover — only for a car with a FASTag
+      ...(fastag != null ? { pickupFastagBalance: fastag } : {}),
       ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
       ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
     };
@@ -858,6 +867,9 @@ export default function PickupScreen() {
   const depositInvalid =
     requestDeposit && (!(Number(depositAmount) > 0) || depositReason.trim().length === 0);
   const odoValid = Number(odo) > 0;
+  // FASTag balance (car with a FASTag): required before the handover
+  const hasFastag = !!vehicle?.hasFastag;
+  const fastagError = hasFastag ? fastagBalanceError(fastagBalance) : null;
   const allowance = booking.kmAllowance ?? null;
   const fuelModuleEnabled = !!booking.frozenChargeConfig?.fuelModuleEnabled;
   const fastagModuleEnabled = !!booking.frozenChargeConfig?.fastagModuleEnabled;
@@ -879,7 +891,9 @@ export default function PickupScreen() {
           ? 'Enter the odometer reading.'
           : fuelLevel == null
             ? 'Select the fuel level.'
-            : missingRequiredPhotos.length > 0
+            : fastagError
+              ? fastagBalance.trim() ? fastagError : 'Enter the FASTag balance.'
+              : missingRequiredPhotos.length > 0
               ? `Take the required photo${missingRequiredPhotos.length > 1 ? 's' : ''}: ${missingRequiredPhotos.map((f) => f.name).join(', ')}.`
               : pendingPhotos > 0
                 ? 'Wait for the photos to upload (retry or remove failed ones).'
@@ -900,6 +914,9 @@ export default function PickupScreen() {
 
   const recordedOdo = booking.startOdometer ?? (odoValid ? Number(odo) : null);
   const recordedFuel = booking.pickupFuelLevel ? Number(booking.pickupFuelLevel) : fuelLevel;
+  const recordedFastag = booking.pickupFastagBalance != null
+    ? Number(booking.pickupFastagBalance)
+    : hasFastag ? parseFastagBalance(fastagBalance) : null;
 
   if (done) {
     return (
@@ -928,6 +945,12 @@ export default function PickupScreen() {
               <View style={styles.successRow}>
                 <Ionicons name="water-outline" size={15} color={Colors.ink3} />
                 <Text style={styles.successRowText}>Fuel level: {recordedFuel}/10</Text>
+              </View>
+            )}
+            {recordedFastag != null && (
+              <View style={styles.successRow}>
+                <Ionicons name="card-outline" size={15} color={Colors.ink3} />
+                <Text style={styles.successRowText}>FASTag balance: {fastagInr(recordedFastag)}</Text>
               </View>
             )}
             {handoverDlNumber && (
@@ -968,7 +991,12 @@ export default function PickupScreen() {
   // Nothing to hand over: already picked up / cancelled, or a handover is
   // waiting on a manager (a fresh form would duplicate its photos and deposit).
   const awaitingManager = booking.status === 'CONFIRMED' && !!booking.requiresManagerConfirmation;
-  if (awaitingManager || booking.status !== 'CONFIRMED') {
+  // Done (handed over, returned, or sent to a manager): the read-only summary,
+  // never the workflow — changes go through Edit Pickup (client item 1).
+  if (awaitingManager || booking.status === 'PICKED_UP' || booking.status === 'RETURNED') {
+    return <Redirect href={`/employee/pickup/summary/${booking.publicId}` as Href} />;
+  }
+  if (booking.status !== 'CONFIRMED') {
     const pickedUp = booking.status === 'PICKED_UP';
     return (
       <KeyboardAvoidingView
@@ -1408,7 +1436,7 @@ export default function PickupScreen() {
         </View>
 
         {/* Rental terms — the allowance the drop bills extra km against */}
-        {(allowance || fuelModuleEnabled || fastagModuleEnabled) && (
+        {(allowance || fuelModuleEnabled || fastagModuleEnabled || hasFastag) && (
           <>
             <SectionHeader title="Rental Terms" />
             <View style={styles.card}>
@@ -1433,7 +1461,8 @@ export default function PickupScreen() {
                   <InfoRow icon="water-outline" label="Fuel tracking" value="Enabled" />
                 </>
               )}
-              {fastagModuleEnabled && (
+              {/* A car with a FASTag is always charged its usage, whatever the branch module */}
+              {(fastagModuleEnabled || hasFastag) && (
                 <>
                   {(allowance || fuelModuleEnabled) && <View style={styles.divider} />}
                   <InfoRow icon="card-outline" label="FASTag charges" value="Enabled" />
@@ -1477,7 +1506,7 @@ export default function PickupScreen() {
           <>
             {/* Saved with the session — the vehicle goes out when it's settled */}
             <SectionHeader title="Handover Details" />
-            {(recordedOdo != null || recordedFuel != null) && (
+            {(recordedOdo != null || recordedFuel != null || recordedFastag != null) && (
               <View style={styles.card}>
                 {recordedOdo != null && (
                   <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
@@ -1486,6 +1515,12 @@ export default function PickupScreen() {
                   <>
                     {recordedOdo != null && <View style={styles.divider} />}
                     <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
+                  </>
+                )}
+                {recordedFastag != null && (
+                  <>
+                    {(recordedOdo != null || recordedFuel != null) && <View style={styles.divider} />}
+                    <InfoRow icon="card-outline" label="FASTag balance" value={fastagInr(recordedFastag)} />
                   </>
                 )}
               </View>
@@ -1723,6 +1758,32 @@ export default function PickupScreen() {
                   ))}
                 </View>
               </View>
+
+              {/* FASTag balance (car with a FASTag) — the drop bills what the tag is used for */}
+              {hasFastag && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
+                    <View style={styles.fieldLabel}>
+                      <Ionicons name="card-outline" size={16} color={Colors.ink3} />
+                      <Text style={styles.fieldLabelText}>FASTag balance (₹)</Text>
+                      {!fastagBalance.trim() && <Text style={styles.requiredTag}>Required</Text>}
+                    </View>
+                    <TextInput
+                      style={styles.odoInput}
+                      value={fastagBalance}
+                      onChangeText={(t) => setFastagBalance(cleanFastagInput(t))}
+                      placeholder="e.g. 480"
+                      placeholderTextColor={Colors.ink4}
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                    />
+                    {fastagBalance.trim() !== '' && fastagError && (
+                      <Text style={styles.fieldErrorTight}>{fastagError}</Text>
+                    )}
+                  </View>
+                </>
+              )}
             </View>
 
             {/* Pre-delivery photos */}
@@ -1935,7 +1996,7 @@ export default function PickupScreen() {
       icon="car-outline"
       iconColor={Colors.orange}
       title="Confirm Pickup"
-      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${termsLine ? `${termsLine}\n` : ''}${handoverDlNumber ? `DL number: ${handoverDlNumber}\n` : ''}${dlSummary}\n\nHand over the vehicle to ${customer.name}?`}
+      message={`Odometer: ${odo} km · Fuel: ${fuelLevel ?? '—'}/10\n${recordedFastag != null ? `FASTag balance: ${fastagInr(recordedFastag)}\n` : ''}${termsLine ? `${termsLine}\n` : ''}${handoverDlNumber ? `DL number: ${handoverDlNumber}\n` : ''}${dlSummary}\n\nHand over the vehicle to ${customer.name}?`}
       confirmLabel="Confirm Pickup"
       confirmColor={Colors.orange}
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}

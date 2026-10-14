@@ -31,9 +31,11 @@ function ymd(d: Date) {
 }
 
 // Size of today's Daily list — what the Queue tab shows when a shortcut opens
-// it. Servers older than #17 send no counts, so fall back to the rows.
+// it. Servers older than #17 send no counts, so fall back to the rows. Sent with
+// includeCompleted like the Queue tab, so the count is the items still waiting
+// (a pickup / drop sent to a manager is done for Fleet — client item 1).
 async function fetchQueueCount(kind: QueueKind, date: string): Promise<number> {
-  const params = { date, type: 'DAILY' as const };
+  const params = { date, type: 'DAILY' as const, includeCompleted: 1 as const };
   try {
     const res = kind === 'pickups' ? await employeeApi.listPickups(params) : await employeeApi.listReturns(params);
     const body = res.data as QueueListResponse;

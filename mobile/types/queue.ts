@@ -3,6 +3,7 @@
 import type { RentalPeriodType } from './api';
 import type { DlCollectionStatus } from '../lib/dlStatus';
 import type { OperationDraftSummary } from '../lib/operationDraft';
+import type { CompletionInfo } from './completedOperation';
 
 // Monthly = rentalPeriodType MONTHLY; everything else (NULL included) is Daily.
 export type BookingListType = 'DAILY' | 'MONTHLY';
@@ -25,6 +26,11 @@ export interface QueueBooking {
   items: Array<{ vehicle: { make: string; model: string; regNo: string } }>;
   // A pickup / drop paused half-way (client item 2); absent on older servers.
   draft?: OperationDraftSummary | null;
+  // Rows of `completed` only (client item 1): who completed it and when, and
+  // whether it waits on the branch manager's confirmation.
+  completed?: CompletionInfo;
+  awaitingManager?: boolean;
+  returnedAt?: string | null;
 }
 
 // counts.daily follows the request's date; counts.monthly has no date.
@@ -38,6 +44,9 @@ export interface QueueListResponse {
   data?: QueueBooking[];
   type?: BookingListType | null;
   counts?: QueueCounts;
+  // includeCompleted=1 only (client item 1): the day's done pickups / returns,
+  // in the order they were done. Absent on older servers.
+  completed?: QueueBooking[];
 }
 
 // GET /api/employee/dashboard/overdue-returns — PICKED_UP bookings past endAt.
