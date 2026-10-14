@@ -22,10 +22,13 @@ import {
   selectBasePrice,
   type BasePriceSelection,
   type BilledAsType,
+  type FestivalBreakdown,
   type WeekendBreakdown,
   type WeekendContext,
 } from "../../services/pricing/base-price-rule.js";
 import { getBranchesWeekendDays } from "../../services/pricing/branch-weekend-days.service.js";
+import { getBranchesSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
+import { rulesForVehicle, type SpecialRule } from "./specialDateRule.js";
 
 interface VehicleRef {
   id: number;
@@ -101,8 +104,9 @@ async function branchRentSplitter(
 /**
  * Same slab rule as PricingEngineService.determineBasePrice (shared
  * base-price-rule.ts): an hourly rate is capped at the 12 h / 24 h slab price,
- * and weekend blocks take the weekend rents, so listing and booking prices
- * always agree. Free km are not needed here.
+ * weekend blocks take the weekend rents and festival blocks their rule's
+ * percentage, so listing and booking prices always agree. Free km are not
+ * needed here.
  */
 function selectPrice(pricing: PricingRow, duration: RentalDuration, weekend?: WeekendContext): BasePriceSelection {
   const toDecimal = (n: number | null) => (n != null && n > 0 ? new Decimal(n) : null);
@@ -144,6 +148,8 @@ export interface ListingPrice {
   discountLabel?: string | null;
   /** Weekend rates inside price (absent when none applies). */
   weekend?: WeekendBreakdown;
+  /** Festival rules inside price (absent when none applies). */
+  festival?: FestivalBreakdown;
 }
 
 /**
@@ -155,13 +161,16 @@ export interface ListingPrice {
  * @param window    The searched pickup → return: at a branch where it is the 12-hour
  *                  package held to closing (client item 6) the price is the full 12 hours,
  *                  as the booking engine bills it; it also places the blocks on the
- *                  calendar for the branch's weekend rents
+ *                  calendar for the branch's weekend rents and festival rules
+ * @param options   specialRules: price with these festival rules instead of each
+ *                  branch's live ones (the festival-rule preview; [] = none)
  * @returns Map<vehicleId, ListingPrice>
  */
 export async function getBatchListingPrices(
   vehicles: VehicleRef[],
   duration: RentalDuration,
   window?: { startAt: Date; endAt: Date },
+  options: { specialRules?: SpecialRule[] } = {},
 ): Promise<Map<number, ListingPrice>> {
   if (vehicles.length === 0) return new Map();
 
@@ -186,6 +195,12 @@ export async function getBatchListingPrices(
   const weekendDaysByBranch = window
     ? await getBranchesWeekendDays(vehicles.map((v) => v.branchId))
     : new Map<number, number[]>();
+  // Festival rules touching the window, per branch (filtered by each vehicle below)
+  const specialRulesByBranch = !window
+    ? new Map<number, SpecialRule[]>()
+    : options.specialRules
+      ? new Map(vehicles.map((v) => [v.branchId, options.specialRules!]))
+      : await getBranchesSpecialRules(vehicles.map((v) => v.branchId), window.startAt, window.endAt);
 
   // Query 1: custom pricing (enabled vehicles override branch defaults)
   const customPricings = await prisma.vehicleCustomPricing.findMany({
@@ -259,7 +274,10 @@ export async function getBatchListingPrices(
 
   // Build base price map
   const basePriceMap = new Map<number, number>();
-  const billedAsMap = new Map<number, { billedAs: string; billedAsType: BilledAsType; weekend?: WeekendBreakdown }>();
+  const billedAsMap = new Map<
+    number,
+    { billedAs: string; billedAsType: BilledAsType; weekend?: WeekendBreakdown; festival?: FestivalBreakdown }
+  >();
   for (const v of vehicles) {
     const pricing = customMap.get(v.id) ?? defaultMap.get(`${v.branchId}:${v.categoryId}`);
     if (!pricing) {
@@ -273,6 +291,7 @@ export async function getBatchListingPrices(
         startAt: window.startAt,
         endAt: window.endAt,
         weekendDays: weekendDaysByBranch.get(v.branchId) ?? [],
+        specialRules: rulesForVehicle(specialRulesByBranch.get(v.branchId) ?? [], v),
       },
     );
     basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));
@@ -280,6 +299,7 @@ export async function getBatchListingPrices(
       billedAs: selection.billedAs,
       billedAsType: selection.billedAsType,
       ...(selection.weekend && { weekend: selection.weekend }),
+      ...(selection.festival && { festival: selection.festival }),
     });
   }
 
@@ -335,24 +355,31 @@ export async function getBatchListingPrices(
       continue;
     }
 
+    // Rounded exactly as the booking engine rounds the slab (duration-discount
+    // service + combined cap): to the paisa, half-up — so the listed price is
+    // the booked price, paise included
+    const base = new Decimal(basePrice);
     let discount = slab.discountType === "PERCENTAGE"
-      ? basePrice * slab.value / 100
-      : Math.min(slab.value, basePrice);
+      ? base.mul(slab.value).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+      : Decimal.min(slab.value, base).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
     // Respect combined discount cap if set
     const cfg = configByBranch.get(v.branchId);
     if (cfg?.maxCombinedDiscountPercent != null) {
-      const maxDiscount = basePrice * Number(cfg.maxCombinedDiscountPercent) / 100;
-      discount = Math.min(discount, maxDiscount);
+      const maxDiscount = base
+        .mul(Number(cfg.maxCombinedDiscountPercent))
+        .div(100)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      discount = Decimal.min(discount, maxDiscount);
     }
 
-    const finalPrice = Math.max(0, Math.round(basePrice - discount));
+    const finalPrice = Decimal.max(0, base.sub(discount)).toNumber();
     result.set(v.id, {
       price: basePrice,
       finalPrice,
       ...billed,
       ...gstSplit(v.branchId, finalPrice),
-      ...(discount > 0 && {
+      ...(discount.gt(0) && {
         discountAmount: Math.round((basePrice - finalPrice) * 100) / 100,
         discountPercent: Math.round(((basePrice - finalPrice) / basePrice) * 10000) / 100,
         discountLabel: slab.label,

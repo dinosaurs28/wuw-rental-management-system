@@ -82,7 +82,7 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
           id: true, publicId: true, status: true, make: true, model: true,
           branchId: true, categoryId: true, advancePayAmount: true,
         },
-        orderBy: { odo: "asc" },
+        orderBy: [{ odo: "asc" }, { id: "asc" }],
       })
     ).filter((v) => normalizeGroupStr(v.make) === make && normalizeGroupStr(v.model) === model);
     const { representative } = await pickGroupRepresentative(

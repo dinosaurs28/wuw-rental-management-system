@@ -40,6 +40,7 @@ import {
   BranchScheduleError,
 } from "../../utils/booking/branchScheduleValidator.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.js";
 import { assertExtensionQrsClosedForCancel } from "../payment/upi-qr.service.js";
 import {
@@ -794,6 +795,8 @@ class ExtensionService {
       });
       // days / rentalPeriodType / hours follow the new end (#5/#17)
       await refreshBookingPeriodFields(extension.bookingId, tx);
+      // Festival rules that priced the added time join the booking's stored ones
+      await recordBookingSpecialRules(tx, extension.bookingId, extension.oldEndAt, effectiveEndAt);
 
       await tx.bookingExtension.update({
         where: { id: extension.id },
@@ -995,6 +998,7 @@ class ExtensionService {
           },
         });
         await refreshBookingPeriodFields(booking.id, tx);
+        await recordBookingSpecialRules(tx, booking.id, extension.oldEndAt, extension.requestedEndAt);
         return true;
       });
 
@@ -1062,6 +1066,7 @@ class ExtensionService {
           },
         });
         await refreshBookingPeriodFields(booking.id, tx);
+        await recordBookingSpecialRules(tx, booking.id, extension.oldEndAt, extension.requestedEndAt);
         return addFleetCredit(tx, {
           bookingId: booking.id,
           amount: additionalAmount,
@@ -1197,6 +1202,7 @@ class ExtensionService {
           },
         });
         await refreshBookingPeriodFields(booking.id, tx);
+        await recordBookingSpecialRules(tx, booking.id, extension.oldEndAt, extension.requestedEndAt);
       }
     });
 

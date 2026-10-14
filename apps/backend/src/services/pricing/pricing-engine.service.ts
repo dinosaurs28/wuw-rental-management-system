@@ -16,10 +16,13 @@ import { redis } from "../../lib/redisconfig.js";
 import {
   selectBasePrice,
   type BilledAsType,
+  type FestivalBreakdown,
   type WeekendBreakdown,
   type WeekendContext,
 } from "./base-price-rule.js";
 import { getBranchWeekendDays } from "./branch-weekend-days.service.js";
+import { getBranchSpecialRules } from "./branch-special-rules.service.js";
+import { rulesForVehicle, rulesOverlapping, type SpecialRule } from "../../utils/pricing/specialDateRule.js";
 import {
   vehiclePricingConfigKey,
   branchPricingDefaultsKey,
@@ -198,6 +201,14 @@ export interface PricingResult {
     weekendDays: number[];
     /** Weekend rates in the price (absent when no block was billed at one) */
     weekend?: WeekendBreakdown;
+    /**
+     * The festival rules the window was priced with — every rule of the branch
+     * touching it, whatever its scope (booking create stores them in
+     * pricingSnapshot.specialRules; empty = none)
+     */
+    specialRules: SpecialRule[];
+    /** Festival rules in the price (absent when no block was billed under one) */
+    festival?: FestivalBreakdown;
   };
 }
 
@@ -231,6 +242,14 @@ export interface PricingDiscountOptions {
    * booking: the branch's current weekend days.
    */
   weekendDays?: number[];
+  /**
+   * Festival pricing: the rules an EXISTING booking is re-priced with when the
+   * same window must come out at the booked rent (specialRulesOf(pricingSnapshot)
+   * ?? [] — none for a booking made before festival pricing). Omitted = the
+   * branch's live rules: new quotes / bookings, and the re-prices that take
+   * today's pricing for both terms (extension delta, vehicle swap).
+   */
+  specialRules?: SpecialRule[];
 }
 
 /**
@@ -247,6 +266,13 @@ export { heldToClosingOf } from "../../utils/booking/halfDayPackage.js";
  * `weekendDays`.
  */
 export { weekendDaysOf } from "../../utils/pricing/weekendRule.js";
+
+/**
+ * The festival rules an existing booking was priced with (pricingSnapshot.
+ * specialRules, stored at create; null for a booking made before festival
+ * pricing). The BM coupon re-price passes `?? []` as `specialRules`.
+ */
+export { specialRulesOf } from "../../utils/pricing/specialDateRule.js";
 
 /**
  * Rent GST result: the GST-inclusive rent before / after discounts split into
@@ -321,9 +347,18 @@ export class PricingEngineService {
       // 4. Determine base price based on duration (weekend blocks at the weekend rents)
       //    — classified on the real return: a 12-hour package held to closing is
       //    billed to pickup + 12 h but is weekday / weekend by its real hours
+      //    Festival blocks then take the best applicable rule's percentage
       const weekendDays = discountOptions?.weekendDays ?? await getBranchWeekendDays(branchId);
-      const weekendContext = { startAt: startAt.toJSDate(), endAt: endAt.toJSDate(), weekendDays };
-      const { basePrice, freeKmLimit, priceSource, billedAs, billedAsType, weekend } =
+      const specialRules = await this.festivalRules(
+        branchId, { id: vehicleId, categoryId: resolvedCategoryId }, startAt, endAt, discountOptions?.specialRules,
+      );
+      const weekendContext = {
+        startAt: startAt.toJSDate(),
+        endAt: endAt.toJSDate(),
+        weekendDays,
+        specialRules: specialRules.vehicle,
+      };
+      const { basePrice, freeKmLimit, priceSource, billedAs, billedAsType, weekend, festival } =
         await this.determineBasePrice(pricing, duration, vehicleId, branchId, weekendContext);
 
       // 5. Evaluate all discounts (duration + coupon + manual) in strict order.
@@ -428,6 +463,8 @@ export class PricingEngineService {
           billedAsType,
           weekendDays,
           ...(weekend && { weekend }),
+          specialRules: specialRules.window,
+          ...(festival && { festival }),
         },
       };
     } finally {
@@ -452,16 +489,19 @@ export class PricingEngineService {
     billedAs: string;
     billedAsType: BilledAsType;
     weekend?: WeekendBreakdown;
+    festival?: FestivalBreakdown;
   }> {
     const duration = DurationCalculatorService.calculate(startAt, await this.billingEndAt(startAt, endAt, branchId));
     const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
     const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
     const weekendDays = await getBranchWeekendDays(branchId);
-    const { basePrice, billedAs, billedAsType, weekend } =
+    const specialRules = await this.festivalRules(branchId, { id: vehicleId, categoryId: resolvedCategoryId }, startAt, endAt);
+    const { basePrice, billedAs, billedAsType, weekend, festival } =
       await this.determineBasePrice(pricing, duration, vehicleId, branchId, {
         startAt: startAt.toJSDate(),
         endAt: endAt.toJSDate(),
         weekendDays,
+        specialRules: specialRules.vehicle,
       });
 
     // Apply duration discount only (no coupon on listing)
@@ -484,23 +524,25 @@ export class PricingEngineService {
       billedAs,
       billedAsType,
       ...(weekend && { weekend }),
+      ...(festival && { festival }),
     };
   }
 
   /**
-   * The rent incl. GST before discounts of one window and its weekend
-   * breakdown — no discounts, GST or deposit. Reschedule compares the old and
-   * the new window with it (weekend pricing must not change the rent).
-   * `options` as for calculateBookingPrice (an existing booking's flags).
+   * The rent incl. GST before discounts of one window and its weekend /
+   * festival breakdowns — no discounts, GST or deposit. Reschedule compares the
+   * old and the new window with it (weekend and festival pricing must not
+   * change the rent). `options` as for calculateBookingPrice (an existing
+   * booking's flags); `specialRules` touching the window come back as `rules`.
    */
   async calculateRent(
     vehicleId: number,
     startAt: DateTime,
     endAt: DateTime,
     branchId: number,
-    options: Pick<PricingDiscountOptions, "heldToClosing" | "weekendDays"> = {},
+    options: Pick<PricingDiscountOptions, "heldToClosing" | "weekendDays" | "specialRules"> = {},
     categoryId?: number,
-  ): Promise<{ rent: Decimal; weekend?: WeekendBreakdown }> {
+  ): Promise<{ rent: Decimal; weekend?: WeekendBreakdown; festival?: FestivalBreakdown; specialRules: SpecialRule[] }> {
     const duration = DurationCalculatorService.calculate(
       startAt,
       await this.billingEndAt(startAt, endAt, branchId, options.heldToClosing),
@@ -508,15 +550,42 @@ export class PricingEngineService {
     const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
     const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
     const weekendDays = options.weekendDays ?? await getBranchWeekendDays(branchId);
-    const { basePrice, weekend } = await this.determineBasePrice(pricing, duration, vehicleId, branchId, {
+    const specialRules = await this.festivalRules(
+      branchId, { id: vehicleId, categoryId: resolvedCategoryId }, startAt, endAt, options.specialRules,
+    );
+    const { basePrice, weekend, festival } = await this.determineBasePrice(pricing, duration, vehicleId, branchId, {
       startAt: startAt.toJSDate(),
       endAt: endAt.toJSDate(),
       weekendDays,
+      specialRules: specialRules.vehicle,
     });
-    return { rent: basePrice, ...(weekend && { weekend }) };
+    return {
+      rent: basePrice,
+      ...(weekend && { weekend }),
+      ...(festival && { festival }),
+      specialRules: specialRules.window,
+    };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * The festival rules a window is priced with: `stored` (an existing booking's,
+   * see PricingDiscountOptions.specialRules), else the branch's live rules.
+   * `window` = those touching [startAt, endAt] (what a booking stores),
+   * `vehicle` = the ones of them covering the vehicle (what the pricer applies).
+   */
+  private async festivalRules(
+    branchId: number,
+    vehicle: { id: number; categoryId: number },
+    startAt: DateTime,
+    endAt: DateTime,
+    stored?: SpecialRule[],
+  ): Promise<{ window: SpecialRule[]; vehicle: SpecialRule[] }> {
+    const rules = stored ?? await getBranchSpecialRules(branchId);
+    const window = rulesOverlapping(rules, startAt.toMillis(), endAt.toMillis());
+    return { window, vehicle: rulesForVehicle(window, vehicle) };
+  }
 
   /**
    * The end the price is worked out to. A 12-hour package held to the branch's
@@ -654,6 +723,7 @@ export class PricingEngineService {
     billedAs: string;
     billedAsType: BilledAsType;
     weekend?: WeekendBreakdown;
+    festival?: FestivalBreakdown;
   }> {
     /**
      * Slab billing, with an hourly rate (when configured) capped at the slab
@@ -665,6 +735,7 @@ export class PricingEngineService {
      * Example: 29 hours, no hourly rate → 1 day + 12-hour slab ("1 day + 12 hours")
      * Example: Fri 18:00 → Sat 18:00, weekend 24-hour ₹1,600 → ₹1,600 (18 of
      *          the 24 h fall on Saturday — weekendRule.ts)
+     * Example: a day on Dussehra (+10%), 24-hour ₹1,300 → ₹1,430 (specialDateRule.ts)
      */
     const selection = selectBasePrice(pricing, duration, weekendContext);
     return {
@@ -674,6 +745,7 @@ export class PricingEngineService {
       billedAs: selection.billedAs,
       billedAsType: selection.billedAsType,
       ...(selection.weekend && { weekend: selection.weekend }),
+      ...(selection.festival && { festival: selection.festival }),
     };
   }
 

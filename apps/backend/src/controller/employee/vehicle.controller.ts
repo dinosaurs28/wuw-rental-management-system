@@ -28,7 +28,7 @@ import {
   type ListingPrice,
   type FallbackPrice,
 } from "../../utils/pricing/batchListingPrice.js";
-import type { WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
+import type { FestivalBreakdown, WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
 import { DateTime } from "luxon";
 import { isGstRuleMissing } from "../../services/tax/gst.service.js";
 import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
@@ -224,6 +224,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
         rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
         // Weekend rates inside price (weekend-wise pricing; absent when none)
         weekend?: WeekendBreakdown;
+        // Festival rules inside price (festival pricing; absent when none)
+        festival?: FestivalBreakdown;
       };
       minDailyPrice: number;
     }
@@ -253,6 +255,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
             sgst: lp.sgst,
           }),
           ...(lp?.weekend && { weekend: lp.weekend }),
+          ...(lp?.festival && { festival: lp.festival }),
         };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
@@ -490,8 +493,9 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
               priceSource:     pr.pricingBreakdown.priceSource,
               billedAs:        pr.pricingBreakdown.billedAs,
               billedAsType:    pr.pricingBreakdown.billedAsType,
-              // Weekend rates inside the price (weekend-wise pricing; absent when none)
+              // Weekend rates / festival rules inside the price (absent when none)
               ...(pr.pricingBreakdown.weekend && { weekend: pr.pricingBreakdown.weekend }),
+              ...(pr.pricingBreakdown.festival && { festival: pr.pricingBreakdown.festival }),
             },
           };
         } catch { /* pricing failure is non-fatal */ }
@@ -645,8 +649,9 @@ export const getEmployeeVehicleDetails = async (
           priceSource: pricingResult.pricingBreakdown.priceSource,
           billedAs: pricingResult.pricingBreakdown.billedAs,
           billedAsType: pricingResult.pricingBreakdown.billedAsType,
-          // Weekend rates inside the price (weekend-wise pricing; absent when none)
+          // Weekend rates / festival rules inside the price (absent when none)
           ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
+          ...(pricingResult.pricingBreakdown.festival && { festival: pricingResult.pricingBreakdown.festival }),
         },
       };
 
@@ -907,6 +912,7 @@ export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
                 sgst: lp.sgst,
               }),
               ...(lp.weekend && { weekend: lp.weekend }),
+              ...(lp.festival && { festival: lp.festival }),
             }
           : null,
         available: reason === null,

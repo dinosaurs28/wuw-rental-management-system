@@ -144,6 +144,10 @@ class ExtensionPricingService {
               heldToClosing: heldToClosingOf(booking.pricingSnapshot),
               // Weekend blocks by the weekend days it was booked with (none before weekend rates)
               weekendDays: weekendDaysOf(booking.pricingSnapshot),
+              // Festival rules: today's for BOTH windows (no specialRules), so the booked
+              // period prices the same in both and cancels — only the added time picks
+              // up a festival, even one created after the booking. Confirming the
+              // extension stores the rules touching the added time (recordBookingSpecialRules)
             },
           ),
         ),

@@ -30,6 +30,7 @@ import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { getBatchListingPrices } from "../../utils/pricing/batchListingPrice.js";
+import { unionSpecialRules, type SpecialRule } from "../../utils/pricing/specialDateRule.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
@@ -625,6 +626,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const inclGst = new InclGstTotals();
     // The branch's weekend days the items were priced with (stored in pricingSnapshot)
     let weekendDays: number[] | null = null;
+    // The festival rules touching the window (stored in pricingSnapshot.specialRules)
+    let specialRules: SpecialRule[] | null = null;
 
     for (const v of vehiclesData) {
       const pricingResult = await pricingEngine.calculateBookingPrice(
@@ -691,11 +694,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           actualHours:   pricingResult.pricingBreakdown.duration.actualDuration,
           freeKmLimit:   pricingResult.freeKmLimit,
           extraKmRate:   Number(pricingResult.extraKmRate.toString()),
-          // Weekend rates charged (weekend-wise pricing; absent when none)
+          // Weekend rates / festival rules charged (absent when none)
           ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
+          ...(pricingResult.pricingBreakdown.festival && { festival: pricingResult.pricingBreakdown.festival }),
         },
       });
       weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
+      specialRules = unionSpecialRules(specialRules, pricingResult.pricingBreakdown.specialRules);
 
       grandBaseTotal    += baseTotal;
       grandDiscountTotal += discountAmount;
@@ -898,6 +903,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             ...(heldToClosing && { heldToClosing: true }),
             // The weekend days it was priced with: re-prices bill weekend blocks by them
             weekendDays: weekendDays ?? [],
+            // The festival rules it was priced with (present = booked with festival
+            // pricing in place): the BM coupon re-price bills festival blocks by them
+            specialRules: specialRules ?? [],
             totals: {
               grandBaseTotal,
               grandDiscountTotal,

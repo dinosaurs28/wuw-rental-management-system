@@ -32,6 +32,7 @@ import {
 } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { getBatchListingPrices } from "../../utils/pricing/batchListingPrice.js";
+import { unionSpecialRules, type SpecialRule } from "../../utils/pricing/specialDateRule.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import Decimal from "decimal.js";
 import {
@@ -160,7 +161,7 @@ async function resolveVehicleFromGroup(
       pricingOverride: true,
       customPricing: true,
     },
-    orderBy: { odo: "asc" },
+    orderBy: [{ odo: "asc" }, { id: "asc" }],
   });
 
   const targetMake = normalizeStr(make);
@@ -378,6 +379,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     const items: any = [];
     // The branch's weekend days the items were priced with (stored in pricingSnapshot)
     let weekendDays: number[] | null = null;
+    // The festival rules touching the window (stored in pricingSnapshot.specialRules)
+    let specialRules: SpecialRule[] | null = null;
 
     // GST Rule Fetching — branchId is resolved from either directly-referenced vehicles
     // or from the parsed groupKey (for pure group-key bookings)
@@ -635,11 +638,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           extraKmRate: Number(pricingResult.extraKmRate.toString()),
           billedAs: pricingResult.pricingBreakdown.billedAs,
           billedAsType: pricingResult.pricingBreakdown.billedAsType,
-          // Weekend rates charged (weekend-wise pricing; absent when none)
+          // Weekend rates / festival rules charged (absent when none)
           ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
+          ...(pricingResult.pricingBreakdown.festival && { festival: pricingResult.pricingBreakdown.festival }),
         },
       });
       weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
+      specialRules = unionSpecialRules(specialRules, pricingResult.pricingBreakdown.specialRules);
 
       grandBaseTotal += baseTotal;
       grandDiscountTotal += discountAmount;
@@ -675,7 +680,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             ...listableVehicleWhere(),
           },
           select: { id: true, publicId: true, status: true, make: true, model: true, branchId: true, categoryId: true, advancePayAmount: true },
-          orderBy: { odo: "asc" },
+          orderBy: [{ odo: "asc" }, { id: "asc" }],
         });
         let groupCandidates = candidates.filter(
           (v) =>
@@ -934,9 +939,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             billedAs:      pricingResult.pricingBreakdown.billedAs,
             billedAsType:  pricingResult.pricingBreakdown.billedAsType,
             ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
+            ...(pricingResult.pricingBreakdown.festival && { festival: pricingResult.pricingBreakdown.festival }),
           },
         });
         weekendDays ??= pricingResult.pricingBreakdown.weekendDays;
+        specialRules = unionSpecialRules(specialRules, pricingResult.pricingBreakdown.specialRules);
       }
 
       // Race-condition guard: re-validate type-class limit inside the transaction
@@ -1010,6 +1017,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             ...(heldToClosing && { heldToClosing: true }),
             // The weekend days it was priced with: re-prices bill weekend blocks by them
             weekendDays: weekendDays ?? [],
+            // The festival rules it was priced with (present = booked with festival
+            // pricing in place): the BM coupon re-price bills festival blocks by them
+            specialRules: specialRules ?? [],
             totals: {
               grandBaseTotal,
               grandDiscountTotal,

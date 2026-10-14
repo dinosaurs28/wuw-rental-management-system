@@ -22,7 +22,7 @@ import {
   ListingPrice,
   type FallbackPrice,
 } from "../../utils/pricing/batchListingPrice.js";
-import type { WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
+import type { FestivalBreakdown, WeekendBreakdown } from "../../services/pricing/base-price-rule.js";
 import { pickGroupRepresentative } from "../../utils/booking/groupRepresentative.js";
 import {
   getCustomerPaymentMode,
@@ -283,10 +283,20 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         rentWithoutGst?: number; gst?: number; cgst?: number; sgst?: number;
         // Weekend rates inside price (weekend-wise pricing; absent when none)
         weekend?: WeekendBreakdown;
+        // Festival rules inside price (festival pricing; absent when none)
+        festival?: FestivalBreakdown;
       };
-      minDailyPrice: number;
+      /** The car the group is shown with (its images and price) */
+      shown: { id: number; status: string; odo: number };
       useCases: Set<string>;
     }
+
+    // The car a group is shown with is the one booking prices and charges
+    // (pickGroupRepresentative): of its cars free for the dates (without dates:
+    // not blocked for every window), one at the branch (AVAILABLE) before one
+    // still out, then the lowest odometer — id breaks a tie, as in group details
+    const showsBefore = (a: GroupEntry["shown"], b: GroupEntry["shown"]) =>
+      (Number(b.status === "AVAILABLE") - Number(a.status === "AVAILABLE") || a.odo - b.odo || a.id - b.id) < 0;
 
     const groupMap = new Map<string, GroupEntry>();
 
@@ -321,6 +331,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
             sgst: lp.sgst,
           }),
           ...(lp?.weekend && { weekend: lp.weekend }),
+          ...(lp?.festival && { festival: lp.festival }),
         };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
@@ -349,15 +360,16 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
             ...(weekendDaily !== undefined ? { weekendDaily } : {}),
           },
           pricingDetails,
-          minDailyPrice: daily,
+          shown: { id: v.id, status: v.status, odo: v.odo },
           useCases: new Set(v.useCases),
         });
       } else {
         existing.availableCount++;
         for (const uc of v.useCases) existing.useCases.add(uc);
-        // Keep the lowest-priced vehicle as the representative
-        if (daily < existing.minDailyPrice) {
-          existing.minDailyPrice = daily;
+        // Show the group with the car booking would price (not the cheapest car)
+        const candidate = { id: v.id, status: v.status, odo: v.odo };
+        if (showsBefore(candidate, existing.shown)) {
+          existing.shown = candidate;
           existing.imageUrl = v.images;
           existing.pricing = {
             daily,
@@ -468,7 +480,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
         customPricing: true,
         pricingOverride: true,
       },
-      orderBy: { odo: "asc" },
+      orderBy: [{ odo: "asc" }, { id: "asc" }],
     });
 
     const targetMake = normalizeStr(make);
@@ -543,8 +555,9 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
               priceSource:     pricingDetails.pricingBreakdown.priceSource,
               billedAs:        pricingDetails.pricingBreakdown.billedAs,
               billedAsType:    pricingDetails.pricingBreakdown.billedAsType,
-              // Weekend rates inside the price (weekend-wise pricing; absent when none)
+              // Weekend rates / festival rules inside the price (absent when none)
               ...(pricingDetails.pricingBreakdown.weekend && { weekend: pricingDetails.pricingBreakdown.weekend }),
+              ...(pricingDetails.pricingBreakdown.festival && { festival: pricingDetails.pricingBreakdown.festival }),
             },
           };
         } catch {
@@ -760,8 +773,9 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
           // absent only on a pricing result cached before these fields existed (60 s)
           billedAs:        pricingResult.pricingBreakdown.billedAs,
           billedAsType:    pricingResult.pricingBreakdown.billedAsType,
-          // Weekend rates inside the price (weekend-wise pricing; absent when none)
+          // Weekend rates / festival rules inside the price (absent when none)
           ...(pricingResult.pricingBreakdown.weekend && { weekend: pricingResult.pricingBreakdown.weekend }),
+          ...(pricingResult.pricingBreakdown.festival && { festival: pricingResult.pricingBreakdown.festival }),
         },
       };
 

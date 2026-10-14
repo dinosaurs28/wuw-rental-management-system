@@ -39,6 +39,7 @@ import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { PricingEngineService, heldToClosingOf, weekendDaysOf } from "../pricing/pricing-engine.service.js";
 import { bookingCouponCode } from "../discount/coupon-validation.service.js";
+import { recordBookingSpecialRules } from "../pricing/branch-special-rules.service.js";
 import {
   explainUnavailableVehicles,
   getUnavailableVehicleIds,
@@ -752,6 +753,9 @@ export class VehicleSwapService {
             where: { id: lockedItem.id },
             data: { vehicleId: newVehicle.id },
           });
+          // Festival rules: today's touching the window both cars were priced over
+          // join the booking's stored ones (a stored version wins)
+          await recordBookingSpecialRules(tx, locked.id, locked.startAt, locked.endAt);
 
           // ── Vehicle statuses / readings ──────────────────────────────────
           let originalStatusAfter: VehicleStatus;
@@ -1295,6 +1299,8 @@ export class VehicleSwapService {
         heldToClosing: heldToClosingOf(booking.pricingSnapshot),
         // Weekend blocks by the weekend days it was booked with (none before weekend rates)
         weekendDays: weekendDaysOf(booking.pricingSnapshot),
+        // Festival rules: today's for both cars (no specialRules), like today's rates;
+        // the confirmed swap stores them on the booking (recordBookingSpecialRules)
       },
     );
     // finalTotal = the post-discount rent incl. GST (what the customer pays for it)

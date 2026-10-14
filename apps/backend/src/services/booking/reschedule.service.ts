@@ -9,9 +9,11 @@
  * for the new pickup — pickup + 12 h, or the branch's closing that day when
  * that is outside hours (pricingSnapshot.heldToClosing follows) — still billed
  * as the 12 hours it was sold as. With weekend pricing (pricingSnapshot.
- * weekendDays) a move that would change the rent — onto or off the weekend —
- * is refused (RESCHEDULE_PRICE_CHANGE); otherwise the items' weekend
- * breakdowns follow the new window.
+ * weekendDays) or festival pricing (the stored pricingSnapshot.specialRules,
+ * and today's rules for the new window) a move that would change the rent —
+ * onto or off the weekend or a festival — is refused (RESCHEDULE_PRICE_CHANGE);
+ * otherwise the items' weekend / festival breakdowns (and the stored festival
+ * rules) follow the new window.
  *
  *   GET  …/bookings/:publicId/reschedule   what the picker needs (hours, limits,
  *                                           busy windows) and whether it can move
@@ -77,8 +79,17 @@ import { invalidateGroupListingCache, invalidateVehicleAvailability } from "../.
 import { extensionLockService } from "../extension/extension-lock.service.js";
 import { assertDlFree, cleanDl, lockAndAssertDlFree } from "./dl-in-use.service.js";
 import { PricingEngineService } from "../pricing/pricing-engine.service.js";
-import type { WeekendBreakdown } from "../pricing/base-price-rule.js";
+import type { FestivalBreakdown, WeekendBreakdown } from "../pricing/base-price-rule.js";
 import { formatRupees, weekendDaysOf, withItemWeekendBreakdowns } from "../../utils/pricing/weekendRule.js";
+import {
+  rescheduleChecksRent,
+  rescheduleRuleSets,
+  specialRulesOf,
+  unionSpecialRules,
+  withItemFestivalBreakdowns,
+  type SpecialRule,
+} from "../../utils/pricing/specialDateRule.js";
+import { getBranchSpecialRules } from "../pricing/branch-special-rules.service.js";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 export type RescheduleActorRole = "STAFF" | "MANAGER";
@@ -476,60 +487,100 @@ function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConfli
   });
 }
 
-// ── Weekend pricing ───────────────────────────────────────────────────────────
+// ── Weekend / festival pricing ────────────────────────────────────────────────
 
 const pricingEngine = new PricingEngineService();
 
 /**
- * A reschedule never re-prices, so with weekend pricing in effect it may not
- * change the rent. The old and the new window are priced now, with the
- * booking's stored weekend days and the same rates — only the weekday /
- * weekend mix differs. A different rent → RESCHEDULE_PRICE_CHANGE (no money
- * moves on a reschedule); the same → the new window's weekend breakdown per
- * vehicle, stored on the items. null = no check: the booking was made before
- * weekend rates (no stored weekend days), or it can't be priced.
+ * A reschedule never re-prices, so with weekend or festival pricing in effect
+ * it may not change the rent. Both windows are priced now, at today's rates
+ * and the booking's stored weekend days (rescheduleRuleSets for the festival
+ * rules): the current window as it was charged — the stored rules
+ * (pricingSnapshot.specialRules, which confirmed extensions / swaps add to), a
+ * rule deleted or edited since still counting in its stored form — and the new
+ * window with the stored rules plus today's live rules not stored. So a move
+ * onto a festival is refused (a booking made before festival pricing has none
+ * stored and gets today's), a move off one it paid for too, and a move that
+ * keeps the festival days is allowed whatever happened to the rule since. A
+ * different rent → RESCHEDULE_PRICE_CHANGE (no money moves on a reschedule);
+ * the same → the new window's weekend / festival breakdowns per vehicle and
+ * the rules touching it, stored on the booking. null = no check: no weekend
+ * days and no rule touching either window, or it can't be priced.
  */
-async function checkWeekendRent(
+async function checkRentUnchanged(
   booking: RescheduleBooking,
   newStart: Date,
   newEnd: Date,
   held: { was: boolean; now: boolean },
-): Promise<{ vehicleId: number; weekend?: WeekendBreakdown }[] | null> {
+): Promise<{
+  items: { vehicleId: number; weekend?: WeekendBreakdown; festival?: FestivalBreakdown }[];
+  /** The stored rules after the move (null = none stored before, and none touch the new window) */
+  specialRules: SpecialRule[] | null;
+} | null> {
   const weekendDays = weekendDaysOf(booking.pricingSnapshot);
-  if (weekendDays.length === 0) return null;
+  const stored = specialRulesOf(booking.pricingSnapshot);
   const at = (d: Date) => DateTime.fromJSDate(d, { zone: "Asia/Kolkata" });
 
-  let priced: { vehicleId: number; before: Decimal; after: Decimal; weekend?: WeekendBreakdown }[];
+  type Priced = Awaited<ReturnType<PricingEngineService["calculateRent"]>>;
+  let priced: { vehicleId: number; before: Priced; after: Priced }[];
   try {
+    const rules = rescheduleRuleSets(stored, await getBranchSpecialRules(booking.branchId));
+    const checks = rescheduleChecksRent(
+      weekendDays,
+      rules,
+      { startMs: booking.startAt.getTime(), endMs: booking.endAt.getTime() },
+      { startMs: newStart.getTime(), endMs: newEnd.getTime() },
+    );
+    if (!checks) return null;
     priced = await Promise.all(
       booking.items.map(async ({ vehicle }) => {
         const [before, after] = await Promise.all([
           pricingEngine.calculateRent(vehicle.id, at(booking.startAt), at(booking.endAt), booking.branchId,
-            { weekendDays, heldToClosing: held.was }, vehicle.categoryId),
+            { weekendDays, heldToClosing: held.was, specialRules: rules.current }, vehicle.categoryId),
           pricingEngine.calculateRent(vehicle.id, at(newStart), at(newEnd), booking.branchId,
-            { weekendDays, heldToClosing: held.now }, vehicle.categoryId),
+            { weekendDays, heldToClosing: held.now, specialRules: rules.next }, vehicle.categoryId),
         ]);
-        return { vehicleId: vehicle.id, before: before.rent, after: after.rent, weekend: after.weekend };
+        return { vehicleId: vehicle.id, before, after };
       }),
     );
   } catch (err) {
-    console.warn(`[reschedule] weekend rent check skipped for ${booking.publicId}:`, err);
+    console.warn(`[reschedule] weekend / festival rent check skipped for ${booking.publicId}:`, err);
     return null;
   }
 
-  const total = (key: "before" | "after") =>
-    priced.reduce((sum, p) => sum.add(p[key]), new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-  const currentRent = total("before");
-  const newRent = total("after");
+  const total = (pick: (p: (typeof priced)[number]) => Decimal) =>
+    priced.reduce((sum, p) => sum.add(pick(p)), new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  const festivalOf = (r: Priced) => new Decimal(r.festival?.amount ?? 0);
+  const currentRent = total((p) => p.before.rent);
+  const newRent = total((p) => p.after.rent);
   if (!currentRent.eq(newRent)) {
+    const festivalMoved = !total((p) => festivalOf(p.before)).eq(total((p) => festivalOf(p.after)));
+    const weekendMoved = !total((p) => p.before.rent.sub(festivalOf(p.before)))
+      .eq(total((p) => p.after.rent.sub(festivalOf(p.after))));
+    const change = `These dates change the rent from ${formatRupees(currentRent.toNumber())} to ${formatRupees(newRent.toNumber())}`;
     throw new RescheduleError(
       StatusCode.CONFLICT,
       "RESCHEDULE_PRICE_CHANGE",
-      `These dates change the rent from ${formatRupees(currentRent.toNumber())} to ${formatRupees(newRent.toNumber())} (weekend pricing). Choose dates with the same weekday/weekend mix, or cancel and rebook.`,
+      festivalMoved && !weekendMoved
+        ? `${change} (festival pricing). Choose dates with the same festival days, or cancel and rebook.`
+        : festivalMoved
+          ? `${change} (weekend and festival pricing). Choose dates priced the same, or cancel and rebook.`
+          : `${change} (weekend pricing). Choose dates with the same weekday/weekend mix, or cancel and rebook.`,
       { currentRent: currentRent.toNumber(), newRent: newRent.toNumber() },
     );
   }
-  return priced.map((p) => ({ vehicleId: p.vehicleId, ...(p.weekend && { weekend: p.weekend }) }));
+  return {
+    items: priced.map((p) => ({
+      vehicleId: p.vehicleId,
+      ...(p.after.weekend && { weekend: p.after.weekend }),
+      ...(p.after.festival && { festival: p.after.festival }),
+    })),
+    specialRules: (() => {
+      // Stored rules + those the new window was priced with (a stored version wins)
+      const next = priced.reduce<SpecialRule[]>((rules, p) => unionSpecialRules(rules, p.after.specialRules), [...(stored ?? [])]);
+      return stored === null && next.length === 0 ? null : next;
+    })(),
+  };
 }
 
 // ── Request parsing ───────────────────────────────────────────────────────────
@@ -806,13 +857,18 @@ export async function rescheduleBooking(
     );
   }
 
-  // Weekend pricing: the move may not change the rent (nothing is re-priced)
-  const weekendBreakdowns = await checkWeekendRent(booking, newStart, newEnd, { was: wasHeld, now: nowHeld });
-  // The held-to-closing flag re-prices bill by and the items' weekend breakdowns follow the new window
+  // Weekend / festival pricing: the move may not change the rent (nothing is re-priced)
+  const repriced = await checkRentUnchanged(booking, newStart, newEnd, { was: wasHeld, now: nowHeld });
+  // The held-to-closing flag re-prices bill by, the items' weekend / festival breakdowns
+  // and the stored festival rules follow the new window
   let nextSnapshot: Prisma.InputJsonValue | null =
     nowHeld !== wasHeld ? withHeldToClosing(booking.pricingSnapshot, nowHeld) : null;
-  if (weekendBreakdowns) {
-    nextSnapshot = withItemWeekendBreakdowns(nextSnapshot ?? booking.pricingSnapshot, weekendBreakdowns) as Prisma.InputJsonValue;
+  if (repriced) {
+    let snapshot = withItemWeekendBreakdowns(nextSnapshot ?? booking.pricingSnapshot, repriced.items);
+    if (repriced.specialRules) {
+      snapshot = { ...withItemFestivalBreakdowns(snapshot, repriced.items), specialRules: repriced.specialRules };
+    }
+    nextSnapshot = snapshot as Prisma.InputJsonValue;
   }
 
   // Vehicle(s) free in the new window — serialised with extension commits on

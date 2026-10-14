@@ -49,11 +49,12 @@ export const durationDiscountSlabKey = (branchId: number, days: number): string 
 /**
  * Full PricingResult for a vehicle+time window. TTL 60s. Invalidate on booking change. (TASK-017)
  * "v2": results priced on the GST-inclusive rent (item 17); "v3": the Extra Hour
- * Rate became the one hourly rate; "v4": weekend rates (pricingBreakdown.weekend)
- * — a result cached by an older release is never read back.
+ * Rate became the one hourly rate; "v4": weekend rates (pricingBreakdown.weekend);
+ * "v5": festival pricing (pricingBreakdown.festival / specialRules) — a result
+ * cached by an older release is never read back.
  */
 export const vehicleDetailsPricingKey = (vehicleId: number, startIso: string, endIso: string): string =>
-  `pricing-result:vehicle:${vehicleId}:v4:${startIso}:${endIso}`;
+  `pricing-result:vehicle:${vehicleId}:v5:${startIso}:${endIso}`;
 
 /**
  * TASK-019: Delete availability cache for a set of vehicles.
@@ -74,7 +75,9 @@ export async function invalidateVehicleAvailability(
  * Clears every vehicle-scoped pricing key — including the VehicleCustomPricing record the
  * pricing engine caches (pricing-config:vehicle:{id}) and, when the client can SCAN, the
  * cached PricingResults (pricing-result:vehicle:{id}:*) — so an edited rate (e.g. extra km)
- * applies to the very next price or drop bill instead of after the cache TTL.
+ * applies to the very next price or drop bill instead of after the cache TTL. The results
+ * are found in ONE pass over the keyspace whatever the number of vehicles (a branch-wide
+ * change — weekend days, festival rules — used to scan it once per vehicle).
  */
 export async function invalidateVehiclePricing(
   redis: {
@@ -88,14 +91,16 @@ export async function invalidateVehiclePricing(
   await redis.del(...keys);
 
   if (!redis.scan) return;
-  for (const id of vehicleIds) {
-    let cursor = "0";
-    do {
-      const [nextCursor, found] = await redis.scan(cursor, "MATCH", `pricing-result:vehicle:${id}:*`, "COUNT", 100);
-      cursor = nextCursor;
-      if (found.length > 0) await redis.del(...found);
-    } while (cursor !== "0");
-  }
+  const ids = new Set(vehicleIds.map(String));
+  const pattern = vehicleIds.length === 1 ? `pricing-result:vehicle:${vehicleIds[0]}:*` : "pricing-result:vehicle:*";
+  let cursor = "0";
+  do {
+    const [nextCursor, found] = (await redis.scan(cursor, "MATCH", pattern, "COUNT", 500)) as [string, string[]];
+    cursor = nextCursor;
+    // pricing-result:vehicle:{id}:… — only these vehicles' results
+    const mine = found.filter((key) => ids.has(key.split(":")[2] ?? ""));
+    if (mine.length > 0) await redis.del(...mine);
+  } while (cursor !== "0");
 }
 
 /**

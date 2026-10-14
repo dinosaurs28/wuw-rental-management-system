@@ -58,6 +58,14 @@ import paymentRouter from "./payment.routes.js";
 import whatsappConfigRouter from "./whatsapp-config.routes.js";
 import userTransferRouter from "./userTransfer.routes.js";
 import {
+  AdminListSpecialRules,
+  AdminGetSpecialRuleOptions,
+  AdminPreviewSpecialRule,
+  AdminCreateSpecialRule,
+  AdminUpdateSpecialRule,
+  AdminDeleteSpecialRule,
+} from "../../controller/admin/special-pricing.controller.js";
+import {
   upsertBranchSchedule,
   updateBranchGrace,
   getAdminBranchSchedule,
@@ -143,6 +151,14 @@ router.get("/dashboard/reports/customers", AdminCheck, GetCustomerReport);
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 router.get("/dashboard/vehicles", AdminCheck, GetAllVehicles);
 router.patch("/dashboard/vehicles/:publicId/use-cases", AdminCheck, UpdateVehicleUseCases);
+
+// Festival pricing for any branch (?branchId= / body.branchId)
+router.get("/pricing/special-rules", AdminCheck, AdminListSpecialRules);
+router.get("/pricing/special-rules/options", AdminCheck, AdminGetSpecialRuleOptions);
+router.post("/pricing/special-rules/preview", AdminCheck, AdminPreviewSpecialRule);
+router.post("/pricing/special-rules", AdminCheck, AdminCreateSpecialRule);
+router.patch("/pricing/special-rules/:publicId", AdminCheck, AdminUpdateSpecialRule);
+router.delete("/pricing/special-rules/:publicId", AdminCheck, AdminDeleteSpecialRule);
 
 // Feature Flags
 router.use("/feature-flags", featureFlagRouter);

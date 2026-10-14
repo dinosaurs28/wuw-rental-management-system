@@ -17,6 +17,7 @@ import { claimPaymentProof } from "./payment-proof.service.js";
 import { addFleetCredit } from "./customer-credit.service.js";
 import Decimal from "decimal.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
 import { initialInvoiceGstData, refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
@@ -558,6 +559,8 @@ export async function confirmExtensionPayment(
       });
       // days / rentalPeriodType / hours follow the extended end (#5/#17)
       await refreshBookingPeriodFields(extensionRecord.booking.id, tx);
+      // Festival rules that priced the added time join the booking's stored ones
+      await recordBookingSpecialRules(tx, extensionRecord.booking.id, extensionRecord.oldEndAt, extensionRecord.requestedEndAt);
 
       // Confirm extension
       await tx.bookingExtension.update({

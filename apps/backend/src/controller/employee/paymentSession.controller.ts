@@ -38,6 +38,7 @@ import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKey
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import {
   applyCounterCouponOnSessionCompletion,
   CounterCouponError,
@@ -1220,6 +1221,8 @@ async function runPostCompletionHooks(
           });
           // days / rentalPeriodType / hours follow the extended end (#5/#17)
           await refreshBookingPeriodFields(bookingId, tx);
+          // Festival rules that priced the added time join the booking's stored ones
+          await recordBookingSpecialRules(tx, bookingId, sessionExt.oldEndAt, sessionExt.requestedEndAt);
         }
       }
     }
@@ -1269,6 +1272,8 @@ async function runPostCompletionHooks(
       });
       // days / rentalPeriodType / hours follow the extended end (#5/#17)
       await refreshBookingPeriodFields(bookingId, tx);
+      // Festival rules that priced the added time join the booking's stored ones
+      await recordBookingSpecialRules(tx, bookingId, extension.oldEndAt, extension.requestedEndAt);
     }
     return [];
   } else if (sessionType === PaymentSessionType.RETURN) {

@@ -26,10 +26,17 @@
  * its minutes fall on the branch's weekend days, and is then priced with the
  * weekend 12 h / 24 h slab (each falling back to the weekday slab): the hourly
  * rate is the same, capped at that block's slab.
+ *
+ * Festival pricing (utils/pricing/specialDateRule.ts): each of those blocks
+ * with at least half of its minutes on a festival rule's dates then has its
+ * rent (after the slab choice and the hourly cap) changed by the rule's
+ * percentage — the rule giving the highest rent when several apply. Free km
+ * never change; full months are never festival blocks.
  */
 import Decimal from "decimal.js";
 import { RentalPeriodType, type RentalDuration } from "./duration-calculator.service.js";
 import { formatRupees, isWeekendBlock } from "../../utils/pricing/weekendRule.js";
+import { festivalPriceFor, ruleLabel, type SpecialRule } from "../../utils/pricing/specialDateRule.js";
 
 export interface RateCard {
   /** null (or 0 upstream) = not offered */
@@ -57,6 +64,11 @@ export interface WeekendContext {
   endAt?: Date;
   /** ISO weekdays, 1 = Mon … 7 = Sun; empty = no weekend pricing */
   weekendDays: readonly number[];
+  /**
+   * Festival rules covering this vehicle (specialDateRule.ts; already filtered
+   * by scope). Absent / empty = no festival pricing.
+   */
+  specialRules?: readonly SpecialRule[];
 }
 
 /**
@@ -77,6 +89,21 @@ export interface WeekendBreakdown {
   label: string;
 }
 
+/**
+ * The festival rules inside a price — persisted per item in the booking's
+ * pricingSnapshot so labels and receipts show what was charged.
+ */
+export interface FestivalBreakdown {
+  /** Blocks billed under a festival rule */
+  festivalBlocks: number;
+  /** What the festival rules changed the rent by (GST-inclusive; negative = a festival discount) */
+  amount: number;
+  /** Each rule applied, in the order first met: its blocks and what it changed the rent by */
+  rules: { id: number; name: string; percent: number; blocks: number; amount: number }[];
+  /** e.g. "Includes 3 festival days (Dussehra +10%)" */
+  label: string;
+}
+
 /** How the price was actually worked out (may differ from the duration's periodType). */
 export type BilledAsType = "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "MONTHLY";
 
@@ -88,6 +115,8 @@ export interface BasePriceSelection {
   billedAs: string;
   /** Absent when no block was billed at a weekend rate. */
   weekend?: WeekendBreakdown;
+  /** Absent when no block was billed under a festival rule. */
+  festival?: FestivalBreakdown;
 }
 
 const DAY_MINUTES = 24 * 60;
@@ -130,37 +159,56 @@ function blockLabel(block: Block): string {
 
 /**
  * Prices the blocks of one window where they sit on the calendar: a weekend
- * block (weekendRule.ts) at the weekend slabs, and tallies what the weekend
- * rates added for the breakdown. Without a context or weekend rates every
- * block is priced exactly as before.
+ * block (weekendRule.ts) at the weekend slabs, then a festival block
+ * (specialDateRule.ts) changed by its rule's percentage, and tallies what the
+ * weekend rates and festival rules did for the breakdowns. Without a context,
+ * weekend rates or festival rules every block is priced exactly as before.
  */
 class BlockPricer {
-  private readonly blocks: { block: Block; weekday: Block; weekendBilled: boolean }[] = [];
+  private readonly blocks: {
+    /** What the block is billed at */
+    block: Block;
+    /** The block at its weekday / weekend slab, before any festival rule */
+    slab: Block;
+    weekday: Block;
+    weekendBilled: boolean;
+    festival: SpecialRule | null;
+  }[] = [];
   private readonly weekendOn: boolean;
+  private readonly festivalOn: boolean;
 
   constructor(private readonly card: RateCard, private readonly ctx: WeekendContext | undefined) {
     this.weekendOn =
       !!ctx && ctx.weekendDays.length > 0 && !!(card.weekendPrice12Hour?.gt(0) || card.weekendPrice24Hour?.gt(0));
+    this.festivalOn = !!ctx?.specialRules?.length;
   }
 
   /** The block of `minutes` starting `offset` minutes after pickup, billed as `billMinutes`. */
   at(offset: number, minutes: number, billMinutes = minutes): Block {
     const weekday = priceBlock(this.card, billMinutes);
-    let block = weekday;
-    if (this.weekendOn) {
-      const startMs = this.ctx!.startAt.getTime() + offset * MINUTE_MS;
-      // Classified on the hours the car is really out (never past the real return)
-      const realEndMs = this.ctx!.endAt?.getTime() ?? Infinity;
-      const endMs = Math.min(startMs + minutes * MINUTE_MS, realEndMs);
-      if (isWeekendBlock(startMs, endMs > startMs ? endMs : startMs + minutes * MINUTE_MS, this.ctx!.weekendDays)) {
-        block = priceBlock(this.card, billMinutes, true);
-        // Never fewer free km than the same block earns on a weekday (a weekend
-        // block billed by the hour would otherwise lose the slab's km)
-        if (block.km < weekday.km) block = { ...block, km: weekday.km };
+    let slab = weekday;
+    // Classified on the hours the car is really out (never past the real return)
+    const startMs = (this.ctx?.startAt.getTime() ?? 0) + offset * MINUTE_MS;
+    const realEndMs = Math.min(startMs + minutes * MINUTE_MS, this.ctx?.endAt?.getTime() ?? Infinity);
+    const endMs = realEndMs > startMs ? realEndMs : startMs + minutes * MINUTE_MS;
+    if (this.weekendOn && isWeekendBlock(startMs, endMs, this.ctx!.weekendDays)) {
+      slab = priceBlock(this.card, billMinutes, true);
+      // Never fewer free km than the same block earns on a weekday (a weekend
+      // block billed by the hour would otherwise lose the slab's km)
+      if (slab.km < weekday.km) slab = { ...slab, km: weekday.km };
+    }
+    const weekendBilled = slab !== weekday && (!slab.price.eq(weekday.price) || slab.kind !== weekday.kind);
+    // Festival: the slab's rent (hourly cap included) × the best applicable rule; km unchanged
+    let block = slab;
+    let festival: SpecialRule | null = null;
+    if (this.festivalOn) {
+      const hit = festivalPriceFor(startMs, endMs, slab.price, this.ctx!.specialRules!);
+      if (hit) {
+        block = { ...slab, price: hit.price };
+        festival = hit.rule;
       }
     }
-    const weekendBilled = block !== weekday && (!block.price.eq(weekday.price) || block.kind !== weekday.kind);
-    this.blocks.push({ block, weekday, weekendBilled });
+    this.blocks.push({ block, slab, weekday, weekendBilled, festival });
     return block;
   }
 
@@ -169,8 +217,9 @@ class BlockPricer {
     if (weekend.length === 0) return undefined;
 
     // "1 weekend day at ₹1,600 + 12 weekend hours at ₹1,100", one part per kind of block
+    // (at the weekend slab — a festival rule on top is the festival breakdown's)
     const groups = new Map<string, { block: Block; count: number }>();
-    for (const { block } of weekend) {
+    for (const { slab: block } of weekend) {
       const key = `${block.kind}:${block.hours}:${block.price.toString()}`;
       const group = groups.get(key);
       if (group) group.count++;
@@ -191,8 +240,46 @@ class BlockPricer {
       weekdayBlocks: this.blocks.length - weekend.length,
       weekendPrice12Hour: slab(this.card.weekendPrice12Hour),
       weekendPrice24Hour: slab(this.card.weekendPrice24Hour),
-      weekendAmount: sum(weekend.map((b) => b.block)),
+      weekendAmount: sum(weekend.map((b) => b.slab)),
       weekdayAmount: sum(weekend.map((b) => b.weekday)),
+      label: `Includes ${parts.join(" + ")}`,
+    };
+  }
+
+  festivalBreakdown(): FestivalBreakdown | undefined {
+    const hits = this.blocks.filter((b) => b.festival);
+    if (hits.length === 0) return undefined;
+
+    const byRule = new Map<number, { rule: SpecialRule; blocks: Block[]; amount: Decimal }>();
+    for (const { block, slab, festival } of hits) {
+      const entry = byRule.get(festival!.id) ?? { rule: festival!, blocks: [], amount: new Decimal(0) };
+      entry.blocks.push(block);
+      entry.amount = entry.amount.add(block.price.sub(slab.price));
+      byRule.set(festival!.id, entry);
+    }
+    const money = (d: Decimal) => d.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+    // "3 festival days (Dussehra +10%)", "1 festival day + 6 festival hours (Diwali −5%)"
+    const parts = [...byRule.values()].map(({ rule, blocks }) => {
+      // A block billed as a day (the 24 h slab, or 24 hours by the hour) is a day, else its hours
+      const days = blocks.filter((b) => b.hours >= 24).length;
+      const hours = blocks.reduce((sum, b) => (b.hours >= 24 ? sum : sum + b.hours), 0);
+      const length = [
+        ...(days > 0 ? [plural(days, "festival day")] : []),
+        ...(hours > 0 ? [plural(hours, "festival hour")] : []),
+      ].join(" + ");
+      return `${length} (${ruleLabel(rule)})`;
+    });
+    const total = [...byRule.values()].reduce((sum, r) => sum.add(r.amount), new Decimal(0));
+    return {
+      festivalBlocks: hits.length,
+      amount: money(total),
+      rules: [...byRule.values()].map(({ rule, blocks, amount }) => ({
+        id: rule.id,
+        name: rule.name,
+        percent: rule.percent,
+        blocks: blocks.length,
+        amount: money(amount),
+      })),
       label: `Includes ${parts.join(" + ")}`,
     };
   }
@@ -207,8 +294,9 @@ function daysLabel(fullDays: number, rest: Block | null): string {
 }
 
 /**
- * `weekend` places the window on the calendar for the weekend rule; without it
- * (or with no weekend days / no weekend rates) every block is a weekday block.
+ * `weekend` places the window on the calendar for the weekend rule and the
+ * festival rules; without it (or with no weekend days / no weekend rates / no
+ * festival rules) every block is a plain weekday block.
  */
 export function selectBasePrice(
   card: RateCard,
@@ -310,7 +398,8 @@ export function selectBasePrice(
   };
 }
 
-function withBreakdown(pricer: BlockPricer): Pick<BasePriceSelection, "weekend"> {
+function withBreakdown(pricer: BlockPricer): Pick<BasePriceSelection, "weekend" | "festival"> {
   const weekend = pricer.breakdown();
-  return weekend ? { weekend } : {};
+  const festival = pricer.festivalBreakdown();
+  return { ...(weekend && { weekend }), ...(festival && { festival }) };
 }

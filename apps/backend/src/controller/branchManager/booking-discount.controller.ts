@@ -8,6 +8,7 @@ import PricingEngineService, {
   allocateByWeights,
   heldToClosingOf,
   weekendDaysOf,
+  specialRulesOf,
   type PricingResult,
 } from "../../services/pricing/pricing-engine.service.js";
 import { discountApplicationService } from "../../services/discount/index.js";
@@ -210,12 +211,15 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
         item.vehicle.categoryId,
         undefined,
         // Booked as 12 hours held to closing (item 6): billed as 12 h, as at booking;
-        // weekend blocks by the weekend days it was booked with (none before weekend rates)
+        // weekend blocks by the weekend days it was booked with (none before weekend rates),
+        // festival blocks by the festival rules it was booked with (none before festival
+        // pricing) — a rule added or edited since never moves the booked rent
         {
           paymentPlan: plan,
           excludeBookingId: booking.id,
           heldToClosing: heldToClosingOf(booking.pricingSnapshot),
           weekendDays: weekendDaysOf(booking.pricingSnapshot),
+          specialRules: specialRulesOf(booking.pricingSnapshot) ?? [],
         },
       ),
     ),

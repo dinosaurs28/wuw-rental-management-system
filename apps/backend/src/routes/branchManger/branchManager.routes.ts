@@ -136,6 +136,14 @@ import {
   GetRescheduleOptionsByManager,
   RescheduleBookingByManager,
 } from "../../controller/branchManager/reschedule.controller.js";
+import {
+  ListSpecialRules,
+  GetSpecialRuleOptions,
+  PreviewSpecialRule,
+  CreateSpecialRule,
+  UpdateSpecialRule,
+  DeleteSpecialRule,
+} from "../../controller/branchManager/special-pricing.controller.js";
 
 const router: Router = Router();
 
@@ -158,6 +166,13 @@ router.patch("/dashboard/branch/booking-restriction", ManagerCheck, updateBookin
 // Weekend-wise pricing: the days the branch bills at the weekend rents
 router.get("/dashboard/branch/weekend-days", ManagerCheck, getManagerWeekendDays);
 router.patch("/dashboard/branch/weekend-days", ManagerCheck, updateManagerWeekendDays);
+// Festival pricing: date-range percentage rules on the branch's rents
+router.get("/pricing/special-rules", ManagerCheck, ListSpecialRules);
+router.get("/pricing/special-rules/options", ManagerCheck, GetSpecialRuleOptions);
+router.post("/pricing/special-rules/preview", ManagerCheck, PreviewSpecialRule);
+router.post("/pricing/special-rules", ManagerCheck, CreateSpecialRule);
+router.patch("/pricing/special-rules/:publicId", ManagerCheck, UpdateSpecialRule);
+router.delete("/pricing/special-rules/:publicId", ManagerCheck, DeleteSpecialRule);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 // Period tab (#14): own-branch report for an IST date range.

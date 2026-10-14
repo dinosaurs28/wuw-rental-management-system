@@ -24,6 +24,7 @@ import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKey
 import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
+import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -306,6 +307,8 @@ class PaymentTransactionService {
       });
       // days / rentalPeriodType / hours follow the extended end (#5/#17)
       await refreshBookingPeriodFields(ext.bookingId, tx);
+      // Festival rules that priced the added time join the booking's stored ones
+      await recordBookingSpecialRules(tx, ext.bookingId, ext.oldEndAt, ext.requestedEndAt);
       return ext;
     });
 
