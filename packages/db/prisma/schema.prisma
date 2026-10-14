@@ -271,6 +271,8 @@ model User {
   notifications         Notification[]
   pushTokens            PushToken[]
   operationDraftsSaved  OperationDraft[]       @relation("OperationDraftUpdater")
+  specialPricingRulesCreated SpecialPricingRule[] @relation("SpecialPricingRuleCreator")
+  specialPricingRulesUpdated SpecialPricingRule[] @relation("SpecialPricingRuleUpdater")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -446,6 +448,7 @@ model Branch {
   schedules               BranchSchedule[]
   notifications           Notification[]
   promoBanners            PromoBanner[]
+  specialPricingRules     SpecialPricingRule[]
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
@@ -2530,4 +2533,43 @@ model OperationDraft {
 
   @@unique([bookingId, type])
   @@index([updatedById])
+}
+
+// ── Festival (special-date) pricing ──────────────────────────────────────────
+
+enum SpecialPricingScope {
+  ALL
+  CATEGORIES
+  VEHICLES
+}
+
+// A branch's festival pricing (e.g. "Dussehra +10%"): the rent of every priced
+// block (a day, the remainder, a trip of up to 24 h) with at least half of its
+// time on startDate…endDate (IST calendar days, inclusive) is changed by
+// `percent` for the vehicles in scope (utils/pricing/specialDateRule.ts).
+// Bookings store the rules they were priced with (pricingSnapshot.specialRules).
+model SpecialPricingRule {
+  id          Int                 @id @default(autoincrement())
+  publicId    String              @unique
+  branchId    Int
+  branch      Branch              @relation(fields: [branchId], references: [id])
+  name        String
+  // IST calendar dates, both inclusive
+  startDate   DateTime            @db.Date
+  endDate     DateTime            @db.Date
+  // −90 … +300: positive raises the rent, negative is a festival discount
+  percent     Decimal             @db.Decimal(6, 2)
+  scope       SpecialPricingScope @default(ALL)
+  categoryIds Int[]               @default([])
+  vehicleIds  Int[]               @default([])
+  active      Boolean             @default(true)
+  createdById Int?
+  createdBy   User?               @relation("SpecialPricingRuleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById Int?
+  updatedBy   User?               @relation("SpecialPricingRuleUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+
+  @@index([branchId, active, endDate])
 }
