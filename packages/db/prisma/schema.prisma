@@ -113,6 +113,8 @@ enum BookingPhotoType {
   PRE_DELIVERY
   POST_RETURN
   DAMAGE
+  // The replacement car, photographed at a mid-rental vehicle swap (swapId set)
+  SWAP_DELIVERY
 }
 
 enum DepositMethod {
@@ -398,6 +400,10 @@ model FileObject {
   url           String
   mime          String
   size          Int
+  // Branch of the staff member who uploaded a pickup / return / damage photo
+  // (null = other files and photos uploaded before Oct 15 2026): such a photo
+  // can only be removed or attached to a swap from that branch
+  uploadedBranchId Int?
   createdAt     DateTime       @default(now())
   bookingPhotos BookingPhoto[]
   customerKycs  CustomerKyc[]
@@ -709,6 +715,7 @@ model Vehicle {
   swapsAsOriginal  VehicleSwap[]              @relation("OriginalVehicle")
   swapsAsNew       VehicleSwap[]              @relation("NewVehicle")
   extensionSwaps   BookingExtension[]         @relation("ExtensionSwappedVehicle")
+  bookingPhotos    BookingPhoto[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -899,6 +906,10 @@ model Booking {
   totalKmDriven      Int?
   freeKmLimit        Int?
   extraKmCharged     Int?
+  // FASTag balance (₹) read at pickup and at the drop, for cars with a FASTag —
+  // the usage between them is billed on the drop bill (null = not read)
+  pickupFastagBalance Decimal?   @db.Decimal(10, 2)
+  returnFastagBalance Decimal?   @db.Decimal(10, 2)
   holdExpiresAt   DateTime?
   totalBase       Decimal
   totalDiscount   Decimal
@@ -1078,14 +1089,20 @@ model BookingPhoto {
   type           BookingPhotoType
   captureLabel   String?          // e.g. "Front", "Left Side" — set when uploaded via capture config
   damageReportId Int?
+  // SWAP_DELIVERY: the swap it was taken at, and the car it shows (the replacement)
+  swapId         Int?
+  vehicleId      Int?
 
   booking      Booking       @relation(fields: [bookingId], references: [id])
   file         FileObject    @relation(fields: [fileId], references: [id])
   createdAt    DateTime      @default(now())
   damageReport DamageReport? @relation(fields: [damageReportId], references: [id])
+  swap         VehicleSwap?  @relation(fields: [swapId], references: [id], onDelete: SetNull)
+  vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   @@index([bookingId])
   @@index([fileId])
+  @@index([swapId])
 }
 
 model DamageReport {
@@ -1467,6 +1484,10 @@ model VehicleSwap {
   // whether staff chose to bill it (billed at drop as a VEHICLE_SWAP line)
   priceDifference            Decimal        @default(0) @db.Decimal(10, 2)
   chargeDifference           Boolean        @default(false)
+  // FASTag balances (₹) at a mid-rental swap, for cars with a FASTag: the
+  // returning car's closing balance and the replacement's opening balance
+  oldVehicleFastagBalance    Decimal?       @db.Decimal(10, 2)
+  newVehicleFastagBalance    Decimal?       @db.Decimal(10, 2)
 
   booking                Booking        @relation(fields: [bookingId], references: [id])
   originalVehicle        Vehicle        @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])
@@ -1474,6 +1495,8 @@ model VehicleSwap {
   swappedBy              User           @relation(fields: [swappedById], references: [id])
 
   extension              BookingExtension?
+  // The replacement's photos taken at a mid-rental swap (BookingPhoto SWAP_DELIVERY)
+  photos                 BookingPhoto[]
 
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -2557,8 +2580,10 @@ model SpecialPricingRule {
   // IST calendar dates, both inclusive
   startDate   DateTime            @db.Date
   endDate     DateTime            @db.Date
-  // −90 … +300: positive raises the rent, negative is a festival discount
+  // −90 … +300: positive raises the rent, negative is a festival discount (0 = none)
   percent     Decimal             @db.Decimal(6, 2)
+  // ₹ a day added (negative: taken off), shared pro rata by billed hours; 0 = none
+  flatAmount  Decimal             @default(0) @db.Decimal(10, 2)
   scope       SpecialPricingScope @default(ALL)
   categoryIds Int[]               @default([])
   vehicleIds  Int[]               @default([])
