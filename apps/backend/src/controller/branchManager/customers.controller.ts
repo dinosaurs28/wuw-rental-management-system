@@ -794,7 +794,8 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
     const [owed, state, dropLines, legacyCharges, txns] = await Promise.all([
       computeBookingOwed(booking.id),
       financialStateService.getState(booking.id),
-      // Drop bill (Unified Payments RETURN session) charge lines, as in computeBookingOwed
+      // Drop bill (Unified Payments RETURN session) charge lines, and the corrections of
+      // edits to the completed drop (ADJUSTMENT sessions), as in computeBookingOwed
       prisma.ledgerEntry.findMany({
         where: {
           bookingId: booking.id,
@@ -802,7 +803,7 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           entryType: { notIn: NON_CHARGE_ENTRY_TYPES },
           classification: { not: LedgerEntryClassification.PAYMENT },
           session: {
-            sessionType: PaymentSessionType.RETURN,
+            sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] },
             status: { not: PaymentSessionStatus.ABANDONED },
           },
         },

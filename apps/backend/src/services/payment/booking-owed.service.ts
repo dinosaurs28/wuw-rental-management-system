@@ -7,7 +7,8 @@
  * confirmed extensions)
  *      + return charges that sit outside totalFinal:
  *          - Unified Payments drop bill: the RETURN session's charge lines with their
- *            GST, less the drop discount (sessions not abandoned)
+ *            GST, less the drop discount (sessions not abandoned), corrected by the
+ *            delta lines of edits to the completed drop (ADJUSTMENT sessions)
  *          - legacy drop: extra km / late return / swap difference ChargeEntry rows
  *            with the GST frozen on them (collected by the BM in Settlements)
  *          - approved damage charged at drop that no drop bill carries
@@ -35,6 +36,12 @@
  * until the branch manager clears it, which records the PaymentTransaction.
  * Only that clearing collects it (creditOutstanding below): Settlements and the
  * over-payment guard leave it out, so a section can't be paid around.
+ *
+ * An edit's difference (ADJUSTMENT session, client item 1 full edit) still to
+ * be settled at the counter: its drop-bill corrections are owed at once (and
+ * reported as adjustmentPending, which the counter — not Settlements — settles);
+ * a safety-deposit change on it counts only once settled, so a raise never
+ * reads as held before it is collected.
  */
 import Decimal from "decimal.js";
 import {
@@ -55,6 +62,9 @@ import {
 } from "./safety-deposit.service.js";
 
 const ZERO = new Decimal(0);
+
+type DecimalLike = { toString(): string } | number | string;
+const dec = (v: DecimalLike | null | undefined) => new Decimal(v == null ? "0" : v.toString());
 
 /** Purposes of money paid back to the customer (money out, never money in). */
 export const REFUND_PAYMENT_PURPOSES: PaymentPurpose[] = [
@@ -94,10 +104,79 @@ export interface BookingOwed {
   legacyDepositRefunded: Decimal;
   /** Legacy SET_OFF: the held deposit counted as credited against what is owed (0 otherwise) */
   legacyDepositSetOff: Decimal;
+  /**
+   * What edits' differences still to be settled at the counter move (ADJUSTMENT
+   * sessions not completed), deposit changes left out: + to collect, − to refund.
+   * Settled on those sessions — Settlements and the over-payment guard leave it out.
+   */
+  adjustmentPending: Decimal;
 }
 
-type DecimalLike = { toString(): string } | number | string;
-const dec = (v: DecimalLike | null | undefined) => new Decimal(v == null ? "0" : v.toString());
+/** The ledger fields the owed tally reads. */
+export interface OwedLedgerEntry {
+  entryType: string;
+  classification: string;
+  amount: DecimalLike;
+  gstAmount: DecimalLike;
+  referenceType: string | null;
+  referenceId: string | null;
+  session: { sessionType: string; status: string };
+}
+
+/**
+ * Drop-bill charges, safety deposit charged / credited and drop damages billed,
+ * from the ledger lines of the sessions still in play (pure). An unsettled
+ * ADJUSTMENT session's deposit change is left out (counted once settled); its
+ * drop-bill lines and credit taken off are tallied in adjustmentPending too.
+ */
+export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
+  let dropBillCharges = ZERO;
+  let safetyDepositCharged = ZERO;
+  let safetyDepositCredited = ZERO;
+  let adjustmentPending = ZERO;
+  const damagesOnBill = new Set<string>();
+
+  for (const e of entries) {
+    const amount = dec(e.amount);
+    const adjustment = e.session.sessionType === PaymentSessionType.ADJUSTMENT;
+    const unsettled = adjustment && e.session.status !== PaymentSessionStatus.COMPLETED;
+    if (e.entryType === LedgerEntryType.DEPOSIT) {
+      // A deposit change still to be collected / paid back isn't held (or released) yet
+      if (unsettled) continue;
+      if (e.classification === LedgerEntryClassification.NON_TAXABLE) {
+        safetyDepositCharged = safetyDepositCharged.add(amount);
+      } else if (e.classification === LedgerEntryClassification.PAYMENT) {
+        safetyDepositCredited = safetyDepositCredited.add(amount.abs());
+      }
+      continue;
+    }
+    // Drop-bill lines: the drop bill's own, and an edit's corrections of them
+    if (e.session.sessionType !== PaymentSessionType.RETURN && !adjustment) continue;
+    let charge = ZERO;
+    switch (e.classification) {
+      case LedgerEntryClassification.TAXABLE:
+        // amount = taxable value, its GST on top
+        charge = amount.add(dec(e.gstAmount));
+        break;
+      case LedgerEntryClassification.NON_TAXABLE:
+        charge = amount;
+        break;
+      case LedgerEntryClassification.DISCOUNT:
+        // amount = −(discount + the GST it takes off)
+        charge = amount;
+        break;
+      default:
+        // PAYMENT / REFUND lines are money, not charges — on an unsettled edit
+        // only credit taken off instead of a refund (it lowers that refund)
+        if (unsettled) adjustmentPending = adjustmentPending.add(amount);
+        break;
+    }
+    dropBillCharges = dropBillCharges.add(charge);
+    if (unsettled) adjustmentPending = adjustmentPending.add(charge);
+    if (e.referenceType === DROP_DAMAGE_REF && e.referenceId) damagesOnBill.add(e.referenceId);
+  }
+  return { dropBillCharges, safetyDepositCharged, safetyDepositCredited, adjustmentPending, damagesOnBill };
+}
 
 export async function computeBookingOwed(bookingId: number, tx?: TxClient): Promise<BookingOwed> {
   const db = tx ?? prisma;
@@ -112,7 +191,7 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
         session: { status: { not: PaymentSessionStatus.ABANDONED } },
         OR: [
           { entryType: LedgerEntryType.DEPOSIT },
-          { session: { sessionType: PaymentSessionType.RETURN } },
+          { session: { sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] } } },
         ],
       },
       select: {
@@ -122,7 +201,7 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
         gstAmount: true,
         referenceType: true,
         referenceId: true,
-        session: { select: { sessionType: true } },
+        session: { select: { sessionType: true, status: true } },
       },
     }),
     legacyReturnChargesTotal(bookingId, db),
@@ -156,40 +235,9 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
   // Rounded to paise: rows written from JS numbers can carry float noise (e.g. 9885.200000000001)
   const totalFinal = dec(booking.totalFinal).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
-  let dropBillCharges = ZERO;
-  let safetyDepositCharged = ZERO;
-  let safetyDepositCredited = ZERO;
-  const damagesOnBill = new Set<string>();
-
-  for (const e of entries) {
-    const amount = dec(e.amount);
-    if (e.entryType === LedgerEntryType.DEPOSIT) {
-      if (e.classification === LedgerEntryClassification.NON_TAXABLE) {
-        safetyDepositCharged = safetyDepositCharged.add(amount);
-      } else if (e.classification === LedgerEntryClassification.PAYMENT) {
-        safetyDepositCredited = safetyDepositCredited.add(amount.abs());
-      }
-      continue;
-    }
-    if (e.session.sessionType !== PaymentSessionType.RETURN) continue;
-    switch (e.classification) {
-      case LedgerEntryClassification.TAXABLE:
-        // amount = taxable value, its GST on top
-        dropBillCharges = dropBillCharges.add(amount).add(dec(e.gstAmount));
-        break;
-      case LedgerEntryClassification.NON_TAXABLE:
-        dropBillCharges = dropBillCharges.add(amount);
-        break;
-      case LedgerEntryClassification.DISCOUNT:
-        // amount = −(discount + the GST it takes off)
-        dropBillCharges = dropBillCharges.add(amount);
-        break;
-      default:
-        // PAYMENT / REFUND lines are money, not charges
-        break;
-    }
-    if (e.referenceType === DROP_DAMAGE_REF && e.referenceId) damagesOnBill.add(e.referenceId);
-  }
+  const tally = tallyOwedEntries(entries);
+  const { dropBillCharges, damagesOnBill, adjustmentPending } = tally;
+  let { safetyDepositCharged, safetyDepositCredited } = tally;
 
   for (const t of standaloneDeposits) safetyDepositCharged = safetyDepositCharged.add(dec(t.totalAmount));
 
@@ -225,6 +273,7 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     safetyDepositHandling,
     legacyDepositRefunded,
     legacyDepositSetOff,
+    adjustmentPending,
   };
 }
 

@@ -75,6 +75,12 @@ import {
 } from "../../services/payment/customer-credit.service.js";
 import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE } from "@repo/schemas";
 import { SAFETY_DEPOSIT_REFUND_REF } from "../../services/payment/safety-deposit.service.js";
+import {
+  adjustmentPendingBody,
+  adjustmentSettleCheck,
+  applyAdjustmentCreditReduction,
+  findPendingAdjustment,
+} from "../../services/booking/operation-edit-money.service.js";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -161,7 +167,9 @@ class SettlementConflict extends Error {
  * First step of every transaction that settles a session: locks the booking row
  * (serialising with drop computes and drop damage changes), then re-checks under
  * the lock that the session still awaits payment, the amount still matches the
- * ledger and — for a RETURN session — the drop bill is still current.
+ * ledger and — for a RETURN session — the drop bill is still current and no
+ * edit's difference is open. An edit's difference (ADJUSTMENT) never collects
+ * more than the booking still owes, nor refunds more than it was paid.
  */
 async function lockSessionForSettlement(
   tx: any,
@@ -194,6 +202,16 @@ async function lockSessionForSettlement(
     !(await isDropBillInSync(session.bookingId, session.id, tx))
   ) {
     throw new SettlementConflict(StatusCode.CONFLICT, DROP_BILL_STALE);
+  }
+  if (session.sessionType === PaymentSessionType.RETURN) {
+    // A safety deposit changed by an edit isn't held until that difference is settled
+    const pendingAdjustment = await findPendingAdjustment(session.bookingId, tx);
+    if (pendingAdjustment) throw new SettlementConflict(StatusCode.CONFLICT, adjustmentPendingBody(pendingAdjustment));
+  }
+  if (session.sessionType === PaymentSessionType.ADJUSTMENT) {
+    // Collected in Settlements meanwhile (or paid back) — never twice
+    const problem = await adjustmentSettleCheck(tx, session, check.recomputed);
+    if (problem) throw new SettlementConflict(StatusCode.CONFLICT, problem);
   }
 
   // The ledger's own figure (the client's amount may be within the ₹1 tolerance)
@@ -299,12 +317,34 @@ async function writeDepositRefund(
   return { publicId: txn.publicId, amount, method: p.choice.isUpi ? "UPI" : p.choice.method };
 }
 
+/**
+ * Clears the booking's active-session pointer once a session is settled. An
+ * ADJUSTMENT session (the difference of an edit to a completed pickup / drop)
+ * is never the active one, so it leaves the pointer alone.
+ */
+async function clearActiveSession(tx: any, session: { bookingId: number; sessionType: string }): Promise<void> {
+  if (session.sessionType === PaymentSessionType.ADJUSTMENT) return;
+  await tx.booking.update({
+    where: { id: session.bookingId },
+    data: { activePaymentSessionId: null },
+  });
+}
+
+/** An ADJUSTMENT session that corrects drop-bill lines (its invoice is rebuilt once it is settled). */
+function adjustsDropBill(session: { sessionType: string; entries?: Array<{ metadata?: unknown }> }): boolean {
+  return (
+    session.sessionType === PaymentSessionType.ADJUSTMENT &&
+    (session.entries ?? []).some((e) => (e.metadata as { part?: string } | null)?.part === "DROP")
+  );
+}
+
 /** Ledger label + credit label for a session put on credit. */
 function creditLabel(sessionType: PaymentSessionType): string {
   switch (sessionType) {
     case PaymentSessionType.PICKUP:    return "Pickup payment on credit";
     case PaymentSessionType.EXTENSION: return "Extension payment on credit";
     case PaymentSessionType.RETURN:    return "Drop charges on credit";
+    case PaymentSessionType.ADJUSTMENT: return "Edit difference on credit";
     default:                           return "Payment on credit";
   }
 }
@@ -583,10 +623,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-        await (tx as any).booking.update({
-          where: { id: session.bookingId },
-          data: { activePaymentSessionId: null },
-        });
+        await clearActiveSession(tx, session);
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
     } else if (method === "CASH") {
@@ -642,10 +679,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         // Mark session completed
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-        await (tx as any).booking.update({
-          where: { id: session.bookingId },
-          data: { activePaymentSessionId: null },
-        });
+        await clearActiveSession(tx, session);
 
         // Run post-completion hooks (returns vehicle IDs for RETURN sessions)
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
@@ -710,10 +744,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-        await (tx as any).booking.update({
-          where: { id: session.bookingId },
-          data: { activePaymentSessionId: null },
-        });
+        await clearActiveSession(tx, session);
 
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
@@ -773,10 +804,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-        await (tx as any).booking.update({
-          where: { id: session.bookingId },
-          data: { activePaymentSessionId: null },
-        });
+        await clearActiveSession(tx, session);
 
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
@@ -839,10 +867,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         }
 
         await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-        await (tx as any).booking.update({
-          where: { id: session.bookingId },
-          data: { activePaymentSessionId: null },
-        });
+        await clearActiveSession(tx, session);
 
         returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
       }, { timeout: 15000 });
@@ -863,8 +888,9 @@ export const RecordPayment = async (req: Request, res: Response) => {
     const creditSummary = await getBookingCreditSummary(session.bookingId);
 
     // Rebuild and regenerate invoice after RETURN session completes — it is PAID
-    // only when nothing of the booking is still owed on credit
-    if (session.sessionType === PaymentSessionType.RETURN) {
+    // only when nothing of the booking is still owed on credit (and after an edit's
+    // difference on drop-bill lines is settled)
+    if (session.sessionType === PaymentSessionType.RETURN || adjustsDropBill(session)) {
       finalizeInvoice(session.bookingId, { markPaid: !(creditSummary?.pending.gt(0) ?? false) }).catch((err) =>
         console.error("[record-payment] Invoice finalization error:", err),
       );
@@ -1052,7 +1078,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
           bookingId: session.bookingId,
           branchId: session.branchId,
           amount: amount.toFixed(2),
-          reason: notes ?? "Deposit refund on vehicle return",
+          reason: notes ?? (session.sessionType === PaymentSessionType.ADJUSTMENT
+            ? "Refund of the difference after an edit"
+            : "Deposit refund on vehicle return"),
           method: method as any,
           status: method === "CASH" ? "PENDING_APPROVAL" : "APPROVED",
           requestedById: actor.id,
@@ -1062,10 +1090,7 @@ export const RecordRefund = async (req: Request, res: Response) => {
       });
 
       await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
-      await (tx as any).booking.update({
-        where: { id: session.bookingId },
-        data: { activePaymentSessionId: null },
-      });
+      await clearActiveSession(tx, session);
 
       returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
     }, { timeout: 15000 });
@@ -1079,8 +1104,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
     }
 
     // Rebuild and regenerate invoice after RETURN session completes (PAID unless
-    // something of the booking is still owed on credit)
-    if (session.sessionType === PaymentSessionType.RETURN) {
+    // something of the booking is still owed on credit) — and after an edit's
+    // difference on drop-bill lines is refunded
+    if (session.sessionType === PaymentSessionType.RETURN || adjustsDropBill(session)) {
       const creditOpen = (await getBookingCreditSummary(session.bookingId))?.pending.gt(0) ?? false;
       finalizeInvoice(session.bookingId, { markPaid: !creditOpen }).catch((err) =>
         console.error("[record-refund] Invoice finalization error:", err),
@@ -1320,6 +1346,10 @@ async function runPostCompletionHooks(
     });
 
     return vehicleIds;
+  } else if (sessionType === PaymentSessionType.ADJUSTMENT) {
+    // A lower bill comes off the customer's credit (the rest was refunded on this session)
+    await applyAdjustmentCreditReduction(tx, sessionId, bookingId);
+    return [];
   }
   return [];
 }
@@ -1331,6 +1361,8 @@ function sessionTypeToPurpose(sessionType: PaymentSessionType): PaymentPurpose {
     case PaymentSessionType.PICKUP:    return PaymentPurpose.REMAINING_BALANCE;
     case PaymentSessionType.EXTENSION: return PaymentPurpose.EXTENSION;
     case PaymentSessionType.RETURN:    return PaymentPurpose.REMAINING_BALANCE;
+    // The difference of an edit (a deposit part is split off as SAFETY_DEPOSIT)
+    case PaymentSessionType.ADJUSTMENT: return PaymentPurpose.REMAINING_BALANCE;
     default:                           return PaymentPurpose.FULL_PAYMENT;
   }
 }
@@ -1411,7 +1443,7 @@ function signedGstPart(part: unknown, gstAmount: unknown): string {
   return (new Decimal(String(gstAmount ?? "0")).lt(0) ? value.negated() : value).toFixed(2);
 }
 
-function serializeSession(session: any) {
+export function serializeSession(session: any) {
   return {
     publicId: session.publicId,
     sessionType: session.sessionType,

@@ -10,7 +10,8 @@
  *    Old app builds (1.0.0 / 1.0.1) don't send the field: their swap goes
  *    ahead and is flagged as taken without photos.
  *  - FASTag balances (both cars' balance at the swap) follow the same rule,
- *    for the cars that have a FASTag.
+ *    required for the cars marked as having a FASTag; a balance read for any
+ *    other car is kept too.
  *  - At the drop, the car coming back is shown with the photos of its own
  *    handover: the last mid-rental swap's, else the pickup's.
  */
@@ -135,21 +136,23 @@ export interface FastagBalanceInput {
   newVehicleFastagBalance?: number;
 }
 
-/** The balances stored on the swap: only mid-rental, only for a car with a FASTag. */
+/**
+ * The balances stored on the swap: only mid-rental, for any car they were read
+ * for — a car not marked as having a FASTag counts as one for the booking once a
+ * balance is recorded for it (fastag-usage countsAsFastagCar).
+ */
 export function fastagBalancesToStore(input: FastagBalanceInput): {
   oldVehicleFastagBalance: number | null;
   newVehicleFastagBalance: number | null;
 } {
   const midRental = input.stage === "ACTIVE_RENTAL";
   return {
-    oldVehicleFastagBalance:
-      midRental && input.oldVehicleHasFastag ? (input.oldVehicleFastagBalance ?? null) : null,
-    newVehicleFastagBalance:
-      midRental && input.newVehicleHasFastag ? (input.newVehicleFastagBalance ?? null) : null,
+    oldVehicleFastagBalance: midRental ? (input.oldVehicleFastagBalance ?? null) : null,
+    newVehicleFastagBalance: midRental ? (input.newVehicleFastagBalance ?? null) : null,
   };
 }
 
-/** Balances a STRICT swap still needs (none in the other modes). */
+/** Balances a STRICT swap still needs — only cars marked as having a FASTag (none in the other modes). */
 export function missingFastagBalances(mode: SwapPhotoMode, input: FastagBalanceInput): FastagBalanceField[] {
   if (mode !== "STRICT") return [];
   const stored = fastagBalancesToStore(input);

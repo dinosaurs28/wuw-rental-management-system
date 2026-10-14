@@ -22,7 +22,12 @@ import {
 } from "./base-price-rule.js";
 import { getBranchWeekendDays } from "./branch-weekend-days.service.js";
 import { getBranchSpecialRules } from "./branch-special-rules.service.js";
-import { rulesForVehicle, rulesOverlapping, type SpecialRule } from "../../utils/pricing/specialDateRule.js";
+import {
+  needsVehicleGroup,
+  rulesForVehicle,
+  rulesOverlapping,
+  type SpecialRule,
+} from "../../utils/pricing/specialDateRule.js";
 import {
   vehiclePricingConfigKey,
   branchPricingDefaultsKey,
@@ -573,7 +578,8 @@ export class PricingEngineService {
    * The festival rules a window is priced with: `stored` (an existing booking's,
    * see PricingDiscountOptions.specialRules), else the branch's live rules.
    * `window` = those touching [startAt, endAt] (what a booking stores),
-   * `vehicle` = the ones of them covering the vehicle (what the pricer applies).
+   * `vehicle` = the ones of them covering the vehicle (what the pricer applies;
+   * a per-group rule matched on the vehicle's make / model, looked up then).
    */
   private async festivalRules(
     branchId: number,
@@ -584,7 +590,10 @@ export class PricingEngineService {
   ): Promise<{ window: SpecialRule[]; vehicle: SpecialRule[] }> {
     const rules = stored ?? await getBranchSpecialRules(branchId);
     const window = rulesOverlapping(rules, startAt.toMillis(), endAt.toMillis());
-    return { window, vehicle: rulesForVehicle(window, vehicle) };
+    const group = needsVehicleGroup(window)
+      ? await prisma.vehicle.findUnique({ where: { id: vehicle.id }, select: { make: true, model: true } })
+      : null;
+    return { window, vehicle: rulesForVehicle(window, { ...vehicle, ...group }) };
   }
 
   /**

@@ -57,6 +57,7 @@ import { dropReadingsSignature, DROP_READINGS_CHANGED } from "../../services/cha
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
 import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import { adjustmentPendingBody, findPendingAdjustment } from "../../services/booking/operation-edit-money.service.js";
 import { recordDepositHandling } from "../../services/payment/safety-deposit.service.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
@@ -487,6 +488,9 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       if (locked.requiresManagerConfirmation) {
         throw new CompleteRejection(StatusCode.CONFLICT, RETURN_AWAITING_MANAGER_BODY);
       }
+      // A safety deposit changed by an edit isn't held until that difference is settled
+      const pendingAdjustment = await findPendingAdjustment(booking.id, tx as any);
+      if (pendingAdjustment) throw new CompleteRejection(StatusCode.CONFLICT, adjustmentPendingBody(pendingAdjustment));
       const lockedExtension = await activeExtensionState(locked.activeExtensionId, tx as any);
       if (lockedExtension.blocking) {
         throw new CompleteRejection(StatusCode.CONFLICT, extensionPendingBody(lockedExtension.blocking));

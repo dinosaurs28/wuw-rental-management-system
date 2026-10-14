@@ -9,7 +9,7 @@ import { CounterGuardError } from "../../services/payment/counter-guard.service.
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
 import { computeBookingOwed, creditOutstanding, getBookingMoney } from "../../services/payment/booking-owed.service.js";
 import { getBookingCreditSummary } from "../../services/payment/customer-credit.service.js";
-import { depositToRefund } from "../../services/payment/settlement-engine.service.js";
+import { depositToRefund, overpaymentToRefund } from "../../services/payment/settlement-engine.service.js";
 import { LEGACY_DEPOSIT_REFUND_KEY_PREFIX } from "../../services/payment/safety-deposit.service.js";
 import { resolvePaymentProof, claimPaymentProof } from "../../services/payment/payment-proof.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
@@ -213,7 +213,7 @@ export const RefundSettlementDeposit = async (req: Request, res: Response): Prom
         });
       }
       // Money on credit stays owed against its collateral — the deposit isn't set off against it
-      const netPayable = owed.totalOwed.sub(money.netConfirmed);
+      const netPayable = owed.totalOwed.sub(money.netConfirmed).sub(owed.adjustmentPending);
       const due = depositToRefund(owed, netPayable, creditOutstanding(owed, money.netConfirmed, credit?.pending ?? new Decimal(0)));
       if (due.lte(0)) {
         throw new DepositRefundRejection(StatusCode.BAD_REQUEST, {
@@ -348,6 +348,205 @@ export const RefundSettlementDeposit = async (req: Request, res: Response): Prom
       return;
     }
     console.error("RefundSettlementDeposit Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+const refundOverpaymentSchema = z.object({
+  method: z.enum(["CASH", "UPI"]),
+  // Defaults to everything paid beyond what the booking owes
+  amount: z.number().positive().optional(),
+  // Optional photo of the UPI transfer to the customer
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+/** idempotencyKey prefix of an over-payment refund recorded here (never a deposit refund — `sdr:`). */
+const OVERPAYMENT_REFUND_KEY_PREFIX = "ovr:";
+
+/**
+ * POST /api/branchManager/payment/settlements/:bookingPublicId/refund-overpayment
+ *
+ * Pays back what a returned booking was paid beyond what it owes — e.g. a
+ * legacy drop's return charges lowered by an edit (client item 1, full edit)
+ * after the manager collected them. Records an OVERPAYMENT_REFUND
+ * PaymentTransaction (key `ovr:`) and a COMPLETED RefundRequest; never more
+ * than overpaidToRefund.
+ */
+export const RefundSettlementOverpayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const validation = refundOverpaymentSchema.safeParse(req.body ?? {});
+    if (!validation.success) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "VALIDATION_FAILED",
+        message: validation.error.issues[0]?.message ?? "Invalid input",
+        errors: validation.error.format(),
+      });
+      return;
+    }
+    const { method, notes } = validation.data;
+
+    const booking = await prisma.booking.findUnique({
+      where: { publicId: req.params.bookingPublicId! },
+      select: { id: true, branchId: true, status: true, publicId: true },
+    });
+    if (!booking || booking.branchId !== req.branch_Id) {
+      res.status(StatusCode.NOT_FOUND).json({ success: false, code: "BOOKING_NOT_FOUND", message: "Booking not found" });
+      return;
+    }
+    if (booking.status !== "RETURNED") {
+      res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "BOOKING_NOT_RETURNED",
+        message: "An over-payment is refunded once the vehicle is returned.",
+      });
+      return;
+    }
+
+    const actor = await buildActorContext(req);
+    const proof = method === "UPI" ? await resolvePaymentProof(validation.data.proof_file_id, booking.branchId) : null;
+
+    const refund = await prisma.$transaction(async (tx) => {
+      // One refund at a time per booking (shared with the deposit refund)
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"deposit-refund:" + booking.id}))`;
+
+      const [owed, money, credit] = await Promise.all([
+        computeBookingOwed(booking.id, tx),
+        getBookingMoney(booking.id, tx),
+        getBookingCreditSummary(booking.id, tx),
+      ]);
+      if (money.pending.gt(0)) {
+        throw new DepositRefundRejection(StatusCode.CONFLICT, {
+          success: false,
+          code: "CASH_AWAITING_CONFIRMATION",
+          message: "Confirm or reject the cash still awaiting confirmation on this booking first.",
+        });
+      }
+      const netPayable = owed.totalOwed.sub(money.netConfirmed).sub(owed.adjustmentPending);
+      const creditPending = creditOutstanding(owed, money.netConfirmed, credit?.pending ?? new Decimal(0));
+      const due = overpaymentToRefund(owed, netPayable, depositToRefund(owed, netPayable, creditPending));
+      if (due.lte(0)) {
+        throw new DepositRefundRejection(StatusCode.BAD_REQUEST, {
+          success: false,
+          code: "NOTHING_OVERPAID",
+          message: "This booking wasn't paid more than it owes — nothing to refund.",
+        });
+      }
+      const amount = validation.data.amount != null
+        ? new Decimal(validation.data.amount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+        : due;
+      if (amount.gt(due)) {
+        throw new DepositRefundRejection(StatusCode.BAD_REQUEST, {
+          success: false,
+          code: "REFUND_EXCEEDS_OVERPAYMENT",
+          message: `Only ₹${due.toFixed(2)} was paid beyond what the booking owes.`,
+          overpaidToRefund: due.toFixed(2),
+        });
+      }
+
+      if (proof) await claimPaymentProof(proof, tx);
+      const isCash = method === "CASH";
+      const shift = isCash
+        ? await tx.cashShift.findFirst({ where: { employeeId: actor.actorId, status: "OPEN" }, select: { id: true } })
+        : null;
+      const now = new Date();
+      const reason = notes?.trim() || "Paid more than the booking owes, refunded";
+
+      const txn = await tx.paymentTransaction.create({
+        data: {
+          publicId: createID(),
+          idempotencyKey: `${OVERPAYMENT_REFUND_KEY_PREFIX}${booking.publicId}:${createID()}`,
+          bookingId: booking.id,
+          branchId: booking.branchId,
+          purpose: PaymentPurpose.OVERPAYMENT_REFUND,
+          method: isCash ? "CASH" : "ONLINE",
+          status: "CONFIRMED",
+          totalAmount: amount.toFixed(2),
+          cashAmount: isCash ? amount.toFixed(2) : "0.00",
+          onlineAmount: isCash ? "0.00" : amount.toFixed(2),
+          onlineGateway: isCash ? null : "UPI",
+          proofFileId: proof?.id ?? null,
+          collectedById: actor.actorId,
+          collectedAt: now,
+          confirmedById: actor.actorId,
+          confirmedAt: now,
+          cashShiftId: shift?.id ?? null,
+          notes: reason,
+        },
+      });
+      // The manager pays it out, so the request is approved and completed at once
+      await tx.refundRequest.create({
+        data: {
+          publicId: createID(),
+          bookingId: booking.id,
+          branchId: booking.branchId,
+          amount: amount.toFixed(2),
+          reason,
+          method: isCash ? "CASH" : "ONLINE",
+          status: "COMPLETED",
+          requestedById: actor.actorId,
+          approvedById: actor.actorId,
+          approvedAt: now,
+          completedById: actor.actorId,
+          completedAt: now,
+        },
+      });
+      return { txn, amount, remaining: due.sub(amount) };
+    });
+
+    syncLegacyReturnInvoice(booking.id).catch((err) =>
+      console.error("[settlement] Invoice sync failed:", err),
+    );
+
+    await auditService.log({
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      actorBranchId: req.branch_Id,
+      action: "OVERPAYMENT_REFUNDED",
+      category: AuditCategory.PAYMENT,
+      description: `Over-payment ₹${refund.amount.toFixed(2)} refunded (${method}) on booking ${booking.publicId}`,
+      entity: "PaymentTransaction",
+      entityId: refund.txn.publicId,
+      entityLabel: booking.publicId,
+      metadata: { method, amount: refund.amount.toFixed(2), ...(proof && { proofFileId: proof.publicId }) },
+    });
+    staffActivityService
+      .logFromRequest(req, {
+        actionType: StaffActionType.REFUNDED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: booking.publicId,
+        description: `Over-payment ₹${refund.amount.toFixed(2)} refunded (${method})`,
+        metadata: { method, amount: refund.amount.toFixed(2) },
+      })
+      .catch(() => {});
+
+    const summary = await settlementEngineService.calculateSettlement(booking.id);
+    res.status(StatusCode.CREATED).json({
+      success: true,
+      message: `₹${refund.amount.toFixed(2)} refunded to the customer`,
+      data: {
+        refund: {
+          publicId: refund.txn.publicId,
+          method,
+          amount: refund.amount.toFixed(2),
+          status: refund.txn.status,
+          remainingToRefund: refund.remaining.toFixed(2),
+        },
+        settlement: summary,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof DepositRefundRejection) {
+      res.status(error.status).json(error.body);
+      return;
+    }
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
+    console.error("RefundSettlementOverpayment Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

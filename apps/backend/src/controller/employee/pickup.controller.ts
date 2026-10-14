@@ -83,7 +83,7 @@ export const PickupController = async (req: Request, res: Response) => {
       },
       include: {
         items: {
-          select: { vehicleId: true, vehicle: { select: { hasFastag: true } } },
+          select: { vehicleId: true },
         },
         customer: {
           select: {
@@ -298,8 +298,9 @@ export const PickupController = async (req: Request, res: Response) => {
         });
       }
 
-      // FASTag balance at the handover — kept only for a car with a FASTag
-      if (pickupFastagBalance !== undefined && booking.items[0]?.vehicle.hasFastag) {
+      // FASTag balance at the handover — any car (a car not marked as having a
+      // FASTag still counts as one for this booking once its balance is read)
+      if (pickupFastagBalance !== undefined) {
         await tx.booking.update({
           where: { id: booking.id },
           data: { pickupFastagBalance: pickupFastagBalance.toFixed(2) },

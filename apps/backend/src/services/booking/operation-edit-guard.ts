@@ -1,35 +1,15 @@
 /**
  * Rules for editing a completed pickup / return (client item 1, Oct 2026).
- * Pure — no database — so the money safeguard is unit-tested.
+ * Pure — no database — so they are unit-tested.
  *
- * Readings, photos, DL details and damage notes may be corrected after the
- * pickup / drop. A change that would move money already computed or settled is
- * refused (409 EDIT_CHANGES_CHARGES) unless working the charge out again with
- * the same rules — and the free km / rate the drop actually billed with, never
- * today's pricing — gives exactly the same amount:
- *  - pickup odometer once the return is completed (an open drop bill is marked
- *    stale by the change instead: odometerBillStale)
- *  - drop odometer (always — the drop measured km with it, or measured none)
- *  - fuel levels when a fuel charge was worked out from them (the drop bill's
- *    FUEL line, prefilled from the bars, or the charge engine's FUEL_DEFICIT
- *    row): the deficit in bars must stay the same
- *  - FASTag balances: the pickup one once the return is completed, the drop
- *    one always (the drop billed the usage from them, or the typed charge when
- *    a reading was missing). An open drop bill is marked stale by a pickup
- *    balance change instead (fastagBillStale).
- * Nothing here re-bills or touches payments.
+ * An edit's money is worked out again with the free km / rate the drop billed
+ * with (never today's pricing) and settled as a difference
+ * (services/booking/operation-adjustment.ts). An open drop bill is marked stale
+ * by a corrected pickup reading instead (odometerBillStale). Readings must stay
+ * possible, and photos can be replaced but not all taken away.
  */
 import Decimal from "decimal.js";
 import type { OdometerSegments } from "../charges/km-allowance.service.js";
-
-/** 409 body when an edit would change money already computed or settled. */
-export const EDIT_CHANGES_CHARGES = {
-  code: "EDIT_CHANGES_CHARGES",
-  message: "This change would alter charges that are already settled. Ask the branch manager to adjust the bill.",
-} as const;
-
-/** The drop's extra-km charge for these segments and end reading; null = it can't be worked out. */
-export type KmChargeOf = (segments: OdometerSegments, endOdometer: number) => Decimal | null;
 
 /**
  * The free km and rate a drop billed with, read from what it recorded (the drop
@@ -100,24 +80,6 @@ export function billedKmAllowance(input: {
   };
 }
 
-export interface KmEditCheck {
-  segmentsBefore: OdometerSegments;
-  segmentsAfter: OdometerSegments;
-  /** null = no km was measured (no drop reading) */
-  endBefore: number | null;
-  endAfter: number | null;
-}
-
-/**
- * True when the edit would give a different extra-km charge than the readings
- * it replaces — or when either can't be worked out (it can't be shown equal).
- */
-export function kmEditChangesCharges(check: KmEditCheck, chargeOf: KmChargeOf): boolean {
-  const before = check.endBefore == null ? new Decimal(0) : chargeOf(check.segmentsBefore, check.endBefore);
-  const after = check.endAfter == null ? new Decimal(0) : chargeOf(check.segmentsAfter, check.endAfter);
-  return before == null || after == null || !before.eq(after);
-}
-
 /**
  * The pickup reading an open drop bill was computed from no longer matches the
  * booking (corrected with Edit Pickup). `billMeta` is RETURN session metadata:
@@ -186,50 +148,6 @@ export function endOdometerProblem(segments: OdometerSegments, endOdometer: numb
   return segments.swapCount > 0
     ? `End odometer can't be less than the replacement vehicle's reading at the swap (${segments.currentStartOdometer} km).`
     : `End odometer can't be less than the pickup reading (${segments.currentStartOdometer} km).`;
-}
-
-/** Fuel bars "1".."10": less fuel came back than went out. */
-export function hasFuelDeficit(pickupLevel: string | null, returnLevel: string | null): boolean {
-  const out = pickupLevel ? parseInt(pickupLevel, 10) : NaN;
-  const back = returnLevel ? parseInt(returnLevel, 10) : NaN;
-  return !Number.isNaN(out) && !Number.isNaN(back) && back < out;
-}
-
-/** Bars of fuel short at the drop (0 when none, or a level is missing). */
-export function fuelDeficitBars(pickupLevel: string | null, returnLevel: string | null): number {
-  if (!hasFuelDeficit(pickupLevel, returnLevel)) return 0;
-  return parseInt(pickupLevel!, 10) - parseInt(returnLevel!, 10);
-}
-
-/**
- * A fuel charge worked out from the levels — the drop bill's FUEL line
- * (prefilled from the bars short × rate) or the charge engine's FUEL_DEFICIT
- * row — stands only for the deficit it was billed for: levels that change the
- * bars short would change it.
- */
-export function fuelEditChangesCharges(input: {
-  levelBasedFuelCharge: boolean;
-  before: { pickupLevel: string | null; returnLevel: string | null };
-  after: { pickupLevel: string | null; returnLevel: string | null };
-}): boolean {
-  if (!input.levelBasedFuelCharge) return false;
-  return (
-    fuelDeficitBars(input.before.pickupLevel, input.before.returnLevel) !==
-    fuelDeficitBars(input.after.pickupLevel, input.after.returnLevel)
-  );
-}
-
-/**
- * The FASTag charge a drop works out from the readings (calculateFastagUsage):
- * COMPUTED bills `amount`; any other status leaves the charge staff typed. A
- * different status or amount is a different charge.
- */
-export function fastagEditChangesCharges(
-  before: { status: string; amount: Decimal },
-  after: { status: string; amount: Decimal },
-): boolean {
-  if (before.status !== after.status) return true;
-  return before.status === "COMPUTED" && !before.amount.eq(after.amount);
 }
 
 /** A pickup / return that had photos can't be left with none (the workflow needs them). */

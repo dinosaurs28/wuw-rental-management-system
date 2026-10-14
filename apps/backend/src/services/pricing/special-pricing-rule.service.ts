@@ -13,12 +13,15 @@ import { prisma, StaffActionType, StaffEntityType, type Prisma, type Role } from
 import { DateTime } from "luxon";
 import {
   calendarDaysBetween,
+  formatGroupChange,
   formatSpecialChange,
   istToday,
+  vehicleGroupKey,
   specialPricingRuleIssues,
   specialPricingStatus,
   type SpecialPricingListFilter,
   type SpecialPricingScopeValue,
+  type SpecialPricingChangeValue,
   type CreateSpecialPricingRuleInput,
   type UpdateSpecialPricingRuleInput,
   type SpecialPricingPreviewInput,
@@ -28,7 +31,7 @@ import { createID } from "../../utils/nanoID.js";
 import { invalidateGroupListingCache, invalidateVehiclePricing } from "../../utils/cache/vehicleCacheKeys.js";
 import { getBatchListingPrices } from "../../utils/pricing/batchListingPrice.js";
 import { PRICING_ZONE } from "../../utils/pricing/weekendRule.js";
-import type { SpecialRule } from "../../utils/pricing/specialDateRule.js";
+import type { SpecialRule, SpecialRuleItem } from "../../utils/pricing/specialDateRule.js";
 import { DurationCalculatorService } from "./duration-calculator.service.js";
 import { dateOnly, toDateColumn } from "./branch-special-rules.service.js";
 import { staffActivityService } from "../staffActivity/staffActivity.service.js";
@@ -66,13 +69,18 @@ export async function specialPricingActor(publicId: string): Promise<SpecialPric
 const RULE_INCLUDE = {
   createdBy: { select: { name: true } },
   updatedBy: { select: { name: true } },
+  items: { orderBy: [{ make: "asc" }, { model: "asc" }, { categoryId: "asc" }] },
 } as const satisfies Prisma.SpecialPricingRuleInclude;
 
 type RuleRow = Prisma.SpecialPricingRuleGetPayload<{ include: typeof RULE_INCLUDE }>;
 
-/** A rule as the API returns it (dates YYYY-MM-DD, percent / flatAmount numbers, the picked categories / vehicles named). */
+/**
+ * A rule as the API returns it (dates YYYY-MM-DD, percent / flatAmount numbers,
+ * the picked categories / vehicles named; a GROUPS rule's items with their
+ * category names and signed values).
+ */
 async function viewRules(rows: RuleRow[], today = istToday()) {
-  const categoryIds = [...new Set(rows.flatMap((r) => r.categoryIds))];
+  const categoryIds = [...new Set(rows.flatMap((r) => [...r.categoryIds, ...r.items.map((i) => i.categoryId)]))];
   const vehicleIds = [...new Set(rows.flatMap((r) => r.vehicleIds))];
   const [categories, vehicles] = await Promise.all([
     categoryIds.length
@@ -107,6 +115,15 @@ async function viewRules(rows: RuleRow[], today = istToday()) {
       status: specialPricingStatus({ startDate, endDate, active: r.active }, today),
       categories: r.categoryIds.flatMap((id) => categoryById.get(id) ?? []),
       vehicles: r.vehicleIds.flatMap((id) => vehicleById.get(id) ?? []),
+      items: r.items.map((i) => ({
+        groupKey: i.groupKey,
+        make: i.make,
+        model: i.model,
+        categoryId: i.categoryId,
+        categoryName: categoryById.get(i.categoryId)?.name ?? null,
+        type: i.type,
+        value: Number(i.value.toString()),
+      })),
       createdBy: r.createdBy ? { name: r.createdBy.name } : null,
       updatedBy: r.updatedBy ? { name: r.updatedBy.name } : null,
       createdAt: r.createdAt,
@@ -144,6 +161,60 @@ export async function listSpecialRules(branchId: number, filter: SpecialPricingL
     return bucket(a) === 0 ? a.startDate.localeCompare(b.startDate) : b.endDate.localeCompare(a.endDate);
   });
 }
+
+/**
+ * The branch's vehicle groups (not deleted vehicles): one per make + model +
+ * category, as customers see one model card — named as its first vehicle is,
+ * with how many vehicles it has.
+ */
+async function branchVehicleGroups(branchId: number) {
+  const vehicles = await prisma.vehicle.findMany({
+    where: { branchId, deletedAt: null },
+    select: { make: true, model: true, categoryId: true, category: { select: { name: true } } },
+    orderBy: [{ make: "asc" }, { model: "asc" }, { id: "asc" }],
+  });
+  const groups = new Map<
+    string,
+    { key: string; make: string; model: string; categoryId: number; categoryName: string; vehicleCount: number }
+  >();
+  for (const v of vehicles) {
+    const key = vehicleGroupKey(v.make, v.model, v.categoryId);
+    const group = groups.get(key);
+    if (group) group.vehicleCount++;
+    else {
+      groups.set(key, {
+        key,
+        make: v.make.trim(),
+        model: v.model.trim(),
+        categoryId: v.categoryId,
+        categoryName: v.category.name,
+        vehicleCount: 1,
+      });
+    }
+  }
+  return [...groups.values()].sort(
+    (a, b) => a.make.localeCompare(b.make) || a.model.localeCompare(b.model) || a.categoryName.localeCompare(b.categoryName),
+  );
+}
+
+type ItemInput = { groupKey: string; type: SpecialPricingChangeValue; value: number };
+
+/** The priced groups with their names, each a group of the branch (400 SPECIAL_RULE_SCOPE_INVALID otherwise). */
+async function resolveItems(branchId: number, items: ItemInput[]): Promise<SpecialRuleItem[]> {
+  const groups = new Map((await branchVehicleGroups(branchId)).map((g) => [g.key, g]));
+  return items.map((item, index) => {
+    const group = groups.get(item.groupKey);
+    if (!group) {
+      throw new SpecialPricingError(400, "SPECIAL_RULE_SCOPE_INVALID", "Some of the vehicle groups aren't at this branch any more. Reload and try again.", [
+        { path: `items.${index}.groupKey`, message: "This vehicle group isn't at the branch" },
+      ]);
+    }
+    return { groupKey: group.key, make: group.make, model: group.model, categoryId: group.categoryId, type: item.type, value: item.value };
+  });
+}
+
+const itemRows = (items: SpecialRuleItem[]) =>
+  items.map((i) => ({ ...i, value: i.value.toFixed(2) }));
 
 /** Only the id list matching the scope is kept. */
 function scopedIds(scope: SpecialPricingScopeValue, categoryIds: number[], vehicleIds: number[]) {
@@ -209,18 +280,38 @@ async function branchName(branchId: number): Promise<string> {
   return branch.name;
 }
 
-/** "Dussehra +10%, 20 Oct – 22 Oct 2026, all vehicles" — the log's summary of a rule. */
-function describeRule(rule: { name: string; startDate: string; endDate: string; percent: number; flatAmount: number; scope: string; categoryIds: number[]; vehicleIds: number[] }) {
+/**
+ * "Dussehra +10%, 20 Oct – 22 Oct 2026, all vehicles", "Diwali Special, 20 Oct
+ * 2026, 3 vehicle groups (Maruti Swift +10%, …)" — the log's summary of a rule.
+ */
+function describeRule(rule: {
+  name: string;
+  startDate: string;
+  endDate: string;
+  percent: number;
+  flatAmount: number;
+  scope: string;
+  categoryIds: number[];
+  vehicleIds: number[];
+  items: { make: string; model: string; type: SpecialPricingChangeValue; value: number }[];
+}) {
   const day = (d: string) => DateTime.fromISO(d, { zone: PRICING_ZONE }).toFormat("d LLL yyyy");
+  const dates = rule.startDate === rule.endDate ? day(rule.startDate) : `${day(rule.startDate)} – ${day(rule.endDate)}`;
+  if (rule.scope === "GROUPS") {
+    const parts = rule.items.map((i) => `${i.make} ${i.model} ${formatGroupChange(i.type, i.value)}`);
+    const shown = parts.length > 3 ? [...parts.slice(0, 3), "…"] : parts;
+    return `${rule.name}, ${dates}, ${plural(rule.items.length, "vehicle group")} (${shown.join(", ")})`;
+  }
   const scope =
     rule.scope === "CATEGORIES"
       ? `${rule.categoryIds.length} categor${rule.categoryIds.length === 1 ? "y" : "ies"}`
       : rule.scope === "VEHICLES"
         ? `${rule.vehicleIds.length} vehicle${rule.vehicleIds.length === 1 ? "" : "s"}`
         : "all vehicles";
-  const dates = rule.startDate === rule.endDate ? day(rule.startDate) : `${day(rule.startDate)} – ${day(rule.endDate)}`;
   return `${rule.name} ${formatSpecialChange(rule.percent, rule.flatAmount)}, ${dates}, ${scope}`;
 }
+
+const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
 
 async function logChange(
   actor: SpecialPricingActor,
@@ -275,8 +366,11 @@ export async function createSpecialRule(branchId: number, input: CreateSpecialPr
   await branchName(branchId);
   assertRuleIssues(input);
   assertNotEnded(input.endDate);
+  const groups = input.scope === "GROUPS";
   const ids = scopedIds(input.scope, input.categoryIds, input.vehicleIds);
   await assertScopeAtBranch(branchId, ids.categoryIds, ids.vehicleIds);
+  // A GROUPS rule carries its changes on the items (the rule's own percent / flat stay 0)
+  const items = groups ? await resolveItems(branchId, input.items) : [];
 
   const row = await prisma.specialPricingRule.create({
     data: {
@@ -285,10 +379,11 @@ export async function createSpecialRule(branchId: number, input: CreateSpecialPr
       name: input.name,
       startDate: toDateColumn(input.startDate),
       endDate: toDateColumn(input.endDate),
-      percent: input.percent.toFixed(2),
-      flatAmount: input.flatAmount.toFixed(2),
+      percent: (groups ? 0 : input.percent).toFixed(2),
+      flatAmount: (groups ? 0 : input.flatAmount).toFixed(2),
       scope: input.scope,
       ...ids,
+      ...(items.length > 0 && { items: { create: itemRows(items) } }),
       active: input.active,
       createdById: actor.userId,
       updatedById: actor.userId,
@@ -305,6 +400,7 @@ export async function createSpecialRule(branchId: number, input: CreateSpecialPr
     flatAmount: view!.flatAmount,
     scope: view!.scope,
     ...ids,
+    ...(groups && { items: items.map((i) => ({ groupKey: i.groupKey, type: i.type, value: i.value })) }),
     active: view!.active,
   });
   return view!;
@@ -324,14 +420,18 @@ export async function updateSpecialRule(
   const existing = await loadRule(publicId, branchId);
   const [before] = await viewRules([existing]);
   const scope = patch.scope ?? before!.scope;
+  const groups = scope === "GROUPS";
+  const beforeItems = before!.items.map(({ groupKey, type, value }) => ({ groupKey, type, value }));
   const merged = {
     name: patch.name ?? before!.name,
     startDate: patch.startDate ?? before!.startDate,
     endDate: patch.endDate ?? before!.endDate,
-    percent: patch.percent ?? before!.percent,
-    flatAmount: patch.flatAmount ?? before!.flatAmount,
+    percent: groups ? 0 : patch.percent ?? before!.percent,
+    flatAmount: groups ? 0 : patch.flatAmount ?? before!.flatAmount,
     scope,
     ...scopedIds(scope, patch.categoryIds ?? before!.categoryIds, patch.vehicleIds ?? before!.vehicleIds),
+    // GROUPS: the items sent replace the rule's (none sent = kept); any other scope has none
+    items: groups ? patch.items ?? beforeItems : [],
     active: patch.active ?? before!.active,
   };
   assertRuleIssues(merged);
@@ -342,28 +442,35 @@ export async function updateSpecialRule(
     merged.categoryIds.join() !== before!.categoryIds.join() ||
     merged.vehicleIds.join() !== before!.vehicleIds.join();
   if (scopeChanged) await assertScopeAtBranch(existing.branchId, merged.categoryIds, merged.vehicleIds);
+  const itemsChanged = JSON.stringify(merged.items) !== JSON.stringify(beforeItems);
+  const items = groups && itemsChanged ? await resolveItems(existing.branchId, merged.items) : [];
 
-  const row = await prisma.specialPricingRule.update({
-    where: { id: existing.id },
-    data: {
-      name: merged.name,
-      startDate: toDateColumn(merged.startDate),
-      endDate: toDateColumn(merged.endDate),
-      percent: merged.percent.toFixed(2),
-      flatAmount: merged.flatAmount.toFixed(2),
-      scope: merged.scope,
-      categoryIds: merged.categoryIds,
-      vehicleIds: merged.vehicleIds,
-      active: merged.active,
-      updatedById: actor.userId,
-    },
-    include: RULE_INCLUDE,
+  const row = await prisma.$transaction(async (tx) => {
+    if (itemsChanged) await tx.specialPricingRuleItem.deleteMany({ where: { ruleId: existing.id } });
+    return tx.specialPricingRule.update({
+      where: { id: existing.id },
+      data: {
+        name: merged.name,
+        startDate: toDateColumn(merged.startDate),
+        endDate: toDateColumn(merged.endDate),
+        percent: merged.percent.toFixed(2),
+        flatAmount: merged.flatAmount.toFixed(2),
+        scope: merged.scope,
+        categoryIds: merged.categoryIds,
+        vehicleIds: merged.vehicleIds,
+        ...(items.length > 0 && { items: { create: itemRows(items) } }),
+        active: merged.active,
+        updatedById: actor.userId,
+      },
+      include: RULE_INCLUDE,
+    });
   });
   const [view] = await viewRules([row]);
   await invalidateFestivalPricing(existing.branchId);
 
+  const previous = { ...before!, items: beforeItems };
   const changed = (Object.keys(merged) as (keyof typeof merged)[]).filter(
-    (key) => JSON.stringify(merged[key]) !== JSON.stringify(before![key]),
+    (key) => JSON.stringify(merged[key]) !== JSON.stringify(previous[key]),
   );
   const onlyActive = changed.length === 1 && changed[0] === "active";
   await logChange(
@@ -376,7 +483,7 @@ export async function updateSpecialRule(
       : `Festival pricing updated: ${describeRule(view!)}`,
     {
       changed,
-      before: Object.fromEntries(changed.map((k) => [k, before![k]])),
+      before: Object.fromEntries(changed.map((k) => [k, previous[k]])),
       after: Object.fromEntries(changed.map((k) => [k, merged[k]])),
     },
   );
@@ -402,12 +509,13 @@ export async function deleteSpecialRule(publicId: string, actor: SpecialPricingA
 }
 
 /**
- * What the pickers offer: the branch's vehicles (not deleted) and the
- * categories in use there (vehicles or branch pricing defaults), with counts.
+ * What the pickers offer: the branch's vehicle groups (the per-group dialog),
+ * its vehicles (not deleted) and the categories in use there (vehicles or
+ * branch pricing defaults), with counts.
  */
 export async function specialRuleOptions(branchId: number) {
   await branchName(branchId);
-  const [vehicles, defaults] = await Promise.all([
+  const [vehicles, defaults, groups] = await Promise.all([
     prisma.vehicle.findMany({
       where: { branchId, deletedAt: null },
       select: { id: true, regNo: true, make: true, model: true, categoryId: true, category: { select: { name: true } } },
@@ -417,6 +525,7 @@ export async function specialRuleOptions(branchId: number) {
       where: { branchId },
       select: { categoryId: true, category: { select: { name: true } } },
     }),
+    branchVehicleGroups(branchId),
   ]);
   const categories = new Map<number, { id: number; name: string; vehicleCount: number }>();
   for (const d of defaults) categories.set(d.categoryId, { id: d.categoryId, name: d.category.name, vehicleCount: 0 });
@@ -426,6 +535,7 @@ export async function specialRuleOptions(branchId: number) {
     categories.set(v.categoryId, entry);
   }
   return {
+    groups,
     categories: [...categories.values()].sort((a, b) => a.name.localeCompare(b.name)),
     vehicles: vehicles.map((v) => ({
       id: v.id,
@@ -450,6 +560,7 @@ const PREVIEW_SAMPLES = 6;
 export async function previewSpecialRule(branchId: number, input: SpecialPricingPreviewInput) {
   await branchName(branchId);
   assertRuleIssues(input);
+  if (input.scope === "GROUPS") return previewGroups(branchId, input);
   const ids = scopedIds(input.scope, input.categoryIds, input.vehicleIds);
   await assertScopeAtBranch(branchId, ids.categoryIds, ids.vehicleIds);
 
@@ -509,6 +620,75 @@ export async function previewSpecialRule(branchId: number, input: SpecialPricing
     .slice(0, PREVIEW_SAMPLES);
 
   return { day, vehiclesInScope: inScope.length, samples: rows };
+}
+
+/**
+ * A per-group draft's effect on one festival day: for each priced group, the
+ * 24-hour rent of the car a booking would price (at the branch first, then the
+ * lowest odometer) before → after (incl. GST, before duration discounts; the
+ * branch's weekend rents apply underneath, other festival rules don't). Groups
+ * whose car has no rates are left out.
+ */
+async function previewGroups(branchId: number, input: SpecialPricingPreviewInput) {
+  const items = await resolveItems(branchId, input.items);
+  const keys = new Set(items.map((i) => i.groupKey));
+  const vehicles = (
+    await prisma.vehicle.findMany({
+      where: { branchId, deletedAt: null },
+      select: {
+        id: true, branchId: true, categoryId: true, make: true, model: true, regNo: true, status: true,
+        category: { select: { name: true } },
+      },
+      orderBy: [{ odo: "asc" }, { id: "asc" }],
+    })
+  ).filter((v) => keys.has(vehicleGroupKey(v.make, v.model, v.categoryId)));
+  const shown = new Map<string, (typeof vehicles)[number]>();
+  for (const v of vehicles) {
+    const key = vehicleGroupKey(v.make, v.model, v.categoryId);
+    const current = shown.get(key);
+    if (!current || (current.status !== "AVAILABLE" && v.status === "AVAILABLE")) shown.set(key, v);
+  }
+
+  const today = istToday();
+  const day = input.startDate >= today || input.endDate < today ? input.startDate : today;
+  const start = DateTime.fromISO(day, { zone: PRICING_ZONE });
+  const end = start.plus({ hours: 24 });
+  const window = { startAt: start.toJSDate(), endAt: end.toJSDate() };
+  const duration = DurationCalculatorService.calculate(start, end);
+  const draft: SpecialRule = {
+    id: 0,
+    name: "Preview",
+    startDate: input.startDate,
+    endDate: input.endDate,
+    percent: 0,
+    flatAmount: 0,
+    scope: "GROUPS",
+    categoryIds: [],
+    vehicleIds: [],
+    items,
+  };
+  const candidates = [...shown.values()];
+  const [before, after] = candidates.length
+    ? await Promise.all([
+        getBatchListingPrices(candidates, duration, window, { specialRules: [] }),
+        getBatchListingPrices(candidates, duration, window, { specialRules: [draft] }),
+      ])
+    : [new Map(), new Map()];
+  const samples = items.flatMap((item) => {
+    const v = shown.get(item.groupKey);
+    const was = v ? before.get(v.id)?.price ?? 0 : 0;
+    if (!v || was <= 0) return [];
+    return [{
+      groupKey: item.groupKey,
+      vehicleId: v.id,
+      name: `${item.make} ${item.model}`,
+      category: v.category.name,
+      regNo: v.regNo,
+      before: was,
+      after: after.get(v.id)?.price ?? 0,
+    }];
+  });
+  return { day, vehiclesInScope: vehicles.length, samples };
 }
 
 // ── Controller helpers ────────────────────────────────────────────────────────

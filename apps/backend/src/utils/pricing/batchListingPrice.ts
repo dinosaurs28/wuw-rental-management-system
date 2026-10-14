@@ -28,12 +28,15 @@ import {
 } from "../../services/pricing/base-price-rule.js";
 import { getBranchesWeekendDays } from "../../services/pricing/branch-weekend-days.service.js";
 import { getBranchesSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
-import { rulesForVehicle, type SpecialRule } from "./specialDateRule.js";
+import { needsVehicleGroup, rulesForVehicle, type SpecialRule } from "./specialDateRule.js";
 
 interface VehicleRef {
   id: number;
   branchId: number;
   categoryId: number;
+  /** For per-group festival rules (looked up when a caller doesn't pass them) */
+  make?: string;
+  model?: string;
 }
 
 interface PricingRow {
@@ -201,6 +204,16 @@ export async function getBatchListingPrices(
     : options.specialRules
       ? new Map(vehicles.map((v) => [v.branchId, options.specialRules!]))
       : await getBranchesSpecialRules(vehicles.map((v) => v.branchId), window.startAt, window.endAt);
+  // Per-group rules match on make / model: one query for the vehicles passed without them
+  const missingGroup = needsVehicleGroup([...specialRulesByBranch.values()].flat())
+    ? vehicles.filter((v) => v.make == null || v.model == null).map((v) => v.id)
+    : [];
+  const groupOf = new Map(
+    (missingGroup.length
+      ? await prisma.vehicle.findMany({ where: { id: { in: missingGroup } }, select: { id: true, make: true, model: true } })
+      : []
+    ).map((v) => [v.id, v]),
+  );
 
   // Query 1: custom pricing (enabled vehicles override branch defaults)
   const customPricings = await prisma.vehicleCustomPricing.findMany({
@@ -291,7 +304,12 @@ export async function getBatchListingPrices(
         startAt: window.startAt,
         endAt: window.endAt,
         weekendDays: weekendDaysByBranch.get(v.branchId) ?? [],
-        specialRules: rulesForVehicle(specialRulesByBranch.get(v.branchId) ?? [], v),
+        specialRules: rulesForVehicle(specialRulesByBranch.get(v.branchId) ?? [], {
+          id: v.id,
+          categoryId: v.categoryId,
+          make: v.make ?? groupOf.get(v.id)?.make,
+          model: v.model ?? groupOf.get(v.id)?.model,
+        }),
       },
     );
     basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));

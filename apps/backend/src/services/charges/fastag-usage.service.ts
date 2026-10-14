@@ -8,7 +8,7 @@ import Decimal from "decimal.js";
 import { prisma, BookingStatus } from "@repo/database/client";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { pickedUpAtMarker } from "./km-allowance.service.js";
-import type { FastagLeg } from "./fastag-usage.js";
+import { buildFastagLegs, type FastagLeg } from "./fastag-usage.js";
 
 const dec = (v: { toString(): string } | null | undefined): Decimal | null =>
   v == null ? null : new Decimal(v.toString());
@@ -16,7 +16,9 @@ const dec = (v: { toString(): string } | null | undefined): Decimal | null =>
 /**
  * The booking's FASTag legs, oldest first; the last leg is the car handed back
  * at the drop and ends at `dropBalance` (null before the drop is read).
- * Swaps count as mid-rental by the same rule as getOdometerSegments.
+ * Swaps count as mid-rental by the same rule as getOdometerSegments. A leg's car
+ * counts as a FASTag car when marked so or when a balance was recorded for it
+ * at pickup / a swap (countsAsFastagCar).
  */
 export async function getFastagLegs(
   bookingId: number,
@@ -58,39 +60,16 @@ export async function getFastagLegs(
     }
   }
 
-  const drop = dropBalance == null ? null : new Decimal(dropBalance);
-  const pickup = dec(booking.pickupFastagBalance);
-  if (midRental.length === 0) {
-    const vehicle = booking.items[0]?.vehicle;
-    return [{
-      regNo: vehicle?.regNo ?? null,
-      hasFastag: vehicle?.hasFastag ?? false,
-      startBalance: pickup,
-      endBalance: drop,
-      endedBySwapPublicId: null,
-    }];
-  }
-
-  const legs: FastagLeg[] = [];
-  let start = pickup;
-  for (const [i, swap] of midRental.entries()) {
-    legs.push({
-      regNo: swap.originalVehicle.regNo,
-      hasFastag: swap.originalVehicle.hasFastag,
-      startBalance: start,
-      endBalance: dec(swap.oldVehicleFastagBalance),
-      endedBySwapPublicId: swap.publicId,
-    });
-    start = dec(swap.newVehicleFastagBalance);
-    if (i === midRental.length - 1) {
-      legs.push({
-        regNo: swap.newVehicle.regNo,
-        hasFastag: swap.newVehicle.hasFastag,
-        startBalance: start,
-        endBalance: drop,
-        endedBySwapPublicId: null,
-      });
-    }
-  }
-  return legs;
+  return buildFastagLegs({
+    pickupBalance: dec(booking.pickupFastagBalance),
+    currentVehicle: booking.items[0]?.vehicle ?? null,
+    midRentalSwaps: midRental.map((swap) => ({
+      publicId: swap.publicId,
+      originalVehicle: swap.originalVehicle,
+      newVehicle: swap.newVehicle,
+      oldVehicleFastagBalance: dec(swap.oldVehicleFastagBalance),
+      newVehicleFastagBalance: dec(swap.newVehicleFastagBalance),
+    })),
+    dropBalance: dropBalance == null ? null : new Decimal(dropBalance),
+  });
 }

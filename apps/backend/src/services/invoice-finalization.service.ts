@@ -10,6 +10,7 @@ import { queueInvoiceGeneration } from "../utils/invoice-generation.queue.js";
 import { DROP_DAMAGE_REF, DROP_DISCOUNT_REF } from "./damage/drop-damage.service.js";
 import { chargeEntryGst, chargeEntryGstRemoved } from "./charges/legacy-return-charges.service.js";
 import { settlementEngineService } from "./payment/settlement-engine.service.js";
+import { netDropEntries } from "./booking/operation-adjustment.js";
 import {
   computeInvoiceGstTotals,
   invoiceTotalsData,
@@ -129,7 +130,9 @@ function dropDiscountItems(entry: any): ChargeItem[] {
 /**
  * Builds charge items from the correct source depending on the return flow:
  *
- * Session flow  → LedgerEntry rows from the completed RETURN PaymentSession
+ * Session flow  → LedgerEntry rows from the completed RETURN PaymentSession,
+ *                 netted with the delta lines of edits to the drop (ADJUSTMENT
+ *                 sessions — full edit, client item 1)
  * Legacy flow   → ChargeEntry rows persisted by the charge engine
  *
  * The session flow is detected by the presence of a completed RETURN
@@ -150,8 +153,18 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
   });
 
   if (returnSession) {
+    // The drop bill as edited: an edit adds delta lines on an ADJUSTMENT session
+    const adjustments = await prisma.paymentSession.findMany({
+      where: { bookingId, sessionType: PaymentSessionType.ADJUSTMENT, status: { not: PaymentSessionStatus.ABANDONED } },
+      include: { entries: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const sessionEntries = netDropEntries(
+      returnSession.entries as any[],
+      adjustments.flatMap((a) => a.entries) as any[],
+    );
     // Filter to positive charge entries only — exclude payments, credits, base
-    const chargeEntries = returnSession.entries.filter((e: any) => {
+    const chargeEntries = sessionEntries.filter((e: any) => {
       if (e.isVoided) return false;
       if (e.classification === LedgerEntryClassification.PAYMENT) return false;
       if (e.classification === "DISCOUNT") return false;
@@ -161,7 +174,7 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
     });
 
     // Discount given at drop — a negative line so invoice total = amount actually settled
-    const dropDiscountEntries = returnSession.entries.filter(
+    const dropDiscountEntries = sessionEntries.filter(
       (e: any) => !e.isVoided && e.referenceType === DROP_DISCOUNT_REF,
     );
 

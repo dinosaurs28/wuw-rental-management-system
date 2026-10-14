@@ -93,7 +93,8 @@ class FraudDetectionService {
       getBookingMoney(bookingId),
       getBookingCreditSummary(bookingId),
     ]);
-    const totalOwed = owed.totalOwed;
+    // An edit's difference still open is collected / refunded on its own session, never here
+    const totalOwed = owed.totalOwed.sub(owed.adjustmentPending);
 
     // CONFIRMED + COLLECTED money in, less refunds paid out
     const alreadyCollected = money.netConfirmed.add(money.pending);

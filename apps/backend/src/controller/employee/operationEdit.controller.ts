@@ -1,26 +1,40 @@
 /**
  * Completed pickups / returns (client item 1, Oct 2026): a read-only summary,
- * and "Edit Pickup" / "Edit Return" — the only way back into what was
- * captured once the pickup / drop is done.
+ * and Edit Pickup / Edit Return — the full pickup / drop flow, editable, money
+ * included ("Full Pickup and Drop Flow should be editable").
  *
  * Endpoints (own branch only):
- *   GET   /employee/pickup/:bookingId/summary
- *   GET   /employee/return/:bookingId/summary
- *   PATCH /employee/pickup/:bookingId   odometer, fuel, FASTag balance, DL status, DL number, photos
- *   PATCH /employee/return/:bookingId   odometer, fuel, FASTag balance, photos, drop damage notes / photos
+ *   GET   /employee/pickup/:bookingId/summary        (+ pending / settled edit differences)
+ *   GET   /employee/return/:bookingId/summary        (+ editState: what the drop recorded)
+ *   POST  /employee/pickup/:bookingId/edit/preview   the money difference — nothing saved
+ *   POST  /employee/return/:bookingId/edit/preview   the edited drop bill and its difference
+ *   PATCH /employee/pickup/:bookingId   odometer, fuel, FASTag balance, safety deposit, DL status, DL number, photos
+ *   PATCH /employee/return/:bookingId   readings, fuel / FASTag / other charges, drop discount, late grace /
+ *                                       waiver, damage amounts / notes / photos, deposit handling, photos
  *
  * A pickup / return counts as completed once it is done or sent to the branch
  * manager (utils/booking/completedQueue.ts). Edits run with the booking row
  * locked (like the drop bill and its payments) and write an audit entry and a
- * staff-activity entry with the before / after of every changed field.
+ * staff-activity entry with the before / after of every changed field and the
+ * money difference.
  *
- * Money already computed or settled is never changed here (nothing is
- * re-billed, no payment or ledger row is touched): a reading that would give a
- * different charge is refused with 409 EDIT_CHANGES_CHARGES
- * (services/booking/operation-edit-guard.ts). Charges themselves (fuel / FASTag
- * / other charges, discounts, waivers, damage amounts) stay with the branch
- * manager. FASTag balances are only for a car with a FASTag; swap readings
- * (VehicleSwap) are not edited here.
+ * Money: the operation's bill is worked out again with the edited inputs
+ * (services/booking/drop-edit.service.ts — the same billing helpers as the
+ * drop; km at the free km / rate the drop billed with) and compared line by line
+ * with what is billed now. The difference goes on an ADJUSTMENT session
+ * (services/booking/operation-edit-money.service.ts) settled with the usual
+ * record-payment / record-refund endpoints; a legacy drop's return charges are
+ * rewritten for the branch manager's Settlements. Past payments and ledger
+ * lines are never changed. A pickup edit that corrects readings the completed
+ * drop billed from (odometer, FASTag balance) re-prices the drop in the same
+ * step. Rent (coupons, extensions) is not re-priced here. The pickup FASTag
+ * balance is accepted for any car; the drop's only for a car that counts as a
+ * FASTag car for the booking (marked, or read at pickup / the swap); swap
+ * readings (VehicleSwap) are not edited here.
+ * A money-moving save needs the previewed difference (expectedDelta) and
+ * replaces an earlier edit's unsettled difference; a lower bill comes off the
+ * booking's counter credit before anything is refunded. The preview is worked
+ * out exactly as the save (same lock and steps) and rolled back.
  *
  * Photos taken off a completed pickup / return are only unlinked from the
  * booking — the file is kept as evidence (the audit entry names it). New photos
@@ -42,7 +56,7 @@ import {
   PaymentSessionStatus,
   PaymentSessionType,
 } from "@repo/database/client";
-import { DL_STATUS_DEPOSIT_REMOVED_MESSAGE } from "@repo/schemas";
+import { DL_STATUS_DEPOSIT_REMOVED_MESSAGE, SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { createID } from "../../utils/nanoID.js";
 import { isPrivateFile, resolveFileUrl } from "../../utils/file-url.js";
@@ -58,28 +72,56 @@ import {
   serializeCompletion,
 } from "../../services/booking/operation-completion.service.js";
 import {
-  EDIT_CHANGES_CHARGES,
-  billedKmAllowance,
-  billedKmCharge,
   changedFields,
   emptiedRequiredSlots,
-  endOdometerProblem,
-  fastagEditChangesCharges,
-  fuelEditChangesCharges,
-  kmEditChangesCharges,
   photosEmptied,
   pickupOdometerProblem,
-  withPickupOdometer,
-  type BilledKmAllowance,
 } from "../../services/booking/operation-edit-guard.js";
-import { getOdometerSegments } from "../../services/charges/km-allowance.service.js";
 import {
-  LEGACY_EXTRA_KM_KEY,
-  LEGACY_RETURN_CHARGE_TYPES,
-} from "../../services/charges/legacy-return-charges.service.js";
+  depositAdjustmentLine,
+  serializeDeltaLine,
+  type AdjustmentDeltaLine,
+  type AdjustmentPart,
+} from "../../services/booking/operation-adjustment.js";
+import {
+  AdjustmentChangedError,
+  AdjustmentPaymentStartedError,
+  AdjustmentPendingError,
+  EditConfirmationRequiredError,
+  abandonSuperseded,
+  assertExpectedDelta,
+  createAdjustmentSession,
+  creditOffsetLine,
+  findPendingAdjustment,
+  linkSuperseded,
+  pendingToSupersede,
+  serializeAdjustmentPlan,
+  type AdjustmentPlan,
+  type SupersededAdjustment,
+} from "../../services/booking/operation-edit-money.service.js";
+import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import {
+  DropEditError,
+  changedDropCategories,
+  computeDropEdit,
+  loadDropEditState,
+  serializeDropInputs,
+  writeLegacyDropRows,
+  type DropEditInputs,
+  type DropEditResult,
+  type DropEditState,
+  type DropFlow,
+} from "../../services/booking/drop-edit.service.js";
+import { getOdometerSegments } from "../../services/charges/km-allowance.service.js";
+import { LEGACY_RETURN_CHARGE_TYPES } from "../../services/charges/legacy-return-charges.service.js";
 import { calculateFastagUsage, fastagBalanceField } from "../../services/charges/fastag-usage.js";
+import { recordDepositHandling } from "../../services/payment/safety-deposit.service.js";
+import type { TxClient } from "../../services/payment/paymentSession.service.js";
+import { getBookingCreditSummary } from "../../services/payment/customer-credit.service.js";
+import { finalizeInvoice, syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
+import { serializeSession } from "./paymentSession.controller.js";
 import { getFastagLegs } from "../../services/charges/fastag-usage.service.js";
-import { isDropDamage, lockBookingForDrop } from "../../services/damage/drop-damage.service.js";
+import { dropDamageAmount, isDropDamage, lockBookingForDrop } from "../../services/damage/drop-damage.service.js";
 import { uploadedFromBranch } from "../../services/booking-photo-file.service.js";
 import {
   STAFF_DL_EDITABLE_STATUSES,
@@ -115,7 +157,7 @@ const editPickupSchema = z.object({
     .min(1, "Enter the odometer reading")
     .optional(),
   pickupFuelLevel: FUEL_LEVEL.optional(),
-  // ₹ on the pickup car's FASTag (cars with a FASTag only)
+  // ₹ on the pickup car's FASTag (any car; required by the clients when it's marked as having one)
   pickupFastagBalance: fastagBalanceField,
   // Licence custody (#3): Collected / Not collected (DEPOSIT was removed)
   dlStatus: z.string().optional(),
@@ -128,6 +170,10 @@ const editPickupSchema = z.object({
     .optional(),
   // FileObject publicIds of saved photos to take off the pickup
   removeFileIds: fileIdList(60).optional(),
+  // New safety deposit total (car still out, nothing recorded at the drop yet)
+  safetyDeposit: z.coerce.number().min(0, "The deposit can't be negative").max(1_000_000).optional(),
+  // The money difference the screen showed (preview) — 409 EDIT_DELTA_CHANGED when it moved
+  expectedDelta: z.coerce.number().optional(),
 });
 
 const editReturnSchema = z.object({
@@ -137,7 +183,7 @@ const editReturnSchema = z.object({
     .min(0, "End odometer can't be negative")
     .optional(),
   returnFuelLevel: FUEL_LEVEL.optional(),
-  // ₹ on the returned car's FASTag at the drop (cars with a FASTag only)
+  // ₹ on the returned car's FASTag at the drop (a car that counts as a FASTag car for the booking)
   returnFastagBalance: fastagBalanceField,
   // New photos, uploaded first via POST /employee/return/upload
   addPhotos: z.array(z.object({ fileId: z.string().trim().min(1) })).max(40).optional(),
@@ -153,10 +199,41 @@ const editReturnSchema = z.object({
         // New damage photos, uploaded first via POST /employee/damage/upload
         addPhotoIds: fileIdList(20).optional(),
         removeFileIds: fileIdList(20).optional(),
+        // What the customer pays for it (damage charged at drop, unreviewed)
+        amount: z.coerce.number().min(0, "Damage cost can't be negative").max(10_000_000).optional(),
       }),
     )
     .max(20)
     .optional(),
+  // ── Drop bill inputs (absent = as recorded) ──
+  // Extra km typed after a swap recorded without readings
+  manualExtraKm: z.coerce.number().int("Extra km must be a whole number").min(0).max(100000).nullable().optional(),
+  // Fuel line (₹; 0 = none)
+  fuelCharge: z.coerce.number().min(0, "Fuel charge can't be negative").max(1_000_000).optional(),
+  // Typed FASTag charge when the balances can't measure the usage (₹; 0 = none)
+  fastagAmount: z.coerce.number().min(0, "FASTag charge can't be negative").max(1_000_000).optional(),
+  fastagNotes: z.string().trim().max(200).nullable().optional(),
+  otherCharges: z
+    .array(z.object({ label: z.string().trim().min(1, "Name the charge").max(120), amount: z.coerce.number().min(0).max(1_000_000) }))
+    .max(20)
+    .optional(),
+  // Drop discount (null removes it)
+  discount: z
+    .object({
+      amount: z.coerce.number().positive("Discount must be more than ₹0"),
+      reason: z.string().trim().min(3, "Give a reason for the discount (at least 3 characters)"),
+    })
+    .nullable()
+    .optional(),
+  applyGrace: z.boolean().optional(),
+  // Late charge waived with a reason (null removes the waiver)
+  waiveLateCharge: z
+    .object({ reason: z.string().trim().min(3, "Give a reason for waiving the late charge (at least 3 characters)") })
+    .nullable()
+    .optional(),
+  safetyDepositHandling: z.enum(SAFETY_DEPOSIT_HANDLING).optional(),
+  // The money difference the screen showed (preview) — 409 EDIT_DELTA_CHANGED when it moved
+  expectedDelta: z.coerce.number().optional(),
 });
 
 /** A refusal raised while editing (mapped to its HTTP response). */
@@ -218,6 +295,7 @@ const summaryBookingSelect = {
   days: true,
   rentalPeriodType: true,
   customerId: true,
+  branchId: true,
   startOdometer: true,
   endOdometer: true,
   totalKmDriven: true,
@@ -228,6 +306,7 @@ const summaryBookingSelect = {
   dlDepositNote: true,
   pickupFastagBalance: true,
   returnFastagBalance: true,
+  frozenChargeConfig: true,
   fuelRecord: {
     select: {
       pickupFuelLevel: true,
@@ -365,19 +444,54 @@ const vehiclesOf = (booking: SummaryBooking) =>
     regNo: vehicle.regNo,
   }));
 
+/**
+ * Edits that moved money: the difference still to settle (pendingAdjustment —
+ * settle it with record-payment / record-refund on its session) and the ones
+ * settled (adjustments).
+ */
+async function adjustmentsOf(bookingId: number) {
+  const sessions = await prisma.paymentSession.findMany({
+    where: { bookingId, sessionType: PaymentSessionType.ADJUSTMENT, status: { not: PaymentSessionStatus.ABANDONED } },
+    orderBy: { createdAt: "asc" },
+    include: { entries: { where: { isVoided: false }, orderBy: { createdAt: "asc" } } },
+  });
+  const describe = (s: (typeof sessions)[number]) => {
+    const meta = ((s.metadata ?? {}) as { adjustment?: { operation?: string; lines?: Array<{ delta: string }> } }).adjustment;
+    return {
+      session: serializeSession(s),
+      operation: meta?.operation ?? null,
+      lines: (meta?.lines ?? []).filter((l) => !new Decimal(l.delta).isZero()),
+      createdAt: s.createdAt,
+      completedAt: s.completedAt,
+    };
+  };
+  const pending = sessions.find((s) => s.status !== PaymentSessionStatus.COMPLETED);
+  return {
+    pendingAdjustment: pending ? describe(pending) : null,
+    adjustments: sessions.filter((s) => s.status === PaymentSessionStatus.COMPLETED).map(describe),
+  };
+}
+
 // ── Summaries ─────────────────────────────────────────────────────────────────
 
 async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
   const state = pickupQueueState(booking);
   const completion = isDone(state) ? (await loadCompletionInfo("PICKUP", [booking])).get(booking.id) : undefined;
-  const [photos, captureFields, bill, fastagLegs] = await Promise.all([
+  const [photos, captureFields, bill, fastagLegs, adjustments] = await Promise.all([
     photosOf(booking.id, BookingPhotoType.PRE_DELIVERY).then(serializePhotos),
     captureFieldsFor(branchId, booking.items[0]?.vehicle.categoryId),
     sessionBill(booking.id, PaymentSessionType.PICKUP),
     getFastagLegs(booking.id, money(booking.returnFastagBalance)),
+    adjustmentsOf(booking.id),
   ]);
   const dlStatusEditable = STAFF_DL_EDITABLE_STATUSES.includes(booking.status);
   const returnDone = isDone(returnQueueState(booking));
+  const depositConfig = (booking.frozenChargeConfig ?? {}) as { safetyDepositEnabled?: boolean };
+  // The deposit is changed only while the car is out with nothing recorded at the drop
+  const depositEditable =
+    booking.status === BookingStatus.PICKED_UP &&
+    !booking.requiresManagerConfirmation &&
+    (!!depositConfig.safetyDepositEnabled || new Decimal(booking.safetyDeposit.toString()).gt(0));
   return {
     phase: "PICKUP" as const,
     state,
@@ -388,22 +502,33 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
     odometer: booking.startOdometer,
     fuelLevel: booking.fuelRecord?.pickupFuelLevel ?? null,
     dl: { status: booking.dlStatus, depositNote: booking.dlDepositNote },
-    // FASTag balance read at the handover — only for a car with a FASTag
+    // FASTag balance read at the handover — editable for any car; required when the
+    // car is marked as having a FASTag (vehicleHasFastag). hasFastag: it counts as a
+    // FASTag car for this booking (marked, or a balance recorded for it)
     fastag: {
       hasFastag: fastagLegs[0]?.hasFastag ?? false,
+      vehicleHasFastag: fastagLegs[0]?.vehicleHasFastag ?? false,
       balance: money(booking.pickupFastagBalance)?.toFixed(2) ?? null,
     },
     safetyDeposit: new Decimal(booking.safetyDeposit.toString()).toFixed(2),
     photos,
     captureFields,
     bill,
+    ...adjustments,
     edit: {
       allowed: isDone(state),
-      // The return is done and measured km from this reading: a change that moves the billed
-      // km charge is refused (an open drop bill just goes stale)
-      odometerCheckedAgainstCharges: returnDone && booking.endOdometer != null,
-      // The return is done: a balance that moves the FASTag charge is refused
-      fastagCheckedAgainstCharges: returnDone,
+      // Kept false for the first edit release's screens: changes that move money are
+      // now settled (collect / refund) instead of refused
+      odometerCheckedAgainstCharges: false,
+      fastagCheckedAgainstCharges: false,
+      // Corrected pickup readings re-price the completed drop's km / FASTag
+      readingsMoveDropCharges: returnDone,
+      depositEditable,
+      depositLockedReason: depositEditable
+        ? null
+        : returnDone
+          ? "The deposit was settled at the drop. Edit the return to change what was charged or refunded."
+          : null,
       dlStatusEditable,
       dlStatusLockedReason: dlStatusEditable
         ? null
@@ -415,7 +540,7 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
 async function buildReturnSummary(booking: SummaryBooking) {
   const state = returnQueueState(booking);
   const completion = isDone(state) ? (await loadCompletionInfo("RETURN", [booking])).get(booking.id) : undefined;
-  const [segments, photos, damageRows, sessionLines, fastagLegs] = await Promise.all([
+  const [segments, photos, damageRows, sessionLines, fastagLegs, adjustments, editState] = await Promise.all([
     getOdometerSegments(booking.id),
     photosOf(booking.id, BookingPhotoType.POST_RETURN).then(serializePhotos),
     prisma.damageReport.findMany({
@@ -437,6 +562,8 @@ async function buildReturnSummary(booking: SummaryBooking) {
     }),
     sessionBill(booking.id, PaymentSessionType.RETURN),
     getFastagLegs(booking.id, money(booking.returnFastagBalance)),
+    adjustmentsOf(booking.id),
+    isDone(state) ? loadDropEditState(booking.id) : Promise.resolve(null),
   ]);
   const returnedLeg = fastagLegs[fastagLegs.length - 1];
   const fastagUsage = calculateFastagUsage(fastagLegs);
@@ -511,9 +638,11 @@ async function buildReturnSummary(booking: SummaryBooking) {
       pickup: segments.currentStartFuelLevel ?? booking.fuelRecord?.pickupFuelLevel ?? null,
       return: booking.fuelRecord?.returnFuelLevel ?? null,
     },
-    // FASTag of the car handed back — only for a car with a FASTag
+    // FASTag of the car handed back — for a car that counts as a FASTag car for this
+    // booking (marked, or a balance recorded for it at pickup / the swap)
     fastag: {
       hasFastag: returnedLeg?.hasFastag ?? false,
+      vehicleHasFastag: returnedLeg?.vehicleHasFastag ?? false,
       // its balance when the customer got it (pickup, or the swap's replacement reading)
       startBalance: returnedLeg?.startBalance?.toFixed(2) ?? null,
       balance: money(booking.returnFastagBalance)?.toFixed(2) ?? null,
@@ -523,6 +652,28 @@ async function buildReturnSummary(booking: SummaryBooking) {
     photos,
     damages,
     bill,
+    ...adjustments,
+    // What the drop recorded, as the edit screens prefill it (full edit, client item 1)
+    editState: editState
+      ? {
+          flow: editState.flow,
+          inputs: serializeDropInputs(editState.inputs),
+          // The bill as charged now: the original plus earlier edits
+          billedLines: editState.billedLines.map((l) => ({
+            entryType: l.entryType,
+            referenceType: l.referenceType,
+            referenceId: l.referenceId,
+            label: l.label,
+            amount: l.amount.toFixed(2),
+          })),
+          damages: editState.damages.map((d) => ({
+            publicId: d.publicId,
+            label: d.label,
+            amount: d.amount.toFixed(2),
+            editable: d.editable,
+          })),
+        }
+      : null,
     edit: {
       allowed: isDone(state),
       // The return fuel is kept with the pickup's fuel reading — none, nothing to edit
@@ -617,58 +768,9 @@ async function resolveNewFiles(
   return map;
 }
 
-/**
- * The free km and rate the drop billed with (never today's pricing): the
- * settled drop bill's km, else the legacy drop's free km and extra-km charge row.
- */
-async function loadBilledKmAllowance(tx: Prisma.TransactionClient, bookingId: number): Promise<BilledKmAllowance> {
-  const [booking, bill, legacyKm] = await Promise.all([
-    tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { freeKmLimit: true, extraKmCharged: true } }),
-    tx.paymentSession.findFirst({
-      where: { bookingId, sessionType: PaymentSessionType.RETURN, status: PaymentSessionStatus.COMPLETED },
-      orderBy: { completedAt: "desc" },
-      select: { metadata: true },
-    }),
-    tx.chargeEntry.findUnique({
-      where: { bookingId_moduleKey: { bookingId, moduleKey: LEGACY_EXTRA_KM_KEY } },
-      select: { unitRate: true },
-    }),
-  ]);
-  return billedKmAllowance({
-    billKm: (bill?.metadata as { km?: unknown } | null)?.km ?? null,
-    freeKmLimit: booking.freeKmLimit,
-    extraKmCharged: booking.extraKmCharged,
-    legacyExtraKmRate: legacyKm?.unitRate ?? null,
-  });
-}
-
 const money = (v: { toString(): string } | null | undefined) => (v == null ? null : new Decimal(v.toString()));
 const sameMoney = (a: { toString(): string } | null | undefined, b: number | undefined) =>
   b === undefined || (a != null && new Decimal(a.toString()).eq(b));
-
-/**
- * A fuel charge worked out from the levels: the settled drop bill's FUEL line
- * (prefilled from the bars short) or the charge engine's FUEL_DEFICIT row.
- */
-async function hasLevelBasedFuelCharge(tx: Prisma.TransactionClient, bookingId: number) {
-  const [row, line] = await Promise.all([
-    tx.chargeEntry.findFirst({
-      where: { bookingId, chargeType: ChargeType.FUEL_DEFICIT, finalAmount: { gt: 0 } },
-      select: { id: true },
-    }),
-    tx.ledgerEntry.findFirst({
-      where: {
-        bookingId,
-        entryType: LedgerEntryType.FUEL,
-        isVoided: false,
-        amount: { gt: 0 },
-        session: { sessionType: PaymentSessionType.RETURN, status: PaymentSessionStatus.COMPLETED },
-      },
-      select: { id: true },
-    }),
-  ]);
-  return row != null || line != null;
-}
 
 async function logEdit(
   req: Request,
@@ -676,8 +778,18 @@ async function logEdit(
   phase: "PICKUP" | "RETURN",
   bookingPublicId: string,
   diff: { before: Record<string, unknown>; after: Record<string, unknown>; fields: string[] },
+  plan?: AdjustmentPlan,
+  session?: { publicId: string; status: string } | null,
 ) {
   const what = phase === "PICKUP" ? "Pickup" : "Return";
+  // The money difference: per changed line old → new, and how it is settled
+  const moneyDetails = plan
+    ? {
+        ...serializeAdjustmentPlan(plan),
+        lines: plan.lines.filter((l) => !l.delta.isZero()).map(serializeDeltaLine),
+        adjustmentSession: session ? { publicId: session.publicId, status: session.status } : null,
+      }
+    : null;
   await auditService.log({
     actorId: actor.id,
     actorName: actor.name,
@@ -693,18 +805,394 @@ async function logEdit(
     before: diff.before,
     after: diff.after,
     changedFields: diff.fields,
+    ...(moneyDetails && { metadata: { money: moneyDetails } }),
   });
   await staffActivityService.logFromRequest(req, {
     actionType: StaffActionType.UPDATED,
     entityType: StaffEntityType.BOOKING,
     entityRef: bookingPublicId,
     description: `${what} details edited for booking ${bookingPublicId} (${diff.fields.join(", ")})`,
-    metadata: { before: diff.before, after: diff.after, changedFields: diff.fields },
+    metadata: { before: diff.before, after: diff.after, changedFields: diff.fields, ...(moneyDetails && { money: moneyDetails }) },
   });
 }
 
 const photoList = (photos: Array<{ fileId: string; label?: string | null }>) =>
   photos.map((p) => (p.label ? { fileId: p.fileId, label: p.label } : { fileId: p.fileId }));
+
+// ── Money of an edit ──────────────────────────────────────────────────────────
+
+const ZERO = new Decimal(0);
+
+/** The booking as the edit reads it inside its transaction. */
+function loadBookingTx(tx: TxClient, bookingId: number) {
+  return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: summaryBookingSelect });
+}
+
+/**
+ * A new safety deposit amount, or null when it doesn't change. Only while the
+ * car is out with nothing recorded at the drop yet — once the drop credited or
+ * refunded the deposit, what was charged is edited on the return.
+ */
+async function depositChangeFor(booking: SummaryBooking, sent: number | undefined, db: TxClient): Promise<Decimal | null> {
+  if (sent === undefined) return null;
+  const next = new Decimal(sent).toDecimalPlaces(2);
+  const current = new Decimal(booking.safetyDeposit.toString());
+  if (next.eq(current)) return null;
+  if (booking.status !== BookingStatus.PICKED_UP || booking.requiresManagerConfirmation) {
+    throw new EditRejection(StatusCode.CONFLICT, {
+      code: "DEPOSIT_LOCKED",
+      message: "The safety deposit was settled at the drop. Edit the return to change what was charged or refunded.",
+      field: "safetyDeposit",
+    });
+  }
+  const config = (booking.frozenChargeConfig ?? {}) as { safetyDepositEnabled?: boolean };
+  if (!config.safetyDepositEnabled && current.isZero()) {
+    throw new EditRejection(StatusCode.BAD_REQUEST, {
+      code: "DEPOSIT_DISABLED",
+      message: "Safety deposits aren't enabled for this booking.",
+      field: "safetyDeposit",
+    });
+  }
+  // An open drop bill already credits the deposit it was computed with
+  const openDrop = await db.paymentSession.findFirst({
+    where: {
+      bookingId: booking.id,
+      sessionType: PaymentSessionType.RETURN,
+      status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT, PaymentSessionStatus.PAYMENT_INITIATED] },
+    },
+    select: { id: true },
+  });
+  if (openDrop) {
+    throw new EditRejection(StatusCode.CONFLICT, {
+      code: "DROP_BILL_OPEN",
+      message: "A drop bill is open for this booking. Finish the drop, then edit it to change the deposit's outcome.",
+      field: "safetyDeposit",
+    });
+  }
+  return next;
+}
+
+/**
+ * Money a pickup edit moves: a new safety deposit (car still out), or — once
+ * the return is done — the completed drop's bill worked out again with the
+ * corrected pickup odometer / FASTag balance (the fuel line is an amount staff
+ * typed at the drop and stays as it is).
+ */
+async function planPickupMoney(
+  booking: SummaryBooking,
+  m: {
+    odoChange: number | null;
+    fastagChange: number | null;
+    depositChange: Decimal | null;
+    superseded: SupersededAdjustment | null;
+  },
+  db: TxClient,
+) {
+  const lines: AdjustmentDeltaLine[] = [];
+  // From the deposit as last settled (an unsettled difference being replaced already set it on the booking)
+  const current = new Decimal(booking.safetyDeposit.toString());
+  const depositLine = depositAdjustmentLine({
+    current,
+    pendingDelta: m.superseded?.depositDelta ?? ZERO,
+    target: m.depositChange ?? current,
+  });
+  if (depositLine) lines.push(depositLine);
+  // Drop lines a replaced difference corrected are worked out again too
+  const force = m.superseded?.dropCategories ?? [];
+  let drop: { state: DropEditState; result: DropEditResult } | null = null;
+  if (isDone(returnQueueState(booking)) && (m.odoChange != null || m.fastagChange != null || force.length > 0)) {
+    const state = await loadDropEditState(booking.id, db);
+    const result = await computeDropEdit(
+      booking.id,
+      state,
+      state.inputs,
+      {
+        ...(m.odoChange != null && { pickupOdometer: m.odoChange }),
+        ...(m.fastagChange != null && { pickupFastagBalance: new Decimal(m.fastagChange) }),
+        force,
+      },
+      db,
+    );
+    drop = { state, result };
+    lines.push(...result.diff.lines);
+  }
+  const plan: AdjustmentPlan = {
+    lines,
+    delta: lines.reduce((s, l) => s.plus(l.delta), ZERO),
+    settledByBranchManager: drop?.state.flow === "LEGACY",
+    depositIncrease: lines.some((l) => l.entryType === "DEPOSIT" && l.delta.gt(0)),
+  };
+  return { plan, drop };
+}
+
+/** The drop's inputs with what the edit sent (absent = as recorded). */
+function mergeDropInputs(state: DropEditState, input: z.infer<typeof editReturnSchema>): DropEditInputs {
+  const s = state.inputs;
+  const decOr = (v: number | undefined, fallback: Decimal) => (v === undefined ? fallback : new Decimal(v).toDecimalPlaces(2));
+  const damageAmounts = { ...s.damageAmounts };
+  for (const d of input.damages ?? []) {
+    if (d.amount === undefined) continue;
+    const damage = state.damages.find((x) => x.publicId === d.publicId);
+    if (!damage) continue;
+    const amount = new Decimal(d.amount).toDecimalPlaces(2);
+    if (amount.eq(damage.amount)) continue;
+    if (!damage.editable) {
+      throw new EditRejection(StatusCode.CONFLICT, {
+        code: "DAMAGE_REVIEWED",
+        message: "This damage was already reviewed by the branch manager — ask them to change it.",
+      });
+    }
+    damageAmounts[d.publicId] = amount;
+  }
+  return {
+    endOdometer: input.endOdometer ?? s.endOdometer,
+    manualExtraKm: input.manualExtraKm !== undefined ? input.manualExtraKm : s.manualExtraKm,
+    returnFuelLevel: input.returnFuelLevel ?? s.returnFuelLevel,
+    returnFastagBalance:
+      input.returnFastagBalance !== undefined ? new Decimal(input.returnFastagBalance) : s.returnFastagBalance,
+    fuelCharge: decOr(input.fuelCharge, s.fuelCharge),
+    fastagAmount: decOr(input.fastagAmount, s.fastagAmount),
+    fastagNotes: input.fastagNotes !== undefined ? input.fastagNotes?.trim() || null : s.fastagNotes,
+    otherCharges: input.otherCharges
+      ? input.otherCharges
+          .filter((o) => o.amount > 0)
+          .map((o) => ({ label: o.label.trim(), amount: new Decimal(o.amount).toDecimalPlaces(2) }))
+      : s.otherCharges,
+    discount:
+      input.discount !== undefined
+        ? input.discount
+          ? { amount: new Decimal(input.discount.amount).toDecimalPlaces(2), reason: input.discount.reason.trim() }
+          : null
+        : s.discount,
+    applyGrace: input.applyGrace ?? s.applyGrace,
+    waiveReason:
+      input.waiveLateCharge !== undefined ? input.waiveLateCharge?.reason.trim() ?? null : s.waiveReason,
+    depositHandling: input.safetyDepositHandling ?? s.depositHandling,
+    damageAmounts,
+  };
+}
+
+/** Money of a return edit: the drop's bill with the merged inputs and its difference. */
+async function planReturnMoney(
+  booking: SummaryBooking,
+  input: z.infer<typeof editReturnSchema>,
+  db: TxClient,
+  superseded: SupersededAdjustment | null,
+) {
+  const state = await loadDropEditState(booking.id, db);
+  const inputs = mergeDropInputs(state, input);
+  if (inputs.returnFastagBalance && !(await getFastagLegs(booking.id, null, db)).at(-1)?.hasFastag) {
+    if (!state.inputs.returnFastagBalance?.eq(inputs.returnFastagBalance)) {
+      throw new EditRejection(StatusCode.BAD_REQUEST, {
+        code: "NO_FASTAG",
+        message: "This car has no FASTag, so there's no balance to record.",
+        field: "returnFastagBalance",
+      });
+    }
+  }
+  // Drop lines a replaced difference corrected are worked out again too
+  const result = await computeDropEdit(booking.id, state, inputs, { force: superseded?.dropCategories ?? [] }, db);
+  const plan: AdjustmentPlan = {
+    lines: result.diff.lines,
+    delta: result.diff.delta,
+    settledByBranchManager: state.flow === "LEGACY",
+    depositIncrease: false,
+  };
+  return { state, inputs, result, plan };
+}
+
+/**
+ * A lower bill takes the part of the booking on counter credit off that credit
+ * first — only the rest is refunded (a legacy drop's difference is the branch
+ * manager's, in Settlements).
+ */
+async function withCreditOffset(plan: AdjustmentPlan, bookingId: number, part: AdjustmentPart, tx: TxClient): Promise<AdjustmentPlan> {
+  if (plan.settledByBranchManager) return plan;
+  const line = await creditOffsetLine(bookingId, plan.delta, part, tx);
+  return line ? { ...plan, lines: [...plan.lines, line], delta: plan.delta.plus(line.delta) } : plan;
+}
+
+/**
+ * The money of a pickup edit, under the booking lock: an edit that changes
+ * money replaces the unsettled difference of an earlier one (abandoned first,
+ * so the new difference covers everything since the last settled state).
+ */
+async function pickupMoneyTx(
+  tx: TxClient,
+  locked: SummaryBooking,
+  input: z.infer<typeof editPickupSchema>,
+  changes: { odoChange: number | null; fastagChange: number | null },
+) {
+  const depositChange = await depositChangeFor(locked, input.safetyDeposit, tx);
+  const touchesMoney =
+    depositChange != null ||
+    ((changes.odoChange != null || changes.fastagChange != null) && isDone(returnQueueState(locked)));
+  const superseded = touchesMoney ? await pendingToSupersede(locked.id, tx) : null;
+  if (superseded) await abandonSuperseded(tx, superseded);
+  const { plan, drop } = await planPickupMoney(locked, { ...changes, depositChange, superseded }, tx);
+  return { plan: await withCreditOffset(plan, locked.id, "PICKUP", tx), drop, depositChange, superseded };
+}
+
+/** The money of a return edit, under the booking lock (see pickupMoneyTx). */
+async function returnMoneyTx(tx: TxClient, locked: SummaryBooking, input: z.infer<typeof editReturnSchema>) {
+  const before = await loadDropEditState(locked.id, tx);
+  const merged = mergeDropInputs(before, input);
+  // A legacy drop's deposit refunded in Settlements already: how it was handled stays
+  if (before.flow === "LEGACY" && merged.depositHandling !== before.inputs.depositHandling) {
+    const owed = await computeBookingOwed(locked.id, tx);
+    if (owed.legacyDepositRefunded.gt(0)) {
+      throw new EditRejection(StatusCode.CONFLICT, {
+        code: "DEPOSIT_REFUND_RECORDED",
+        message: "The branch manager already refunded the safety deposit in Settlements, so how it was handled at the drop can't be changed now.",
+        field: "safetyDepositHandling",
+      });
+    }
+  }
+  const touchesMoney = changedDropCategories(before.inputs, merged).size > 0;
+  const superseded = touchesMoney ? await pendingToSupersede(locked.id, tx) : null;
+  if (superseded) await abandonSuperseded(tx, superseded);
+  const planned = await planReturnMoney(locked, input, tx, superseded);
+  return { ...planned, plan: await withCreditOffset(planned.plan, locked.id, "DROP", tx), superseded };
+}
+
+/** Thrown to roll a preview back once it has its answer. */
+class PreviewRollback<T> extends Error {
+  constructor(readonly value: T) {
+    super("Preview rolled back");
+    this.name = "PreviewRollback";
+  }
+}
+
+/**
+ * Works a preview out exactly as the save would (same lock, an unsettled
+ * difference it replaces abandoned) and rolls everything back.
+ */
+async function previewInRollback<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        throw new PreviewRollback(await fn(tx as any));
+      },
+      { timeout: 30000 },
+    );
+  } catch (error) {
+    if (error instanceof PreviewRollback) return error.value as T;
+    throw error;
+  }
+  throw new Error("Preview didn't produce a result");
+}
+
+/** Drop details for the screen next to the difference (DROP_BILL: the edited bill). */
+function dropPreview(state: DropEditState, inputs: DropEditInputs, result: DropEditResult) {
+  const charges = result.lines.reduce((s, l) => s.plus(l.amount), ZERO);
+  return {
+    flow: state.flow,
+    bill: result.bill,
+    late: result.late,
+    fastag: result.fastag,
+    km: result.km,
+    charges: charges.toFixed(2),
+    depositHandling: inputs.depositHandling,
+  };
+}
+
+/** Invoice after an edit's money changed (fire-and-forget, like the drop itself). */
+function refreshInvoiceAfterEdit(bookingId: number, flow: DropFlow | null, session: { status: string } | null) {
+  if (flow === "LEGACY") {
+    syncLegacyReturnInvoice(bookingId).catch((err) => console.error("[operation-edit] Legacy invoice sync failed:", err));
+    return;
+  }
+  // A drop-bill difference still to be settled is invoiced when it is (record-payment / refund)
+  if (flow === "DROP_BILL" && session?.status === PaymentSessionStatus.COMPLETED) {
+    getBookingCreditSummary(bookingId)
+      .then((credit) => finalizeInvoice(bookingId, { markPaid: !(credit?.pending.gt(0) ?? false) }))
+      .catch((err) => console.error("[operation-edit] Invoice finalization failed:", err));
+  }
+}
+
+function sendMoneyError(res: Response, error: unknown, where: string) {
+  if (error instanceof DropEditError) return res.status(error.status).json(error.body);
+  if (
+    error instanceof AdjustmentPendingError ||
+    error instanceof AdjustmentChangedError ||
+    error instanceof AdjustmentPaymentStartedError ||
+    error instanceof EditConfirmationRequiredError
+  ) {
+    return res.status(error.status).json(error.toJSON());
+  }
+  return sendError(res, error, where);
+}
+
+// ── POST /employee/pickup/:bookingId/edit/preview ─────────────────────────────
+
+/** What a pickup edit would do to the money — nothing is saved. */
+export const PreviewPickupEdit = async (req: Request, res: Response) => {
+  try {
+    const parsed = editPickupSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(StatusCode.BAD_REQUEST).json(validationBody(parsed.error));
+    const input = parsed.data;
+    const booking = await loadBooking(req.params.bookingId!, req.branch_Id);
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    if (!isDone(pickupQueueState(booking))) return res.status(StatusCode.CONFLICT).json(NOT_COMPLETED.PICKUP);
+
+    const odoChange = input.odo !== undefined && input.odo !== booking.startOdometer ? input.odo : null;
+    const fastagChange = sameMoney(booking.pickupFastagBalance, input.pickupFastagBalance) ? null : input.pickupFastagBalance!;
+    if (odoChange != null) {
+      const problem = pickupOdometerProblem(await getOdometerSegments(booking.id), odoChange, booking.endOdometer);
+      if (problem) {
+        throw new EditRejection(StatusCode.BAD_REQUEST, { code: "PICKUP_ODOMETER_TOO_HIGH", message: problem, field: "odo" });
+      }
+    }
+    const preview = await previewInRollback(async (tx) => {
+      await lockBookingForDrop(tx as any, booking.id);
+      const locked = await loadBookingTx(tx, booking.id);
+      const { plan, drop, superseded } = await pickupMoneyTx(tx, locked, input, { odoChange, fastagChange });
+      return {
+        adjustment: serializeAdjustmentPlan(plan),
+        drop: drop ? dropPreview(drop.state, drop.state.inputs, drop.result) : null,
+        supersedes: superseded ? serializeSession(superseded.session) : null,
+      };
+    });
+    const pending = await findPendingAdjustment(booking.id);
+    return res.status(StatusCode.OK).json({
+      message: "Pickup edit previewed",
+      data: { ...preview, pendingAdjustment: pending ? serializeSession(pending) : null },
+    });
+  } catch (error) {
+    return sendMoneyError(res, error, "PreviewPickupEdit");
+  }
+};
+
+// ── POST /employee/return/:bookingId/edit/preview ─────────────────────────────
+
+/** What a return edit would do to the bill and the money — nothing is saved. */
+export const PreviewReturnEdit = async (req: Request, res: Response) => {
+  try {
+    const parsed = editReturnSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(StatusCode.BAD_REQUEST).json(validationBody(parsed.error));
+    const booking = await loadBooking(req.params.bookingId!, req.branch_Id);
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    if (!isDone(returnQueueState(booking))) return res.status(StatusCode.CONFLICT).json(NOT_COMPLETED.RETURN);
+
+    const preview = await previewInRollback(async (tx) => {
+      await lockBookingForDrop(tx as any, booking.id);
+      const locked = await loadBookingTx(tx, booking.id);
+      const { state, inputs, result, plan, superseded } = await returnMoneyTx(tx, locked, parsed.data);
+      return {
+        adjustment: serializeAdjustmentPlan(plan),
+        drop: dropPreview(state, inputs, result),
+        supersedes: superseded ? serializeSession(superseded.session) : null,
+      };
+    });
+    const pending = await findPendingAdjustment(booking.id);
+    return res.status(StatusCode.OK).json({
+      message: "Return edit previewed",
+      data: { ...preview, pendingAdjustment: pending ? serializeSession(pending) : null },
+    });
+  } catch (error) {
+    return sendMoneyError(res, error, "PreviewReturnEdit");
+  }
+};
 
 // ── PATCH /employee/pickup/:bookingId ─────────────────────────────────────────
 
@@ -733,19 +1221,12 @@ export const EditPickup = async (req: Request, res: Response) => {
     const currentFuel = booking.fuelRecord?.pickupFuelLevel ?? null;
     const fuelChange =
       input.pickupFuelLevel !== undefined && input.pickupFuelLevel !== currentFuel ? input.pickupFuelLevel : null;
+    // Accepted for any car: a car not marked as having a FASTag counts as one for
+    // this booking once its balance is read (as at pickup)
     const fastagChange = sameMoney(booking.pickupFastagBalance, input.pickupFastagBalance)
       ? null
       : input.pickupFastagBalance!;
-    if (fastagChange != null) {
-      const legs = await getFastagLegs(booking.id, null);
-      if (!legs[0]?.hasFastag) {
-        throw new EditRejection(StatusCode.BAD_REQUEST, {
-          code: "NO_FASTAG",
-          message: "This car has no FASTag, so there's no balance to record.",
-          field: "pickupFastagBalance",
-        });
-      }
-    }
+    const depositChange = await depositChangeFor(booking, input.safetyDeposit, prisma);
     const dlStatusChange =
       input.dlStatus !== undefined && input.dlStatus !== booking.dlStatus
         ? (input.dlStatus as "COLLECTED" | "NOT_COLLECTED")
@@ -806,59 +1287,51 @@ export const EditPickup = async (req: Request, res: Response) => {
     }
     const photosChange = toRemove.length > 0 || toAdd.length > 0;
 
-    if (odoChange == null && !fuelChange && fastagChange == null && !dlStatusChange && !dlNumber && !photosChange) {
+    if (
+      odoChange == null && !fuelChange && fastagChange == null && !depositChange &&
+      !dlStatusChange && !dlNumber && !photosChange
+    ) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
         changed: [],
         data: await buildPickupSummary(booking, branchId),
+        adjustment: null,
       });
     }
 
     const completion = (await loadCompletionInfo("PICKUP", [booking])).get(booking.id);
     const vehicleIds = booking.items.map((i) => i.vehicle.id);
 
-    await prisma.$transaction(
+    const outcome = await prisma.$transaction(
       async (tx) => {
         // Serialised with the drop bill, its payments and other edits of this booking
         await lockBookingForDrop(tx as any, booking.id);
-        const locked = await tx.booking.findUniqueOrThrow({
-          where: { id: booking.id },
-          select: {
-            status: true,
-            requiresManagerConfirmation: true,
-            startOdometer: true,
-            endOdometer: true,
-            licenseCollectedAt: true,
-            returnFastagBalance: true,
-          },
-        });
+        const locked = await loadBookingTx(tx as any, booking.id);
         if (!isDone(pickupQueueState(locked))) throw new EditRejection(StatusCode.CONFLICT, NOT_COMPLETED.PICKUP);
 
         const update: Prisma.BookingUpdateInput = {};
-
         if (odoChange != null) {
           const segments = await getOdometerSegments(booking.id, tx as any);
           const problem = pickupOdometerProblem(segments, odoChange, locked.endOdometer);
           if (problem) {
             throw new EditRejection(StatusCode.BAD_REQUEST, { code: "PICKUP_ODOMETER_TOO_HIGH", message: problem, field: "odo" });
           }
-          // Return done and km measured: only a change that leaves the billed km charge alone.
-          // Before that, an open drop bill is marked stale by the change (odometerBillStale).
-          if (isDone(returnQueueState(locked)) && locked.endOdometer != null) {
-            const allowance = await loadBilledKmAllowance(tx, booking.id);
-            const after = withPickupOdometer(segments, odoChange);
-            const check = { segmentsBefore: segments, segmentsAfter: after, endBefore: locked.endOdometer, endAfter: locked.endOdometer };
-            if (kmEditChangesCharges(check, (s, end) => billedKmCharge(allowance, s, end).charge)) {
-              throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "odo" });
-            }
-            const km = billedKmCharge(allowance, after, locked.endOdometer);
-            if (km.measured) {
-              update.totalKmDriven = km.kmDriven;
-              update.extraKmCharged = km.extraKm;
-            }
-          }
+        }
+
+        // ── Money: re-worked under the lock (replacing an unsettled difference),
+        // refused when it moved since the preview ──
+        const { plan, drop, depositChange: lockedDeposit, superseded } = await pickupMoneyTx(
+          tx as any,
+          locked,
+          input,
+          { odoChange, fastagChange },
+        );
+        assertExpectedDelta(input.expectedDelta, plan.delta, plan.lines.some((l) => !l.delta.isZero()));
+
+        if (odoChange != null) {
           update.startOdometer = odoChange;
           // The car still out on this rental keeps the corrected reading as its last known odometer
+          const segments = await getOdometerSegments(booking.id, tx as any);
           if (locked.status !== BookingStatus.RETURNED && segments.swapCount === 0 && locked.startOdometer != null) {
             await tx.vehicle.updateMany({
               where: { id: { in: vehicleIds }, odo: locked.startOdometer },
@@ -866,25 +1339,13 @@ export const EditPickup = async (req: Request, res: Response) => {
             });
           }
         }
+        // The completed drop's km, worked out again from the corrected reading
+        if (drop?.result.km && drop.result.changed.has("KM")) {
+          update.totalKmDriven = drop.result.km.kmDriven;
+          update.extraKmCharged = drop.result.km.extraKm;
+        }
 
         if (fuelChange) {
-          const record = await tx.fuelRecord.findUnique({
-            where: { bookingId: booking.id },
-            select: { returnFuelLevel: true },
-          });
-          // After a swap that recorded the replacement's fuel, the drop measured from that instead
-          const dropStartFuel = (await getOdometerSegments(booking.id, tx as any)).currentStartFuelLevel;
-          if (
-            record?.returnFuelLevel &&
-            dropStartFuel == null &&
-            fuelEditChangesCharges({
-              levelBasedFuelCharge: await hasLevelBasedFuelCharge(tx, booking.id),
-              before: { pickupLevel: currentFuel, returnLevel: record.returnFuelLevel },
-              after: { pickupLevel: fuelChange, returnLevel: record.returnFuelLevel },
-            })
-          ) {
-            throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "pickupFuelLevel" });
-          }
           // Branches without the fuel module kept no per-booking reading: it is recorded now
           await tx.fuelRecord.upsert({
             where: { bookingId: booking.id },
@@ -898,24 +1359,30 @@ export const EditPickup = async (req: Request, res: Response) => {
             update: { pickupFuelLevel: fuelChange },
           });
         }
-
-        if (fastagChange != null) {
-          // Return done: the drop worked the FASTag charge out from this reading. Before
-          // that, an open drop bill is marked stale by the change (fastagBillStale).
-          if (isDone(returnQueueState(locked))) {
-            const legs = await getFastagLegs(booking.id, money(locked.returnFastagBalance), tx as any);
-            const corrected = legs.map((leg, i) => (i === 0 ? { ...leg, startBalance: new Decimal(fastagChange) } : leg));
-            if (fastagEditChangesCharges(calculateFastagUsage(legs), calculateFastagUsage(corrected))) {
-              throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "pickupFastagBalance" });
-            }
-          }
-          update.pickupFastagBalance = fastagChange.toFixed(2);
-        }
-
+        if (fastagChange != null) update.pickupFastagBalance = fastagChange.toFixed(2);
         if (dlStatusChange) {
           Object.assign(update, dlStatusUpdateData({ dlStatus: dlStatusChange, dlDepositNote: null }, actor.id, locked));
         }
         if (dlNumber) await savePickupDlNumber(dlNumber, tx);
+
+        if (lockedDeposit) {
+          update.safetyDeposit = lockedDeposit.toFixed(2);
+          await tx.safetyDepositRequest.upsert({
+            where: { bookingId: booking.id },
+            create: {
+              publicId: createID(),
+              bookingId: booking.id,
+              requestedAmount: lockedDeposit.toFixed(2),
+              reason: "Set when the pickup was edited",
+              status: "APPROVED",
+              requestedById: actor.id,
+              approvedById: actor.id,
+              approvedAmount: lockedDeposit.toFixed(2),
+              approvedAt: new Date(),
+            },
+            update: { requestedAmount: lockedDeposit.toFixed(2), approvedAmount: lockedDeposit.toFixed(2) },
+          });
+        }
 
         if (toRemove.length > 0) {
           await tx.bookingPhoto.deleteMany({
@@ -933,19 +1400,38 @@ export const EditPickup = async (req: Request, res: Response) => {
             })),
           });
         }
-
         if (Object.keys(update).length > 0) {
           await tx.booking.update({ where: { id: booking.id }, data: update });
         }
+
+        // The difference: a legacy drop's return charges go back to the branch manager's
+        // Settlements; everything else is settled on an ADJUSTMENT session
+        let session = null;
+        if (drop?.state.flow === "LEGACY") {
+          await writeLegacyDropRows(tx as any, booking.id, drop.result, actor.id);
+        } else {
+          session = await createAdjustmentSession(tx as any, {
+            booking,
+            actor: { id: actor.id, role: String(actor.role) },
+            operation: "PICKUP",
+            lines: plan.lines,
+            metadata: { editedById: actor.id, ...(superseded && { replaces: superseded.session.publicId }) },
+          });
+        }
+        if (superseded) await linkSuperseded(tx as any, superseded, session?.publicId ?? null);
+        return { plan, flow: drop?.state.flow ?? null, session };
       },
-      { timeout: 20000 },
+      { timeout: 30000 },
     );
+
+    refreshInvoiceAfterEdit(booking.id, outcome.flow, outcome.session);
 
     const diff = changedFields(
       {
         odometer: booking.startOdometer,
         fuelLevel: currentFuel,
         fastagBalance: money(booking.pickupFastagBalance)?.toFixed(2) ?? null,
+        safetyDeposit: new Decimal(booking.safetyDeposit.toString()).toFixed(2),
         dlStatus: booking.dlStatus,
         drivingLicenceNumber: dlNumber?.previous ?? null,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel }))),
@@ -954,6 +1440,7 @@ export const EditPickup = async (req: Request, res: Response) => {
         odometer: odoChange ?? undefined,
         fuelLevel: fuelChange ?? undefined,
         fastagBalance: fastagChange != null ? fastagChange.toFixed(2) : undefined,
+        safetyDeposit: depositChange ? depositChange.toFixed(2) : undefined,
         dlStatus: dlStatusChange ?? undefined,
         drivingLicenceNumber: dlNumber?.drivingLicenceNumber,
         photos: photosChange
@@ -964,7 +1451,7 @@ export const EditPickup = async (req: Request, res: Response) => {
           : undefined,
       },
     );
-    await logEdit(req, actor, "PICKUP", booking.publicId, diff);
+    await logEdit(req, actor, "PICKUP", booking.publicId, diff, outcome.plan, outcome.session);
     if (dlNumber) await logPickupDlNumber(req, dlNumber, booking.publicId);
     if (dlStatusChange) await invalidateDlStatusListCaches(branchId);
 
@@ -973,9 +1460,13 @@ export const EditPickup = async (req: Request, res: Response) => {
       message: "Pickup updated",
       changed: diff.fields,
       data: await buildPickupSummary(fresh!, branchId),
+      adjustment: {
+        ...serializeAdjustmentPlan(outcome.plan),
+        session: outcome.session ? serializeSession(outcome.session) : null,
+      },
     });
   } catch (error) {
-    return sendError(res, error, "EditPickup");
+    return sendMoneyError(res, error, "EditPickup");
   }
 };
 
@@ -996,25 +1487,10 @@ export const EditReturn = async (req: Request, res: Response) => {
       return res.status(StatusCode.CONFLICT).json(NOT_COMPLETED.RETURN);
     }
 
-    // ── What changes ──
-    const endChange =
-      input.endOdometer !== undefined && input.endOdometer !== booking.endOdometer ? input.endOdometer : null;
+    // ── Readings that aren't bill inputs ──
     const currentFuel = booking.fuelRecord?.returnFuelLevel ?? null;
     const fuelChange =
       input.returnFuelLevel !== undefined && input.returnFuelLevel !== currentFuel ? input.returnFuelLevel : null;
-    const fastagChange = sameMoney(booking.returnFastagBalance, input.returnFastagBalance)
-      ? null
-      : input.returnFastagBalance!;
-    if (fastagChange != null) {
-      const legs = await getFastagLegs(booking.id, null);
-      if (!legs[legs.length - 1]?.hasFastag) {
-        throw new EditRejection(StatusCode.BAD_REQUEST, {
-          code: "NO_FASTAG",
-          message: "This car has no FASTag, so there's no balance to record.",
-          field: "returnFastagBalance",
-        });
-      }
-    }
     if (fuelChange && !booking.fuelRecord) {
       throw new EditRejection(StatusCode.BAD_REQUEST, {
         code: "FUEL_NOT_RECORDED",
@@ -1036,7 +1512,7 @@ export const EditReturn = async (req: Request, res: Response) => {
     const keptIds = new Set(kept.map((p) => p.file.publicId));
     const toAdd = [...new Set((input.addPhotos ?? []).map((p) => p.fileId))].filter((id) => !keptIds.has(id));
 
-    // Drop damage: notes and photos only
+    // Drop damage: notes and photos (amounts are bill inputs, below)
     const damageInputs = input.damages ?? [];
     const reports = damageInputs.length
       ? await prisma.damageReport.findMany({
@@ -1047,6 +1523,9 @@ export const EditReturn = async (req: Request, res: Response) => {
             severity: true,
             notes: true,
             status: true,
+            chargedAtDrop: true,
+            estimatedCost: true,
+            finalCost: true,
             photos: {
               where: { type: BookingPhotoType.DAMAGE },
               orderBy: { createdAt: "asc" },
@@ -1079,7 +1558,15 @@ export const EditReturn = async (req: Request, res: Response) => {
       const keptPhotos = report.photos.filter((p) => !removeDamageIds.includes(p.file.publicId));
       const keptDamageIds = new Set(keptPhotos.map((p) => p.file.publicId));
       const addedIds = [...new Set(d.addPhotoIds ?? [])].filter((id) => !keptDamageIds.has(id));
-      const changes = area != null || description != null || severity != null || removedPhotos.length > 0 || addedIds.length > 0;
+      // The cost of a damage the manager charges in the review (not on a drop bill):
+      // what the review starts from — no money moves here. A drop-billed damage's
+      // cost is a bill input (worked out below).
+      const reviewCost =
+        !report.chargedAtDrop && d.amount !== undefined && !dropDamageAmount(report).eq(d.amount)
+          ? new Decimal(d.amount).toDecimalPlaces(2)
+          : null;
+      const changes =
+        area != null || description != null || severity != null || removedPhotos.length > 0 || addedIds.length > 0 || reviewCost != null;
       if (changes && report.status !== DamageReportStatus.PENDING) {
         throw new EditRejection(StatusCode.CONFLICT, {
           code: "DAMAGE_REVIEWED",
@@ -1092,7 +1579,7 @@ export const EditReturn = async (req: Request, res: Response) => {
           message: "Keep at least one photo of each damage.",
         });
       }
-      return { report, notes, area, description, severity, removedPhotos, keptPhotos, addedIds, changes };
+      return { report, notes, area, description, severity, removedPhotos, keptPhotos, addedIds, reviewCost, changes };
     });
     const changedDamages = damagePlans.filter((p) => p.changes);
 
@@ -1108,70 +1595,50 @@ export const EditReturn = async (req: Request, res: Response) => {
     ]);
     const photosChange = toRemove.length > 0 || toAdd.length > 0;
 
-    if (endChange == null && !fuelChange && fastagChange == null && !photosChange && changedDamages.length === 0) {
+    // ── Bill inputs ──
+    const before = await loadDropEditState(booking.id);
+    const merged = mergeDropInputs(before, input);
+    const inputsChange =
+      JSON.stringify(serializeDropInputs(merged)) !== JSON.stringify(serializeDropInputs(before.inputs));
+
+    if (!inputsChange && !fuelChange && !photosChange && changedDamages.length === 0) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
         changed: [],
         data: await buildReturnSummary(booking),
+        adjustment: null,
       });
     }
 
-    await prisma.$transaction(
+    const outcome = await prisma.$transaction(
       async (tx) => {
         await lockBookingForDrop(tx as any, booking.id);
-        const locked = await tx.booking.findUniqueOrThrow({
-          where: { id: booking.id },
-          select: {
-            status: true,
-            requiresManagerConfirmation: true,
-            endOdometer: true,
-            freeKmLimit: true,
-            returnFastagBalance: true,
-          },
-        });
+        const locked = await loadBookingTx(tx as any, booking.id);
         if (!isDone(returnQueueState(locked))) throw new EditRejection(StatusCode.CONFLICT, NOT_COMPLETED.RETURN);
 
-        const update: Prisma.BookingUpdateInput = {};
+        // ── Money: the bill re-worked under the lock (replacing an unsettled
+        // difference), refused when it moved since the preview ──
+        const { state, inputs, result, plan, superseded } = await returnMoneyTx(tx as any, locked, input);
+        assertExpectedDelta(input.expectedDelta, plan.delta, plan.lines.some((l) => !l.delta.isZero()));
 
-        if (endChange != null) {
-          const segments = await getOdometerSegments(booking.id, tx as any);
-          const problem = endOdometerProblem(segments, endChange);
-          if (problem) {
-            throw new EditRejection(StatusCode.BAD_REQUEST, { code: "END_ODOMETER_TOO_LOW", message: problem, field: "endOdometer" });
-          }
-          // The drop measured km with the old reading (or none), with the free km and rate
-          // it billed: only a change that gives the same charge
-          const allowance = await loadBilledKmAllowance(tx, booking.id);
-          const check = { segmentsBefore: segments, segmentsAfter: segments, endBefore: locked.endOdometer, endAfter: endChange };
-          if (kmEditChangesCharges(check, (s, end) => billedKmCharge(allowance, s, end).charge)) {
-            throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "endOdometer" });
-          }
-          update.endOdometer = endChange;
-          const km = billedKmCharge(allowance, segments, endChange);
-          // After a swap without readings km stays unknown and the staff-entered extra km stays
-          if (km.measured) {
-            update.totalKmDriven = km.kmDriven;
-            update.extraKmCharged = km.extraKm;
-            if (locked.freeKmLimit == null && allowance.includedKm != null) update.freeKmLimit = allowance.includedKm;
-          }
+        const update: Prisma.BookingUpdateInput = {};
+        if (inputs.endOdometer !== state.inputs.endOdometer) update.endOdometer = inputs.endOdometer;
+        if (result.km && result.changed.has("KM")) {
+          update.totalKmDriven = result.km.kmDriven;
+          update.extraKmCharged = result.km.extraKm;
+          if (locked.freeKmLimit == null && result.km.includedKm != null) update.freeKmLimit = result.km.includedKm;
+        }
+        if (
+          (inputs.returnFastagBalance == null) !== (state.inputs.returnFastagBalance == null) ||
+          (inputs.returnFastagBalance && !inputs.returnFastagBalance.eq(state.inputs.returnFastagBalance ?? -1))
+        ) {
+          update.returnFastagBalance = inputs.returnFastagBalance?.toFixed(2) ?? null;
+        }
+        if (Object.keys(update).length > 0) {
+          await tx.booking.update({ where: { id: booking.id }, data: update });
         }
 
         if (fuelChange) {
-          const record = await tx.fuelRecord.findUniqueOrThrow({
-            where: { bookingId: booking.id },
-            select: { pickupFuelLevel: true },
-          });
-          // The fuel the returned car started with: after a swap with readings, the replacement's
-          const startFuel = (await getOdometerSegments(booking.id, tx as any)).currentStartFuelLevel ?? record.pickupFuelLevel;
-          if (
-            fuelEditChangesCharges({
-              levelBasedFuelCharge: await hasLevelBasedFuelCharge(tx, booking.id),
-              before: { pickupLevel: startFuel, returnLevel: currentFuel },
-              after: { pickupLevel: startFuel, returnLevel: fuelChange },
-            })
-          ) {
-            throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "returnFuelLevel" });
-          }
           await tx.fuelRecord.update({
             where: { bookingId: booking.id },
             data: {
@@ -1181,15 +1648,26 @@ export const EditReturn = async (req: Request, res: Response) => {
           });
         }
 
-        if (fastagChange != null) {
-          // The drop billed FASTag from this reading (or typed it when one was missing)
-          const before = await getFastagLegs(booking.id, money(locked.returnFastagBalance), tx as any);
-          const after = await getFastagLegs(booking.id, new Decimal(fastagChange), tx as any);
-          if (fastagEditChangesCharges(calculateFastagUsage(before), calculateFastagUsage(after))) {
-            throw new EditRejection(StatusCode.CONFLICT, { ...EDIT_CHANGES_CHARGES, field: "returnFastagBalance" });
-          }
-          update.returnFastagBalance = fastagChange.toFixed(2);
+        // Deposit choice (no money moves: the customer's net is charges − deposit either way)
+        if (inputs.depositHandling !== state.inputs.depositHandling) {
+          await recordDepositHandling(tx, booking.id, inputs.depositHandling, state.flow === "LEGACY" ? "LEGACY" : "DROP_BILL", actor.id);
         }
+        // Damage amounts charged at drop (unreviewed only — checked when merging)
+        for (const [publicId, amount] of Object.entries(inputs.damageAmounts)) {
+          const previous = state.inputs.damageAmounts[publicId];
+          if (previous && previous.eq(amount)) continue;
+          await tx.damageReport.updateMany({
+            where: { bookingId: booking.id, publicId, status: DamageReportStatus.PENDING },
+            data: { estimatedCost: amount.toFixed(2), finalCost: amount.toFixed(2) },
+          });
+        }
+        // What this edit left the drop's inputs at (the next edit starts from them)
+        const fresh = await tx.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { pricingSnapshot: true } });
+        const snapshot = (fresh.pricingSnapshot ?? {}) as Record<string, unknown>;
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { pricingSnapshot: { ...snapshot, editedDropInputs: serializeDropInputs(inputs) } as Prisma.InputJsonValue },
+        });
 
         if (toRemove.length > 0) {
           await tx.bookingPhoto.deleteMany({ where: { id: { in: toRemove.map((p) => p.id) }, bookingId: booking.id } });
@@ -1236,19 +1714,45 @@ export const EditReturn = async (req: Request, res: Response) => {
             data: {
               severity,
               notes: { ...plan.notes, area, description, damages: [{ ...first, area, severity, description, photos }] },
+              ...(plan.reviewCost && {
+                estimatedCost: plan.reviewCost.toFixed(2),
+                finalCost: plan.reviewCost.toFixed(2),
+              }),
             },
           });
         }
 
-        if (Object.keys(update).length > 0) {
-          await tx.booking.update({ where: { id: booking.id }, data: update });
+        // The difference: legacy return charges go back to the branch manager's
+        // Settlements; a drop bill's is settled on an ADJUSTMENT session
+        let session = null;
+        if (state.flow === "LEGACY") {
+          await writeLegacyDropRows(tx as any, booking.id, result, actor.id);
+        } else {
+          session = await createAdjustmentSession(tx as any, {
+            booking,
+            actor: { id: actor.id, role: String(actor.role) },
+            operation: "RETURN",
+            lines: plan.lines,
+            metadata: {
+              editedById: actor.id,
+              inputs: serializeDropInputs(inputs),
+              ...(superseded && { replaces: superseded.session.publicId }),
+            },
+          });
         }
+        if (superseded) await linkSuperseded(tx as any, superseded, session?.publicId ?? null);
+        return { plan, flow: state.flow, session, before: state.inputs, after: inputs };
       },
-      { timeout: 20000 },
+      { timeout: 30000 },
     );
+
+    refreshInvoiceAfterEdit(booking.id, outcome.flow, outcome.session);
 
     const damageState = (plan: (typeof changedDamages)[number], after: boolean) => ({
       publicId: plan.report.publicId,
+      ...(plan.reviewCost && {
+        cost: after ? plan.reviewCost.toFixed(2) : dropDamageAmount(plan.report).toFixed(2),
+      }),
       area: after ? plan.area ?? String(plan.notes.area ?? "") : String(plan.notes.area ?? ""),
       description: after ? plan.description ?? String(plan.notes.description ?? "") : String(plan.notes.description ?? ""),
       severity: after ? plan.severity ?? plan.report.severity : plan.report.severity,
@@ -1256,33 +1760,37 @@ export const EditReturn = async (req: Request, res: Response) => {
         ? [...plan.keptPhotos.map((p) => p.file.publicId), ...plan.addedIds]
         : [...plan.keptPhotos, ...plan.removedPhotos].map((p) => p.file.publicId),
     });
+    const beforeInputs = serializeDropInputs(outcome.before);
+    const afterInputs = serializeDropInputs(outcome.after);
     const diff = changedFields(
       {
-        endOdometer: booking.endOdometer,
+        ...beforeInputs,
         returnFuelLevel: currentFuel,
-        fastagBalance: money(booking.returnFastagBalance)?.toFixed(2) ?? null,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId }))),
         damages: changedDamages.map((p) => damageState(p, false)),
       } as Record<string, unknown>,
       {
-        endOdometer: endChange ?? undefined,
+        ...afterInputs,
         returnFuelLevel: fuelChange ?? undefined,
-        fastagBalance: fastagChange != null ? fastagChange.toFixed(2) : undefined,
         photos: photosChange
           ? photoList([...kept.map((p) => ({ fileId: p.file.publicId })), ...toAdd.map((fileId) => ({ fileId }))])
           : undefined,
         damages: changedDamages.length ? changedDamages.map((p) => damageState(p, true)) : undefined,
       },
     );
-    await logEdit(req, actor, "RETURN", booking.publicId, diff);
+    await logEdit(req, actor, "RETURN", booking.publicId, diff, outcome.plan, outcome.session);
 
     const fresh = await loadBooking(booking.publicId, branchId);
     return res.status(StatusCode.OK).json({
       message: "Return updated",
       changed: diff.fields,
       data: await buildReturnSummary(fresh!),
+      adjustment: {
+        ...serializeAdjustmentPlan(outcome.plan),
+        session: outcome.session ? serializeSession(outcome.session) : null,
+      },
     });
   } catch (error) {
-    return sendError(res, error, "EditReturn");
+    return sendMoneyError(res, error, "EditReturn");
   }
 };

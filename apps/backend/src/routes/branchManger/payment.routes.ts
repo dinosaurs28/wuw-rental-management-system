@@ -21,6 +21,7 @@ import {
   GetSettlementSummary,
   RecordSettlementPayment,
   RefundSettlementDeposit,
+  RefundSettlementOverpayment,
 } from "../../controller/branchManager/settlement.controller.js";
 import {
   RequestRefund,
@@ -79,6 +80,8 @@ router.get("/settlements/:bookingPublicId", GetSettlementSummary);
 router.post("/settlements/:bookingPublicId/pay", RecordSettlementPayment);
 // Legacy drop: pay the safety deposit back per the drop's choice (#6)
 router.post("/settlements/:bookingPublicId/refund-deposit", RefundSettlementDeposit);
+// Paid beyond what the booking owes (e.g. charges lowered by an edit after they were collected)
+router.post("/settlements/:bookingPublicId/refund-overpayment", RefundSettlementOverpayment);
 
 // Refunds
 router.post("/refunds", RequestRefund);

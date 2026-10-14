@@ -35,17 +35,95 @@ export const fastagBalanceField = z.preprocess(
     .optional(),
 );
 
+/**
+ * A car counts as a FASTag car for this booking when it is marked as having a
+ * FASTag, or when a FASTag balance was recorded for it on the booking (at pickup,
+ * or at a swap) — many cars carry a tag the fleet record doesn't show yet. A
+ * drop reading alone doesn't make a car count (nothing to measure it against).
+ */
+export function countsAsFastagCar(
+  vehicleHasFastag: boolean,
+  recordedBalances: Array<Decimal | number | string | null | undefined>,
+): boolean {
+  return vehicleHasFastag || recordedBalances.some((b) => b != null);
+}
+
 /** One car the customer had, from when they got it to when it came back. */
 export interface FastagLeg {
   regNo: string | null;
-  /** The car has a FASTag (no tag = no tolls on it, never a missing reading). */
+  /**
+   * The car counts as a FASTag car for this booking (countsAsFastagCar) — no
+   * tag = no tolls on it, never a missing reading.
+   */
   hasFastag: boolean;
+  /** The car is marked as having a FASTag (Vehicle.hasFastag) — its readings are required. */
+  vehicleHasFastag?: boolean;
   /** Balance when the customer got the car: the pickup's, or a swap's replacement reading. */
   startBalance: Decimal | null;
   /** Balance when the car came back: a swap's returning-car reading, or the drop's. */
   endBalance: Decimal | null;
   /** VehicleSwap.publicId that ended this leg (null = the car handed back at the drop). */
   endedBySwapPublicId: string | null;
+}
+
+interface FastagVehicleRef {
+  regNo: string;
+  hasFastag: boolean;
+}
+
+/**
+ * Legs from a booking's readings, oldest first: the pickup car from the pickup
+ * balance, each mid-rental swap's returning-car / replacement balances, and the
+ * car handed back at the drop ending at `dropBalance`. Each car counts as a
+ * FASTag car by countsAsFastagCar (marked, or a balance recorded for it).
+ */
+export function buildFastagLegs(input: {
+  pickupBalance: Decimal | null;
+  /** The booking's car now (used when there was no mid-rental swap) */
+  currentVehicle: FastagVehicleRef | null;
+  midRentalSwaps: Array<{
+    publicId: string;
+    originalVehicle: FastagVehicleRef;
+    newVehicle: FastagVehicleRef;
+    oldVehicleFastagBalance: Decimal | null;
+    newVehicleFastagBalance: Decimal | null;
+  }>;
+  dropBalance: Decimal | null;
+}): FastagLeg[] {
+  const { pickupBalance, currentVehicle, midRentalSwaps, dropBalance } = input;
+  if (midRentalSwaps.length === 0) {
+    return [{
+      regNo: currentVehicle?.regNo ?? null,
+      hasFastag: countsAsFastagCar(currentVehicle?.hasFastag ?? false, [pickupBalance]),
+      vehicleHasFastag: currentVehicle?.hasFastag ?? false,
+      startBalance: pickupBalance,
+      endBalance: dropBalance,
+      endedBySwapPublicId: null,
+    }];
+  }
+  const legs: FastagLeg[] = [];
+  let start = pickupBalance;
+  for (const swap of midRentalSwaps) {
+    legs.push({
+      regNo: swap.originalVehicle.regNo,
+      hasFastag: countsAsFastagCar(swap.originalVehicle.hasFastag, [start, swap.oldVehicleFastagBalance]),
+      vehicleHasFastag: swap.originalVehicle.hasFastag,
+      startBalance: start,
+      endBalance: swap.oldVehicleFastagBalance,
+      endedBySwapPublicId: swap.publicId,
+    });
+    start = swap.newVehicleFastagBalance;
+  }
+  const last = midRentalSwaps[midRentalSwaps.length - 1]!;
+  legs.push({
+    regNo: last.newVehicle.regNo,
+    hasFastag: countsAsFastagCar(last.newVehicle.hasFastag, [start]),
+    vehicleHasFastag: last.newVehicle.hasFastag,
+    startBalance: start,
+    endBalance: dropBalance,
+    endedBySwapPublicId: null,
+  });
+  return legs;
 }
 
 export interface FastagLegUsage extends FastagLeg {

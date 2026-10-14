@@ -1194,15 +1194,15 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     }
     // Km across mid-rental swaps: swaps with readings are measured segment by segment;
     // a swap recorded without readings stops automatic extra km (staff enter it at drop)
-    const segments: OdometerSegments | null =
-      booking.status === BookingStatus.PICKED_UP ? await getOdometerSegments(booking.id) : null;
+    // (also for a returned booking: Edit Return opens the drop screen again — client item 1)
+    const dropReadable = booking.status === BookingStatus.PICKED_UP || booking.status === BookingStatus.RETURNED;
+    const segments: OdometerSegments | null = dropReadable ? await getOdometerSegments(booking.id) : null;
     const vehicleSwapped = segments != null && !segments.complete;
     // FASTag at the drop: READINGS (the drop bill works the usage out from the
     // balances), MANUAL (a reading is missing — staff type the charge) or NONE
-    const fastag =
-      booking.status === BookingStatus.PICKED_UP
-        ? serializeFastagBeforeDrop(fastagBeforeDrop(await getFastagLegs(booking.id, null)))
-        : null;
+    const fastag = dropReadable
+      ? serializeFastagBeforeDrop(fastagBeforeDrop(await getFastagLegs(booking.id, null)))
+      : null;
     const effectiveFreeKmLimit: number | null = kmAllowance?.includedKm ?? booking.freeKmLimit ?? null;
     const extraKmRate: number | null = kmAllowance ? kmAllowance.extraKmRate.toNumber() : null;
 
@@ -1265,7 +1265,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
               manualExtraKmAllowed: vehicleSwapped,
             }
           : null,
-        // Odometer segments across mid-rental swaps (null unless PICKED_UP)
+        // Odometer segments across mid-rental swaps (null unless PICKED_UP / RETURNED)
         kmSegments: segments
           ? {
               swapCount: segments.swapCount,
@@ -1278,7 +1278,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
           : null,
         rentalTimeline,
         swapCharges,
-        // FASTag balances across the rental (null unless PICKED_UP) — additive
+        // FASTag balances across the rental (null unless PICKED_UP / RETURNED) — additive
         fastag,
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
       },

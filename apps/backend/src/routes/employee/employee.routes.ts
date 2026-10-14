@@ -113,6 +113,8 @@ import {
   GetReturnSummary,
   EditPickup,
   EditReturn,
+  PreviewPickupEdit,
+  PreviewReturnEdit,
 } from "../../controller/employee/operationEdit.controller.js";
 
 const router: Router = Router();
@@ -171,6 +173,9 @@ router.get("/pickup/:bookingId/summary", EmployeeCheck, GetPickupSummary);
 router.patch("/pickup/:bookingId", EmployeeCheck, EditPickup);
 router.get("/return/:bookingId/summary", EmployeeCheck, GetReturnSummary);
 router.patch("/return/:bookingId", EmployeeCheck, EditReturn);
+// Full edit (client item 1): the money difference an edit would settle — nothing saved
+router.post("/pickup/:bookingId/edit/preview", EmployeeCheck, PreviewPickupEdit);
+router.post("/return/:bookingId/edit/preview", EmployeeCheck, PreviewReturnEdit);
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin);
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp);
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile);

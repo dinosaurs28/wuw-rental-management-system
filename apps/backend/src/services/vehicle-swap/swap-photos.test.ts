@@ -88,15 +88,20 @@ test("two files for one shot: the last is kept, the earlier one is reported (nev
   );
 });
 
-test("FASTag balances: required in strict mode for cars with a FASTag, stored only mid-rental", () => {
+test("FASTag balances: required in strict mode for cars with a FASTag, stored for any car mid-rental", () => {
   const base = { stage: "ACTIVE_RENTAL" as const, oldVehicleHasFastag: true, newVehicleHasFastag: true };
   assert.deepEqual(missingFastagBalances("STRICT", base), ["oldVehicleFastagBalance", "newVehicleFastagBalance"]);
   assert.deepEqual(missingFastagBalances("STRICT", { ...base, oldVehicleFastagBalance: 0 }), ["newVehicleFastagBalance"]);
   assert.deepEqual(missingFastagBalances("STRICT", { ...base, newVehicleHasFastag: false, oldVehicleFastagBalance: 120.5 }), []);
   assert.deepEqual(missingFastagBalances("LEGACY", base), []);
+  // A balance read for a car not marked as having a FASTag is kept (it then counts as one)
   assert.deepEqual(
     fastagBalancesToStore({ ...base, newVehicleHasFastag: false, oldVehicleFastagBalance: 120.5, newVehicleFastagBalance: 300 }),
-    { oldVehicleFastagBalance: 120.5, newVehicleFastagBalance: null },
+    { oldVehicleFastagBalance: 120.5, newVehicleFastagBalance: 300 },
+  );
+  assert.deepEqual(
+    fastagBalancesToStore({ ...base, oldVehicleHasFastag: false, newVehicleHasFastag: false, oldVehicleFastagBalance: 80 }),
+    { oldVehicleFastagBalance: 80, newVehicleFastagBalance: null },
   );
   assert.deepEqual(
     fastagBalancesToStore({ ...base, stage: "PRE_PICKUP", oldVehicleFastagBalance: 1, newVehicleFastagBalance: 2 }),

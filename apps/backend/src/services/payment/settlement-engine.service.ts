@@ -47,6 +47,16 @@ export interface SettlementSummary {
   safetyDepositHandling: string | null;
   /** Safety deposit still to pay back to the customer under that choice (refund-deposit endpoint) */
   safetyDepositToRefund: string;
+  /**
+   * An edit's difference still to be settled at the counter (+ collect, − refund) —
+   * left out of netPayable: it is collected / refunded on its own session, never here
+   */
+  adjustmentPending: string;
+  /**
+   * Paid beyond what the booking owes (e.g. a legacy drop's charges lowered by an
+   * edit after they were collected), the deposit refund aside — refund-overpayment pays it back
+   */
+  overpaidToRefund: string;
 }
 
 export interface PaginatedSettlements {
@@ -70,6 +80,18 @@ export function depositToRefund(owed: BookingOwed, netPayable: Decimal, creditPe
     return Decimal.min(owed.safetyDepositCharged, Decimal.max(ZERO, netPayable.sub(creditPending).negated()));
   }
   return ZERO;
+}
+
+/**
+ * Money paid beyond what the booking owes, to pay back (refund-overpayment):
+ * what netPayable is below zero, less the deposit refund that already covers
+ * part of it (legacy SET_OFF — a REFUND_IN_FULL deposit is still owed until it
+ * is refunded, so it isn't in the overpayment).
+ */
+export function overpaymentToRefund(owed: Pick<BookingOwed, "safetyDepositHandling">, netPayable: Decimal, depositRefund: Decimal): Decimal {
+  if (netPayable.gte(0)) return ZERO;
+  const coveredByDeposit = owed.safetyDepositHandling === "SET_OFF" ? depositRefund : ZERO;
+  return Decimal.max(ZERO, netPayable.negated().sub(coveredByDeposit)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 }
 
 class SettlementEngineService {
@@ -127,14 +149,20 @@ class SettlementEngineService {
     // Rental money paid = what was paid less the deposit still held / credited back
     const rentalPaid = totalCollectedConfirmed.sub(owed.safetyDepositCharged.sub(owed.safetyDepositCredited));
     const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(rentalPaid));
-    const netPayable = totalOwed.sub(totalCollectedConfirmed);
+    // An edit's difference still open is settled at the counter on its own session
+    const netPayable = totalOwed.sub(totalCollectedConfirmed).sub(owed.adjustmentPending);
     // Money on credit stays inside netPayable (the booking isn't settled until it is
     // cleared) but is collected only on the Customer Credit page (#11)
     const creditPending = creditOutstanding(owed, totalCollectedConfirmed, credit?.pending ?? ZERO);
     const payableExcludingCredit = Decimal.max(ZERO, netPayable.sub(creditPending));
 
     const safetyDepositToRefund = depositToRefund(owed, netPayable, creditPending);
-    const isSettled = netPayable.lte(ZERO) && totalCollectedPending.eq(ZERO) && safetyDepositToRefund.lte(ZERO);
+    const overpaidToRefund = overpaymentToRefund(owed, netPayable, safetyDepositToRefund);
+    const isSettled =
+      netPayable.lte(ZERO) &&
+      totalCollectedPending.eq(ZERO) &&
+      safetyDepositToRefund.lte(ZERO) &&
+      overpaidToRefund.lte(ZERO);
 
     // Confirmed extension charges (taxable + GST). Informational: every
     // extension finalizer already added them to totalFinal.
@@ -166,6 +194,8 @@ class SettlementEngineService {
       creditCollateral: creditPending.gt(0) ? (credit?.collateral ?? []) : [],
       safetyDepositHandling: owed.safetyDepositHandling,
       safetyDepositToRefund: safetyDepositToRefund.toFixed(2),
+      adjustmentPending: owed.adjustmentPending.toFixed(2),
+      overpaidToRefund: overpaidToRefund.toFixed(2),
     };
   }
 

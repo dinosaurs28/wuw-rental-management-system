@@ -19,6 +19,8 @@ import {
   normalizeSpecialRules,
   rescheduleChecksRent,
   rescheduleRuleSets,
+  rulesForVehicle,
+  needsVehicleGroup,
   ruleCoversVehicle,
   ruleMinutesIn,
   rulesOverlapping,
@@ -493,4 +495,88 @@ test("with a festival rule the hourly and slab options are both priced with it, 
   assert.equal(near.basePrice.toNumber(), 1886);
   assert.equal(near.billedAs, "23 hours");
   assert.equal(near.freeKmLimit, Math.floor((23 * 150) / 24));
+});
+
+// ── Per vehicle group (GROUPS rules) ──────────────────────────────────────────
+
+const swift = { id: 7, categoryId: 3, make: "Maruti", model: "Swift" };
+const swiftKey = "MARUTI__SWIFT__3";
+const creta = { id: 9, categoryId: 4, make: "Hyundai ", model: "Creta" };
+const cretaKey = "HYUNDAI__CRETA__4";
+const groups = (items: { groupKey: string; type: "PERCENT" | "FLAT"; value: number }[]) =>
+  rule({
+    id: 20,
+    name: "Diwali Special",
+    percent: 0,
+    scope: "GROUPS",
+    items: items.map((i) => ({ make: "", model: "", categoryId: Number(i.groupKey.split("__")[2]), ...i })),
+  });
+
+test("a GROUPS rule prices each vehicle by its group's change; a group left out keeps its rent", () => {
+  const diwali = groups([
+    { groupKey: swiftKey, type: "PERCENT", value: 10 },
+    { groupKey: cretaKey, type: "FLAT", value: 200 },
+  ]);
+  const day = (vehicle: typeof swift) => price(card(), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([diwali], vehicle));
+  // Swift +10%
+  assert.equal(day(swift).basePrice.toNumber(), 1430);
+  assert.equal(day(swift).festival?.label, "Includes 1 festival day (Diwali Special +10%)");
+  assert.deepEqual(day(swift).festival?.rules, [{ id: 20, name: "Diwali Special", percent: 10, flatAmount: 0, blocks: 1, amount: 130 }]);
+  // Creta (make written with a stray space) +₹200/day
+  assert.equal(day(creta).basePrice.toNumber(), 1500);
+  assert.equal(day(creta).festival?.label, "Includes 1 festival day (Diwali Special +₹200/day)");
+  // A Baleno isn't priced by the rule
+  const baleno = { id: 11, categoryId: 3, make: "Maruti", model: "Baleno" };
+  assert.deepEqual(rulesForVehicle([diwali], baleno), []);
+  assert.equal(day(baleno).basePrice.toNumber(), 1300);
+  assert.equal(day(baleno).festival, undefined);
+  // Without make / model a GROUPS rule can't be matched (callers look them up)
+  assert.deepEqual(rulesForVehicle([diwali], { id: 7, categoryId: 3 }), []);
+  assert.equal(needsVehicleGroup([diwali]), true);
+  assert.equal(needsVehicleGroup([rule()]), false);
+});
+
+test("GROUPS discounts: percentage off and flat amount off (12 hours get half), never below ₹0", () => {
+  const off = groups([
+    { groupKey: swiftKey, type: "PERCENT", value: -10 },
+    { groupKey: cretaKey, type: "FLAT", value: -100 },
+  ]);
+  const swiftDay = price(card(), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([off], swift));
+  assert.equal(swiftDay.basePrice.toNumber(), 1170);
+  assert.equal(swiftDay.festival?.label, "Includes 1 festival day (Diwali Special 10% off)");
+  const cretaHalf = price(card(), "2026-10-20T08:00:00", "2026-10-20T16:00:00", rulesForVehicle([off], creta));
+  assert.equal(cretaHalf.basePrice.toNumber(), 900 - 50);
+  assert.equal(cretaHalf.festival?.label, "Includes 12 festival hours (Diwali Special ₹100/day off)");
+  const huge = groups([{ groupKey: swiftKey, type: "FLAT", value: -5000 }]);
+  assert.equal(price(card(), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([huge], swift)).basePrice.toNumber(), 0);
+});
+
+test("a GROUPS rule overlapping a legacy all-vehicles rule: the higher price wins per block", () => {
+  const diwali = groups([{ groupKey: swiftKey, type: "FLAT", value: 200 }]);
+  const legacy = rule({ id: 1, name: "Dussehra", percent: 10 });
+  // Swift: +₹200 = ₹1,500 beats +10% = ₹1,430
+  const both = price(card(), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([legacy, diwali], swift));
+  assert.equal(both.basePrice.toNumber(), 1500);
+  assert.equal(both.festival?.rules[0]?.id, 20);
+  // Creta isn't in the group rule: the legacy rule alone
+  const cretaDay = price(card(), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([legacy, diwali], creta));
+  assert.equal(cretaDay.basePrice.toNumber(), 1430);
+  assert.equal(cretaDay.festival?.label, "Includes 1 festival day (Dussehra +10%)");
+  // A dearer car: +10% of ₹3,000 = ₹3,300 beats +₹200 = ₹3,200
+  const dear = price(card({ price24Hour: new Decimal(3000) }), "2026-10-20T10:00:00", "2026-10-21T10:00:00", rulesForVehicle([legacy, diwali], swift));
+  assert.equal(dear.basePrice.toNumber(), 3300);
+  assert.equal(dear.festival?.rules[0]?.id, 1);
+  // Legacy rules are untouched by rulesForVehicle
+  assert.deepEqual(rulesForVehicle([legacy], swift), [legacy]);
+});
+
+test("stored GROUPS rules keep their items; malformed items are dropped", () => {
+  const diwali = groups([{ groupKey: swiftKey, type: "PERCENT", value: 10 }]);
+  assert.deepEqual(specialRulesOf({ specialRules: [diwali] }), [diwali]);
+  // No usable item: the rule is dropped
+  assert.deepEqual(normalizeSpecialRules([{ ...diwali, items: [{ groupKey: swiftKey, type: "PERCENT", value: 0, categoryId: 3 }] }]), []);
+  assert.deepEqual(
+    normalizeSpecialRules([{ ...diwali, items: [...diwali.items!, { groupKey: "X", type: "BOGUS", value: 5, categoryId: 1 }] }]),
+    [diwali],
+  );
 });

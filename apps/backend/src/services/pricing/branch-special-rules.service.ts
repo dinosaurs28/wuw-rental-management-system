@@ -37,6 +37,14 @@ type RuleRow = {
   scope: string;
   categoryIds: number[];
   vehicleIds: number[];
+  items?: {
+    groupKey: string;
+    make: string;
+    model: string;
+    categoryId: number;
+    type: string;
+    value: { toString(): string };
+  }[];
 };
 
 const RULE_SELECT = {
@@ -49,6 +57,7 @@ const RULE_SELECT = {
   scope: true,
   categoryIds: true,
   vehicleIds: true,
+  items: { select: { groupKey: true, make: true, model: true, categoryId: true, type: true, value: true } },
 } as const;
 
 /** A SpecialPricingRule row as the pricer's rule (null for a malformed row). */
@@ -64,6 +73,7 @@ export function toSpecialRule(row: RuleRow): SpecialRule | null {
       scope: row.scope,
       categoryIds: row.categoryIds,
       vehicleIds: row.vehicleIds,
+      items: (row.items ?? []).map((item) => ({ ...item, value: Number(item.value.toString()) })),
     },
   ])[0] ?? null;
 }

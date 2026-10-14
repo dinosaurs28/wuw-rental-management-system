@@ -5,7 +5,9 @@
  * A branch manager (or admin) sets a SpecialPricingRule: a name, IST calendar
  * dates (both inclusive), a percentage (−90 … +300) and / or a flat ₹ a day
  * (−1,00,000 … +1,00,000; negative = a festival discount) and the vehicles it
- * covers (all, some categories, some vehicles).
+ * covers (all, some categories, some vehicles) — or, since the per-group
+ * dialog (scope GROUPS), one change per vehicle group (make + model + category):
+ * a percentage or a flat ₹ a day, up or off; a group left out keeps its rent.
  *
  * The rule, per priced block (base-price-rule.ts — each full 24 h day, the
  * remainder, a single trip of up to 24 h, the 12-hour package held to closing,
@@ -34,10 +36,21 @@
  */
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { formatSpecialChange, isCalendarDate } from "@repo/schemas";
+import { formatGroupChange, formatSpecialChange, isCalendarDate, vehicleGroupKey } from "@repo/schemas";
 import { PRICING_ZONE } from "./weekendRule.js";
 
-export type SpecialPricingScope = "ALL" | "CATEGORIES" | "VEHICLES";
+export type SpecialPricingScope = "ALL" | "CATEGORIES" | "VEHICLES" | "GROUPS";
+
+/** One vehicle group's change under a GROUPS rule (value signed: negative = off). */
+export type SpecialRuleItem = {
+  /** vehicleGroupKey(make, model, categoryId) */
+  groupKey: string;
+  make: string;
+  model: string;
+  categoryId: number;
+  type: "PERCENT" | "FLAT";
+  value: number;
+};
 
 /** A festival rule as the pricer uses it — and as a booking stores it (a type, so it is JSON-assignable). */
 export type SpecialRule = {
@@ -53,6 +66,11 @@ export type SpecialRule = {
   scope: SpecialPricingScope;
   categoryIds: number[];
   vehicleIds: number[];
+  /**
+   * GROUPS scope: each vehicle group's change (percent / flatAmount are 0 on
+   * the stored rule; rulesForVehicle sets them from the vehicle's group item)
+   */
+  items?: SpecialRuleItem[];
 };
 
 /** [startMs, endMs) of the rule's days: 00:00 IST of the first day to 00:00 IST after the last. */
@@ -76,16 +94,48 @@ export function isFestivalBlock(startMs: number, endMs: number, rule: Pick<Speci
   return ruleMinutesIn(startMs, endMs, rule) * 2 >= (endMs - startMs) / 60_000;
 }
 
+/** A vehicle as the scopes match it: make / model are needed for GROUPS rules only. */
+export type RuleVehicle = { id: number; categoryId: number; make?: string | null; model?: string | null };
+
+/** A GROUPS rule's item for the vehicle's group (null: not priced, or make / model unknown). */
+export function groupItemFor(rule: SpecialRule, vehicle: RuleVehicle): SpecialRuleItem | null {
+  if (vehicle.make == null || vehicle.model == null) return null;
+  const key = vehicleGroupKey(vehicle.make, vehicle.model, vehicle.categoryId);
+  return rule.items?.find((item) => item.groupKey === key) ?? null;
+}
+
 /** Whether the rule's scope covers the vehicle. */
-export function ruleCoversVehicle(rule: SpecialRule, vehicle: { id: number; categoryId: number }): boolean {
+export function ruleCoversVehicle(rule: SpecialRule, vehicle: RuleVehicle): boolean {
+  if (rule.scope === "GROUPS") return groupItemFor(rule, vehicle) !== null;
   if (rule.scope === "CATEGORIES") return rule.categoryIds.includes(vehicle.categoryId);
   if (rule.scope === "VEHICLES") return rule.vehicleIds.includes(vehicle.id);
   return true;
 }
 
-/** The rules covering one vehicle. */
-export function rulesForVehicle(rules: readonly SpecialRule[], vehicle: { id: number; categoryId: number }): SpecialRule[] {
-  return rules.filter((rule) => ruleCoversVehicle(rule, vehicle));
+/**
+ * The rules covering one vehicle, as the pricer applies them: a GROUPS rule
+ * becomes its group item's change (PERCENT → percent, FLAT → flatAmount; the
+ * item kept alone in `items`), every other rule as it is.
+ */
+export function rulesForVehicle(rules: readonly SpecialRule[], vehicle: RuleVehicle): SpecialRule[] {
+  return rules.flatMap((rule) => {
+    if (rule.scope !== "GROUPS") return ruleCoversVehicle(rule, vehicle) ? [rule] : [];
+    const item = groupItemFor(rule, vehicle);
+    if (!item) return [];
+    return [
+      {
+        ...rule,
+        percent: item.type === "PERCENT" ? item.value : 0,
+        flatAmount: item.type === "FLAT" ? item.value : 0,
+        items: [item],
+      },
+    ];
+  });
+}
+
+/** Whether any of the rules needs the vehicle's make / model to be matched. */
+export function needsVehicleGroup(rules: readonly SpecialRule[]): boolean {
+  return rules.some((rule) => rule.scope === "GROUPS");
 }
 
 /** The rules with any time in [startMs, endMs) — what a booking of that window stores. */
@@ -189,13 +239,48 @@ export function festivalPriceFor(
   return best;
 }
 
-/** "Dussehra +10%", "Dussehra +₹200/day", "Dussehra +10% + ₹200/day" — a rule as the breakdown label names it. */
-export function ruleLabel(rule: Pick<SpecialRule, "name" | "percent" | "flatAmount">): string {
+/**
+ * A rule as the breakdown label names it: "Dussehra +10%", "Dussehra +₹200/day",
+ * "Dussehra +10% + ₹200/day"; a GROUPS rule (resolved for the vehicle by
+ * rulesForVehicle) "Diwali Special +10%", "… +₹200/day", "… 10% off", "… ₹100/day off".
+ */
+export function ruleLabel(rule: Pick<SpecialRule, "name" | "percent" | "flatAmount" | "scope">): string {
+  if (rule.scope === "GROUPS") {
+    const change = rule.percent !== 0 ? formatGroupChange("PERCENT", rule.percent) : formatGroupChange("FLAT", rule.flatAmount ?? 0);
+    return `${rule.name} ${change}`;
+  }
   return `${rule.name} ${formatSpecialChange(rule.percent, rule.flatAmount ?? 0)}`;
 }
 
 const positiveIds = (raw: unknown): number[] =>
   Array.isArray(raw) ? raw.filter((id): id is number => Number.isInteger(id) && id > 0) : [];
+
+/** Well-formed group items (JSON); anything else is dropped. */
+function normalizeItems(raw: unknown): SpecialRuleItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): SpecialRuleItem[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const i = entry as Record<string, unknown>;
+    const value = Number(i.value);
+    if (
+      typeof i.groupKey !== "string" ||
+      (i.type !== "PERCENT" && i.type !== "FLAT") ||
+      !Number.isFinite(value) ||
+      value === 0 ||
+      !Number.isInteger(i.categoryId)
+    ) {
+      return [];
+    }
+    return [{
+      groupKey: i.groupKey,
+      make: typeof i.make === "string" ? i.make : "",
+      model: typeof i.model === "string" ? i.model : "",
+      categoryId: i.categoryId as number,
+      type: i.type,
+      value,
+    }];
+  });
+}
 
 /** Well-formed rules from JSON (a booking's snapshot, the Redis cache); anything else is dropped. */
 export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
@@ -206,6 +291,7 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
     const r = entry as Record<string, unknown>;
     const percent = Number(r.percent);
     const flatAmount = r.flatAmount == null ? 0 : Number(r.flatAmount);
+    const items = r.scope === "GROUPS" ? normalizeItems(r.items) : [];
     if (
       !Number.isInteger(r.id) ||
       typeof r.name !== "string" ||
@@ -215,11 +301,12 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
       !isCalendarDate(r.endDate) ||
       !Number.isFinite(percent) ||
       !Number.isFinite(flatAmount) ||
-      (percent === 0 && flatAmount === 0)
+      (r.scope === "GROUPS" ? items.length === 0 : percent === 0 && flatAmount === 0)
     ) {
       continue;
     }
-    const scope: SpecialPricingScope = r.scope === "CATEGORIES" || r.scope === "VEHICLES" ? r.scope : "ALL";
+    const scope: SpecialPricingScope =
+      r.scope === "CATEGORIES" || r.scope === "VEHICLES" || r.scope === "GROUPS" ? r.scope : "ALL";
     rules.push({
       id: r.id as number,
       name: r.name,
@@ -230,6 +317,7 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
       scope,
       categoryIds: positiveIds(r.categoryIds),
       vehicleIds: positiveIds(r.vehicleIds),
+      ...(scope === "GROUPS" && { items }),
     });
   }
   return rules;

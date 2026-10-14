@@ -1,43 +1,25 @@
 /**
  * Pure checks of the completed pickup / return edit rules (client item 1):
- * the "edit changes charges" money safeguard (km and fuel), the corrected
- * pickup reading across mid-rental swaps, reading bounds, required photo slots
- * and the audit before/after. No database.
+ * km worked out with the allowance the drop billed with, the corrected pickup
+ * reading across mid-rental swaps, reading bounds, an open drop bill going
+ * stale, photo minimums / required slots and the audit before/after. No database.
  *   cd apps/backend && pnpm test
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Decimal from "decimal.js";
 import type { OdometerSegments } from "../charges/km-allowance.service.js";
-import { calculateFastagUsage, type FastagLeg } from "../charges/fastag-usage.js";
 import {
   billedKmAllowance,
   billedKmCharge,
   changedFields,
   emptiedRequiredSlots,
   endOdometerProblem,
-  fastagEditChangesCharges,
-  fuelDeficitBars,
-  fuelEditChangesCharges,
-  hasFuelDeficit,
-  kmEditChangesCharges,
   odometerBillStale,
   photosEmptied,
   pickupOdometerProblem,
   withPickupOdometer,
-  type KmChargeOf,
 } from "./operation-edit-guard.js";
-
-// Same formula as calculateKmCharge: 100 free km, ₹5.5 / extra km, rounded up.
-const INCLUDED = 100;
-const RATE = new Decimal("5.5");
-const chargeOf: KmChargeOf = (segments, end) => {
-  if (!segments.complete) return new Decimal(0); // swap without readings: not measured
-  const start = segments.currentStartOdometer;
-  const driven = segments.priorKm + Math.max(0, end - (start ?? end));
-  return RATE.mul(Math.max(0, driven - INCLUDED)).ceil();
-};
-const noChargeOf: KmChargeOf = () => new Decimal(0); // extra km not charged on this plan
 
 const noSwap = (start: number | null): OdometerSegments => ({
   swapCount: 0,
@@ -64,69 +46,6 @@ const oneSwap = (pickup: number | null, oldEnd: number | null = 1150, newStart: 
   };
 };
 
-test("pickup reading before any drop reading never changes charges", () => {
-  const before = noSwap(1000);
-  assert.equal(
-    kmEditChangesCharges(
-      { segmentsBefore: before, segmentsAfter: withPickupOdometer(before, 1300), endBefore: null, endAfter: null },
-      chargeOf,
-    ),
-    false,
-  );
-});
-
-test("pickup reading after the drop measured km: refused only when the extra km charge moves", () => {
-  const before = noSwap(1000);
-  // 1000 → 1150 = 150 km, 50 extra = ₹275. A start of 1010 gives 140 km = ₹220.
-  assert.equal(
-    kmEditChangesCharges(
-      { segmentsBefore: before, segmentsAfter: withPickupOdometer(before, 1010), endBefore: 1150, endAfter: 1150 },
-      chargeOf,
-    ),
-    true,
-  );
-  // Within the free km either way (1000 → 1080 vs 1010 → 1080): ₹0 both — allowed.
-  assert.equal(
-    kmEditChangesCharges(
-      { segmentsBefore: before, segmentsAfter: withPickupOdometer(before, 1010), endBefore: 1080, endAfter: 1080 },
-      chargeOf,
-    ),
-    false,
-  );
-  // Plan without extra-km charging: any correction leaves ₹0.
-  assert.equal(
-    kmEditChangesCharges(
-      { segmentsBefore: before, segmentsAfter: withPickupOdometer(before, 900), endBefore: 1500, endAfter: 1500 },
-      noChargeOf,
-    ),
-    false,
-  );
-});
-
-test("drop reading: same charge allowed, different charge refused", () => {
-  const segments = noSwap(1000);
-  // 1180 vs 1181: 80 vs 81 extra km → ₹440 vs ₹446 (5.5 × 81 = 445.5 → 446)
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1180, endAfter: 1181 }, chargeOf), true);
-  // 1050 vs 1090: both inside the 100 free km
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1050, endAfter: 1090 }, chargeOf), false);
-  // No drop reading recorded (old app build): adding one that bills extra km is refused …
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: null, endAfter: 1300 }, chargeOf), true);
-  // … one inside the free km is fine
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: null, endAfter: 1060 }, chargeOf), false);
-});
-
-test("swap without readings: km isn't measured, so readings never move the charge", () => {
-  const segments = oneSwap(1000, null, null);
-  assert.equal(segments.complete, false);
-  assert.equal(
-    kmEditChangesCharges(
-      { segmentsBefore: segments, segmentsAfter: withPickupOdometer(segments, 400), endBefore: 9000, endAfter: 9999 },
-      chargeOf,
-    ),
-    false,
-  );
-});
-
 test("withPickupOdometer moves the first segment after a swap with readings", () => {
   const before = oneSwap(1000);
   assert.equal(before.priorKm, 150);
@@ -136,11 +55,6 @@ test("withPickupOdometer moves the first segment after a swap with readings", ()
   assert.equal(after.segments[0]!.km, 50);
   // The current (replacement) car still starts where the swap recorded it
   assert.equal(after.currentStartOdometer, 5000);
-  // 150 km on the old car + 5000 → 5000 = 150 km → ₹275; with 1100: 50 km → ₹0
-  assert.equal(
-    kmEditChangesCharges({ segmentsBefore: before, segmentsAfter: after, endBefore: 5000, endAfter: 5000 }, chargeOf),
-    true,
-  );
   // No swap: the corrected reading is the current start
   assert.equal(withPickupOdometer(noSwap(1000), 1200).currentStartOdometer, 1200);
   // The input isn't changed
@@ -161,28 +75,7 @@ test("reading bounds", () => {
   assert.equal(endOdometerProblem(noSwap(null), 10), null);
 });
 
-test("fuel levels change money only when a fuel charge was worked out from them", () => {
-  assert.equal(hasFuelDeficit("8", "5"), true);
-  assert.equal(hasFuelDeficit("5", "5"), false);
-  assert.equal(hasFuelDeficit("10", "9"), true);
-  assert.equal(hasFuelDeficit(null, "5"), false);
-  assert.equal(hasFuelDeficit("8", null), false);
-  assert.equal(fuelDeficitBars("8", "5"), 3);
-  assert.equal(fuelDeficitBars("5", "8"), 0);
-  assert.equal(fuelDeficitBars(null, "8"), 0);
-
-  const billed = { pickupLevel: "8", returnLevel: "5" }; // 3 bars short, billed on the drop bill's FUEL line
-  // Return fuel 5 → 8 after the fuel charge was settled: the deficit is gone — refused
-  assert.equal(fuelEditChangesCharges({ levelBasedFuelCharge: true, before: billed, after: { pickupLevel: "8", returnLevel: "8" } }), true);
-  // 5 → 6: 2 bars short instead of 3 — refused
-  assert.equal(fuelEditChangesCharges({ levelBasedFuelCharge: true, before: billed, after: { pickupLevel: "8", returnLevel: "6" } }), true);
-  // Both moved by one: still 3 bars short — allowed
-  assert.equal(fuelEditChangesCharges({ levelBasedFuelCharge: true, before: billed, after: { pickupLevel: "9", returnLevel: "6" } }), false);
-  // No fuel charge on the bill: levels are free to change
-  assert.equal(fuelEditChangesCharges({ levelBasedFuelCharge: false, before: billed, after: { pickupLevel: "5", returnLevel: "9" } }), false);
-});
-
-test("km is compared with the allowance the drop billed with, not today's pricing", () => {
+test("km is worked out with the allowance the drop billed with, not today's pricing", () => {
   const segments = noSwap(1000);
   // Billed: 100 free km @ ₹10 — 1000 → 1150 = ₹500 (pricing later raised to 200 free km: not used)
   const billed = billedKmAllowance({
@@ -191,13 +84,14 @@ test("km is compared with the allowance the drop billed with, not today's pricin
     extraKmCharged: 50,
     legacyExtraKmRate: null,
   });
-  const chargeOf: KmChargeOf = (s, end) => billedKmCharge(billed, s, end).charge;
   assert.equal(billedKmCharge(billed, segments, 1150).charge!.toFixed(2), "500.00");
-  // End reading 1150 → 1110: ₹100 instead of ₹500 — refused
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1150, endAfter: 1110 }, chargeOf), true);
-  // 1080 → 1090: inside the billed 100 free km — allowed, and the km written follow the billed allowance
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1080, endAfter: 1090 }, chargeOf), false);
+  assert.equal(billedKmCharge(billed, segments, 1110).charge!.toFixed(2), "100.00");
   assert.deepEqual(billedKmCharge(billed, segments, 1090), { measured: true, kmDriven: 90, extraKm: 0, charge: new Decimal(0) });
+  // 5.5 × 81 = 445.5 → rounded up
+  const odd = billedKmAllowance({ billKm: { includedKm: 100, extraKmRate: "5.5", extraKmEnabled: true }, freeKmLimit: null, extraKmCharged: null, legacyExtraKmRate: null });
+  assert.equal(billedKmCharge(odd, segments, 1181).charge!.toFixed(2), "446.00");
+  // After a swap with readings: km on the old car + the replacement from its start
+  assert.equal(billedKmCharge(billed, oneSwap(1000), 5000).kmDriven, 150);
 
   // Legacy drop: free km from the booking, rate from the extra-km charge row
   const legacy = billedKmAllowance({ billKm: null, freeKmLimit: 100, extraKmCharged: 50, legacyExtraKmRate: "8.5" });
@@ -207,13 +101,11 @@ test("km is compared with the allowance the drop billed with, not today's pricin
   const notCharged = billedKmAllowance({ billKm: null, freeKmLimit: 100, extraKmCharged: 50, legacyExtraKmRate: null });
   assert.equal(notCharged.extraKmEnabled, false);
   assert.equal(billedKmCharge(notCharged, segments, 1300).charge!.toFixed(2), "0.00");
-  // Legacy, nothing extra and no rate recorded: a reading past the free km can't be priced — refused
+  // Legacy, nothing extra and no rate recorded: a reading past the free km can't be priced from the drop
   const unknown = billedKmAllowance({ billKm: null, freeKmLimit: 100, extraKmCharged: 0, legacyExtraKmRate: null });
-  const unknownOf: KmChargeOf = (s, end) => billedKmCharge(unknown, s, end).charge;
   assert.equal(billedKmCharge(unknown, segments, 1090).charge!.toFixed(2), "0.00");
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1050, endAfter: 1090 }, unknownOf), false);
-  assert.equal(kmEditChangesCharges({ segmentsBefore: segments, segmentsAfter: segments, endBefore: 1050, endAfter: 1150 }, unknownOf), true);
-  // No free km recorded at all (old app build, no drop reading): nothing can be shown equal
+  assert.equal(billedKmCharge(unknown, segments, 1150).charge, null);
+  // No free km recorded at all (old app build, no drop reading)
   const none = billedKmAllowance({ billKm: null, freeKmLimit: null, extraKmCharged: null, legacyExtraKmRate: null });
   assert.equal(billedKmCharge(none, segments, 1010).charge, null);
   // Swap without readings: km not measured, readings don't move the charge
@@ -259,31 +151,4 @@ test("changedFields keeps only what changes", () => {
   assert.deepEqual(out.after, { odometer: 1010 });
   assert.deepEqual(changedFields({ photos: ["a"] }, { photos: ["a", "c"] }).fields, ["photos"]);
   assert.deepEqual(changedFields({ fuelLevel: null as string | null }, { fuelLevel: "4" }).after, { fuelLevel: "4" });
-});
-
-test("FASTag balances change money only when the worked-out FASTag charge moves", () => {
-  const leg = (start: number | null, end: number | null, hasFastag = true): FastagLeg => ({
-    regNo: "KA01AB1234",
-    hasFastag,
-    startBalance: start == null ? null : new Decimal(start),
-    endBalance: end == null ? null : new Decimal(end),
-    endedBySwapPublicId: null,
-  });
-  const usage = (...legs: FastagLeg[]) => calculateFastagUsage(legs);
-
-  // ₹480 → ₹215 billed ₹265; a corrected pickup balance of ₹500 bills ₹285 — refused
-  assert.equal(fastagEditChangesCharges(usage(leg(480, 215)), usage(leg(500, 215))), true);
-  // Drop balance corrected but the tag was recharged both ways (₹0 either way) — allowed
-  assert.equal(fastagEditChangesCharges(usage(leg(200, 300)), usage(leg(200, 350))), false);
-  // Same usage from different readings — allowed
-  assert.equal(fastagEditChangesCharges(usage(leg(480, 215)), usage(leg(500, 235))), false);
-  // The drop had no pickup reading (typed charge); adding one would bill from readings — refused
-  assert.equal(fastagEditChangesCharges(usage(leg(null, 215)), usage(leg(480, 215))), true);
-  // Another car still misses a reading: the typed charge stays — allowed
-  assert.equal(
-    fastagEditChangesCharges(usage(leg(480, 300), leg(null, 100)), usage(leg(500, 300), leg(null, 100))),
-    false,
-  );
-  // Car without a FASTag: nothing billed either way
-  assert.equal(fastagEditChangesCharges(usage(leg(null, null, false)), usage(leg(100, 50, false))), false);
 });

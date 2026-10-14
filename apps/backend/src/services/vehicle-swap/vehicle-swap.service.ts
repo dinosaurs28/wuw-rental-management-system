@@ -59,6 +59,7 @@ import { displayEmail } from "../../utils/customer/identity.js";
 import { isPrivateFile, publicFileUrl } from "../../utils/file-url.js";
 import { uploadedFromBranch } from "../booking-photo-file.service.js";
 import { pickedUpAtMarker } from "../charges/km-allowance.service.js";
+import { getFastagLegs } from "../charges/fastag-usage.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import {
   fastagBalancesToStore,
@@ -205,6 +206,12 @@ export interface SwapContext {
     fuelBars: string | null;
     /** Has a FASTag: its closing balance is read at a mid-rental swap */
     hasFastag: boolean;
+    /**
+     * A FASTag balance was recorded for this car on the booking (at pickup, or as
+     * the replacement at an earlier swap): its closing balance is asked for too
+     * (optional unless hasFastag). Mid-rental only; false otherwise.
+     */
+    fastagBalanceRecorded: boolean;
   };
   /**
    * The replacement must be photographed (candidate.photoRequirement) and the
@@ -630,6 +637,9 @@ export class VehicleSwapService {
           fuelLevel: currentVehicle.fuelLevel,
           fuelBars: fuelPercentToBars(currentVehicle.fuelLevel),
           hasFastag: currentVehicle.hasFastag,
+          fastagBalanceRecorded:
+            stage === "ACTIVE_RENTAL" &&
+            (await getFastagLegs(booking.id, null)).at(-1)?.startBalance != null,
         },
         photosRequired: stage === "ACTIVE_RENTAL",
         currentVehicleStartOdometer:

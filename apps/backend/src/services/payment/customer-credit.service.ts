@@ -69,6 +69,12 @@ export interface CreditSection {
    */
   voided?: boolean;
   voidReason?: string;
+  /**
+   * Lowered because an edit lowered what the booking owes (client item 1, full
+   * edit): the amount before, and why. The section's `amount` is what is owed now.
+   */
+  reducedFrom?: number;
+  reducedReason?: string;
 }
 
 /** Totals of a section list, to the paisa (sections store plain numbers). Voided sections don't count. */
@@ -219,6 +225,57 @@ export async function voidPendingCreditOnCancel(
     },
   });
   return { voidedAmount: voidedAmount.toDecimalPlaces(2).toNumber() };
+}
+
+/**
+ * Takes `amount` off the booking's pending credit, newest section first, when
+ * an edit lowered what the customer owes (client item 1, full edit): the part
+ * of the drop they hadn't paid is no longer owed, so it isn't refunded — it
+ * comes off the credit. A section covered in full is closed as voided (nothing
+ * is owed on it any more); one covered in part keeps the rest pending. Runs
+ * inside the caller's transaction. Returns what was taken off (never more than
+ * is pending).
+ */
+export async function reduceBookingCredit(
+  tx: Prisma.TransactionClient,
+  bookingId: number,
+  amount: Decimal,
+  reason: string,
+): Promise<Decimal> {
+  let left = amount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  if (left.lte(0)) return ZERO;
+  await lockBookingCredit(tx, bookingId);
+  const entry = await tx.customerCreditEntry.findUnique({ where: { bookingId } });
+  if (!entry) return ZERO;
+  const sections = [...((entry.sections as unknown as CreditSection[] | null) ?? [])];
+  const nowISO = new Date().toISOString();
+  for (let i = sections.length - 1; i >= 0 && left.gt(0); i--) {
+    const s = sections[i]!;
+    if (s.isCleared) continue;
+    const owed = new Decimal(String(s.amount));
+    if (owed.lte(left)) {
+      sections[i] = { ...s, isCleared: true, clearedAt: nowISO, clearedRef: "VOID", voided: true, voidReason: reason };
+      left = left.sub(owed);
+    } else {
+      sections[i] = {
+        ...s,
+        amount: owed.sub(left).toDecimalPlaces(2).toNumber(),
+        reducedFrom: s.reducedFrom ?? s.amount,
+        reducedReason: reason,
+      };
+      left = ZERO;
+    }
+  }
+  const taken = amount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).sub(left);
+  if (taken.lte(0)) return ZERO;
+  await tx.customerCreditEntry.update({
+    where: { id: entry.id },
+    data: {
+      sections: sections as unknown as Prisma.InputJsonValue,
+      ...recalcCreditAggregates(sections),
+    },
+  });
+  return taken;
 }
 
 export interface BookingCreditSummary {

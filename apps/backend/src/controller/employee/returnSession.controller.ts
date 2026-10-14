@@ -99,6 +99,7 @@ import {
 } from "../../services/tax/gst.service.js";
 import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import { adjustmentPendingBody, findPendingAdjustment } from "../../services/booking/operation-edit-money.service.js";
 import { getFastagLegs } from "../../services/charges/fastag-usage.service.js";
 import {
   calculateFastagUsage,
@@ -422,6 +423,9 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
           message: `Cannot compute return session. Booking status: ${locked.status}`,
         });
       }
+      // A safety deposit changed by an edit isn't held until that difference is settled
+      const pendingAdjustment = await findPendingAdjustment(booking.id, tx as any);
+      if (pendingAdjustment) throw new ComputeRejection(StatusCode.CONFLICT, adjustmentPendingBody(pendingAdjustment));
       // The km and FASTag charges above were worked out from readings read before the
       // lock (pickup odometer / FASTag balance, swap readings) — re-read them under it
       const [lockedSegments, lockedFastagLegs] = await Promise.all([

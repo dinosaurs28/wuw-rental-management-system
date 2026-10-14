@@ -13,7 +13,9 @@ import { fastagBalanceSchema } from "@repo/schemas";
 import {
   FASTAG_RECHARGED_NOTE,
   fastagBalanceField,
+  buildFastagLegs,
   calculateFastagUsage,
+  countsAsFastagCar,
   fastagBeforeDrop,
   fastagBillStale,
   type FastagLeg,
@@ -201,4 +203,92 @@ test("drop readings signature: changes when a pickup / swap reading changes", ()
   );
   // Old builds without an end odometer: only FASTag is compared
   assert.equal(dropReadingsSignature(null, [leg(480, 215)]), dropReadingsSignature(null, [leg(480, 215)]));
+});
+
+test("counts as a FASTag car: marked, or a balance recorded for it on the booking", () => {
+  assert.equal(countsAsFastagCar(true, []), true);
+  assert.equal(countsAsFastagCar(true, [null]), true);
+  assert.equal(countsAsFastagCar(false, [null, undefined]), false);
+  assert.equal(countsAsFastagCar(false, [new Decimal(480)]), true);
+  assert.equal(countsAsFastagCar(false, [0]), true); // ₹0 is a reading
+  assert.equal(countsAsFastagCar(false, [null, new Decimal(300)]), true);
+});
+
+const car = (regNo: string, hasFastag: boolean) => ({ regNo, hasFastag });
+
+test("legs: a car not marked as FASTag but with a pickup balance is billed from the readings", () => {
+  const legs = buildFastagLegs({
+    pickupBalance: new Decimal(480),
+    currentVehicle: car("KA20A1", false),
+    midRentalSwaps: [],
+    dropBalance: new Decimal(215),
+  });
+  assert.equal(legs[0]!.hasFastag, true);
+  const u = calculateFastagUsage(legs);
+  assert.equal(u.status, "COMPUTED");
+  assert.equal(u.amount.toFixed(2), "265.00");
+  // …and asks for the balance now before the drop
+  assert.equal(fastagBeforeDrop(buildFastagLegs({
+    pickupBalance: new Decimal(480), currentVehicle: car("KA20A1", false), midRentalSwaps: [], dropBalance: null,
+  })).currentHasFastag, true);
+});
+
+test("legs: not marked and no pickup balance — no FASTag; a drop reading alone doesn't count", () => {
+  const legs = buildFastagLegs({
+    pickupBalance: null,
+    currentVehicle: car("KA20A1", false),
+    midRentalSwaps: [],
+    dropBalance: new Decimal(215),
+  });
+  assert.equal(legs[0]!.hasFastag, false);
+  assert.equal(calculateFastagUsage(legs).status, "NO_FASTAG");
+});
+
+test("legs: marked car without a pickup balance falls back to the manual charge", () => {
+  const legs = buildFastagLegs({
+    pickupBalance: null, currentVehicle: car("KA20A1", true), midRentalSwaps: [], dropBalance: new Decimal(215),
+  });
+  assert.equal(calculateFastagUsage(legs).status, "READINGS_MISSING");
+});
+
+test("legs: swaps count each car by its own flag or the balances the swap recorded for it", () => {
+  const swap = (overrides: Partial<Parameters<typeof buildFastagLegs>[0]["midRentalSwaps"][number]> = {}) => ({
+    publicId: "s1",
+    originalVehicle: car("KA20A1", false),
+    newVehicle: car("KA20B2", false),
+    oldVehicleFastagBalance: new Decimal(300),
+    newVehicleFastagBalance: new Decimal(900),
+    ...overrides,
+  });
+  const legs = buildFastagLegs({
+    pickupBalance: new Decimal(480),
+    currentVehicle: car("KA20B2", false),
+    midRentalSwaps: [swap()],
+    dropBalance: new Decimal(850),
+  });
+  assert.deepEqual(legs.map((l) => [l.regNo, l.hasFastag, l.endedBySwapPublicId]), [
+    ["KA20A1", true, "s1"],
+    ["KA20B2", true, null],
+  ]);
+  assert.equal(calculateFastagUsage(legs).amount.toFixed(2), "230.00"); // 180 + 50
+
+  // Replacement neither marked nor read at the swap: it adds nothing
+  const noTagReplacement = buildFastagLegs({
+    pickupBalance: new Decimal(480),
+    currentVehicle: car("KA20B2", false),
+    midRentalSwaps: [swap({ newVehicleFastagBalance: null })],
+    dropBalance: null,
+  });
+  assert.equal(noTagReplacement[1]!.hasFastag, false);
+  assert.equal(calculateFastagUsage(noTagReplacement).amount.toFixed(2), "180.00");
+
+  // Returning car read only at the swap (no pickup balance): counts, reading missing → manual
+  const onlySwapReading = buildFastagLegs({
+    pickupBalance: null,
+    currentVehicle: car("KA20B2", false),
+    midRentalSwaps: [swap({ newVehicleFastagBalance: null })],
+    dropBalance: null,
+  });
+  assert.equal(onlySwapReading[0]!.hasFastag, true);
+  assert.equal(calculateFastagUsage(onlySwapReading).status, "READINGS_MISSING");
 });
