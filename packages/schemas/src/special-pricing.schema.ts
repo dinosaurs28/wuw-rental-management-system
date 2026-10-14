@@ -2,14 +2,17 @@ import { z } from "zod";
 
 // ─── Festival (special-date) pricing ──────────────────────────────────────────
 //
-// A branch's festival pricing rule, e.g. "Dussehra", 20–22 Oct, +10% on every
-// vehicle. Dates are IST calendar days (YYYY-MM-DD), both inclusive. A priced
-// block (a day of the trip, the remainder, a trip of up to 24 h) with at least
-// half of its time on those days is billed at its rent × (1 + percent / 100).
+// A branch's festival pricing rule, e.g. "Dussehra", 20–22 Oct, +10% and/or
+// +₹200 a day on every vehicle. Dates are IST calendar days (YYYY-MM-DD), both
+// inclusive. A priced block (a day of the trip, the remainder, a trip of up to
+// 24 h) with at least half of its time on those days is billed at
+// rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
 
 export const SPECIAL_PRICING_NAME_MAX = 60;
 export const SPECIAL_PRICING_PERCENT_MIN = -90;
 export const SPECIAL_PRICING_PERCENT_MAX = 300;
+/** The flat ₹ a day a rule adds (negative: takes off), either way at most this. */
+export const SPECIAL_PRICING_FLAT_MAX = 100000;
 /** Longest festival, in days (start and end day included). */
 export const SPECIAL_PRICING_MAX_DAYS = 60;
 export const SPECIAL_PRICING_SCOPES = ["ALL", "CATEGORIES", "VEHICLES"] as const;
@@ -42,6 +45,18 @@ export function formatSpecialPercent(percent: number): string {
   return `${percent < 0 ? "−" : "+"}${digits}%`;
 }
 
+/**
+ * A rule's change as labels write it: "+10%", "+₹200/day", "−₹100/day",
+ * "+10% + ₹200/day", "−5% − ₹50/day".
+ */
+export function formatSpecialChange(percent: number, flatAmount = 0): string {
+  const perDay = `₹${Math.abs(flatAmount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}/day`;
+  const sign = flatAmount < 0 ? "−" : "+";
+  if (percent !== 0 && flatAmount !== 0) return `${formatSpecialPercent(percent)} ${sign} ${perDay}`;
+  if (flatAmount !== 0) return `${sign}${perDay}`;
+  return formatSpecialPercent(percent);
+}
+
 /** Paused, else where today (IST) sits against the rule's dates. */
 export function specialPricingStatus(
   rule: { startDate: string; endDate: string; active: boolean },
@@ -52,14 +67,25 @@ export function specialPricingStatus(
   return rule.startDate > today ? "UPCOMING" : "ACTIVE";
 }
 
-/** Why a percentage isn't allowed, or null: −90 … +300, not 0, at most 2 decimals. */
+const twoDecimals = (n: number) => Math.abs(Math.round(n * 100) - n * 100) <= 1e-6;
+
+/** Why a percentage isn't allowed, or null: −90 … +300 (0 = none), at most 2 decimals. */
 export function specialPricingPercentIssue(percent: number): string | null {
   if (typeof percent !== "number" || !Number.isFinite(percent)) return "Enter a percentage";
   if (percent < SPECIAL_PRICING_PERCENT_MIN || percent > SPECIAL_PRICING_PERCENT_MAX) {
     return `Use a percentage from ${SPECIAL_PRICING_PERCENT_MIN}% to +${SPECIAL_PRICING_PERCENT_MAX}%`;
   }
-  if (percent === 0) return "A 0% change does nothing — enter an increase or a decrease";
-  if (Math.abs(Math.round(percent * 100) - percent * 100) > 1e-6) return "Use at most 2 decimal places";
+  if (!twoDecimals(percent)) return "Use at most 2 decimal places";
+  return null;
+}
+
+/** Why a flat ₹/day amount isn't allowed, or null: −1,00,000 … +1,00,000 (0 = none), paise at most. */
+export function specialPricingFlatIssue(flatAmount: number): string | null {
+  if (typeof flatAmount !== "number" || !Number.isFinite(flatAmount)) return "Enter an amount";
+  if (Math.abs(flatAmount) > SPECIAL_PRICING_FLAT_MAX) {
+    return `Use an amount up to ₹${SPECIAL_PRICING_FLAT_MAX.toLocaleString("en-IN")} a day`;
+  }
+  if (!twoDecimals(flatAmount)) return "Use at most 2 decimal places";
   return null;
 }
 
@@ -67,6 +93,7 @@ type RuleShape = {
   startDate?: string | null;
   endDate?: string | null;
   percent?: number | null;
+  flatAmount?: number | null;
   scope?: SpecialPricingScopeValue | null;
   categoryIds?: number[] | null;
   vehicleIds?: number[] | null;
@@ -75,7 +102,8 @@ type RuleShape = {
 /**
  * Cross-field rules shared by create, update (checked on the merged rule) and
  * preview: end on or after start, at most SPECIAL_PRICING_MAX_DAYS days, a valid
- * percentage, and categories / vehicles picked for those scopes.
+ * percentage and flat ₹/day amount — at least one of them not 0 — and
+ * categories / vehicles picked for those scopes.
  */
 export function specialPricingRuleIssues(rule: RuleShape): { path: string; message: string }[] {
   const issues: { path: string; message: string }[] = [];
@@ -86,9 +114,14 @@ export function specialPricingRuleIssues(rule: RuleShape): { path: string; messa
       issues.push({ path: "endDate", message: `A festival can last at most ${SPECIAL_PRICING_MAX_DAYS} days` });
     }
   }
-  if (rule.percent != null) {
-    const issue = specialPricingPercentIssue(rule.percent);
-    if (issue) issues.push({ path: "percent", message: issue });
+  const percentIssue = rule.percent != null ? specialPricingPercentIssue(rule.percent) : null;
+  const flatIssue = rule.flatAmount != null ? specialPricingFlatIssue(rule.flatAmount) : null;
+  if (percentIssue) issues.push({ path: "percent", message: percentIssue });
+  if (flatIssue) issues.push({ path: "flatAmount", message: flatIssue });
+  if (!percentIssue && !flatIssue && (rule.percent != null || rule.flatAmount != null)) {
+    if ((rule.percent ?? 0) === 0 && (rule.flatAmount ?? 0) === 0) {
+      issues.push({ path: "percent", message: "Enter a percentage or a ₹ a day amount (or both)" });
+    }
   }
   if (rule.scope === "CATEGORIES" && !(rule.categoryIds?.length)) {
     issues.push({ path: "categoryIds", message: "Pick at least one category" });
@@ -111,7 +144,9 @@ const specialPricingRuleBase = z.object({
     .max(SPECIAL_PRICING_NAME_MAX, `Use at most ${SPECIAL_PRICING_NAME_MAX} characters`),
   startDate: calendarDate,
   endDate: calendarDate,
-  percent: z.number({ invalid_type_error: "Enter a percentage" }),
+  // Either or both: rent × (1 + percent / 100) + flatAmount ₹ a day (0 = none)
+  percent: z.number({ invalid_type_error: "Enter a percentage" }).default(0),
+  flatAmount: z.number({ invalid_type_error: "Enter an amount" }).default(0),
   scope: z.enum(SPECIAL_PRICING_SCOPES).default("ALL"),
   // Only the list matching the scope is kept (the other is stored empty)
   categoryIds: ids(200).default([]),
@@ -141,7 +176,7 @@ export const updateSpecialPricingRuleSchema = specialPricingRuleBase.partial();
 
 /** POST …/special-rules/preview — a draft rule's 24-hour rents before → after. */
 export const specialPricingPreviewSchema = specialPricingRuleBase
-  .pick({ startDate: true, endDate: true, percent: true, scope: true, categoryIds: true, vehicleIds: true })
+  .pick({ startDate: true, endDate: true, percent: true, flatAmount: true, scope: true, categoryIds: true, vehicleIds: true })
   .extend({ branchId: z.number().int().positive().optional() })
   .superRefine(refineRule);
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { dlCollectionStatusSchema, dlDepositNoteSchema } from "./dl-status.js";
+import { fastagBalanceSchema } from "./fastag.js";
 
 export const getVehicleDetailsSchema = z.object({
   id: z.string().min(16, "Vehicle ID length is invalid."),
@@ -225,7 +226,6 @@ const swapFuelBarsSchema = z.preprocess(
     .regex(/^([1-9]|10)$/, "Fuel must be between 1 and 10 bars")
     .optional(),
 );
-
 export const vehicleSwapSchema = z
   .object({
     newVehicleId: z.coerce
@@ -255,6 +255,28 @@ export const vehicleSwapSchema = z
     // Bill the pro-rated price difference at drop. Omitted (old app builds) =
     // not billed; the difference is still stored on the swap for audit.
     chargeDifference: z.boolean().optional(),
+    // Photos of the replacement taken at a mid-rental swap (pickup photo
+    // uploads: FileObject publicId + capture-config label). Sent (even empty)
+    // by current clients: the server then requires the photos and FASTag
+    // balances (400 SWAP_PHOTOS_REQUIRED / FASTAG_BALANCE_REQUIRED). Omitted
+    // (app 1.0.0/1.0.1) = the swap goes ahead, flagged as without photos.
+    replacementPhotos: z
+      .array(
+        z.object({
+          fileId: z.string().trim().min(1, "Photo file id is required"),
+          label: z.preprocess(
+            (v) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v),
+            z.string().trim().max(100).optional(),
+          ),
+        }),
+      )
+      .max(30, "Too many photos")
+      .optional(),
+    // FASTag balances at a mid-rental swap: the returning car's closing
+    // balance and the replacement's opening balance (cars with a FASTag)
+    // (same 0 … 1,00,000 rule as the pickup / drop balances)
+    oldVehicleFastagBalance: fastagBalanceSchema,
+    newVehicleFastagBalance: fastagBalanceSchema,
   })
   .refine(
     (data) => {
