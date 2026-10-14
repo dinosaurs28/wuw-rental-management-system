@@ -3,7 +3,26 @@ import { SearchForm } from "./SearchForm";
 import { Footer } from "./Footer";
 import { HeroOfferSlider } from "./HeroOfferSlider";
 import { StoreButtons } from "./StoreButtons";
-import { Check, Car, HeartHandshake } from "lucide-react";
+import { Timer, CarFront, ClipboardCheck } from "lucide-react";
+import { MAX_BOOKING_DAYS } from "@/utils/bookingPickers";
+
+const FEATURES = [
+  {
+    icon: Timer,
+    title: "12 hours or by the day",
+    body: `Book 12 hours or 1–${MAX_BOOKING_DAYS} days. The price you see includes GST and free kilometres.`,
+  },
+  {
+    icon: CarFront,
+    title: "Cars and two-wheelers",
+    body: "Pick a four-wheeler or a bike, and filter for highway, hill-station or long-drive trips.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Checked at pickup and return",
+    body: "We photograph the vehicle and note fuel and kilometres when you collect and return it, so your bill is easy to check.",
+  },
+];
 
 export const LandingPage = () => {
   return (
@@ -50,45 +69,26 @@ export const LandingPage = () => {
             </p>
         </section>
 
-        {/* Features Section */}
-        <section className="bg-white py-16 md:py-24 px-4 md:px-6 lg:px-8">
-            <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-                {/* Feature 1 */}
-                <div className="flex flex-col text-left">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Check className="size-6 md:size-7 text-[#1A1A1A]" strokeWidth={3} />
-                        <h3 className="text-base md:text-lg font-bold text-[#1A1A1A]">Unmatched Value</h3>
-                    </div>
-                    <p className="text-2xl md:text-[1.75rem] leading-tight font-black text-[#1A1A1A] tracking-tight">
-                        Experience luxury without the premium price tag
-                    </p>
-                </div>
-                {/* Feature 2 */}
-                <div className="flex flex-col text-left">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Car className="size-6 md:size-7 text-[#1A1A1A]" strokeWidth={3} />
-                        <h3 className="text-base md:text-lg font-bold text-[#1A1A1A]">Curated Fleet</h3>
-                    </div>
-                    <p className="text-2xl md:text-[1.75rem] leading-tight font-black text-[#1A1A1A] tracking-tight">
-                        From executive sedans to exotic supercars
-                    </p>
-                </div>
-                {/* Feature 3 */}
-                <div className="flex flex-col text-left">
-                    <div className="flex items-center gap-3 mb-4">
-                        <HeartHandshake className="size-6 md:size-7 text-[#1A1A1A]" strokeWidth={3} />
-                        <h3 className="text-base md:text-lg font-bold text-[#1A1A1A]">White-Glove Service</h3>
-                    </div>
-                    <p className="text-2xl md:text-[1.75rem] leading-tight font-black text-[#1A1A1A] tracking-tight">
-                        Seamless experience from booking to return
-                    </p>
-                </div>
-            </div>
+        {/* What renting with us is like — real service facts only */}
+        <section className="bg-white py-12 md:py-20 px-4 md:px-6 lg:px-8">
+            <ul className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-y-8 md:gap-x-12">
+                {FEATURES.map(({ icon: Icon, title, body }) => (
+                    <li key={title} className="flex md:flex-col gap-4 text-left">
+                        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#FF5F00]">
+                            <Icon className="size-6" strokeWidth={2} aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0">
+                            <h3 className="text-lg md:text-xl font-bold tracking-tight text-[#1A1A1A]">{title}</h3>
+                            <p className="mt-1.5 max-w-[36ch] text-[15px] md:text-base leading-relaxed text-zinc-600">{body}</p>
+                        </div>
+                    </li>
+                ))}
+            </ul>
         </section>
 
         {/* Mobile app */}
         <section className="px-4 md:px-6 lg:px-8 pb-16">
-            <div className="max-w-[1200px] mx-auto rounded-3xl bg-[#F4F4F4] p-8 md:p-12 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+            <div className="max-w-[1200px] mx-auto rounded-3xl bg-[#F4F4F4] p-6 md:p-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
                 <div>
                     <h2 className="text-2xl md:text-4xl font-black text-[#1A1A1A] uppercase tracking-tighter leading-none mb-3">
                         Get the WUW Rentals app
@@ -102,7 +102,7 @@ export const LandingPage = () => {
         </section>
 
         {/* Bottom Banner */}
-        <section className="px-4 md:px-6 lg:px-8 pb-24">
+        <section className="px-4 md:px-6 lg:px-8 pb-8 md:pb-12">
             <div 
                 className="max-w-[1200px] mx-auto rounded-3xl overflow-hidden relative min-h-[400px] md:min-h-[500px] flex items-end p-8 md:p-12 lg:p-16 bg-cover bg-center"
                 style={{

@@ -1,5 +1,6 @@
 import apiClient from "@/lib/axios";
 import type {
+  SpecialPricingChangeValue,
   SpecialPricingListFilter,
   SpecialPricingScopeValue,
   SpecialPricingStatus,
@@ -9,7 +10,8 @@ import type {
  * Festival pricing rules (e.g. "Dussehra", 20–22 Oct, +10% and/or +₹200 a day
  * on every vehicle): priced blocks with at least half their time on the dates
  * are billed at rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
- * Bookings already made keep their prices.
+ * A GROUPS rule (the per-group dialog) sets one change per vehicle group
+ * instead (items). Bookings already made keep their prices.
  */
 export interface SpecialPricingRule {
   id: number;
@@ -31,14 +33,38 @@ export interface SpecialPricingRule {
   status: SpecialPricingStatus;
   categories: { id: number; name: string }[];
   vehicles: { id: number; regNo: string; make: string; model: string }[];
+  /** GROUPS: each priced vehicle group's change (value signed: negative = off) */
+  items: SpecialPricingItem[];
   createdBy: { name: string } | null;
   updatedBy: { name: string } | null;
   createdAt: string;
   updatedAt: string;
 }
 
-/** What the scope pickers offer: the branch's categories in use and its vehicles. */
+/** One vehicle group's change under a GROUPS rule. */
+export interface SpecialPricingItem {
+  groupKey: string;
+  make: string;
+  model: string;
+  categoryId: number;
+  categoryName: string | null;
+  type: SpecialPricingChangeValue;
+  value: number;
+}
+
+/** A vehicle group: the branch's vehicles of one make + model + category. */
+export interface SpecialPricingGroup {
+  key: string;
+  make: string;
+  model: string;
+  categoryId: number;
+  categoryName: string;
+  vehicleCount: number;
+}
+
+/** What the dialog offers: the branch's vehicle groups (and its categories in use and vehicles). */
 export interface SpecialPricingOptions {
+  groups: SpecialPricingGroup[];
   categories: { id: number; name: string; vehicleCount: number }[];
   vehicles: { id: number; regNo: string; make: string; model: string; categoryId: number; categoryName: string }[];
 }
@@ -52,6 +78,7 @@ export interface SpecialPricingDraft {
   scope: SpecialPricingScopeValue;
   categoryIds: number[];
   vehicleIds: number[];
+  items: { groupKey: string; type: SpecialPricingChangeValue; value: number }[];
   active: boolean;
 }
 
@@ -59,7 +86,16 @@ export interface SpecialPricingDraft {
 export interface SpecialPricingPreview {
   day: string;
   vehiclesInScope: number;
-  samples: { vehicleId: number; name: string; category: string; regNo: string; before: number; after: number }[];
+  /** groupKey: the priced group the sample stands for (GROUPS drafts) */
+  samples: {
+    groupKey?: string;
+    vehicleId: number;
+    name: string;
+    category: string;
+    regNo: string;
+    before: number;
+    after: number;
+  }[];
 }
 
 /** Whose rules: the manager's own branch, or the branch an admin picked. */
@@ -80,7 +116,10 @@ export const specialPricingApi = {
   },
   preview: async (
     portal: SpecialPricingPortal,
-    draft: Pick<SpecialPricingDraft, "startDate" | "endDate" | "percent" | "flatAmount" | "scope" | "categoryIds" | "vehicleIds">,
+    draft: Pick<
+      SpecialPricingDraft,
+      "startDate" | "endDate" | "percent" | "flatAmount" | "scope" | "categoryIds" | "vehicleIds" | "items"
+    >,
   ): Promise<SpecialPricingPreview> => {
     const res = await apiClient.post(`${base(portal)}/preview`, { ...draft, ...branchOf(portal) });
     return res.data.data;

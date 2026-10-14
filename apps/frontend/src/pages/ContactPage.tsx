@@ -5,6 +5,7 @@ import { MapPin, Phone, Clock, MessageCircle } from "lucide-react";
 import { useBranches } from "@/hooks/useBranches";
 import { fetchBranchSchedule } from "@/services/branch.service";
 import { BranchWeeklyHours } from "@/components/branch/BranchWeeklyHours";
+import { CONTACT_ADDRESS, CONTACT_PHONES, WHATSAPP_URL } from "@/lib/contact";
 
 /** Each branch's weekly office hours in force: saved by the branch, else the default 8:00 AM – 11:00 PM. */
 const BranchHoursList = () => {
@@ -84,10 +85,10 @@ export const ContactPage = () => {
                       Location
                     </p>
                     <p className="text-zinc-900 font-semibold text-lg leading-snug">
-                      No. 16, Anath Nagar 1st Stage,<br />Near Syndicate Circle
+                      {CONTACT_ADDRESS.lines[0]}<br />{CONTACT_ADDRESS.lines[1]}
                     </p>
                     <p className="text-zinc-500 font-medium mt-1">
-                      Manipal - 576104
+                      {CONTACT_ADDRESS.cityPin}
                     </p>
                   </div>
                 </div>
@@ -104,16 +105,16 @@ export const ContactPage = () => {
                       Phone
                     </p>
                     <a
-                      href="tel:+918000800469"
+                      href={CONTACT_PHONES[0].href}
                       className="block text-zinc-900 font-semibold text-lg hover:text-zinc-600 transition-colors"
                     >
-                      +91 8000 800 469
+                      {CONTACT_PHONES[0].display}
                     </a>
                     <a
-                      href="tel:+918000800468"
+                      href={CONTACT_PHONES[1].href}
                       className="block text-zinc-500 font-medium mt-1 hover:text-zinc-700 transition-colors"
                     >
-                      +91 8000 800 468
+                      {CONTACT_PHONES[1].display}
                     </a>
                   </div>
                 </div>
@@ -133,7 +134,7 @@ export const ContactPage = () => {
                       Chat with us on WhatsApp
                     </p>
                     <a
-                      href="https://wa.me/918000800469"
+                      href={WHATSAPP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 mt-3 px-5 py-2.5 rounded-full bg-[#25D366] text-white text-sm font-bold hover:bg-[#20bc5a] transition-colors duration-200"

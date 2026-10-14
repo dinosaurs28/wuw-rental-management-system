@@ -33,7 +33,8 @@ export interface LedgerEntry {
 
 export interface PaymentSession {
   publicId: string;
-  sessionType: "PICKUP" | "EXTENSION" | "RETURN";
+  /** ADJUSTMENT = the money difference of an edit to a completed pickup / drop */
+  sessionType: "PICKUP" | "EXTENSION" | "RETURN" | "ADJUSTMENT";
   status: "OPEN" | "COMPUTING" | "AWAITING_PAYMENT" | "PAYMENT_INITIATED" | "COMPLETED" | "ABANDONED";
   netPayable: string;
   totalCharges: string;

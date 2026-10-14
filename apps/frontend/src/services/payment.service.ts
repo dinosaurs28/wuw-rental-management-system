@@ -195,6 +195,13 @@ export interface SettlementSummary {
   safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL" | null;
   /** Safety deposit still to pay back to the customer (#6) — refund-deposit pays it. */
   safetyDepositToRefund?: string;
+  /**
+   * An edit's difference still open (+ collect, − refund) — settled at the counter on
+   * its own session, so it is left out of netPayable. Absent on older servers.
+   */
+  adjustmentPending?: string;
+  /** Paid beyond what the booking owes — refund-overpayment pays it back. Absent on older servers. */
+  overpaidToRefund?: string;
 }
 
 /** POST /branchManager/payment/settlements/:id/refund-deposit (#6, legacy drop). */
@@ -581,6 +588,22 @@ export const paymentService = {
     apiClient
       .post<{ success: boolean; message: string; data: DepositRefundResult }>(
         `/branchManager/payment/settlements/${bookingPublicId}/refund-deposit`,
+        payload
+      )
+      .then((r) => r.data),
+
+  /**
+   * Pays back what a returned booking was paid beyond what it owes (e.g. charges
+   * lowered by an edit after they were collected) — all of overpaidToRefund unless
+   * `amount` is sent. Same response shape as refund-deposit.
+   */
+  refundSettlementOverpayment: (
+    bookingPublicId: string,
+    payload: { method: "CASH" | "UPI"; amount?: number; proof_file_id?: string; notes?: string }
+  ) =>
+    apiClient
+      .post<{ success: boolean; message: string; data: DepositRefundResult }>(
+        `/branchManager/payment/settlements/${bookingPublicId}/refund-overpayment`,
         payload
       )
       .then((r) => r.data),

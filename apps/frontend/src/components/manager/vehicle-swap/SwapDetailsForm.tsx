@@ -96,8 +96,15 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
     fields: [],
     minPhotos: MIN_PHOTOS_WITHOUT_CONFIG,
   };
+  // FASTag balances: the returning car's when it's marked as having a FASTag
+  // (required) or its balance was read earlier on this booking (optional); the
+  // replacement's always (required when it's marked as having one) — a balance
+  // read here starts tracking its FASTag for this booking.
   const oldHasFastag = photosRequired && swapContext?.currentVehicle.hasFastag === true;
+  const oldFastagShown =
+    oldHasFastag || (photosRequired && swapContext?.currentVehicle.fastagBalanceRecorded === true);
   const newHasFastag = photosRequired && newVehicle.hasFastag === true;
+  const newFastagShown = photosRequired;
   const chargeDefaults = swapContext?.chargeDifferenceDefaults ?? DEFAULT_CHARGE_DIFFERENCE;
   const segmentStart = swapContext?.currentVehicleStartOdometer ?? null;
 
@@ -155,10 +162,10 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
   const oldFastagValue = parseFastagBalance(oldFastag);
   const newFastagValue = parseFastagBalance(newFastag);
   const fastagErrors: Partial<Record<"old" | "new", string>> = {};
-  if (oldHasFastag && oldFastagValue === null) {
+  if ((oldHasFastag || (oldFastagShown && oldFastag.trim() !== "")) && oldFastagValue === null) {
     fastagErrors.old = oldFastag.trim() === "" ? "Enter the FASTag balance" : "Enter an amount like 250 or 250.50 (up to ₹1,00,000)";
   }
-  if (newHasFastag && newFastagValue === null) {
+  if ((newHasFastag || (newFastagShown && newFastag.trim() !== "")) && newFastagValue === null) {
     fastagErrors.new = newFastag.trim() === "" ? "Enter the FASTag balance" : "Enter an amount like 250 or 250.50 (up to ₹1,00,000)";
   }
   const showFastagError = (field: "old" | "new", typed: string) =>
@@ -213,8 +220,8 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
     data.replacementPhotos = photosRequired
       ? photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) }))
       : [];
-    if (oldHasFastag && oldFastagValue !== null) data.oldVehicleFastagBalance = oldFastagValue;
-    if (newHasFastag && newFastagValue !== null) data.newVehicleFastagBalance = newFastagValue;
+    if (oldFastagShown && oldFastagValue !== null) data.oldVehicleFastagBalance = oldFastagValue;
+    if (newFastagShown && newFastagValue !== null) data.newVehicleFastagBalance = newFastagValue;
     onSubmit(data);
   };
 
@@ -297,10 +304,10 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <p className="text-xs text-red-600">{showError("originalFuel", originalFuel)}</p>
                 )}
               </div>
-              {oldHasFastag && (
+              {oldFastagShown && (
                 <div className="space-y-1.5">
                   <Label htmlFor="oldFastag" className="text-sm">
-                    FASTag balance (₹) <span className="text-red-500">*</span>
+                    FASTag balance (₹) {oldHasFastag ? <span className="text-red-500">*</span> : <span className="text-xs text-muted-foreground">optional</span>}
                   </Label>
                   <Input
                     id="oldFastag"
@@ -310,9 +317,13 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                     onChange={(e) => setOldFastag(e.target.value.replace(/[^\d.]/g, ""))}
                     aria-invalid={!!showFastagError("old", oldFastag)}
                   />
-                  {showFastagError("old", oldFastag) && (
+                  {showFastagError("old", oldFastag) ? (
                     <p className="text-xs text-red-600">{showFastagError("old", oldFastag)}</p>
-                  )}
+                  ) : !oldHasFastag ? (
+                    <p className="text-xs text-muted-foreground">
+                      Its FASTag balance was read earlier on this rental — leave empty if it has no FASTag.
+                    </p>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -361,10 +372,10 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <p className="text-xs text-red-600">{showError("newFuel", newFuel)}</p>
                 )}
               </div>
-              {newHasFastag && (
+              {newFastagShown && (
                 <div className="space-y-1.5">
                   <Label htmlFor="newFastag" className="text-sm">
-                    FASTag balance (₹) <span className="text-red-500">*</span>
+                    FASTag balance (₹) {newHasFastag ? <span className="text-red-500">*</span> : <span className="text-xs text-muted-foreground">optional</span>}
                   </Label>
                   <Input
                     id="newFastag"
@@ -374,9 +385,11 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                     onChange={(e) => setNewFastag(e.target.value.replace(/[^\d.]/g, ""))}
                     aria-invalid={!!showFastagError("new", newFastag)}
                   />
-                  {showFastagError("new", newFastag) && (
+                  {showFastagError("new", newFastag) ? (
                     <p className="text-xs text-red-600">{showFastagError("new", newFastag)}</p>
-                  )}
+                  ) : !newHasFastag ? (
+                    <p className="text-xs text-muted-foreground">Leave empty if this car has no FASTag.</p>
+                  ) : null}
                 </div>
               )}
             </div>

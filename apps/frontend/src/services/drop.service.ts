@@ -58,6 +58,10 @@ const DROP_ERROR_CODES = [
   "RETURN_AWAITING_MANAGER",
   // legacy complete: the branch now settles drops on the drop bill
   "USE_DROP_BILL",
+  // compute / legacy complete: the pickup / swap readings were corrected meanwhile (Edit Pickup)
+  "DROP_READINGS_CHANGED",
+  // compute / legacy complete / settling the drop bill: an edit's difference is still to be settled
+  "ADJUSTMENT_PENDING",
 ] as const;
 
 export type DropErrorCode = (typeof DROP_ERROR_CODES)[number];

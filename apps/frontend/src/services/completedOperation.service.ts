@@ -1,15 +1,79 @@
 import apiClient from "@/lib/axios";
 import type { DlStatus } from "@/services/dlStatus.service";
+import type { PaymentSession } from "@/services/paymentSession.service";
 import type { BookingListType } from "@/types/overdueReturns";
 
 /**
  * Completed pickups / returns (client item 1): the read-only summary and the
  * Edit Pickup / Edit Return endpoints.
  *   GET   /employee/{pickup|return}/:bookingId/summary
- *   PATCH /employee/{pickup|return}/:bookingId — only the fields sent change;
- *         409 EDIT_CHANGES_CHARGES (+ field) when a reading would change charges
- *         already computed or settled.
+ *   POST  /employee/{pickup|return}/:bookingId/edit/preview — the money difference, nothing saved
+ *   PATCH /employee/{pickup|return}/:bookingId — only the fields sent change; the
+ *         difference is settled on `adjustment.session` (record-payment / record-refund);
+ *         409 EDIT_DELTA_CHANGED when it moved since `expectedDelta` (required when money
+ *         moves: EDIT_CONFIRMATION_REQUIRED). An unsettled earlier difference is replaced
+ *         (preview `supersedes`), unless a payment was started on it (ADJUSTMENT_PAYMENT_STARTED).
  */
+
+/** One bill line of an edit's money difference (old → new). */
+export interface AdjustmentLine {
+  key: string;
+  part: "PICKUP" | "DROP";
+  entryType: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  label: string;
+  oldAmount: string;
+  newAmount: string;
+  delta: string;
+}
+
+/** How an edit's difference is settled. */
+export interface AdjustmentPlan {
+  /** new − old: + collect, − refund */
+  delta: string;
+  action: "COLLECT" | "REFUND" | "NONE";
+  amount: string;
+  /** COUNTER = on the adjustment session now; BRANCH_MANAGER = legacy return charges in Settlements */
+  settledBy: "COUNTER" | "BRANCH_MANAGER";
+  methods: { collect: string[]; refund: string[] };
+  lines: AdjustmentLine[];
+  changedLines: number;
+}
+
+/** An edit's ADJUSTMENT session. */
+export interface AdjustmentRecord {
+  session: PaymentSession;
+  operation: "PICKUP" | "RETURN" | null;
+  lines: AdjustmentLine[];
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface EditPreview {
+  adjustment: AdjustmentPlan;
+  drop: { flow: "DROP_BILL" | "LEGACY"; charges: string; depositHandling: "SET_OFF" | "REFUND_IN_FULL" } | null;
+  pendingAdjustment: PaymentSession | null;
+  /** The unsettled difference this save replaces (its money is worked out again in this one) */
+  supersedes?: PaymentSession | null;
+}
+
+/** The drop's bill inputs as recorded / last edited (money as 2-dp strings). */
+export interface DropEditInputs {
+  endOdometer: number | null;
+  manualExtraKm: number | null;
+  returnFuelLevel: string | null;
+  returnFastagBalance: string | null;
+  fuelCharge: string;
+  fastagAmount: string;
+  fastagNotes: string | null;
+  otherCharges: { label: string; amount: string }[];
+  discount: { amount: string; reason: string } | null;
+  applyGrace: boolean;
+  waiveReason: string | null;
+  depositHandling: "SET_OFF" | "REFUND_IN_FULL";
+  damageAmounts: Record<string, string>;
+}
 
 /** PENDING = not done yet (the workflow handles it); null = not on that queue. */
 export type CompletedState = "PENDING" | "COMPLETED" | "AWAITING_MANAGER";
@@ -56,6 +120,10 @@ interface SummaryBase {
   vehicles: { publicId: string; make: string; model: string; regNo: string }[];
   dl: { status: DlStatus; depositNote: string | null };
   photos: SummaryPhoto[];
+  /** An edit's difference still to collect / refund */
+  pendingAdjustment?: AdjustmentRecord | null;
+  /** Edits whose difference was settled */
+  adjustments?: AdjustmentRecord[];
 }
 
 export interface PickupSummary extends SummaryBase {
@@ -63,17 +131,25 @@ export interface PickupSummary extends SummaryBase {
   odometer: number | null;
   /** "1".."10" */
   fuelLevel: string | null;
-  /** ₹ on the FASTag at the handover — shown / editable only when hasFastag. */
-  fastag: { hasFastag: boolean; balance: string | null };
+  /**
+   * ₹ on the FASTag at the handover — editable for any car, required when the car
+   * is marked as having a FASTag (vehicleHasFastag; absent on older servers).
+   * hasFastag: it counts as a FASTag car for the booking (marked, or a balance read).
+   */
+  fastag: { hasFastag: boolean; vehicleHasFastag?: boolean; balance: string | null };
   safetyDeposit: string;
   captureFields: { name: string; required: boolean }[];
   bill: { lines: SummaryBillLine[]; netPayable: string } | null;
   edit: {
     allowed: boolean;
-    /** A drop already measured km from the pickup reading. */
+    /** Always false since the full edit (money changes are settled, not refused). */
     odometerCheckedAgainstCharges: boolean;
-    /** The return is done: a FASTag balance that moves the FASTag charge is refused. */
     fastagCheckedAgainstCharges: boolean;
+    /** Corrected pickup readings re-price the completed drop. */
+    readingsMoveDropCharges?: boolean;
+    /** The safety deposit can be changed (car out, nothing recorded at the drop). */
+    depositEditable?: boolean;
+    depositLockedReason?: string | null;
     dlStatusEditable: boolean;
     dlStatusLockedReason: string | null;
   };
@@ -107,9 +183,13 @@ export interface ReturnSummary extends SummaryBase {
     measured: boolean;
   };
   fuel: { pickup: string | null; return: string | null };
-  /** FASTag of the car handed back — shown / editable only when hasFastag. */
+  /**
+   * FASTag of the car handed back — shown / editable (and required) when hasFastag:
+   * it counts as a FASTag car for the booking (marked, or a balance read at pickup / swap).
+   */
   fastag: {
     hasFastag: boolean;
+    vehicleHasFastag?: boolean;
     /** When the customer got the car */
     startBalance: string | null;
     /** At the drop */
@@ -119,10 +199,22 @@ export interface ReturnSummary extends SummaryBase {
   };
   damages: ReturnSummaryDamage[];
   bill: { settledBy: "DROP_BILL" | "BRANCH_MANAGER"; lines: SummaryBillLine[]; netPayable: string } | null;
+  /** What the drop recorded, to prefill Edit Return */
+  editState?: {
+    flow: "DROP_BILL" | "LEGACY";
+    inputs: DropEditInputs;
+    /** The drop bill as charged now: the original plus earlier edits */
+    billedLines: { entryType: string; referenceType: string | null; referenceId: string | null; label: string; amount: string }[];
+    damages: { publicId: string; label: string; amount: string; editable: boolean }[];
+  } | null;
   edit: { allowed: boolean; fuelEditable: boolean };
 }
 
 export interface EditPickupBody {
+  /** New safety deposit total (car still out) */
+  safetyDeposit?: number;
+  /** The difference the review showed */
+  expectedDelta?: number;
   odo?: number;
   pickupFuelLevel?: string;
   pickupFastagBalance?: number;
@@ -145,13 +237,26 @@ export interface EditReturnBody {
     severity?: "Minor" | "Moderate" | "Severe";
     addPhotoIds?: string[];
     removeFileIds?: string[];
+    amount?: number;
   }[];
+  manualExtraKm?: number | null;
+  fuelCharge?: number;
+  fastagAmount?: number;
+  fastagNotes?: string | null;
+  otherCharges?: { label: string; amount: number }[];
+  discount?: { amount: number; reason: string } | null;
+  applyGrace?: boolean;
+  waiveLateCharge?: { reason: string } | null;
+  safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL";
+  expectedDelta?: number;
 }
 
 export interface EditOperationResponse<T> {
   message: string;
   changed: string[];
   data: T;
+  /** The money difference and the session that settles it */
+  adjustment?: (AdjustmentPlan & { session: PaymentSession | null }) | null;
 }
 
 export const completedOperationService = {
@@ -169,6 +274,14 @@ export const completedOperationService = {
       body,
     );
     return response.data;
+  },
+  previewPickupEdit: async (bookingId: string, body: EditPickupBody) => {
+    const response = await apiClient.post<{ data: EditPreview }>(`/employee/pickup/${bookingId}/edit/preview`, body);
+    return response.data.data;
+  },
+  previewReturnEdit: async (bookingId: string, body: EditReturnBody) => {
+    const response = await apiClient.post<{ data: EditPreview }>(`/employee/return/${bookingId}/edit/preview`, body);
+    return response.data.data;
   },
   editReturn: async (bookingId: string, body: EditReturnBody) => {
     const response = await apiClient.patch<EditOperationResponse<ReturnSummary>>(

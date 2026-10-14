@@ -2,37 +2,23 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import {
-  AlertCircle,
-  Info,
-  Loader2,
-  Pause,
-  Pencil,
-  Play,
-  Plus,
-  Search,
-  Trash2,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { AlertCircle, Info, Loader2, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import {
   SPECIAL_PRICING_MAX_DAYS,
   SPECIAL_PRICING_NAME_MAX,
-  SPECIAL_PRICING_PERCENT_MAX,
-  SPECIAL_PRICING_FLAT_MAX,
-  calendarDaysBetween,
+  formatGroupChange,
   formatSpecialChange,
   isCalendarDate,
   istToday,
   specialPricingRuleIssues,
+  vehicleGroupKey,
+  type SpecialPricingChangeValue,
   type SpecialPricingListFilter,
-  type SpecialPricingScopeValue,
   type SpecialPricingStatus,
 } from "@repo/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -42,6 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +58,8 @@ import { cn } from "@/lib/utils";
 import {
   specialPricingApi,
   type SpecialPricingDraft,
+  type SpecialPricingGroup,
+  type SpecialPricingItem,
   type SpecialPricingOptions,
   type SpecialPricingPortal,
   type SpecialPricingRule,
@@ -86,13 +81,8 @@ const STATUS_STYLE: Record<SpecialPricingStatus, { label: string; className: str
   PAUSED: { label: "Paused", className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
-const SCOPES: { value: SpecialPricingScopeValue; label: string }[] = [
-  { value: "ALL", label: "All vehicles" },
-  { value: "CATEGORIES", label: "Categories" },
-  { value: "VEHICLES", label: "Vehicles" },
-];
-
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
 
 /** "20 Oct – 22 Oct 2026", "20 Oct 2026" */
 function dateRangeLabel(startDate: string, endDate: string): string {
@@ -104,195 +94,188 @@ function dateRangeLabel(startDate: string, endDate: string): string {
     : `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`;
 }
 
-function scopeSummary(rule: SpecialPricingRule): { text: string; title?: string } {
+/** A per-group rule's changes in one line: "+10%", "up to +10%", "up to +10% · ₹100/day off". */
+function groupChangeSummary(items: SpecialPricingItem[]): string {
+  const parts: string[] = [];
+  for (const type of ["PERCENT", "FLAT"] as const) {
+    for (const sign of [1, -1]) {
+      const values = items.filter((i) => i.type === type && Math.sign(i.value) === sign).map((i) => Math.abs(i.value));
+      if (values.length === 0) continue;
+      const max = Math.max(...values);
+      parts.push(`${values.every((v) => v === max) ? "" : "up to "}${formatGroupChange(type, sign * max)}`);
+    }
+  }
+  return parts.join(" · ");
+}
+
+/** The list's "Change" and "Applies to" cells for a rule (a per-group one, or one from before). */
+function ruleSummary(rule: SpecialPricingRule): {
+  change: string;
+  tone: "up" | "off" | "mixed";
+  appliesTo: string;
+  title?: string;
+} {
+  if (rule.scope === "GROUPS") {
+    const up = rule.items.every((i) => i.value > 0);
+    const off = rule.items.every((i) => i.value < 0);
+    return {
+      change: groupChangeSummary(rule.items),
+      tone: up ? "up" : off ? "off" : "mixed",
+      appliesTo: plural(rule.items.length, "group"),
+      title: rule.items
+        .map((i) => `${i.make} ${i.model}${i.categoryName ? ` (${i.categoryName})` : ""}: ${formatGroupChange(i.type, i.value)}`)
+        .join("\n"),
+    };
+  }
+  const tone =
+    rule.percent <= 0 && rule.flatAmount <= 0 ? "off" : rule.percent >= 0 && rule.flatAmount >= 0 ? "up" : "mixed";
+  const change = formatSpecialChange(rule.percent, rule.flatAmount);
   if (rule.scope === "CATEGORIES") {
     const names = rule.categories.map((c) => c.name);
     return {
-      text: names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`,
+      change,
+      tone,
+      appliesTo: names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`,
       title: names.join(", "),
     };
   }
   if (rule.scope === "VEHICLES") {
     return {
-      text: `${rule.vehicles.length} vehicle${rule.vehicles.length === 1 ? "" : "s"}`,
+      change,
+      tone,
+      appliesTo: plural(rule.vehicles.length, "vehicle"),
       title: rule.vehicles.map((v) => `${v.regNo} · ${v.make} ${v.model}`).join("\n"),
     };
   }
-  return { text: "All vehicles" };
+  return { change, tone, appliesTo: "All vehicles" };
 }
 
-type Direction = "increase" | "decrease";
+// ── Pricing types ─────────────────────────────────────────────────────────────
+
+/** A group's pricing type: up or off, by a percentage or a flat ₹ a day. */
+type PricingType = "PERCENT" | "FLAT" | "PERCENT_OFF" | "FLAT_OFF";
+
+const PRICING_TYPES: { value: PricingType; label: string }[] = [
+  { value: "PERCENT", label: "Percentage" },
+  { value: "FLAT", label: "Flat amount" },
+  { value: "PERCENT_OFF", label: "Percentage off" },
+  { value: "FLAT_OFF", label: "Flat amount off" },
+];
+
+const changeOf = (type: PricingType): SpecialPricingChangeValue => (type.startsWith("PERCENT") ? "PERCENT" : "FLAT");
+const isOff = (type: PricingType) => type.endsWith("_OFF");
+const pricingTypeOf = (type: SpecialPricingChangeValue, value: number): PricingType =>
+  value < 0 ? (type === "PERCENT" ? "PERCENT_OFF" : "FLAT_OFF") : type;
+
+interface GroupRow {
+  type: PricingType;
+  /** As typed, positive (the type carries up / off); empty = no change for the group */
+  amount: string;
+}
 
 interface FormState {
   name: string;
   startDate: string;
   endDate: string;
-  /** The percentage without its sign, as typed (blank = none) */
-  percentDirection: Direction;
-  percent: string;
-  /** The flat ₹ a day without its sign, as typed (blank = none) */
-  flatDirection: Direction;
-  flatAmount: string;
-  scope: SpecialPricingScopeValue;
-  categoryIds: number[];
-  vehicleIds: number[];
-  active: boolean;
+  rows: Record<string, GroupRow>;
 }
 
-const emptyForm = (): FormState => ({
-  name: "",
-  startDate: "",
-  endDate: "",
-  percentDirection: "increase",
-  percent: "",
-  flatDirection: "increase",
-  flatAmount: "",
-  scope: "ALL",
-  categoryIds: [],
-  vehicleIds: [],
-  active: true,
-});
-
-const formOf = (rule: SpecialPricingRule): FormState => ({
-  name: rule.name,
-  startDate: rule.startDate,
-  endDate: rule.endDate,
-  percentDirection: rule.percent < 0 ? "decrease" : "increase",
-  percent: rule.percent ? String(Math.abs(rule.percent)) : "",
-  flatDirection: rule.flatAmount < 0 ? "decrease" : "increase",
-  flatAmount: rule.flatAmount ? String(Math.abs(rule.flatAmount)) : "",
-  scope: rule.scope,
-  categoryIds: rule.categoryIds,
-  vehicleIds: rule.vehicleIds,
-  active: rule.active,
-});
+const emptyRow = (): GroupRow => ({ type: "PERCENT", amount: "" });
+const emptyForm = (): FormState => ({ name: "", startDate: "", endDate: "", rows: {} });
 
 /**
- * A typed amount with its direction: the toggle alone sets the sign (a typed
- * "-200" is 200), blank = 0; anything not a number stays NaN for the checks.
+ * The form an existing rule opens with, and a note when it can't be shown as
+ * is: groups that left the branch, or a rule from before per-group pricing
+ * (spread over the groups it covered).
  */
-const signed = (typed: string, direction: Direction) => {
-  const magnitude = typed.trim() === "" ? 0 : Math.abs(Number(typed));
-  return direction === "decrease" && magnitude !== 0 ? -magnitude : magnitude;
-};
+function formOf(rule: SpecialPricingRule, options: SpecialPricingOptions): { form: FormState; note: string | null } {
+  const base = { name: rule.name, startDate: rule.startDate, endDate: rule.endDate };
+  const rows: Record<string, GroupRow> = {};
+  if (rule.scope === "GROUPS") {
+    for (const i of rule.items) rows[i.groupKey] = { type: pricingTypeOf(i.type, i.value), amount: String(Math.abs(i.value)) };
+    const keys = new Set(options.groups.map((g) => g.key));
+    const gone = rule.items.filter((i) => !keys.has(i.groupKey)).length;
+    return {
+      form: { ...base, rows },
+      note: gone
+        ? `${plural(gone, "vehicle group")} in this offer no longer ${gone === 1 ? "has" : "have"} vehicles at the branch — saving removes ${gone === 1 ? "it" : "them"}.`
+        : null,
+    };
+  }
+  const vehicleGroups = new Set(
+    options.vehicles.filter((v) => rule.vehicleIds.includes(v.id)).map((v) => vehicleGroupKey(v.make, v.model, v.categoryId)),
+  );
+  const covered = options.groups.filter(
+    (g) =>
+      rule.scope === "ALL" ||
+      (rule.scope === "CATEGORIES" && rule.categoryIds.includes(g.categoryId)) ||
+      (rule.scope === "VEHICLES" && vehicleGroups.has(g.key)),
+  );
+  const type: SpecialPricingChangeValue = rule.percent !== 0 ? "PERCENT" : "FLAT";
+  const value = rule.percent !== 0 ? rule.percent : rule.flatAmount;
+  for (const g of covered) rows[g.key] = { type: pricingTypeOf(type, value), amount: String(Math.abs(value)) };
+  const dropped = rule.percent !== 0 && rule.flatAmount !== 0 ? ` Its ${formatGroupChange("FLAT", rule.flatAmount)} part isn't carried over.` : "";
+  return {
+    form: { ...base, rows },
+    note: `This offer was set up before per-group pricing. Saving replaces it with the group prices below.${dropped}`,
+  };
+}
 
-function draftOf(form: FormState): SpecialPricingDraft {
+/** The rule the form describes: a GROUPS rule pricing each group with an amount. */
+function draftOf(form: FormState, groups: SpecialPricingGroup[], active: boolean): SpecialPricingDraft {
+  const items = groups.flatMap((g) => {
+    const row = form.rows[g.key];
+    if (!row || row.amount.trim() === "") return [];
+    // Positive numbers only: the type alone says up or off ("-200" is 200)
+    const magnitude = Math.abs(Number(row.amount));
+    return [{ groupKey: g.key, type: changeOf(row.type), value: isOff(row.type) ? -magnitude : magnitude }];
+  });
   return {
     name: form.name.trim(),
     startDate: form.startDate,
     endDate: form.endDate,
-    percent: signed(form.percent, form.percentDirection),
-    flatAmount: signed(form.flatAmount, form.flatDirection),
-    scope: form.scope,
-    categoryIds: form.scope === "CATEGORIES" ? form.categoryIds : [],
-    vehicleIds: form.scope === "VEHICLES" ? form.vehicleIds : [],
-    active: form.active,
+    percent: 0,
+    flatAmount: 0,
+    scope: "GROUPS",
+    categoryIds: [],
+    vehicleIds: [],
+    items,
+    active,
   };
 }
 
-type FieldErrors = Partial<
-  Record<"name" | "startDate" | "endDate" | "percent" | "flatAmount" | "categoryIds" | "vehicleIds", string>
->;
+interface FormErrors {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  items?: string;
+  /** Per vehicle group (groupKey) */
+  rows: Record<string, string>;
+}
 
-/** The same checks the server runs (schemas), field by field. */
-function draftErrors(draft: SpecialPricingDraft, datesMoved: boolean): FieldErrors {
-  const errors: FieldErrors = {};
-  if (!draft.name) errors.name = "Give the festival a name";
+/** The same checks the server runs (schemas), field by field and group by group. */
+function draftErrors(draft: SpecialPricingDraft, datesMoved: boolean): FormErrors {
+  const errors: FormErrors = { rows: {} };
+  if (!draft.name) errors.name = "Give the festive offer a name";
   else if (draft.name.length > SPECIAL_PRICING_NAME_MAX) errors.name = `Use at most ${SPECIAL_PRICING_NAME_MAX} characters`;
   if (!isCalendarDate(draft.startDate)) errors.startDate = "Pick the first day";
   if (!isCalendarDate(draft.endDate)) errors.endDate = "Pick the last day";
   else if (datesMoved && draft.endDate < istToday()) errors.endDate = "The end date is in the past";
   for (const issue of specialPricingRuleIssues(draft)) {
-    const key = issue.path as keyof FieldErrors;
-    if (!errors[key]) errors[key] = issue.message;
+    const index = /^items\.(\d+)\./.exec(issue.path)?.[1];
+    const groupKey = index != null ? draft.items[Number(index)]?.groupKey : undefined;
+    if (groupKey) errors.rows[groupKey] ??= issue.message;
+    else if (issue.path === "items") errors.items ??= issue.message;
+    else if (issue.path === "startDate" || issue.path === "endDate") errors[issue.path] ??= issue.message;
   }
   return errors;
 }
 
+const hasErrors = (e: FormErrors) =>
+  !!(e.name || e.startDate || e.endDate || e.items || Object.keys(e.rows).length > 0);
+
 const errorMessage = (e: unknown, fallback: string) =>
   (e as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
-
-// ── Scope pickers ─────────────────────────────────────────────────────────────
-
-function CategoryPicker({
-  options,
-  selected,
-  onChange,
-}: {
-  options: SpecialPricingOptions["categories"];
-  selected: number[];
-  onChange: (ids: number[]) => void;
-}) {
-  if (options.length === 0) {
-    return <p className="px-1 py-2 text-xs text-zinc-500">This branch has no vehicle categories in use yet.</p>;
-  }
-  const toggle = (id: number, on: boolean) =>
-    onChange(on ? [...new Set([...selected, id])] : selected.filter((x) => x !== id));
-  return (
-    <div className="max-h-44 overflow-y-auto rounded-md border divide-y divide-zinc-100">
-      {options.map((c) => (
-        <label key={c.id} className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-zinc-50">
-          <Checkbox checked={selected.includes(c.id)} onCheckedChange={(v) => toggle(c.id, !!v)} />
-          <span className="text-zinc-800">{c.name}</span>
-          <span className="ml-auto text-xs text-zinc-400">
-            {c.vehicleCount} vehicle{c.vehicleCount === 1 ? "" : "s"}
-          </span>
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function VehiclePicker({
-  options,
-  selected,
-  onChange,
-}: {
-  options: SpecialPricingOptions["vehicles"];
-  selected: number[];
-  onChange: (ids: number[]) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
-  const shown = q
-    ? options.filter((v) => `${v.regNo} ${v.make} ${v.model} ${v.categoryName}`.toLowerCase().includes(q))
-    : options;
-  if (options.length === 0) {
-    return <p className="px-1 py-2 text-xs text-zinc-500">This branch has no vehicles yet.</p>;
-  }
-  const toggle = (id: number, on: boolean) =>
-    onChange(on ? [...new Set([...selected, id])] : selected.filter((x) => x !== id));
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Search className="absolute left-3 top-2.5 size-4 text-zinc-400" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by number, make, model or category"
-          className="h-9 pl-9 text-sm"
-        />
-      </div>
-      <div className="max-h-52 overflow-y-auto rounded-md border divide-y divide-zinc-100">
-        {shown.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-zinc-500">No vehicle matches “{query}”.</p>
-        ) : (
-          shown.map((v) => (
-            <label key={v.id} className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-zinc-50">
-              <Checkbox checked={selected.includes(v.id)} onCheckedChange={(on) => toggle(v.id, !!on)} />
-              <span className="font-medium text-zinc-800">{v.regNo}</span>
-              <span className="truncate text-zinc-600">
-                {v.make} {v.model}
-              </span>
-              <span className="ml-auto shrink-0 text-xs text-zinc-400">{v.categoryName}</span>
-            </label>
-          ))
-        )}
-      </div>
-      <p className="text-xs text-zinc-500">{selected.length} selected</p>
-    </div>
-  );
-}
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 
@@ -306,11 +289,12 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
   const inputKey = JSON.stringify({
     startDate: draft.startDate,
     endDate: draft.endDate,
-    percent: draft.percent,
-    flatAmount: draft.flatAmount,
-    scope: draft.scope,
-    categoryIds: draft.categoryIds,
-    vehicleIds: draft.vehicleIds,
+    percent: 0,
+    flatAmount: 0,
+    scope: "GROUPS",
+    categoryIds: [],
+    vehicleIds: [],
+    items: draft.items,
   });
   const debouncedKey = useDebounce(inputKey, 400);
   const { data, isFetching, error } = useQuery({
@@ -322,37 +306,34 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
   });
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
+    <div className="rounded-lg bg-zinc-50 px-4 py-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Preview</p>
         {isFetching && <Loader2 className="size-3.5 animate-spin text-zinc-400" />}
       </div>
       {!ready ? (
-        <p className="text-xs text-zinc-500">Fill in the dates, the change and what it applies to.</p>
+        <p className="text-sm text-zinc-500">Choose dates and configure pricing for the vehicle groups.</p>
       ) : error ? (
-        <p className="text-xs text-red-600">{errorMessage(error, "Couldn't load the preview")}</p>
+        <p className="text-sm text-red-600">{errorMessage(error, "Couldn't load the preview")}</p>
       ) : !data ? (
-        <p className="text-xs text-zinc-500">Loading…</p>
+        <p className="text-sm text-zinc-500">Loading…</p>
       ) : data.samples.length === 0 ? (
-        <p className="text-xs text-zinc-500">
-          {data.vehiclesInScope === 0 ? "No vehicles match yet." : "None of these vehicles has rates set yet."}
-        </p>
+        <p className="text-sm text-zinc-500">None of these vehicle groups has rates set yet.</p>
       ) : (
         <>
           <p className="mb-2 text-xs text-zinc-500">
-            24-hour rent on {format(parseISO(data.day), "EEE d MMM")} (incl. GST) · {data.vehiclesInScope} vehicle
-            {data.vehiclesInScope === 1 ? "" : "s"} in scope
+            24-hour rent on {format(parseISO(data.day), "EEE d MMM")}, incl. GST
           </p>
           <div className="space-y-1.5">
-            {data.samples.map((s) => (
-              <div key={s.vehicleId} className="flex items-center justify-between gap-3 text-sm">
+            {data.samples.map((sample) => (
+              <div key={sample.groupKey ?? sample.vehicleId} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate text-zinc-700">
-                  {s.name} <span className="text-xs text-zinc-400">· {s.category}</span>
+                  {sample.name} <span className="text-xs text-zinc-400">· {sample.category}</span>
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  <span className="text-zinc-400 line-through">{rupees(s.before)}</span>
+                  <span className="text-zinc-400 line-through">{rupees(sample.before)}</span>
                   <span className="mx-1.5 text-zinc-400">→</span>
-                  <span className="font-semibold text-zinc-900">{rupees(s.after)}</span>
+                  <span className="font-semibold text-zinc-900">{rupees(sample.after)}</span>
                 </span>
               </div>
             ))}
@@ -363,80 +344,64 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
   );
 }
 
-// ── Change inputs ─────────────────────────────────────────────────────────────
+// ── Create / edit dialog ──────────────────────────────────────────────────────
 
-/** One part of a rule's change: Increase / Decrease and the amount (% or ₹ a day). */
-function ChangeInput({
-  id,
-  label,
-  unit,
-  direction,
-  value,
-  max,
-  placeholder,
-  invalid,
-  onDirection,
-  onValue,
+function GroupPricingRow({
+  group,
+  row,
+  error,
+  onChange,
 }: {
-  id: string;
-  label: string;
-  unit: "%" | "₹";
-  direction: Direction;
-  value: string;
-  max: number;
-  placeholder: string;
-  invalid: boolean;
-  onDirection: (direction: Direction) => void;
-  onValue: (value: string) => void;
+  group: SpecialPricingGroup;
+  row: GroupRow;
+  error?: string;
+  onChange: (row: GroupRow) => void;
 }) {
+  const percent = changeOf(row.type) === "PERCENT";
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Label htmlFor={id} className="w-36 text-sm font-normal text-zinc-600">
-        {label}
-      </Label>
-      <div className="inline-flex rounded-lg border border-zinc-200 p-0.5">
-        {(["increase", "decrease"] as const).map((dir) => (
-          <button
-            key={dir}
-            type="button"
-            onClick={() => onDirection(dir)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              direction === dir
-                ? dir === "increase"
-                  ? "bg-orange-500 text-white"
-                  : "bg-emerald-600 text-white"
-                : "text-zinc-600 hover:bg-zinc-100",
-            )}
-          >
-            {dir === "increase" ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
-            {dir === "increase" ? "Increase" : "Decrease"}
-          </button>
-        ))}
+    <div className="grid grid-cols-1 gap-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_170px_150px] sm:items-start sm:gap-3">
+      <div className="min-w-0 sm:pt-1.5">
+        <p className="truncate text-sm font-semibold text-zinc-900">
+          {group.make} {group.model}
+        </p>
+        <p className="text-xs text-zinc-500">
+          {plural(group.vehicleCount, "vehicle")} · {group.categoryName}
+        </p>
       </div>
-      <div className="relative w-32">
-        {unit === "₹" && <span className="pointer-events-none absolute left-3 top-2 text-sm text-zinc-400">₹</span>}
-        <Input
-          id={id}
-          type="number"
-          inputMode="decimal"
-          min={0}
-          max={max}
-          step="0.01"
-          value={value}
-          // The Increase / Decrease toggle carries the sign: a typed minus is dropped
-          onChange={(e) => onValue(e.target.value.replace(/^-/, ""))}
-          placeholder={placeholder}
-          className={unit === "₹" ? "pl-7" : "pr-8"}
-          aria-invalid={invalid}
-        />
-        {unit === "%" && <span className="pointer-events-none absolute right-3 top-2 text-sm text-zinc-400">%</span>}
+      <Select value={row.type} onValueChange={(type) => onChange({ ...row, type: type as PricingType })}>
+        <SelectTrigger className="w-full" aria-label={`Pricing type for ${group.make} ${group.model}`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PRICING_TYPES.map((t) => (
+            <SelectItem key={t.value} value={t.value}>
+              {t.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div>
+        <div className="relative">
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            value={row.amount}
+            // Positive numbers only: the pricing type says up or off
+            onChange={(e) => onChange({ ...row, amount: e.target.value.replace(/^-/, "") })}
+            placeholder="Enter amount"
+            className="pr-9"
+            aria-label={`Amount for ${group.make} ${group.model}`}
+            aria-invalid={!!error}
+          />
+          <span className="pointer-events-none absolute right-3 top-2 text-sm text-zinc-400">{percent ? "%" : "₹"}</span>
+        </div>
+        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       </div>
     </div>
   );
 }
-
-// ── Create / edit dialog ──────────────────────────────────────────────────────
 
 function RuleDialog({
   portal,
@@ -453,15 +418,9 @@ function RuleDialog({
 }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [note, setNote] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
-  const [serverError, setServerError] = useState<{ message: string; fields: FieldErrors } | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setForm(editing ? formOf(editing) : emptyForm());
-    setShowErrors(false);
-    setServerError(null);
-  }, [open, editing]);
+  const [serverError, setServerError] = useState<{ message: string; rows: Record<string, string> } | null>(null);
 
   const { data: options, isLoading: loadingOptions } = useQuery({
     queryKey: ["special-pricing-options", portalKey],
@@ -470,44 +429,72 @@ function RuleDialog({
     staleTime: 60_000,
   });
 
-  const draft = draftOf(form);
+  // Opened: the rule's values once the branch's vehicle groups are known (once per opening,
+  // so a background refetch of the groups never wipes what was typed)
+  const openKey = open ? editing?.publicId ?? "new" : null;
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openKey) {
+      setLoadedFor(null);
+      return;
+    }
+    if (loadedFor === openKey) return;
+    if (editing && !options) {
+      // Name and dates straight away; the group rows once the groups arrive
+      setForm({ name: editing.name, startDate: editing.startDate, endDate: editing.endDate, rows: {} });
+      return;
+    }
+    setShowErrors(false);
+    setServerError(null);
+    const opened = editing && options ? formOf(editing, options) : { form: emptyForm(), note: null };
+    setForm(opened.form);
+    setNote(opened.note);
+    setLoadedFor(openKey);
+  }, [openKey, loadedFor, editing, options]);
+
+  const groups = options?.groups ?? [];
+  const draft = draftOf(form, groups, editing?.active ?? true);
   const datesMoved = !editing || editing.startDate !== draft.startDate || editing.endDate !== draft.endDate;
   const errors = draftErrors(draft, datesMoved);
   const previewReady =
-    !errors.startDate &&
-    !errors.endDate &&
-    !errors.percent &&
-    !errors.flatAmount &&
-    !errors.categoryIds &&
-    !errors.vehicleIds;
-  const fieldError = (key: keyof FieldErrors) => serverError?.fields[key] ?? (showErrors ? errors[key] : undefined);
-  const span = isCalendarDate(draft.startDate) && isCalendarDate(draft.endDate)
-    ? calendarDaysBetween(draft.startDate, draft.endDate) + 1
-    : null;
+    !errors.startDate && !errors.endDate && draft.items.length > 0 && Object.keys(errors.rows).length === 0;
+  const span =
+    isCalendarDate(draft.startDate) && isCalendarDate(draft.endDate) && draft.endDate >= draft.startDate
+      ? Math.round((parseISO(draft.endDate).getTime() - parseISO(draft.startDate).getTime()) / 86_400_000) + 1
+      : null;
 
   const save = useMutation({
     mutationFn: () => (editing ? specialPricingApi.update(portal, editing.publicId, draft) : specialPricingApi.create(portal, draft)),
     onSuccess: () => {
-      toast.success(editing ? "Festival pricing updated" : "Festival pricing created");
+      toast.success(editing ? "Festive pricing updated" : "Festive offer created");
       queryClient.invalidateQueries({ queryKey: ["special-pricing", portalKey] });
       onClose();
     },
     onError: (e: unknown) => {
       const data = (e as { response?: { data?: { message?: string; errors?: { path: string; message: string }[] } } })
         .response?.data;
-      const fields: FieldErrors = {};
-      for (const issue of data?.errors ?? []) fields[issue.path as keyof FieldErrors] ??= issue.message;
-      setServerError({ message: data?.message || "Couldn't save the festival pricing", fields });
+      const rows: Record<string, string> = {};
+      for (const issue of data?.errors ?? []) {
+        const index = /^items\.(\d+)\./.exec(issue.path)?.[1];
+        const groupKey = index != null ? draft.items[Number(index)]?.groupKey : undefined;
+        if (groupKey) rows[groupKey] ??= issue.message;
+      }
+      setServerError({ message: data?.message || "Couldn't save the festive pricing", rows });
     },
   });
 
+  const setRow = (key: string, row: GroupRow) => {
+    setForm((prev) => ({ ...prev, rows: { ...prev.rows, [key]: row } }));
+    setServerError(null);
+  };
   const update = (patch: Partial<FormState>) => {
     setForm((prev) => ({ ...prev, ...patch }));
     setServerError(null);
   };
+  const shown = (message?: string) => (showErrors ? message : undefined);
 
   const submit = () => {
-    if (Object.keys(errors).length > 0) {
+    if (hasErrors(errors)) {
       setShowErrors(true);
       return;
     }
@@ -518,33 +505,30 @@ function RuleDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit festival pricing" : "Add festival pricing"}</DialogTitle>
-          <DialogDescription>
-            Raise (or lower) rents by a percentage, a flat amount a day, or both on festival dates. Bookings
-            already made keep their prices.
-          </DialogDescription>
+          <DialogTitle>{editing ? "Edit festive pricing" : "Add festive pricing"}</DialogTitle>
+          <DialogDescription>Set special pricing for vehicle groups during your festive offer dates.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label htmlFor="festival-name">Name</Label>
+            <Label htmlFor="festival-name">Name of the festive offer</Label>
             <Input
               id="festival-name"
               value={form.name}
               maxLength={SPECIAL_PRICING_NAME_MAX}
               onChange={(e) => update({ name: e.target.value })}
-              placeholder="e.g. Dussehra"
-              aria-invalid={!!fieldError("name")}
+              placeholder="e.g. Diwali Special"
+              aria-invalid={!!shown(errors.name)}
             />
-            {fieldError("name") && <p className="text-xs text-red-600">{fieldError("name")}</p>}
+            {shown(errors.name) && <p className="text-xs text-red-600">{errors.name}</p>}
           </div>
 
           {/* Dates */}
           <div className="space-y-1.5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="festival-start">First day</Label>
+                <Label htmlFor="festival-start">Start date</Label>
                 <Input
                   id="festival-start"
                   type="date"
@@ -552,135 +536,81 @@ function RuleDialog({
                   onChange={(e) =>
                     update({
                       startDate: e.target.value,
-                      // A one-day festival by default
+                      // A one-day offer by default
                       ...(!form.endDate || form.endDate < e.target.value ? { endDate: e.target.value } : {}),
                     })
                   }
-                  aria-invalid={!!fieldError("startDate")}
+                  aria-invalid={!!shown(errors.startDate)}
                 />
-                {fieldError("startDate") && <p className="text-xs text-red-600">{fieldError("startDate")}</p>}
+                {shown(errors.startDate) && <p className="text-xs text-red-600">{errors.startDate}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="festival-end">Last day</Label>
+                <Label htmlFor="festival-end">End date</Label>
                 <Input
                   id="festival-end"
                   type="date"
                   value={form.endDate}
                   min={form.startDate || undefined}
                   onChange={(e) => update({ endDate: e.target.value })}
-                  aria-invalid={!!fieldError("endDate")}
+                  aria-invalid={!!(errors.endDate && (showErrors || form.endDate))}
                 />
-                {fieldError("endDate") && <p className="text-xs text-red-600">{fieldError("endDate")}</p>}
+                {errors.endDate && (showErrors || form.endDate) && <p className="text-xs text-red-600">{errors.endDate}</p>}
               </div>
             </div>
             <p className="text-xs text-zinc-500">
-              {span != null && span > 0 ? `${span} day${span === 1 ? "" : "s"} · ` : ""}
+              {span != null ? `${plural(span, "day")} · ` : ""}
               Both days included, up to {SPECIAL_PRICING_MAX_DAYS} days. A day or 12 hours of a trip counts when at
               least half of it falls on these dates.
             </p>
           </div>
 
-          {/* Change: a percentage, a flat ₹ a day, or both */}
+          {/* Vehicle group pricing */}
           <div className="space-y-2">
-            <Label>Change</Label>
-            <ChangeInput
-              id="festival-percent"
-              label="Percentage"
-              unit="%"
-              direction={form.percentDirection}
-              value={form.percent}
-              max={form.percentDirection === "decrease" ? 90 : SPECIAL_PRICING_PERCENT_MAX}
-              placeholder="10"
-              invalid={!!fieldError("percent")}
-              onDirection={(percentDirection) => update({ percentDirection })}
-              onValue={(percent) => update({ percent })}
-            />
-            <ChangeInput
-              id="festival-flat"
-              label="Flat amount a day"
-              unit="₹"
-              direction={form.flatDirection}
-              value={form.flatAmount}
-              max={SPECIAL_PRICING_FLAT_MAX}
-              placeholder="200"
-              invalid={!!fieldError("flatAmount")}
-              onDirection={(flatDirection) => update({ flatDirection })}
-              onValue={(flatAmount) => update({ flatAmount })}
-            />
-            <p className="text-xs text-zinc-500">
-              Fill in either or both. The flat amount is for a full day: 12 hours get half of it, an hourly trip its
-              hours' share.
-            </p>
-            {fieldError("percent") && <p className="text-xs text-red-600">{fieldError("percent")}</p>}
-            {fieldError("flatAmount") && <p className="text-xs text-red-600">{fieldError("flatAmount")}</p>}
-          </div>
-
-          {/* Scope */}
-          <div className="space-y-2">
-            <Label>Applies to</Label>
-            <div className="inline-flex flex-wrap rounded-lg border border-zinc-200 p-0.5">
-              {SCOPES.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  onClick={() => update({ scope: s.value })}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                    form.scope === s.value ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100",
-                  )}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            {form.scope !== "ALL" &&
-              (loadingOptions || !options ? (
-                <div className="h-24 animate-pulse rounded-md border bg-zinc-50" />
-              ) : form.scope === "CATEGORIES" ? (
-                <CategoryPicker
-                  options={options.categories}
-                  selected={form.categoryIds}
-                  onChange={(categoryIds) => update({ categoryIds })}
-                />
-              ) : (
-                <VehiclePicker
-                  options={options.vehicles}
-                  selected={form.vehicleIds}
-                  onChange={(vehicleIds) => update({ vehicleIds })}
-                />
-              ))}
-            {fieldError("categoryIds") && <p className="text-xs text-red-600">{fieldError("categoryIds")}</p>}
-            {fieldError("vehicleIds") && <p className="text-xs text-red-600">{fieldError("vehicleIds")}</p>}
-          </div>
-
-          {/* Active */}
-          <div className="flex items-start justify-between gap-4 rounded-lg border border-zinc-200 px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-zinc-900">Active</p>
-              <p className="mt-0.5 text-xs text-zinc-500">A paused festival isn't charged until you resume it.</p>
+              <p className="text-sm font-semibold text-zinc-900">Vehicle group pricing</p>
+              <p className="text-xs text-zinc-500">Choose a pricing change for each group.</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={form.active}
-              aria-label="Active"
-              onClick={() => update({ active: !form.active })}
-              className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none",
-                form.active ? "bg-primary" : "bg-zinc-200",
+            <div className="overflow-hidden rounded-lg border border-zinc-200">
+              <div className="hidden grid-cols-[minmax(0,1fr)_170px_150px] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-medium text-zinc-500 sm:grid">
+                <span>Vehicle group</span>
+                <span>Pricing type</span>
+                <span>Amount</span>
+              </div>
+              {loadingOptions || !options ? (
+                <div className="space-y-2 p-4">
+                  <div className="h-10 animate-pulse rounded-md bg-zinc-100" />
+                  <div className="h-10 animate-pulse rounded-md bg-zinc-100" />
+                </div>
+              ) : groups.length === 0 ? (
+                <p className="px-4 py-4 text-sm text-zinc-500">This branch has no vehicles yet.</p>
+              ) : (
+                <div className="max-h-[42vh] divide-y divide-zinc-100 overflow-y-auto">
+                  {groups.map((group) => (
+                    <GroupPricingRow
+                      key={group.key}
+                      group={group}
+                      row={form.rows[group.key] ?? emptyRow()}
+                      error={serverError?.rows[group.key] ?? shown(errors.rows[group.key])}
+                      onChange={(row) => setRow(group.key, row)}
+                    />
+                  ))}
+                </div>
               )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                  form.active ? "translate-x-5" : "translate-x-0",
-                )}
-              />
-            </button>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Leave the amount empty for no change. Flat amounts are per day: 12 hours get half.
+            </p>
+            {shown(errors.items) && <p className="text-xs text-red-600">{errors.items}</p>}
           </div>
 
           <DraftPreview portal={portal} portalKey={portalKey} draft={draft} ready={previewReady} />
 
+          {note && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+              <Info className="mt-0.5 size-4 shrink-0 text-amber-600" />
+              <span>{note}</span>
+            </div>
+          )}
           {serverError && (
             <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
@@ -693,9 +623,14 @@ function RuleDialog({
           <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>
             Cancel
           </Button>
-          <Button type="button" onClick={submit} disabled={save.isPending} className="bg-orange-500 text-white hover:bg-orange-600">
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={save.isPending || (!!editing && !options)}
+            className="bg-orange-500 text-white hover:bg-orange-600"
+          >
             {save.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-            {editing ? "Save changes" : "Create"}
+            {editing ? "Save changes" : "Create festive offer"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -757,11 +692,10 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
       <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3.5 text-sm text-orange-900">
         <Info className="mt-0.5 size-4 shrink-0 text-orange-600" />
         <p>
-          On a festival's dates each day of a trip — or its last 12 hours — is billed at the rent changed by the
-          festival's percentage and / or flat amount a day (12 hours get half of it), when at least half of it falls
-          on those dates (weekend rents apply underneath).
-          When festivals overlap, the one giving the higher price applies. Free km don't change, and bookings already
-          made keep their prices.
+          On an offer's dates each day of a trip — or its last 12 hours — is billed at the rent changed by its
+          vehicle group's pricing (a flat amount is per day, 12 hours get half), when at least half of it falls on
+          those dates (weekend rents apply underneath). When offers overlap, the one giving the higher price applies.
+          Free km don't change, and bookings already made keep their prices.
         </p>
       </div>
 
@@ -777,7 +711,7 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
         </Tabs>
         <Button onClick={openCreate} className="gap-2 bg-orange-500 text-white hover:bg-orange-600">
           <Plus className="size-4" />
-          Add festival pricing
+          Add festive pricing
         </Button>
       </div>
 
@@ -817,7 +751,7 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
               </TableRow>
             ) : (
               rules.map((rule) => {
-                const scope = scopeSummary(rule);
+                const summary = ruleSummary(rule);
                 const status = STATUS_STYLE[rule.status];
                 return (
                   <TableRow key={rule.publicId}>
@@ -831,17 +765,13 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
                     <TableCell
                       className={cn(
                         "whitespace-nowrap font-semibold tabular-nums",
-                        rule.percent <= 0 && rule.flatAmount <= 0
-                          ? "text-emerald-600"
-                          : rule.percent >= 0 && rule.flatAmount >= 0
-                            ? "text-orange-600"
-                            : "text-zinc-700",
+                        summary.tone === "off" ? "text-emerald-600" : summary.tone === "up" ? "text-orange-600" : "text-zinc-700",
                       )}
                     >
-                      {formatSpecialChange(rule.percent, rule.flatAmount)}
+                      {summary.change}
                     </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-zinc-700" title={scope.title}>
-                      {scope.text}
+                    <TableCell className="max-w-[220px] truncate text-zinc-700" title={summary.title}>
+                      {summary.appliesTo}
                     </TableCell>
                     <TableCell>
                       <span

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { isAxiosError } from "axios";
 import {
   Loader2,
   ChevronRight,
@@ -70,14 +71,15 @@ import { SwapExcludedList } from "@/components/swap/SwapExcludedList";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 
 import apiClient from "@/lib/axios";
-import { bookingService } from "@/services/booking.service";
+import { bookingService, type EmployeeBooking } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
 // import { extensionService } from "@/services/extension.service";
 import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
 import type { DlStatus } from "@/services/dlStatus.service";
 import { DlStatusPanel, DlStatusSelector } from "@/components/booking/DlStatus";
-import { dlChoicePayload, pickupDlChoiceError } from "@/lib/dlStatus";
+import { dlChoicePayload, dlStatusLabel, pickupDlChoiceError } from "@/lib/dlStatus";
+import { formatRupees } from "@/lib/counterPayment";
 import { PickupDlNumberCard } from "@/components/employee/PickupDlNumberCard";
 import { fastagInr, readFastagBalance } from "@/components/employee/drop/fastag";
 import {
@@ -93,7 +95,24 @@ import {
 } from "@/components/employee/PickupImageCard";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
 import { CompletedOperationPage } from "@/components/employee/completed/CompletedOperation";
-import { isCompletedForPhase } from "@/services/completedOperation.service";
+import {
+  errorMessage,
+  isMoneyInput,
+  photoDiff,
+  photosOf,
+  sameMoney,
+  useEditUploads,
+  useSummary,
+} from "@/components/employee/completed/completedEdit";
+import { EditSaveBar, EditSavedCard, PendingAdjustmentCard } from "@/components/employee/completed/OperationEditFlow";
+import { useEditSaveFlow } from "@/components/employee/completed/useEditSaveFlow";
+import { PhotoEditor, type EditablePhoto } from "@/components/employee/completed/PhotoEditor";
+import {
+  completedOperationService,
+  isCompletedForPhase,
+  type EditPickupBody,
+  type PickupSummary,
+} from "@/services/completedOperation.service";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
@@ -292,6 +311,70 @@ function RentalTermsBox({
   );
 }
 
+// --- BOOKING FACTS ---
+const formatBookingTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+/** Customer (with the DL number on file), vehicle and booked times — the top of the pickup page. */
+function PickupBookingFacts({ booking }: { booking: EmployeeBooking }) {
+  const vehicle = booking.items[0]?.vehicle;
+  const dlOnFile = booking.customer.drivingLicenceNumber ?? null;
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div>
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
+          Customer
+        </p>
+        <p className="font-semibold text-gray-900 flex items-center gap-1">
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          {booking.customer.user.name}
+        </p>
+        {/* DL number (X2) — required for the handover; entered in step 3 when missing */}
+        {dlOnFile ? (
+          <p className="text-xs font-mono font-semibold text-gray-700 mt-0.5 break-all">
+            DL {formatDlNumber(dlOnFile)}
+          </p>
+        ) : (
+          <p className="text-xs font-semibold text-amber-700 mt-0.5">DL number missing</p>
+        )}
+      </div>
+      <div>
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
+          Vehicle
+        </p>
+        <p className="font-semibold text-gray-900 flex items-center gap-1">
+          <Car className="h-3.5 w-3.5 text-muted-foreground" />
+          {vehicle?.make} {vehicle?.model}
+        </p>
+        <p className="text-xs text-muted-foreground">{vehicle?.regNo}</p>
+      </div>
+      <div>
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
+          Start
+        </p>
+        <p className="font-medium text-gray-700 flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          {formatBookingTime(booking.startAt)}
+        </p>
+      </div>
+      <div>
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
+          End
+        </p>
+        <p className="font-medium text-gray-700 flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          {formatBookingTime(booking.endAt)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // --- ORIGINAL LICENCE (#3) ---
 // Server codes for a bad DL choice; shown under the selector rather than only as a toast.
 const DL_ERROR_CODES = ["INVALID_DL_STATUS", "DL_STATUS_INVALID"];
@@ -303,6 +386,9 @@ export default function StaffPickupsPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Edit Pickup (client item 1): ?edit=1 on a completed pickup opens this workflow again
+  const [searchParams] = useSearchParams();
+  const editRequested = searchParams.get("edit") === "1";
 
   // --- STEP 0: Vehicle Available ---
   const [pickupViewerIndex, setPickupViewerIndex] = useState<number | null>(null);
@@ -723,10 +809,11 @@ export default function StaffPickupsPage() {
   // Extension step disabled — step 1 passes through automatically
   const canProceedFromStep1 = canProceedFromStep0;
   const canProceedFromStep2 = canProceedFromStep1;
-  // FASTag balance (car with a FASTag): required before the handover
+  // FASTag balance: asked for every car — required when it's marked as having a
+  // FASTag, optional (checked only when typed) otherwise
   const hasFastag = !!booking?.items?.[0]?.vehicle?.hasFastag;
   const fastag = readFastagBalance(fastagBalance);
-  const fastagReady = !hasFastag || fastag.value != null;
+  const fastagReady = hasFastag ? fastag.value != null : fastagBalance.trim() === "" || fastag.value != null;
   const isHandoverReady =
     canProceedFromStep2 &&
     dlNumberReady &&
@@ -827,14 +914,6 @@ export default function StaffPickupsPage() {
     }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   const formatPrice = (amount: string | number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -857,8 +936,8 @@ export default function StaffPickupsPage() {
       odo: data.odo,
       fuelLevel: fuelNumeric,
       pickupFuelLevel: chargeConfig?.fuelModuleEnabled ? data.fuelLevel : undefined,
-      // FASTag balance at the handover — only for a car with a FASTag
-      pickupFastagBalance: hasFastag && fastag.value != null ? fastag.value : undefined,
+      // FASTag balance at the handover — when entered (required for a car with a FASTag)
+      pickupFastagBalance: fastag.value != null ? fastag.value : undefined,
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
@@ -973,13 +1052,17 @@ export default function StaffPickupsPage() {
   }
 
   // Done (handed over, returned, or sent to a manager): the read-only summary,
-  // never the workflow — changes go through Edit Pickup (client item 1).
+  // never the workflow — changes go through Edit Pickup (client item 1), this
+  // page again with ?edit=1.
   if (isCompletedForPhase("PICKUP", booking)) {
-    return <CompletedOperationPage phase="PICKUP" bookingId={booking.publicId} />;
+    return editRequested ? (
+      <PickupEditMode booking={booking} pricingRules={pricingRules} isLoadingPricing={isLoadingPricing} />
+    ) : (
+      <CompletedOperationPage phase="PICKUP" bookingId={booking.publicId} />
+    );
   }
 
   const vehicle = booking.items[0]?.vehicle;
-  const customer = booking.customer.user;
 
   // ============================================================================
   // RENDER
@@ -1025,53 +1108,7 @@ export default function StaffPickupsPage() {
         {/* Booking Summary Card */}
         <Card className="shadow-sm border-gray-200 bg-white">
           <CardContent className="pt-4 pb-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
-                  Customer
-                </p>
-                <p className="font-semibold text-gray-900 flex items-center gap-1">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  {customer.name}
-                </p>
-                {/* DL number (X2) — required for the handover; entered in step 3 when missing */}
-                {dlOnFile ? (
-                  <p className="text-xs font-mono font-semibold text-gray-700 mt-0.5 break-all">
-                    DL {formatDlNumber(dlOnFile)}
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-amber-700 mt-0.5">DL number missing</p>
-                )}
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
-                  Vehicle
-                </p>
-                <p className="font-semibold text-gray-900 flex items-center gap-1">
-                  <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                  {vehicle?.make} {vehicle?.model}
-                </p>
-                <p className="text-xs text-muted-foreground">{vehicle?.regNo}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
-                  Start
-                </p>
-                <p className="font-medium text-gray-700 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  {formatDate(booking.startAt)}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-1">
-                  End
-                </p>
-                <p className="font-medium text-gray-700 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  {formatDate(booking.endAt)}
-                </p>
-              </div>
-            </div>
+            <PickupBookingFacts booking={booking} />
             {/* The customer asked for another time or more hours: move / extend before the handover */}
             {booking.status === "CONFIRMED" && !pickupSession && (
               <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
@@ -1541,33 +1578,39 @@ export default function StaffPickupsPage() {
                 )}
               </div>
 
-              {/* FASTag balance (car with a FASTag) — the drop bills what the tag is used for */}
-              {hasFastag && (
-                <div className="space-y-2">
-                  <Label htmlFor="fastagBalance" className="text-sm font-medium">
-                    FASTag balance (₹)
-                  </Label>
-                  <Input
-                    id="fastagBalance"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.01"
-                    placeholder="e.g. 480"
-                    className="h-12"
-                    disabled={isPickedUp}
-                    value={fastagBalance}
-                    onChange={(e) => setFastagBalance(e.target.value)}
-                  />
-                  {fastagBalance.trim() !== "" && fastag.error ? (
-                    <p className="text-xs text-red-500">{fastag.error}</p>
+              {/* FASTag balance — every car; required when it's marked as having a FASTag.
+                  The drop bills what the tag is used for. */}
+              <div className="space-y-2">
+                <Label htmlFor="fastagBalance" className="text-sm font-medium">
+                  FASTag balance (₹){" "}
+                  {hasFastag ? (
+                    <span className="text-red-500">*</span>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Read the balance on the car's FASTag. The usage until the drop is charged on the drop bill (no GST).
-                    </p>
+                    <span className="text-xs font-normal text-muted-foreground">optional</span>
                   )}
-                </div>
-              )}
+                </Label>
+                <Input
+                  id="fastagBalance"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  placeholder="e.g. 480"
+                  className="h-12"
+                  disabled={isPickedUp}
+                  value={fastagBalance}
+                  onChange={(e) => setFastagBalance(e.target.value)}
+                />
+                {fastagBalance.trim() !== "" && fastag.error ? (
+                  <p className="text-xs text-red-500">{fastag.error}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {hasFastag
+                      ? "Read the balance on the car's FASTag. The usage until the drop is charged on the drop bill (no GST)."
+                      : "Leave empty if this car has no FASTag. If it has one, the usage until the drop is charged on the drop bill (no GST)."}
+                  </p>
+                )}
+              </div>
             </form>
           </CardContent>
         </StepCard>
@@ -2247,7 +2290,7 @@ export default function StaffPickupsPage() {
                     )?.label || "—"}
                   </strong>
                 </span>
-                {hasFastag && (
+                {(hasFastag || fastag.value != null) && (
                   <span>
                     FASTag balance:{" "}
                     <strong>{fastag.value != null ? fastagInr(fastag.value) : "—"}</strong>
@@ -2372,6 +2415,483 @@ export default function StaffPickupsPage() {
           </DialogContent>
         </Dialog>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// EDIT PICKUP (client item 1, full edit): this page again for a completed
+// pickup, prefilled from what it recorded. Save changes shows the money
+// difference (old → new) — readings that re-price a finished drop, a changed
+// safety deposit — saves it and settles it at the counter.
+// ============================================================================
+
+/** Fields of Edit Pickup a refusal can point at (anything else is shown above Save). */
+const PICKUP_EDIT_FIELDS = ["odo", "pickupFuelLevel", "pickupFastagBalance", "safetyDeposit", "drivingLicenceNumber", "dlStatus"];
+
+interface PickupEditModeProps {
+  booking: EmployeeBooking;
+  pricingRules: PickupPricingRules | null | undefined;
+  isLoadingPricing: boolean;
+}
+
+function PickupEditMode({ booking, pricingRules, isLoadingPricing }: PickupEditModeProps) {
+  const { data: summary, isLoading, isError } = useSummary("PICKUP", booking.publicId);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <DashboardNavbar />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#FF5F00]" />
+        </div>
+      </div>
+    );
+  }
+  // Can't be loaded or edited: the summary says why (and offers what it can)
+  if (isError || !summary || summary.phase !== "PICKUP" || !summary.edit.allowed) {
+    return <CompletedOperationPage phase="PICKUP" bookingId={booking.publicId} />;
+  }
+  return (
+    <PickupEditForm
+      booking={booking}
+      summary={summary}
+      pricingRules={pricingRules}
+      isLoadingPricing={isLoadingPricing}
+    />
+  );
+}
+
+function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: PickupEditModeProps & { summary: PickupSummary }) {
+  const dlOnFile = summary.customer.drivingLicenceNumber ?? null;
+  // FASTag balance: editable for any car; once the pickup recorded one it can be
+  // changed but not blanked — never recorded (older pickups) stays optional
+  const fastagRequired = summary.fastag.balance != null;
+  const hasFastag = summary.fastag.hasFastag || !!summary.fastag.vehicleHasFastag;
+
+  // ── What the pickup recorded ──
+  const [odo, setOdo] = useState(summary.odometer != null ? String(summary.odometer) : "");
+  const [fuelLevel, setFuelLevel] = useState(summary.fuelLevel ?? "");
+  const [fastagBalance, setFastagBalance] = useState(
+    summary.fastag.balance != null ? String(Number(summary.fastag.balance)) : "",
+  );
+  const [dlStatus, setDlStatus] = useState<DlStatus>(summary.dl.status);
+  const [dlNumberInput, setDlNumberInput] = useState("");
+  const [dlNumberEditing, setDlNumberEditing] = useState(false);
+  const [photos, setPhotos] = useState<EditablePhoto[]>(() => photosOf(summary.photos));
+  const [deposit, setDeposit] = useState(String(Number(summary.safetyDeposit) || 0));
+  const [uploading, setUploading] = useState(false);
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  // Photos uploaded here and not saved are deleted when the page closes
+  const uploads = useEditUploads((fileId) => bookingService.deletePickupImage(fileId));
+
+  const odoValue = /^\d+$/.test(odo.trim()) ? Number(odo.trim()) : null;
+  const fastag = readFastagBalance(fastagBalance);
+  // Blank while correcting keeps the number on file (X2)
+  const dlNumber = pickupDlNumberState(dlOnFile, dlNumberInput, dlNumberEditing);
+
+  // Only what changed is sent; the server keeps the rest as recorded
+  const body = useMemo((): EditPickupBody => {
+    const out: EditPickupBody = {};
+    if (odoValue != null && odoValue !== summary.odometer) out.odo = odoValue;
+    if (fuelLevel && fuelLevel !== summary.fuelLevel) out.pickupFuelLevel = fuelLevel;
+    if (
+      fastag.value != null &&
+      (summary.fastag.balance == null || !sameMoney(fastag.value, summary.fastag.balance))
+    ) {
+      out.pickupFastagBalance = fastag.value;
+    }
+    if (summary.edit.dlStatusEditable && dlStatus && dlStatus !== summary.dl.status && dlStatus !== "DEPOSIT") {
+      out.dlStatus = dlStatus;
+    }
+    if (dlNumber.toSend) out.drivingLicenceNumber = dlNumber.toSend;
+    const { removed, added } = photoDiff(photosOf(summary.photos), photos);
+    if (removed.length) out.removeFileIds = removed;
+    if (added.length) out.addPhotos = added.map((p) => ({ fileId: p.fileId, label: p.label ?? null }));
+    if (summary.edit.depositEditable && isMoneyInput(deposit) && !sameMoney(deposit, summary.safetyDeposit)) {
+      out.safetyDeposit = Number(deposit);
+    }
+    return out;
+  }, [odoValue, fuelLevel, fastag.value, dlStatus, dlNumber.toSend, photos, deposit, summary]);
+
+  // ── The handover's own validations ──
+  // Old pickups saved without a reading may stay without one
+  const odoProblem = !odo.trim()
+    ? summary.odometer != null
+      ? "Enter the odometer reading."
+      : null
+    : odoValue == null || odoValue <= 0
+      ? "Enter the odometer reading in whole km."
+      : null;
+  const fastagProblem = fastagRequired || fastagBalance.trim() ? fastag.error : null;
+  const dlProblem = dlNumberInput.trim() ? dlNumber.problem : null;
+  const depositProblem =
+    summary.edit.depositEditable && !isMoneyInput(deposit) ? "Enter the safety deposit in ₹ (0 for none)." : null;
+  const hadLabel = new Set(summary.photos.map((p) => p.label).filter(Boolean));
+  const emptied = summary.captureFields.filter(
+    (f) => f.required && hadLabel.has(f.name) && !photos.some((p) => p.label === f.name),
+  );
+  const photosProblem =
+    (summary.photos.length > 0 && photos.length === 0
+      ? "Keep at least one pickup photo — replace a photo rather than removing them all."
+      : null) ??
+    (emptied.length
+      ? `Take the required photo${emptied.length > 1 ? "s" : ""}: ${emptied.map((f) => f.name).join(", ")}.`
+      : null) ??
+    (uploading ? "Wait for the photos to upload." : null);
+  const blocker = dlProblem ?? odoProblem ?? fastagProblem ?? photosProblem ?? depositProblem;
+  const changed = Object.keys(body).length > 0;
+
+  /** A refusal of the preview / save that belongs to a field. */
+  const onFormError = (error: unknown) => {
+    const data = isAxiosError<{ field?: string | null; code?: string }>(error) ? error.response?.data : undefined;
+    const message = errorMessage(error, "Couldn't save the changes. Try again.");
+    const field =
+      data?.field ??
+      (isPickupDlNumberError(error) || data?.code === "DL_IN_USE"
+        ? "drivingLicenceNumber"
+        : data?.code?.startsWith("DL_STATUS") || DL_ERROR_CODES.includes(data?.code ?? "")
+          ? "dlStatus"
+          : null);
+    if (field && PICKUP_EDIT_FIELDS.includes(field)) {
+      setFieldError({ field, message });
+      if (field === "drivingLicenceNumber" && dlOnFile && !dlNumberEditing) setDlNumberEditing(true);
+      document.getElementById(`edit-pickup-${field}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      setFormError(message);
+    }
+  };
+  const errorFor = (field: string) => (fieldError?.field === field ? fieldError.message : null);
+  const clearFieldError = (field: string) => setFieldError((cur) => (cur?.field === field ? null : cur));
+
+  const flow = useEditSaveFlow<EditPickupBody, PickupSummary>({
+    phase: "PICKUP",
+    bookingId: booking.publicId,
+    preview: (b) => completedOperationService.previewPickupEdit(booking.publicId, b),
+    save: (b) => completedOperationService.editPickup(booking.publicId, b),
+    onFormError,
+    // Kept with the pickup now: never cleaned up as unused uploads
+    onSaved: () => uploads.keep(photos.map((p) => p.fileId)),
+  });
+
+  const save = () => {
+    if (blocker || !changed) return;
+    setFieldError(null);
+    setFormError(null);
+    flow.open(body);
+  };
+
+  const vehicle = booking.items[0]?.vehicle;
+  const depositShown =
+    !!summary.edit.depositEditable || Number(summary.safetyDeposit) > 0 || !!summary.edit.depositLockedReason;
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 pb-20">
+      <DashboardNavbar />
+
+      <main className="container max-w-3xl mx-auto py-6 px-4 space-y-5">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/employee/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to={{ search: "" }}>Pickup {booking.publicId}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Edit</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {flow.finished ? (
+          <EditSavedCard
+            phase="PICKUP"
+            note={flow.finished.note}
+            detail={`The pickup of ${vehicle ? `${vehicle.make} ${vehicle.model}` : "the vehicle"} for ${booking.customer.user.name} was updated.`}
+          />
+        ) : (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">Edit Pickup</h1>
+              <p className="text-sm text-muted-foreground">
+                Correct what this pickup recorded — any change in money is shown before it is saved
+              </p>
+            </div>
+
+            <Card className="shadow-sm border-gray-200 bg-white">
+              <CardContent className="pt-4 pb-4">
+                <PickupBookingFacts booking={booking} />
+              </CardContent>
+            </Card>
+
+            <PendingAdjustmentCard summary={summary} />
+
+            {/* STEP 1: DRIVING LICENCE NUMBER + ORIGINAL LICENCE */}
+            <StepCard
+              stepNum={1}
+              title="Driving Licence"
+              subtitle="DL number and the original licence"
+              isCompleted={!dlProblem && !errorFor("drivingLicenceNumber") && !errorFor("dlStatus")}
+              isLocked={false}
+            >
+              <CardContent className="pt-4 space-y-4">
+                <div id="edit-pickup-drivingLicenceNumber">
+                  <PickupDlNumberCard
+                    id="edit-pickup-dl-number-input"
+                    onFile={dlOnFile}
+                    value={dlNumberInput}
+                    onValueChange={(v) => {
+                      setDlNumberInput(v);
+                      clearFieldError("drivingLicenceNumber");
+                    }}
+                    editing={dlNumberEditing}
+                    onEditingChange={(editing) => {
+                      setDlNumberEditing(editing);
+                      setDlNumberInput(editing && dlOnFile ? formatDlNumber(dlOnFile) : "");
+                      clearFieldError("drivingLicenceNumber");
+                    }}
+                    error={errorFor("drivingLicenceNumber") ?? dlProblem}
+                  />
+                </div>
+                <div id="edit-pickup-dlStatus" className="rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+                  {summary.edit.dlStatusEditable ? (
+                    <DlStatusSelector
+                      id="edit-pickup-dl-status"
+                      value={dlStatus}
+                      onValueChange={(v) => {
+                        setDlStatus(v);
+                        clearFieldError("dlStatus");
+                      }}
+                      error={errorFor("dlStatus")}
+                      // Never recorded (older pickups): it may stay unset
+                      optional={summary.dl.status == null}
+                      onClear={summary.dl.status == null ? () => setDlStatus(null) : undefined}
+                    />
+                  ) : (
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-900">Original driving licence: {dlStatusLabel(summary.dl.status)}</p>
+                      {summary.edit.dlStatusLockedReason && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{summary.edit.dlStatusLockedReason}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </StepCard>
+
+            {/* STEP 2: VEHICLE INSPECTION */}
+            <StepCard
+              stepNum={2}
+              title="Vehicle Inspection"
+              subtitle="Odometer and fuel level at handover"
+              isCompleted={!odoProblem && !fastagProblem && !!fuelLevel}
+              isLocked={false}
+            >
+              <CardContent className="pt-4">
+                <div className="mb-5">
+                  <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} hasFastag={hasFastag} />
+                </div>
+                <div className="space-y-5">
+                  <div id="edit-pickup-odo" className="space-y-2">
+                    <Label htmlFor="edit-pickup-odo-input" className="text-sm font-medium">
+                      Odometer Reading (KM)
+                    </Label>
+                    <Input
+                      id="edit-pickup-odo-input"
+                      type="number"
+                      placeholder="e.g. 12500"
+                      className={cn("h-12", (errorFor("odo") || (odo.trim() && odoProblem)) && "border-red-500")}
+                      value={odo}
+                      onChange={(e) => {
+                        setOdo(e.target.value);
+                        clearFieldError("odo");
+                      }}
+                    />
+                    {errorFor("odo") || odoProblem ? (
+                      <p className="text-xs text-red-500">{errorFor("odo") ?? odoProblem}</p>
+                    ) : summary.edit.readingsMoveDropCharges ? (
+                      <p className="text-xs text-muted-foreground">
+                        The drop is done — a corrected reading re-works its km charge. You'll see the difference before saving.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div id="edit-pickup-pickupFuelLevel" className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      {booking.frozenChargeConfig?.fuelModuleEnabled ? "Pickup Fuel Level" : "Fuel Level"}
+                    </Label>
+                    <Select
+                      value={fuelLevel}
+                      onValueChange={(v) => {
+                        setFuelLevel(v);
+                        clearFieldError("pickupFuelLevel");
+                      }}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select Fuel Level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FUEL_LEVEL_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errorFor("pickupFuelLevel") && (
+                      <p className="text-xs text-red-500">{errorFor("pickupFuelLevel")}</p>
+                    )}
+                  </div>
+
+                  {/* FASTag balance — every car; required when it's marked as having a FASTag */}
+                  <div id="edit-pickup-pickupFastagBalance" className="space-y-2">
+                    <Label htmlFor="edit-pickup-fastag" className="text-sm font-medium">
+                      FASTag balance (₹){" "}
+                      {fastagRequired ? (
+                        <span className="text-red-500">*</span>
+                      ) : (
+                        <span className="text-xs font-normal text-muted-foreground">optional</span>
+                      )}
+                    </Label>
+                    <Input
+                      id="edit-pickup-fastag"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="0.01"
+                      placeholder="e.g. 480"
+                      className={cn("h-12", (errorFor("pickupFastagBalance") || fastagProblem) && "border-red-500")}
+                      value={fastagBalance}
+                      onChange={(e) => {
+                        setFastagBalance(e.target.value);
+                        clearFieldError("pickupFastagBalance");
+                      }}
+                    />
+                    {errorFor("pickupFastagBalance") || fastagProblem ? (
+                      <p className="text-xs text-red-500">{errorFor("pickupFastagBalance") ?? fastagProblem}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {!fastagRequired ? "Leave empty if this car has no FASTag. " : ""}
+                        {summary.edit.readingsMoveDropCharges
+                          ? "The drop is done — a corrected balance re-works its FASTag charge. You'll see the difference before saving."
+                          : "The usage until the drop is charged on the drop bill (no GST)."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </StepCard>
+
+            {/* STEP 3: PICKUP PHOTOS */}
+            <StepCard
+              stepNum={3}
+              title="Pickup Photos"
+              subtitle={
+                summary.captureFields.length > 0
+                  ? "Retake a required angle, or add / remove photos"
+                  : "Add or remove photos of the vehicle at handover"
+              }
+              isCompleted={!photosProblem && photos.length > 0}
+              isLocked={false}
+            >
+              <CardContent className="pt-4">
+                <PhotoEditor
+                  fields={summary.captureFields}
+                  value={photos}
+                  onChange={setPhotos}
+                  onBusyChange={setUploading}
+                  upload={uploads.track((form) => bookingService.uploadPickupImage(form))}
+                />
+              </CardContent>
+            </StepCard>
+
+            {/* STEP 4: SAFETY DEPOSIT — changeable while the car is out and the drop hasn't billed it */}
+            {depositShown && (
+              <StepCard
+                stepNum={4}
+                title="Safety Deposit"
+                subtitle={
+                  summary.edit.depositEditable
+                    ? "A higher deposit is collected, a lower one refunded"
+                    : "Held from the pickup"
+                }
+                isCompleted={!depositProblem}
+                isLocked={false}
+              >
+                <CardContent className="pt-4">
+                  {summary.edit.depositEditable ? (
+                    <div id="edit-pickup-safetyDeposit" className="space-y-2 max-w-xs">
+                      <Label htmlFor="edit-pickup-deposit" className="text-xs text-neutral-600">
+                        Safety deposit (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                        <Input
+                          id="edit-pickup-deposit"
+                          inputMode="decimal"
+                          className={cn("pl-7 h-10", (errorFor("safetyDeposit") || depositProblem) && "border-red-500")}
+                          value={deposit}
+                          onChange={(e) => {
+                            setDeposit(e.target.value.replace(/[^0-9.]/g, ""));
+                            clearFieldError("safetyDeposit");
+                          }}
+                        />
+                      </div>
+                      {errorFor("safetyDeposit") || depositProblem ? (
+                        <p className="text-xs text-red-500">{errorFor("safetyDeposit") ?? depositProblem}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Held now: {formatRupees(Number(summary.safetyDeposit) || 0)}. 0 takes the deposit off.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-sm">
+                      <ShieldAlert className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          Safety deposit: {formatRupees(Number(summary.safetyDeposit) || 0)}
+                        </p>
+                        {summary.edit.depositLockedReason && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{summary.edit.depositLockedReason}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </StepCard>
+            )}
+
+            <div className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-600">
+              <Tag className="h-4 w-4 mt-0.5 shrink-0 text-neutral-400" />
+              <span>Rent, coupons and extensions aren't changed here — ask the branch manager.</span>
+            </div>
+
+            {formError && (
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                {formError}
+              </div>
+            )}
+
+            <EditSaveBar blocker={blocker} changed={changed} busy={flow.busy} onSave={save} />
+          </>
+        )}
+      </main>
+
+      {flow.dialog}
     </div>
   );
 }

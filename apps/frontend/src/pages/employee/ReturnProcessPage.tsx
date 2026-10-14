@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isAxiosError } from "axios";
 import apiClient from "@/lib/axios";
-import { bookingService } from "@/services/booking.service";
+import { bookingService, type EmployeeBooking } from "@/services/booking.service";
 import { paymentSessionService, type ReturnSessionResponse } from "@/services/paymentSession.service";
 import { dropService, dropErrorCode } from "@/services/drop.service";
 import { apiErrorMessage } from "@/lib/counterErrors";
@@ -84,12 +85,36 @@ import {
   ShieldCheck,
   CheckCircle2,
   CalendarPlus,
+  Info,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
 import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
-import { CompletedOperationPage } from "@/components/employee/completed/CompletedOperation";
-import { isCompletedForPhase } from "@/services/completedOperation.service";
+import { CompletedOperationPage, PendingAdjustment } from "@/components/employee/completed/CompletedOperation";
+import {
+  damageDraftOf,
+  damageDraftProblem,
+  damageEdit,
+  errorMessage,
+  isMoneyInput,
+  moneyText,
+  photoDiff,
+  photosOf,
+  sameMoney,
+  useEditUploads,
+  useSummary,
+  type DamageDraft,
+} from "@/components/employee/completed/completedEdit";
+import { EditSaveBar, EditSavedCard, PendingAdjustmentCard } from "@/components/employee/completed/OperationEditFlow";
+import { useEditSaveFlow } from "@/components/employee/completed/useEditSaveFlow";
+import { DropDamageEditor } from "@/components/employee/completed/DropDamageEditor";
+import { PhotoEditor, type EditablePhoto } from "@/components/employee/completed/PhotoEditor";
+import {
+  completedOperationService,
+  isCompletedForPhase,
+  type EditReturnBody,
+  type ReturnSummary,
+} from "@/services/completedOperation.service";
 
 const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   value: String(i + 1),
@@ -120,6 +145,8 @@ interface ReturnPageShellProps {
   canSwap: boolean;
   /** The drop was recorded and sent for the branch manager's confirmation. */
   awaitingManager: boolean;
+  /** "Edit Return" when a completed drop is corrected (client item 1). */
+  title?: string;
 }
 
 function ReturnPageShell({
@@ -135,6 +162,7 @@ function ReturnPageShell({
   rentalTimelineBlock,
   canSwap,
   awaitingManager,
+  title = "Return Inspection",
 }: ReturnPageShellProps) {
   return (
     <div className="min-h-screen bg-[#F5F5F5] pb-20">
@@ -151,7 +179,7 @@ function ReturnPageShell({
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Return Inspection</BreadcrumbPage>
+              <BreadcrumbPage>{title}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -159,7 +187,7 @@ function ReturnPageShell({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold tracking-tight text-primary">Return Inspection</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-primary">{title}</h1>
               <Badge
                 variant={isCompleted ? "outline" : "secondary"}
                 className={cn("uppercase px-3 py-1", isCompleted && "bg-green-100 text-green-700 border-green-200")}
@@ -229,10 +257,298 @@ function ReturnPageShell({
   );
 }
 
+// ── Charge fields shared by the drop and Edit Return ───────────────────────────
+
+interface OtherChargeItem {
+  id: string;
+  label: string;
+  amount: string;
+}
+
+/** Fuel level at return (1–10), against the level the vehicle started with. */
+function ReturnFuelLevelField({
+  value,
+  onChange,
+  disabled,
+  pickupFuelLevel,
+  swappedWithReadings,
+  deficitHint,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  pickupFuelLevel: string | null;
+  swappedWithReadings: boolean;
+  /** Lower than at pickup and not charged yet */
+  deficitHint: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium flex items-center gap-2">
+        <Fuel className="h-4 w-4 text-muted-foreground" />
+        Return Fuel Level
+      </Label>
+      {pickupFuelLevel && (
+        <p className="text-xs text-muted-foreground">
+          {swappedWithReadings ? "Level at the swap (this vehicle)" : "Pickup level"}:{" "}
+          <span className="font-medium text-foreground">{FUEL_LEVEL_OPTIONS.find((o) => o.value === pickupFuelLevel)?.label ?? pickupFuelLevel}</span>
+        </p>
+      )}
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="h-11 max-w-xs">
+          <SelectValue placeholder="Select fuel level at return" />
+        </SelectTrigger>
+        <SelectContent>
+          {FUEL_LEVEL_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {deficitHint && (
+        <p className="text-xs text-amber-600">Return fuel is lower than pickup — check the box below to charge.</p>
+      )}
+    </div>
+  );
+}
+
+/** Fuel deficit charged to the customer (no GST). */
+function FuelDeficitCharge({
+  checked,
+  onCheckedChange,
+  amount,
+  onAmountChange,
+  disabled,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  amount: string;
+  onAmountChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-3 p-4 rounded-lg border bg-amber-50/40 border-amber-200">
+      <div className="flex items-center gap-3">
+        <Checkbox
+          id="fuelDeficit"
+          checked={checked}
+          onCheckedChange={(v) => onCheckedChange(!!v)}
+          disabled={disabled}
+        />
+        <Label htmlFor="fuelDeficit" className="text-sm font-semibold cursor-pointer text-amber-900 flex items-center gap-2">
+          <Fuel className="h-4 w-4" /> Fuel Deficit — charge customer
+        </Label>
+      </div>
+      {checked && (
+        <div className="space-y-1.5 ml-7">
+          <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹, no GST)</Label>
+          <div className="relative max-w-xs">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+            <Input
+              type="number"
+              min="0"
+              className="pl-7 h-10"
+              placeholder="e.g. 300"
+              value={amount}
+              onChange={(e) => onAmountChange(e.target.value)}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Typed FASTag / toll charge — when the balances can't measure the usage. */
+function FastagTollCharge({
+  checked,
+  onCheckedChange,
+  amount,
+  onAmountChange,
+  notes,
+  onNotesChange,
+  disabled,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  amount: string;
+  onAmountChange: (value: string) => void;
+  notes: string;
+  onNotesChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-3 p-4 rounded-lg border bg-green-50/40 border-green-200">
+      <div className="flex items-center gap-3">
+        <Checkbox
+          id="fastagChecked"
+          checked={checked}
+          onCheckedChange={(v) => onCheckedChange(!!v)}
+          disabled={disabled}
+        />
+        <Label htmlFor="fastagChecked" className="text-sm font-semibold cursor-pointer text-green-900 flex items-center gap-2">
+          <CreditCard className="h-4 w-4" /> FASTag Toll Charges — charge customer
+        </Label>
+      </div>
+      {checked && (
+        <div className="ml-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-neutral-600">Amount (₹)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+              <Input
+                type="number"
+                min="0"
+                className="pl-7 h-10"
+                placeholder="e.g. 150"
+                value={amount}
+                onChange={(e) => onAmountChange(e.target.value)}
+                disabled={disabled}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-neutral-600">Notes (optional)</Label>
+            <Input
+              className="h-10"
+              placeholder="Route / toll plaza..."
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Other / additional drop charges, line by line (no GST). */
+function OtherChargesFields({
+  checked,
+  onCheckedChange,
+  items,
+  onItemsChange,
+  disabled,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  items: OtherChargeItem[];
+  /** `typed`: a line's description / amount was edited (not a line added or removed) */
+  onItemsChange: (next: OtherChargeItem[], typed: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-3 p-4 rounded-lg border bg-purple-50/40 border-purple-200">
+      <div className="flex items-center gap-3">
+        <Checkbox
+          id="hasOtherCharges"
+          checked={checked}
+          onCheckedChange={(v) => onCheckedChange(!!v)}
+          disabled={disabled}
+        />
+        <Label htmlFor="hasOtherCharges" className="text-sm font-semibold cursor-pointer text-purple-900 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" /> Other / Additional Charges
+        </Label>
+      </div>
+      {checked && (
+        <div className="ml-7 space-y-3">
+          <p className="text-xs text-neutral-600">
+            Charged as entered — drop charges carry no GST. Late return is charged automatically, so don't add it here.
+          </p>
+          {items.map((item) => (
+            <div key={item.id} className="flex gap-2 items-center">
+              <Input
+                className="h-10 flex-1"
+                placeholder="Description (e.g. Interior cleaning)"
+                value={item.label}
+                onChange={(e) => onItemsChange(items.map((c) => c.id === item.id ? { ...c, label: e.target.value } : c), true)}
+                disabled={disabled}
+              />
+              <div className="relative w-32 shrink-0">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                <Input
+                  type="number"
+                  min="0"
+                  className="pl-7 h-10"
+                  placeholder="0"
+                  value={item.amount}
+                  onChange={(e) => onItemsChange(items.map((c) => c.id === item.id ? { ...c, amount: e.target.value } : c), true)}
+                  disabled={disabled}
+                />
+              </div>
+              {items.length > 1 && !disabled && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 text-red-500 hover:text-red-700 shrink-0"
+                  onClick={() => onItemsChange(items.filter((c) => c.id !== item.id), false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+          {!disabled && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-purple-700 border-purple-300 hover:bg-purple-50"
+              onClick={() => onItemsChange([...items, { id: Date.now().toString(), label: "", amount: "" }], false)}
+            >
+              + Add Another Charge
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The drop is refused while an edit's money difference is open (409
+ * ADJUSTMENT_PENDING): that difference, settled right here from the pickup's
+ * summary — then the drop carries on.
+ */
+function AdjustmentPendingNotice({ bookingPublicId, message }: { bookingPublicId: string; message: string }) {
+  const { data: summary, isLoading } = useSummary("PICKUP", bookingPublicId);
+  const record = summary?.pendingAdjustment ?? null;
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="flex items-start gap-3 text-amber-800">
+        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold">Settle the edit's difference first</p>
+          <p className="text-sm">{message}</p>
+        </div>
+      </div>
+      {isLoading ? (
+        <Loader2 className="h-5 w-5 animate-spin text-[#FF5F00]" />
+      ) : summary && record ? (
+        <div className="rounded-lg border bg-white px-3">
+          <PendingAdjustment summary={summary} record={record} />
+        </div>
+      ) : summary ? (
+        <p className="text-sm font-medium text-green-700 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" /> The difference is settled — carry on with the drop.
+        </p>
+      ) : (
+        <Button asChild variant="outline" size="sm">
+          <Link to={`/staff/pickups/${bookingPublicId}`}>Open the pickup summary</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function ReturnProcessPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Edit Return (client item 1): ?edit=1 on a completed drop opens this workflow again
+  const [searchParams] = useSearchParams();
+  const editRequested = searchParams.get("edit") === "1";
 
   // ── Photos ─────────────────────────────────────────────────────────────────
   const [returnPhotos, setReturnPhotos] = useState<{ publicId: string; url: string }[]>([]);
@@ -253,7 +569,7 @@ export default function ReturnProcessPage() {
   const [fastagNow, setFastagNow] = useState("");
   // other charges
   const [hasOtherCharges, setHasOtherCharges] = useState(false);
-  const [otherChargeItems, setOtherChargeItems] = useState<{ id: string; label: string; amount: string }[]>([
+  const [otherChargeItems, setOtherChargeItems] = useState<OtherChargeItem[]>([
     { id: "1", label: "", amount: "" },
   ]);
 
@@ -276,6 +592,9 @@ export default function ReturnProcessPage() {
   const [depositHandling, setDepositHandling] = useState<SafetyDepositHandling>("SET_OFF");
   const depositHandlingRef = useRef<SafetyDepositHandling>("SET_OFF");
   const [showExtendModal, setShowExtendModal] = useState(false);
+
+  // An edit's difference still to settle blocks the drop (409 ADJUSTMENT_PENDING): the server's message
+  const [adjustmentBlock, setAdjustmentBlock] = useState<string | null>(null);
 
   // ── Damage ─────────────────────────────────────────────────────────────────
   // damageDecision: null = not yet decided, "NO_DAMAGE" = no damage, "DAMAGE_FOUND" = damage recorded at drop
@@ -354,7 +673,9 @@ export default function ReturnProcessPage() {
   const fastagManualShown =
     !fastagFromReadings &&
     (!!vehicle?.hasFastag || fastagInfo?.mode === "MANUAL" || !!frozenConfig?.fastagModuleEnabled);
-  const fastagNowNeeded = fastagFromReadings && !!fastagInfo?.currentHasFastag;
+  // FASTag balance now: asked for (and required) whenever the car coming back counts
+  // as a FASTag car for this booking — marked, or its balance read at pickup / the swap
+  const fastagNowNeeded = !!fastagInfo?.currentHasFastag;
   const fastagNowValue = fastagNowNeeded ? readFastagBalance(fastagNow).value : null;
   const fastagNowMissing = fastagNowNeeded && fastagNowValue == null;
   // Km across mid-rental swaps: swaps with readings are measured segment by segment
@@ -569,10 +890,9 @@ export default function ReturnProcessPage() {
     if (manualKmAllowed && manualExtraKmValue != null) payload.manualExtraKm = manualExtraKmValue;
     if (returnFuelLevel) payload.returnFuelLevel = returnFuelLevel;
     if (fuelDeficit && fuelCharge) payload.fuelCharge = parseFloat(fuelCharge);
-    if (fastagFromReadings) {
-      // The server charges the usage from the balances
-      if (fastagNowValue != null) payload.returnFastagBalance = fastagNowValue;
-    } else if (fastagManualShown && fastagChecked && fastagAmount) {
+    // With every reading the server charges the usage from the balances
+    if (fastagNowValue != null) payload.returnFastagBalance = fastagNowValue;
+    if (!fastagFromReadings && fastagManualShown && fastagChecked && fastagAmount) {
       payload.fastagAmount = parseFloat(fastagAmount);
       if (fastagNotes) payload.fastagNotes = fastagNotes;
     }
@@ -611,6 +931,7 @@ export default function ReturnProcessPage() {
       setLateOptions(late);
       setLateError(null);
       setDiscountError(discountNotice);
+      setAdjustmentBlock(null);
       toast.success(
         trigger === "discount"
           ? discountToSend ? "Discount applied" : "Discount removed"
@@ -621,6 +942,11 @@ export default function ReturnProcessPage() {
     } catch (err) {
       const message = apiErrorMessage(err, "Failed to compute charges");
       const code = dropErrorCode(err);
+      if (code === "ADJUSTMENT_PENDING") {
+        setAdjustmentBlock(message);
+        toast.error(message);
+        return;
+      }
       if (code === "LATE_RATE_UNAVAILABLE") {
         // Late, but the vehicle has no extra-hour rate — staff set pricing or waive it.
         // Refresh the timeline: the car may have become late since the page loaded.
@@ -629,8 +955,9 @@ export default function ReturnProcessPage() {
         toast.error(message);
         return;
       }
-      if (code === "EXTENSION_PENDING") {
-        // Show the unsettled extension in the rental-time block (it may be new since page load)
+      if (code === "EXTENSION_PENDING" || code === "DROP_READINGS_CHANGED") {
+        // Show the unsettled extension in the rental-time block (it may be new since page load),
+        // or the pickup / swap readings an edit just corrected
         queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       }
       if (code === "DISCOUNT_EXCEEDS_CHARGES") {
@@ -758,7 +1085,10 @@ export default function ReturnProcessPage() {
 
   /** Payment refused because damages or the booked period changed since compute. */
   function handleStaleBill(err: unknown) {
-    if (dropErrorCode(err) !== "DROP_BILL_STALE") return;
+    const code = dropErrorCode(err);
+    // An edit's difference opened meanwhile: it is settled first (shown above the steps)
+    if (code === "ADJUSTMENT_PENDING") setAdjustmentBlock(apiErrorMessage(err, "Settle the edit's difference first."));
+    if (code !== "DROP_BILL_STALE") return;
     void recomputeBill(appliedDiscount, "refresh");
   }
 
@@ -808,7 +1138,13 @@ export default function ReturnProcessPage() {
       // An unsettled extension / a return already sent to the manager / a changed
       // rental: refresh so the page shows why
       const code = dropErrorCode(err);
-      if (code === "EXTENSION_PENDING" || code === "RETURN_AWAITING_MANAGER" || code === "USE_DROP_BILL") {
+      if (code === "ADJUSTMENT_PENDING") setAdjustmentBlock(apiErrorMessage(err, "Settle the edit's difference first."));
+      if (
+        code === "EXTENSION_PENDING" ||
+        code === "RETURN_AWAITING_MANAGER" ||
+        code === "USE_DROP_BILL" ||
+        code === "DROP_READINGS_CHANGED"
+      ) {
         queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       }
     },
@@ -831,9 +1167,11 @@ export default function ReturnProcessPage() {
   }
 
   // Done (returned, or sent to a manager) before this page opened: the read-only
-  // summary, never the workflow — changes go through Edit Return (client item 1).
-  // A drop finished on this page keeps its confirmation below.
-  if (isCompletedForPhase("RETURN", booking) && !paymentSettled && !legacySubmissionResult?.success) {
+  // summary, never the workflow — changes go through Edit Return (client item 1),
+  // this page again with ?edit=1. A drop finished on this page keeps its confirmation below.
+  const completedBeforeOpen =
+    isCompletedForPhase("RETURN", booking) && !paymentSettled && !legacySubmissionResult?.success;
+  if (completedBeforeOpen && !editRequested) {
     return <CompletedOperationPage phase="RETURN" bookingId={booking.publicId} />;
   }
 
@@ -872,6 +1210,17 @@ export default function ReturnProcessPage() {
     ) : null,
   };
 
+  // Edit Return: the drop's sections again, prefilled from what it recorded
+  if (completedBeforeOpen) {
+    return (
+      <ReturnEditMode
+        booking={booking}
+        shellProps={{ ...shellProps, title: "Edit Return", isCompleted: false, awaitingManager: false, canSwap: false }}
+        pickupCaptures={pickupCapturesData}
+      />
+    );
+  }
+
   // Recorded and waiting for the branch manager: nothing to inspect or bill again
   if (awaitingManager) {
     return <ReturnPageShell {...shellProps}>{null}</ReturnPageShell>;
@@ -879,48 +1228,15 @@ export default function ReturnProcessPage() {
 
   // Typed FASTag / toll charge — on the drop bill, or recorded for the manager (legacy)
   const renderFastagTollCharge = (disabled: boolean) => (
-    <div className="space-y-3 p-4 rounded-lg border bg-green-50/40 border-green-200">
-      <div className="flex items-center gap-3">
-        <Checkbox
-          id="fastagChecked"
-          checked={fastagChecked}
-          onCheckedChange={(v) => { setFastagChecked(!!v); setFastagAmount(""); setFastagNotes(""); setReturnSession(null); }}
-          disabled={disabled}
-        />
-        <Label htmlFor="fastagChecked" className="text-sm font-semibold cursor-pointer text-green-900 flex items-center gap-2">
-          <CreditCard className="h-4 w-4" /> FASTag Toll Charges — charge customer
-        </Label>
-      </div>
-      {fastagChecked && (
-        <div className="ml-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-neutral-600">Amount (₹)</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-              <Input
-                type="number"
-                min="0"
-                className="pl-7 h-10"
-                placeholder="e.g. 150"
-                value={fastagAmount}
-                onChange={(e) => { setFastagAmount(e.target.value); setReturnSession(null); }}
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-neutral-600">Notes (optional)</Label>
-            <Input
-              className="h-10"
-              placeholder="Route / toll plaza..."
-              value={fastagNotes}
-              onChange={(e) => setFastagNotes(e.target.value)}
-              disabled={disabled}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+    <FastagTollCharge
+      checked={fastagChecked}
+      onCheckedChange={(v) => { setFastagChecked(v); setFastagAmount(""); setFastagNotes(""); setReturnSession(null); }}
+      amount={fastagAmount}
+      onAmountChange={(v) => { setFastagAmount(v); setReturnSession(null); }}
+      notes={fastagNotes}
+      onNotesChange={setFastagNotes}
+      disabled={disabled}
+    />
   );
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -954,6 +1270,8 @@ export default function ReturnProcessPage() {
           ) : null
         }
       >
+        {adjustmentBlock && <AdjustmentPendingNotice bookingPublicId={booking.publicId} message={adjustmentBlock} />}
+
         {/* ── STEP 1: Handover reference photos (pickup, or the swap) ─────── */}
         {showHandoverReference && pickupCapturesData && (
           <StepCard
@@ -1044,67 +1362,23 @@ export default function ReturnProcessPage() {
             />
 
             {/* ── Fuel Level ── */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Fuel className="h-4 w-4 text-muted-foreground" />
-                Return Fuel Level
-              </Label>
-              {pickupFuelLevel && (
-                <p className="text-xs text-muted-foreground">
-                  {swappedWithReadings ? "Level at the swap (this vehicle)" : "Pickup level"}:{" "}
-                  <span className="font-medium text-foreground">{FUEL_LEVEL_OPTIONS.find((o) => o.value === pickupFuelLevel)?.label ?? pickupFuelLevel}</span>
-                </p>
-              )}
-              <Select
-                value={returnFuelLevel}
-                onValueChange={(v) => { setReturnFuelLevel(v); setFuelDeficit(false); setFuelCharge(""); setReturnSession(null); }}
-                disabled={step3Complete}
-              >
-                <SelectTrigger className="h-11 max-w-xs">
-                  <SelectValue placeholder="Select fuel level at return" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FUEL_LEVEL_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {hasFuelDeficit && !fuelDeficit && (
-                <p className="text-xs text-amber-600">Return fuel is lower than pickup — check the box below to charge.</p>
-              )}
-            </div>
+            <ReturnFuelLevelField
+              value={returnFuelLevel}
+              onChange={(v) => { setReturnFuelLevel(v); setFuelDeficit(false); setFuelCharge(""); setReturnSession(null); }}
+              disabled={step3Complete}
+              pickupFuelLevel={pickupFuelLevel}
+              swappedWithReadings={swappedWithReadings}
+              deficitHint={hasFuelDeficit && !fuelDeficit}
+            />
 
             {/* ── Fuel Deficit ── */}
-            <div className="space-y-3 p-4 rounded-lg border bg-amber-50/40 border-amber-200">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="fuelDeficit"
-                  checked={fuelDeficit}
-                  onCheckedChange={(v) => { setFuelDeficit(!!v); setFuelCharge(""); setReturnSession(null); }}
-                  disabled={step3Complete}
-                />
-                <Label htmlFor="fuelDeficit" className="text-sm font-semibold cursor-pointer text-amber-900 flex items-center gap-2">
-                  <Fuel className="h-4 w-4" /> Fuel Deficit — charge customer
-                </Label>
-              </div>
-              {fuelDeficit && (
-                <div className="space-y-1.5 ml-7">
-                  <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹, no GST)</Label>
-                  <div className="relative max-w-xs">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      className="pl-7 h-10"
-                      placeholder="e.g. 300"
-                      value={fuelCharge}
-                      onChange={(e) => { setFuelCharge(e.target.value); setReturnSession(null); }}
-                      disabled={step3Complete}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <FuelDeficitCharge
+              checked={fuelDeficit}
+              onCheckedChange={(v) => { setFuelDeficit(v); setFuelCharge(""); setReturnSession(null); }}
+              amount={fuelCharge}
+              onAmountChange={(v) => { setFuelCharge(v); setReturnSession(null); }}
+              disabled={step3Complete}
+            />
 
             {/* ── FASTag balance now (every earlier reading present) ── */}
             {fastagInfo && (
@@ -1121,76 +1395,16 @@ export default function ReturnProcessPage() {
             {fastagManualShown && renderFastagTollCharge(step3Complete)}
 
             {/* ── Other / Additional Charges ── */}
-            <div className="space-y-3 p-4 rounded-lg border bg-purple-50/40 border-purple-200">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="hasOtherCharges"
-                  checked={hasOtherCharges}
-                  onCheckedChange={(v) => { setHasOtherCharges(!!v); setReturnSession(null); }}
-                  disabled={step3Complete}
-                />
-                <Label htmlFor="hasOtherCharges" className="text-sm font-semibold cursor-pointer text-purple-900 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" /> Other / Additional Charges
-                </Label>
-              </div>
-              {hasOtherCharges && (
-                <div className="ml-7 space-y-3">
-                  <p className="text-xs text-neutral-600">
-                    Charged as entered — drop charges carry no GST. Late return is charged automatically, so don't add it here.
-                  </p>
-                  {otherChargeItems.map((item) => (
-                    <div key={item.id} className="flex gap-2 items-center">
-                      <Input
-                        className="h-10 flex-1"
-                        placeholder="Description (e.g. Interior cleaning)"
-                        value={item.label}
-                        onChange={(e) => {
-                          setOtherChargeItems((prev) => prev.map((c) => c.id === item.id ? { ...c, label: e.target.value } : c));
-                          setReturnSession(null);
-                        }}
-                        disabled={step3Complete}
-                      />
-                      <div className="relative w-32 shrink-0">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          className="pl-7 h-10"
-                          placeholder="0"
-                          value={item.amount}
-                          onChange={(e) => {
-                            setOtherChargeItems((prev) => prev.map((c) => c.id === item.id ? { ...c, amount: e.target.value } : c));
-                            setReturnSession(null);
-                          }}
-                          disabled={step3Complete}
-                        />
-                      </div>
-                      {otherChargeItems.length > 1 && !step3Complete && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-red-500 hover:text-red-700 shrink-0"
-                          onClick={() => setOtherChargeItems((prev) => prev.filter((c) => c.id !== item.id))}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  {!step3Complete && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-purple-700 border-purple-300 hover:bg-purple-50"
-                      onClick={() => setOtherChargeItems((prev) => [...prev, { id: Date.now().toString(), label: "", amount: "" }])}
-                    >
-                      + Add Another Charge
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
+            <OtherChargesFields
+              checked={hasOtherCharges}
+              onCheckedChange={(v) => { setHasOtherCharges(v); setReturnSession(null); }}
+              items={otherChargeItems}
+              onItemsChange={(next, typed) => {
+                setOtherChargeItems(next);
+                if (typed) setReturnSession(null);
+              }}
+              disabled={step3Complete}
+            />
 
             {/* ── Late return beyond the booked end (automatic EXTRA_TIME line) ── */}
             {rentalTimeline && (
@@ -1594,6 +1808,8 @@ export default function ReturnProcessPage() {
 
   return (
     <ReturnPageShell {...shellProps}>
+      {adjustmentBlock && <AdjustmentPendingNotice bookingPublicId={booking.publicId} message={adjustmentBlock} />}
+
       {/* Handover reference photos (pickup, or the swap) */}
       {showHandoverReference && pickupCapturesData && (
         <Card className="border-none shadow-sm">
@@ -1819,6 +2035,526 @@ export default function ReturnProcessPage() {
           )}
         </div>
       )}
+
+      <PhotoLightbox
+        open={!!lightbox}
+        onOpenChange={(open) => !open && setLightbox(null)}
+        items={lightbox?.items ?? []}
+        startIndex={lightbox?.index ?? 0}
+        title="Photo Preview"
+      />
+    </ReturnPageShell>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// EDIT RETURN (client item 1, full edit): this page again for a completed drop,
+// prefilled from what it recorded (its inputs as last edited). Save changes shows
+// the bill's difference (old → new), saves it and settles it at the counter — or,
+// for a drop the branch manager settles (legacy), sends it to Settlements.
+// ══════════════════════════════════════════════════════════════════════════
+
+const num = (x: unknown) => Number(x ?? 0) || 0;
+
+interface ReturnEditModeProps {
+  booking: EmployeeBooking;
+  shellProps: Omit<ReturnPageShellProps, "children">;
+  pickupCaptures: ReturnConditionCaptures | undefined;
+}
+
+function ReturnEditMode({ booking, shellProps, pickupCaptures }: ReturnEditModeProps) {
+  const { data: summary, isLoading, isError } = useSummary("RETURN", booking.publicId);
+
+  if (isLoading) {
+    return (
+      <ReturnPageShell {...shellProps}>
+        <div className="py-12 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-[#FF5F00]" />
+        </div>
+      </ReturnPageShell>
+    );
+  }
+  if (isError || !summary) {
+    return (
+      <ReturnPageShell {...shellProps}>
+        <p className="py-8 text-center text-sm text-muted-foreground">Couldn't load this return.</p>
+      </ReturnPageShell>
+    );
+  }
+  // Nothing this page can edit (not completed, or the drop's inputs aren't on record): the summary
+  if (summary.phase !== "RETURN" || !summary.edit.allowed || !summary.editState) {
+    return <CompletedOperationPage phase="RETURN" bookingId={booking.publicId} />;
+  }
+  return (
+    <ReturnEditForm
+      booking={booking}
+      summary={summary}
+      editState={summary.editState}
+      shellProps={shellProps}
+      pickupCaptures={pickupCaptures}
+    />
+  );
+}
+
+function ReturnEditForm({
+  booking,
+  summary,
+  editState,
+  shellProps,
+  pickupCaptures,
+}: ReturnEditModeProps & { summary: ReturnSummary; editState: NonNullable<ReturnSummary["editState"]> }) {
+  const inputs = editState.inputs;
+  const dropBill = editState.flow === "DROP_BILL";
+  const vehicle = booking.items[0]?.vehicle;
+  const recordedEnd = inputs.endOdometer ?? summary.odometer.end;
+  const recordedFuel = inputs.returnFuelLevel ?? summary.fuel.return;
+
+  // ── The drop's inputs, as recorded / last edited ──
+  const [endOdometer, setEndOdometer] = useState(recordedEnd != null ? String(recordedEnd) : "");
+  const [manualExtraKm, setManualExtraKm] = useState(inputs.manualExtraKm != null ? String(inputs.manualExtraKm) : "");
+  const [returnFuelLevel, setReturnFuelLevel] = useState(recordedFuel ?? "");
+  const [fuelDeficit, setFuelDeficit] = useState(num(inputs.fuelCharge) > 0);
+  const [fuelCharge, setFuelCharge] = useState(moneyText(inputs.fuelCharge));
+  const [fastagNow, setFastagNow] = useState(inputs.returnFastagBalance != null ? String(num(inputs.returnFastagBalance)) : "");
+  const [fastagChecked, setFastagChecked] = useState(num(inputs.fastagAmount) > 0);
+  const [fastagAmount, setFastagAmount] = useState(moneyText(inputs.fastagAmount));
+  const [fastagNotes, setFastagNotes] = useState(inputs.fastagNotes ?? "");
+  const [hasOtherCharges, setHasOtherCharges] = useState(inputs.otherCharges.length > 0);
+  const [otherChargeItems, setOtherChargeItems] = useState<OtherChargeItem[]>(() =>
+    inputs.otherCharges.length > 0
+      ? inputs.otherCharges.map((o, i) => ({ id: String(i + 1), label: o.label, amount: String(num(o.amount)) }))
+      : [{ id: "1", label: "", amount: "" }],
+  );
+  const [discount, setDiscount] = useState<DropDiscountInput | null>(
+    inputs.discount ? { amount: num(inputs.discount.amount), reason: inputs.discount.reason } : null,
+  );
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [lateOptions, setLateOptions] = useState<LateReturnOptions>({
+    applyGrace: inputs.applyGrace,
+    waiver: inputs.waiveReason != null ? { reason: inputs.waiveReason } : null,
+  });
+  const [lateError, setLateError] = useState<string | null>(null);
+  const [depositHandling, setDepositHandling] = useState<SafetyDepositHandling>(inputs.depositHandling);
+  const [photos, setPhotos] = useState<EditablePhoto[]>(() => photosOf(summary.photos));
+  const [damages, setDamages] = useState<Record<string, DamageDraft>>(() =>
+    Object.fromEntries(summary.damages.filter((d) => d.editable).map((d) => [d.publicId, damageDraftOf(editState, d)])),
+  );
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
+  // Photos uploaded here and not saved are deleted when the page closes
+  const uploads = useEditUploads((fileId) => bookingService.deleteReturnImage(fileId));
+
+  // ── Same figures as the drop: km across swaps, FASTag mode, late return ──
+  const kmSegments = booking.kmSegments ?? null;
+  const manualKmAllowed = !!booking.kmAllowance?.manualExtraKmAllowed;
+  const currentStartOdometer = kmSegments ? kmSegments.currentStartOdometer : booking.startOdometer ?? null;
+  const swappedWithReadings = !!kmSegments && kmSegments.swapCount > 0 && kmSegments.complete;
+  const endValue = /^\d+$/.test(endOdometer.trim()) ? Number(endOdometer.trim()) : null;
+  const endOdometerTooLow =
+    endValue != null && !manualKmAllowed && currentStartOdometer != null && endValue < currentStartOdometer;
+  // The bill's km charge is worked out by the server (shown in the review); km driven is shown here
+  const drivenKm =
+    !manualKmAllowed && currentStartOdometer != null && endValue != null
+      ? (kmSegments?.priorKm ?? 0) + Math.max(0, endValue - currentStartOdometer)
+      : null;
+  const fastagInfo = booking.fastag ?? null;
+  const fastagFromReadings = fastagInfo?.mode === "READINGS";
+  // Asked for (and required) whenever the car handed back counts as a FASTag car
+  const fastagNowShown = !!fastagInfo?.currentHasFastag;
+  const fastagNowRead = readFastagBalance(fastagNow);
+  // Typed FASTag / toll charge on the drop bill: the balances can't measure the usage, or one was typed
+  const fastagTypedShown =
+    dropBill &&
+    (num(inputs.fastagAmount) > 0 ||
+      (!fastagFromReadings &&
+        (!!vehicle?.hasFastag || fastagInfo?.mode === "MANUAL" || !!booking.frozenChargeConfig?.fastagModuleEnabled)));
+  const timeline = booking.rentalTimeline ?? null;
+  const lateShown = !!timeline && timeline.lateMinutes > 0;
+  const manualGrace =
+    !!timeline && timeline.gracePolicyEnabled && timeline.graceType === "MANUAL" && timeline.graceMinutes > 0;
+  const depositHeld = num(booking.safetyDeposit);
+  const pickupFuelLevel = booking.pickupFuelLevel ?? summary.fuel.pickup;
+  const hasFuelDeficit =
+    !!returnFuelLevel && !!pickupFuelLevel && FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER[pickupFuelLevel];
+  const typedOther = useMemo(
+    () => (hasOtherCharges ? otherChargeItems.filter((c) => c.label.trim() || c.amount.trim()) : []),
+    [hasOtherCharges, otherChargeItems],
+  );
+
+  // Only what changed is sent; the server keeps the rest as recorded
+  const body = useMemo((): EditReturnBody => {
+    const out: EditReturnBody = {};
+    if (endValue != null && endValue !== recordedEnd) out.endOdometer = endValue;
+    if (summary.edit.fuelEditable && returnFuelLevel && returnFuelLevel !== recordedFuel) {
+      out.returnFuelLevel = returnFuelLevel;
+    }
+    if (
+      fastagNowShown &&
+      fastagNowRead.value != null &&
+      (inputs.returnFastagBalance == null || !sameMoney(fastagNowRead.value, inputs.returnFastagBalance))
+    ) {
+      out.returnFastagBalance = fastagNowRead.value;
+    }
+    const { removed, added } = photoDiff(photosOf(summary.photos), photos);
+    if (removed.length) out.removeFileIds = removed;
+    if (added.length) out.addPhotos = added.map((p) => ({ fileId: p.fileId }));
+    const damageEdits = summary.damages.flatMap((d) => {
+      const draft = d.editable ? damages[d.publicId] : undefined;
+      const entry = draft ? damageEdit(editState, d, draft) : null;
+      return entry ? [entry] : [];
+    });
+    if (damageEdits.length) out.damages = damageEdits;
+    if (dropBill) {
+      const fuel = fuelDeficit ? num(fuelCharge) : 0;
+      if (!sameMoney(fuel, inputs.fuelCharge)) out.fuelCharge = fuel;
+      if (fastagTypedShown) {
+        const amount = fastagChecked ? num(fastagAmount) : 0;
+        if (!sameMoney(amount, inputs.fastagAmount)) out.fastagAmount = amount;
+        const notes = fastagChecked ? fastagNotes.trim() || null : null;
+        if (notes !== (inputs.fastagNotes ?? null)) out.fastagNotes = notes;
+      }
+      const others = typedOther.map((c) => ({ label: c.label.trim(), amount: num(c.amount) }));
+      const before = inputs.otherCharges.map((o) => ({ label: o.label, amount: num(o.amount) }));
+      if (JSON.stringify(others) !== JSON.stringify(before)) out.otherCharges = others;
+      const hadDiscount = inputs.discount ? { amount: num(inputs.discount.amount), reason: inputs.discount.reason } : null;
+      if (JSON.stringify(discount) !== JSON.stringify(hadDiscount)) out.discount = discount;
+    }
+    if (lateShown) {
+      if ((lateOptions.waiver?.reason ?? null) !== (inputs.waiveReason ?? null)) out.waiveLateCharge = lateOptions.waiver;
+      if (manualGrace && lateOptions.applyGrace !== inputs.applyGrace) out.applyGrace = lateOptions.applyGrace;
+    }
+    if (manualKmAllowed && (!manualExtraKm.trim() || /^\d+$/.test(manualExtraKm.trim()))) {
+      const typed = manualExtraKm.trim() ? Number(manualExtraKm.trim()) : null;
+      if (typed !== inputs.manualExtraKm) out.manualExtraKm = typed;
+    }
+    if (depositHeld > 0 && depositHandling !== inputs.depositHandling) out.safetyDepositHandling = depositHandling;
+    return out;
+  }, [
+    endValue, recordedEnd, summary, returnFuelLevel, recordedFuel, fastagNowShown, fastagNowRead.value, inputs, photos,
+    damages, editState, dropBill, fuelDeficit, fuelCharge, fastagTypedShown, fastagChecked, fastagAmount, fastagNotes,
+    typedOther, discount, lateShown, lateOptions, manualGrace, manualKmAllowed, manualExtraKm, depositHeld, depositHandling,
+  ]);
+
+  // ── The drop's own validations ──
+  const endProblem = !endOdometer.trim()
+    ? recordedEnd != null
+      ? "Enter the end odometer reading."
+      : null
+    : endValue == null
+      ? "Enter the end odometer reading in whole km."
+      : endOdometerTooLow
+        ? `The end odometer can't be less than ${swappedWithReadings ? "the reading at the swap" : "the start reading"} (${currentStartOdometer} km).`
+        : null;
+  const chargesProblem =
+    endProblem ??
+    (manualKmAllowed && manualExtraKm.trim() && !/^\d+$/.test(manualExtraKm.trim())
+      ? "Enter the extra km as a whole number."
+      : null) ??
+    // A balance the drop recorded can be changed but not blanked; never recorded
+    // (older drops) stays optional — checked only when typed
+    (fastagNowShown && (inputs.returnFastagBalance != null || fastagNow.trim()) && fastagNowRead.error
+      ? fastagNowRead.error
+      : null) ??
+    (dropBill && fuelDeficit && fuelCharge.trim() && !isMoneyInput(fuelCharge) ? "Enter the fuel charge in ₹." : null) ??
+    (fastagTypedShown && fastagChecked && fastagAmount.trim() && !isMoneyInput(fastagAmount)
+      ? "Enter the FASTag charge in ₹."
+      : null) ??
+    (dropBill && typedOther.some((c) => !c.label.trim() || !isMoneyInput(c.amount) || num(c.amount) <= 0)
+      ? "Name each other charge and enter its amount in ₹."
+      : null);
+  const damageProblem =
+    summary.damages
+      .map((d) => (d.editable && damages[d.publicId] ? damageDraftProblem(d, damages[d.publicId]!) : null))
+      .find(Boolean) ?? null;
+  const blocker =
+    (summary.photos.length > 0 && photos.length === 0
+      ? "Keep at least one return photo — replace a photo rather than removing them all."
+      : null) ??
+    chargesProblem ??
+    damageProblem ??
+    (Object.values(uploading).some(Boolean) ? "Wait for the photos to upload." : null);
+  const changed = Object.keys(body).length > 0;
+
+  const setDamage = (publicId: string, patch: Partial<DamageDraft>) =>
+    setDamages((all) => ({ ...all, [publicId]: { ...all[publicId]!, ...patch } }));
+
+  /** Fuel level changed: the deficit charge follows it, as on the drop. */
+  const changeFuelLevel = (level: string) => {
+    setReturnFuelLevel(level);
+    const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
+    const deficitBars = pickupFuelLevel ? FUEL_LEVEL_ORDER[pickupFuelLevel] - FUEL_LEVEL_ORDER[level] : 0;
+    if (dropBill && fuelBarRate && deficitBars > 0) {
+      setFuelDeficit(true);
+      setFuelCharge(String(Math.ceil(deficitBars * fuelBarRate)));
+    } else {
+      setFuelDeficit(false);
+      setFuelCharge("");
+    }
+  };
+
+  /** A refusal of the preview / save that belongs to a field. */
+  const onFormError = (error: unknown) => {
+    const data = isAxiosError<{ field?: string | null; code?: string }>(error) ? error.response?.data : undefined;
+    const message = errorMessage(error, "Couldn't save the changes. Try again.");
+    const field = data?.field ?? "";
+    if (data?.code === "DISCOUNT_EXCEEDS_CHARGES" || field.startsWith("discount")) {
+      setDiscountError(message);
+    } else if (data?.code === "LATE_RATE_UNAVAILABLE" || field.startsWith("waiveLateCharge")) {
+      setLateError(message);
+    } else if (
+      ["endOdometer", "manualExtraKm", "returnFuelLevel", "returnFastagBalance", "safetyDepositHandling"].includes(field)
+    ) {
+      // DEPOSIT_REFUND_RECORDED (safetyDepositHandling): the BM refunded the deposit in Settlements
+      setFieldError({ field, message });
+      document.getElementById(`edit-return-${field}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      setFormError(message);
+    }
+  };
+  const errorFor = (field: string) => (fieldError?.field === field ? fieldError.message : null);
+
+  const flow = useEditSaveFlow<EditReturnBody, ReturnSummary>({
+    phase: "RETURN",
+    bookingId: booking.publicId,
+    preview: (b) => completedOperationService.previewReturnEdit(booking.publicId, b),
+    save: (b) => completedOperationService.editReturn(booking.publicId, b),
+    onFormError,
+    // Kept with the drop now: never cleaned up as unused uploads
+    onSaved: () => uploads.keep([...photos, ...Object.values(damages).flatMap((d) => d.photos)].map((p) => p.fileId)),
+  });
+
+  const save = () => {
+    if (blocker || !changed) return;
+    setFieldError(null);
+    setFormError(null);
+    setDiscountError(null);
+    setLateError(null);
+    flow.open(body);
+  };
+
+  if (flow.finished) {
+    return (
+      <ReturnPageShell {...shellProps}>
+        <EditSavedCard
+          phase="RETURN"
+          note={flow.finished.note}
+          detail={`The return of ${vehicle ? `${vehicle.make} ${vehicle.model}` : "the vehicle"} for ${booking.customer.user.name} was updated.`}
+        />
+      </ReturnPageShell>
+    );
+  }
+
+  const showHandoverReference = hasHandoverReference(pickupCaptures);
+  const handoverHeading = handoverReferenceHeading(pickupCaptures);
+  const stepPhotos = showHandoverReference ? 2 : 1;
+
+  return (
+    <ReturnPageShell {...shellProps}>
+      <PendingAdjustmentCard summary={summary} />
+
+      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+        {dropBill
+          ? "Correct what this drop recorded. Before saving you'll see what changes in the bill — then collect the difference or refund it."
+          : "Correct what this drop recorded. Its charges are settled by the branch manager — a change in them goes to Settlements."}
+      </div>
+
+      {/* ── Handover reference photos (pickup, or the swap) ── */}
+      {showHandoverReference && pickupCaptures && (
+        <StepCard stepNum={1} title={handoverHeading.title} subtitle={handoverHeading.subtitle} isCompleted isLocked={false}>
+          <CardContent className="pt-4">
+            <HandoverConditionPhotos data={pickupCaptures} onOpen={(items, index) => setLightbox({ items, index })} />
+          </CardContent>
+        </StepCard>
+      )}
+
+      {/* ── Return photos ── */}
+      <StepCard
+        stepNum={stepPhotos}
+        title="Return Condition Photos"
+        subtitle="Replace, add or remove the photos taken at the return"
+        isCompleted={photos.length > 0 && !uploading.return}
+        isLocked={false}
+      >
+        <CardContent className="pt-4">
+          <PhotoEditor
+            value={photos}
+            onChange={setPhotos}
+            onBusyChange={(busy) => setUploading((all) => ({ ...all, return: busy }))}
+            upload={uploads.track((form) => bookingService.uploadReturnImage(form))}
+          />
+        </CardContent>
+      </StepCard>
+
+      {/* ── Readings and drop charges ── */}
+      <StepCard
+        stepNum={stepPhotos + 1}
+        title="Charge Details"
+        subtitle={dropBill ? "Readings and the drop charges" : "Readings — the branch manager collects the charges"}
+        isCompleted={!chargesProblem}
+        isLocked={false}
+      >
+        <CardContent className="pt-4 space-y-5">
+          <div id="edit-return-endOdometer" className="space-y-1">
+            <DropOdometerFields
+              endOdometer={endOdometer}
+              onEndOdometerChange={(v) => { setEndOdometer(v); setFieldError(null); }}
+              manualExtraKm={manualExtraKm}
+              onManualExtraKmChange={(v) => { setManualExtraKm(v); setFieldError(null); }}
+              currentStartOdometer={currentStartOdometer}
+              swappedWithReadings={swappedWithReadings}
+              manualKmAllowed={manualKmAllowed}
+              endOdometerTooLow={endOdometerTooLow}
+              kmSummary={null}
+              drivenKmFallback={drivenKm}
+            />
+            {(errorFor("endOdometer") ?? errorFor("manualExtraKm")) && (
+              <p className="text-xs text-red-600">{errorFor("endOdometer") ?? errorFor("manualExtraKm")}</p>
+            )}
+          </div>
+
+          <div id="edit-return-returnFuelLevel" className="space-y-1">
+            {summary.edit.fuelEditable ? (
+              <ReturnFuelLevelField
+                value={returnFuelLevel}
+                onChange={(v) => { changeFuelLevel(v); setFieldError(null); }}
+                pickupFuelLevel={pickupFuelLevel}
+                swappedWithReadings={swappedWithReadings}
+                deficitHint={dropBill && hasFuelDeficit && !fuelDeficit}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">No fuel reading was kept for this rental.</p>
+            )}
+            {errorFor("returnFuelLevel") && <p className="text-xs text-red-600">{errorFor("returnFuelLevel")}</p>}
+          </div>
+
+          {dropBill && (
+            <FuelDeficitCharge
+              checked={fuelDeficit}
+              onCheckedChange={(v) => { setFuelDeficit(v); setFuelCharge(""); }}
+              amount={fuelCharge}
+              onAmountChange={setFuelCharge}
+            />
+          )}
+
+          {fastagInfo && (
+            <div id="edit-return-returnFastagBalance" className="space-y-1">
+              <FastagReturnField
+                info={fastagInfo}
+                value={fastagNow}
+                onChange={(v) => { setFastagNow(v); setFieldError(null); }}
+                billedOnDropBill={dropBill}
+                note="A corrected balance re-works the FASTag charge — you'll see the difference before saving."
+              />
+              {errorFor("returnFastagBalance") && (
+                <p className="text-xs text-red-600">{errorFor("returnFastagBalance")}</p>
+              )}
+            </div>
+          )}
+
+          {fastagTypedShown && (
+            <FastagTollCharge
+              checked={fastagChecked}
+              onCheckedChange={(v) => { setFastagChecked(v); setFastagAmount(""); setFastagNotes(""); }}
+              amount={fastagAmount}
+              onAmountChange={setFastagAmount}
+              notes={fastagNotes}
+              onNotesChange={setFastagNotes}
+            />
+          )}
+
+          {dropBill && (
+            <OtherChargesFields
+              checked={hasOtherCharges}
+              onCheckedChange={setHasOtherCharges}
+              items={otherChargeItems}
+              onItemsChange={(next) => setOtherChargeItems(next)}
+            />
+          )}
+
+          {timeline && (
+            <LateReturnPanel
+              timeline={timeline}
+              billed={null}
+              options={lateOptions}
+              onOptionsChange={(next) => { setLateOptions(next); setLateError(null); }}
+              collection={dropBill ? "drop-bill" : "branch-manager"}
+              error={lateError}
+              editing
+            />
+          )}
+
+          <SwapChargesNote charges={booking.swapCharges ?? []} billedOnDropBill={dropBill} />
+
+          {dropBill && (
+            <DropDiscountPanel
+              applied={discount ? { amount: discount.amount.toFixed(2), reason: discount.reason } : null}
+              error={discountError}
+              isPending={false}
+              onApply={(d) => { setDiscount(d); setDiscountError(null); }}
+              onRemove={() => { setDiscount(null); setDiscountError(null); }}
+            />
+          )}
+
+          {depositHeld > 0 && (
+            <div id="edit-return-safetyDepositHandling" className="space-y-1">
+              <SafetyDepositChoice
+                held={depositHeld}
+                value={depositHandling}
+                onChange={(v) => { setDepositHandling(v); setFieldError(null); }}
+                settledByManager={!dropBill}
+                note={dropBill ? "Changing it only updates what was recorded — no money moves with it." : undefined}
+              />
+              {errorFor("safetyDepositHandling") && (
+                <p className="text-xs text-red-600">{errorFor("safetyDepositHandling")}</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </StepCard>
+
+      {/* ── Damage recorded at the drop ── */}
+      <StepCard
+        stepNum={stepPhotos + 2}
+        title="Vehicle Condition"
+        subtitle="Damage recorded at the drop — what it says, its photos and its cost"
+        isCompleted={!damageProblem}
+        isLocked={false}
+      >
+        <CardContent className="pt-4 space-y-3">
+          {summary.damages.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No damage was recorded at this drop.</p>
+          ) : (
+            summary.damages.map((d) => (
+              <DropDamageEditor
+                key={d.publicId}
+                damage={d}
+                draft={d.editable ? damages[d.publicId] : undefined}
+                onChange={(patch) => setDamage(d.publicId, patch)}
+                upload={uploads.track((form) => bookingService.uploadDamageImage(form))}
+                onBusyChange={(busy) => setUploading((all) => ({ ...all, [d.publicId]: busy }))}
+              />
+            ))
+          )}
+        </CardContent>
+      </StepCard>
+
+      <p className="text-xs text-muted-foreground">
+        Rent, coupons and extensions aren't changed here — ask the branch manager.
+      </p>
+
+      {formError && (
+        <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          {formError}
+        </div>
+      )}
+
+      <EditSaveBar blocker={blocker} changed={changed} busy={flow.busy} onSave={save} />
+
+      {flow.dialog}
 
       <PhotoLightbox
         open={!!lightbox}

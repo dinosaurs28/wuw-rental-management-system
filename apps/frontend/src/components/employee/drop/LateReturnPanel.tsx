@@ -31,6 +31,11 @@ interface LateReturnPanelProps {
   isPending?: boolean;
   /** Server message, e.g. LATE_RATE_UNAVAILABLE. */
   error?: string | null;
+  /**
+   * Edit Return (client item 1): the drop is recorded, so there is no preview —
+   * the grace / waiver are saved with the changes and the late charge worked out again.
+   */
+  editing?: boolean;
 }
 
 const STATUS_BADGE: Record<LateReturnStatus, { label: string; className: string }> = {
@@ -74,6 +79,7 @@ export function LateReturnPanel({
   readOnly,
   isPending,
   error,
+  editing = false,
 }: LateReturnPanelProps) {
   const [waiving, setWaiving] = useState(false);
   const [reason, setReason] = useState("");
@@ -106,7 +112,9 @@ export function LateReturnPanel({
   const waiverReason = billed?.waiverReason ?? options.waiver?.reason ?? null;
   // A LATE_RATE_UNAVAILABLE refusal can only be cleared by pricing the vehicle or waiving
   const canWaive =
-    !readOnly && (status === "CHARGED" || status === "RATE_UNAVAILABLE" || (!!error && !options.waiver));
+    !readOnly &&
+    (status === "CHARGED" || status === "RATE_UNAVAILABLE" || (!!error && !options.waiver) || (editing && !status));
+  const when = collection === "drop-bill" ? "when you compute the charges" : "when you complete the return";
   const reasonValid = reason.trim().length >= 3;
 
   const submitWaiver = () => {
@@ -168,9 +176,9 @@ export function LateReturnPanel({
           <div className="min-w-0 text-sm">
             <p className="font-medium text-gray-900">
               {pendingWaiver
-                ? collection === "drop-bill"
-                  ? "Will be waived when you compute the charges"
-                  : "Will be waived when you complete the return"
+                ? editing
+                  ? "Late charge waived"
+                  : `Will be waived ${when}`
                 : `Late charge of ${inr(billed?.waivedAmount ?? "0")} waived`}
             </p>
             {waiverReason && <p className="text-xs text-gray-600 break-words">Reason: {waiverReason}</p>}
@@ -191,9 +199,9 @@ export function LateReturnPanel({
         </div>
       ) : !preview ? (
         <p className="text-xs text-gray-600">
-          {collection === "drop-bill"
-            ? "The late charge is worked out when you compute the charges."
-            : "The late charge is worked out when you complete the return."}
+          {editing
+            ? "The late charge is worked out again when you save the changes — you'll see any difference first."
+            : `The late charge is worked out ${when}.`}
         </p>
       ) : status === "CHARGED" ? (
         <div className="space-y-1 text-sm">

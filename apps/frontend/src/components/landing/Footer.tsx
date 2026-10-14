@@ -1,93 +1,139 @@
 import { Link } from "react-router-dom";
-import { Twitter, Instagram, Linkedin, Facebook, Youtube, ArrowRight } from "lucide-react";
+import { MapPin, Phone, MessageCircle } from "lucide-react";
 import { StoreButtons } from "./StoreButtons";
+import { BUSINESS_NAME, CONTACT_ADDRESS, CONTACT_PHONES, WHATSAPP_URL } from "@/lib/contact";
+
+type FooterLink = { name: string; to: string; external?: boolean };
+
+// Static policy pages live under /legal as plain HTML, so they're ordinary links
+const COLUMNS: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Explore",
+    links: [
+      { name: "Browse vehicles", to: "/vehicles" },
+      { name: "FAQs", to: "/faq" },
+      { name: "Contact us", to: "/contact" },
+    ],
+  },
+  {
+    title: "Policies",
+    links: [
+      { name: "Refund policy", to: "/refund-policy" },
+      { name: "Terms & conditions", to: "/legal/terms.html", external: true },
+      { name: "Privacy policy", to: "/legal/privacy.html", external: true },
+    ],
+  },
+];
+
+const linkClass =
+  "text-[15px] text-zinc-400 transition-colors hover:text-white focus:outline-none focus-visible:text-white focus-visible:underline";
 
 export const Footer = () => {
+  const primaryPhone = CONTACT_PHONES[0];
+
   return (
-    <footer className="bg-black text-white font-sans pt-20 pb-8 relative overflow-hidden mt-20">
-      {/* Background glow or subtle gradient */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-      
-      <div className="w-full px-4 md:px-6 lg:px-12 mx-auto max-w-[1600px] relative z-10">
-        
-        {/* Top Section with Newsletter */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10 mb-20 bg-[#1A1A1A] p-8 md:p-12 rounded-3xl border border-white/5">
+    <footer className="relative mt-20 flow-root bg-black font-sans text-white md:mt-28">
+      <div className="mx-auto w-full max-w-[1300px] px-4 md:px-6 lg:px-12">
+        {/* Help with a booking — the one call to action down here */}
+        <div className="relative z-10 -mt-16 rounded-3xl bg-[#FF5F00] p-6 text-[#1A1A1A] md:-mt-20 md:p-10">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-8">
             <div>
-                <h3 className="text-3xl font-black mb-2 uppercase tracking-tight text-white">Stay ahead of the curve</h3>
-                <p className="text-gray-400 font-medium max-w-xl">Subscribe for exclusive WUW Rewards, early access to new fleet arrivals, and special seasonal offers.</p>
+              <h2 className="text-2xl font-black uppercase leading-none tracking-tighter md:text-4xl">
+                Need help with a booking?
+              </h2>
+              <p className="mt-2 max-w-xl font-semibold text-balance text-[#1A1A1A]/80">
+                Call or WhatsApp the Manipal branch and we&apos;ll help you pick a vehicle and dates.
+              </p>
             </div>
-            <div className="flex w-full lg:w-auto items-center min-w-[320px] bg-black border border-white/10 rounded-full overflow-hidden p-1 focus-within:border-[#FF5F00] transition-colors">
-                <input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    className="bg-transparent text-white px-6 py-3 w-full outline-none placeholder:text-gray-500 font-medium text-sm"
-                />
-                <button className="bg-[#FF5F00] hover:bg-[#E55500] p-3 rounded-full text-white transition-colors">
-                    <ArrowRight className="size-5" />
-                </button>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={primaryPhone.href}
+                className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 font-semibold text-white transition-colors hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#FF5F00]"
+              >
+                <Phone className="size-[18px]" aria-hidden="true" />
+                Call {primaryPhone.display}
+              </a>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 font-semibold text-[#1A1A1A] transition-colors hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#FF5F00]"
+              >
+                <MessageCircle className="size-[18px] text-[#1FAF55]" aria-hidden="true" />
+                WhatsApp us
+              </a>
             </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-16 mb-20">
-          
-          {/* Column 1: Brand */}
-          <div className="lg:col-span-2 flex flex-col items-start text-left">
-            <Link to="/" className="flex items-center mb-8 group">
-              <img
-                src="/logo-W.png"
-                alt="WUW Rentals Logo"
-                className="h-10 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-              />
+        {/* Brand + links + visit us */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 pt-12 pb-12 md:grid-cols-12 md:pt-16 md:pb-16">
+          <div className="col-span-2 md:col-span-4">
+            <Link to="/" className="inline-flex" aria-label={`${BUSINESS_NAME} home`}>
+              <img src="/logo-W.png" alt="WUW Rentals" className="h-9 w-auto object-contain" />
             </Link>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-medium">
-              Redefining mobility with a premium fleet and exceptional service. Drive the extraordinary with WUW Rentals and experience the journey you deserve.
+            <p className="mt-5 max-w-xs text-[15px] leading-relaxed text-zinc-400">
+              Car and bike rentals in Manipal. Book 12 hours or by the day, online or in the app.
             </p>
-            <h4 className="text-sm font-black text-white mt-10 mb-4 uppercase tracking-widest">
-              Get the app
-            </h4>
-            <StoreButtons tone="dark" />
+            <StoreButtons tone="dark" className="mt-6" />
           </div>
 
-          {/* Column: Support & Company */}
-          <div className="flex flex-col text-left">
-            <h4 className="text-sm font-black text-white mb-6 uppercase tracking-widest">
-              Company
-            </h4>
-            <ul className="space-y-4">
-              {[
-                  { name: 'FAQs', path: '/faq' },
-                  { name: 'Contact Us', path: '/contact' },
-                  { name: 'Terms & Conditions', path: '/legal/terms.html' },
-                  { name: 'Privacy Policy', path: '/legal/privacy.html' },
-                  { name: 'Refund Policy', path: '/refund-policy' }
-              ].map(link => (
-                <li key={link.name}>
-                    <Link to={link.path} className="group flex items-center gap-2 text-sm text-gray-400 font-medium hover:text-white transition-colors">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5F00] opacity-0 group-hover:opacity-100 transition-opacity" />
+          {COLUMNS.map((column) => (
+            <nav
+              key={column.title}
+              aria-label={column.title}
+              className="col-span-1 md:col-span-2"
+            >
+              <h3 className="text-sm font-semibold text-white">{column.title}</h3>
+              <ul className="mt-4 space-y-3">
+                {column.links.map((link) => (
+                  <li key={link.name}>
+                    {link.external ? (
+                      <a href={link.to} className={linkClass}>
                         {link.name}
-                    </Link>
+                      </a>
+                    ) : (
+                      <Link to={link.to} className={linkClass}>
+                        {link.name}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+
+          <address className="col-span-2 not-italic md:col-span-4 lg:col-span-3 lg:col-start-10">
+            <h3 className="text-sm font-semibold text-white">Visit us</h3>
+            <p className="mt-4 flex gap-2 text-[15px] leading-relaxed text-zinc-400">
+              <MapPin className="mt-1 size-4 shrink-0 text-[#FF5F00]" aria-hidden="true" />
+              <span>
+                {CONTACT_ADDRESS.lines.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+                <span className="block">{CONTACT_ADDRESS.cityPin}</span>
+              </span>
+            </p>
+            <ul className="mt-4 space-y-2">
+              {CONTACT_PHONES.map((phone) => (
+                <li key={phone.href}>
+                  <a href={phone.href} className={`${linkClass} inline-flex items-center gap-2`}>
+                    <Phone className="size-4 shrink-0 text-[#FF5F00]" aria-hidden="true" />
+                    {phone.display}
+                  </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </address>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col-reverse md:flex-row justify-between items-center gap-6 relative">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          
-          <div className="text-sm text-gray-500 font-medium text-center md:text-left">
-            <p>© {new Date().getFullYear()} WUW Rentals Inc. All rights reserved.</p>
-          </div>
-
-          {/* Social Links */}
-          <div className="flex items-center gap-3">
-            {[Facebook, Twitter, Instagram, Youtube, Linkedin].map((Icon, idx) => (
-                <a key={idx} href="#" className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-[#FF5F00] hover:-translate-y-1 text-gray-400 hover:text-white transition-all duration-300">
-                  <Icon className="size-4" />
-                </a>
-            ))}
-          </div>
+        <div className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-zinc-500 md:flex-row md:items-center md:justify-between">
+          <p>
+            © {new Date().getFullYear()} {BUSINESS_NAME}
+          </p>
+          <p>Manipal, Karnataka</p>
         </div>
       </div>
     </footer>

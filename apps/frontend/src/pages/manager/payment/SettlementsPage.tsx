@@ -67,6 +67,11 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
   const [depositProof, setDepositProof] = useState<CounterProof | null>(null);
   const [depositError, setDepositError] = useState<string | null>(null);
   const [refunding, setRefunding] = useState(false);
+  // Paid beyond what is owed (e.g. charges lowered by an edit after they were collected)
+  const [overpayMethod, setOverpayMethod] = useState<CounterRefundMethod>("CASH");
+  const [overpayProof, setOverpayProof] = useState<CounterProof | null>(null);
+  const [overpayError, setOverpayError] = useState<string | null>(null);
+  const [refundingOverpay, setRefundingOverpay] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
   const isUpi = gateway === "UPI";
 
@@ -146,6 +151,29 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
     }
   };
 
+  // Paid beyond what the booking owes — refunded here
+  const overpaid = parseFloat(summary?.overpaidToRefund ?? "0") || 0;
+  // An edit's difference still open — settled at the counter, so not part of Net Payable
+  const adjustmentOpen = parseFloat(summary?.adjustmentPending ?? "0") || 0;
+  const handleRefundOverpayment = async () => {
+    setRefundingOverpay(true);
+    setOverpayError(null);
+    try {
+      const res = await paymentService.refundSettlementOverpayment(bookingPublicId, {
+        method: overpayMethod,
+        ...(overpayMethod === "UPI" && overpayProof ? { proof_file_id: overpayProof.proofFileId } : {}),
+      });
+      toast.success(res.message || "Refund recorded.");
+      setSummary(res.data.settlement);
+      setAmount(payableHere(res.data.settlement).toFixed(2));
+      setOverpayProof(null);
+    } catch (err) {
+      setOverpayError(apiErrorMessage(err, "Couldn't record the refund."));
+    } finally {
+      setRefundingOverpay(false);
+    }
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
@@ -193,6 +221,15 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                     ? [[
                         `Safety Deposit to Refund${summary.safetyDepositHandling === "REFUND_IN_FULL" ? " (refund in full)" : " (left after set-off)"}`,
                         summary.safetyDepositToRefund,
+                      ]]
+                    : []),
+                  // An edit's difference still open: collected / refunded by Fleet at the counter, not here
+                  ...(adjustmentOpen !== 0
+                    ? [[
+                        adjustmentOpen > 0
+                          ? "Edit Difference to Collect at the Counter (not part of Net Payable)"
+                          : "Edit Difference to Refund at the Counter (not part of Net Payable)",
+                        String(Math.abs(adjustmentOpen)),
                       ]]
                     : []),
                 ].map(([label, val]) => (
@@ -278,6 +315,39 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                     onClick={handleRefundDeposit}
                   >
                     {refunding ? "Recording…" : `Refund ${formatRupees(depositToRefund)} (${depositMethod === "UPI" ? "UPI" : "Cash"})`}
+                  </Button>
+                </div>
+              )}
+
+              {/* Paid beyond what the booking owes (e.g. charges lowered by an edit after they were collected) */}
+              {overpaid > 0 && (
+                <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-blue-900">Refund the over-payment</span>
+                    <span className="text-sm font-bold text-blue-900">{formatRupees(overpaid)}</span>
+                  </div>
+                  <p className="text-xs text-blue-800">
+                    The customer paid more than this booking now owes — usually because its charges were lowered by an
+                    edit after they were collected. Pay it back here.
+                  </p>
+                  <RefundMethodFields
+                    idPrefix="settle-overpayment"
+                    method={overpayMethod}
+                    onMethodChange={(m) => { setOverpayMethod(m); setOverpayError(null); }}
+                    proof={overpayProof}
+                    onProofChange={(p) => { setOverpayProof(p); setOverpayError(null); }}
+                    proofRole="manager"
+                    disabled={refundingOverpay}
+                  />
+                  {overpayError && <p className="text-xs text-red-600">{overpayError}</p>}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-10 border-blue-300 text-blue-800 hover:bg-blue-100"
+                    disabled={refundingOverpay}
+                    onClick={handleRefundOverpayment}
+                  >
+                    {refundingOverpay ? "Recording…" : `Refund ${formatRupees(overpaid)} (${overpayMethod === "UPI" ? "UPI" : "Cash"})`}
                   </Button>
                 </div>
               )}

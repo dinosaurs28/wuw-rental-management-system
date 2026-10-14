@@ -31,7 +31,7 @@ export function StoreButtons({
   ];
 
   return (
-    <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2.5 sm:gap-3 ${className}`}>
       {stores.map((store) => (
         <a
           key={store.name}
@@ -39,12 +39,12 @@ export function StoreButtons({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${store.label} ${store.name}`}
-          className={`inline-flex items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors ${buttonClass}`}
+          className={`inline-flex items-center gap-2.5 sm:gap-3 rounded-xl border px-3.5 sm:px-4 py-2.5 transition-colors ${buttonClass}`}
         >
           {store.icon}
           <span className="flex flex-col text-left leading-none">
             <span className="text-[10px] font-medium tracking-wide opacity-80">{store.label}</span>
-            <span className="mt-1 text-base font-bold tracking-tight">{store.name}</span>
+            <span className="mt-1 text-[15px] sm:text-base font-bold tracking-tight">{store.name}</span>
           </span>
         </a>
       ))}

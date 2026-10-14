@@ -68,8 +68,8 @@ export default function EmployeeDashboardPage() {
   const [bookings, setBookings] = useState<EmployeeBooking[]>([]);
   // The day's done pickups / returns, kept below the waiting ones (client item 1)
   const [completedRows, setCompletedRows] = useState<EmployeeBooking[]>([]);
-  // A completed row opened: its summary, or straight on Edit Pickup / Edit Return
-  const [completedOpen, setCompletedOpen] = useState<{ bookingId: string; edit: boolean } | null>(null);
+  // A completed row opened: its summary (Edit Pickup / Edit Return open the workflow page in edit mode)
+  const [completedOpen, setCompletedOpen] = useState<string | null>(null);
   const [counts, setCounts] = useState<BookingListCounts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -201,6 +201,13 @@ export default function EmployeeDashboardPage() {
       console.error(error);
       toast.error("Action failed");
     }
+  };
+
+  /** Edit Pickup / Edit Return: the workflow page again, prefilled from what was recorded. */
+  const openCompletedEdit = (bookingId: string) => {
+    navigate(
+      filter === "PICKUP" ? `/staff/pickups/${bookingId}?edit=1` : `/employee/dashboard/return/${bookingId}?edit=1`,
+    );
   };
 
   const handleQrScan = async (data: string | null) => {
@@ -505,8 +512,8 @@ export default function EmployeeDashboardPage() {
             <CompletedQueueList
               rows={completedRows}
               filterType={filter}
-              onView={(bookingId) => setCompletedOpen({ bookingId, edit: false })}
-              onEdit={(bookingId) => setCompletedOpen({ bookingId, edit: true })}
+              onView={(bookingId) => setCompletedOpen(bookingId)}
+              onEdit={openCompletedEdit}
             />
           )}
         </motion.div>
@@ -515,10 +522,9 @@ export default function EmployeeDashboardPage() {
       {filter !== "OVERDUE" && (
         <CompletedOperationDialog
           phase={filter}
-          bookingId={completedOpen?.bookingId ?? null}
-          startInEdit={completedOpen?.edit ?? false}
+          bookingId={completedOpen}
           onOpenChange={(open) => !open && setCompletedOpen(null)}
-          onSaved={fetchData}
+          onEdit={openCompletedEdit}
         />
       )}
 

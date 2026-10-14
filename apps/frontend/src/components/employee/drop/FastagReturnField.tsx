@@ -7,27 +7,35 @@ import { fastagInr, readFastagBalance } from "./fastag";
 const RECHARGED_NOTE = "FASTag balance went up (recharged?) — no charge for that part.";
 
 interface FastagReturnFieldProps {
-  /** booking.fastag — only rendered in READINGS mode */
+  /**
+   * booking.fastag — the balance now is asked for whenever the car coming back
+   * counts as a FASTag car (currentHasFastag); the usage only in READINGS mode
+   */
   info: FastagBeforeDrop;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   /** Without a drop bill the usage is recorded for the branch manager to collect. */
   billedOnDropBill: boolean;
+  /** Replaces the line on how the usage is billed (Edit Return). */
+  note?: string;
 }
 
 /**
- * FASTag balance at the drop (Oct 15 2026): with every earlier reading present
- * the usage since pickup (summed across mid-rental swaps) is charged from the
- * balances — the typed toll charge is not used. Swapped onto a car without a
- * FASTag: the usage is already known and needs no input.
+ * FASTag balance at the drop (Oct 15 2026), asked for whenever the car coming
+ * back counts as a FASTag car (marked, or its balance read at pickup / the
+ * swap). With every earlier reading present the usage since pickup (summed
+ * across mid-rental swaps) is charged from the balances — the typed toll charge
+ * is not used; otherwise the balance is recorded and the toll charge is typed.
+ * Swapped onto a car without a FASTag: the usage is already known and needs no input.
  */
-export function FastagReturnField({ info, value, onChange, disabled, billedOnDropBill }: FastagReturnFieldProps) {
-  if (info.mode !== "READINGS") return null;
+export function FastagReturnField({ info, value, onChange, disabled, billedOnDropBill, note }: FastagReturnFieldProps) {
+  if (info.mode !== "READINGS" && !info.currentHasFastag) return null;
+  const readings = info.mode === "READINGS";
   const prior = Number(info.priorUsage) || 0;
-  const billedNote = billedOnDropBill
+  const billedNote = note ?? (billedOnDropBill
     ? "Added to the drop bill when you compute the charges (no GST)."
-    : "Recorded when you complete the return (no GST) — the branch manager collects it at settlement.";
+    : "Recorded when you complete the return (no GST) — the branch manager collects it at settlement.");
 
   if (!info.currentHasFastag) {
     if (prior <= 0 && !info.priorRecharged) return null;
@@ -48,8 +56,8 @@ export function FastagReturnField({ info, value, onChange, disabled, billedOnDro
   const read = readFastagBalance(value);
   const start = info.currentStartBalance != null ? Number(info.currentStartBalance) : null;
   // Same formula as the server: earlier cars' usage + max(0, start − now)
-  const usage = read.value != null && start != null ? prior + Math.max(0, start - read.value) : null;
-  const recharged = (read.value != null && start != null && read.value > start) || info.priorRecharged;
+  const usage = readings && read.value != null && start != null ? prior + Math.max(0, start - read.value) : null;
+  const recharged = readings && ((read.value != null && start != null && read.value > start) || info.priorRecharged);
 
   return (
     <div className="space-y-2 p-4 rounded-lg border bg-green-50/40 border-green-200">
@@ -92,7 +100,11 @@ export function FastagReturnField({ info, value, onChange, disabled, billedOnDro
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {RECHARGED_NOTE}
         </p>
       )}
-      <p className="text-xs text-green-900/80">{billedNote}</p>
+      <p className="text-xs text-green-900/80">
+        {readings
+          ? billedNote
+          : `No balance was recorded ${info.swapCount > 0 ? "for an earlier car" : "at pickup"}, so the usage can't be worked out — the balance is kept and any toll charge is typed below.`}
+      </p>
     </div>
   );
 }

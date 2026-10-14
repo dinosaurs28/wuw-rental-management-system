@@ -100,6 +100,11 @@ export interface SwapContext {
     fuelBars?: string | null;
     /** Has a FASTag: its closing balance is entered at a mid-rental swap */
     hasFastag?: boolean;
+    /**
+     * A FASTag balance was recorded for it on this booking (pickup / earlier swap):
+     * its closing balance is asked for too, optional unless hasFastag (absent on older servers)
+     */
+    fastagBalanceRecorded?: boolean;
   };
   /** Photos of the replacement + FASTag balances are required (ACTIVE_RENTAL; absent on older servers) */
   photosRequired?: boolean;

@@ -22,6 +22,8 @@ interface SafetyDepositChoiceProps {
   isPending?: boolean;
   /** Legacy branches: the branch manager settles it — no amounts are shown here. */
   settledByManager?: boolean;
+  /** Replaces the closing line when there is no bill breakdown (Edit Return). */
+  note?: string;
   className?: string;
 }
 
@@ -38,6 +40,7 @@ export function SafetyDepositChoice({
   readOnly = false,
   isPending = false,
   settledByManager = false,
+  note,
   className,
 }: SafetyDepositChoiceProps) {
   const options: SafetyDepositHandling[] = ["SET_OFF", "REFUND_IN_FULL"];
@@ -105,6 +108,8 @@ export function SafetyDepositChoice({
             <span className="font-semibold">{formatRupees(refund)}</span>
           </div>
         </div>
+      ) : note ? (
+        <p className="text-xs text-blue-800">{note}</p>
       ) : settledByManager ? (
         <p className="text-xs text-blue-800">
           Recorded with the return. The branch manager settles the deposit and the charges.
