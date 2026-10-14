@@ -12,7 +12,9 @@
  *     allowance, summed across mid-rental swaps that recorded readings; a
  *     staff-entered figure only after a swap without readings), late return
  *     (automatic EXTRA_TIME line unless waived with a reason), vehicle-swap
- *     difference, fuel, FASTag, other charges and damage billed at drop
+ *     difference, fuel, FASTag (the usage between the balances read at pickup /
+ *     swaps and at the drop, else the amount staff typed), other charges and
+ *     damage billed at drop
  *  3. Classify each line under the canonical GST rule and store its GST
  *     (taxable lines are GST-exclusive; damage and FASTag are not taxed)
  *  4. Apply the optional drop discount — pre-tax, split pro-rata between taxable
@@ -97,6 +99,15 @@ import {
 } from "../../services/tax/gst.service.js";
 import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
+import { getFastagLegs } from "../../services/charges/fastag-usage.service.js";
+import {
+  calculateFastagUsage,
+  fastagBalanceField,
+  fastagBillStale,
+  serializeFastagUsage,
+} from "../../services/charges/fastag-usage.js";
+import { odometerBillStale } from "../../services/booking/operation-edit-guard.js";
+import { dropReadingsSignature, DROP_READINGS_CHANGED } from "../../services/charges/drop-readings.js";
 import {
   SAFETY_DEPOSIT_CREDIT_REF,
   SAFETY_DEPOSIT_REFUND_REF,
@@ -111,6 +122,10 @@ const computeReturnSessionSchema = z.object({
   fuelCharge: z.coerce.number().min(0).optional(),
   fastagAmount: z.coerce.number().min(0).optional(),
   fastagNotes: z.string().optional(),
+  // FASTag balance now (car with a FASTag). With every earlier reading present the
+  // usage is billed from the balances and fastagAmount is ignored; older builds
+  // don't send it and keep the typed FASTag charge.
+  returnFastagBalance: fastagBalanceField,
   otherCharges: z.array(z.object({ label: z.string().min(1), amount: z.coerce.number().min(0) })).optional(),
   returnImageIds: z.array(z.string()).optional(),
   // Deprecated: the driving-licence-returned tick was removed from the drop.
@@ -150,7 +165,7 @@ const computeReturnSessionSchema = z.object({
 });
 
 /** Request fields whose validation message is shown to staff as-is. */
-const MESSAGE_FIELDS = new Set(["discount", "waiveLateCharge", "manualExtraKm", "safetyDepositHandling"]);
+const MESSAGE_FIELDS = new Set(["discount", "waiveLateCharge", "manualExtraKm", "safetyDepositHandling", "returnFastagBalance"]);
 
 /** A precondition that failed inside the compute transaction — sent to the client as-is. */
 class ComputeRejection extends Error {
@@ -214,6 +229,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       fuelCharge,
       fastagAmount,
       fastagNotes,
+      returnFastagBalance,
       otherCharges,
       discount,
       applyGrace,
@@ -322,6 +338,18 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
     // the lock against the return time frozen on the session
     const latePolicy = await resolveLateReturnPolicy(booking.id);
 
+    // FASTag usage across the cars the customer had: billed from the balances when
+    // every car with a FASTag has its readings, else the typed FASTag charge (as before)
+    const fastagLegs = await getFastagLegs(booking.id, returnFastagBalance ?? null);
+    const fastagUsage = calculateFastagUsage(fastagLegs);
+    const currentHasFastag = fastagLegs[fastagLegs.length - 1]?.hasFastag ?? false;
+    const fastagData = {
+      ...serializeFastagUsage(fastagUsage),
+      // The readings this bill was computed from — a later change marks it stale
+      pickupBalance: fastagLegs[0]?.startBalance?.toFixed(2) ?? null,
+      returnBalance: currentHasFastag && returnFastagBalance !== undefined ? returnFastagBalance.toFixed(2) : null,
+    };
+
     // Drop charge lines from the request (skip zero-amount entries); late, swap and
     // damage lines are added under the lock. Taxable lines carry their taxable value.
     const requestCharges: DropChargeLine[] = [];
@@ -345,7 +373,17 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
     if (fuelCharge && fuelCharge > 0) {
       requestCharges.push({ type: LedgerEntryType.FUEL, label: "Fuel deficit charge", amount: new Decimal(fuelCharge).toDecimalPlaces(2), referenceType: LedgerEntryType.FUEL });
     }
-    if (fastagAmount && fastagAmount > 0) {
+    if (fastagUsage.status === "COMPUTED") {
+      if (fastagUsage.amount.gt(0)) {
+        requestCharges.push({
+          type: LedgerEntryType.FASTAG,
+          label: fastagUsage.label!,
+          amount: fastagUsage.amount,
+          referenceType: LedgerEntryType.FASTAG,
+          metadata: { source: "FASTAG_READINGS", legs: fastagData.legs, notes: fastagUsage.notes },
+        });
+      }
+    } else if (fastagAmount && fastagAmount > 0) {
       requestCharges.push({ type: LedgerEntryType.FASTAG, label: fastagNotes ? `FASTag: ${fastagNotes}` : "FASTag charges", amount: new Decimal(fastagAmount).toDecimalPlaces(2), referenceType: LedgerEntryType.FASTAG });
     }
     // Free-form "other charges" (no GST, like every drop charge — item 8), kept on the DAMAGE ledger
@@ -383,6 +421,15 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         throw new ComputeRejection(StatusCode.BAD_REQUEST, {
           message: `Cannot compute return session. Booking status: ${locked.status}`,
         });
+      }
+      // The km and FASTag charges above were worked out from readings read before the
+      // lock (pickup odometer / FASTag balance, swap readings) — re-read them under it
+      const [lockedSegments, lockedFastagLegs] = await Promise.all([
+        getOdometerSegments(booking.id, tx as any),
+        getFastagLegs(booking.id, returnFastagBalance ?? null, tx as any),
+      ]);
+      if (dropReadingsSignature(lockedSegments, lockedFastagLegs) !== dropReadingsSignature(segments, fastagLegs)) {
+        throw new ComputeRejection(StatusCode.CONFLICT, DROP_READINGS_CHANGED);
       }
       const lockedExtension = await activeExtensionState(locked.activeExtensionId, tx as any);
       if (lockedExtension.blocking) {
@@ -736,6 +783,9 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
             bookingEndAt: locked.endAt.toISOString(),
             returnedAt: returnedAt.toISOString(),
             deposit: depositData,
+            fastag: fastagData,
+            // The pickup reading km was measured from — Edit Pickup changing it marks the bill stale
+            pickupOdometer: booking.startOdometer,
           },
         },
       });
@@ -758,6 +808,8 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
           totalKmDriven: km.autoKmSkipped ? null : km.kmDriven,
           freeKmLimit: km.includedKm,
           extraKmCharged: km.extraKm,
+          // FASTag balance now — kept for a car with a FASTag (null when not read)
+          returnFastagBalance: fastagData.returnBalance,
         },
       });
 
@@ -868,6 +920,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         chargeCount: manualCharges.length,
         km: kmData,
         late: lateData,
+        fastag: fastagData,
         vehicleSwapLines: chargedSwaps.map((s) => s.publicId),
         dropDamages: dropDamages.map((d) => d.publicId),
         ...(releasedQuoteId != null && { releasedExtensionQuoteId: releasedQuoteId }),
@@ -975,6 +1028,9 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         rentalTimeline,
         // Safety deposit at drop (#6): handling, held, set-off, refund, left to collect
         deposit: depositData,
+        // FASTag (additive): COMPUTED from the balances (readings, usage, recharge notes),
+        // READINGS_MISSING (the typed charge was used) or NO_FASTAG
+        fastag: fastagData,
       },
     });
   } catch (err: any) {
@@ -1006,7 +1062,7 @@ export const GetReturnSession = async (req: Request, res: Response) => {
 
     const booking = await prisma.booking.findFirst({
       where: { publicId: bookingId, branchId: actor.branchId! },
-      select: { id: true, endAt: true },
+      select: { id: true, endAt: true, pickupFastagBalance: true, startOdometer: true },
     });
     if (!booking) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
@@ -1043,8 +1099,20 @@ export const GetReturnSession = async (req: Request, res: Response) => {
     const periodChanged =
       meta?.bookingEndAt != null && new Date(meta.bookingEndAt).getTime() !== booking.endAt.getTime();
     const gstOnDropCharges = dropBillHasGst(session.entries);
-    const billStale = periodChanged || gstOnDropCharges;
-    const billStaleReason = periodChanged ? "PERIOD_CHANGED" : gstOnDropCharges ? "DROP_GST_REMOVED" : null;
+    // …and one computed before the FASTag balance at pickup was entered or corrected
+    const fastagChanged = fastagBillStale(meta?.fastag, booking.pickupFastagBalance);
+    // …and one computed before the pickup odometer was corrected (Edit Pickup)
+    const odometerChanged = odometerBillStale(meta, booking.startOdometer);
+    const billStale = periodChanged || gstOnDropCharges || fastagChanged || odometerChanged;
+    const billStaleReason = periodChanged
+      ? "PERIOD_CHANGED"
+      : gstOnDropCharges
+        ? "DROP_GST_REMOVED"
+        : fastagChanged
+          ? "FASTAG_CHANGED"
+          : odometerChanged
+            ? "PICKUP_ODOMETER_CHANGED"
+            : null;
     const rentalTimeline = await getRentalTimeline(booking.id, { late: billStale ? null : meta?.late ?? null });
 
     return res.status(StatusCode.OK).json({
@@ -1059,11 +1127,14 @@ export const GetReturnSession = async (req: Request, res: Response) => {
         returnedAt: meta?.returnedAt ?? null,
         billStale,
         // Why it is stale: PERIOD_CHANGED (an extension) | DROP_GST_REMOVED (computed
-        // with GST on drop charges, item 8) | null
+        // with GST on drop charges, item 8) | FASTAG_CHANGED (pickup FASTag balance
+        // changed since) | PICKUP_ODOMETER_CHANGED (pickup reading corrected since) | null
         billStaleReason,
         rentalTimeline,
         // Safety deposit at drop (#6) as last computed (null for bills computed before it)
         deposit: meta?.deposit ?? null,
+        // FASTag as last computed (null for bills computed before FASTag readings)
+        fastag: meta?.fastag ?? null,
       },
     });
   } catch (err: any) {

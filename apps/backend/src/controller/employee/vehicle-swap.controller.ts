@@ -64,6 +64,9 @@ export const GetAvailableVehiclesForEmployee = async (
  * POST /api/employee/bookings/:bookingId/swap-vehicle
  *
  * A PICKED_UP booking needs all four readings (READINGS_REQUIRED otherwise).
+ * A request with `replacementPhotos` (current clients) also needs the
+ * replacement's photos and the FASTag balances (SWAP_PHOTOS_REQUIRED /
+ * FASTAG_BALANCE_REQUIRED); old app builds swap without them, flagged.
  */
 export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -114,6 +117,9 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
       newVehicleStartOdometer: body.newVehicleStartOdometer,
       newVehicleFuelLevel: body.newVehicleFuelLevel,
       chargeDifference: body.chargeDifference,
+      replacementPhotos: body.replacementPhotos,
+      oldVehicleFastagBalance: body.oldVehicleFastagBalance,
+      newVehicleFastagBalance: body.newVehicleFastagBalance,
       branchId: req.branch_Id,
       source: "STAFF",
     });
@@ -123,7 +129,8 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
       entityType: StaffEntityType.VEHICLE,
       entityRef: bookingId,
       description:
-        `Vehicle swapped in booking ${bookingId}: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo} — reason: ${body.reason}`,
+        `Vehicle swapped in booking ${bookingId}: ${swap.originalVehicle.regNo} → ${swap.newVehicle.regNo} — reason: ${body.reason}` +
+        (swap.photosMissing ? ` — no photos of ${swap.newVehicle.regNo} were taken (older app build)` : ""),
       metadata: {
         swapPublicId: swap.publicId,
         bookingStatusAtSwap: swap.bookingStatusAtSwap,
@@ -133,6 +140,10 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
         reasonNotes: body.reasonNotes,
         priceDifference: swap.priceDifference.toString(),
         chargeDifference: swap.chargeDifference,
+        replacementPhotoCount: swap.photos.length,
+        photosMissing: swap.photosMissing,
+        oldVehicleFastagBalance: swap.oldVehicleFastagBalance?.toString() ?? null,
+        newVehicleFastagBalance: swap.newVehicleFastagBalance?.toString() ?? null,
       },
     });
 

@@ -19,6 +19,8 @@ import {
   VehicleReturnDisposition,
 } from "@repo/database/client";
 import type { TxClient } from "../payment/paymentSession.service.js";
+import { fastagBillStale } from "../charges/fastag-usage.js";
+import { odometerBillStale } from "../booking/operation-edit-guard.js";
 
 export const DROP_DAMAGE_SOURCE = "DROP";
 
@@ -32,7 +34,7 @@ export const DROP_DISCOUNT_REF = "DROP_DISCOUNT";
 export const DROP_BILL_STALE = {
   code: "DROP_BILL_STALE",
   message:
-    "The drop bill is out of date — damage or the rental period changed after it was computed. Recompute the drop charges and try again.",
+    "The drop bill is out of date — damage, the rental period or the FASTag balance at pickup changed after it was computed. Recompute the drop charges and try again.",
 } as const;
 
 /**
@@ -136,9 +138,10 @@ export async function vehicleStatusAfterDrop(
 /**
  * True when the RETURN session's bill still matches the booking: the drop damage
  * lines are exactly the booking's charged drop damages (same reports, same
- * amounts) and the rental period is the one the bill was computed for. Staff can
- * add or remove a damage, or commit an extension, after computing the bill, so
- * payment must not be taken on a stale one.
+ * amounts), the rental period is the one the bill was computed for and so is the
+ * FASTag balance at pickup. Staff can add or remove a damage, commit an
+ * extension or correct the pickup readings after computing the bill, so payment
+ * must not be taken on a stale one.
  */
 export async function isDropBillInSync(
   bookingId: number,
@@ -156,12 +159,25 @@ export async function isDropBillInSync(
       select: { referenceId: true, amount: true },
     }),
     db.paymentSession.findUnique({ where: { id: sessionId }, select: { metadata: true } }),
-    db.booking.findUnique({ where: { id: bookingId }, select: { endAt: true } }),
+    db.booking.findUnique({
+      where: { id: bookingId },
+      select: { endAt: true, pickupFastagBalance: true, startOdometer: true },
+    }),
   ]);
 
   // Sessions computed before the period was recorded have no bookingEndAt to compare
   const computedEndAt = (session?.metadata as any)?.bookingEndAt as string | undefined;
   if (computedEndAt && booking && new Date(computedEndAt).getTime() !== booking.endAt.getTime()) {
+    return false;
+  }
+
+  // The FASTag balance at pickup was entered or corrected after the bill was computed
+  if (booking && fastagBillStale((session?.metadata as any)?.fastag, booking.pickupFastagBalance)) {
+    return false;
+  }
+
+  // The pickup odometer was corrected (Edit Pickup) after the bill was computed
+  if (booking && odometerBillStale(session?.metadata, booking.startOdometer)) {
     return false;
   }
 

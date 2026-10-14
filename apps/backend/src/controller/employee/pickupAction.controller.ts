@@ -68,6 +68,8 @@ export const UploadPickupImage = async (req: Request, res: Response) => {
         url: `${R2_PUBLIC_URL}/${key}`,
         mime: processed.mimeType,
         size: processed.size,
+        // Only this branch can remove it or attach it to a swap
+        uploadedBranchId: req.branch_Id ?? null,
       },
     });
 
@@ -92,7 +94,8 @@ export const DeletePickupImage = async (req: Request, res: Response) => {
   const { publicId } = req.params;
 
   try {
-    const result = await deleteUploadedPhoto(publicId!);
+    // Scoped to the branch the photo was uploaded from (Fleet / manager alike)
+    const result = await deleteUploadedPhoto(publicId!, { branchId: req.branch_Id });
 
     if (result === "NOT_FOUND") {
       return res.status(StatusCode.NOT_FOUND).json({

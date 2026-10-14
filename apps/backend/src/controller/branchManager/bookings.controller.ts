@@ -1025,6 +1025,9 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         dlStatus: true,
         dlDepositNote: true,
         dlStatusUpdatedAt: true,
+        // FASTag balances read at the handover / drop (cars with a FASTag; null = not read)
+        pickupFastagBalance: true,
+        returnFastagBalance: true,
         customer: {
           select: {
             user: {
@@ -1053,6 +1056,8 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
             id: true,
             type: true,
             captureLabel: true,
+            // SWAP_DELIVERY photos show the replacement taken at a mid-rental swap
+            vehicle: { select: { regNo: true } },
             file: {
               select: {
                 key: true,

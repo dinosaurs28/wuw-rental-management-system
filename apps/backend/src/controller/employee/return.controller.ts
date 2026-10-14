@@ -10,12 +10,17 @@ import {
 } from "../../utils/booking/bookingTypeFilter.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
+import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
+import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
 
 // Return queue. The day is the IST business day (a return due 00:00–05:29 IST
 // belongs to that day, not the previous UTC one). `?type=DAILY|MONTHLY` splits
 // it into tabs (#17): Daily keeps the per-day scope, Monthly lists every
 // PICKED_UP monthly booking whatever the date. No cache — a returned booking
 // must leave the queue on the next fetch.
+// `?includeCompleted=1` (client item 1, new clients only) adds the day's done
+// returns in `completed`; the waiting list and counts then leave out drops sent
+// to a manager (they are listed as completed, "Awaiting manager").
 export const returnController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -26,6 +31,8 @@ export const returnController = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
     }
     const type = parsedType.type;
+    const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
+    const pendingOnly = pendingOnlyWhere(includeCompleted);
 
     let dayDt = TimezoneService.getCurrentTime();
     if (date) {
@@ -46,12 +53,14 @@ export const returnController = async (req: Request, res: Response) => {
       status: {
         in: [BookingStatus.PICKED_UP],
       },
+      ...pendingOnly,
     };
     const dailyWhere = { ...dayWhere, ...bookingTypeWhere("DAILY") };
     const monthlyWhere = {
       branchId: branchId,
       status: BookingStatus.PICKED_UP,
       ...bookingTypeWhere("MONTHLY"),
+      ...pendingOnly,
     };
     const listWhere = type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : dayWhere;
 
@@ -128,9 +137,13 @@ export const returnController = async (req: Request, res: Response) => {
       draft: draftOf(row.publicId),
     }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
+    // Done (or sent to a manager) for the day — additive, new clients only
+    const completed = includeCompleted
+      ? await listCompletedQueue("RETURN", { branchId, type, day: { gte: startOfDay, lte: endOfDay } })
+      : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
-    if (bookings.length === 0 && !type) {
+    if (bookings.length === 0 && !type && !includeCompleted) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "No Returns Scheduled for this Date",
         counts,
@@ -142,6 +155,7 @@ export const returnController = async (req: Request, res: Response) => {
       data: bookings,
       type: type ?? null,
       counts,
+      ...(completed && { completed }),
     });
   } catch (error) {
     console.error("Error fetching return bookings:", error);

@@ -13,7 +13,7 @@ import { prisma, StaffActionType, StaffEntityType, type Prisma, type Role } from
 import { DateTime } from "luxon";
 import {
   calendarDaysBetween,
-  formatSpecialPercent,
+  formatSpecialChange,
   istToday,
   specialPricingRuleIssues,
   specialPricingStatus,
@@ -70,7 +70,7 @@ const RULE_INCLUDE = {
 
 type RuleRow = Prisma.SpecialPricingRuleGetPayload<{ include: typeof RULE_INCLUDE }>;
 
-/** A rule as the API returns it (dates YYYY-MM-DD, percent a number, the picked categories / vehicles named). */
+/** A rule as the API returns it (dates YYYY-MM-DD, percent / flatAmount numbers, the picked categories / vehicles named). */
 async function viewRules(rows: RuleRow[], today = istToday()) {
   const categoryIds = [...new Set(rows.flatMap((r) => r.categoryIds))];
   const vehicleIds = [...new Set(rows.flatMap((r) => r.vehicleIds))];
@@ -99,6 +99,7 @@ async function viewRules(rows: RuleRow[], today = istToday()) {
       endDate,
       days: calendarDaysBetween(startDate, endDate) + 1,
       percent: Number(r.percent.toString()),
+      flatAmount: Number(r.flatAmount.toString()),
       scope: r.scope,
       categoryIds: r.categoryIds,
       vehicleIds: r.vehicleIds,
@@ -209,7 +210,7 @@ async function branchName(branchId: number): Promise<string> {
 }
 
 /** "Dussehra +10%, 20 Oct – 22 Oct 2026, all vehicles" — the log's summary of a rule. */
-function describeRule(rule: { name: string; startDate: string; endDate: string; percent: number; scope: string; categoryIds: number[]; vehicleIds: number[] }) {
+function describeRule(rule: { name: string; startDate: string; endDate: string; percent: number; flatAmount: number; scope: string; categoryIds: number[]; vehicleIds: number[] }) {
   const day = (d: string) => DateTime.fromISO(d, { zone: PRICING_ZONE }).toFormat("d LLL yyyy");
   const scope =
     rule.scope === "CATEGORIES"
@@ -218,7 +219,7 @@ function describeRule(rule: { name: string; startDate: string; endDate: string; 
         ? `${rule.vehicleIds.length} vehicle${rule.vehicleIds.length === 1 ? "" : "s"}`
         : "all vehicles";
   const dates = rule.startDate === rule.endDate ? day(rule.startDate) : `${day(rule.startDate)} – ${day(rule.endDate)}`;
-  return `${rule.name} ${formatSpecialPercent(rule.percent)}, ${dates}, ${scope}`;
+  return `${rule.name} ${formatSpecialChange(rule.percent, rule.flatAmount)}, ${dates}, ${scope}`;
 }
 
 async function logChange(
@@ -285,6 +286,7 @@ export async function createSpecialRule(branchId: number, input: CreateSpecialPr
       startDate: toDateColumn(input.startDate),
       endDate: toDateColumn(input.endDate),
       percent: input.percent.toFixed(2),
+      flatAmount: input.flatAmount.toFixed(2),
       scope: input.scope,
       ...ids,
       active: input.active,
@@ -300,6 +302,7 @@ export async function createSpecialRule(branchId: number, input: CreateSpecialPr
     startDate: view!.startDate,
     endDate: view!.endDate,
     percent: view!.percent,
+    flatAmount: view!.flatAmount,
     scope: view!.scope,
     ...ids,
     active: view!.active,
@@ -326,6 +329,7 @@ export async function updateSpecialRule(
     startDate: patch.startDate ?? before!.startDate,
     endDate: patch.endDate ?? before!.endDate,
     percent: patch.percent ?? before!.percent,
+    flatAmount: patch.flatAmount ?? before!.flatAmount,
     scope,
     ...scopedIds(scope, patch.categoryIds ?? before!.categoryIds, patch.vehicleIds ?? before!.vehicleIds),
     active: patch.active ?? before!.active,
@@ -346,6 +350,7 @@ export async function updateSpecialRule(
       startDate: toDateColumn(merged.startDate),
       endDate: toDateColumn(merged.endDate),
       percent: merged.percent.toFixed(2),
+      flatAmount: merged.flatAmount.toFixed(2),
       scope: merged.scope,
       categoryIds: merged.categoryIds,
       vehicleIds: merged.vehicleIds,
@@ -392,6 +397,7 @@ export async function deleteSpecialRule(publicId: string, actor: SpecialPricingA
     startDate: view!.startDate,
     endDate: view!.endDate,
     percent: view!.percent,
+    flatAmount: view!.flatAmount,
   });
 }
 
@@ -477,6 +483,7 @@ export async function previewSpecialRule(branchId: number, input: SpecialPricing
     startDate: input.startDate,
     endDate: input.endDate,
     percent: input.percent,
+    flatAmount: input.flatAmount,
     scope: input.scope,
     ...ids,
   };

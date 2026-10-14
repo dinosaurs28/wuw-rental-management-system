@@ -26,6 +26,8 @@ import { assertBookingWindow, BookingWindowError } from "../../utils/booking/boo
 import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { MONTHLY_MIN_DAYS } from "@repo/schemas";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
+import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
+import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
@@ -46,6 +48,8 @@ import {
   type OdometerSegments,
 } from "../../services/charges/km-allowance.service.js";
 import { getRentalTimeline } from "../../services/charges/rental-timeline.service.js";
+import { getFastagLegs } from "../../services/charges/fastag-usage.service.js";
+import { fastagBeforeDrop, serializeFastagBeforeDrop } from "../../services/charges/fastag-usage.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import {
   getMissingProfileFields,
@@ -88,6 +92,9 @@ function dailyPriceToPaise(price: number): number {
 // Pickup queue. `?type=DAILY|MONTHLY` splits it into tabs (#17): Daily keeps the
 // per-day (IST) scope, Monthly lists every CONFIRMED monthly booking whatever the
 // date. No cache — a picked-up booking must leave the queue on the next fetch.
+// `?includeCompleted=1` (client item 1, new clients only) adds the day's done
+// pickups in `completed`; the waiting list and counts then leave out pickups
+// sent to a manager (they are listed as completed, "Awaiting manager").
 export const BookingController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -98,6 +105,7 @@ export const BookingController = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json(INVALID_BOOKING_TYPE);
     }
     const type = parsedType.type;
+    const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
 
     let dateFilter: any = {};
 
@@ -114,29 +122,40 @@ export const BookingController = async (req: Request, res: Response) => {
       }
     }
 
+    // The day completed pickups are listed for: the requested day, else today
+    const nowDt = TimezoneService.getCurrentTime();
+    const completedDay = dateFilter.lte
+      ? { gte: dateFilter.gte as Date, lte: dateFilter.lte as Date }
+      : {
+          gte: TimezoneService.toPrisma(TimezoneService.startOfDay(nowDt)),
+          lte: TimezoneService.toPrisma(TimezoneService.endOfDay(nowDt)),
+        };
+
     if (Object.keys(dateFilter).length === 0) {
-      const nowDt = TimezoneService.getCurrentTime();
       const startOfDayDt = TimezoneService.startOfDay(nowDt);
       dateFilter = { gte: TimezoneService.toPrisma(startOfDayDt) };
     }
 
+    const pendingOnly = pendingOnlyWhere(includeCompleted);
     const dailyWhere = {
       branchId,
       startAt: dateFilter,
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("DAILY"),
+      ...pendingOnly,
     };
     const monthlyWhere = {
       branchId,
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("MONTHLY"),
+      ...pendingOnly,
     };
     const listWhere =
       type === "MONTHLY"
         ? monthlyWhere
         : type === "DAILY"
           ? dailyWhere
-          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED };
+          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED, ...pendingOnly };
 
     const [dailyCount, monthlyCount] = await Promise.all([
       prisma.booking.count({ where: dailyWhere }),
@@ -196,9 +215,13 @@ export const BookingController = async (req: Request, res: Response) => {
       draft: draftOf(row.publicId),
     }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
+    // Done (or sent to a manager) for the day — additive, new clients only
+    const completed = includeCompleted
+      ? await listCompletedQueue("PICKUP", { branchId, type, day: completedDay })
+      : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
-    if (bookings.length === 0 && !type) {
+    if (bookings.length === 0 && !type && !includeCompleted) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "No Upcoming Bookings Found",
         counts,
@@ -210,6 +233,7 @@ export const BookingController = async (req: Request, res: Response) => {
       data: bookings,
       type: type ?? null,
       counts,
+      ...(completed && { completed }),
     });
   } catch (error) {
     console.error("Error fetching bookings:", error);
@@ -1107,6 +1131,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         remainingPaidDuring: true,
         frozenChargeConfig: true,
         startOdometer: true,
+        // FASTag balance read at the handover (cars with a FASTag; null = not read)
+        pickupFastagBalance: true,
         safetyDeposit: true,
         days: true,
         freeKmLimit: true,
@@ -1171,6 +1197,12 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     const segments: OdometerSegments | null =
       booking.status === BookingStatus.PICKED_UP ? await getOdometerSegments(booking.id) : null;
     const vehicleSwapped = segments != null && !segments.complete;
+    // FASTag at the drop: READINGS (the drop bill works the usage out from the
+    // balances), MANUAL (a reading is missing — staff type the charge) or NONE
+    const fastag =
+      booking.status === BookingStatus.PICKED_UP
+        ? serializeFastagBeforeDrop(fastagBeforeDrop(await getFastagLegs(booking.id, null)))
+        : null;
     const effectiveFreeKmLimit: number | null = kmAllowance?.includedKm ?? booking.freeKmLimit ?? null;
     const extraKmRate: number | null = kmAllowance ? kmAllowance.extraKmRate.toNumber() : null;
 
@@ -1246,6 +1278,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
           : null,
         rentalTimeline,
         swapCharges,
+        // FASTag balances across the rental (null unless PICKED_UP) — additive
+        fastag,
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
       },
     });

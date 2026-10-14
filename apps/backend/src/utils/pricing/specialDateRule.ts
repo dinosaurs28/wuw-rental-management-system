@@ -3,24 +3,28 @@
  * the owner bulk-edits three days' fees, e.g. +10% for each product").
  *
  * A branch manager (or admin) sets a SpecialPricingRule: a name, IST calendar
- * dates (both inclusive), a percentage (−90 … +300; negative = a festival
- * discount) and the vehicles it covers (all, some categories, some vehicles).
+ * dates (both inclusive), a percentage (−90 … +300) and / or a flat ₹ a day
+ * (−1,00,000 … +1,00,000; negative = a festival discount) and the vehicles it
+ * covers (all, some categories, some vehicles).
  *
  * The rule, per priced block (base-price-rule.ts — each full 24 h day, the
  * remainder, a single trip of up to 24 h, the 12-hour package held to closing,
  * monthly overflow days; never a full month): the block is a FESTIVAL block for
  * a rule when at least half of its minutes fall on the rule's dates in
  * Asia/Kolkata — classified on the real return, like the weekend rule. Its
- * rent, after the weekday / weekend slab and the hourly cap, is multiplied by
- * (1 + percent / 100) and rounded to the paisa (half-up, as the engine rounds
- * a percentage discount). When several rules apply to one block, the one
- * giving the HIGHEST rent wins — one rule per block, never stacked. Free km
- * never change.
+ * rent, after the weekday / weekend slab and the hourly cap, becomes
+ *   rent × (1 + percent / 100) + flatAmount × (billed hours / 24)
+ * — a block billed as a day gets the whole flat amount, the 12-hour slab
+ * (held-to-closing included) half, an hourly block its hours' share — rounded
+ * to the paisa (half-up, as the engine rounds a percentage discount), never
+ * below ₹0. When several rules apply to one block, the one giving the HIGHEST
+ * rent wins — one rule per block, never stacked. Free km never change.
  *
  *   Dussehra 20–22 Oct +10%, 24-hour rent ₹1,300:
  *   20 Oct 10:00 → 21 Oct 10:00  festival day      → ₹1,430
  *   19 Oct 18:00 → 20 Oct 18:00  18 of 24 h on it  → ₹1,430
  *   22 Oct 20:00 → 23 Oct 20:00  4 of 24 h on it   → ₹1,300
+ *   with +₹200/day as well: a festival day ₹1,630, its 12-hour slab ₹900 → ₹1,090
  *
  * Bookings store the rules they were charged with (pricingSnapshot.specialRules:
  * the rules touching the booked window at create, plus those touching the time
@@ -30,7 +34,7 @@
  */
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
-import { formatSpecialPercent, isCalendarDate } from "@repo/schemas";
+import { formatSpecialChange, isCalendarDate } from "@repo/schemas";
 import { PRICING_ZONE } from "./weekendRule.js";
 
 export type SpecialPricingScope = "ALL" | "CATEGORIES" | "VEHICLES";
@@ -42,8 +46,10 @@ export type SpecialRule = {
   /** First and last day, IST calendar dates (YYYY-MM-DD), both inclusive */
   startDate: string;
   endDate: string;
-  /** −90 … +300: positive raises the rent, negative is a festival discount */
+  /** −90 … +300: positive raises the rent, negative is a festival discount (0 = none) */
   percent: number;
+  /** ₹ a day added (negative: taken off), shared by billed hours (0 = none; absent in older snapshots) */
+  flatAmount: number;
   scope: SpecialPricingScope;
   categoryIds: number[];
   vehicleIds: number[];
@@ -140,34 +146,52 @@ export function rescheduleChecksRent(
   );
 }
 
-/** rent × (1 + percent / 100), to the paisa (half-up), never below ₹0. */
+/**
+ * A festival block's rent: rent × (1 + percent / 100) + flatAmount × (billed
+ * hours / 24) — 24 billed hours take the whole flat amount, the 12-hour slab
+ * half — to the paisa (half-up), never below ₹0.
+ */
+export function applySpecialRule(
+  rent: Decimal,
+  rule: Pick<SpecialRule, "percent" | "flatAmount">,
+  billedHours = 24,
+): Decimal {
+  const flat = new Decimal(rule.flatAmount ?? 0).mul(billedHours).div(24);
+  return Decimal.max(
+    rent.mul(new Decimal(100).add(rule.percent)).div(100).add(flat).toDecimalPlaces(2, Decimal.ROUND_HALF_UP),
+    0,
+  );
+}
+
+/** rent × (1 + percent / 100), to the paisa (half-up), never below ₹0 (a percentage-only rule). */
 export function applySpecialPercent(rent: Decimal, percent: number): Decimal {
-  return Decimal.max(rent.mul(new Decimal(100).add(percent)).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP), 0);
+  return applySpecialRule(rent, { percent, flatAmount: 0 });
 }
 
 /**
- * The rule a block is billed under, and its rent: among `rules` with at least
- * half of [startMs, endMs) on their days, the one giving the highest rent (a
- * tie keeps the first). null = not a festival block.
+ * The rule a block billed as `billedHours` is billed under, and its rent:
+ * among `rules` with at least half of [startMs, endMs) on their days, the one
+ * giving the highest rent (a tie keeps the first). null = not a festival block.
  */
 export function festivalPriceFor(
   startMs: number,
   endMs: number,
   rent: Decimal,
   rules: readonly SpecialRule[],
+  billedHours = 24,
 ): { rule: SpecialRule; price: Decimal } | null {
   let best: { rule: SpecialRule; price: Decimal } | null = null;
   for (const rule of rules) {
     if (!isFestivalBlock(startMs, endMs, rule)) continue;
-    const price = applySpecialPercent(rent, rule.percent);
+    const price = applySpecialRule(rent, rule, billedHours);
     if (!best || price.gt(best.price)) best = { rule, price };
   }
   return best;
 }
 
-/** "Dussehra +10%" — a rule as the breakdown label names it. */
-export function ruleLabel(rule: Pick<SpecialRule, "name" | "percent">): string {
-  return `${rule.name} ${formatSpecialPercent(rule.percent)}`;
+/** "Dussehra +10%", "Dussehra +₹200/day", "Dussehra +10% + ₹200/day" — a rule as the breakdown label names it. */
+export function ruleLabel(rule: Pick<SpecialRule, "name" | "percent" | "flatAmount">): string {
+  return `${rule.name} ${formatSpecialChange(rule.percent, rule.flatAmount ?? 0)}`;
 }
 
 const positiveIds = (raw: unknown): number[] =>
@@ -181,6 +205,7 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
     if (!entry || typeof entry !== "object") continue;
     const r = entry as Record<string, unknown>;
     const percent = Number(r.percent);
+    const flatAmount = r.flatAmount == null ? 0 : Number(r.flatAmount);
     if (
       !Number.isInteger(r.id) ||
       typeof r.name !== "string" ||
@@ -189,7 +214,8 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
       !isCalendarDate(r.startDate) ||
       !isCalendarDate(r.endDate) ||
       !Number.isFinite(percent) ||
-      percent === 0
+      !Number.isFinite(flatAmount) ||
+      (percent === 0 && flatAmount === 0)
     ) {
       continue;
     }
@@ -200,6 +226,7 @@ export function normalizeSpecialRules(raw: unknown): SpecialRule[] {
       startDate: r.startDate,
       endDate: r.endDate,
       percent,
+      flatAmount,
       scope,
       categoryIds: positiveIds(r.categoryIds),
       vehicleIds: positiveIds(r.vehicleIds),

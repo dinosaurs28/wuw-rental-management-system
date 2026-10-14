@@ -108,6 +108,12 @@ import {
   makeGetOperationDraft,
   makeSaveOperationDraft,
 } from "../../controller/employee/operationDraft.controller.js";
+import {
+  GetPickupSummary,
+  GetReturnSummary,
+  EditPickup,
+  EditReturn,
+} from "../../controller/employee/operationEdit.controller.js";
 
 const router: Router = Router();
 
@@ -160,6 +166,11 @@ router.delete("/pickup/:bookingId/draft", EmployeeCheck, makeDiscardOperationDra
 router.get("/return/:bookingId/draft", EmployeeCheck, makeGetOperationDraft("RETURN"));
 router.put("/return/:bookingId/draft", EmployeeCheck, makeSaveOperationDraft("RETURN"));
 router.delete("/return/:bookingId/draft", EmployeeCheck, makeDiscardOperationDraft("RETURN"));
+// Completed pickup / drop (client item 1): read-only summary, and Edit Pickup / Edit Return
+router.get("/pickup/:bookingId/summary", EmployeeCheck, GetPickupSummary);
+router.patch("/pickup/:bookingId", EmployeeCheck, EditPickup);
+router.get("/return/:bookingId/summary", EmployeeCheck, GetReturnSummary);
+router.patch("/return/:bookingId", EmployeeCheck, EditReturn);
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin);
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp);
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile);

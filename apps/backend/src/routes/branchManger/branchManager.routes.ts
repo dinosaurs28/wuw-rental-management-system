@@ -93,7 +93,11 @@ import {
   UpdateCaptureConfig,
   DeleteCaptureConfig,
 } from "../../controller/branchManager/captureConfig.controller.js";
-import { upload, handleImageUpload } from "../../middlewares/upload.middleware.js";
+import { upload, handleImageUpload, handleFileUpload } from "../../middlewares/upload.middleware.js";
+import {
+  UploadPickupImage,
+  DeletePickupImage,
+} from "../../controller/employee/pickupAction.controller.js";
 import {
   GetBookingQrPhoto,
   UploadBookingQrPhoto,
@@ -246,6 +250,15 @@ router.get(
   ManagerCheck,
   GetBookingSwapHistory,
 );
+// Photos of the replacement at a mid-rental swap — the Fleet pickup photo
+// upload (pickup/ keys), so the swap attaches them like the Fleet screens do
+router.post(
+  "/dashboard/swap-photos/upload",
+  ManagerCheck,
+  handleFileUpload("file"),
+  UploadPickupImage,
+);
+router.delete("/dashboard/swap-photos/:publicId", ManagerCheck, DeletePickupImage);
 // Customer QR code photo (#4) — booking-level view/replace for the branch.
 router.get("/dashboard/bookings/:bookingId/qr-photo", ManagerCheck, GetBookingQrPhoto);
 router.post(

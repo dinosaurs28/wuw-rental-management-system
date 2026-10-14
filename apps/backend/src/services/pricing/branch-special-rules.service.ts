@@ -33,6 +33,7 @@ type RuleRow = {
   startDate: Date;
   endDate: Date;
   percent: { toString(): string };
+  flatAmount: { toString(): string };
   scope: string;
   categoryIds: number[];
   vehicleIds: number[];
@@ -44,6 +45,7 @@ const RULE_SELECT = {
   startDate: true,
   endDate: true,
   percent: true,
+  flatAmount: true,
   scope: true,
   categoryIds: true,
   vehicleIds: true,
@@ -58,6 +60,7 @@ export function toSpecialRule(row: RuleRow): SpecialRule | null {
       startDate: dateOnly(row.startDate),
       endDate: dateOnly(row.endDate),
       percent: Number(row.percent.toString()),
+      flatAmount: Number(row.flatAmount.toString()),
       scope: row.scope,
       categoryIds: row.categoryIds,
       vehicleIds: row.vehicleIds,

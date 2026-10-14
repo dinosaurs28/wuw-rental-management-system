@@ -4,6 +4,17 @@ import { isPrivateFile } from "../utils/file-url.js";
 
 export type DeleteUploadedPhotoResult = "DELETED" | "NOT_FOUND" | "IN_USE";
 
+/**
+ * A photo upload may be used from this branch: it was uploaded there, or it
+ * predates uploadedBranchId (null), or the caller isn't branch-scoped.
+ */
+export function uploadedFromBranch(
+  file: { uploadedBranchId: number | null },
+  branchId: number | undefined,
+): boolean {
+  return file.uploadedBranchId == null || branchId == null || file.uploadedBranchId === branchId;
+}
+
 // Keys written by the pickup, return and damage photo uploads (public bucket).
 // Mirrors DRAFT_PHOTO_KEY_PREFIXES in services/booking/operation-draft.service.ts.
 const BOOKING_PHOTO_KEY_PREFIXES = ["pickup/", "returns/", "damage/"];
@@ -21,19 +32,31 @@ const BOOKING_PHOTO_KEY_PREFIXES = ["pickup/", "returns/", "damage/"];
  * to delete, leaving the booking pointing at an object that no longer exists
  * ("Failed to load photo").
  *
- * FileObject records no branch or uploader, so this can't be branch-scoped.
+ * With `branchId` (the staff / manager delete endpoints), a photo uploaded
+ * from another branch is NOT_FOUND. Photos uploaded before uploads recorded
+ * their branch (uploadedBranchId null) can't be scoped and are treated as before.
  */
-export async function deleteUploadedPhoto(publicId: string): Promise<DeleteUploadedPhotoResult> {
+export async function deleteUploadedPhoto(
+  publicId: string,
+  { branchId }: { branchId?: number } = {},
+): Promise<DeleteUploadedPhotoResult> {
   const file = await prisma.fileObject.findUnique({
     where: { publicId },
-    select: { id: true, key: true, url: true, _count: { select: { bookingPhotos: true } } },
+    select: {
+      id: true,
+      key: true,
+      url: true,
+      uploadedBranchId: true,
+      _count: { select: { bookingPhotos: true } },
+    },
   });
   // Only photo uploads, never another public file (vehicle image, promo
   // banner, pre-June-2026 KYC) or a private one (KYC, payment proof, invoice).
   if (
     !file ||
     isPrivateFile(file) ||
-    !BOOKING_PHOTO_KEY_PREFIXES.some((prefix) => file.key.startsWith(prefix))
+    !BOOKING_PHOTO_KEY_PREFIXES.some((prefix) => file.key.startsWith(prefix)) ||
+    !uploadedFromBranch(file, branchId)
   ) {
     return "NOT_FOUND";
   }

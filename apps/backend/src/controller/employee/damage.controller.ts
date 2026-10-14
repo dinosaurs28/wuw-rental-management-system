@@ -63,6 +63,8 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
         url: `${R2_PUBLIC_URL}/${key}`,
         mime: processed.mimeType,
         size: processed.size,
+        // Only this branch can remove it or attach it to a swap
+        uploadedBranchId: req.branch_Id ?? null,
       },
     });
 

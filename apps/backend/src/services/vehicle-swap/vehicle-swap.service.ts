@@ -7,6 +7,9 @@
  *  - ACTIVE_RENTAL  booking PICKED_UP. The returning car's end odometer + fuel and
  *                   the replacement's start odometer + fuel are required and stored
  *                   on the VehicleSwap row, so the drop can bill km per vehicle.
+ *                   The replacement is photographed (BookingPhoto SWAP_DELIVERY,
+ *                   linked to the swap) and both cars' FASTag balances are read
+ *                   (cars with a FASTag) — see swap-photos.ts for who must send them.
  *
  * Every swap stores the pro-rated price difference of the GST-inclusive rents
  * for the remaining period (never negative) and whether staff chose to bill it
@@ -29,6 +32,7 @@ import {
   PaymentSessionStatus,
   PaymentSessionType,
   AuditCategory,
+  BookingPhotoType,
   Prisma,
 } from "@repo/database/client";
 import Decimal from "decimal.js";
@@ -52,7 +56,22 @@ import { redis } from "../../lib/redisconfig.js";
 import { extensionLockService } from "../extension/extension-lock.service.js";
 import { lockBookingForDrop, vehicleStatusAfterDrop } from "../damage/drop-damage.service.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import { isPrivateFile, publicFileUrl } from "../../utils/file-url.js";
+import { uploadedFromBranch } from "../booking-photo-file.service.js";
+import { pickedUpAtMarker } from "../charges/km-allowance.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
+import {
+  fastagBalancesToStore,
+  missingFastagBalances,
+  normalizeReplacementPhotos,
+  parseCaptureFields,
+  replacementPhotoShortfall,
+  swapPhotoMode,
+  swapPhotoRequirement,
+  swapPhotosMissing,
+  type ReplacementPhotoInput,
+  type SwapPhotoRequirement,
+} from "./swap-photos.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -134,6 +153,13 @@ interface AvailableVehicle {
 export interface SwapCandidate extends AvailableVehicle {
   /** Current odometer — prefill for the replacement's start odometer */
   odo: number;
+  /** Has a FASTag: its balance is read at a mid-rental swap */
+  hasFastag: boolean;
+  /**
+   * Photos of this car a mid-rental swap needs (context.photosRequired): the
+   * branch's pickup capture config for its category, else minPhotos photos
+   */
+  photoRequirement: SwapPhotoRequirement;
   /** Last recorded fuel, as a percent (Vehicle.fuelLevel) */
   fuelLevel: number;
   /** The same reading as fuel bars "1".."10" — prefill for newVehicleFuelLevel; null = unknown */
@@ -177,7 +203,14 @@ export interface SwapContext {
     fuelLevel: number;
     /** fuelLevel as bars "1".."10"; null = unknown */
     fuelBars: string | null;
+    /** Has a FASTag: its closing balance is read at a mid-rental swap */
+    hasFastag: boolean;
   };
+  /**
+   * The replacement must be photographed (candidate.photoRequirement) and the
+   * FASTag balances read before the swap completes (ACTIVE_RENTAL)
+   */
+  photosRequired: boolean;
   /**
    * Odometer the current vehicle started this rental segment at (pickup reading,
    * or the start reading of the last mid-rental swap). The returning car's end
@@ -241,6 +274,14 @@ export interface SwapVehicleInput {
   newVehicleFuelLevel?: string;
   /** Bill the difference at drop; omitted (old app builds) = not billed */
   chargeDifference?: boolean;
+  /**
+   * Photos of the replacement (mid-rental). Sent, even empty = required;
+   * omitted (old app builds) = the swap is recorded without photos.
+   */
+  replacementPhotos?: ReplacementPhotoInput[];
+  /** FASTag balances at a mid-rental swap (cars with a FASTag; required with replacementPhotos) */
+  oldVehicleFastagBalance?: number;
+  newVehicleFastagBalance?: number;
   /** The booking must belong to this branch (staff / manager routes) */
   branchId?: number;
   source?: SwapSource;
@@ -267,9 +308,71 @@ const swapRelations = {
   originalVehicle: { select: vehicleSummarySelect },
   newVehicle: { select: vehicleSummarySelect },
   swappedBy: { select: { publicId: true, name: true, email: true, role: true } },
+  photos: {
+    select: {
+      publicId: true,
+      captureLabel: true,
+      createdAt: true,
+      file: { select: { key: true, url: true, mime: true } },
+    },
+    orderBy: { id: "asc" },
+  },
 } satisfies Prisma.VehicleSwapInclude;
 
-export type VehicleSwapWithRelations = Prisma.VehicleSwapGetPayload<{ include: typeof swapRelations }>;
+type VehicleSwapRow = Prisma.VehicleSwapGetPayload<{ include: typeof swapRelations }>;
+
+/** A photo of the replacement taken at the swap, with a viewable link. */
+export interface SwapPhotoView {
+  publicId: string;
+  captureLabel: string | null;
+  url: string;
+  mime: string;
+  createdAt: Date;
+}
+
+/** A swap row as the history / swap response sends it. */
+export type VehicleSwapWithRelations = Omit<VehicleSwapRow, "photos"> & {
+  photos: SwapPhotoView[];
+  /** A mid-rental swap with no photo of the replacement (old app build, or the extension path) */
+  photosMissing: boolean;
+};
+
+/**
+ * `pickedUpAt` = the booking's pickup marker, only needed for rows from before
+ * bookingStatusAtSwap (see pickupMarkersFor); the same rule as the drop screens.
+ */
+function toSwapView<T extends VehicleSwapRow>(swap: T, pickedUpAt: Date | null = null): Omit<T, "photos"> & {
+  photos: SwapPhotoView[];
+  photosMissing: boolean;
+} {
+  const photos = swap.photos.map((p) => ({
+    publicId: p.publicId,
+    captureLabel: p.captureLabel,
+    url: publicFileUrl(p.file),
+    mime: p.file.mime,
+    createdAt: p.createdAt,
+  }));
+  return {
+    ...swap,
+    photos,
+    photosMissing: swapPhotosMissing(swap, pickedUpAt),
+  };
+}
+
+/**
+ * Pickup markers of the bookings that have swap rows without
+ * bookingStatusAtSwap (the only rows whose stage needs one).
+ */
+async function pickupMarkersFor(
+  swaps: Array<{ bookingId: number; bookingStatusAtSwap: BookingStatus | null }>,
+): Promise<Map<number, Date | null>> {
+  const ids = [...new Set(swaps.filter((s) => s.bookingStatusAtSwap == null).map((s) => s.bookingId))];
+  const markers = await Promise.all(ids.map(async (id) => [id, await pickedUpAtMarker(id)] as const));
+  return new Map(markers);
+}
+
+/** Swap photos are uploaded through the pickup photo upload (Fleet and manager screens). */
+const SWAP_PHOTO_KEY_PREFIX = "pickup/";
 
 const swapBookingInclude = {
   items: { include: { vehicle: { include: { category: true } } } },
@@ -463,6 +566,12 @@ export class VehicleSwapService {
       }),
     );
 
+    // Photos a mid-rental swap needs of each car: its category's pickup capture config
+    const photoRequirements = await this.photoRequirementsByCategory(
+      booking.branchId,
+      free.map((v) => v.categoryId),
+    );
+
     const candidates: SwapCandidate[] = free.map((vehicle, i) => ({
       id: vehicle.id,
       publicId: vehicle.publicId,
@@ -475,6 +584,8 @@ export class VehicleSwapService {
       categoryRank: vehicle.category.rank,
       images: vehicle.images.map((img) => ({ url: img.file.url })),
       odo: vehicle.odo,
+      hasFastag: vehicle.hasFastag,
+      photoRequirement: photoRequirements.get(vehicle.categoryId) ?? swapPhotoRequirement([]),
       fuelLevel: vehicle.fuelLevel,
       fuelBars: fuelPercentToBars(vehicle.fuelLevel),
       insuranceExpiry: vehicle.insuranceExpiry,
@@ -518,7 +629,9 @@ export class VehicleSwapService {
           odo: currentVehicle.odo,
           fuelLevel: currentVehicle.fuelLevel,
           fuelBars: fuelPercentToBars(currentVehicle.fuelLevel),
+          hasFastag: currentVehicle.hasFastag,
         },
+        photosRequired: stage === "ACTIVE_RENTAL",
         currentVehicleStartOdometer:
           stage === "ACTIVE_RENTAL" ? await this.segmentStartOdometer(booking) : null,
         pricingAvailable: originalTaxable !== null,
@@ -619,7 +732,7 @@ export class VehicleSwapService {
 
     const replacement = await prisma.vehicle.findFirst({
       where: { id: input.newVehicleId, branchId: booking.branchId },
-      select: { id: true, regNo: true, categoryId: true },
+      select: { id: true, regNo: true, categoryId: true, hasFastag: true },
     });
     if (!replacement) {
       throw new VehicleSwapError(
@@ -628,6 +741,67 @@ export class VehicleSwapService {
         "Replacement vehicle not found in this branch",
       );
     }
+
+    // Photos of the replacement and both cars' FASTag balances: required from
+    // current clients (they send replacementPhotos), optional from old app builds
+    const photoMode = swapPhotoMode({ stage, source, replacementPhotos: input.replacementPhotos });
+    let replacementPhotos: ReplacementPhotoInput[] = [];
+    if (photoMode === "STRICT" && input.replacementPhotos) {
+      const requirement =
+        (await this.photoRequirementsByCategory(booking.branchId, [replacement.categoryId])).get(
+          replacement.categoryId,
+        ) ?? swapPhotoRequirement([]);
+      const normalized = normalizeReplacementPhotos(input.replacementPhotos, requirement.fields);
+      if (normalized.duplicates.length > 0) {
+        throw new VehicleSwapError(
+          StatusCode.BAD_REQUEST,
+          "SWAP_PHOTOS_INVALID",
+          "Two photos were sent for the same shot of the replacement vehicle. Remove the extra one and try again.",
+          { fileIds: normalized.duplicates },
+        );
+      }
+      replacementPhotos = normalized.photos;
+      const shortfall = replacementPhotoShortfall(replacementPhotos, requirement);
+      if (shortfall) {
+        throw new VehicleSwapError(
+          StatusCode.BAD_REQUEST,
+          "SWAP_PHOTOS_REQUIRED",
+          "Take photos of the replacement vehicle before completing the swap.",
+          { ...shortfall, regNo: replacement.regNo },
+        );
+      }
+    }
+    const fastagInput = {
+      stage,
+      oldVehicleHasFastag: originalVehicle.hasFastag,
+      newVehicleHasFastag: replacement.hasFastag,
+      oldVehicleFastagBalance: input.oldVehicleFastagBalance,
+      newVehicleFastagBalance: input.newVehicleFastagBalance,
+    };
+    const missingFastag = missingFastagBalances(photoMode, fastagInput);
+    if (missingFastag.length > 0) {
+      const regNos = missingFastag.map((field) =>
+        field === "oldVehicleFastagBalance" ? originalVehicle.regNo : replacement.regNo,
+      );
+      throw new VehicleSwapError(
+        StatusCode.BAD_REQUEST,
+        "FASTAG_BALANCE_REQUIRED",
+        `Enter the FASTag balance of ${regNos.join(" and ")} to swap during a rental.`,
+        { missing: missingFastag },
+      );
+    }
+    const fastagBalances = fastagBalancesToStore(fastagInput);
+    const storedFastag = {
+      oldVehicleFastagBalance:
+        fastagBalances.oldVehicleFastagBalance != null
+          ? new Decimal(fastagBalances.oldVehicleFastagBalance).toFixed(2)
+          : null,
+      newVehicleFastagBalance:
+        fastagBalances.newVehicleFastagBalance != null
+          ? new Decimal(fastagBalances.newVehicleFastagBalance).toFixed(2)
+          : null,
+    };
+    const photosMissing = stage === "ACTIVE_RENTAL" && replacementPhotos.length === 0;
 
     // Price difference (outside the locks — the engine is slow). Under the lock
     // the booking is re-checked to still be on the same car and window.
@@ -749,6 +923,12 @@ export class VehicleSwapService {
             );
           }
 
+          // The photos must be fresh pickup-photo uploads not saved anywhere yet
+          const photoFileIds =
+            replacementPhotos.length > 0
+              ? await this.claimSwapPhotoFiles(db, replacementPhotos, locked.branchId)
+              : new Map<string, number>();
+
           await tx.bookingItem.update({
             where: { id: lockedItem.id },
             data: { vehicleId: newVehicle.id },
@@ -804,7 +984,7 @@ export class VehicleSwapService {
             await tx.vehicle.update({ where: { id: lockedOriginal.id }, data: originalData });
           }
 
-          const created = await tx.vehicleSwap.create({
+          const createdRow = await tx.vehicleSwap.create({
             data: {
               publicId: createID(),
               bookingId: locked.id,
@@ -820,7 +1000,25 @@ export class VehicleSwapService {
               ...storedReadings,
               priceDifference: priceDifference.toFixed(2),
               chargeDifference,
+              ...storedFastag,
             },
+            select: { id: true },
+          });
+          if (replacementPhotos.length > 0) {
+            await tx.bookingPhoto.createMany({
+              data: replacementPhotos.map((photo) => ({
+                publicId: createID(),
+                bookingId: locked.id,
+                fileId: photoFileIds.get(photo.fileId)!,
+                type: BookingPhotoType.SWAP_DELIVERY,
+                captureLabel: photo.label ?? null,
+                swapId: createdRow.id,
+                vehicleId: newVehicle.id,
+              })),
+            });
+          }
+          const created = await tx.vehicleSwap.findUniqueOrThrow({
+            where: { id: createdRow.id },
             include: swapRelations,
           });
 
@@ -830,6 +1028,9 @@ export class VehicleSwapService {
           });
           const differenceNote = priceDifference.gt(0)
             ? `; price difference ₹${priceDifference.toFixed(2)} ${chargeDifference ? "to be billed at drop" : "waived"}`
+            : "";
+          const photoNote = photosMissing
+            ? `; no photos of ${newVehicle.regNo} were taken at the swap${photoMode === "LEGACY" ? " (older app build)" : ""}`
             : "";
           await auditService.log(
             {
@@ -841,7 +1042,7 @@ export class VehicleSwapService {
               category: AuditCategory.VEHICLE,
               description:
                 `Vehicle swapped from ${lockedOriginal.regNo} to ${newVehicle.regNo} on booking ${locked.publicId} ` +
-                `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}`,
+                `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}${photoNote}`,
               entity: "Booking",
               entityId: locked.publicId,
               metadata: {
@@ -859,12 +1060,16 @@ export class VehicleSwapService {
                 priceDifference: priceDifference.toFixed(2),
                 chargeDifference,
                 pricingError,
+                photoMode,
+                replacementPhotoCount: replacementPhotos.length,
+                photosMissing,
+                fastagBalances: storedFastag,
               },
             },
             tx,
           );
 
-          return created;
+          return toSwapView(created);
         },
         { maxWait: 5000, timeout: 15000 },
       );
@@ -892,11 +1097,13 @@ export class VehicleSwapService {
    * Get swap history for a booking (newest first)
    */
   async getSwapHistory(bookingId: number): Promise<VehicleSwapWithRelations[]> {
-    return await prisma.vehicleSwap.findMany({
+    const swaps = await prisma.vehicleSwap.findMany({
       where: { bookingId },
       include: swapRelations,
       orderBy: { swappedAt: 'desc' }
     });
+    const markers = await pickupMarkersFor(swaps);
+    return swaps.map((swap) => toSwapView(swap, markers.get(swap.bookingId) ?? null));
   }
 
   /**
@@ -981,9 +1188,10 @@ export class VehicleSwapService {
       ...(limit != null && { take: limit }),
     });
 
+    const markers = await pickupMarkersFor(swaps);
     // Walk-in placeholder emails are never shown
     return swaps.map((swap) => ({
-      ...swap,
+      ...toSwapView(swap, markers.get(swap.bookingId) ?? null),
       booking: {
         ...swap.booking,
         customer: {
@@ -998,6 +1206,91 @@ export class VehicleSwapService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Photos a mid-rental swap needs of a car, per category: the branch's pickup
+   * capture config for it (VehiclePhotoCaptureConfig), else minPhotos photos.
+   */
+  private async photoRequirementsByCategory(
+    branchId: number,
+    categoryIds: number[],
+  ): Promise<Map<number, SwapPhotoRequirement>> {
+    const ids = [...new Set(categoryIds)];
+    const configs =
+      ids.length > 0
+        ? await prisma.vehiclePhotoCaptureConfig.findMany({
+            where: { branchId, categoryId: { in: ids } },
+            select: { categoryId: true, fields: true },
+          })
+        : [];
+    const fieldsOf = new Map(configs.map((c) => [c.categoryId, parseCaptureFields(c.fields)]));
+    return new Map(ids.map((id) => [id, swapPhotoRequirement(fieldsOf.get(id) ?? [])]));
+  }
+
+  /**
+   * The swap photos' files (FileObject publicIds) → their ids. Each must be a
+   * pickup-photo upload (public, pickup/ key) uploaded from the booking's
+   * branch (or before uploads recorded one), not yet saved with any booking
+   * and not kept in a paused pickup / drop; otherwise SWAP_PHOTOS_INVALID.
+   */
+  private async claimSwapPhotoFiles(
+    db: Db,
+    photos: ReplacementPhotoInput[],
+    branchId: number,
+  ): Promise<Map<string, number>> {
+    const publicIds = photos.map((p) => p.fileId);
+    const files = await db.fileObject.findMany({
+      where: { publicId: { in: publicIds } },
+      select: {
+        id: true,
+        publicId: true,
+        key: true,
+        url: true,
+        uploadedBranchId: true,
+        _count: { select: { bookingPhotos: true } },
+      },
+    });
+    const byPublicId = new Map(files.map((f) => [f.publicId, f]));
+    const unusable = publicIds.filter((id) => {
+      const file = byPublicId.get(id);
+      return (
+        !file ||
+        isPrivateFile(file) ||
+        !file.key.startsWith(SWAP_PHOTO_KEY_PREFIX) ||
+        !uploadedFromBranch(file, branchId) ||
+        file._count.bookingPhotos > 0
+      );
+    });
+    // OperationDraft.data = { schemaVersion, data, photos: [{ fileId, label }] }
+    const inDraft =
+      unusable.length === 0
+        ? await db.operationDraft.findMany({
+            where: {
+              OR: publicIds.map((fileId) => ({
+                data: { path: ["photos"], array_contains: [{ fileId }] },
+              })),
+            },
+            select: { data: true },
+          })
+        : [];
+    for (const draft of inDraft) {
+      const draftPhotos = (draft.data as { photos?: Array<{ fileId?: unknown }> } | null)?.photos ?? [];
+      for (const p of draftPhotos) {
+        if (typeof p?.fileId === "string" && publicIds.includes(p.fileId) && !unusable.includes(p.fileId)) {
+          unusable.push(p.fileId);
+        }
+      }
+    }
+    if (unusable.length > 0) {
+      throw new VehicleSwapError(
+        StatusCode.BAD_REQUEST,
+        "SWAP_PHOTOS_INVALID",
+        "Some photos of the replacement vehicle couldn't be used. Remove them and take them again.",
+        { fileIds: unusable },
+      );
+    }
+    return new Map(files.map((f) => [f.publicId, f.id]));
+  }
 
   /** Booking by publicId, scoped to the branch when one is given (staff / manager routes). */
   private async loadBooking(bookingPublicId: string, branchId?: number): Promise<SwapBooking> {

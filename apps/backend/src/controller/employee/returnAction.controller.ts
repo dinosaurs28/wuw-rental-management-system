@@ -49,7 +49,11 @@ import {
   legacyVehicleSwapKey,
   LEGACY_EXTRA_KM_KEY,
   LEGACY_EXTRA_TIME_KEY,
+  LEGACY_FASTAG_KEY,
 } from "../../services/charges/legacy-return-charges.service.js";
+import { getFastagLegs } from "../../services/charges/fastag-usage.service.js";
+import { calculateFastagUsage, fastagBalanceField, serializeFastagUsage } from "../../services/charges/fastag-usage.js";
+import { dropReadingsSignature, DROP_READINGS_CHANGED } from "../../services/charges/drop-readings.js";
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
 import { SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { computeBookingOwed } from "../../services/payment/booking-owed.service.js";
@@ -102,11 +106,18 @@ const completeReturnSchema = z.object({
     .enum(SAFETY_DEPOSIT_HANDLING, { message: "safetyDepositHandling must be SET_OFF or REFUND_IN_FULL" })
     .nullable()
     .optional(),
+  // FASTag balance now (car with a FASTag): with every earlier reading present the
+  // usage is recorded for the manager to collect, like extra km
+  returnFastagBalance: fastagBalanceField,
+  // FASTag charge typed by staff — used only when the balances can't measure the
+  // usage (a reading is missing), as on the drop bill
+  fastagAmount: z.preprocess(blankToUndefined, z.coerce.number().min(0, "FASTag charge can't be negative").optional()),
+  fastagNotes: z.string().optional(),
 });
 
 /** A return charge the branch manager collects later (legacy drop). */
 interface LegacyChargeLine {
-  type: "EXTRA_KM" | "EXTRA_TIME" | "VEHICLE_SWAP";
+  type: "EXTRA_KM" | "EXTRA_TIME" | "VEHICLE_SWAP" | "FASTAG";
   label: string;
   /** VEHICLE_SWAP: the swap's publicId; null otherwise */
   referenceId: string | null;
@@ -185,6 +196,8 @@ export const UploadReturnImage = async (req: Request, res: Response) => {
         url: `${R2_PUBLIC_URL}/${key}`,
         mime: processed.mimeType,
         size: processed.size,
+        // Only this branch can remove it or attach it to a swap
+        uploadedBranchId: req.branch_Id ?? null,
       },
     });
 
@@ -219,8 +232,17 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         errors: validation.error.format(),
       });
     }
-    const { returnImageIds, requireManagerConfirmation, endOdometer, manualExtraKm, applyGrace, waiveLateCharge } =
-      validation.data;
+    const {
+      returnImageIds,
+      requireManagerConfirmation,
+      endOdometer,
+      manualExtraKm,
+      applyGrace,
+      waiveLateCharge,
+      returnFastagBalance,
+      fastagAmount,
+      fastagNotes,
+    } = validation.data;
     // Old builds omit it — the deposit is then set off against the charges (default)
     const depositHandling = validation.data.safetyDepositHandling ?? "SET_OFF";
     // The vehicle is back now — the late charge is measured to this moment
@@ -407,6 +429,35 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         gst: new Decimal(0),
       });
     }
+    // FASTag usage between the balances read at pickup / swaps and now (no GST), when
+    // every car with a FASTag has its readings; otherwise the charge staff typed (if any)
+    const fastagLegs = await getFastagLegs(booking.id, returnFastagBalance ?? null);
+    const fastagUsage = calculateFastagUsage(fastagLegs);
+    const currentHasFastag = fastagLegs[fastagLegs.length - 1]?.hasFastag ?? false;
+    if (fastagUsage.status === "COMPUTED") {
+      if (fastagUsage.amount.gt(0)) {
+        chargeLines.push({
+          type: "FASTAG",
+          label: fastagUsage.label!,
+          referenceId: null,
+          amount: fastagUsage.amount,
+          cgst: new Decimal(0),
+          sgst: new Decimal(0),
+          gst: new Decimal(0),
+        });
+      }
+    } else if (fastagAmount && fastagAmount > 0) {
+      chargeLines.push({
+        type: "FASTAG",
+        label: fastagNotes?.trim() ? `FASTag: ${fastagNotes.trim()}` : "FASTag charges",
+        referenceId: null,
+        amount: new Decimal(fastagAmount).toDecimalPlaces(2),
+        cgst: new Decimal(0),
+        sgst: new Decimal(0),
+        gst: new Decimal(0),
+      });
+    }
+    const fastagLine = chargeLines.find((l) => l.type === "FASTAG");
     // Drop / recovery charges carry no GST (item 8): every line stays at face value
     // (cgst / sgst / gst 0) and its ChargeEntry is written with GST columns 0, so a
     // branch without a GST rule can still record the return.
@@ -445,6 +496,15 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           message: "The rental period changed while the return was being completed. Try again.",
         });
       }
+      // Extra km and FASTag were worked out from readings read before the lock (pickup
+      // odometer / FASTag balance, swap readings) — re-read them under it
+      const [lockedSegments, lockedFastagLegs] = await Promise.all([
+        segments ? getOdometerSegments(booking.id, tx as any) : Promise.resolve(null),
+        getFastagLegs(booking.id, returnFastagBalance ?? null, tx as any),
+      ]);
+      if (dropReadingsSignature(lockedSegments, lockedFastagLegs) !== dropReadingsSignature(segments, fastagLegs)) {
+        throw new CompleteRejection(StatusCode.CONFLICT, DROP_READINGS_CHANGED);
+      }
       // A customer quote that was never committed holds no slot and no money —
       // release it so it can't be paid for after the vehicle is back
       if (lockedExtension.uncommittedQuoteId != null) {
@@ -464,6 +524,10 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         where: { id: booking.id },
         data: {
           returnedAt,
+          // FASTag balance now — kept for a car with a FASTag
+          ...(currentHasFastag && returnFastagBalance !== undefined && {
+            returnFastagBalance: returnFastagBalance.toFixed(2),
+          }),
           ...(km && {
             endOdometer: km.endOdometer,
             // Unknown after a mid-rental swap recorded without readings
@@ -535,6 +599,27 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         });
       }
       await removeStaleLegacySwapCharges(tx as any, booking.id, swapKeys);
+
+      // FASTag: the usage read from the balances, else the charge staff typed —
+      // replaced only when one of them is given
+      if (fastagLine) {
+        await upsertLegacyReturnCharge(tx as any, {
+          bookingId: booking.id,
+          moduleKey: LEGACY_FASTAG_KEY,
+          chargeType: ChargeType.FASTAG,
+          label: fastagLine.label,
+          amount: fastagLine.amount,
+          quantity: 1,
+          unitRate: fastagLine.amount,
+          actorId: actingUser.id,
+          gst: null, // no GST on drop charges (item 8)
+          details: fastagUsage.status === "COMPUTED"
+            ? { fastag: serializeFastagUsage(fastagUsage) }
+            : { fastagSource: "STAFF_ENTERED" },
+        });
+      } else if (fastagUsage.status === "COMPUTED") {
+        await removeLegacyReturnCharge(tx as any, booking.id, LEGACY_FASTAG_KEY);
+      }
 
       // Safety deposit (#6): the staff's choice, honoured by the BM's settlement.
       // Recorded only when a deposit is actually held — and not when a manager
@@ -702,6 +787,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           lines: chargeLines.map((l) => ({ type: l.type, label: l.label, amount: l.amount.toFixed(2), gst: l.gst.toFixed(2) })),
           km: km ? serializeKmCharge(km, segments) : null,
           late: lateData,
+          fastag: serializeFastagUsage(fastagUsage),
         },
       });
     }
@@ -736,6 +822,8 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       returnedAt: returnedAt.toISOString(),
       km: km ? serializeKmCharge(km, segments) : null,
       late: lateData,
+      // FASTag usage from the balances (additive): COMPUTED / READINGS_MISSING / NO_FASTAG
+      fastag: serializeFastagUsage(fastagUsage),
       returnCharges: {
         /** Collected by the branch manager in Settlements (legacy branches have no drop bill). */
         collectedBy: "BRANCH_MANAGER",
@@ -775,7 +863,8 @@ export const DeleteReturnImage = async (req: Request, res: Response) => {
   const { publicId } = req.params;
 
   try {
-    const result = await deleteUploadedPhoto(publicId!);
+    // Scoped to the branch the photo was uploaded from (Fleet / manager alike)
+    const result = await deleteUploadedPhoto(publicId!, { branchId: req.branch_Id });
 
     if (result === "NOT_FOUND") {
       return res.status(StatusCode.NOT_FOUND).json({

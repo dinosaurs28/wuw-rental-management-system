@@ -1,8 +1,9 @@
 /**
  * Return charges on branches without Unified Payments (legacy drop).
  *
- * The legacy CompleteReturn has no drop bill: extra km, late return and any
- * vehicle-swap price difference are recorded as ChargeEntry rows (one per
+ * The legacy CompleteReturn has no drop bill: extra km, late return, any
+ * vehicle-swap price difference and the FASTag usage read from the balances
+ * are recorded as ChargeEntry rows (one per
  * moduleKey) and the branch manager collects them in Settlements, the same way
  * legacy drop damage is handled.
  *
@@ -26,6 +27,8 @@ export const LEGACY_DROP_SOURCE = "LEGACY_DROP";
 /** ChargeEntry.moduleKey of the legacy drop's extra-km and late-return rows. */
 export const LEGACY_EXTRA_KM_KEY = "extra_km";
 export const LEGACY_EXTRA_TIME_KEY = "extra_time";
+/** ChargeEntry.moduleKey of the FASTag usage worked out from the balances (the charge engine's FASTag key). */
+export const LEGACY_FASTAG_KEY = "fastag";
 /** ChargeEntry.moduleKey prefix of a vehicle-swap difference — one row per swap (`vehicle_swap:<swapPublicId>`). */
 export const LEGACY_VEHICLE_SWAP_KEY_PREFIX = "vehicle_swap:";
 export const legacyVehicleSwapKey = (swapPublicId: string) => `${LEGACY_VEHICLE_SWAP_KEY_PREFIX}${swapPublicId}`;

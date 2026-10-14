@@ -41,6 +41,7 @@ import {
   COUNTER_COUPON_REF,
 } from "../../services/discount/counter-coupon.service.js";
 import { DL_COLLECTION_STATUSES, DL_DEPOSIT_NOTE_MAX } from "@repo/schemas";
+import { fastagBalanceField } from "../../services/charges/fastag-usage.js";
 import {
   resolvePickupDlStatus,
   dlStatusUpdateData,
@@ -71,6 +72,8 @@ const initiatePickupSessionSchema = z.object({
   odo: z.coerce.number().min(0).optional(),
   fuelLevel: z.coerce.number().min(0).max(100).optional(),
   pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
+  // FASTag balance at the handover (cars with a FASTag) — optional: older builds don't send it
+  pickupFastagBalance: fastagBalanceField,
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
   // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED /
@@ -105,6 +108,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       odo,
       fuelLevel,
       pickupFuelLevel,
+      pickupFastagBalance,
       pickupImageIds,
       captureImages,
       dlStatus,
@@ -429,6 +433,20 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         }
       }
 
+      // FASTag balance at the handover — kept only for a car with a FASTag
+      if (pickupFastagBalance !== undefined) {
+        const fastagCar = await tx.bookingItem.findFirst({
+          where: { bookingId: booking.id, vehicle: { hasFastag: true } },
+          select: { id: true },
+        });
+        if (fastagCar) {
+          await tx.booking.update({
+            where: { id: booking.id },
+            data: { pickupFastagBalance: pickupFastagBalance.toFixed(2) },
+          });
+        }
+      }
+
       if (frozenConfig.fuelModuleEnabled && pickupFuelLevel) {
         await tx.fuelRecord.create({
           data: {
@@ -496,6 +514,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       metadata: {
         remainingBalance,
         safetyDepositAmount,
+        pickupFastagBalance: pickupFastagBalance ?? null,
         dlStatus: dlChoice?.dlStatus ?? null,
         dlDepositNote: dlChoice?.dlDepositNote ?? null,
       },

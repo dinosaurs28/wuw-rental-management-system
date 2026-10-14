@@ -30,8 +30,9 @@
  * Festival pricing (utils/pricing/specialDateRule.ts): each of those blocks
  * with at least half of its minutes on a festival rule's dates then has its
  * rent (after the slab choice and the hourly cap) changed by the rule's
- * percentage — the rule giving the highest rent when several apply. Free km
- * never change; full months are never festival blocks.
+ * percentage and / or flat ₹ a day (its billed hours' share of it) — the rule
+ * giving the highest rent when several apply. Free km never change; full
+ * months are never festival blocks.
  */
 import Decimal from "decimal.js";
 import { RentalPeriodType, type RentalDuration } from "./duration-calculator.service.js";
@@ -99,8 +100,8 @@ export interface FestivalBreakdown {
   /** What the festival rules changed the rent by (GST-inclusive; negative = a festival discount) */
   amount: number;
   /** Each rule applied, in the order first met: its blocks and what it changed the rent by */
-  rules: { id: number; name: string; percent: number; blocks: number; amount: number }[];
-  /** e.g. "Includes 3 festival days (Dussehra +10%)" */
+  rules: { id: number; name: string; percent: number; flatAmount: number; blocks: number; amount: number }[];
+  /** e.g. "Includes 3 festival days (Dussehra +10%)", "… (Dussehra +10% + ₹200/day)" */
   label: string;
 }
 
@@ -132,8 +133,11 @@ interface Block {
 
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
 
-/** Price one block of up to 24 h (`minutes` > 0), at the weekend slabs when `weekend`. */
-function priceBlock(card: RateCard, minutes: number, weekend = false): Block {
+/**
+ * One block of up to 24 h (`minutes` > 0) at its slab (the weekend slabs when
+ * `weekend`) and, when the card has an hourly rate, by the hour.
+ */
+function blockOptions(card: RateCard, minutes: number, weekend = false): { slab: Block; hourly: Block | null } {
   const weekendSlab = (slab: Decimal | null | undefined) => (weekend && slab && slab.gt(0) ? slab : null);
   const price12Hour = weekendSlab(card.weekendPrice12Hour) ?? card.price12Hour;
   const price24Hour = weekendSlab(card.weekendPrice24Hour) ?? card.price24Hour;
@@ -141,15 +145,18 @@ function priceBlock(card: RateCard, minutes: number, weekend = false): Block {
     minutes <= 12 * 60 && price12Hour
       ? { price: price12Hour, km: card.freeKm12Hour, kind: "HALF_DAY", hours: 12 }
       : { price: price24Hour, km: card.freeKm24Hour, kind: "FULL_DAY", hours: 24 };
-  if (!card.hourlyRate || !card.hourlyRate.gt(0)) return slab;
+  if (!card.hourlyRate || !card.hourlyRate.gt(0)) return { slab, hourly: null };
 
   const hours = Math.max(1, Math.ceil(minutes / 60));
-  const hourly = card.hourlyRate.mul(hours);
-  // A tie goes to the slab (same price, the slab's free km)
-  if (hourly.lt(slab.price)) {
-    return { price: hourly, km: Math.floor((hours * card.freeKm24Hour) / 24), kind: "HOURS", hours };
-  }
-  return slab;
+  return {
+    slab,
+    hourly: { price: card.hourlyRate.mul(hours), km: Math.floor((hours * card.freeKm24Hour) / 24), kind: "HOURS", hours },
+  };
+}
+
+/** The cheaper option — a tie goes to the slab (same price, the slab's free km). */
+function cheaper(options: { slab: Block; hourly: Block | null }): Block {
+  return options.hourly && options.hourly.price.lt(options.slab.price) ? options.hourly : options.slab;
 }
 
 function blockLabel(block: Block): string {
@@ -160,7 +167,7 @@ function blockLabel(block: Block): string {
 /**
  * Prices the blocks of one window where they sit on the calendar: a weekend
  * block (weekendRule.ts) at the weekend slabs, then a festival block
- * (specialDateRule.ts) changed by its rule's percentage, and tallies what the
+ * (specialDateRule.ts) changed by its rule's percentage / flat ₹ a day, and tallies what the
  * weekend rates and festival rules did for the breakdowns. Without a context,
  * weekend rates or festival rules every block is priced exactly as before.
  */
@@ -185,26 +192,38 @@ class BlockPricer {
 
   /** The block of `minutes` starting `offset` minutes after pickup, billed as `billMinutes`. */
   at(offset: number, minutes: number, billMinutes = minutes): Block {
-    const weekday = priceBlock(this.card, billMinutes);
+    const weekdayOptions = blockOptions(this.card, billMinutes);
+    const weekday = cheaper(weekdayOptions);
+    let options = weekdayOptions;
     let slab = weekday;
     // Classified on the hours the car is really out (never past the real return)
     const startMs = (this.ctx?.startAt.getTime() ?? 0) + offset * MINUTE_MS;
     const realEndMs = Math.min(startMs + minutes * MINUTE_MS, this.ctx?.endAt?.getTime() ?? Infinity);
     const endMs = realEndMs > startMs ? realEndMs : startMs + minutes * MINUTE_MS;
-    if (this.weekendOn && isWeekendBlock(startMs, endMs, this.ctx!.weekendDays)) {
-      slab = priceBlock(this.card, billMinutes, true);
-      // Never fewer free km than the same block earns on a weekday (a weekend
-      // block billed by the hour would otherwise lose the slab's km)
-      if (slab.km < weekday.km) slab = { ...slab, km: weekday.km };
+    const weekendBlock = this.weekendOn && isWeekendBlock(startMs, endMs, this.ctx!.weekendDays);
+    // Never fewer free km than the same block earns on a weekday (a weekend
+    // block billed by the hour would otherwise lose the slab's km)
+    const kmFloor = (b: Block): Block => (weekendBlock && b.km < weekday.km ? { ...b, km: weekday.km } : b);
+    if (weekendBlock) {
+      options = blockOptions(this.card, billMinutes, true);
+      slab = kmFloor(cheaper(options));
     }
     const weekendBilled = slab !== weekday && (!slab.price.eq(weekday.price) || slab.kind !== weekday.kind);
-    // Festival: the slab's rent (hourly cap included) × the best applicable rule; km unchanged
+    // Festival: each option's rent (the slab, and by the hour) changed by its best
+    // applicable rule — the flat ₹ a day shared by the option's billed hours — and
+    // the cheaper of the two billed (a tie goes to the slab), with that option's km
     let block = slab;
     let festival: SpecialRule | null = null;
     if (this.festivalOn) {
-      const hit = festivalPriceFor(startMs, endMs, slab.price, this.ctx!.specialRules!);
+      const rules = this.ctx!.specialRules!;
+      const bySlab = festivalPriceFor(startMs, endMs, options.slab.price, rules, options.slab.hours);
+      const byHour = options.hourly
+        ? festivalPriceFor(startMs, endMs, options.hourly.price, rules, options.hourly.hours)
+        : null;
+      const [option, hit] =
+        byHour && bySlab && byHour.price.lt(bySlab.price) ? [options.hourly!, byHour] : [options.slab, bySlab];
       if (hit) {
-        block = { ...slab, price: hit.price };
+        block = { ...kmFloor(option), price: hit.price };
         festival = hit.rule;
       }
     }
@@ -277,6 +296,7 @@ class BlockPricer {
         id: rule.id,
         name: rule.name,
         percent: rule.percent,
+        flatAmount: rule.flatAmount ?? 0,
         blocks: blocks.length,
         amount: money(amount),
       })),

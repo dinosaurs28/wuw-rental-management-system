@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingPhotoType } from "@repo/database/client";
-import { resolveFileUrl } from "../../utils/file-url.js";
+import { prisma } from "@repo/database/client";
+import { getReturnConditionPhotos } from "../../services/vehicle-swap/return-condition-photos.service.js";
 
 /**
  * GET /employee/pickup/:bookingId/capture-config
@@ -47,6 +47,12 @@ export const GetPickupCaptureConfig = async (req: Request, res: Response) => {
  * GET /employee/return/:bookingId/pickup-captures
  * Returns all PRE_DELIVERY photos for the booking, keyed by captureLabel.
  * Used on the return page to show pre-delivery reference photos.
+ *
+ * `photos` stays the pickup photos (older app builds show them as before).
+ * Additive (client item 2): `currentVehicleCaptures` = the handover photos of
+ * the car actually being returned (after a mid-rental swap, the replacement's
+ * photos taken at the last swap), `earlierCaptures` = the swapped-out cars'
+ * sets (original pickup last), `swapped`, `photosMissing`.
  */
 export const GetPickupCaptures = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -55,29 +61,16 @@ export const GetPickupCaptures = async (req: Request, res: Response) => {
   try {
     const booking = await prisma.booking.findFirst({
       where: { publicId: bookingId, branchId },
+      select: { id: true },
     });
 
     if (!booking) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     }
 
-    const photos = await prisma.bookingPhoto.findMany({
-      where: { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY },
-      include: { file: { select: { key: true, url: true, mime: true } } },
-      orderBy: { createdAt: "asc" },
-    });
+    const result = await getReturnConditionPhotos(booking.id);
 
-    // Return as array (some may have captureLabel, some may not)
-    const result = await Promise.all(
-      photos.map(async (p) => ({
-        publicId: p.publicId,
-        captureLabel: p.captureLabel ?? null,
-        url: await resolveFileUrl(p.file),
-        mime: p.file.mime,
-      })),
-    );
-
-    return res.status(StatusCode.OK).json({ photos: result });
+    return res.status(StatusCode.OK).json(result);
   } catch (error) {
     console.error("GetPickupCaptures error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });

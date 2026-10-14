@@ -287,7 +287,7 @@ export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance
  * Earliest pickup marker (licence collected, fuel captured, handover photos) —
  * how swaps recorded before bookingStatusAtSwap existed are told apart.
  */
-async function pickedUpAtMarker(bookingId: number, db: TxClient): Promise<Date | null> {
+export async function pickedUpAtMarker(bookingId: number, db: TxClient = prisma): Promise<Date | null> {
   const [booking, firstHandoverPhoto] = await Promise.all([
     db.booking.findUnique({
       where: { id: bookingId },

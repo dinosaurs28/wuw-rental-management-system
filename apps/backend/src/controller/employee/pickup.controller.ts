@@ -11,6 +11,7 @@ import { auditService, AuditCategory } from "../../services/audit/audit.service.
 import { createID } from "../../utils/nanoID.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
+import { fastagBalanceField } from "../../services/charges/fastag-usage.js";
 import { assertOpenShift, CounterGuardError } from "../../services/payment/counter-guard.service.js";
 import {
   resolvePickupDlStatus,
@@ -61,6 +62,16 @@ export const PickupController = async (req: Request, res: Response) => {
     });
   }
   const parsedVehicleDetails = parsedBody.data;
+  // FASTag balance at the handover (cars with a FASTag) — optional: older builds don't send it
+  const parsedFastag = fastagBalanceField.safeParse(req.body?.pickupFastagBalance);
+  if (!parsedFastag.success) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "VALIDATION_FAILED",
+      message: parsedFastag.error.issues[0]?.message ?? "Check the FASTag balance.",
+    });
+  }
+  const pickupFastagBalance = parsedFastag.data;
   try {
     // DL number typed at the counter (X2), optional: 400 INVALID_DL_NUMBER when invalid
     const sentDlNumber = parsePickupDlNumber(req.body?.drivingLicenceNumber);
@@ -72,7 +83,7 @@ export const PickupController = async (req: Request, res: Response) => {
       },
       include: {
         items: {
-          select: { vehicleId: true },
+          select: { vehicleId: true, vehicle: { select: { hasFastag: true } } },
         },
         customer: {
           select: {
@@ -287,6 +298,14 @@ export const PickupController = async (req: Request, res: Response) => {
         });
       }
 
+      // FASTag balance at the handover — kept only for a car with a FASTag
+      if (pickupFastagBalance !== undefined && booking.items[0]?.vehicle.hasFastag) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { pickupFastagBalance: pickupFastagBalance.toFixed(2) },
+        });
+      }
+
       // Create FuelRecord if fuel module is enabled
       if (
         frozenConfig.fuelModuleEnabled &&
@@ -406,6 +425,7 @@ export const PickupController = async (req: Request, res: Response) => {
         metadata: {
           odo: parsedVehicleDetails.odo,
           fuelLevel: parsedVehicleDetails.fuelLevel,
+          pickupFastagBalance: pickupFastagBalance ?? null,
           dlStatus: dlChoice?.dlStatus ?? null,
           dlDepositNote: dlChoice?.dlDepositNote ?? null,
         },
