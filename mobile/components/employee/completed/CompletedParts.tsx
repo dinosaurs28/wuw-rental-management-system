@@ -18,13 +18,9 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export const num = (x: unknown) => Number(x ?? 0) || 0;
 export const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-// Fuel is recorded in bars, "1".."10".
-export const FUEL_LEVELS = Array.from({ length: 10 }, (_, i) => String(i + 1));
 export const fuelText = (level: string | null | undefined) => (level ? `${level}/10` : '—');
 export const kmText = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('en-IN')} km`);
 export const balanceText = (v: string | null | undefined) => (v == null ? 'Not read' : inr(num(v)));
-// FASTag balance typed by staff: ₹ with up to 2 decimals.
-export const isBalanceInput = (v: string) => /^\d{1,6}(\.\d{1,2})?$/.test(v.trim());
 
 // Who pays for a damage recorded at drop.
 export function damageBillingLabel(d: ReturnSummaryDamage): string {
@@ -225,28 +221,6 @@ export function FooterButton({
   );
 }
 
-// 1..10 fuel bars picker.
-export function FuelPicker({ value, onChange, disabled }: { value: string | null; onChange: (v: string) => void; disabled?: boolean }) {
-  return (
-    <View style={styles.fuelRow}>
-      {FUEL_LEVELS.map((lvl) => {
-        const active = value === lvl;
-        return (
-          <TouchableOpacity
-            key={lvl}
-            style={[styles.fuelPill, active && styles.fuelPillActive, disabled && { opacity: 0.5 }]}
-            onPress={() => onChange(lvl)}
-            disabled={disabled}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.fuelPillText, active && styles.fuelPillTextActive]}>{lvl}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
 export const completedStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   loader: { marginTop: 100 },
@@ -380,12 +354,4 @@ const styles = StyleSheet.create({
   },
   footerBtnDisabled: { opacity: 0.45 },
   footerBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: Colors.white },
-  fuelRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  fuelPill: {
-    width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.hairline,
-  },
-  fuelPillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
-  fuelPillText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink3 },
-  fuelPillTextActive: { color: Colors.white },
 });

@@ -64,6 +64,13 @@ import DropBillCard, {
   SwapChargesCard,
 } from '../../../components/employee/drop/DropBillCard';
 import { useReturnDraft } from '../../../hooks/useReturnDraft';
+import EditReviewSheet from '../../../components/employee/edit/EditReviewSheet';
+import DropDamageEditor, {
+  damageDraftOf,
+  damageDraftProblem,
+  type DamageDraft,
+} from '../../../components/employee/edit/DropDamageEditor';
+import type { EditPreview, EditReturnBody, ReturnSummary } from '../../../types/completedOperation';
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -151,7 +158,10 @@ function ChargeToggle({
 }
 
 export default function ReturnScreen() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { bookingId, edit } = useLocalSearchParams<{ bookingId: string; edit?: string }>();
+  // Edit Return (client item 1, full edit): this screen again for a completed
+  // drop, prefilled from what it recorded; Save works out the money difference
+  const editMode = edit === '1';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -233,6 +243,19 @@ export default function ReturnScreen() {
   const [settledNote, setSettledNote] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // ── Edit Return (full edit) ──
+  const [editPreview, setEditPreview] = useState<EditPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [damageDrafts, setDamageDrafts] = useState<Record<string, DamageDraft>>({});
+  const [damageUploads, setDamageUploads] = useState<Record<string, number>>({});
+  const [editDiscountOpen, setEditDiscountOpen] = useState(false);
+  const [editSavedNote, setEditSavedNote] = useState<string | null>(null);
+  // Photos taken during the edit: deleted on the way out unless the save kept them
+  const editUploadsRef = useRef(new Set<string>());
+  const editKeptRef = useRef(new Set<string>());
+  const editPrefilledRef = useRef(false);
 
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -426,6 +449,50 @@ export default function ReturnScreen() {
     onGone: () => { refetch(); },
   });
 
+  // Edit Return: what the completed drop recorded (its inputs as last edited)
+  const { data: editSummary, isLoading: editSummaryLoading } = useQuery<ReturnSummary>({
+    queryKey: ['employee', 'return-summary', bookingId],
+    queryFn: async () => (await employeeApi.getReturnSummary(bookingId as string)).data.data,
+    enabled: editMode && !!bookingId,
+    retry: false,
+  });
+  useEffect(() => {
+    if (!editMode || !editSummary?.editState || editPrefilledRef.current) return;
+    editPrefilledRef.current = true;
+    const i = editSummary.editState.inputs;
+    setEndOdo(i.endOdometer != null ? String(i.endOdometer) : '');
+    if (i.returnFuelLevel ?? editSummary.fuel.return) setFuelLevel(i.returnFuelLevel ?? editSummary.fuel.return ?? '');
+    setChargeFuel(num(i.fuelCharge) > 0);
+    setFuelAmt(num(i.fuelCharge) > 0 ? String(num(i.fuelCharge)) : '');
+    setFastagNow(i.returnFastagBalance != null ? String(num(i.returnFastagBalance)) : '');
+    setChargeFastag(num(i.fastagAmount) > 0);
+    setFastagAmt(num(i.fastagAmount) > 0 ? String(num(i.fastagAmount)) : '');
+    setFastagNote(i.fastagNotes ?? '');
+    setChargeOther(i.otherCharges.length > 0);
+    setOtherLines(
+      i.otherCharges.length > 0
+        ? i.otherCharges.map((o) => ({ ...newOtherLine(), label: o.label, amount: String(num(o.amount)) }))
+        : [newOtherLine()],
+    );
+    setDiscount(i.discount ? { amount: num(i.discount.amount), reason: i.discount.reason } : null);
+    setApplyGrace(i.applyGrace);
+    setWaiveLate(i.waiveReason != null);
+    setWaiveReason(i.waiveReason ?? '');
+    setManualKm(i.manualExtraKm != null ? String(i.manualExtraKm) : '');
+    setDepositHandling(i.depositHandling);
+    setReturnPhotos(editSummary.photos.map((p) => ({ fileId: p.fileId, url: p.url })));
+    setDamageDrafts(Object.fromEntries(editSummary.damages.map((d) => [d.publicId, damageDraftOf(d)])));
+    setDamageDecision(editSummary.damages.length > 0 ? 'DAMAGE_FOUND' : 'NO_DAMAGE');
+  }, [editMode, editSummary]);
+  useEffect(
+    () => () => {
+      for (const fileId of editUploadsRef.current) {
+        if (!editKeptRef.current.has(fileId)) employeeApi.deleteReturnImage(fileId).catch(() => {});
+      }
+    },
+    [],
+  );
+
   const vehicle = booking?.items[0]?.vehicle;
   const customer = booking?.customer.user;
   const hasRemainingBalance =
@@ -435,7 +502,8 @@ export default function ReturnScreen() {
     !booking.remainingPaidAt;
   // Legacy drop already recorded and sent for the manager's confirmation — the
   // vehicle is back; nothing more to inspect or bill here.
-  const awaitingManager = booking?.status === 'PICKED_UP' && !!booking.requiresManagerConfirmation;
+  // (An edit of one is a completed drop like any other.)
+  const awaitingManager = !editMode && booking?.status === 'PICKED_UP' && !!booking.requiresManagerConfirmation;
 
   // Odometer at the original pickup (shown under "State at Pickup").
   const pickupOdo = booking?.startOdometer ?? null;
@@ -487,7 +555,7 @@ export default function ReturnScreen() {
   // Rental timeline (#7) — the compute's copy once there is one.
   const timeline = serverTimeline ?? booking?.rentalTimeline ?? null;
   // Late-return controls apply only while the vehicle is out and late.
-  const lateShown = !!timeline && booking?.status === 'PICKED_UP' && timeline.lateMinutes > 0;
+  const lateShown = !!timeline && (booking?.status === 'PICKED_UP' || editMode) && timeline.lateMinutes > 0;
   const manualGrace =
     !!timeline && timeline.gracePolicyEnabled && timeline.graceType === 'MANUAL' && timeline.graceMinutes > 0;
 
@@ -528,7 +596,11 @@ export default function ReturnScreen() {
   const fastagManualShown = !fastagFromReadings && (
     !!vehicle?.hasFastag || fastagInfo?.mode === 'MANUAL' || !!booking?.frozenChargeConfig?.fastagModuleEnabled
   );
-  const fastagNowNeeded = fastagFromReadings && !!fastagInfo?.currentHasFastag;
+  // FASTag balance now: asked for (and required) whenever the car coming back
+  // counts as a FASTag car for this booking — marked as having one, or its balance
+  // was read at pickup / the swap. Without every earlier reading it is recorded
+  // and the typed toll charge applies.
+  const fastagNowNeeded = !!fastagInfo?.currentHasFastag;
   const fastagNowValue = fastagNowNeeded ? parseFastagBalance(fastagNow) : null;
   const fastagStart = fastagInfo?.currentStartBalance != null ? num(fastagInfo.currentStartBalance) : null;
   // Same formula as the server: earlier cars' usage + max(0, start − now)
@@ -651,10 +723,9 @@ export default function ReturnScreen() {
       };
       if (fuelBars(fuelLevel) != null) body.returnFuelLevel = fuelLevel;
       if (chargeFuel && num(fuelAmt) > 0) body.fuelCharge = num(fuelAmt);
-      if (fastagFromReadings) {
-        // The server bills the usage from the balances
-        if (fastagNowValue != null) body.returnFastagBalance = fastagNowValue;
-      } else if (fastagManualShown && chargeFastag && num(fastagAmt) > 0) {
+      // With every reading the server bills the usage from the balances
+      if (fastagNowValue != null) body.returnFastagBalance = fastagNowValue;
+      if (!fastagFromReadings && fastagManualShown && chargeFastag && num(fastagAmt) > 0) {
         body.fastagAmount = num(fastagAmt);
         if (fastagNote.trim()) body.fastagNotes = fastagNote.trim();
       }
@@ -1033,7 +1104,121 @@ export default function ReturnScreen() {
     }
   };
 
-  if (isLoading) {
+  // ── Edit Return: the edit's body, its money difference, the save ──
+  // Everything the form holds; the server keeps what didn't change.
+  const buildEditBody = (): { error: string } | EditReturnBody => {
+    const original = editSummary;
+    if (!original || !booking) return { error: 'Still loading what the drop recorded.' };
+    if (!isWholeKm(endOdo)) return { error: 'Enter the end odometer reading in whole km.' };
+    if (original.photos.length > 0 && returnPhotos.length === 0) {
+      return { error: 'Keep at least one return photo — replace a photo rather than removing them all.' };
+    }
+    // A balance the drop recorded can be changed but not blanked; never recorded
+    // (older drops) stays optional — checked only when typed
+    const fastagWasRecorded = original.editState?.inputs.returnFastagBalance != null;
+    if (fastagNowNeeded && (fastagWasRecorded || fastagNow.trim()) && fastagNowValue == null) {
+      return { error: fastagBalanceError(fastagNow) ?? 'Enter the FASTag balance.' };
+    }
+    const extras = dropExtras();
+    if ('error' in extras) return extras;
+    for (const d of original.damages) {
+      const draft = damageDrafts[d.publicId];
+      const problem = d.editable && draft ? damageDraftProblem(draft) : null;
+      if (problem) return { error: problem };
+    }
+    const before = new Set(original.photos.map((p) => p.fileId));
+    const now = new Set(returnPhotos.map((p) => p.fileId));
+    const body: EditReturnBody = {
+      endOdometer: Number(endOdo.trim()),
+      safetyDepositHandling: depositHandling,
+      addPhotos: returnPhotos.filter((p) => !before.has(p.fileId)).map((p) => ({ fileId: p.fileId })),
+      removeFileIds: original.photos.filter((p) => !now.has(p.fileId)).map((p) => p.fileId),
+    };
+    if (original.edit.fuelEditable && fuelBars(fuelLevel) != null) body.returnFuelLevel = fuelLevel;
+    if (fastagNowValue != null) body.returnFastagBalance = fastagNowValue;
+    if (booking.usePaymentSessions) {
+      body.fuelCharge = chargeFuel ? num(fuelAmt) : 0;
+      if (fastagManualShown) {
+        body.fastagAmount = chargeFastag ? num(fastagAmt) : 0;
+        body.fastagNotes = chargeFastag ? fastagNote.trim() || null : null;
+      }
+      body.otherCharges = chargeOther
+        ? otherLines.filter((l) => l.label.trim() && num(l.amount) > 0).map((l) => ({ label: l.label.trim(), amount: num(l.amount) }))
+        : [];
+      body.discount = discount ?? null;
+    }
+    if (lateShown) body.waiveLateCharge = waiveLate ? { reason: waiveReason.trim() } : null;
+    if (manualGrace) body.applyGrace = applyGrace;
+    if (manualKmAllowed) body.manualExtraKm = manualKm.trim() ? Number(manualKm) : null;
+    body.damages = original.damages
+      .filter((d) => d.editable && damageDrafts[d.publicId])
+      .map((d) => {
+        const draft = damageDrafts[d.publicId]!;
+        const had = new Set(d.photos.map((p) => p.fileId));
+        const has = new Set(draft.photos.map((p) => p.fileId));
+        return {
+          publicId: d.publicId,
+          area: draft.area.trim(),
+          description: draft.description.trim(),
+          severity: draft.severity as 'Minor' | 'Moderate' | 'Severe',
+          amount: num(draft.amount),
+          addPhotoIds: draft.photos.filter((p) => !had.has(p.fileId)).map((p) => p.fileId),
+          removeFileIds: d.photos.filter((p) => !has.has(p.fileId)).map((p) => p.fileId),
+        };
+      });
+    return body;
+  };
+
+  const openEditReview = async () => {
+    const body = buildEditBody();
+    if ('error' in body) {
+      setErrorMsg(body.error);
+      return;
+    }
+    setErrorMsg(null);
+    setReviewOpen(true);
+    setPreviewing(true);
+    setEditPreview(null);
+    try {
+      const res = await employeeApi.previewReturnEdit(bookingId as string, body);
+      if (mountedRef.current) setEditPreview(res.data.data);
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      setReviewOpen(false);
+      setErrorMsg(apiErrorMessage(err, 'Could not work out the changes. Try again.'));
+    } finally {
+      if (mountedRef.current) setPreviewing(false);
+    }
+  };
+
+  const saveEdit = async (expectedDelta: number) => {
+    const body = buildEditBody();
+    if ('error' in body) throw new Error(body.error);
+    const res = await employeeApi.editReturn(bookingId as string, { ...body, expectedDelta });
+    // Kept with the drop now: never cleaned up as unused uploads
+    editKeptRef.current = new Set([
+      ...returnPhotos.map((p) => p.fileId),
+      ...Object.values(damageDrafts).flatMap((d) => d.photos.map((p) => p.fileId)),
+    ]);
+    qc.setQueryData(['employee', 'return-summary', bookingId], res.data.data);
+    qc.invalidateQueries({ queryKey: ['employee', 'returns'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking?.publicId] });
+    return res.data;
+  };
+
+  const finishEdit = (note: string | null) => {
+    setReviewOpen(false);
+    setEditSavedNote(note);
+    qc.invalidateQueries({ queryKey: ['employee', 'return-summary', bookingId] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking?.publicId] });
+    setDone(true);
+  };
+
+  const trackEditUpload = (fileId: string) => {
+    if (editMode) editUploadsRef.current.add(fileId);
+  };
+
+  if (isLoading || (editMode && editSummaryLoading)) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
@@ -1053,6 +1238,31 @@ export default function ReturnScreen() {
         <View style={styles.errorState}>
           <Ionicons name="alert-circle-outline" size={44} color={Colors.ink4} />
           <Text style={styles.errorText}>Could not load booking details.</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (done && editMode) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.back, { marginHorizontal: 20, marginTop: 8 }]} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+        </TouchableOpacity>
+        <View style={styles.successBody}>
+          <View style={styles.successIcon}>
+            <Ionicons name="checkmark-circle" size={64} color="#10b981" />
+          </View>
+          <Text style={styles.successTitle}>Changes Saved</Text>
+          <Text style={styles.successSub}>The return of {vehicle.make} {vehicle.model} for {customer.name} was updated.</Text>
+          {editSavedNote && <Text style={styles.settledNote}>{editSavedNote}</Text>}
+          <TouchableOpacity
+            style={styles.doneBtn}
+            onPress={() => router.replace(`/employee/return/summary/${booking.publicId}` as Href)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.doneBtnText}>Back to Summary</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -1098,7 +1308,14 @@ export default function ReturnScreen() {
 
   // Done (returned, or sent to a manager): the read-only summary, never the
   // workflow — changes go through Edit Return (client item 1).
-  if (booking.status === 'RETURNED' || awaitingManager) {
+  if (!editMode && (booking.status === 'RETURNED' || awaitingManager)) {
+    return <Redirect href={`/employee/return/summary/${booking.publicId}` as Href} />;
+  }
+  // Edit Return only edits a completed drop: one still out is returned from here
+  if (editMode && booking.status === 'PICKED_UP' && !booking.requiresManagerConfirmation) {
+    return <Redirect href={`/employee/return/${booking.publicId}` as Href} />;
+  }
+  if (editMode && (!editSummary?.editState || !editSummary.edit.allowed)) {
     return <Redirect href={`/employee/return/summary/${booking.publicId}` as Href} />;
   }
 
@@ -1154,7 +1371,7 @@ export default function ReturnScreen() {
             <Ionicons name="arrow-back" size={22} color={Colors.ink} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Return</Text>
+            <Text style={styles.title}>{editMode ? 'Edit Return' : 'Return'}</Text>
             <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
             <DraftSaveStatus draft={draft} />
           </View>
@@ -1386,6 +1603,7 @@ export default function ReturnScreen() {
                   onChange={setReturnPhotos}
                   upload={async (form) => {
                     const res = await employeeApi.uploadReturnImage(form);
+                    trackEditUpload(res.data.fileId);
                     return { fileId: res.data.fileId, url: res.data.url };
                   }}
                   genericLabel="Add"
@@ -1493,7 +1711,8 @@ export default function ReturnScreen() {
                   </>
                 )}
 
-                {/* FASTag balance now — the usage since pickup is billed from the balances (no GST) */}
+                {/* FASTag balance now — the usage since pickup is billed from the balances (no GST);
+                    without every earlier reading it is recorded and the toll charge is typed */}
                 {fastagNowNeeded && fastagInfo && (
                   <>
                     <Text style={[styles.fieldLabel, { marginTop: 16 }]}>FASTag balance now (₹)</Text>
@@ -1516,6 +1735,9 @@ export default function ReturnScreen() {
                           : ''}
                         {fastagPreview != null && fastagNowValue != null
                           ? ` · FASTag usage ${fastagInr(fastagPreview)} (no GST${booking.usePaymentSessions ? '' : ', the branch manager collects it'})`
+                          : ''}
+                        {!fastagFromReadings
+                          ? `${fastagStart != null ? ' · ' : ''}No balance was recorded ${swappedMidRental ? 'for an earlier car' : 'at pickup'}, so the usage can't be worked out — enter any toll charge below.`
                           : ''}
                       </Text>
                     )}
@@ -1641,7 +1863,9 @@ export default function ReturnScreen() {
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text style={styles.toggleLabel}>Discount −{inr(discount.amount)}</Text>
-                        <Text style={styles.hint} numberOfLines={2}>{discount.reason} · applied on compute</Text>
+                        <Text style={styles.hint} numberOfLines={2}>
+                          {discount.reason} · {editMode ? 'on the drop bill' : 'applied on compute'}
+                        </Text>
                       </View>
                       <TouchableOpacity onPress={removeDiscount} hitSlop={8}>
                         <Text style={styles.linkDanger}>Remove</Text>
@@ -1649,12 +1873,55 @@ export default function ReturnScreen() {
                     </View>
                   </>
                 )}
+                {/* Edit Return: the drop discount is part of the form (no compute step) */}
+                {editMode && !discount && (
+                  <>
+                    <View style={styles.divider} />
+                    {editDiscountOpen ? (
+                      <View style={{ gap: 8 }}>
+                        <TextInput
+                          style={styles.input}
+                          value={discountAmt}
+                          onChangeText={(t) => setDiscountAmt(t.replace(/[^\d.]/g, ''))}
+                          placeholder="Discount ₹"
+                          placeholderTextColor={Colors.ink4}
+                          keyboardType="decimal-pad"
+                        />
+                        <TextInput
+                          style={styles.input}
+                          value={discountReason}
+                          onChangeText={setDiscountReason}
+                          placeholder="Reason"
+                          placeholderTextColor={Colors.ink4}
+                        />
+                        {discountError && <Text style={styles.fieldError}>{discountError}</Text>}
+                        <TouchableOpacity
+                          onPress={() => {
+                            const amount = Number(discountAmt);
+                            if (!Number.isFinite(amount) || amount <= 0) return setDiscountError('Enter a discount amount.');
+                            if (discountReason.trim().length < 3) return setDiscountError('Enter a reason (at least 3 characters).');
+                            setDiscountError(null);
+                            setDiscount({ amount, reason: discountReason.trim() });
+                            setEditDiscountOpen(false);
+                          }}
+                          hitSlop={8}
+                        >
+                          <Text style={styles.link}>Apply discount</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => setEditDiscountOpen(true)} hitSlop={8}>
+                        <Text style={styles.link}>+ Add a discount</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
               </View>
 
               {/* Safety deposit at drop (#6): set off against the charges, or refund in full */}
-              {depositHeldBefore > 0 ? (
+              {(editMode ? safetyDeposit : depositHeldBefore) > 0 ? (
                 <SafetyDepositAtDrop
-                  held={depositHeldBefore}
+                  held={editMode ? safetyDeposit : depositHeldBefore}
                   handling={depositHandling}
                   onChange={changeDepositHandling}
                   legacy={!booking.usePaymentSessions}
@@ -1668,8 +1935,38 @@ export default function ReturnScreen() {
             </>
           )}
 
+          {/* Edit Return: damage recorded at the drop — notes, photos and cost */}
+          {editMode && editSummary && (
+            <>
+              <SectionHeader title="Vehicle Condition" />
+              {editSummary.damages.length === 0 ? (
+                <View style={styles.card}>
+                  <Text style={styles.hintInline}>No damage was recorded at this drop.</Text>
+                </View>
+              ) : (
+                editSummary.damages.map((d) => (
+                  <View key={d.publicId} style={styles.card}>
+                    <DropDamageEditor
+                      damage={d}
+                      draft={damageDrafts[d.publicId]}
+                      onChange={(patch) =>
+                        setDamageDrafts((all) => ({ ...all, [d.publicId]: { ...all[d.publicId]!, ...patch } }))
+                      }
+                      upload={async (form) => {
+                        const res = await employeeApi.uploadDamageImage(form);
+                        trackEditUpload(res.data.fileId);
+                        return { fileId: res.data.fileId, url: res.data.url };
+                      }}
+                      onPendingChange={(n) => setDamageUploads((all) => ({ ...all, [d.publicId]: n }))}
+                    />
+                  </View>
+                ))
+              )}
+            </>
+          )}
+
           {/* Damage found at drop — billed on the return session, or by the manager on review (legacy) */}
-          {showDamages && (
+          {showDamages && !editMode && (
             <>
               <SectionHeader title="Vehicle Condition" />
               <View style={styles.card}>
@@ -1809,7 +2106,7 @@ export default function ReturnScreen() {
           )}
 
           {/* Manager confirmation escalation (#50) — legacy (non-session) returns only */}
-          {!hasRemainingBalance && !booking.usePaymentSessions && !awaitingManager && (
+          {!hasRemainingBalance && !booking.usePaymentSessions && !awaitingManager && !editMode && (
             <>
               <SectionHeader title="Confirmation" />
               <View style={styles.card}>
@@ -2089,7 +2386,28 @@ export default function ReturnScreen() {
 
         {/* Footer CTA */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-          {awaitingManager ? (
+          {editMode ? (
+            photosPending > 0 || Object.values(damageUploads).some((n) => n > 0) ? (
+              <View style={styles.footerNote}>
+                <Ionicons name="cloud-upload-outline" size={16} color={Colors.ink3} />
+                <Text style={styles.footerNoteText}>Finish uploading photos above (retry or remove failed ones)</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.confirmBtn, previewing && styles.confirmBtnDisabled]}
+                onPress={openEditReview}
+                disabled={previewing}
+                activeOpacity={0.85}
+              >
+                {previewing ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                    <Text style={styles.confirmBtnText}>Save changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )
+          ) : awaitingManager ? (
             <View style={styles.footerNote}>
               <Ionicons name="time-outline" size={16} color={Colors.ink3} />
               <Text style={styles.footerNoteText}>Waiting for the branch manager to confirm this return.</Text>
@@ -2204,6 +2522,19 @@ export default function ReturnScreen() {
         startIndex={photoViewer?.index ?? 0}
         onClose={() => setPhotoViewer(null)}
       />
+
+      {editMode && (
+        <EditReviewSheet
+          visible={reviewOpen}
+          phase="return"
+          preview={editPreview}
+          loading={previewing}
+          save={saveEdit}
+          onRefresh={() => { void openEditReview(); }}
+          onClose={() => setReviewOpen(false)}
+          onFinished={finishEdit}
+        />
+      )}
     </>
   );
 }

@@ -175,7 +175,7 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
           /* The only way back into a completed pickup / drop */
           <TouchableOpacity
             style={styles.editBtn}
-            onPress={() => router.push(`/employee/${phase}/edit/${booking.publicId}` as Href)}
+            onPress={() => router.push(`/employee/${phase}/${booking.publicId}?edit=1` as Href)}
             hitSlop={8}
             activeOpacity={0.7}
           >

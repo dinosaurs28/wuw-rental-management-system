@@ -27,6 +27,7 @@ import {
   num,
 } from '../../../../components/employee/completed/CompletedParts';
 import type { PickupSummary } from '../../../../types/completedOperation';
+import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
 
 // A completed pickup (client item 1): read-only. Changes go through Edit Pickup.
 export default function PickupSummaryScreen() {
@@ -158,6 +159,20 @@ export default function PickupSummaryScreen() {
           </>
         )}
 
+        {/* Edits that moved money (full edit): still to settle, then settled */}
+        {data.pendingAdjustment && (
+          <>
+            <SectionHeader title="Edit difference" />
+            <PendingAdjustmentCard record={data.pendingAdjustment} onSettled={() => { refetch(); }} />
+          </>
+        )}
+        {(data.adjustments?.length ?? 0) > 0 && (
+          <>
+            <SectionHeader title="Edits" />
+            <AdjustmentHistory records={data.adjustments ?? []} />
+          </>
+        )}
+
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
@@ -168,7 +183,7 @@ export default function PickupSummaryScreen() {
         <FooterButton
           label="Edit Pickup"
           icon="create-outline"
-          onPress={() => router.push(`/employee/pickup/edit/${data.booking.publicId}` as Href)}
+          onPress={() => router.push(`/employee/pickup/${data.booking.publicId}?edit=1` as Href)}
         />
       )}
     </View>

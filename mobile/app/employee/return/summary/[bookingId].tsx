@@ -27,6 +27,7 @@ import {
   num,
 } from '../../../../components/employee/completed/CompletedParts';
 import type { ReturnSummary } from '../../../../types/completedOperation';
+import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
 
 // A completed return (client item 1): read-only. Changes go through Edit Return.
 export default function ReturnSummaryScreen() {
@@ -215,6 +216,20 @@ export default function ReturnSummaryScreen() {
           </>
         )}
 
+        {/* Edits that moved money (full edit): still to settle, then settled */}
+        {data.pendingAdjustment && (
+          <>
+            <SectionHeader title="Edit difference" />
+            <PendingAdjustmentCard record={data.pendingAdjustment} onSettled={() => { refetch(); }} />
+          </>
+        )}
+        {(data.adjustments?.length ?? 0) > 0 && (
+          <>
+            <SectionHeader title="Edits" />
+            <AdjustmentHistory records={data.adjustments ?? []} />
+          </>
+        )}
+
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
@@ -225,7 +240,7 @@ export default function ReturnSummaryScreen() {
         <FooterButton
           label="Edit Return"
           icon="create-outline"
-          onPress={() => router.push(`/employee/return/edit/${data.booking.publicId}` as Href)}
+          onPress={() => router.push(`/employee/return/${data.booking.publicId}?edit=1` as Href)}
         />
       )}
     </View>

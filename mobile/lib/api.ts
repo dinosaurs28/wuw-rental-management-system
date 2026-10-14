@@ -4,6 +4,7 @@ import type { DropDamageInput } from '../types/return';
 import type {
   EditOperationResponse,
   EditPickupBody,
+  EditPreview,
   EditReturnBody,
   PickupSummary,
   ReturnSummary,
@@ -387,6 +388,11 @@ export const employeeApi = {
     api.patch<EditOperationResponse<PickupSummary>>(`/api/employee/pickup/${bookingId}`, body),
   editReturn: (bookingId: string, body: EditReturnBody) =>
     api.patch<EditOperationResponse<ReturnSummary>>(`/api/employee/return/${bookingId}`, body),
+  // Full edit: the money difference an edit would settle — nothing saved (EditPreview)
+  previewPickupEdit: (bookingId: string, body: EditPickupBody) =>
+    api.post<{ data: EditPreview }>(`/api/employee/pickup/${bookingId}/edit/preview`, body),
+  previewReturnEdit: (bookingId: string, body: EditReturnBody) =>
+    api.post<{ data: EditPreview }>(`/api/employee/return/${bookingId}/edit/preview`, body),
   // PICKED_UP bookings past their return time, most overdue first (#8). Always
   // 200 — OverdueReturnsResponse (types/queue.ts). limit defaults 50, max 200.
   listOverdueReturns: (params?: { page?: number; limit?: number; type?: 'DAILY' | 'MONTHLY' }) =>

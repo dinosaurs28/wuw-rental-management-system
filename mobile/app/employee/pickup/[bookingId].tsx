@@ -51,6 +51,8 @@ import {
 } from '../../../lib/counterErrors';
 import type { ReturnSession } from '../../../types/api';
 import { usePickupDraft } from '../../../hooks/usePickupDraft';
+import EditReviewSheet from '../../../components/employee/edit/EditReviewSheet';
+import type { EditPickupBody, EditPreview, PickupSummary } from '../../../types/completedOperation';
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 import type { KmAllowance } from '../../../types/return';
 import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
@@ -250,7 +252,10 @@ function SessionBill({ session }: { session: PickupSession }) {
 }
 
 export default function PickupScreen() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { bookingId, edit } = useLocalSearchParams<{ bookingId: string; edit?: string }>();
+  // Edit Pickup (client item 1, full edit): this screen again for a completed
+  // pickup, prefilled from what it recorded; Save works out the money difference
+  const editMode = edit === '1';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -283,6 +288,18 @@ export default function PickupScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // P4c — the Reschedule sheet (CONFIRMED bookings, not picked up yet).
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+
+  // ── Edit Pickup (full edit) ──
+  const [editPreview, setEditPreview] = useState<EditPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  // New safety deposit total (car still out)
+  const [editDeposit, setEditDeposit] = useState('');
+  const [editSavedNote, setEditSavedNote] = useState<string | null>(null);
+  // Photos taken during the edit: deleted on the way out unless the save kept them
+  const editUploadsRef = useRef(new Set<string>());
+  const editKeptRef = useRef(new Set<string>());
+  const editPrefilledRef = useRef(false);
 
   // Legacy flow only (branches without payment sessions)
   const [requireManager, setRequireManager] = useState(false);
@@ -396,6 +413,8 @@ export default function PickupScreen() {
   // Start from the vehicle's current odometer (as the web does); follow a
   // vehicle swap unless staff already typed their own reading.
   useEffect(() => {
+    // Edit Pickup starts from the reading the pickup recorded instead
+    if (editMode) return;
     const v = booking?.items[0]?.vehicle;
     if (!v || !(num(v.odo) > 0)) return;
     if (odoPrefillRef.current?.vehicle === v.regNo) return;
@@ -448,18 +467,45 @@ export default function PickupScreen() {
     onGone: () => { refetch(); },
   });
 
+  // Edit Pickup: what the completed pickup recorded
+  const { data: editSummary, isLoading: editSummaryLoading } = useQuery<PickupSummary>({
+    queryKey: ['employee', 'pickup-summary', bookingId],
+    queryFn: async () => (await employeeApi.getPickupSummary(bookingId as string)).data.data,
+    enabled: editMode && !!bookingId,
+    retry: false,
+  });
+  useEffect(() => {
+    if (!editMode || !editSummary || editPrefilledRef.current) return;
+    editPrefilledRef.current = true;
+    setOdo(editSummary.odometer != null ? String(editSummary.odometer) : '');
+    setFuelLevel(editSummary.fuelLevel ? Number(editSummary.fuelLevel) : null);
+    setFastagBalance(editSummary.fastag.balance != null ? String(Number(editSummary.fastag.balance)) : '');
+    setDlStatus(editSummary.dl.status);
+    setPhotos(editSummary.photos.map((p) => ({ fileId: p.fileId, url: p.url, label: p.label ?? undefined })));
+    setEditDeposit(String(Number(editSummary.safetyDeposit) || 0));
+  }, [editMode, editSummary]);
+  useEffect(
+    () => () => {
+      for (const fileId of editUploadsRef.current) {
+        if (!editKeptRef.current.has(fileId)) employeeApi.deletePickupImage(fileId).catch(() => {});
+      }
+    },
+    [],
+  );
+
   const handoverBody = () => {
     const labeled = photos.filter((p) => p.label);
     const generic = photos.filter((p) => !p.label);
     const level = fuelLevel ?? 0;
-    const fastag = booking?.items[0]?.vehicle?.hasFastag ? parseFastagBalance(fastagBalance) : null;
+    // Any car: a car not marked as having a FASTag counts as one once its balance is read
+    const fastag = parseFastagBalance(fastagBalance);
     return {
       odo: Number(odo),
       // fuelLevel is stored on the vehicle as a percent; derive it from the 1..10 scale.
       fuelLevel: level * 10,
       // 1..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
       pickupFuelLevel: String(level),
-      // FASTag balance at the handover — only for a car with a FASTag
+      // FASTag balance at the handover — when entered (required for a car with a FASTag)
       ...(fastag != null ? { pickupFastagBalance: fastag } : {}),
       ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
       ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
@@ -808,7 +854,7 @@ export default function PickupScreen() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (editMode && editSummaryLoading)) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
@@ -867,9 +913,10 @@ export default function PickupScreen() {
   const depositInvalid =
     requestDeposit && (!(Number(depositAmount) > 0) || depositReason.trim().length === 0);
   const odoValid = Number(odo) > 0;
-  // FASTag balance (car with a FASTag): required before the handover
+  // FASTag balance: asked for every car — required when it's marked as having a
+  // FASTag, optional (checked only when typed) otherwise
   const hasFastag = !!vehicle?.hasFastag;
-  const fastagError = hasFastag ? fastagBalanceError(fastagBalance) : null;
+  const fastagError = hasFastag || fastagBalance.trim() ? fastagBalanceError(fastagBalance) : null;
   const allowance = booking.kmAllowance ?? null;
   const fuelModuleEnabled = !!booking.frozenChargeConfig?.fuelModuleEnabled;
   const fastagModuleEnabled = !!booking.frozenChargeConfig?.fastagModuleEnabled;
@@ -916,7 +963,121 @@ export default function PickupScreen() {
   const recordedFuel = booking.pickupFuelLevel ? Number(booking.pickupFuelLevel) : fuelLevel;
   const recordedFastag = booking.pickupFastagBalance != null
     ? Number(booking.pickupFastagBalance)
-    : hasFastag ? parseFastagBalance(fastagBalance) : null;
+    : parseFastagBalance(fastagBalance);
+
+  // ── Edit Pickup: the edit's body, its money difference, the save ──
+  // FASTag balance: editable for any car; once the pickup recorded one it can be
+  // changed but not blanked — never recorded (older pickups) stays optional
+  const editFastagRequired = editSummary?.fastag.balance != null;
+  const editFastagError = editMode && (editFastagRequired || fastagBalance.trim()) ? fastagBalanceError(fastagBalance) : null;
+  const buildEditBody = (): { error: string } | EditPickupBody => {
+    const original = editSummary;
+    if (!original) return { error: 'Still loading what the pickup recorded.' };
+    if (!/^\d+$/.test(odo.trim()) || Number(odo) <= 0) {
+      if (original.odometer != null || odo.trim()) return { error: 'Enter the odometer reading in whole km.' };
+    }
+    if (original.fuelLevel && fuelLevel == null) return { error: 'Select the fuel level.' };
+    if (editFastagError) return { error: editFastagError };
+    if (original.photos.length > 0 && photos.length === 0) {
+      return { error: 'Keep at least one pickup photo — replace a photo rather than removing them all.' };
+    }
+    const hadLabel = new Set(original.photos.map((p) => p.label).filter(Boolean));
+    const emptied = original.captureFields.filter((f) => f.required && hadLabel.has(f.name) && !photos.some((p) => p.label === f.name));
+    if (emptied.length > 0) {
+      return { error: `Take the required photo${emptied.length > 1 ? 's' : ''}: ${emptied.map((f) => f.name).join(', ')}.` };
+    }
+    if (pendingPhotos > 0) return { error: 'Wait for the photos to upload (retry or remove failed ones).' };
+    if (dlNumberOpen && dlNumberTyped && dlNumberInvalid) return { error: dlNumberInvalid };
+    const before = new Set(original.photos.map((p) => p.fileId));
+    const now = new Set(photos.map((p) => p.fileId));
+    const body: EditPickupBody = {
+      ...(odo.trim() ? { odo: Number(odo) } : {}),
+      ...(fuelLevel != null ? { pickupFuelLevel: String(fuelLevel) } : {}),
+      ...dlNumberBody(),
+      addPhotos: photos.filter((p) => !before.has(p.fileId)).map((p) => ({ fileId: p.fileId, label: p.label ?? null })),
+      removeFileIds: original.photos.filter((p) => !now.has(p.fileId)).map((p) => p.fileId),
+    };
+    if (fastagBalance.trim()) {
+      const value = parseFastagBalance(fastagBalance);
+      if (value != null) body.pickupFastagBalance = value;
+    }
+    if (original.edit.dlStatusEditable && dlStatus && dlStatus !== original.dl.status && dlStatus !== 'DEPOSIT') {
+      body.dlStatus = dlStatus;
+    }
+    if (original.edit.depositEditable) {
+      if (!/^\d+(\.\d{1,2})?$/.test(editDeposit.trim())) return { error: 'Enter the safety deposit in ₹ (0 for none).' };
+      body.safetyDeposit = Number(editDeposit);
+    }
+    return body;
+  };
+
+  const openEditReview = async () => {
+    const body = buildEditBody();
+    if ('error' in body) {
+      setErrorMsg(body.error);
+      return;
+    }
+    setErrorMsg(null);
+    setReviewOpen(true);
+    setPreviewing(true);
+    setEditPreview(null);
+    try {
+      const res = await employeeApi.previewPickupEdit(bookingId as string, body);
+      if (mountedRef.current) setEditPreview(res.data.data);
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      setReviewOpen(false);
+      setErrorMsg(apiErrorMessage(err, 'Could not work out the changes. Try again.'));
+    } finally {
+      if (mountedRef.current) setPreviewing(false);
+    }
+  };
+
+  const saveEdit = async (expectedDelta: number) => {
+    const body = buildEditBody();
+    if ('error' in body) throw new Error(body.error);
+    const res = await employeeApi.editPickup(bookingId as string, { ...body, expectedDelta });
+    // Kept with the pickup now: never cleaned up as unused uploads
+    editKeptRef.current = new Set(photos.map((p) => p.fileId));
+    qc.setQueryData(['employee', 'pickup-summary', bookingId], res.data.data);
+    qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+    qc.invalidateQueries({ queryKey: ['employee', 'pickup', bookingId] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking.publicId] });
+    return res.data;
+  };
+
+  const finishEdit = (note: string | null) => {
+    setReviewOpen(false);
+    setEditSavedNote(note);
+    qc.invalidateQueries({ queryKey: ['employee', 'pickup-summary', bookingId] });
+    qc.invalidateQueries({ queryKey: ['employee', 'financial-state', booking.publicId] });
+    setDone(true);
+  };
+
+  if (done && editMode) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.back, { marginHorizontal: 20, marginTop: 8 }]} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={Colors.ink} />
+        </TouchableOpacity>
+        <View style={styles.successBody}>
+          <View style={styles.successIcon}>
+            <Ionicons name="checkmark-circle" size={64} color="#10b981" />
+          </View>
+          <Text style={styles.successTitle}>Changes Saved</Text>
+          <Text style={styles.successSub}>The pickup of {vehicleName} for {customer.name} was updated.</Text>
+          {editSavedNote && <Text style={styles.successSub}>{editSavedNote}</Text>}
+          <TouchableOpacity
+            style={styles.doneBtn}
+            onPress={() => router.replace(`/employee/pickup/summary/${booking.publicId}` as Href)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.doneBtnText}>Back to Summary</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   if (done) {
     return (
@@ -993,10 +1154,18 @@ export default function PickupScreen() {
   const awaitingManager = booking.status === 'CONFIRMED' && !!booking.requiresManagerConfirmation;
   // Done (handed over, returned, or sent to a manager): the read-only summary,
   // never the workflow — changes go through Edit Pickup (client item 1).
-  if (awaitingManager || booking.status === 'PICKED_UP' || booking.status === 'RETURNED') {
+  const pickupDone = awaitingManager || booking.status === 'PICKED_UP' || booking.status === 'RETURNED';
+  if (!editMode && pickupDone) {
     return <Redirect href={`/employee/pickup/summary/${booking.publicId}` as Href} />;
   }
-  if (booking.status !== 'CONFIRMED') {
+  // Edit Pickup only edits a completed pickup: one not handed over yet is done from here
+  if (editMode && booking.status === 'CONFIRMED' && !booking.requiresManagerConfirmation) {
+    return <Redirect href={`/employee/pickup/${booking.publicId}` as Href} />;
+  }
+  if (editMode && (!pickupDone || !editSummary?.edit.allowed)) {
+    return <Redirect href={`/employee/pickup/summary/${booking.publicId}` as Href} />;
+  }
+  if (!editMode && booking.status !== 'CONFIRMED') {
     const pickedUp = booking.status === 'PICKED_UP';
     return (
       <KeyboardAvoidingView
@@ -1104,7 +1273,7 @@ export default function PickupScreen() {
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Pickup</Text>
+          <Text style={styles.title}>{editMode ? 'Edit Pickup' : 'Pickup'}</Text>
           <Text style={styles.subtitle}>#{booking.publicId.slice(-8).toUpperCase()}</Text>
           <DraftSaveStatus draft={draft} />
         </View>
@@ -1363,7 +1532,7 @@ export default function PickupScreen() {
         </View>
 
         {/* Vehicle availability swap (#51) — before the handover details are saved */}
-        {!session && (
+        {!session && !editMode && (
           <>
             <SectionHeader title="Vehicle Availability" />
             <VehicleSwapSection
@@ -1759,15 +1928,19 @@ export default function PickupScreen() {
                 </View>
               </View>
 
-              {/* FASTag balance (car with a FASTag) — the drop bills what the tag is used for */}
-              {hasFastag && (
+              {/* FASTag balance — every car; required when it's marked as having a FASTag.
+                  The drop bills what the tag is used for. */}
+              {(() => {
+                const fastagRequired = editMode ? editFastagRequired : hasFastag;
+                const shownError = editMode ? editFastagError : fastagError;
+                return (
                 <>
                   <View style={styles.divider} />
                   <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
                     <View style={styles.fieldLabel}>
                       <Ionicons name="card-outline" size={16} color={Colors.ink3} />
                       <Text style={styles.fieldLabelText}>FASTag balance (₹)</Text>
-                      {!fastagBalance.trim() && <Text style={styles.requiredTag}>Required</Text>}
+                      {fastagRequired && !fastagBalance.trim() && <Text style={styles.requiredTag}>Required</Text>}
                     </View>
                     <TextInput
                       style={styles.odoInput}
@@ -1778,12 +1951,15 @@ export default function PickupScreen() {
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
-                    {fastagBalance.trim() !== '' && fastagError && (
-                      <Text style={styles.fieldErrorTight}>{fastagError}</Text>
-                    )}
+                    {fastagBalance.trim() !== '' && shownError ? (
+                      <Text style={styles.fieldErrorTight}>{shownError}</Text>
+                    ) : !fastagRequired ? (
+                      <Text style={styles.fastagHint}>Leave empty if this car has no FASTag.</Text>
+                    ) : null}
                   </View>
                 </>
-              )}
+                );
+              })()}
             </View>
 
             {/* Pre-delivery photos */}
@@ -1799,6 +1975,7 @@ export default function PickupScreen() {
                 onChange={setPhotos}
                 upload={async (form) => {
                   const res = await employeeApi.uploadPickupImage(form);
+                  if (editMode) editUploadsRef.current.add(res.data.fileId);
                   return { fileId: res.data.fileId, url: res.data.url };
                 }}
                 genericLabel="Add"
@@ -1808,7 +1985,41 @@ export default function PickupScreen() {
 
             {/* Safety deposit request (#49) — legacy flow, only when the branch enables it.
                 With payment sessions the deposit is added to the bill on the next step. */}
-            {!sessionMode && depositEnabled && (
+            {/* Edit Pickup: the safety deposit total (car still out); the difference is collected / refunded */}
+            {editMode && editSummary && (editSummary.edit.depositEditable || Number(editSummary.safetyDeposit) > 0) && (
+              <>
+                <SectionHeader title="Safety Deposit" />
+                <View style={styles.card}>
+                  {editSummary.edit.depositEditable ? (
+                    <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
+                      <View style={styles.fieldLabel}>
+                        <Ionicons name="cash-outline" size={16} color={Colors.ink3} />
+                        <Text style={styles.fieldLabelText}>Deposit held (₹)</Text>
+                      </View>
+                      <TextInput
+                        style={styles.odoInput}
+                        value={editDeposit}
+                        onChangeText={(t) => setEditDeposit(t.replace(/[^\d.]/g, ''))}
+                        placeholder="0"
+                        placeholderTextColor={Colors.ink4}
+                        keyboardType="decimal-pad"
+                        returnKeyType="done"
+                      />
+                      <Text style={styles.toggleSub}>A change is collected or refunded when you save.</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <InfoRow icon="cash-outline" label="Deposit held" value={inr(Number(editSummary.safetyDeposit))} />
+                      {editSummary.edit.depositLockedReason && (
+                        <Text style={[styles.toggleSub, { marginTop: 8 }]}>{editSummary.edit.depositLockedReason}</Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+
+            {!sessionMode && depositEnabled && !editMode && (
               <>
                 <SectionHeader title="Safety Deposit" />
                 <View style={styles.card}>
@@ -1890,11 +2101,15 @@ export default function PickupScreen() {
               <DlStatusSelector
                 value={dlStatus}
                 onChange={(v) => { setDlStatus(v); setDlRejected(false); }}
+                disabled={editMode && !editSummary?.edit.dlStatusEditable}
               />
+              {editMode && editSummary?.edit.dlStatusLockedReason && (
+                <Text style={[styles.toggleSub, { marginTop: 8 }]}>{editSummary.edit.dlStatusLockedReason}</Text>
+              )}
             </View>
 
             {/* Manager confirmation escalation (#50) — legacy flow only */}
-            {!sessionMode && (
+            {!sessionMode && !editMode && (
               <>
                 <SectionHeader title="Confirmation" />
                 <View style={styles.card}>
@@ -1915,9 +2130,14 @@ export default function PickupScreen() {
               </>
             )}
 
-            {sessionMode && (
+            {sessionMode && !editMode && (
               <Text style={styles.nextStepNote}>
                 Next: review the bill, add a safety deposit or coupon, and collect the payment.
+              </Text>
+            )}
+            {editMode && (
+              <Text style={styles.nextStepNote}>
+                Rent, coupons and extensions aren't changed here — ask the branch manager.
               </Text>
             )}
             {/* #20 — the counter coupon lives on the Unified Payments pickup bill only */}
@@ -1941,7 +2161,21 @@ export default function PickupScreen() {
 
       {/* Footer CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {session ? (
+        {editMode ? (
+          <TouchableOpacity
+            style={[styles.confirmBtn, (previewing || pendingPhotos > 0) && styles.confirmBtnDisabled]}
+            onPress={openEditReview}
+            disabled={previewing || pendingPhotos > 0}
+            activeOpacity={0.85}
+          >
+            {previewing ? <ActivityIndicator size="small" color={Colors.white} /> : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                <Text style={styles.confirmBtnText}>{pendingPhotos > 0 ? 'Uploading photos…' : 'Save changes'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : session ? (
           <TouchableOpacity
             style={[styles.confirmBtn, sessionBusy && styles.confirmBtnDisabled]}
             onPress={settleSession}
@@ -2007,6 +2241,18 @@ export default function PickupScreen() {
         images={kycViewer ? [{ url: kycViewer.url, label: kycViewer.label }] : []}
         onClose={() => setKycViewer(null)}
       />
+      {editMode && (
+        <EditReviewSheet
+          visible={reviewOpen}
+          phase="pickup"
+          preview={editPreview}
+          loading={previewing}
+          save={saveEdit}
+          onRefresh={() => { void openEditReview(); }}
+          onClose={() => setReviewOpen(false)}
+          onFinished={finishEdit}
+        />
+      )}
       {/* P4c — move the pickup (and the return with it) for the customer */}
       <RescheduleSheet
         visible={rescheduleOpen}
@@ -2137,6 +2383,7 @@ const styles = StyleSheet.create({
   fieldLabelSolo: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3, marginBottom: 8 },
   fieldError: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e', marginTop: 8 },
   fieldErrorTight: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e' },
+  fastagHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 6 },
 
   odoInput: {
     backgroundColor: Colors.bg,

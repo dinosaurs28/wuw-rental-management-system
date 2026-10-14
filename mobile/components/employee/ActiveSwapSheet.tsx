@@ -210,8 +210,14 @@ export default function ActiveSwapSheet({
   const clearError = (f: Field) => setErrors((e) => (e[f] ? { ...e, [f]: undefined } : e));
 
   const requirement = selected?.photoRequirement ?? NO_CONFIG_REQUIREMENT;
+  // FASTag balances: the returning car's when it's marked as having a FASTag
+  // (required) or its balance was read earlier on this booking (optional); the
+  // replacement's always (required when it's marked as having one) — a balance
+  // read here starts tracking its FASTag for this booking.
   const oldHasFastag = photosRequired && current?.hasFastag === true;
+  const oldFastagShown = oldHasFastag || (photosRequired && current?.fastagBalanceRecorded === true);
   const newHasFastag = photosRequired && selected?.hasFastag === true;
+  const newFastagShown = photosRequired && !!selected;
   const shortfall = photoShortfall(photos, requirement);
   const photosIncomplete = photosRequired && (shortfall.missingLabels.length > 0 || shortfall.short > 0);
   // Why "Swap vehicle" is still off because of the photos (shown above it).
@@ -270,11 +276,11 @@ export default function ActiveSwapSheet({
         if (!fuelBarsValue(startFuel)) next.startFuel = 'Pick its fuel level.';
       }
     }
-    if (oldHasFastag) {
+    if (oldHasFastag || (oldFastagShown && oldFastag.trim())) {
       const err = fastagBalanceError(oldFastag);
       if (err) next.oldFastag = err;
     }
-    if (newHasFastag) {
+    if (newHasFastag || (newFastagShown && newFastag.trim())) {
       const err = fastagBalanceError(newFastag);
       if (err) next.newFastag = err;
     }
@@ -305,10 +311,10 @@ export default function ActiveSwapSheet({
       ...(photosRequired
         ? { replacementPhotos: photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) })) }
         : {}),
-      ...(oldHasFastag && parseFastagBalance(oldFastag) != null
+      ...(oldFastagShown && parseFastagBalance(oldFastag) != null
         ? { oldVehicleFastagBalance: parseFastagBalance(oldFastag)! }
         : {}),
-      ...(newHasFastag && parseFastagBalance(newFastag) != null
+      ...(newFastagShown && parseFastagBalance(newFastag) != null
         ? { newVehicleFastagBalance: parseFastagBalance(newFastag)! }
         : {}),
     };
@@ -539,9 +545,9 @@ export default function ActiveSwapSheet({
                       <Text style={styles.subLabel}>Fuel now (bars)</Text>
                       <SwapFuelBars value={endFuel} onChange={(v) => { setEndFuel(v); clearError('endFuel'); }} disabled={swapping} />
                       {errors.endFuel ? <Text style={styles.fieldError}>{errors.endFuel}</Text> : null}
-                      {oldHasFastag && (
+                      {oldFastagShown && (
                         <>
-                          <Text style={styles.subLabel}>FASTag balance now (₹)</Text>
+                          <Text style={styles.subLabel}>FASTag balance now (₹){oldHasFastag ? '' : ' — optional'}</Text>
                           <TextInput
                             style={[styles.input, styles.inputTight, !!errors.oldFastag && styles.inputError]}
                             value={oldFastag}
@@ -552,7 +558,11 @@ export default function ActiveSwapSheet({
                             maxLength={9}
                             editable={!swapping}
                           />
-                          {errors.oldFastag ? <Text style={styles.fieldError}>{errors.oldFastag}</Text> : null}
+                          {errors.oldFastag ? (
+                            <Text style={styles.fieldError}>{errors.oldFastag}</Text>
+                          ) : !oldHasFastag ? (
+                            <Text style={styles.hint}>Its FASTag balance was read earlier on this rental — leave empty if it has no FASTag.</Text>
+                          ) : null}
                         </>
                       )}
 
@@ -577,9 +587,9 @@ export default function ActiveSwapSheet({
                           <Text style={styles.subLabel}>Fuel at handover (bars)</Text>
                           <SwapFuelBars value={startFuel} onChange={(v) => { setStartFuel(v); clearError('startFuel'); }} disabled={swapping} />
                           {errors.startFuel ? <Text style={styles.fieldError}>{errors.startFuel}</Text> : null}
-                          {newHasFastag && (
+                          {newFastagShown && (
                             <>
-                              <Text style={styles.subLabel}>FASTag balance at handover (₹)</Text>
+                              <Text style={styles.subLabel}>FASTag balance at handover (₹){newHasFastag ? '' : ' — optional'}</Text>
                               <TextInput
                                 style={[styles.input, styles.inputTight, !!errors.newFastag && styles.inputError]}
                                 value={newFastag}
@@ -590,7 +600,11 @@ export default function ActiveSwapSheet({
                                 maxLength={9}
                                 editable={!swapping}
                               />
-                              {errors.newFastag ? <Text style={styles.fieldError}>{errors.newFastag}</Text> : null}
+                              {errors.newFastag ? (
+                                <Text style={styles.fieldError}>{errors.newFastag}</Text>
+                              ) : !newHasFastag ? (
+                                <Text style={styles.hint}>Leave empty if this car has no FASTag.</Text>
+                              ) : null}
                             </>
                           )}
                         </>
