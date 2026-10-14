@@ -719,6 +719,10 @@ export default function WalkinSummaryScreen() {
           {pd?.pricingBreakdown?.weekend ? (
             <Text style={styles.priceNote}>{pd.pricingBreakdown.weekend.label}</Text>
           ) : null}
+          {/* Festival pricing: which part of the rent a festival rule changed */}
+          {pd?.pricingBreakdown?.festival ? (
+            <Text style={styles.priceNote}>{pd.pricingBreakdown.festival.label}</Text>
+          ) : null}
           {/* Duration slab named (#24), e.g. "Weekly discount (10%)" */}
           {pd && rent
             ? quoteDiscountLines({ ...pd, discountAmount: rent.discount, durationDiscountAmount: rent.durationDiscount }).map((l) => (

@@ -37,7 +37,7 @@ import {
   type WalkinPackage,
 } from '../../../lib/packages';
 import { useBranchSchedule } from '../../../hooks/useBranchSchedule';
-import type { WeekendPricing } from '../../../types/api';
+import type { FestivalPricing, WeekendPricing } from '../../../types/api';
 import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
 import {
   bookingTimesNotice,
@@ -81,8 +81,16 @@ interface VehicleCard {
   // weekendDaily: without dates, the weekend 24-hour rent (only when it differs)
   pricing: { daily: number; weekendDaily?: number };
   // billedAs (#5): what the total covers, e.g. "12 hours", "1 month + 5 days";
-  // weekend: the weekend rates inside it (weekend-wise pricing, absent when none)
-  pricingDetails?: { price: number; finalPrice: number; type: string; billedAs?: string; weekend?: WeekendPricing };
+  // weekend: the weekend rates inside it (weekend-wise pricing, absent when none);
+  // festival: the festival rules inside it (festival pricing, absent when none)
+  pricingDetails?: {
+    price: number;
+    finalPrice: number;
+    type: string;
+    billedAs?: string;
+    weekend?: WeekendPricing;
+    festival?: FestivalPricing;
+  };
 }
 
 // GET /api/employee/vehicles/search-reg — one car per row (client item 5).
@@ -100,7 +108,14 @@ interface RegVehicle {
   // The car's make/model group — booked by publicId, not by this key
   groupKey: string;
   pricing: { daily: number | null };
-  pricingDetails: { price: number; finalPrice: number; type: string; billedAs?: string; weekend?: WeekendPricing } | null;
+  pricingDetails: {
+    price: number;
+    finalPrice: number;
+    type: string;
+    billedAs?: string;
+    weekend?: WeekendPricing;
+    festival?: FestivalPricing;
+  } | null;
   available: boolean;
   unavailableReason: { code: string; message: string } | null;
 }
@@ -730,6 +745,9 @@ export default function WalkinVehiclesScreen() {
           {price != null && car.pricingDetails?.weekend ? (
             <Text style={styles.cardMeta}>{car.pricingDetails.weekend.label}</Text>
           ) : null}
+          {price != null && car.pricingDetails?.festival ? (
+            <Text style={styles.cardMeta}>{car.pricingDetails.festival.label}</Text>
+          ) : null}
           {reason ? (
             <Text style={styles.cardBlockedText}>{reason}</Text>
           ) : (
@@ -818,6 +836,10 @@ export default function WalkinVehiclesScreen() {
                       ? item.pricingDetails.weekend?.label
                       : `Weekend ₹${Number(item.pricing.weekendDaily).toLocaleString('en-IN')}/day`}
                   </Text>
+                ) : null}
+                {/* Festival pricing: the part of the total a festival rule changed */}
+                {!blocked && item.pricingDetails?.festival ? (
+                  <Text style={styles.cardMeta}>{item.pricingDetails.festival.label}</Text>
                 ) : null}
               </View>
               {busy ? (

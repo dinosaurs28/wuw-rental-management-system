@@ -28,6 +28,8 @@ export interface ListPricing {
   sgst?: number;
   // Weekend rates inside price (weekend-wise pricing) — absent when none apply.
   weekend?: WeekendPricing;
+  // Festival rules inside price (festival pricing) — absent when none apply.
+  festival?: FestivalPricing;
 }
 
 // Weekend-wise pricing: the blocks of a window (each 24 h, the remainder, or a
@@ -43,6 +45,18 @@ export interface WeekendPricing {
   weekendAmount: number;
   weekdayAmount: number;
   // e.g. "Includes 1 weekend day at ₹1,600"
+  label: string;
+}
+
+// Festival pricing: the blocks of a window with at least half their time on a
+// branch festival's dates have their rent changed by its percentage (the rule
+// giving the higher rent when festivals overlap). Sent only when one applied.
+export interface FestivalPricing {
+  festivalBlocks: number;
+  // What the festival rules changed the rent by (GST-inclusive; negative = a festival discount).
+  amount: number;
+  rules: { id: number; name: string; percent: number; blocks: number; amount: number }[];
+  // e.g. "Includes 3 festival days (Dussehra +10%)"
   label: string;
 }
 
@@ -160,6 +174,8 @@ export interface PricingDetails extends RentInclGstFields {
     billedAsType?: RentalPeriodType;
     // Weekend rates inside the price (weekend-wise pricing) — absent when none apply.
     weekend?: WeekendPricing;
+    // Festival rules inside the price (festival pricing) — absent when none apply.
+    festival?: FestivalPricing;
   };
 }
 

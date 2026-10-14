@@ -1031,6 +1031,10 @@ export default function Checkout() {
           {pd?.pricingBreakdown?.weekend ? (
             <Text style={styles.priceNote}>{pd.pricingBreakdown.weekend.label}</Text>
           ) : null}
+          {/* Festival pricing: which part of the rent a festival rule changed */}
+          {pd?.pricingBreakdown?.festival ? (
+            <Text style={styles.priceNote}>{pd.pricingBreakdown.festival.label}</Text>
+          ) : null}
           {/* Duration slab named (#24). With a coupon, the server's re-priced
               layers — a slab the coupon replaced (no stacking) is not shown. */}
           {couponPricing && rentView

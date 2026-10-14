@@ -2,7 +2,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { priceUnitFor, unitLabel, weekendNote } from '../../lib/pricing';
+import { festivalNote, priceUnitFor, unitLabel, weekendNote } from '../../lib/pricing';
 import { slabChipText } from '../../lib/discounts';
 import { inrExact } from '../../lib/gst';
 import type { Vehicle } from '../../types/api';
@@ -33,6 +33,8 @@ export default function OfferCard({ vehicle, onPress }: Props) {
     typeof totalGst === 'number' && totalGst > 0 ? `incl. ${inrExact(totalGst)} GST` : 'incl. GST';
   // Weekend-wise pricing: the weekend part of the price / the weekend day rent
   const weekend = rate != null ? weekendNote(vehicle) : null;
+  // Festival pricing: the part of the price a festival rule changed
+  const festival = rate != null ? festivalNote(vehicle) : null;
 
   const count = vehicle.availableCount;
 
@@ -107,6 +109,7 @@ export default function OfferCard({ vehicle, onPress }: Props) {
         </View>
         {rate != null ? <Text style={styles.gstNote}>{gstNote}</Text> : null}
         {weekend ? <Text style={styles.gstNote}>{weekend}</Text> : null}
+        {festival ? <Text style={styles.gstNote}>{festival}</Text> : null}
       </View>
     </TouchableOpacity>
   );
