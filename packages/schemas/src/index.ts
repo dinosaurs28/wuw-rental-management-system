@@ -17,3 +17,4 @@ export * from "./dl-status.js";
 export * from "./notification.schema.js";
 export * from "./counter-payment.js";
 export * from "./share-link.js";
+export * from "./special-pricing.schema.js";
