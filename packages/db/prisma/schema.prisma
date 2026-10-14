@@ -2304,6 +2304,9 @@ enum PaymentSessionType {
   PICKUP
   EXTENSION
   RETURN
+  // The money difference of an edit to a completed pickup / drop (metadata.adjustment):
+  // delta lines (new − old) plus the payment / refund that settles them
+  ADJUSTMENT
 }
 
 enum LedgerEntryType {
@@ -2564,6 +2567,14 @@ enum SpecialPricingScope {
   ALL
   CATEGORIES
   VEHICLES
+  // Per vehicle group (make + model + category): SpecialPricingRuleItem rows
+  GROUPS
+}
+
+// A vehicle group's change under a GROUPS rule
+enum SpecialPricingChange {
+  PERCENT
+  FLAT
 }
 
 // A branch's festival pricing (e.g. "Dussehra +10%"): the rent of every priced
@@ -2595,6 +2606,28 @@ model SpecialPricingRule {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   deletedAt   DateTime?
+  // GROUPS scope: one change per vehicle group
+  items       SpecialPricingRuleItem[]
 
   @@index([branchId, active, endDate])
+}
+
+// One vehicle group's change under a GROUPS festival rule: the group is the
+// branch's vehicles of one make + model + category (normalised, as one model
+// card); PERCENT → rent × (1 + value / 100), FLAT → value ₹ a day shared by the
+// billed hours. value is signed: negative = off.
+model SpecialPricingRuleItem {
+  id         Int                  @id @default(autoincrement())
+  ruleId     Int
+  rule       SpecialPricingRule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  // MAKE__MODEL__categoryId (make / model trimmed, spaces collapsed, upper case)
+  groupKey   String
+  // How the group was named when saved (display)
+  make       String
+  model      String
+  categoryId Int
+  type       SpecialPricingChange
+  value      Decimal              @db.Decimal(10, 2)
+
+  @@unique([ruleId, groupKey])
 }
