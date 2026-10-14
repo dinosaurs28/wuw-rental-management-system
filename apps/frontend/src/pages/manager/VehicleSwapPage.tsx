@@ -12,6 +12,7 @@ import {
   SWAP_PICK_AGAIN_CODES,
   swapAmount,
   swapErrorCode,
+  swapErrorFileIds,
 } from "@/components/manager/vehicle-swap/swapFormat";
 import type { AvailableVehicle } from "@/types/vehicleSwap";
 import { apiErrorMessage } from "@/lib/counterErrors";
@@ -46,6 +47,7 @@ export const VehicleSwapPage = () => {
   const [selectedVehicle, setSelectedVehicle] =
     useState<AvailableVehicle | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
+  const [rejectedPhotoIds, setRejectedPhotoIds] = useState<string[]>([]);
 
   const candidatesQuery = useQuery({
     queryKey: ["vehicle-swap-candidates", "manager", bookingId],
@@ -113,6 +115,8 @@ export const VehicleSwapPage = () => {
         void candidatesQuery.refetch();
       } else {
         setSwapError(message);
+        // Photos the server can't use: drop them from the form so they can be retaken
+        if (swapErrorCode(err) === "SWAP_PHOTOS_INVALID") setRejectedPhotoIds(swapErrorFileIds(err));
       }
     },
   });
@@ -225,7 +229,8 @@ export const VehicleSwapPage = () => {
                   </span>
                   {activeRental && (
                     <span className="text-xs text-muted-foreground">
-                      Handover readings for both cars are required.
+                      Handover readings for both cars
+                      {swapContext.photosRequired ? " and photos of the replacement are" : " are"} required.
                     </span>
                   )}
                 </div>
@@ -347,6 +352,8 @@ export const VehicleSwapPage = () => {
             isLoading={swapMutation.isPending}
             swapContext={swapContext}
             errorMessage={swapError}
+            role="manager"
+            rejectedPhotoIds={rejectedPhotoIds}
           />
         )}
       </div>

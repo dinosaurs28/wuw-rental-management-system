@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { DropBill, OdometerSegment, RentalTimeline, ReturnLateSummary } from "@/types/drop";
+import type { DropBill, FastagUsageSummary, OdometerSegment, RentalTimeline, ReturnLateSummary } from "@/types/drop";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 
@@ -154,12 +154,16 @@ export interface ReturnSessionResponse {
   billStale?: boolean;
   /**
    * GET only: why the bill is stale — "DROP_GST_REMOVED" (computed with GST on drop
-   * charges before item 8; recomputing rebuilds it without GST) or "PERIOD_CHANGED"
-   * (an extension moved the booked end); null when fresh. Absent from older servers.
+   * charges before item 8; recomputing rebuilds it without GST), "PERIOD_CHANGED"
+   * (an extension moved the booked end), "FASTAG_CHANGED" (the pickup FASTag
+   * balance was corrected) or "PICKUP_ODOMETER_CHANGED" (the pickup odometer was
+   * corrected with Edit Pickup); null when fresh. Absent from older servers.
    */
-  billStaleReason?: "DROP_GST_REMOVED" | "PERIOD_CHANGED" | null;
+  billStaleReason?: "DROP_GST_REMOVED" | "PERIOD_CHANGED" | "FASTAG_CHANGED" | "PICKUP_ODOMETER_CHANGED" | null;
   /** Safety deposit set off / refunded on this bill (#6); null on bills computed before it. */
   deposit?: DropDepositSummary | null;
+  /** FASTag usage the bill was computed with (null on bills computed before FASTag readings). */
+  fastag?: FastagUsageSummary | null;
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────
@@ -198,6 +202,8 @@ export const paymentSessionService = {
       odo?: number;
       fuelLevel?: number;
       pickupFuelLevel?: string;
+      /** ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage. */
+      pickupFastagBalance?: number;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
       /** Original licence custody (#3) — optional (X1); re-initiating applies the new choice. */
@@ -304,6 +310,11 @@ export const paymentSessionService = {
       fuelCharge?: number;
       fastagAmount?: number;
       fastagNotes?: string;
+      /**
+       * FASTag balance now (booking.fastag.mode READINGS): the server bills the
+       * usage from the balances and ignores fastagAmount.
+       */
+      returnFastagBalance?: number;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
       /** Re-applied on every compute — resend it or it is dropped. Pre-tax. */

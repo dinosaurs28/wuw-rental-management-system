@@ -19,8 +19,9 @@ import {
   SPECIAL_PRICING_MAX_DAYS,
   SPECIAL_PRICING_NAME_MAX,
   SPECIAL_PRICING_PERCENT_MAX,
+  SPECIAL_PRICING_FLAT_MAX,
   calendarDaysBetween,
-  formatSpecialPercent,
+  formatSpecialChange,
   isCalendarDate,
   istToday,
   specialPricingRuleIssues,
@@ -120,13 +121,18 @@ function scopeSummary(rule: SpecialPricingRule): { text: string; title?: string 
   return { text: "All vehicles" };
 }
 
+type Direction = "increase" | "decrease";
+
 interface FormState {
   name: string;
   startDate: string;
   endDate: string;
-  direction: "increase" | "decrease";
-  /** The percentage without its sign, as typed */
-  amount: string;
+  /** The percentage without its sign, as typed (blank = none) */
+  percentDirection: Direction;
+  percent: string;
+  /** The flat ₹ a day without its sign, as typed (blank = none) */
+  flatDirection: Direction;
+  flatAmount: string;
   scope: SpecialPricingScopeValue;
   categoryIds: number[];
   vehicleIds: number[];
@@ -137,8 +143,10 @@ const emptyForm = (): FormState => ({
   name: "",
   startDate: "",
   endDate: "",
-  direction: "increase",
-  amount: "",
+  percentDirection: "increase",
+  percent: "",
+  flatDirection: "increase",
+  flatAmount: "",
   scope: "ALL",
   categoryIds: [],
   vehicleIds: [],
@@ -149,21 +157,32 @@ const formOf = (rule: SpecialPricingRule): FormState => ({
   name: rule.name,
   startDate: rule.startDate,
   endDate: rule.endDate,
-  direction: rule.percent < 0 ? "decrease" : "increase",
-  amount: String(Math.abs(rule.percent)),
+  percentDirection: rule.percent < 0 ? "decrease" : "increase",
+  percent: rule.percent ? String(Math.abs(rule.percent)) : "",
+  flatDirection: rule.flatAmount < 0 ? "decrease" : "increase",
+  flatAmount: rule.flatAmount ? String(Math.abs(rule.flatAmount)) : "",
   scope: rule.scope,
   categoryIds: rule.categoryIds,
   vehicleIds: rule.vehicleIds,
   active: rule.active,
 });
 
+/**
+ * A typed amount with its direction: the toggle alone sets the sign (a typed
+ * "-200" is 200), blank = 0; anything not a number stays NaN for the checks.
+ */
+const signed = (typed: string, direction: Direction) => {
+  const magnitude = typed.trim() === "" ? 0 : Math.abs(Number(typed));
+  return direction === "decrease" && magnitude !== 0 ? -magnitude : magnitude;
+};
+
 function draftOf(form: FormState): SpecialPricingDraft {
-  const magnitude = form.amount.trim() === "" ? NaN : Number(form.amount);
   return {
     name: form.name.trim(),
     startDate: form.startDate,
     endDate: form.endDate,
-    percent: form.direction === "decrease" ? -magnitude : magnitude,
+    percent: signed(form.percent, form.percentDirection),
+    flatAmount: signed(form.flatAmount, form.flatDirection),
     scope: form.scope,
     categoryIds: form.scope === "CATEGORIES" ? form.categoryIds : [],
     vehicleIds: form.scope === "VEHICLES" ? form.vehicleIds : [],
@@ -171,7 +190,9 @@ function draftOf(form: FormState): SpecialPricingDraft {
   };
 }
 
-type FieldErrors = Partial<Record<"name" | "startDate" | "endDate" | "percent" | "categoryIds" | "vehicleIds", string>>;
+type FieldErrors = Partial<
+  Record<"name" | "startDate" | "endDate" | "percent" | "flatAmount" | "categoryIds" | "vehicleIds", string>
+>;
 
 /** The same checks the server runs (schemas), field by field. */
 function draftErrors(draft: SpecialPricingDraft, datesMoved: boolean): FieldErrors {
@@ -286,6 +307,7 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
     startDate: draft.startDate,
     endDate: draft.endDate,
     percent: draft.percent,
+    flatAmount: draft.flatAmount,
     scope: draft.scope,
     categoryIds: draft.categoryIds,
     vehicleIds: draft.vehicleIds,
@@ -306,7 +328,7 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
         {isFetching && <Loader2 className="size-3.5 animate-spin text-zinc-400" />}
       </div>
       {!ready ? (
-        <p className="text-xs text-zinc-500">Fill in the dates, the percentage and what it applies to.</p>
+        <p className="text-xs text-zinc-500">Fill in the dates, the change and what it applies to.</p>
       ) : error ? (
         <p className="text-xs text-red-600">{errorMessage(error, "Couldn't load the preview")}</p>
       ) : !data ? (
@@ -337,6 +359,79 @@ function DraftPreview({ portal, portalKey, draft, ready }: {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ── Change inputs ─────────────────────────────────────────────────────────────
+
+/** One part of a rule's change: Increase / Decrease and the amount (% or ₹ a day). */
+function ChangeInput({
+  id,
+  label,
+  unit,
+  direction,
+  value,
+  max,
+  placeholder,
+  invalid,
+  onDirection,
+  onValue,
+}: {
+  id: string;
+  label: string;
+  unit: "%" | "₹";
+  direction: Direction;
+  value: string;
+  max: number;
+  placeholder: string;
+  invalid: boolean;
+  onDirection: (direction: Direction) => void;
+  onValue: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Label htmlFor={id} className="w-36 text-sm font-normal text-zinc-600">
+        {label}
+      </Label>
+      <div className="inline-flex rounded-lg border border-zinc-200 p-0.5">
+        {(["increase", "decrease"] as const).map((dir) => (
+          <button
+            key={dir}
+            type="button"
+            onClick={() => onDirection(dir)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              direction === dir
+                ? dir === "increase"
+                  ? "bg-orange-500 text-white"
+                  : "bg-emerald-600 text-white"
+                : "text-zinc-600 hover:bg-zinc-100",
+            )}
+          >
+            {dir === "increase" ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
+            {dir === "increase" ? "Increase" : "Decrease"}
+          </button>
+        ))}
+      </div>
+      <div className="relative w-32">
+        {unit === "₹" && <span className="pointer-events-none absolute left-3 top-2 text-sm text-zinc-400">₹</span>}
+        <Input
+          id={id}
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={max}
+          step="0.01"
+          value={value}
+          // The Increase / Decrease toggle carries the sign: a typed minus is dropped
+          onChange={(e) => onValue(e.target.value.replace(/^-/, ""))}
+          placeholder={placeholder}
+          className={unit === "₹" ? "pl-7" : "pr-8"}
+          aria-invalid={invalid}
+        />
+        {unit === "%" && <span className="pointer-events-none absolute right-3 top-2 text-sm text-zinc-400">%</span>}
+      </div>
     </div>
   );
 }
@@ -379,7 +474,12 @@ function RuleDialog({
   const datesMoved = !editing || editing.startDate !== draft.startDate || editing.endDate !== draft.endDate;
   const errors = draftErrors(draft, datesMoved);
   const previewReady =
-    !errors.startDate && !errors.endDate && !errors.percent && !errors.categoryIds && !errors.vehicleIds;
+    !errors.startDate &&
+    !errors.endDate &&
+    !errors.percent &&
+    !errors.flatAmount &&
+    !errors.categoryIds &&
+    !errors.vehicleIds;
   const fieldError = (key: keyof FieldErrors) => serverError?.fields[key] ?? (showErrors ? errors[key] : undefined);
   const span = isCalendarDate(draft.startDate) && isCalendarDate(draft.endDate)
     ? calendarDaysBetween(draft.startDate, draft.endDate) + 1
@@ -420,7 +520,8 @@ function RuleDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit festival pricing" : "Add festival pricing"}</DialogTitle>
           <DialogDescription>
-            Raise (or lower) rents by a percentage on festival dates. Bookings already made keep their prices.
+            Raise (or lower) rents by a percentage, a flat amount a day, or both on festival dates. Bookings
+            already made keep their prices.
           </DialogDescription>
         </DialogHeader>
 
@@ -479,48 +580,39 @@ function RuleDialog({
             </p>
           </div>
 
-          {/* Percentage */}
-          <div className="space-y-1.5">
-            <Label htmlFor="festival-percent">Change</Label>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-lg border border-zinc-200 p-0.5">
-                {(["increase", "decrease"] as const).map((dir) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    onClick={() => update({ direction: dir })}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                      form.direction === dir
-                        ? dir === "increase"
-                          ? "bg-orange-500 text-white"
-                          : "bg-emerald-600 text-white"
-                        : "text-zinc-600 hover:bg-zinc-100",
-                    )}
-                  >
-                    {dir === "increase" ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
-                    {dir === "increase" ? "Increase" : "Decrease"}
-                  </button>
-                ))}
-              </div>
-              <div className="relative w-32">
-                <Input
-                  id="festival-percent"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.01}
-                  max={form.direction === "decrease" ? 90 : SPECIAL_PRICING_PERCENT_MAX}
-                  step="0.01"
-                  value={form.amount}
-                  onChange={(e) => update({ amount: e.target.value })}
-                  placeholder="10"
-                  className="pr-8"
-                  aria-invalid={!!fieldError("percent")}
-                />
-                <span className="pointer-events-none absolute right-3 top-2 text-sm text-zinc-400">%</span>
-              </div>
-            </div>
+          {/* Change: a percentage, a flat ₹ a day, or both */}
+          <div className="space-y-2">
+            <Label>Change</Label>
+            <ChangeInput
+              id="festival-percent"
+              label="Percentage"
+              unit="%"
+              direction={form.percentDirection}
+              value={form.percent}
+              max={form.percentDirection === "decrease" ? 90 : SPECIAL_PRICING_PERCENT_MAX}
+              placeholder="10"
+              invalid={!!fieldError("percent")}
+              onDirection={(percentDirection) => update({ percentDirection })}
+              onValue={(percent) => update({ percent })}
+            />
+            <ChangeInput
+              id="festival-flat"
+              label="Flat amount a day"
+              unit="₹"
+              direction={form.flatDirection}
+              value={form.flatAmount}
+              max={SPECIAL_PRICING_FLAT_MAX}
+              placeholder="200"
+              invalid={!!fieldError("flatAmount")}
+              onDirection={(flatDirection) => update({ flatDirection })}
+              onValue={(flatAmount) => update({ flatAmount })}
+            />
+            <p className="text-xs text-zinc-500">
+              Fill in either or both. The flat amount is for a full day: 12 hours get half of it, an hourly trip its
+              hours' share.
+            </p>
             {fieldError("percent") && <p className="text-xs text-red-600">{fieldError("percent")}</p>}
+            {fieldError("flatAmount") && <p className="text-xs text-red-600">{fieldError("flatAmount")}</p>}
           </div>
 
           {/* Scope */}
@@ -666,7 +758,8 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
         <Info className="mt-0.5 size-4 shrink-0 text-orange-600" />
         <p>
           On a festival's dates each day of a trip — or its last 12 hours — is billed at the rent changed by the
-          festival's percentage, when at least half of it falls on those dates (weekend rents apply underneath).
+          festival's percentage and / or flat amount a day (12 hours get half of it), when at least half of it falls
+          on those dates (weekend rents apply underneath).
           When festivals overlap, the one giving the higher price applies. Free km don't change, and bookings already
           made keep their prices.
         </p>
@@ -736,9 +829,16 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
                       </span>
                     </TableCell>
                     <TableCell
-                      className={cn("font-semibold tabular-nums", rule.percent < 0 ? "text-emerald-600" : "text-orange-600")}
+                      className={cn(
+                        "whitespace-nowrap font-semibold tabular-nums",
+                        rule.percent <= 0 && rule.flatAmount <= 0
+                          ? "text-emerald-600"
+                          : rule.percent >= 0 && rule.flatAmount >= 0
+                            ? "text-orange-600"
+                            : "text-zinc-700",
+                      )}
                     >
-                      {formatSpecialPercent(rule.percent)}
+                      {formatSpecialChange(rule.percent, rule.flatAmount)}
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate text-zinc-700" title={scope.title}>
                       {scope.text}

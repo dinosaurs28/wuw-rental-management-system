@@ -63,6 +63,18 @@ export const employeeVehicleSwapService = {
     );
     return response.data.data ?? [];
   },
+
+  /** Photo of the replacement for a mid-rental swap (the pickup photo upload) */
+  async uploadSwapPhoto(formData: FormData): Promise<{ fileId: string; url: string }> {
+    const response = await apiClient.post("/employee/pickup/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  async deleteSwapPhoto(fileId: string): Promise<void> {
+    await apiClient.delete(`/employee/pickup/image/${fileId}`);
+  },
 };
 
 export const vehicleSwapService = {
@@ -125,6 +137,18 @@ export const vehicleSwapService = {
       `/branchManager/dashboard/bookings/${bookingId}/swap-history`,
     );
     return response.data.data;
+  },
+
+  /** Photo of the replacement for a mid-rental swap */
+  async uploadSwapPhoto(formData: FormData): Promise<{ fileId: string; url: string }> {
+    const response = await apiClient.post("/branchManager/dashboard/swap-photos/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  async deleteSwapPhoto(fileId: string): Promise<void> {
+    await apiClient.delete(`/branchManager/dashboard/swap-photos/${fileId}`);
   },
 
   /**

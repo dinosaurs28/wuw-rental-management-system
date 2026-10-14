@@ -13,6 +13,7 @@ import {
   swapAmount,
   swapStageLabel,
 } from "@/components/manager/vehicle-swap/swapFormat";
+import { SwapPhotoStrip } from "@/components/swap/SwapPhotoStrip";
 
 interface BookingSwapHistoryProps {
   bookingPublicId: string;
@@ -60,6 +61,8 @@ function SwapRow({ swap }: { swap: VehicleSwap }) {
   const difference = swapAmount(swap.priceDifference);
   const hasReadings =
     swap.originalVehicleEndOdometer != null && swap.newVehicleStartOdometer != null;
+  const oldFastag = swapAmount(swap.oldVehicleFastagBalance);
+  const newFastag = swapAmount(swap.newVehicleFastagBalance);
 
   return (
     <li className="px-4 py-3 space-y-1.5 text-sm">
@@ -92,6 +95,20 @@ function SwapRow({ swap }: { swap: VehicleSwap }) {
           {swap.newVehicleFuelLevel && `, fuel ${swap.newVehicleFuelLevel}/10`}
         </p>
       )}
+
+      {(oldFastag !== null || newFastag !== null) && (
+        <p className="text-xs text-gray-600">
+          FASTag at swap:{" "}
+          {[
+            oldFastag !== null ? `${swap.originalVehicle?.regNo ?? "returned"} ${formatSwapRupees(oldFastag)}` : null,
+            newFastag !== null ? `${swap.newVehicle?.regNo ?? "replacement"} ${formatSwapRupees(newFastag)}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
+
+      <SwapPhotoStrip swap={swap} />
 
       {difference !== null && difference > 0 && (
         <p className="text-xs">

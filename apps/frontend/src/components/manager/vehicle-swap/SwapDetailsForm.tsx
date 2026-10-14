@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type {
   AvailableVehicle,
   SwapContext,
@@ -20,9 +20,15 @@ import {
 import { AlertCircle, Gauge, IndianRupee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  SwapReplacementPhotos,
+  swapPhotosShortfall,
+  type SwapUploadedPhoto,
+} from "@/components/swap/SwapReplacementPhotos";
+import {
   SWAP_FUEL_BAR_OPTIONS,
   formatKm,
   formatSwapRupees,
+  parseFastagBalance,
   parseOdometer,
   swapAmount,
 } from "./swapFormat";
@@ -46,7 +52,14 @@ interface SwapDetailsFormProps {
   onSubmit: (data: SwapDetailsData) => void;
   cancelLabel?: string;
   submitLabel?: string;
+  /** Which API uploads the replacement's photos at a mid-rental swap (Fleet = employee, BM = manager) */
+  role?: "employee" | "manager";
+  /** Photos the server refused (SWAP_PHOTOS_INVALID `fileIds`) — dropped so they can be retaken */
+  rejectedPhotoIds?: string[];
 }
+
+/** Without a capture config the server asks for this many photos (it also sends it per car). */
+const MIN_PHOTOS_WITHOUT_CONFIG = 4;
 
 const REASON_OPTIONS = [
   { value: SwapReason.CUSTOMER_REQUEST, label: "Customer Request" },
@@ -58,8 +71,9 @@ const REASON_OPTIONS = [
 ];
 
 /**
- * Reason, handover readings (mid-rental), price difference + "Charge customer",
- * and the maintenance flag for a vehicle swap. Used by the swap confirmation
+ * Reason, handover readings, FASTag balances and photos of the replacement
+ * (mid-rental), price difference + "Charge customer", and the maintenance
+ * flag for a vehicle swap. Used by the swap confirmation
  * modal (pickup screen, BM swap page) and the Fleet active-rental swap dialog.
  */
 export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
@@ -72,8 +86,18 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
   onSubmit,
   cancelLabel = "Cancel",
   submitLabel = "Confirm Swap",
+  role = "employee",
+  rejectedPhotoIds,
 }) => {
   const readingsRequired = swapContext?.readingsRequired === true;
+  // Mid-rental: photos of the replacement + FASTag balances (cars with a FASTag)
+  const photosRequired = swapContext?.photosRequired === true;
+  const photoRequirement = newVehicle.photoRequirement ?? {
+    fields: [],
+    minPhotos: MIN_PHOTOS_WITHOUT_CONFIG,
+  };
+  const oldHasFastag = photosRequired && swapContext?.currentVehicle.hasFastag === true;
+  const newHasFastag = photosRequired && newVehicle.hasFastag === true;
   const chargeDefaults = swapContext?.chargeDifferenceDefaults ?? DEFAULT_CHARGE_DIFFERENCE;
   const segmentStart = swapContext?.currentVehicleStartOdometer ?? null;
 
@@ -89,7 +113,16 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
     typeof newVehicle.odo === "number" ? String(newVehicle.odo) : "",
   );
   const [newFuel, setNewFuel] = useState("");
+  const [oldFastag, setOldFastag] = useState("");
+  const [newFastag, setNewFastag] = useState("");
+  const [photos, setPhotos] = useState<SwapUploadedPhoto[]>([]);
+  const [photosUploading, setPhotosUploading] = useState(0);
   const [attempted, setAttempted] = useState(false);
+
+  useEffect(() => {
+    if (!rejectedPhotoIds?.length) return;
+    setPhotos((list) => list.filter((p) => !rejectedPhotoIds.includes(p.fileId)));
+  }, [rejectedPhotoIds]);
 
   // undefined = the list didn't carry prices (older server) → nothing shown, nothing billed
   const priceKnown = newVehicle.priceDifference !== undefined;
@@ -118,12 +151,31 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
   const showError = (field: keyof typeof readingErrors, typed: string) =>
     attempted || (typed !== "" && field in readingErrors) ? readingErrors[field] : undefined;
 
+  // ── FASTag balances + photos (mid-rental) ─────────────────────────────────
+  const oldFastagValue = parseFastagBalance(oldFastag);
+  const newFastagValue = parseFastagBalance(newFastag);
+  const fastagErrors: Partial<Record<"old" | "new", string>> = {};
+  if (oldHasFastag && oldFastagValue === null) {
+    fastagErrors.old = oldFastag.trim() === "" ? "Enter the FASTag balance" : "Enter an amount like 250 or 250.50 (up to ₹1,00,000)";
+  }
+  if (newHasFastag && newFastagValue === null) {
+    fastagErrors.new = newFastag.trim() === "" ? "Enter the FASTag balance" : "Enter an amount like 250 or 250.50 (up to ₹1,00,000)";
+  }
+  const showFastagError = (field: "old" | "new", typed: string) =>
+    attempted || typed.trim() !== "" ? fastagErrors[field] : undefined;
+  const photoShortfall = swapPhotosShortfall(photos, photoRequirement);
+  const photosIncomplete =
+    photosRequired && (photoShortfall.missingLabels.length > 0 || photoShortfall.short > 0);
+
   const maintenanceNotesMissing = markOriginalForMaintenance && !originalVehicleNotes.trim();
   const canSubmit =
     !!reason &&
     !isSubmitting &&
     !maintenanceNotesMissing &&
-    Object.keys(readingErrors).length === 0;
+    Object.keys(readingErrors).length === 0 &&
+    Object.keys(fastagErrors).length === 0 &&
+    !photosIncomplete &&
+    photosUploading === 0;
 
   const handleReasonChange = (value: string) => {
     const next = value as SwapReason;
@@ -156,6 +208,13 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
     // bill (no difference, or the cars couldn't be priced) → off, so the server
     // never refuses with PRICE_DIFFERENCE_UNAVAILABLE.
     data.chargeDifference = priceKnown && chargeable ? chargeDifference : false;
+    // Always sent from the web, so the server holds mid-rental swaps to the
+    // photo + FASTag rule (it ignores both before pickup)
+    data.replacementPhotos = photosRequired
+      ? photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) }))
+      : [];
+    if (oldHasFastag && oldFastagValue !== null) data.oldVehicleFastagBalance = oldFastagValue;
+    if (newHasFastag && newFastagValue !== null) data.newVehicleFastagBalance = newFastagValue;
     onSubmit(data);
   };
 
@@ -238,6 +297,24 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <p className="text-xs text-red-600">{showError("originalFuel", originalFuel)}</p>
                 )}
               </div>
+              {oldHasFastag && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="oldFastag" className="text-sm">
+                    FASTag balance (₹) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="oldFastag"
+                    inputMode="decimal"
+                    placeholder="e.g. 450.00"
+                    value={oldFastag}
+                    onChange={(e) => setOldFastag(e.target.value.replace(/[^\d.]/g, ""))}
+                    aria-invalid={!!showFastagError("old", oldFastag)}
+                  />
+                  {showFastagError("old", oldFastag) && (
+                    <p className="text-xs text-red-600">{showFastagError("old", oldFastag)}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Replacement */}
@@ -284,9 +361,42 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <p className="text-xs text-red-600">{showError("newFuel", newFuel)}</p>
                 )}
               </div>
+              {newHasFastag && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="newFastag" className="text-sm">
+                    FASTag balance (₹) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="newFastag"
+                    inputMode="decimal"
+                    placeholder="e.g. 450.00"
+                    value={newFastag}
+                    onChange={(e) => setNewFastag(e.target.value.replace(/[^\d.]/g, ""))}
+                    aria-invalid={!!showFastagError("new", newFastag)}
+                  />
+                  {showFastagError("new", newFastag) && (
+                    <p className="text-xs text-red-600">{showFastagError("new", newFastag)}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Photos of the replacement — required before a mid-rental swap completes */}
+      {photosRequired && (
+        <SwapReplacementPhotos
+          regNo={newVehicle.regNo}
+          requirement={photoRequirement}
+          role={role}
+          value={photos}
+          onChange={setPhotos}
+          onUploadingChange={setPhotosUploading}
+          disabled={isSubmitting}
+          submitting={isSubmitting}
+          showMissing={attempted}
+        />
       )}
 
       {/* Price difference + Charge customer */}
@@ -422,6 +532,14 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
         </div>
       )}
 
+      {photosRequired && (photosIncomplete || photosUploading > 0) && (
+        <p className="text-xs text-gray-500 sm:text-right">
+          {photosUploading > 0
+            ? "Wait for the photos to finish uploading."
+            : `Take the photos of ${newVehicle.regNo} to complete the swap.`}
+        </p>
+      )}
+
       {/* Footer Actions */}
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
@@ -429,7 +547,11 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || (attempted && !canSubmit)}
+          disabled={
+            isSubmitting ||
+            (attempted && !canSubmit) ||
+            (photosRequired && (photosIncomplete || photosUploading > 0))
+          }
           className="bg-orange-500 hover:bg-orange-600 text-white"
         >
           {isSubmitting ? "Processing..." : submitLabel}

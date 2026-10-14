@@ -19,6 +19,7 @@ import {
   swapAmount,
   swapStageLabel,
 } from "@/components/manager/vehicle-swap/swapFormat";
+import { SwapPhotoStrip } from "@/components/swap/SwapPhotoStrip";
 import { format } from "date-fns";
 
 interface RecentVehicleSwapsProps {
@@ -255,6 +256,7 @@ export const RecentVehicleSwaps = ({ limit = 5 }: RecentVehicleSwapsProps) => {
                                 .join(" · ")}
                             </span>
                           )}
+                          <SwapPhotoStrip swap={swap} className="mt-1 max-w-[260px]" />
                         </div>
                       </TableCell>
                       <TableCell>

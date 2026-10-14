@@ -6,9 +6,10 @@ import type {
 } from "@repo/schemas";
 
 /**
- * Festival pricing rules (e.g. "Dussehra", 20–22 Oct, +10% on every vehicle):
- * priced blocks with at least half their time on the dates are billed at
- * rent × (1 + percent / 100). Bookings already made keep their prices.
+ * Festival pricing rules (e.g. "Dussehra", 20–22 Oct, +10% and/or +₹200 a day
+ * on every vehicle): priced blocks with at least half their time on the dates
+ * are billed at rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
+ * Bookings already made keep their prices.
  */
 export interface SpecialPricingRule {
   id: number;
@@ -19,8 +20,10 @@ export interface SpecialPricingRule {
   startDate: string;
   endDate: string;
   days: number;
-  /** −90 … +300; negative = a festival discount */
+  /** −90 … +300; negative = a festival discount; 0 = none */
   percent: number;
+  /** ₹ a day added (negative: taken off); 0 = none */
+  flatAmount: number;
   scope: SpecialPricingScopeValue;
   categoryIds: number[];
   vehicleIds: number[];
@@ -45,6 +48,7 @@ export interface SpecialPricingDraft {
   startDate: string;
   endDate: string;
   percent: number;
+  flatAmount: number;
   scope: SpecialPricingScopeValue;
   categoryIds: number[];
   vehicleIds: number[];
@@ -76,7 +80,7 @@ export const specialPricingApi = {
   },
   preview: async (
     portal: SpecialPricingPortal,
-    draft: Pick<SpecialPricingDraft, "startDate" | "endDate" | "percent" | "scope" | "categoryIds" | "vehicleIds">,
+    draft: Pick<SpecialPricingDraft, "startDate" | "endDate" | "percent" | "flatAmount" | "scope" | "categoryIds" | "vehicleIds">,
   ): Promise<SpecialPricingPreview> => {
     const res = await apiClient.post(`${base(portal)}/preview`, { ...draft, ...branchOf(portal) });
     return res.data.data;

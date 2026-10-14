@@ -18,6 +18,8 @@ import type { BookingListCounts, BookingListType } from "@/types/overdueReturns"
 
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { BookingTable } from "@/components/employee/BookingTable";
+import { CompletedQueueList } from "@/components/employee/completed/CompletedQueueList";
+import { CompletedOperationDialog } from "@/components/employee/completed/CompletedOperation";
 import { OverdueReturnsTable } from "@/components/employee/OverdueReturnsTable";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import { DashboardStats } from "@/components/employee/DashboardStats";
@@ -64,6 +66,10 @@ export default function EmployeeDashboardPage() {
   const bookingType: BookingListType =
     searchParams.get("type")?.toUpperCase() === "MONTHLY" ? "MONTHLY" : "DAILY";
   const [bookings, setBookings] = useState<EmployeeBooking[]>([]);
+  // The day's done pickups / returns, kept below the waiting ones (client item 1)
+  const [completedRows, setCompletedRows] = useState<EmployeeBooking[]>([]);
+  // A completed row opened: its summary, or straight on Edit Pickup / Edit Return
+  const [completedOpen, setCompletedOpen] = useState<{ bookingId: string; edit: boolean } | null>(null);
   const [counts, setCounts] = useState<BookingListCounts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -139,6 +145,7 @@ export default function EmployeeDashboardPage() {
           : await bookingService.getEmployeeReturnQueue(date, bookingType);
       if (seq !== requestSeq.current) return;
       setBookings(result.data);
+      setCompletedRows(result.completed);
       setCounts(result.counts);
       countsKey.current = key;
     } catch (error) {
@@ -149,6 +156,7 @@ export default function EmployeeDashboardPage() {
         : undefined;
       toast.error(message || "Failed to fetch bookings");
       setBookings([]);
+      setCompletedRows([]);
       setCounts(null);
       countsKey.current = null;
     } finally {
@@ -478,6 +486,10 @@ export default function EmployeeDashboardPage() {
                     </p>
                   )}
               </>
+            ) : bookings.length === 0 && completedRows.length > 0 && !isLoading ? (
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">
+                {filter === "PICKUP" ? "No pickups waiting." : "No returns waiting."}
+              </p>
             ) : (
               <BookingTable
                 bookings={bookings}
@@ -488,8 +500,27 @@ export default function EmployeeDashboardPage() {
               />
             )}
           </div>
+
+          {filter !== "OVERDUE" && !isLoading && (
+            <CompletedQueueList
+              rows={completedRows}
+              filterType={filter}
+              onView={(bookingId) => setCompletedOpen({ bookingId, edit: false })}
+              onEdit={(bookingId) => setCompletedOpen({ bookingId, edit: true })}
+            />
+          )}
         </motion.div>
       </main>
+
+      {filter !== "OVERDUE" && (
+        <CompletedOperationDialog
+          phase={filter}
+          bookingId={completedOpen?.bookingId ?? null}
+          startInEdit={completedOpen?.edit ?? false}
+          onOpenChange={(open) => !open && setCompletedOpen(null)}
+          onSaved={fetchData}
+        />
+      )}
 
       <QrScannerModal
         isOpen={isScannerOpen}

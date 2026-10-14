@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
 import { formatKm, formatSwapRupees, swapAmount, swapStageLabel } from "./swapFormat";
+import { SwapPhotoStrip } from "@/components/swap/SwapPhotoStrip";
 
 interface SwapHistoryTableProps {
   swaps: VehicleSwap[];
@@ -101,6 +102,8 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                 const hasReadings =
                   swap.originalVehicleEndOdometer != null &&
                   swap.newVehicleStartOdometer != null;
+                const oldFastag = swapAmount(swap.oldVehicleFastagBalance);
+                const newFastag = swapAmount(swap.newVehicleFastagBalance);
                 return (
                 <TableRow key={swap.id} className="hover:bg-gray-50">
                   <TableCell className="text-sm">
@@ -142,6 +145,7 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                         <span className="text-xs text-gray-600">
                           {swap.newVehicle.regNo}
                         </span>
+                        <SwapPhotoStrip swap={swap} className="mt-1.5 max-w-[220px]" />
                       </div>
                     ) : (
                       <span className="text-gray-400 text-sm">N/A</span>
@@ -161,10 +165,12 @@ export const SwapHistoryTable: React.FC<SwapHistoryTableProps> = ({
                         <span>
                           In: {formatKm(swap.originalVehicleEndOdometer!)}
                           {swap.originalVehicleFuelLevel && ` · fuel ${swap.originalVehicleFuelLevel}/10`}
+                          {oldFastag !== null && ` · FASTag ${formatSwapRupees(oldFastag)}`}
                         </span>
                         <span>
                           Out: {formatKm(swap.newVehicleStartOdometer!)}
                           {swap.newVehicleFuelLevel && ` · fuel ${swap.newVehicleFuelLevel}/10`}
+                          {newFastag !== null && ` · FASTag ${formatSwapRupees(newFastag)}`}
                         </span>
                       </div>
                     ) : (

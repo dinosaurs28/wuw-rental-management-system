@@ -102,8 +102,9 @@ export interface FestivalPricing {
   festivalBlocks: number;
   /** What the festival rules changed the rent by (GST-inclusive; negative = a festival discount) */
   amount: number;
-  rules: { id: number; name: string; percent: number; blocks: number; amount: number }[];
-  /** e.g. "Includes 3 festival days (Dussehra +10%)" */
+  /** flatAmount: ₹ a day (absent from servers before flat amounts) */
+  rules: { id: number; name: string; percent: number; flatAmount?: number; blocks: number; amount: number }[];
+  /** e.g. "Includes 3 festival days (Dussehra +10%)", "… (Dussehra +10% + ₹200/day)" */
   label: string;
 }
 

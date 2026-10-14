@@ -79,6 +79,7 @@ import type { DlStatus } from "@/services/dlStatus.service";
 import { DlStatusPanel, DlStatusSelector } from "@/components/booking/DlStatus";
 import { dlChoicePayload, pickupDlChoiceError } from "@/lib/dlStatus";
 import { PickupDlNumberCard } from "@/components/employee/PickupDlNumberCard";
+import { fastagInr, readFastagBalance } from "@/components/employee/drop/fastag";
 import {
   formatDlNumber,
   isPickupDlNumberError,
@@ -91,6 +92,8 @@ import {
   type UploadedImage,
 } from "@/components/employee/PickupImageCard";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
+import { CompletedOperationPage } from "@/components/employee/completed/CompletedOperation";
+import { isCompletedForPhase } from "@/services/completedOperation.service";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
@@ -206,9 +209,12 @@ type PickupPricingRules = Awaited<ReturnType<typeof bookingService.getPickupPric
 function RentalTermsBox({
   pricingRules,
   isLoading,
+  hasFastag = false,
 }: {
   pricingRules: PickupPricingRules | null | undefined;
   isLoading: boolean;
+  /** The car has a FASTag — its usage is charged at the drop whatever the branch module. */
+  hasFastag?: boolean;
 }) {
   if (isLoading) {
     return (
@@ -275,7 +281,7 @@ function RentalTermsBox({
             <p className="font-semibold text-green-700">Enabled</p>
           </div>
         )}
-        {pricingRules.frozenChargeConfig?.fastagModuleEnabled && (
+        {(pricingRules.frozenChargeConfig?.fastagModuleEnabled || hasFastag) && (
           <div>
             <p className="text-muted-foreground">Fastag Charges</p>
             <p className="font-semibold text-green-700">Enabled</p>
@@ -339,6 +345,8 @@ export default function StaffPickupsPage() {
 
   // --- STEP 4: Inspection ---
   const [requestSafetyDeposit, setRequestSafetyDeposit] = useState(false);
+  // ₹ balance on the car's FASTag — required when the car has one (the drop bills the usage)
+  const [fastagBalance, setFastagBalance] = useState("");
   const [safetyDepositAmount, setSafetyDepositAmount] = useState<string>("");
   const [safetyDepositReason, setSafetyDepositReason] = useState<string>("");
 
@@ -467,6 +475,12 @@ export default function StaffPickupsPage() {
       setValue("odo", odo, { shouldValidate: true });
     }
   }, [booking, setValue]);
+
+  // A pickup session reopened later: the FASTag balance it saved
+  useEffect(() => {
+    const saved = booking?.pickupFastagBalance;
+    if (saved != null) setFastagBalance((cur) => cur || String(Number(saved)));
+  }, [booking?.pickupFastagBalance]);
 
   // --- MUTATIONS ---
   const verifyKycMutation = useMutation({
@@ -709,11 +723,16 @@ export default function StaffPickupsPage() {
   // Extension step disabled — step 1 passes through automatically
   const canProceedFromStep1 = canProceedFromStep0;
   const canProceedFromStep2 = canProceedFromStep1;
+  // FASTag balance (car with a FASTag): required before the handover
+  const hasFastag = !!booking?.items?.[0]?.vehicle?.hasFastag;
+  const fastag = readFastagBalance(fastagBalance);
+  const fastagReady = !hasFastag || fastag.value != null;
   const isHandoverReady =
     canProceedFromStep2 &&
     dlNumberReady &&
     (watch("odo") ?? 0) > 0 &&
-    watch("fuelLevel") !== "";
+    watch("fuelLevel") !== "" &&
+    fastagReady;
   // The DL status may be left unset (X1); only Collected / Not collected can be chosen.
   const dlChoiceReady = pickupDlChoiceError(dlStatus) === null;
 
@@ -838,6 +857,8 @@ export default function StaffPickupsPage() {
       odo: data.odo,
       fuelLevel: fuelNumeric,
       pickupFuelLevel: chargeConfig?.fuelModuleEnabled ? data.fuelLevel : undefined,
+      // FASTag balance at the handover — only for a car with a FASTag
+      pickupFastagBalance: hasFastag && fastag.value != null ? fastag.value : undefined,
       requireManagerConfirmation: data.requireManagerConfirmation,
       payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
@@ -864,6 +885,10 @@ export default function StaffPickupsPage() {
 
     if (!checkDlNumber()) return;
     if (!checkDlChoice()) return;
+    if (!fastagReady) {
+      toast.error(fastag.error ?? "Enter the FASTag balance.");
+      return;
+    }
 
     // Validate required capture photos
     if (captureConfig) {
@@ -883,6 +908,7 @@ export default function StaffPickupsPage() {
         odo: payload.odo,
         fuelLevel: payload.fuelLevel,
         pickupFuelLevel: payload.pickupFuelLevel,
+        pickupFastagBalance: payload.pickupFastagBalance,
         pickupImageIds: (payload as any).pickupImageIds,
         captureImages: (payload as any).captureImages,
         safetyDepositAmount: requestSafetyDeposit && safetyDepositAmount
@@ -904,6 +930,10 @@ export default function StaffPickupsPage() {
   const onConfirmHandoverLegacy = (data: HandoverFormValues) => {
     if (!checkDlNumber()) return;
     if (!checkDlChoice()) return;
+    if (!fastagReady) {
+      toast.error(fastag.error ?? "Enter the FASTag balance.");
+      return;
+    }
     const payload = buildHandoverPayload(data);
     handoverMutation.mutate(payload as any);
   };
@@ -940,6 +970,12 @@ export default function StaffPickupsPage() {
         </div>
       </div>
     );
+  }
+
+  // Done (handed over, returned, or sent to a manager): the read-only summary,
+  // never the workflow — changes go through Edit Pickup (client item 1).
+  if (isCompletedForPhase("PICKUP", booking)) {
+    return <CompletedOperationPage phase="PICKUP" bookingId={booking.publicId} />;
   }
 
   const vehicle = booking.items[0]?.vehicle;
@@ -1434,14 +1470,15 @@ export default function StaffPickupsPage() {
           isCompleted={
             canProceedFromStep2 &&
             (watch("odo") ?? 0) > 0 &&
-            watch("fuelLevel") !== ""
+            watch("fuelLevel") !== "" &&
+            fastagReady
           }
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4">
             {/* This booking's free km / extra km rate — tell the customer at handover (#21) */}
             <div className="mb-5">
-              <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} />
+              <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} hasFastag={hasFastag} />
             </div>
             <form className="space-y-5">
               <div className="space-y-2">
@@ -1504,6 +1541,33 @@ export default function StaffPickupsPage() {
                 )}
               </div>
 
+              {/* FASTag balance (car with a FASTag) — the drop bills what the tag is used for */}
+              {hasFastag && (
+                <div className="space-y-2">
+                  <Label htmlFor="fastagBalance" className="text-sm font-medium">
+                    FASTag balance (₹)
+                  </Label>
+                  <Input
+                    id="fastagBalance"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    placeholder="e.g. 480"
+                    className="h-12"
+                    disabled={isPickedUp}
+                    value={fastagBalance}
+                    onChange={(e) => setFastagBalance(e.target.value)}
+                  />
+                  {fastagBalance.trim() !== "" && fastag.error ? (
+                    <p className="text-xs text-red-500">{fastag.error}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Read the balance on the car's FASTag. The usage until the drop is charged on the drop bill (no GST).
+                    </p>
+                  )}
+                </div>
+              )}
             </form>
           </CardContent>
         </StepCard>
@@ -2183,11 +2247,17 @@ export default function StaffPickupsPage() {
                     )?.label || "—"}
                   </strong>
                 </span>
+                {hasFastag && (
+                  <span>
+                    FASTag balance:{" "}
+                    <strong>{fastag.value != null ? fastagInr(fastag.value) : "—"}</strong>
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Rental terms (also shown on the inspection step) */}
-            <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} />
+            <RentalTermsBox pricingRules={pricingRules} isLoading={isLoadingPricing} hasFastag={hasFastag} />
 
             {/* DL number the handover goes ahead with (X2) */}
             <div

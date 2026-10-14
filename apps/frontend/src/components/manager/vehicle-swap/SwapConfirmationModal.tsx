@@ -31,6 +31,10 @@ interface SwapConfirmationModalProps {
   swapContext?: SwapContext | null;
   /** Server refusal of the last attempt */
   errorMessage?: string | null;
+  /** Which API uploads the replacement's photos at a mid-rental swap */
+  role?: "employee" | "manager";
+  /** Photos the server refused (SWAP_PHOTOS_INVALID) */
+  rejectedPhotoIds?: string[];
 }
 
 export const SwapConfirmationModal: React.FC<SwapConfirmationModalProps> = ({
@@ -42,6 +46,8 @@ export const SwapConfirmationModal: React.FC<SwapConfirmationModalProps> = ({
   isLoading = false,
   swapContext,
   errorMessage,
+  role = "employee",
+  rejectedPhotoIds,
 }) => {
   const handleClose = () => {
     if (!isLoading) onClose();
@@ -132,6 +138,8 @@ export const SwapConfirmationModal: React.FC<SwapConfirmationModalProps> = ({
             errorMessage={errorMessage}
             onCancel={handleClose}
             onSubmit={onConfirm}
+            role={role}
+            rejectedPhotoIds={rejectedPhotoIds}
           />
         </div>
       </DialogContent>

@@ -5,6 +5,8 @@ import type { RazorpayOrder } from "@/lib/razorpay";
 import type { BookingListCounts, BookingListType } from "@/types/overdueReturns";
 import type { DlStatus, UpdateDlStatusBody } from "@/services/dlStatus.service";
 import type {
+  FastagBeforeDrop,
+  FastagUsageSummary,
   KmSegments,
   LegacyReturnCharges,
   RentalTimeline,
@@ -278,6 +280,10 @@ export interface EmployeeBooking {
   requiresManagerConfirmation?: boolean;
   frozenChargeConfig?: FrozenChargeConfig | null;
   startOdometer?: number | null;
+  /** FASTag balance read at the handover (cars with a FASTag; null = not read). Details only. */
+  pickupFastagBalance?: string | null;
+  /** Return details only: how the drop bills FASTag (null unless PICKED_UP). */
+  fastag?: FastagBeforeDrop | null;
   safetyDeposit?: string | null;
   days?: number;
   /** HOURLY | HALF_DAY | FULL_DAY | MULTI_DAY | MONTHLY (null on old rows). */
@@ -318,6 +324,10 @@ export interface EmployeeBooking {
   originalPickupFuelLevel?: string | null;
   /** Actual return time (set once the drop completes). */
   returnedAt?: string | null;
+  /** Rows of a queue's `completed` list only (client item 1): who completed it and when. */
+  completed?: { at: string | null; byName: string | null };
+  /** `completed` rows: sent for the branch manager's confirmation. */
+  awaitingManager?: boolean;
   usePaymentSessions?: boolean;
   branch?: {
     chargeConfig?: { usePaymentSessions: boolean } | null;
@@ -362,6 +372,8 @@ export interface EmployeeBookingQueue {
   data: EmployeeBooking[];
   /** Both tabs' row counts; null if the server sent none. */
   counts: BookingListCounts | null;
+  /** The day's done pickups / returns (client item 1), in the order they were done. */
+  completed: EmployeeBooking[];
 }
 
 const fetchEmployeeQueue = async (
@@ -370,15 +382,22 @@ const fetchEmployeeQueue = async (
   type: BookingListType,
 ): Promise<EmployeeBookingQueue> => {
   try {
+    // includeCompleted: done pickups / returns stay on their day (client item 1);
+    // `data` and `counts` then hold the ones still waiting.
     const response = await apiClient.get<{
       data?: EmployeeBooking[];
       counts?: BookingListCounts;
-    }>(path, { params: { date: format(date, "yyyy-MM-dd"), type } });
-    return { data: response.data.data ?? [], counts: response.data.counts ?? null };
+      completed?: EmployeeBooking[];
+    }>(path, { params: { date: format(date, "yyyy-MM-dd"), type, includeCompleted: 1 } });
+    return {
+      data: response.data.data ?? [],
+      counts: response.data.counts ?? null,
+      completed: response.data.completed ?? [],
+    };
   } catch (error) {
     // With `type` the server answers 200 + []; a 404 (older server) still means empty.
     if (isAxiosError<{ counts?: BookingListCounts }>(error) && error.response?.status === 404) {
-      return { data: [], counts: error.response.data?.counts ?? null };
+      return { data: [], counts: error.response.data?.counts ?? null, completed: [] };
     }
     throw error;
   }
@@ -538,6 +557,8 @@ export const bookingService = {
     data: {
       odo: number;
       fuelLevel: number;
+      /** ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage. */
+      pickupFastagBalance?: number;
       pickupImageIds?: string[];
       /** Original licence custody (#3) — optional (X1): omitted / null = not recorded. */
       dlStatus?: UpdateDlStatusBody["dlStatus"] | null;
@@ -601,6 +622,11 @@ export const bookingService = {
       waiveLateCharge?: { reason: string } | null;
       /** Safety deposit (#6): SET_OFF (default) or REFUND_IN_FULL — the branch manager settles it. */
       safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL";
+      /** FASTag balance now (car with a FASTag): the usage is recorded for the manager to collect. */
+      returnFastagBalance?: number;
+      /** Typed FASTag charge — used only when a reading is missing. */
+      fastagAmount?: number;
+      fastagNotes?: string;
     },
   ) => {
     const response = await apiClient.post<{
@@ -609,6 +635,8 @@ export const bookingService = {
       /** null when no end odometer was sent */
       km?: ReturnKmSummary | null;
       late?: ReturnLateSummary;
+      /** FASTag usage from the balances (absent on older servers). */
+      fastag?: FastagUsageSummary;
       returnCharges?: LegacyReturnCharges;
       /** The deposit choice recorded with the return (#6); null when no deposit is held. */
       safetyDeposit?: {

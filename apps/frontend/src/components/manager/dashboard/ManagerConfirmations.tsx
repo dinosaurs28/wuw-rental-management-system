@@ -33,17 +33,28 @@ import { managerDashboardService } from "@/services/managerDashboard.service";
 import { DlStatusBadge, DlStatusPanel } from "@/components/booking/DlStatus";
 import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { dlInUseToastOptions } from "@/lib/dlInUse";
+import { fastagInr } from "@/components/employee/drop/fastag";
 
 // Booking photo types from confirmation-details (pickup confirmations only carry PRE_DELIVERY)
 const PHOTO_TYPE_LABELS: Record<string, string> = {
   PRE_DELIVERY: "Pickup",
   POST_RETURN: "Return",
   DAMAGE: "Damage",
+  // The replacement, photographed at a mid-rental swap
+  SWAP_DELIVERY: "At swap",
 };
 
-/** "Pickup · Front", "Return", … — empty when the server sent neither type nor label. */
-const confirmationPhotoLabel = (photo: { type?: string | null; captureLabel?: string | null }) =>
-  [photo.type ? PHOTO_TYPE_LABELS[photo.type] ?? photo.type : null, photo.captureLabel]
+/** "Pickup · Front", "Return", "At swap · KA20AB1234 · Front", … — empty when the server sent neither type nor label. */
+const confirmationPhotoLabel = (photo: {
+  type?: string | null;
+  captureLabel?: string | null;
+  vehicle?: { regNo: string } | null;
+}) =>
+  [
+    photo.type ? PHOTO_TYPE_LABELS[photo.type] ?? photo.type : null,
+    photo.type === "SWAP_DELIVERY" ? photo.vehicle?.regNo : null,
+    photo.captureLabel,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -272,9 +283,16 @@ export const ManagerConfirmations = ({
               <div className="bg-gray-50 p-4 rounded-lg border text-sm space-y-2">
                 <p><strong>Customer:</strong> {details.customer.user.name} ({details.customer.user.phone})</p>
                 <p><strong>Vehicle:</strong> {details.items[0].vehicle.make} {details.items[0].vehicle.model} - {details.items[0].vehicle.regNo}</p>
-                <div className="flex gap-4 mt-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
                   <Badge variant="secondary">Recorded ODO: {details.items[0].vehicle.odo} km</Badge>
                   <Badge variant="secondary">Recorded Fuel: {details.items[0].vehicle.fuelLevel}%</Badge>
+                  {/* FASTag balances read at the handover / drop (cars with a FASTag) */}
+                  {details.pickupFastagBalance != null && (
+                    <Badge variant="secondary">FASTag at pickup: {fastagInr(details.pickupFastagBalance)}</Badge>
+                  )}
+                  {details.status !== "CONFIRMED" && details.returnFastagBalance != null && (
+                    <Badge variant="secondary">FASTag at return: {fastagInr(details.returnFastagBalance)}</Badge>
+                  )}
                 </div>
               </div>
 
@@ -338,7 +356,8 @@ export const ManagerConfirmations = ({
                     items={details.photos.map((p: any, i: number): LightboxItem => ({
                       url: p.file.url,
                       mime: p.file.mime,
-                      label: [details.items[0]?.vehicle?.regNo, confirmationPhotoLabel(p)].filter(Boolean).join(" · ") || `Photo ${i + 1}`,
+                      // Swap photos name their own car (the replacement)
+                      label: [p.type === "SWAP_DELIVERY" ? null : details.items[0]?.vehicle?.regNo, confirmationPhotoLabel(p)].filter(Boolean).join(" · ") || `Photo ${i + 1}`,
                     }))}
                     startIndex={mediaViewer?.index ?? 0}
                     title="Staff Uploaded Media"

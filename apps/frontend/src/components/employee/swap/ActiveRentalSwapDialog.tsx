@@ -30,6 +30,7 @@ import {
   SWAP_PICK_AGAIN_CODES,
   swapAmount,
   swapErrorCode,
+  swapErrorFileIds,
 } from "@/components/manager/vehicle-swap/swapFormat";
 
 interface ActiveRentalSwapDialogProps {
@@ -60,6 +61,7 @@ export function ActiveRentalSwapDialog({
   const [selected, setSelected] = useState<AvailableVehicle | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
   const [listNotice, setListNotice] = useState<string | null>(null);
+  const [rejectedPhotoIds, setRejectedPhotoIds] = useState<string[]>([]);
 
   const candidatesQuery = useQuery({
     queryKey: ["vehicle-swap-candidates", role, bookingPublicId],
@@ -89,6 +91,8 @@ export function ActiveRentalSwapDialog({
       // The return page reads the car, odometer and fuel from the booking
       queryClient.invalidateQueries({ queryKey: ["booking", bookingPublicId] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-swaps"] });
+      // The drop's reference photos are now the replacement's swap photos
+      queryClient.invalidateQueries({ queryKey: ["pickup-captures", bookingPublicId] });
       onSwapped?.(swap);
       setSelected(null);
       setSwapError(null);
@@ -104,6 +108,8 @@ export function ActiveRentalSwapDialog({
         void candidatesQuery.refetch();
       } else {
         setSwapError(message);
+        // Photos the server can't use: drop them from the form so they can be retaken
+        if (swapErrorCode(err) === "SWAP_PHOTOS_INVALID") setRejectedPhotoIds(swapErrorFileIds(err));
       }
       toast.error(message);
     },
@@ -220,6 +226,8 @@ export function ActiveRentalSwapDialog({
               swapContext={swapContext}
               isSubmitting={swapMutation.isPending}
               errorMessage={swapError}
+              role={role}
+              rejectedPhotoIds={rejectedPhotoIds}
               cancelLabel="Back"
               onCancel={() => {
                 setSelected(null);

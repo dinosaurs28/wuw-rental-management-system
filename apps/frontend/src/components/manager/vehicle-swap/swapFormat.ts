@@ -2,6 +2,7 @@
  * Display helpers shared by the vehicle-swap screens (Fleet + BM).
  * Amounts arrive as Decimal strings — always Number() them.
  */
+import { FASTAG_BALANCE_MAX } from "@repo/schemas";
 
 /** `?swap=1` on the Fleet return page opens the swap dialog (dashboard row "Swap" link). */
 export const SWAP_QUERY_PARAM = "swap";
@@ -74,10 +75,24 @@ export function swapErrorCode(err: unknown): string | undefined {
   return typeof code === "string" ? code : undefined;
 }
 
+/** `fileIds` of a SWAP_PHOTOS_INVALID refusal (the photos to drop and retake). */
+export function swapErrorFileIds(err: unknown): string[] {
+  const ids = (err as { response?: { data?: { fileIds?: unknown } } } | undefined)?.response?.data?.fileIds;
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+}
+
 /** Whole-number odometer within range, or null. */
 export function parseOdometer(raw: string): number | null {
   const trimmed = raw.trim();
   if (!/^\d+$/.test(trimmed)) return null;
   const n = Number(trimmed);
   return n <= SWAP_MAX_ODOMETER ? n : null;
+}
+
+/** FASTag balance typed in rupees (0 … FASTAG_BALANCE_MAX, at most 2 decimals), or null. */
+export function parseFastagBalance(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!/^\d{1,6}(\.\d{1,2})?$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  return n <= FASTAG_BALANCE_MAX ? n : null;
 }
