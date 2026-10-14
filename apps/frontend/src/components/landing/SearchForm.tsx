@@ -140,9 +140,14 @@ export const SearchForm = () => {
     };
 
     // Shared field styling: one height, one type size, one border treatment
+    // (phones get a compact 48 px scale so the whole form fits on one screen)
     const fieldBox =
-        "h-14 rounded-xl border border-zinc-300 bg-white transition-colors hover:border-zinc-400";
-    const fieldLabel = "text-sm font-semibold text-zinc-900";
+        "h-12 sm:h-14 rounded-xl border border-zinc-300 bg-white transition-colors hover:border-zinc-400";
+    const fieldLabel = "text-[13px] sm:text-sm font-semibold text-zinc-900";
+    const labelRow = "flex items-center h-6 mb-1 sm:h-8 sm:mb-1.5";
+    // A chip row scrolls sideways on phones instead of wrapping onto more lines
+    const chipScroll =
+        "flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible";
 
     return (
         <motion.div
@@ -151,15 +156,15 @@ export const SearchForm = () => {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="w-full max-w-[1300px] mx-auto relative z-10 font-sans text-left"
         >
-            <div className="relative rounded-[20px] bg-white border border-zinc-200/70 shadow-[0_1px_2px_rgba(20,20,30,0.04),0_18px_50px_-24px_rgba(20,20,30,0.22)] p-5 sm:p-6 lg:p-7">
+            <div className="relative rounded-[20px] bg-white border border-zinc-200/70 shadow-[0_1px_2px_rgba(20,20,30,0.04),0_18px_50px_-24px_rgba(20,20,30,0.22)] p-4 sm:p-6 lg:p-7">
                 {/* Category Row */}
-                <div className="flex items-center flex-wrap gap-2 mb-4">
+                <div className={cn(chipScroll, "gap-2 mb-3 sm:mb-4")}>
                     <button
                         type="button"
                         onClick={() => setSearchCriteria({ categoryPublicId: "all" })}
                         aria-pressed={!categoryPublicId || categoryPublicId === "all"}
                         className={cn(
-                            "flex items-center gap-2 h-10 px-4 rounded-full text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
+                            "flex shrink-0 items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-full text-sm sm:text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
                             (!categoryPublicId || categoryPublicId === "all")
                                 ? "bg-zinc-900 text-white"
                                 : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
@@ -167,7 +172,7 @@ export const SearchForm = () => {
                         All
                     </button>
                     {categoriesLoading ? (
-                        <div className="h-10 px-4 flex items-center gap-2 text-zinc-400 text-[15px] font-semibold">
+                        <div className="h-9 sm:h-10 px-4 flex shrink-0 items-center gap-2 text-zinc-400 text-sm sm:text-[15px] font-semibold">
                             <Loader2 className="size-[18px] animate-spin" /> Loading
                         </div>
                     ) : (
@@ -181,12 +186,12 @@ export const SearchForm = () => {
                                     onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
                                     aria-pressed={active}
                                     className={cn(
-                                        "flex items-center gap-2 h-10 px-4 rounded-full text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
+                                        "flex shrink-0 items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-full text-sm sm:text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
                                         active
                                             ? "bg-zinc-900 text-white"
                                             : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
                                     )}>
-                                    <CategoryIcon className="size-[18px]" strokeWidth={1.8} />
+                                    <CategoryIcon className="size-4 sm:size-[18px]" strokeWidth={1.8} />
                                     {category.name}
                                 </button>
                             );
@@ -195,19 +200,20 @@ export const SearchForm = () => {
                 </div>
 
                 {/* Trip type Row */}
-                <div className="flex items-center flex-wrap gap-x-3 gap-y-2 mb-6">
-                    <span className={fieldLabel}>Trip type</span>
+                <div className={cn(chipScroll, "gap-2 sm:gap-x-3 sm:gap-y-2 mb-4 sm:mb-6")}>
+                    <span className={cn(fieldLabel, "shrink-0 whitespace-nowrap")}>Trip type</span>
                     <UseCaseFilterChips
                         value={useCases}
                         onChange={(next) => setSearchCriteria({ useCases: next })}
+                        className="shrink-0 flex-nowrap sm:flex-wrap [&>button]:h-8 [&>button]:px-3.5 [&>button]:text-[13px] sm:[&>button]:h-10 sm:[&>button]:px-5 sm:[&>button]:text-sm"
                     />
                 </div>
 
                 {/* Main Search Row — every column is label row (h-8) + 56 px field + its own note */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(180px,0.8fr)] gap-x-4 gap-y-5 w-full items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(180px,0.8fr)] gap-x-4 gap-y-3 sm:gap-y-5 w-full items-start">
                     {/* Location */}
                     <div className="sm:col-span-2 xl:col-span-1 min-w-0">
-                        <div className="flex items-center h-8 mb-1.5">
+                        <div className={labelRow}>
                             <label className={fieldLabel}>Location</label>
                         </div>
                         <Select
@@ -215,9 +221,9 @@ export const SearchForm = () => {
                             onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
                             disabled={isLoading || isError}
                         >
-                            <SelectTrigger className={cn(fieldBox, "w-full data-[size=default]:h-14 px-4 text-left shadow-none focus:ring-0 focus:ring-offset-0 focus-visible:border-zinc-900 focus-visible:ring-0 [&>svg]:hidden")}>
-                                <div className="flex items-center gap-3 text-base font-medium w-full min-w-0">
-                                    <Search className="size-5 shrink-0 text-zinc-500" strokeWidth={2} />
+                            <SelectTrigger className={cn(fieldBox, "w-full data-[size=default]:h-12 sm:data-[size=default]:h-14 px-3.5 sm:px-4 text-left shadow-none focus:ring-0 focus:ring-offset-0 focus-visible:border-zinc-900 focus-visible:ring-0 [&>svg]:hidden")}>
+                                <div className="flex items-center gap-2.5 sm:gap-3 text-[15px] sm:text-base font-medium w-full min-w-0">
+                                    <Search className="size-[18px] sm:size-5 shrink-0 text-zinc-500" strokeWidth={2} />
                                     <span className={cn("truncate flex-1", branchPublicId ? "text-zinc-900" : "text-zinc-500")}>
                                         <SelectValue placeholder={isLoading ? "Loading locations..." : "Search city, airport or address"} />
                                     </span>
@@ -242,7 +248,7 @@ export const SearchForm = () => {
 
                     {/* Pick-up Date & Time */}
                     <div className="min-w-0">
-                        <div className="flex items-center h-8 mb-1.5">
+                        <div className={labelRow}>
                             <label className={fieldLabel}>Pick-up date</label>
                         </div>
                         <div className={cn(fieldBox, "flex items-stretch overflow-hidden focus-within:border-zinc-900")}>
@@ -251,12 +257,12 @@ export const SearchForm = () => {
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            "flex flex-1 items-center gap-3 min-w-0 h-full rounded-none justify-start px-4 text-left bg-transparent hover:bg-zinc-50 border-0 shadow-none",
+                                            "flex flex-1 items-center gap-2.5 sm:gap-3 min-w-0 h-full rounded-none justify-start px-3.5 sm:px-4 text-left bg-transparent hover:bg-zinc-50 border-0 shadow-none",
                                             !pickupDate ? "text-zinc-500" : "text-zinc-900"
                                         )}
                                     >
-                                        <CalendarIcon className="size-5 shrink-0 text-zinc-700" strokeWidth={1.8} />
-                                        <span className="text-base font-medium whitespace-nowrap truncate">
+                                        <CalendarIcon className="size-[18px] sm:size-5 shrink-0 text-zinc-700" strokeWidth={1.8} />
+                                        <span className="text-[15px] sm:text-base font-medium whitespace-nowrap truncate">
                                             {pickupDate ? format(pickupDate, "EEE, d MMM") : "Select date"}
                                         </span>
                                     </Button>
@@ -272,33 +278,33 @@ export const SearchForm = () => {
                                     />
                                 </PopoverContent>
                             </Popover>
-                            <div className="w-px bg-zinc-200 shrink-0 my-3" />
+                            <div className="w-px bg-zinc-200 shrink-0 my-2.5 sm:my-3" />
                             <div className="flex items-center h-full px-3 gap-1.5 shrink-0 hover:bg-zinc-50 transition-colors">
                                 <Clock className="size-[18px] shrink-0 text-zinc-500" strokeWidth={2} />
                                 <TimeSelect
                                     value={pickupTime || "10:00"}
                                     onChange={(v) => setPickup({ pickupTime: v })}
                                     isDisabled={limits.isPickupSlotDisabled}
-                                    triggerClassName="text-base font-medium text-zinc-900"
+                                    triggerClassName="text-[15px] sm:text-base font-medium text-zinc-900"
                                 />
                             </div>
                         </div>
-                        <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" className="mt-2" />
+                        <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" className="mt-1.5 sm:mt-2" />
                     </div>
 
                     {/* Rental length — the return is computed (pickup + 12 hours / N days) */}
                     <div className="min-w-0">
-                        <div className="flex items-center justify-between gap-2 h-8 mb-1.5">
+                        <div className={cn(labelRow, "justify-between gap-2")}>
                             <label className={cn(fieldLabel, "whitespace-nowrap")}>Rental length</label>
-                            <PackageQuickChips state={pkg} onSelect={choosePackage} className="gap-1.5 [&>button]:h-7 [&>button]:px-3" />
+                            <PackageQuickChips state={pkg} onSelect={choosePackage} className="gap-1.5 [&>button]:h-6 [&>button]:px-2.5 [&>button]:text-[11px] sm:[&>button]:h-7 sm:[&>button]:px-3 sm:[&>button]:text-xs" />
                         </div>
                         <PackageSelect
                             state={pkg}
                             onSelect={choosePackage}
-                            icon={<Timer className="size-5 shrink-0 text-zinc-700" strokeWidth={1.8} />}
-                            triggerClassName={cn(fieldBox, "w-full data-[size=default]:h-14 px-4 text-left text-base font-medium text-zinc-900 shadow-none focus:ring-0 focus:ring-offset-0 focus-visible:border-zinc-900 focus-visible:ring-0")}
+                            icon={<Timer className="size-[18px] sm:size-5 shrink-0 text-zinc-700" strokeWidth={1.8} />}
+                            triggerClassName={cn(fieldBox, "w-full data-[size=default]:h-12 sm:data-[size=default]:h-14 px-3.5 sm:px-4 text-left text-[15px] sm:text-base font-medium text-zinc-900 shadow-none focus:ring-0 focus:ring-offset-0 focus-visible:border-zinc-900 focus-visible:ring-0")}
                         />
-                        <p className="mt-2 text-[13px] text-zinc-500">
+                        <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
                             Return{" "}
                             <span className="font-semibold text-zinc-900">
                                 {pkg.selected ? formatPackageReturn(pkg.returnAt) : "—"}
@@ -314,7 +320,7 @@ export const SearchForm = () => {
                             type="button"
                             whileTap={isFormValid ? { scale: 0.98 } : {}}
                             className={cn(
-                                "h-14 w-full px-5 rounded-xl bg-[#f0500a] text-white flex items-center justify-center font-semibold text-base transition-colors whitespace-nowrap",
+                                "h-12 sm:h-14 w-full px-5 rounded-xl bg-[#f0500a] text-white flex items-center justify-center font-semibold text-[15px] sm:text-base transition-colors whitespace-nowrap",
                                 "hover:bg-[#d9470a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0500a] focus-visible:ring-offset-2",
                                 "disabled:opacity-45 disabled:hover:bg-[#f0500a] disabled:cursor-not-allowed"
                             )}
@@ -327,7 +333,7 @@ export const SearchForm = () => {
                                 "Show vehicles"
                             )}
                         </motion.button>
-                        <p className="mt-2 text-[13px] text-zinc-500">
+                        <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
                             Book 12 hours or 1–{MAX_BOOKING_DAYS} days, up to {MAX_BOOKING_DAYS} days ahead.
                         </p>
                     </div>
