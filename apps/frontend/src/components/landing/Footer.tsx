@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Twitter, Instagram, Linkedin, Facebook, Youtube, ArrowRight } from "lucide-react";
+import { StoreButtons } from "./StoreButtons";
 
 export const Footer = () => {
   return (
@@ -41,6 +42,10 @@ export const Footer = () => {
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-medium">
               Redefining mobility with a premium fleet and exceptional service. Drive the extraordinary with WUW Rentals and experience the journey you deserve.
             </p>
+            <h4 className="text-sm font-black text-white mt-10 mb-4 uppercase tracking-widest">
+              Get the app
+            </h4>
+            <StoreButtons tone="dark" />
           </div>
 
           {/* Column: Support & Company */}

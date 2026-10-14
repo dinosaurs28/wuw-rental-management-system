@@ -2,6 +2,7 @@ import { Navbar } from "./Navbar";
 import { SearchForm } from "./SearchForm";
 import { Footer } from "./Footer";
 import { HeroOfferSlider } from "./HeroOfferSlider";
+import { StoreButtons } from "./StoreButtons";
 import { Check, Car, HeartHandshake } from "lucide-react";
 
 export const LandingPage = () => {
@@ -82,6 +83,21 @@ export const LandingPage = () => {
                         Seamless experience from booking to return
                     </p>
                 </div>
+            </div>
+        </section>
+
+        {/* Mobile app */}
+        <section className="px-4 md:px-6 lg:px-8 pb-16">
+            <div className="max-w-[1200px] mx-auto rounded-3xl bg-[#F4F4F4] p-8 md:p-12 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+                <div>
+                    <h2 className="text-2xl md:text-4xl font-black text-[#1A1A1A] uppercase tracking-tighter leading-none mb-3">
+                        Get the WUW Rentals app
+                    </h2>
+                    <p className="text-gray-600 font-medium max-w-xl">
+                        Book, extend and keep track of your rentals from your phone.
+                    </p>
+                </div>
+                <StoreButtons tone="light" className="shrink-0" />
             </div>
         </section>
 

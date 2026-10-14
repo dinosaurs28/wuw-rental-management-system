@@ -22,7 +22,7 @@ function storeUrlFromEnv(value: unknown): string | null {
 export const PLAY_STORE_URL: string =
   storeUrlFromEnv(import.meta.env.VITE_PLAY_STORE_URL) ?? DEFAULT_PLAY_STORE_URL;
 
-export const DEFAULT_APP_STORE_URL = "https://apps.apple.com/app/id6801821149";
+export const DEFAULT_APP_STORE_URL = "https://apps.apple.com/in/app/what-u-want-rentals/id6801821149";
 
 /** App Store listing (build-time VITE_APP_STORE_URL overrides the live listing). */
 export const APP_STORE_URL: string | null =
