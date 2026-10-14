@@ -567,6 +567,10 @@ export const EmployeeBookingSummaryPage = () => {
             {vehicle.pricingBreakdown?.weekend?.label && (
               <div className="mt-1 text-xs text-muted-foreground">{vehicle.pricingBreakdown.weekend.label}</div>
             )}
+            {/* Festival pricing: which part of the rent a festival rule changed */}
+            {vehicle.pricingBreakdown?.festival?.label && (
+              <div className="mt-1 text-xs text-muted-foreground">{vehicle.pricingBreakdown.festival.label}</div>
+            )}
           </div>
         </div>
 

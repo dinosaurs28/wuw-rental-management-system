@@ -24,6 +24,7 @@ import {
   ClipboardCheck,
   Contact,
   Megaphone,
+  PartyPopper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
@@ -71,6 +72,7 @@ const operationsItems = [
   { label: "Confirmations", path: "/manager/confirmations", icon: ClipboardCheck },
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
   { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
+  { label: "Festival Pricing", path: "/manager/festival-pricing", icon: PartyPopper },
   { label: "Offers & Banners", path: "/manager/offers", icon: Megaphone },
   { label: "Cancellations", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },

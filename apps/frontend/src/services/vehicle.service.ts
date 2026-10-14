@@ -71,6 +71,8 @@ export interface PublicVehicle {
     sgst?: number;
     /** Weekend rates inside price (absent when none applies). */
     weekend?: WeekendPricing;
+    /** Festival rules inside the price (absent when none applies). */
+    festival?: FestivalPricing;
   };
 }
 
@@ -88,6 +90,20 @@ export interface WeekendPricing {
   weekendAmount: number;
   weekdayAmount: number;
   /** e.g. "Includes 1 weekend day at ₹1,600" */
+  label: string;
+}
+
+/**
+ * Festival rules inside a price (festival pricing): blocks of the window with
+ * at least half their time on a festival's dates have their rent changed by
+ * its percentage (the highest-rent rule when several apply).
+ */
+export interface FestivalPricing {
+  festivalBlocks: number;
+  /** What the festival rules changed the rent by (GST-inclusive; negative = a festival discount) */
+  amount: number;
+  rules: { id: number; name: string; percent: number; blocks: number; amount: number }[];
+  /** e.g. "Includes 3 festival days (Dussehra +10%)" */
   label: string;
 }
 
@@ -168,6 +184,8 @@ export interface VehicleGroupDetails {
       billedAsType?: BilledAsType;
       /** Weekend rates inside the price (absent when none applies). */
       weekend?: WeekendPricing;
+      /** Festival rules inside the price (absent when none applies). */
+      festival?: FestivalPricing;
     };
   }) | null;
 }
@@ -415,6 +433,8 @@ export interface VehicleDetails {
       billedAsType?: BilledAsType;
       /** Weekend rates inside the price (absent when none applies). */
       weekend?: WeekendPricing;
+      /** Festival rules inside the price (absent when none applies). */
+      festival?: FestivalPricing;
     };
   }) | null;
 }

@@ -85,6 +85,9 @@ export const VehicleCard = ({
       ? `Weekend ₹${weekendDaily.toLocaleString("en-IN", { maximumFractionDigits: 2 })}/day`
       : null;
   })();
+  // Festival pricing: with dates, the part of the listed price a festival rule changed
+  const festivalNote =
+    "pricingDetails" in vehicle ? vehicle.pricingDetails?.festival?.label ?? null : null;
 
   // Listed rents are GST-inclusive (item 17); with dates the server also sends
   // the GST inside the price (absent when the branch has no GST rule).
@@ -257,6 +260,9 @@ export const VehicleCard = ({
               {weekendNote && (
                 <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{weekendNote}</p>
               )}
+              {festivalNote && (
+                <p className="mt-1 text-[12px] font-medium text-[#c5c7cb]">{festivalNote}</p>
+              )}
               {slabNote && (
                 <p className="mt-1.5 text-[13px] font-semibold text-emerald-400">{slabNote}</p>
               )}
@@ -380,6 +386,9 @@ export const VehicleCard = ({
             )}
             {weekendNote && (
               <p className="mt-1 text-[11px] font-medium text-gray-500">{weekendNote}</p>
+            )}
+            {festivalNote && (
+              <p className="mt-1 text-[11px] font-medium text-gray-500">{festivalNote}</p>
             )}
             {slabNote && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">{slabNote}</p>

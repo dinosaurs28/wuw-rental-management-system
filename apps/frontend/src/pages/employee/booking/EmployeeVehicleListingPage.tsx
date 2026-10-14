@@ -597,6 +597,9 @@ function RegNoResults({
               {price != null && car.pricingDetails?.weekend && (
                 <p className="text-xs text-zinc-500">{car.pricingDetails.weekend.label}</p>
               )}
+              {price != null && car.pricingDetails?.festival && (
+                <p className="text-xs text-zinc-500">{car.pricingDetails.festival.label}</p>
+              )}
               {reason ? (
                 <p className="mt-0.5 text-xs font-medium text-amber-700">{reason}</p>
               ) : (

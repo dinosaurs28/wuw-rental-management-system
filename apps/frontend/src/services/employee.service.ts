@@ -6,7 +6,7 @@ import type {
   OverdueReturnsResponse,
   OverdueReturnsSnapshot,
 } from "@/types/overdueReturns";
-import type { WeekendPricing } from "@/services/vehicle.service";
+import type { WeekendPricing, FestivalPricing } from "@/services/vehicle.service";
 
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 
@@ -50,6 +50,8 @@ export interface RegNoVehicle {
     billedAs?: string;
     /** Weekend rates inside price (weekend-wise pricing; absent when none). */
     weekend?: WeekendPricing;
+    /** Festival rules charged (festival pricing; absent when none). */
+    festival?: FestivalPricing;
   } | null;
   available: boolean;
   /** Why it can't be booked for the dates (on rent, maintenance, insurance …). */
