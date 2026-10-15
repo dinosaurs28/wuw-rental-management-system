@@ -4,9 +4,10 @@ import { z } from "zod";
 //
 // A branch's festival pricing rule, e.g. "Dussehra", 20–22 Oct, +10% and/or
 // +₹200 a day on every vehicle. Dates are IST calendar days (YYYY-MM-DD), both
-// inclusive. A priced block (a day of the trip, the remainder, a trip of up to
-// 24 h) with at least half of its time on those days is billed at
-// rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
+// inclusive. A priced block (a day of the trip counted from pickup, the
+// remainder, a trip of up to 24 h) that STARTS on one of those days is billed
+// at rent × (1 + percent / 100) + flatAmount × (billed hours / 24) — where it
+// ends doesn't matter.
 //
 // A GROUPS rule (the festival dialog since Oct 16) instead sets one change per
 // vehicle group — the branch's vehicles of one make + model + category: a

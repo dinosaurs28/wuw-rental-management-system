@@ -28,11 +28,13 @@
  * rate is the same, capped at that block's slab.
  *
  * Festival pricing (utils/pricing/specialDateRule.ts): each of those blocks
- * with at least half of its minutes on a festival rule's dates then has its
- * rent (after the slab choice and the hourly cap) changed by the rule's
- * percentage and / or flat ₹ a day (its billed hours' share of it) — the rule
- * giving the highest rent when several apply. Free km never change; full
- * months are never festival blocks.
+ * that STARTS on a festival rule's dates (the IST calendar day of its first
+ * minute; where it ends doesn't matter) then has its rent (after the slab
+ * choice and the hourly cap) changed by the rule's percentage and / or flat ₹
+ * a day (its billed hours' share of it) — the rule giving the highest rent
+ * when several apply. Free km never change; full months are never festival
+ * blocks. E.g. festival 16 Oct: 15 Oct 20:00 → 16 Oct 20:00 is no festival
+ * day; 15 Oct 10:00 → 18 Oct 10:00 has one, the day starting 16 Oct 10:00.
  */
 import Decimal from "decimal.js";
 import { RentalPeriodType, type RentalDuration } from "./duration-calculator.service.js";
@@ -58,9 +60,10 @@ export interface WeekendContext {
   /** Billing start (the pickup) */
   startAt: Date;
   /**
-   * The real return. Blocks are classified on the hours before it: a 12-hour
-   * package held to closing (Fri 18:00 → 22:30) is billed to pickup + 12 h but
-   * is a weekday block — the car is only out on Friday. Absent = the billed end.
+   * The real return. Weekend blocks are classified on the hours before it: a
+   * 12-hour package held to closing (Fri 18:00 → 22:30) is billed to pickup +
+   * 12 h but is a weekday block — the car is only out on Friday. Absent = the
+   * billed end. (Festival blocks go by their start alone.)
    */
   endAt?: Date;
   /** ISO weekdays, 1 = Mon … 7 = Sun; empty = no weekend pricing */
@@ -196,7 +199,8 @@ class BlockPricer {
     const weekday = cheaper(weekdayOptions);
     let options = weekdayOptions;
     let slab = weekday;
-    // Classified on the hours the car is really out (never past the real return)
+    // Weekend: classified on the hours the car is really out (never past the
+    // real return); festival: on the block's start alone
     const startMs = (this.ctx?.startAt.getTime() ?? 0) + offset * MINUTE_MS;
     const realEndMs = Math.min(startMs + minutes * MINUTE_MS, this.ctx?.endAt?.getTime() ?? Infinity);
     const endMs = realEndMs > startMs ? realEndMs : startMs + minutes * MINUTE_MS;
@@ -209,16 +213,17 @@ class BlockPricer {
       slab = kmFloor(cheaper(options));
     }
     const weekendBilled = slab !== weekday && (!slab.price.eq(weekday.price) || slab.kind !== weekday.kind);
-    // Festival: each option's rent (the slab, and by the hour) changed by its best
-    // applicable rule — the flat ₹ a day shared by the option's billed hours — and
-    // the cheaper of the two billed (a tie goes to the slab), with that option's km
+    // Festival (the block starts on a rule's dates): each option's rent (the slab,
+    // and by the hour) changed by its best applicable rule — the flat ₹ a day
+    // shared by the option's billed hours — and the cheaper of the two billed (a
+    // tie goes to the slab), with that option's km
     let block = slab;
     let festival: SpecialRule | null = null;
     if (this.festivalOn) {
       const rules = this.ctx!.specialRules!;
-      const bySlab = festivalPriceFor(startMs, endMs, options.slab.price, rules, options.slab.hours);
+      const bySlab = festivalPriceFor(startMs, options.slab.price, rules, options.slab.hours);
       const byHour = options.hourly
-        ? festivalPriceFor(startMs, endMs, options.hourly.price, rules, options.hourly.hours)
+        ? festivalPriceFor(startMs, options.hourly.price, rules, options.hourly.hours)
         : null;
       const [option, hit] =
         byHour && bySlab && byHour.price.lt(bySlab.price) ? [options.hourly!, byHour] : [options.slab, bySlab];

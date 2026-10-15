@@ -9,11 +9,14 @@
  * dialog (scope GROUPS), one change per vehicle group (make + model + category):
  * a percentage or a flat ₹ a day, up or off; a group left out keeps its rent.
  *
- * The rule, per priced block (base-price-rule.ts — each full 24 h day, the
- * remainder, a single trip of up to 24 h, the 12-hour package held to closing,
- * monthly overflow days; never a full month): the block is a FESTIVAL block for
- * a rule when at least half of its minutes fall on the rule's dates in
- * Asia/Kolkata — classified on the real return, like the weekend rule. Its
+ * The rule, per priced block (base-price-rule.ts — each full 24 h day counted
+ * from pickup, the remainder, a single trip of up to 24 h, the 12-hour package
+ * held to closing, monthly overflow days; never a full month): the block is a
+ * FESTIVAL block for a rule when it STARTS on one of the rule's dates (the
+ * Asia/Kolkata calendar day of the block's first minute; the range inclusive).
+ * Where the block ends doesn't matter (client, Oct 2026: "if the price change
+ * starts from tomorrow and I book today a car from today to tomorrow, that
+ * price change shouldn't apply; if I book from tomorrow, it should"). Its
  * rent, after the weekday / weekend slab and the hourly cap, becomes
  *   rent × (1 + percent / 100) + flatAmount × (billed hours / 24)
  * — a block billed as a day gets the whole flat amount, the 12-hour slab
@@ -23,9 +26,10 @@
  * rent wins — one rule per block, never stacked. Free km never change.
  *
  *   Dussehra 20–22 Oct +10%, 24-hour rent ₹1,300:
- *   20 Oct 10:00 → 21 Oct 10:00  festival day      → ₹1,430
- *   19 Oct 18:00 → 20 Oct 18:00  18 of 24 h on it  → ₹1,430
- *   22 Oct 20:00 → 23 Oct 20:00  4 of 24 h on it   → ₹1,300
+ *   20 Oct 10:00 → 21 Oct 10:00  starts on it              → ₹1,430
+ *   19 Oct 18:00 → 20 Oct 18:00  starts the day before     → ₹1,300
+ *   22 Oct 23:30 → 23 Oct 23:30  starts on the last day    → ₹1,430
+ *   19 Oct 10:00 → 21 Oct 10:00  day 1 (19th) ₹1,300 + day 2 (20th) ₹1,430
  *   with +₹200/day as well: a festival day ₹1,630, its 12-hour slab ₹900 → ₹1,090
  *
  * Bookings store the rules they were charged with (pricingSnapshot.specialRules:
@@ -88,10 +92,14 @@ export function ruleMinutesIn(startMs: number, endMs: number, rule: Pick<Special
   return Math.max(0, Math.min(endMs, span.endMs) - Math.max(startMs, span.startMs)) / 60_000;
 }
 
-/** At least half of the block's minutes on the rule's days (a 12 / 12 split counts). */
-export function isFestivalBlock(startMs: number, endMs: number, rule: Pick<SpecialRule, "startDate" | "endDate">): boolean {
-  if (endMs <= startMs) return false;
-  return ruleMinutesIn(startMs, endMs, rule) * 2 >= (endMs - startMs) / 60_000;
+/**
+ * A block starting at `startMs` is a festival block for the rule when that
+ * instant falls on one of the rule's days (IST calendar, inclusive) — where
+ * the block ends doesn't matter.
+ */
+export function isFestivalBlock(startMs: number, rule: Pick<SpecialRule, "startDate" | "endDate">): boolean {
+  const span = ruleSpanMs(rule);
+  return startMs >= span.startMs && startMs < span.endMs;
 }
 
 /** A vehicle as the scopes match it: make / model are needed for GROUPS rules only. */
@@ -138,7 +146,11 @@ export function needsVehicleGroup(rules: readonly SpecialRule[]): boolean {
   return rules.some((rule) => rule.scope === "GROUPS");
 }
 
-/** The rules with any time in [startMs, endMs) — what a booking of that window stores. */
+/**
+ * The rules with any time in [startMs, endMs) — what a booking of that window
+ * stores. A superset of the rules its blocks are charged with (each block
+ * starts inside the window), so a stored rule may have charged nothing.
+ */
 export function rulesOverlapping(rules: readonly SpecialRule[], startMs: number, endMs: number): SpecialRule[] {
   return rules.filter((rule) => ruleMinutesIn(startMs, endMs, rule) > 0);
 }
@@ -219,20 +231,20 @@ export function applySpecialPercent(rent: Decimal, percent: number): Decimal {
 }
 
 /**
- * The rule a block billed as `billedHours` is billed under, and its rent:
- * among `rules` with at least half of [startMs, endMs) on their days, the one
- * giving the highest rent (a tie keeps the first). null = not a festival block.
+ * The rule a block starting at `startMs`, billed as `billedHours`, is billed
+ * under, and its rent: among `rules` whose days hold the block's start, the
+ * one giving the highest rent (a tie keeps the first). null = not a festival
+ * block.
  */
 export function festivalPriceFor(
   startMs: number,
-  endMs: number,
   rent: Decimal,
   rules: readonly SpecialRule[],
   billedHours = 24,
 ): { rule: SpecialRule; price: Decimal } | null {
   let best: { rule: SpecialRule; price: Decimal } | null = null;
   for (const rule of rules) {
-    if (!isFestivalBlock(startMs, endMs, rule)) continue;
+    if (!isFestivalBlock(startMs, rule)) continue;
     const price = applySpecialRule(rent, rule, billedHours);
     if (!best || price.gt(best.price)) best = { rule, price };
   }

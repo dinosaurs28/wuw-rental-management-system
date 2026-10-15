@@ -352,7 +352,8 @@ export class PricingEngineService {
       // 4. Determine base price based on duration (weekend blocks at the weekend rents)
       //    — classified on the real return: a 12-hour package held to closing is
       //    billed to pickup + 12 h but is weekday / weekend by its real hours
-      //    Festival blocks then take the best applicable rule's percentage
+      //    Festival blocks (those STARTING on a rule's dates) then take the best
+      //    applicable rule's change
       const weekendDays = discountOptions?.weekendDays ?? await getBranchWeekendDays(branchId);
       const specialRules = await this.festivalRules(
         branchId, { id: vehicleId, categoryId: resolvedCategoryId }, startAt, endAt, discountOptions?.specialRules,

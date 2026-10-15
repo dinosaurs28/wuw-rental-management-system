@@ -26,6 +26,7 @@ import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
 import { initNoShowAutoCancelWorker } from "./jobs/noShowAutoCancel.worker.js";
 import { initNotificationWorker } from "./jobs/notification.worker.js";
 import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
+import { hideFestivalPricing } from "./middlewares/hideFestivalPricing.middleware.js";
 import fs from "fs";
 import { getRedis } from "./lib/redisconfig.js";
 
@@ -80,9 +81,10 @@ app.use(
 );
 app.use(passport.initialize());
 app.use("/api/auth", authrouter);
-app.use("/api/public", vehiclerouter);
+// Customer-facing: festival pricing details never leave these (only final prices)
+app.use("/api/public", hideFestivalPricing, vehiclerouter);
 app.use("/api/payment", paymentrouter);
-app.use("/api/user", userrouter);
+app.use("/api/user", hideFestivalPricing, userrouter);
 app.use("/api/employee", employeerouter);
 app.use("/api/branchManager", branchManagerRouter);
 app.use("/api/admin", adminRouter);

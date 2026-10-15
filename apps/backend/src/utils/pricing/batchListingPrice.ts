@@ -107,8 +107,9 @@ async function branchRentSplitter(
 /**
  * Same slab rule as PricingEngineService.determineBasePrice (shared
  * base-price-rule.ts): an hourly rate is capped at the 12 h / 24 h slab price,
- * weekend blocks take the weekend rents and festival blocks their rule's
- * percentage, so listing and booking prices always agree. Free km are not
+ * weekend blocks take the weekend rents and festival blocks (those starting on
+ * a rule's dates) their rule's change, so listing and booking prices — and
+ * walk-in group resolution's price keys — always agree. Free km are not
  * needed here.
  */
 function selectPrice(pricing: PricingRow, duration: RentalDuration, weekend?: WeekendContext): BasePriceSelection {

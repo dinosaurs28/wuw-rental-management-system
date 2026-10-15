@@ -1,6 +1,7 @@
 /**
  * Pure checks of festival (special-date) pricing: the festival-block rule
- * (specialDateRule.ts) and how base-price-rule.ts bills festival blocks — days
+ * (specialDateRule.ts: a block is a festival block when it STARTS on the
+ * rule's dates) and how base-price-rule.ts bills festival blocks — days
  * across midnight, overlapping rules, festival discounts, rounding, the hourly
  * cap, the 12-hour package held to closing, monthly overflow days, weekend
  * rents underneath, and an extension's delta. No database.
@@ -71,23 +72,30 @@ function price(
   return selectBasePrice(rateCard, duration, { startAt, endAt: ist(to), weekendDays, specialRules });
 }
 
-test("a day across midnight is a festival block when at least half of it is on the festival", () => {
-  // 19 Oct 18:00 → 20 Oct 18:00: 18 of 24 h on the 20th
+test("a block is a festival block when it starts on the festival (IST), wherever it ends", () => {
+  // 19 Oct 18:00 → 20 Oct 18:00: 18 of 24 h on the 20th, but it starts on the 19th
   assert.equal(ruleMinutesIn(ms("2026-10-19T18:00:00"), ms("2026-10-20T18:00:00"), rule()), 18 * 60);
-  assert.equal(isFestivalBlock(ms("2026-10-19T18:00:00"), ms("2026-10-20T18:00:00"), rule()), true);
-  // 22 Oct 20:00 → 23 Oct 20:00: 4 of 24 h on the last festival day
-  assert.equal(isFestivalBlock(ms("2026-10-22T20:00:00"), ms("2026-10-23T20:00:00"), rule()), false);
-  // exactly half counts: 19 Oct 12:00 → 20 Oct 12:00
-  assert.equal(isFestivalBlock(ms("2026-10-19T12:00:00"), ms("2026-10-20T12:00:00"), rule()), true);
-  // IST calendar days: 19 Oct 23:00 → 20 Oct 05:00 IST has 5 of 6 h on the 20th
-  assert.equal(ruleMinutesIn(ms("2026-10-19T23:00:00"), ms("2026-10-20T05:00:00"), rule()), 5 * 60);
+  assert.equal(isFestivalBlock(ms("2026-10-19T18:00:00"), rule()), false);
+  // 22 Oct 20:00 → 23 Oct 20:00: starts on the last festival day
+  assert.equal(isFestivalBlock(ms("2026-10-22T20:00:00"), rule()), true);
+  // the range is inclusive, in IST calendar days: 00:00 of the first day to 23:59 of the last
+  assert.equal(isFestivalBlock(ms("2026-10-20T00:00:00"), rule()), true);
+  assert.equal(isFestivalBlock(ms("2026-10-19T23:59:00"), rule()), false);
+  assert.equal(isFestivalBlock(ms("2026-10-22T23:59:00"), rule()), true);
+  assert.equal(isFestivalBlock(ms("2026-10-23T00:00:00"), rule()), false);
+  // 20 Oct 00:30 IST is still 19 Oct in UTC — IST decides
+  assert.equal(isFestivalBlock(Date.parse("2026-10-19T19:00:00Z"), rule()), true);
 });
 
-test("a one-day festival day across midnight is billed at the festival rent", () => {
+test("a day starting the evening before the festival is billed at the plain rent", () => {
   const sel = price(card(), "2026-10-19T18:00:00", "2026-10-20T18:00:00", [rule({ endDate: "2026-10-20" })]);
-  assert.equal(sel.basePrice.toNumber(), 1430);
-  assert.equal(sel.freeKmLimit, 150);
-  assert.deepEqual(sel.festival, {
+  assert.equal(sel.basePrice.toNumber(), 1300);
+  assert.equal(sel.festival, undefined);
+  // the same day starting on the festival: the festival rent
+  const onIt = price(card(), "2026-10-20T18:00:00", "2026-10-21T18:00:00", [rule({ endDate: "2026-10-20" })]);
+  assert.equal(onIt.basePrice.toNumber(), 1430);
+  assert.equal(onIt.freeKmLimit, 150);
+  assert.deepEqual(onIt.festival, {
     festivalBlocks: 1,
     amount: 130,
     rules: [{ id: 1, name: "Dussehra", percent: 10, flatAmount: 0, blocks: 1, amount: 130 }],
@@ -95,8 +103,59 @@ test("a one-day festival day across midnight is billed at the festival rent", ()
   });
 });
 
+// The client's examples (festival = 16 Oct, +10%, 24-hour rent ₹1,300, 12-hour ₹900)
+const oct16 = rule({ startDate: "2026-10-16", endDate: "2026-10-16" });
+
+test("client: booked today until tomorrow, the change starting tomorrow doesn't apply", () => {
+  const sel = price(card(), "2026-10-15T20:00:00", "2026-10-16T20:00:00", [oct16]);
+  assert.equal(sel.basePrice.toNumber(), 1300);
+  assert.equal(sel.festival, undefined);
+});
+
+test("client: booked from the festival day, the change applies", () => {
+  const sel = price(card(), "2026-10-16T10:00:00", "2026-10-17T10:00:00", [oct16]);
+  assert.equal(sel.basePrice.toNumber(), 1430);
+  assert.equal(sel.festival?.label, "Includes 1 festival day (Dussehra +10%)");
+});
+
+test("client: a 3-day trip pays the festival rent only for the day starting on the festival", () => {
+  // 15 Oct 10:00 → 18 Oct 10:00: days start 15th, 16th, 17th
+  const sel = price(card(), "2026-10-15T10:00:00", "2026-10-18T10:00:00", [oct16]);
+  assert.equal(sel.basePrice.toNumber(), 1300 + 1430 + 1300);
+  assert.equal(sel.festival?.festivalBlocks, 1);
+  assert.equal(sel.festival?.amount, 130);
+});
+
+test("client: 1 day + 12 h from the eve — the 12 h remainder starting on the festival is festival", () => {
+  // 15 Oct 10:00 → 16 Oct 22:00: day 15th ₹1,300 + 12 h from 16 Oct 10:00 ₹990
+  const sel = price(card(), "2026-10-15T10:00:00", "2026-10-16T22:00:00", [oct16]);
+  assert.equal(sel.billedAs, "1 day + 12 hours");
+  assert.equal(sel.basePrice.toNumber(), 1300 + 990);
+  assert.equal(sel.festival?.label, "Includes 12 festival hours (Dussehra +10%)");
+});
+
+test("client: a 12-hour package held to closing, starting on the festival, is festival", () => {
+  const startAt = ist("2026-10-16T14:00:00");
+  const held = selectBasePrice(
+    card(),
+    DurationCalculatorService.calculate(DateTime.fromJSDate(startAt), DateTime.fromJSDate(startAt).plus({ hours: 12 })),
+    { startAt, endAt: ist("2026-10-16T22:30:00"), weekendDays: [], specialRules: [oct16] },
+  );
+  assert.equal(held.billedAs, "12 hours");
+  assert.equal(held.basePrice.toNumber(), 990);
+  assert.equal(held.festival?.festivalBlocks, 1);
+});
+
+test("client: a block starting 16 Oct 23:30 is festival (30 min of it on the day)", () => {
+  const sel = price(card(), "2026-10-16T23:30:00", "2026-10-17T23:30:00", [oct16]);
+  assert.equal(sel.basePrice.toNumber(), 1430);
+  assert.equal(sel.festival?.festivalBlocks, 1);
+  // and one starting 16 Oct 00:00 sharp
+  assert.equal(price(card(), "2026-10-16T00:00:00", "2026-10-17T00:00:00", [oct16]).basePrice.toNumber(), 1430);
+});
+
 test("three festival days: every day of the trip on the festival", () => {
-  // 20 Oct 10:00 → 23 Oct 10:00: the last day has 14 of 24 h on the 22nd
+  // 20 Oct 10:00 → 23 Oct 10:00: the last day starts on the 22nd
   const sel = price(card(), "2026-10-20T10:00:00", "2026-10-23T10:00:00");
   assert.equal(sel.basePrice.toNumber(), 3 * 1430);
   assert.equal(sel.freeKmLimit, 450);
@@ -139,7 +198,6 @@ test("overlapping rules: one rule per block, the one giving the highest rent", (
   // two discounts: the smaller one wins (the higher rent)
   const discounts = festivalPriceFor(
     ms("2026-10-20T10:00:00"),
-    ms("2026-10-21T10:00:00"),
     new Decimal(1300),
     [offer, rule({ id: 4, percent: -10 })],
   );
@@ -177,7 +235,7 @@ test("the hourly cap applies first; free km never change", () => {
 });
 
 test("a remainder block is a festival block on its own", () => {
-  // 19 Oct 10:00 → 20 Oct 20:00: 19→20 Oct 10:00 (14 h on the 19th) + 10 h remainder on the 20th
+  // 19 Oct 10:00 → 20 Oct 20:00: 19→20 Oct 10:00 (starts on the 19th) + 10 h remainder from the 20th
   const sel = price(card(), "2026-10-19T10:00:00", "2026-10-20T20:00:00");
   assert.equal(sel.basePrice.toNumber(), 1300 + 990);
   assert.equal(sel.billedAs, "1 day + 12 hours");
@@ -201,7 +259,7 @@ test("weekend rents underneath: the weekend slab, then the festival percentage",
   assert.equal(sel.festival?.amount, 160);
 });
 
-test("a held 12-hour package is a festival block by its real hours", () => {
+test("a held 12-hour package is a festival block by its start", () => {
   const priceHeld = (from: string, realReturn: string) => {
     const startAt = ist(from);
     const duration = DurationCalculatorService.calculate(
@@ -216,8 +274,7 @@ test("a held 12-hour package is a festival block by its real hours", () => {
   assert.equal(evening.billedAs, "12 hours");
   assert.equal(evening.freeKmLimit, 100);
   assert.equal(evening.festival?.label, "Includes 12 festival hours (Dussehra +10%)");
-  // The eve, 19 Oct 18:00 → 22:30: pickup + 12 h would reach 20 Oct 06:00 (a 6 / 12 tie),
-  // but the car is only out on the 19th
+  // The eve, 19 Oct 18:00 → 22:30 (billed to 20 Oct 06:00): it starts on the 19th
   const eve = priceHeld("2026-10-19T18:00:00", "2026-10-19T22:30:00");
   assert.equal(eve.basePrice.toNumber(), 900);
   assert.equal(eve.festival, undefined);
@@ -226,7 +283,7 @@ test("a held 12-hour package is a festival block by its real hours", () => {
 test("monthly: full months are never festival blocks, overflow days are", () => {
   const monthly = card({ priceMonthly: new Decimal(25000) });
   const late = rule({ id: 6, name: "Fair", startDate: "2026-11-11", endDate: "2026-11-12" });
-  // 12 Oct 10:00 + 30 days = 11 Nov 10:00 (the month holds Dussehra); one overflow day on the fair
+  // 12 Oct 10:00 + 30 days = 11 Nov 10:00 (the month holds Dussehra); one overflow day starting on the fair
   const sel = price(monthly, "2026-10-12T10:00:00", "2026-11-12T10:00:00", [rule(), late]);
   assert.equal(sel.basePrice.toNumber(), 25000 + 1430);
   assert.equal(sel.billedAs, "1 month + 1 day");
@@ -237,7 +294,7 @@ test("monthly: full months are never festival blocks, overflow days are", () => 
 });
 
 test("extension delta: both terms at today's rules — the booked days cancel, new days pick up the festival", () => {
-  // Booked 17 → 20 Oct 10:00 (day 3 already on Dussehra); extended to 22 Oct 10:00
+  // Booked 17 → 20 Oct 10:00 (day 3 starts the 19th: plain); extended to 22 Oct 10:00
   const booked = price(card(), "2026-10-17T10:00:00", "2026-10-20T10:00:00");
   const extended = price(card(), "2026-10-17T10:00:00", "2026-10-22T10:00:00");
   assert.equal(booked.basePrice.toNumber(), 3 * 1300);

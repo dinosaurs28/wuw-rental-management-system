@@ -21,8 +21,8 @@ import {
 
 /**
  * Festival pricing — the manager's own branch (ManagerCheck: req.branch_Id).
- * A rule changes the rent of every priced block with at least half of its time
- * on its dates by its percentage (utils/pricing/specialDateRule.ts).
+ * A rule changes the rent of every priced block that starts on one of its
+ * dates (utils/pricing/specialDateRule.ts).
  */
 
 const listFilter = (raw: unknown): SpecialPricingListFilter =>

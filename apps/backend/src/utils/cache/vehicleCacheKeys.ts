@@ -50,11 +50,12 @@ export const durationDiscountSlabKey = (branchId: number, days: number): string 
  * Full PricingResult for a vehicle+time window. TTL 60s. Invalidate on booking change. (TASK-017)
  * "v2": results priced on the GST-inclusive rent (item 17); "v3": the Extra Hour
  * Rate became the one hourly rate; "v4": weekend rates (pricingBreakdown.weekend);
- * "v5": festival pricing (pricingBreakdown.festival / specialRules) — a result
- * cached by an older release is never read back.
+ * "v5": festival pricing (pricingBreakdown.festival / specialRules); "v6": a
+ * festival block is the one STARTING on a festival date — a result cached by an
+ * older release is never read back.
  */
 export const vehicleDetailsPricingKey = (vehicleId: number, startIso: string, endIso: string): string =>
-  `pricing-result:vehicle:${vehicleId}:v5:${startIso}:${endIso}`;
+  `pricing-result:vehicle:${vehicleId}:v6:${startIso}:${endIso}`;
 
 /**
  * TASK-019: Delete availability cache for a set of vehicles.
