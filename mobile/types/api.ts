@@ -27,9 +27,8 @@ export interface ListPricing {
   cgst?: number;
   sgst?: number;
   // Weekend rates inside price (weekend-wise pricing) — absent when none apply.
+  // (No festival breakdown: customers see only the final price.)
   weekend?: WeekendPricing;
-  // Festival rules inside price (festival pricing) — absent when none apply.
-  festival?: FestivalPricing;
 }
 
 // Weekend-wise pricing: the blocks of a window (each 24 h, the remainder, or a
@@ -48,9 +47,11 @@ export interface WeekendPricing {
   label: string;
 }
 
-// Festival pricing: the blocks of a window with at least half their time on a
-// branch festival's dates have their rent changed by its percentage (the rule
-// giving the higher rent when festivals overlap). Sent only when one applied.
+// Festival pricing: the blocks of a window (each day from pickup, the remainder)
+// that start on a branch festival's dates have their rent changed by its
+// percentage / flat ₹ a day (the rule giving the higher rent when festivals
+// overlap). Sent only when one applied, and only by STAFF endpoints — public /
+// customer responses leave it out (customers see just the final price).
 export interface FestivalPricing {
   festivalBlocks: number;
   // What the festival rules changed the rent by (GST-inclusive; negative = a festival discount).
@@ -174,7 +175,8 @@ export interface PricingDetails extends RentInclGstFields {
     billedAsType?: RentalPeriodType;
     // Weekend rates inside the price (weekend-wise pricing) — absent when none apply.
     weekend?: WeekendPricing;
-    // Festival rules inside the price (festival pricing) — absent when none apply.
+    // Festival rules inside the price (festival pricing) — absent when none apply;
+    // staff endpoints only (walk-in summary), never in public / customer responses.
     festival?: FestivalPricing;
   };
 }

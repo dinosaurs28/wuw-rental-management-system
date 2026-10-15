@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts } from '../../constants/colors';
-import { billedBadge, festivalNote, priceUnitFor, weekendNote } from '../../lib/pricing';
+import { billedBadge, priceUnitFor, weekendNote } from '../../lib/pricing';
 import { availabilityLabel, availabilityColor } from '../../lib/availability';
 import StudioImage from './StudioImage';
 import Chip from '../ui/Chip';
@@ -30,7 +30,6 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
   const priceUnit = vehicle.priceInfo ? priceUnitFor(vehicle.priceInfo) : '/ day';
   const badge = vehicle.priceInfo ? billedBadge(vehicle.priceInfo) : null;
   const weekend = price != null ? weekendNote(vehicle) : null;
-  const festival = price != null ? festivalNote(vehicle) : null;
   const availLabel = availabilityLabel(vehicle.availableCount);
 
   return (
@@ -78,12 +77,6 @@ export default function CarCard({ vehicle, onPress, width: cardWidth }: CarCardP
         {weekend ? (
           <Text style={styles.gstNote} numberOfLines={2}>
             {weekend}
-          </Text>
-        ) : null}
-        {/* Festival pricing: the part of the price a festival rule changed */}
-        {festival ? (
-          <Text style={styles.gstNote} numberOfLines={2}>
-            {festival}
           </Text>
         ) : null}
       </View>

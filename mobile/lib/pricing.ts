@@ -51,12 +51,6 @@ export function weekendNote(vehicle: {
     : null;
 }
 
-// Festival pricing note for a listed price (with dates only): the part of the
-// price a festival rule changed ("Includes 3 festival days (Dussehra +10%)").
-export function festivalNote(vehicle: { priceInfo?: ListPricing | null }): string | null {
-  return vehicle.priceInfo?.festival?.label ?? null;
-}
-
 // Human label for the rental period type (e.g. shown as a badge).
 export function periodLabel(periodType?: string | null): string | null {
   switch (periodType) {

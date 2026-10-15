@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
-import { festivalNote, periodLabel, priceUnitFor, weekendNote } from '../../lib/pricing';
+import { periodLabel, priceUnitFor, weekendNote } from '../../lib/pricing';
 import { rentGstSplitText } from '../../lib/gst';
 import type { Vehicle } from '../../types/api';
 
@@ -47,7 +47,6 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
       : null;
 
   const weekend = price != null && vehicle ? weekendNote(vehicle) : null;
-  const festival = price != null && vehicle ? festivalNote(vehicle) : null;
 
   const handleViewDetails = () => {
     const id = vehicle!.publicId;
@@ -149,8 +148,6 @@ export default function VehicleQuickView({ vehicle, onClose }: Props) {
                 {gstSplit ? <Text style={styles.priceGstSplit}>{gstSplit}</Text> : null}
                 {/* Weekend-wise pricing: the weekend part of the price / the weekend day rent */}
                 {weekend ? <Text style={styles.priceGstSplit}>{weekend}</Text> : null}
-                {/* Festival pricing: the part of the price a festival rule changed */}
-                {festival ? <Text style={styles.priceGstSplit}>{festival}</Text> : null}
                 <View style={styles.priceHintRow}>
                   <Ionicons name="information-circle-outline" size={14} color={Colors.ink3} />
                   <Text style={styles.priceHint}>
