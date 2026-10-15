@@ -97,6 +97,13 @@ enum BookingStatus {
   HOLD_EXPIRED
 }
 
+// Who cancelled a booking. Null = cancelled before this was recorded, or by the
+// other paths (hold expiry, no-show, displaced by an extension).
+enum BookingCancellationSource {
+  // The branch manager cancelled it by hand from the Fleet tab (Oct 2026)
+  MANUAL_BM
+}
+
 enum VehicleTypeClass {
   TWO_WHEELER
   FOUR_WHEELER
@@ -962,6 +969,9 @@ model Booking {
   // Cancellation Tracking
   cancelledAt        DateTime?
   cancellationReason String?
+  // User id of who cancelled it (no relation, like the licence ids below) and how
+  cancelledById      Int?
+  cancellationSource BookingCancellationSource?
 
   // Manager Confirmation Flag
   requiresManagerConfirmation Boolean @default(false)
