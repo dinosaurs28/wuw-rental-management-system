@@ -57,6 +57,7 @@ import {
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
 import { lockAndAssertDlFreeForPickup, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import {
@@ -178,6 +179,17 @@ async function lockSessionForSettlement(
   allowedStatuses: string[],
 ): Promise<Decimal> {
   await lockBookingForDrop(tx, session.bookingId);
+
+  // A pickup on a booking cancelled meanwhile (its session was abandoned by the
+  // cancel): 409 BOOKING_CANCELLED, not the session-status error
+  if (session.sessionType === PaymentSessionType.PICKUP) {
+    try {
+      await lockBookingForPickup(tx, session.bookingId);
+    } catch (err) {
+      if (err instanceof PickupStateError) throw new SettlementConflict(err.status, err.toJSON());
+      throw err;
+    }
+  }
 
   const current = await tx.paymentSession.findUniqueOrThrow({
     where: { id: session.id },
@@ -354,7 +366,7 @@ async function resolveSession(sessionPublicId: string, branchId: number) {
     where: { publicId: sessionPublicId },
     include: {
       entries: { where: { isVoided: false }, orderBy: { createdAt: "asc" } },
-      booking: { select: { publicId: true, status: true, branchId: true } },
+      booking: { select: { publicId: true, status: true, branchId: true, cancellationSource: true } },
     },
   });
   if (!session) throw Object.assign(new Error("Session not found"), { status: 404 });
@@ -506,6 +518,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
     const onlineGateway = validation.data.method === "UPI" ? "UPI" : validation.data.onlineGateway;
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
+
+    // A pickup on a booking cancelled meanwhile (the cancel abandoned its session): 409 BOOKING_CANCELLED
+    if (session.sessionType === PaymentSessionType.PICKUP) {
+      const cancelled = cancelledPickupRefusal(session.booking);
+      if (cancelled) return res.status(cancelled.status).json(cancelled.toJSON());
+    }
 
     if (!["AWAITING_PAYMENT", "PAYMENT_INITIATED"].includes(session.status)) {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -1162,6 +1180,16 @@ async function runPostCompletionHooks(
   tx: any,
 ): Promise<number[]> {
   if (sessionType === PaymentSessionType.PICKUP) {
+    // Still CONFIRMED under the booking row lock (lockSessionForSettlement took
+    // it; shared with the BM's manual cancel): a booking cancelled meanwhile is
+    // refused (409 BOOKING_CANCELLED) and the payment rolls back
+    try {
+      await lockBookingForPickup(tx, bookingId);
+    } catch (err) {
+      if (err instanceof PickupStateError) throw new SettlementConflict(err.status, err.toJSON());
+      throw err;
+    }
+
     // One vehicle per driving licence (X3): the handover is refused (and the
     // payment rolled back) while another booking on this DL is out.
     try {

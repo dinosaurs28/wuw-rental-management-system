@@ -10,6 +10,7 @@
  */
 import { Request, Response } from "express";
 import { z } from "zod";
+import { cancelledPickupRefusal } from "../../services/booking/booking-row-lock.js";
 import Decimal from "decimal.js";
 import {
   prisma,
@@ -138,6 +139,10 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     if (!booking) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     }
+
+    // Cancelled (e.g. by the branch manager): 409 BOOKING_CANCELLED
+    const cancelled = cancelledPickupRefusal(booking);
+    if (cancelled) return res.status(cancelled.status).json(cancelled.toJSON());
 
     if (booking.status !== BookingStatus.CONFIRMED) {
       return res.status(StatusCode.BAD_REQUEST).json({

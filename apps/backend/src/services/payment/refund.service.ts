@@ -4,6 +4,7 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
+import { ORIGINAL_PAYMENT_REFUND_REASON_PREFIX } from "../booking/manual-cancel-rules.js";
 import type { RefundRequest, PaymentMethod, Role } from "@repo/database/client";
 
 interface ActorContext {
@@ -309,9 +310,20 @@ class RefundService {
     };
   }
 
+  /**
+   * The branch's refunds queue: requests awaiting approval, and a manual cancel's
+   * refund to the original online payment (APPROVED) still to be completed with
+   * the Razorpay refund id.
+   */
   async listPendingForBranch(branchId: number): Promise<any[]> {
     const refunds = await prisma.refundRequest.findMany({
-      where: { branchId, status: "PENDING_APPROVAL" },
+      where: {
+        branchId,
+        OR: [
+          { status: "PENDING_APPROVAL" },
+          { status: "APPROVED", reason: { startsWith: ORIGINAL_PAYMENT_REFUND_REASON_PREFIX } },
+        ],
+      },
       include: {
         requestedBy: { select: { publicId: true, name: true } },
         booking: {

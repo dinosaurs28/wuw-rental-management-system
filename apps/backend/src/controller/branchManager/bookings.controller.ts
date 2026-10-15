@@ -32,6 +32,7 @@ import {
   lockAndAssertDlFreeForPickup,
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
+import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -648,6 +649,10 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         .json({ message: "Booking not found" });
     }
 
+    // Cancelled meanwhile (e.g. from the Fleet tab): 409 BOOKING_CANCELLED
+    const cancelled = cancelledPickupRefusal(booking);
+    if (cancelled) return res.status(cancelled.status).json(cancelled.toJSON());
+
     if (
       booking.status !== BookingStatus.CONFIRMED ||
       !booking.requiresManagerConfirmation
@@ -718,6 +723,9 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Booking row lock first (shared with the manual cancel), then still
+      // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
+      await lockBookingForPickup(tx, booking.id);
       await lockAndAssertDlFreeForPickup(booking.id, tx);
 
       await tx.booking.update({
@@ -761,6 +769,9 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
   } catch (error: any) {
     if (error instanceof DlInUseError) {
       return res.status(error.status).json(error.toJSON("staff"));
+    }
+    if (error instanceof PickupStateError) {
+      return res.status(error.status).json(error.toJSON());
     }
     console.error("Manager Confirm Pickup Error:", error);
     return res

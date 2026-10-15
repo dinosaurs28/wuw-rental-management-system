@@ -141,6 +141,10 @@ import {
   RescheduleBookingByManager,
 } from "../../controller/branchManager/reschedule.controller.js";
 import {
+  GetManualCancelOptions,
+  ManualCancelBooking,
+} from "../../controller/branchManager/manual-cancel.controller.js";
+import {
   ListSpecialRules,
   GetSpecialRuleOptions,
   PreviewSpecialRule,
@@ -370,6 +374,9 @@ router.patch("/bookings/:publicId/dl-status", ManagerCheck, UpdateBookingDlStatu
 // Reschedule a confirmed booking (not picked up): new pickup, return shifted the same, price unchanged
 router.get("/bookings/:publicId/reschedule", ManagerCheck, GetRescheduleOptionsByManager);
 router.post("/bookings/:publicId/reschedule", ManagerCheck, RescheduleBookingByManager);
+// Cancel an upcoming or active rent by hand (Fleet tab): status CANCELLED, record kept, optional refund
+router.get("/bookings/:publicId/cancel", ManagerCheck, GetManualCancelOptions);
+router.post("/bookings/:publicId/cancel", ManagerCheck, ManualCancelBooking);
 
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);

@@ -32,6 +32,7 @@ import {
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
+import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { z } from "zod";
 const chargePickupDataSchema = z.object({
@@ -98,6 +99,10 @@ export const PickupController = async (req: Request, res: Response) => {
         message: "Booking not found or access denied",
       });
     }
+
+    // Cancelled (e.g. by the branch manager): 409 BOOKING_CANCELLED
+    const cancelled = cancelledPickupRefusal(booking);
+    if (cancelled) return res.status(cancelled.status).json(cancelled.toJSON());
 
     if (booking.status !== BookingStatus.CONFIRMED) {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -192,6 +197,10 @@ export const PickupController = async (req: Request, res: Response) => {
       : {};
 
     await prisma.$transaction(async (tx) => {
+      // Booking row lock first (shared with the BM's manual cancel), then still
+      // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
+      await lockBookingForPickup(tx, booking.id);
+
       // DL number entered / corrected at the counter (X2)
       await savePickupDlNumber(pickupDl, tx);
 
@@ -459,6 +468,9 @@ export const PickupController = async (req: Request, res: Response) => {
     }
     if (error instanceof DlInUseError) {
       return res.status(error.status).json(error.toJSON("staff"));
+    }
+    if (error instanceof PickupStateError) {
+      return res.status(error.status).json(error.toJSON());
     }
     console.error("Pickup Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

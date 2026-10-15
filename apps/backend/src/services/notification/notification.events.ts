@@ -344,7 +344,10 @@ export const notifyEvents = {
     });
   },
 
-  /** Booking cancelled (no-show — manual or the 06:00 auto-cancel — or a displaced booking cancelled). */
+  /**
+   * Booking cancelled (no-show — manual or the 06:00 auto-cancel — a displaced
+   * booking cancelled, or the branch manager's manual cancel from the Fleet tab).
+   */
   bookingCancelled(args: {
     bookingId: number;
     actorUserId?: number | null;
@@ -353,12 +356,21 @@ export const notifyEvents = {
     reason?: string | null;
     /** System cancellations also go to the branch manager. */
     bySystem?: boolean;
+    /** Cancelled by the branch manager by hand: "was cancelled by the branch". */
+    byBranch?: boolean;
+    /** A sentence on the refund, appended after the reason (e.g. "A refund of ₹500.00 (Cash) has been issued."). */
+    refundNote?: string | null;
   }): Promise<void> {
     return safely("bookingCancelled", async () => {
       const booking = await loadBooking(args.bookingId);
       if (!booking || booking.status !== "CANCELLED") return;
       const actorId = await resolveActorId(args.actorUserId, args.actorPublicId);
-      const reason = args.reason?.trim() ? `: ${args.reason.trim()}` : ".";
+      const refundNote = args.refundNote?.trim() ?? "";
+      const reasonText = args.reason?.trim() ?? "";
+      const reason =
+        (args.byBranch ? " by the branch" : "") +
+        (reasonText ? `: ${reasonText}${refundNote && !/[.!?]$/.test(reasonText) ? "." : ""}` : ".") +
+        (refundNote ? ` ${refundNote}` : "");
       const vehicle = booking.items[0]?.vehicle;
       const base = {
         type: "BOOKING_CANCELLED" as const,
