@@ -8,8 +8,9 @@ import type {
 
 /**
  * Festival pricing rules (e.g. "Dussehra", 20–22 Oct, +10% and/or +₹200 a day
- * on every vehicle): priced blocks with at least half their time on the dates
- * are billed at rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
+ * on every vehicle): priced blocks (each rental day from pickup, the
+ * remainder) that start on one of the dates are billed at
+ * rent × (1 + percent / 100) + flatAmount × (billed hours / 24).
  * A GROUPS rule (the per-group dialog) sets one change per vehicle group
  * instead (items). Bookings already made keep their prices.
  */

@@ -29,6 +29,8 @@ interface VehicleGridProps {
   restrictedTypeClasses?: Set<string>;
   blockedAll?: boolean;
   limitsLoading?: boolean;
+  /** Staff listing only: show each card's festival pricing line */
+  showFestival?: boolean;
 }
 
 // Memoized vehicle card for optimization
@@ -90,6 +92,7 @@ export const VehicleGrid = ({
   restrictedTypeClasses,
   blockedAll = false,
   limitsLoading = false,
+  showFestival = false,
 }: VehicleGridProps) => {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -170,6 +173,7 @@ export const VehicleGrid = ({
               variant={variant}
               isRestricted={isRestricted}
               limitsLoading={limitsLoading}
+              showFestival={showFestival}
             />
           );
         })}

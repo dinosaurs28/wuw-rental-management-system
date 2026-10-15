@@ -6,7 +6,7 @@ import type {
   OverdueReturnsResponse,
   OverdueReturnsSnapshot,
 } from "@/types/overdueReturns";
-import type { WeekendPricing, FestivalPricing } from "@/services/vehicle.service";
+import type { WeekendPricing, FestivalPricing, VehicleDetailsResponse } from "@/services/vehicle.service";
 
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 
@@ -154,6 +154,23 @@ export const employeeService = {
   ) => {
     const response = await apiClient.get(
       `/employee/vehicles/group/${encodeURIComponent(groupKey)}`,
+      { params: { start: startDate, end: endDate } },
+    );
+    return response.data;
+  },
+
+  /**
+   * One car of the staff's branch priced for the walk-in window — the staff
+   * endpoint (GET /employee/vehicles/:id) keeps the festival breakdown that the
+   * public vehicle endpoint leaves out for customers.
+   */
+  getVehicleDetails: async (
+    vehicleId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<VehicleDetailsResponse> => {
+    const response = await apiClient.get<VehicleDetailsResponse>(
+      `/employee/vehicles/${encodeURIComponent(vehicleId)}`,
       { params: { start: startDate, end: endDate } },
     );
     return response.data;

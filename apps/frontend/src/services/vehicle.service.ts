@@ -71,7 +71,7 @@ export interface PublicVehicle {
     sgst?: number;
     /** Weekend rates inside price (absent when none applies). */
     weekend?: WeekendPricing;
-    /** Festival rules inside the price (absent when none applies). */
+    /** Festival rules inside the price — staff endpoints only (public / customer responses never carry it). */
     festival?: FestivalPricing;
   };
 }
@@ -94,9 +94,10 @@ export interface WeekendPricing {
 }
 
 /**
- * Festival rules inside a price (festival pricing): blocks of the window with
- * at least half their time on a festival's dates have their rent changed by
- * its percentage (the highest-rent rule when several apply).
+ * Festival rules inside a price (festival pricing): blocks of the window that
+ * start on a festival's dates have their rent changed by its percentage / flat
+ * ₹ a day (the highest-rent rule when several apply). Staff responses only —
+ * customer / public responses never carry it.
  */
 export interface FestivalPricing {
   festivalBlocks: number;
@@ -185,7 +186,7 @@ export interface VehicleGroupDetails {
       billedAsType?: BilledAsType;
       /** Weekend rates inside the price (absent when none applies). */
       weekend?: WeekendPricing;
-      /** Festival rules inside the price (absent when none applies). */
+      /** Festival rules inside the price — staff endpoints only (public / customer responses never carry it). */
       festival?: FestivalPricing;
     };
   }) | null;
@@ -434,7 +435,7 @@ export interface VehicleDetails {
       billedAsType?: BilledAsType;
       /** Weekend rates inside the price (absent when none applies). */
       weekend?: WeekendPricing;
-      /** Festival rules inside the price (absent when none applies). */
+      /** Festival rules inside the price — staff endpoints only (public / customer responses never carry it). */
       festival?: FestivalPricing;
     };
   }) | null;

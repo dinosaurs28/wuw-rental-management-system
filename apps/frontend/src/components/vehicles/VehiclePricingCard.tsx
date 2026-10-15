@@ -318,10 +318,6 @@ export const VehiclePricingCard = ({
               {pd.pricingBreakdown.weekend && (
                 <p className="-mt-3 text-xs text-zinc-500">{pd.pricingBreakdown.weekend.label}</p>
               )}
-              {/* Festival pricing: which part of the rent a festival rule changed */}
-              {pd.pricingBreakdown.festival && (
-                <p className="-mt-3 text-xs text-zinc-500">{pd.pricingBreakdown.festival.label}</p>
-              )}
 
               {rent.discount > 0 && (
                 <div className="flex justify-between text-base">

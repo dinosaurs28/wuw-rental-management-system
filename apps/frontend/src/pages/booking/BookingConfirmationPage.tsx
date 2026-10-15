@@ -94,8 +94,6 @@ interface BookingResponse {
   billedAs?: string;
   /** Weekend-wise pricing: e.g. "Includes 1 weekend day at ₹1,600", one per vehicle priced so. */
   weekendLabels?: string[];
-  /** Festival pricing: e.g. "Includes 3 festival days (Dussehra +10%)", one per vehicle priced so. */
-  festivalLabels?: string[];
   /** The rent incl. GST, its discounts and the GST inside it (item 17). */
   rentIncl: ReturnType<typeof bookingTotalsInclGst>;
 }
@@ -244,13 +242,6 @@ export const BookingConfirmationPage = () => {
             ...new Set(
               response.data.items
                 .map((item) => item.pricingBreakdown?.weekend?.label)
-                .filter((label): label is string => !!label),
-            ),
-          ],
-          festivalLabels: [
-            ...new Set(
-              response.data.items
-                .map((item) => item.pricingBreakdown?.festival?.label)
                 .filter((label): label is string => !!label),
             ),
           ],
@@ -855,10 +846,6 @@ export const BookingConfirmationPage = () => {
               </div>
               {/* Weekend-wise pricing: which part of the rent is at the weekend rate */}
               {bookingData.weekendLabels?.map((label) => (
-                <p key={label} className="-mt-2 text-xs text-muted-foreground">{label}</p>
-              ))}
-              {/* Festival pricing: which part of the rent a festival rule changed */}
-              {bookingData.festivalLabels?.map((label) => (
                 <p key={label} className="-mt-2 text-xs text-muted-foreground">{label}</p>
               ))}
 

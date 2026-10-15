@@ -489,6 +489,7 @@ export default function EmployeeVehicleListingPage() {
             endDateTime={endDateTime}
             restrictedTypeClasses={restrictedTypeClasses}
             limitsLoading={limitsLoading}
+            showFestival
           />
         )}
       </main>

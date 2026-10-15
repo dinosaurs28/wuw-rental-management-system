@@ -9,6 +9,7 @@ import { Shield, Users, Fuel, Settings2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { getCurrentTime } from "@/utils/formatters";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,6 @@ import { CompleteProfileDialog } from "@/components/booking/CompleteProfileDialo
 import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { CustomerIdentityLine } from "@/components/employee/CustomerIdentityLine";
 
-import { useVehicleDetails } from "@/hooks/useVehicleDetails";
 import { useCustomerQrPhoto } from "@/hooks/useQrPhoto";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useBookingScheduleVerdict } from "@/hooks/useBookingScheduleVerdict";
@@ -40,6 +40,7 @@ import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
+import { employeeService } from "@/services/employee.service";
 
 export const EmployeeVehicleDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -132,7 +133,13 @@ export const EmployeeVehicleDetailsPage = () => {
     isLoading: isVehicleLoading,
     isRefetching: isVehicleRefetching,
     error: vehicleError,
-  } = useVehicleDetails(id || "", startDateTime, endDateTime);
+  } = useQuery({
+    // The staff endpoint: the walk-in quote keeps its festival breakdown
+    queryKey: ["employee-vehicle-details", id, startDateTime, endDateTime],
+    queryFn: () => employeeService.getVehicleDetails(id!, startDateTime || undefined, endDateTime || undefined),
+    enabled: !!id,
+    staleTime: 60 * 1000,
+  });
 
   const vehicle = vehicleResponse?.data;
 

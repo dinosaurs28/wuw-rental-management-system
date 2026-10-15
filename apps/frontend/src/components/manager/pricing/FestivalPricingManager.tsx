@@ -559,8 +559,8 @@ function RuleDialog({
             </div>
             <p className="text-xs text-zinc-500">
               {span != null ? `${plural(span, "day")} · ` : ""}
-              Both days included, up to {SPECIAL_PRICING_MAX_DAYS} days. A day or 12 hours of a trip counts when at
-              least half of it falls on these dates.
+              Both days included, up to {SPECIAL_PRICING_MAX_DAYS} days. A rental day (or the last 12 hours) is
+              charged the festival price when it starts on one of these dates.
             </p>
           </div>
 
@@ -692,10 +692,11 @@ export function FestivalPricingManager({ portal }: { portal: SpecialPricingPorta
       <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3.5 text-sm text-orange-900">
         <Info className="mt-0.5 size-4 shrink-0 text-orange-600" />
         <p>
-          On an offer's dates each day of a trip — or its last 12 hours — is billed at the rent changed by its
-          vehicle group's pricing (a flat amount is per day, 12 hours get half), when at least half of it falls on
-          those dates (weekend rents apply underneath). When offers overlap, the one giving the higher price applies.
-          Free km don't change, and bookings already made keep their prices.
+          A rental day is charged the festival price when it starts on a festival date: each day of a trip
+          (counted from pickup) — or its last 12 hours — that starts on an offer's dates is billed at the rent
+          changed by its vehicle group's pricing (a flat amount is per day, 12 hours get half; weekend rents apply
+          underneath). When offers overlap, the one giving the higher price applies. Free km don't change, bookings
+          already made keep their prices, and customers see only the final price.
         </p>
       </div>
 

@@ -22,6 +22,8 @@ interface VehicleCardProps {
   isRestricted?: boolean;
   /** When true, show a skeleton shimmer on the CTA while booking limits are loading */
   limitsLoading?: boolean;
+  /** Staff listing only: show the festival pricing line (customers see just the price) */
+  showFestival?: boolean;
 }
 
 export const VehicleCard = ({
@@ -32,6 +34,7 @@ export const VehicleCard = ({
   variant = "light",
   isRestricted = false,
   limitsLoading = false,
+  showFestival = false,
 }: VehicleCardProps) => {
   const navigate = useNavigate();
 
@@ -85,9 +88,10 @@ export const VehicleCard = ({
       ? `Weekend ₹${weekendDaily.toLocaleString("en-IN", { maximumFractionDigits: 2 })}/day`
       : null;
   })();
-  // Festival pricing: with dates, the part of the listed price a festival rule changed
+  // Festival pricing (staff listing only — customers see just the final price):
+  // with dates, the part of the listed price a festival rule changed
   const festivalNote =
-    "pricingDetails" in vehicle ? vehicle.pricingDetails?.festival?.label ?? null : null;
+    showFestival && "pricingDetails" in vehicle ? vehicle.pricingDetails?.festival?.label ?? null : null;
 
   // Listed rents are GST-inclusive (item 17); with dates the server also sends
   // the GST inside the price (absent when the branch has no GST rule).
