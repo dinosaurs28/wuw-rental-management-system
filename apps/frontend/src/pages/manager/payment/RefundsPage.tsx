@@ -255,8 +255,10 @@ export function RefundsTab() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-neutral-900">Pending Refund Approvals</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Approve or reject customer refund requests</p>
+            <h2 className="text-base font-semibold text-neutral-900">Pending Refunds</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Approve or reject refund requests, and complete approved refunds to the original payment
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {items.length > 0 && (

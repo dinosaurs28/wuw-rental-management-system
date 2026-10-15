@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2 } from "lucide-react";
+import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2, Ban } from "lucide-react";
 import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
+import { CancelRentDialog } from "@/components/manager/CancelRentDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,11 +77,14 @@ function BookingRow({
   booking,
   mode,
   onReschedule,
+  onCancel,
 }: {
   booking: FleetBooking;
   mode: "picked_up" | "upcoming";
   /** Upcoming (CONFIRMED) rows: open the reschedule sheet (P4c). */
   onReschedule?: (booking: FleetBooking) => void;
+  /** Open the Cancel rent dialog (active and upcoming rents). */
+  onCancel?: (booking: FleetBooking) => void;
 }) {
   const vehicle = booking.items[0]?.vehicle;
   const thumbUrl = vehicle?.images?.[0]?.file?.url;
@@ -165,6 +169,20 @@ function BookingRow({
         >
           <CalendarClock className="w-3.5 h-3.5" />
           Reschedule
+        </Button>
+      )}
+
+      {/* Cancel the rent by hand — kept as Cancelled, the customer can book again */}
+      {onCancel && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onCancel(booking)}
+          className="h-7 px-2 gap-1 text-xs flex-shrink-0 border-[#e8e6e1] text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
+          <Ban className="w-3.5 h-3.5" />
+          Cancel rent
         </Button>
       )}
     </div>
@@ -314,6 +332,8 @@ export const FleetStatusPage = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   // Upcoming booking being rescheduled (P4c)
   const [rescheduleFor, setRescheduleFor] = useState<FleetBooking | null>(null);
+  // Active / upcoming rent being cancelled by hand
+  const [cancelFor, setCancelFor] = useState<FleetBooking | null>(null);
   const queryClient = useQueryClient();
 
   const updateParams = (patch: Record<string, string>) => {
@@ -622,6 +642,7 @@ export const FleetStatusPage = () => {
                     booking={b}
                     mode={tab === "picked_up" ? "picked_up" : "upcoming"}
                     onReschedule={setRescheduleFor}
+                    onCancel={setCancelFor}
                   />
                 ))
               )}
@@ -640,6 +661,23 @@ export const FleetStatusPage = () => {
           role="manager"
           onRescheduled={() => {
             queryClient.invalidateQueries({ queryKey: ["manager-fleet-status"] });
+          }}
+        />
+      )}
+
+      {cancelFor && (
+        <CancelRentDialog
+          open={!!cancelFor}
+          onOpenChange={(open) => {
+            if (!open) setCancelFor(null);
+          }}
+          bookingPublicId={cancelFor.publicId}
+          onCancelled={() => {
+            // Leaves Out on Road / Upcoming; shows as Cancelled in the history
+            queryClient.invalidateQueries({ queryKey: ["manager-fleet-status"] });
+            queryClient.invalidateQueries({ queryKey: ["manager-overdue-returns"] });
+            queryClient.invalidateQueries({ queryKey: ["cancellation-stats"] });
+            queryClient.invalidateQueries({ queryKey: ["cancellation-history"] });
           }}
         />
       )}
