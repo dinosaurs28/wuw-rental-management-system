@@ -7,6 +7,9 @@
  *    customer's payment-success screen: uploaded first, its id sent as
  *    `proof_file_id`. The UTR box is gone from this app (the server still
  *    accepts a UTR from older builds).
+ *  - Up to three such photos per payment (Oct 2026): screenshot 1 is required,
+ *    2 and 3 are optional for a customer who paid in several UPI transactions.
+ *    All of them go as `proof_file_ids` (slot order) next to `proof_file_id`.
  *  - CREDIT = the amount stays owed by the customer against a note of the
  *    collateral held, until the branch manager clears it.
  *  - Safety deposit at drop: SET_OFF (default) credits it against the drop
@@ -50,6 +53,9 @@ export const DUPLICATE_PAYMENT_PROOF_MESSAGE =
 /** Largest payment-proof photo the upload endpoint accepts. */
 export const PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024;
 
+/** Payment screenshots one counter UPI payment can carry (the first is required). */
+export const PAYMENT_PROOF_MAX_PHOTOS = 3;
+
 /** How the safety deposit taken at pickup is returned at drop. */
 export const SAFETY_DEPOSIT_HANDLING = ['SET_OFF', 'REFUND_IN_FULL'] as const;
 export type SafetyDepositHandling = (typeof SAFETY_DEPOSIT_HANDLING)[number];
@@ -88,14 +94,16 @@ export interface CounterPaymentErrors {
   method?: string;
   split?: string;
   proof?: string;
+  /** Which payment screenshot slot (0-based) `proof` is about; the first when unset. */
+  proofIndex?: number;
   collateral?: string;
 }
 
 /** What the picker resolved to — each screen maps it onto its endpoint's body. */
 export type CounterPaymentChoice =
   | { method: 'CASH'; amount: number }
-  | { method: 'UPI'; amount: number; proofFileId: string }
-  | { method: 'SPLIT'; amount: number; cashAmount: number; upiAmount: number; proofFileId: string }
+  | { method: 'UPI'; amount: number; proofFileId: string; proofFileIds: string[] }
+  | { method: 'SPLIT'; amount: number; cashAmount: number; upiAmount: number; proofFileId: string; proofFileIds: string[] }
   | { method: 'CREDIT'; amount: number; collateral: string }
   | { method: 'ONLINE'; amount: number };
 
@@ -127,6 +135,28 @@ export function proofProblem(shot: ProofShot | null, required = true): string | 
   return null;
 }
 
+/**
+ * The screenshots of a payment (slots in order, empty slots skipped): their ids,
+ * or the problem and the slot it is about. At least one is required; one still
+ * uploading or failed has to land (or be removed) first.
+ */
+export function proofsProblem(
+  shots: readonly (ProofShot | null)[],
+): { ok: true; ids: string[] } | { ok: false; error: string; index: number } {
+  const ids: string[] = [];
+  for (let i = 0; i < shots.length; i++) {
+    const shot = shots[i];
+    if (!shot) continue;
+    if (shot.status !== 'ready') {
+      const problem = proofProblem(shot) ?? PAYMENT_PROOF_REQUIRED_MESSAGE;
+      return { ok: false, error: i > 0 ? problem.replace('payment photo', `payment screenshot ${i + 1}`) : problem, index: i };
+    }
+    if (!ids.includes(shot.proof.proofFileId)) ids.push(shot.proof.proofFileId);
+  }
+  if (ids.length === 0) return { ok: false, error: PAYMENT_PROOF_REQUIRED_MESSAGE, index: 0 };
+  return { ok: true, ids: ids.slice(0, PAYMENT_PROOF_MAX_PHOTOS) };
+}
+
 export function collateralProblem(text: string): string | null {
   const t = text.trim();
   if (t.length < COLLATERAL_MIN_LENGTH) return COLLATERAL_REQUIRED_MESSAGE;
@@ -140,7 +170,7 @@ export function collateralProblem(text: string): string | null {
  */
 export function resolveCounterPayment(
   amount: number,
-  input: { method: PaymentMethodKey; cash: string; proof: ProofShot | null; collateral: string },
+  input: { method: PaymentMethodKey; cash: string; proofs: readonly (ProofShot | null)[]; collateral: string },
 ): { ok: true; choice: CounterPaymentChoice } | { ok: false; errors: CounterPaymentErrors } {
   const total = round2(amount);
   switch (input.method) {
@@ -149,9 +179,9 @@ export function resolveCounterPayment(
     case 'ONLINE':
       return { ok: true, choice: { method: 'ONLINE', amount: total } };
     case 'UPI': {
-      const problem = proofProblem(input.proof);
-      if (problem || input.proof?.status !== 'ready') return { ok: false, errors: { proof: problem ?? PAYMENT_PROOF_REQUIRED_MESSAGE } };
-      return { ok: true, choice: { method: 'UPI', amount: total, proofFileId: input.proof.proof.proofFileId } };
+      const proofs = proofsProblem(input.proofs);
+      if (!proofs.ok) return { ok: false, errors: { proof: proofs.error, proofIndex: proofs.index } };
+      return { ok: true, choice: { method: 'UPI', amount: total, proofFileId: proofs.ids[0]!, proofFileIds: proofs.ids } };
     }
     case 'SPLIT': {
       const cash = parseCashPart(input.cash);
@@ -161,9 +191,12 @@ export function resolveCounterPayment(
       } else if (cash >= total) {
         errors.split = `The cash part must be less than ${inrCounter(total)} — choose Cash to take it all in cash.`;
       }
-      const problem = proofProblem(input.proof);
-      if (problem) errors.proof = problem;
-      if (errors.split || errors.proof || input.proof?.status !== 'ready') return { ok: false, errors };
+      const proofs = proofsProblem(input.proofs);
+      if (!proofs.ok) {
+        errors.proof = proofs.error;
+        errors.proofIndex = proofs.index;
+      }
+      if (errors.split || !proofs.ok) return { ok: false, errors };
       return {
         ok: true,
         choice: {
@@ -171,7 +204,8 @@ export function resolveCounterPayment(
           amount: total,
           cashAmount: cash,
           upiAmount: round2(total - cash),
-          proofFileId: input.proof.proof.proofFileId,
+          proofFileId: proofs.ids[0]!,
+          proofFileIds: proofs.ids,
         },
       };
     }
@@ -206,16 +240,19 @@ export function counterPaymentServerError(
   const body = err?.response?.data;
   const code = body?.code as string | undefined;
   const message: string | undefined = typeof body?.message === 'string' && body.message ? body.message : undefined;
+  // Which screenshot (1–3) the server refused, when it says (Oct 2026)
+  const position = typeof body?.proofPosition === 'number' ? body.proofPosition : null;
+  const at = position && position >= 1 && position <= PAYMENT_PROOF_MAX_PHOTOS ? { proofIndex: position - 1 } : {};
   switch (code) {
     case 'PAYMENT_PROOF_REQUIRED':
       return { errors: { proof: message ?? PAYMENT_PROOF_REQUIRED_MESSAGE }, dropProof: false };
     case 'INVALID_PAYMENT_PROOF':
       return {
-        errors: { proof: message ?? "The payment photo wasn't found. Take the photo of the customer's payment screen again." },
+        errors: { proof: message ?? "The payment photo wasn't found. Take the photo of the customer's payment screen again.", ...at },
         dropProof: true,
       };
     case 'DUPLICATE_PAYMENT_PROOF':
-      return { errors: { proof: message ?? DUPLICATE_PAYMENT_PROOF_MESSAGE }, dropProof: true };
+      return { errors: { proof: message ?? DUPLICATE_PAYMENT_PROOF_MESSAGE, ...at }, dropProof: true };
     // Only from a UTR-backed payment (an older build's hold); a reused photo comes
     // back as DUPLICATE_PAYMENT_PROOF, the walk-in confirm poll included. This app
     // only sends photos, so either way a new photo is what fixes it.

@@ -23,7 +23,7 @@ import { LEGAL_URLS } from '../../constants/links';
 import WhatsAppSupportButton from '../../components/ui/WhatsAppSupportButton';
 import { useAuthStore } from '../../store/auth';
 import { useIsGuest } from '../../lib/auth-gate';
-import { displayEmail, joinProfileFieldLabels, maskAadhaar } from '../../lib/identity';
+import { displayEmail, joinProfileFieldLabels } from '../../lib/identity';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
 import DlPhotosSheet, { dlPairCompletedByUpload } from '../../components/ui/DlPhotosSheet';
@@ -269,22 +269,14 @@ export default function Profile() {
           <InfoRow icon="person-outline" label="Name" value={name} />
           <InfoRow icon="mail-outline" label="Email" value={email} />
           <InfoRow icon="call-outline" label="Phone" value={profile?.phone || 'Not added'} muted={!profile?.phone} />
+          {/* Age replaces the DL / Aadhaar numbers and date of birth (Oct 2026) */}
           <InfoRow
-            icon="card-outline"
-            label="Driving Licence number"
-            value={profile?.drivingLicenceNumber || 'Not added'}
-            muted={!profile?.drivingLicenceNumber}
+            icon="calendar-outline"
+            label="Age"
+            value={profile?.age != null ? String(profile.age) : 'Not added'}
+            muted={profile?.age == null}
+            last
           />
-          <InfoRow
-            icon="finger-print-outline"
-            label="Aadhaar number"
-            value={profile?.aadhaarNumber ? maskAadhaar(profile.aadhaarNumber) : 'Not added'}
-            muted={!profile?.aadhaarNumber}
-            last={!profile?.dob}
-          />
-          {profile?.dob && (
-            <InfoRow icon="calendar-outline" label="Date of birth" value={new Date(profile.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} last />
-          )}
         </View>
 
         {/* Bookings */}
@@ -300,7 +292,7 @@ export default function Profile() {
         </View>
 
         {/* KYC documents */}
-        {/* X2 — document photos are optional; the DL + Aadhaar NUMBERS are what booking needs */}
+        {/* X2 — document photos are optional; a complete profile is what booking needs */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionTitleGroup}>
             <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Identity Documents</Text>
@@ -309,7 +301,7 @@ export default function Profile() {
           {kycLoading && <ActivityIndicator size="small" color={Colors.orange} />}
         </View>
         <Text style={styles.docsHint}>
-          Not needed to book — your Driving Licence and Aadhaar numbers are. Upload photos if you want them on file.
+          Not needed to book. Upload photos if you want them on file — bring your original driving licence to pickup.
         </Text>
 
         {!isProfileComplete && (
@@ -320,7 +312,7 @@ export default function Profile() {
               <Text style={styles.incompleteBannerSub}>
                 {missingText
                   ? `Add your ${missingText} to book a car and upload documents.`
-                  : 'Name, phone, address, Driving Licence and Aadhaar number are required to book a car and upload documents.'}
+                  : 'Name, phone, address and age are required to book a car and upload documents.'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#d97706" />

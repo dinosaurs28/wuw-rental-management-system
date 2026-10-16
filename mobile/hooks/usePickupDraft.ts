@@ -3,7 +3,7 @@ import type { CapturedPhoto } from '../components/employee/PhotoCaptureSection';
 import type { CounterPaymentController, CounterRefundController } from '../components/employee/CounterPaymentPicker';
 import { COUNTER_PAYMENT_METHODS, COUNTER_REFUND_METHODS } from '../lib/counterPayment';
 import { DL_SELECTABLE_STATUSES, type DlCollectionStatus } from '../lib/dlStatus';
-import { draftBool, draftNumber, draftOneOf, draftString, proofDraftId } from '../lib/operationDraft';
+import { draftBool, draftNumber, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
 // Paused pickup (client item 2): which pickup-screen fields are kept and how
@@ -30,6 +30,10 @@ export interface PickupDraftFields {
   depositOpen: boolean;
   sDepositAmt: string;
   sDepositReason: string;
+  // Manual pickup discount typed but not applied yet (an applied one is on the server)
+  discountOpen: boolean;
+  discountAmount: string;
+  discountReason: string;
 }
 
 interface Options {
@@ -76,6 +80,9 @@ export function usePickupDraft({
     !f.depositReason &&
     !f.couponCode &&
     !f.depositOpen &&
+    !f.discountOpen &&
+    !f.discountAmount &&
+    !f.discountReason &&
     (f.odo === '' || f.odo === odoPrefill);
 
   return useOperationDraft({
@@ -92,7 +99,9 @@ export function usePickupDraft({
         payMethod: pay.method,
         payCash: pay.cash,
         payCollateral: pay.collateral,
-        payProofId: proofDraftId(pay.proof),
+        // Screenshot 1 (drafts saved by older builds carry only this) and all of them
+        payProofId: proofDraftIds(pay.proof)[0] ?? null,
+        payProofIds: proofDraftIds(pay.proof),
         refundMethod: refundPay.method,
         refundProofId: proofDraftId(refundPay.proof),
       },
@@ -128,14 +137,19 @@ export function usePickupDraft({
       s.setDepositOpen(draftBool(d, 'depositOpen'));
       s.setSDepositAmt(draftString(d, 'sDepositAmt'));
       s.setSDepositReason(draftString(d, 'sDepositReason'));
+      s.setDiscountOpen(draftBool(d, 'discountOpen'));
+      s.setDiscountAmount(draftString(d, 'discountAmount'));
+      s.setDiscountReason(draftString(d, 'discountReason'));
       // How the bill was going to be settled (the amounts come from the server
       // again; a proof photo is re-checked when the payment is recorded).
       const method = draftOneOf(d, 'payMethod', COUNTER_PAYMENT_METHODS);
       if (method) pay.setMethod(method);
       pay.setCash(draftString(d, 'payCash'));
       pay.setCollateral(draftString(d, 'payCollateral'));
+      const payProofIds = draftStrings(d, 'payProofIds');
       const payProofId = draftString(d, 'payProofId');
-      if (payProofId) pay.proof.restore(payProofId);
+      if (payProofIds.length) pay.proof.restore(payProofIds);
+      else if (payProofId) pay.proof.restore(payProofId);
       const refundMethod = draftOneOf(d, 'refundMethod', COUNTER_REFUND_METHODS);
       if (refundMethod) refundPay.setMethod(refundMethod);
       const refundProofId = draftString(d, 'refundProofId');

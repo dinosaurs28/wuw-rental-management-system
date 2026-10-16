@@ -1,7 +1,8 @@
 // Booking packages on the booking screens (BRIEF4 P1 / P3 / P4a), built on the
 // shared rule in ./bookingWindow (CUSTOMER_PACKAGES, customerPackageEnd …).
 //
-// Customers pick a pickup and a PACKAGE — "12 hours" or "1 day" … "15 days" —
+// Customers pick a pickup (up to 30 days ahead) and a PACKAGE — "12 hours" or
+// "1 day" … "15 days" —
 // and the return is computed from them (never picked freely), so customer
 // booking create's BOOKING_PACKAGE_REQUIRED can't be hit from the app.
 // Self-extensions add +12 hours or + N days. Fleet walk-ins use the same
@@ -11,9 +12,9 @@
 // priced as 12 hours by the server — and the screens say so.
 import {
   CUSTOMER_PACKAGES,
-  HALF_DAY_CLAMP_MIN_MINUTES,
   HALF_DAY_PACKAGE_HOURS,
-  MAX_BOOKING_DAYS,
+  ADVANCE_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   bookingWindowEnd,
   customerPackageEnd,
   customerPackageFor,
@@ -27,7 +28,6 @@ import {
   bookingTimesNotice,
   firstAllowedFrom,
   getBranchLocalTime,
-  getDayWindow,
   halfDayReturnFor,
   hasOfficeHours,
   isClampedHalfDay,
@@ -118,19 +118,12 @@ export function refreshPackageRange<R extends PackageRange>(r: R, now: Date = ne
 }
 
 /**
- * Latest pickup that still leaves the 12-hour package inside the 15-day window:
- * window end − 12 h, or — given the branch hours — an hour before closing on
- * the window's last day, where 12 hours is held to closing (client item 6).
+ * Latest pickup a customer can book: 23:59 IST on the advance window's last
+ * day (today + 30). Every package fits from it — the return may pass the
+ * window, up to 15 days after pickup. `config` is kept for callers.
  */
-export function latestPackagePickup(now: Date = new Date(), config?: BranchScheduleConfig | null): Date {
-  const windowEnd = bookingWindowEnd(now);
-  const plain = new Date(windowEnd.getTime() - HALF_DAY_PACKAGE_HOURS * HOUR_MS);
-  const lastDay = hasOfficeHours(config) ? getDayWindow(config, windowEnd) : null;
-  if (!lastDay?.isOpen) return plain;
-  // windowEnd is 23:59:59.999 IST on the last day
-  const lastDayStart = windowEnd.getTime() + 1 - 24 * HOUR_MS;
-  const held = new Date(lastDayStart + (lastDay.closeMin - HALF_DAY_CLAMP_MIN_MINUTES) * 60_000);
-  return held.getTime() > plain.getTime() ? held : plain;
+export function latestPackagePickup(now: Date = new Date(), _config?: BranchScheduleConfig | null): Date {
+  return bookingWindowEnd(now);
 }
 
 /** The 12-hour return held to closing for this pickup (item 6), when the branch hours hold it. */
@@ -174,8 +167,8 @@ export function returnIssue(config: BranchScheduleConfig | null | undefined, at:
 }
 
 /**
- * Customer packages for a pickup: every package whose return is inside the
- * 15-day window, each with its return and, when the branch wouldn't take a
+ * Customer packages for a pickup inside the 30-day window (none past it),
+ * each with its return and, when the branch wouldn't take a
  * return then, why not (the 12-hour package overnight; a day package whose
  * return day is closed or shorter).
  */
@@ -254,7 +247,7 @@ function istDayLabel(d: Date): string {
 
 /**
  * What a customer booking screen should say about its pickup + package: no
- * package left in the 15-day window, the pickup outside hours, the return in
+ * pickup past the 30-day window, the pickup outside hours, the return in
  * the grace after closing, or a return the branch would move. null when fine.
  */
 export function packageTimesNotice(
@@ -265,9 +258,9 @@ export function packageTimesNotice(
   if (customerPackagesForPickup(r.start, now, heldHalfDayEnd(config, r.start)).length === 0) {
     return {
       tone: 'error',
-      text: `Bookings can run up to ${MAX_BOOKING_DAYS} days from today (return by ${istDayLabel(
+      text: `Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead. Choose a pickup on or before ${istDayLabel(
         bookingWindowEnd(now),
-      )}), so even the 12-hour package from this pickup is too long. Choose an earlier pickup.`,
+      )}.`,
     };
   }
   return bookingTimesNotice(config, r.start, packageRangeEnd(r, 0, config), { now });
@@ -284,7 +277,7 @@ export function walkinExtraIssue(
   now: Date = new Date(),
 ): string | null {
   const end = packageRangeEnd({ start, hours: packageHours }, extra, config);
-  if (end.getTime() > maxReturnFor(start, now).getTime()) return `past the ${MAX_BOOKING_DAYS}-day limit`;
+  if (end.getTime() > maxReturnFor(start, now).getTime()) return `past the ${MAX_RENTAL_DAYS}-day limit`;
   return returnIssue(config, end);
 }
 
@@ -393,7 +386,7 @@ export function extensionChoices(
       })
       .filter((c) => Number.isFinite(c.hours) && !isNaN(c.endAt.getTime()));
   }
-  const limit = maxEnd ?? customerPackageEnd(currentEnd, MAX_BOOKING_DAYS * 24);
+  const limit = maxEnd ?? customerPackageEnd(currentEnd, MAX_RENTAL_DAYS * 24);
   return extensionPackageOptions(currentEnd, limit).map((o) => ({
     hours: o.hours,
     label: `+${o.label}`,

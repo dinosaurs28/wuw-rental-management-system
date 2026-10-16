@@ -19,11 +19,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import {
-  aadhaarError,
-  drivingLicenceError,
+  customerAgeError,
   formatAadhaarInput,
+  formatAgeInput,
   normalizeAadhaar,
   normalizeDrivingLicence,
+  optionalAadhaarError,
+  optionalDrivingLicenceError,
   profileIncompleteMessage,
 } from '../../../lib/identity';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
@@ -36,6 +38,8 @@ interface CustomerPrefill {
   email: string | null; // null for a walk-in placeholder
   phone: string | null;
   dob: string | null;
+  /** Entered age, else derived from dob; absent on older servers. */
+  age?: number | null;
   addressLine1: string | null;
   city: string | null;
   state: string | null;
@@ -45,26 +49,6 @@ interface CustomerPrefill {
   aadhaarNumber?: string | null;
   isProfileCompleted?: boolean;
   missingFields?: string[];
-}
-
-// Date of birth from the three DD / MM / YYYY boxes → "YYYY-MM-DD", or an
-// error. Same rule as the web form and the backend: required, and 18+.
-function parseDob(dd: string, mm: string, yyyy: string): { value: string } | { error: string } {
-  if (!dd && !mm && !yyyy) return { error: "Enter the customer's date of birth." };
-  const d = Number(dd);
-  const m = Number(mm);
-  const y = Number(yyyy);
-  const date = new Date(y, m - 1, d);
-  if (
-    yyyy.length !== 4 || y < 1900 ||
-    date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d
-  ) {
-    return { error: 'Enter a valid date of birth (DD / MM / YYYY).' };
-  }
-  const cutoff = new Date();
-  cutoff.setFullYear(cutoff.getFullYear() - 18);
-  if (date > cutoff) return { error: 'The customer must be at least 18 years old.' };
-  return { value: `${yyyy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` };
 }
 
 function Field({
@@ -85,12 +69,6 @@ function Field({
   );
 }
 
-// Stored DOBs are "YYYY-MM-DD" (sometimes a full ISO string) → DD / MM / YYYY boxes.
-function dobParts(dob: string | null | undefined): { d: string; m: string; y: string } | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dob ?? ''));
-  return match ? { y: match[1]!, m: match[2]!, d: match[3]! } : null;
-}
-
 export default function CreateCustomerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -98,8 +76,8 @@ export default function CreateCustomerScreen() {
   const resetBooking = useEmployeeBookingStore((s) => s.reset);
   const setBookingCustomer = useEmployeeBookingStore((s) => s.setCustomer);
 
-  // Complete mode (#1): fill in an EXISTING customer's missing details (e.g. DL
-  // and Aadhaar numbers) via the same walk-in complete endpoint, skipping the
+  // Complete mode (#1): fill in an EXISTING customer's missing details (e.g. the
+  // age) via the same walk-in complete endpoint, skipping the
   // phone/OTP steps. `next=back` returns to the screen that sent us here (the
   // walk-in summary after a 422 CUSTOMER_PROFILE_INCOMPLETE); otherwise the
   // booking flow starts for this customer.
@@ -120,9 +98,7 @@ export default function CreateCustomerScreen() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
+  const [age, setAge] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
@@ -168,12 +144,8 @@ export default function CreateCustomerScreen() {
     setName(existing.name ?? '');
     setEmail(existing.email ?? '');
     setPhone(existing.phone ?? '');
-    const dob = dobParts(existing.dob);
-    if (dob) {
-      setDobDay(dob.d);
-      setDobMonth(dob.m);
-      setDobYear(dob.y);
-    }
+    // Entered age, else the server's age from an older customer's dob
+    if (existing.age != null) setAge(String(existing.age));
     setAddressLine1(existing.addressLine1 ?? '');
     setCity(existing.city ?? '');
     setStateName(existing.state ?? '');
@@ -243,11 +215,12 @@ export default function CreateCustomerScreen() {
     // Email is optional for walk-ins (#1): only checked when filled in.
     const emailValue = email.trim();
     if (emailValue && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailValue)) return setError('Enter a valid email.');
-    const dob = parseDob(dobDay.trim(), dobMonth.trim(), dobYear.trim());
-    if ('error' in dob) return setError(dob.error);
-    const dlProblem = drivingLicenceError(dlNumber);
+    const ageProblem = customerAgeError(age);
+    if (ageProblem) return setError(ageProblem);
+    // DL / Aadhaar numbers are optional since Oct 2026 (checked when filled in)
+    const dlProblem = optionalDrivingLicenceError(dlNumber);
     if (dlProblem) return setError(dlProblem);
-    const aadhaarProblem = aadhaarError(aadhaar);
+    const aadhaarProblem = optionalAadhaarError(aadhaar);
     if (aadhaarProblem) return setError(aadhaarProblem);
     if (!addressLine1.trim() || !city.trim() || !stateName.trim() || !zipCode.trim() || !country.trim()) {
       return setError('Fill in the full address.');
@@ -260,14 +233,14 @@ export default function CreateCustomerScreen() {
         name: name.trim(),
         // Blank = omitted: the server keeps the stored email (or placeholder).
         ...(emailValue && !hasStoredEmail ? { email: emailValue } : {}),
-        drivingLicenceNumber: normalizeDrivingLicence(dlNumber.trim()),
-        aadhaarNumber: normalizeAadhaar(aadhaar.trim()),
+        ...(dlNumber.trim() ? { drivingLicenceNumber: normalizeDrivingLicence(dlNumber.trim()) } : {}),
+        ...(aadhaar.trim() ? { aadhaarNumber: normalizeAadhaar(aadhaar.trim()) } : {}),
+        age: Number(age),
         addressLine1: addressLine1.trim(),
         city: city.trim(),
         state: stateName.trim(),
         country: country.trim(),
         zipCode: zipCode.trim(),
-        dob: dob.value,
         ...(altPhone.trim() ? { alternatePhone: altPhone.trim() } : {}),
       });
       // Detail screen + search badge read these.
@@ -429,46 +402,22 @@ export default function CreateCustomerScreen() {
                     : 'Leave blank if the customer has no email.'
                 }
               />
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Date of birth</Text>
-                <View style={styles.dobRow}>
-                  <TextInput
-                    style={[styles.input, styles.dobPart]}
-                    value={dobDay}
-                    onChangeText={(t) => setDobDay(t.replace(/\D/g, ''))}
-                    placeholder="DD"
-                    placeholderTextColor={Colors.ink4}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.dobPart]}
-                    value={dobMonth}
-                    onChangeText={(t) => setDobMonth(t.replace(/\D/g, ''))}
-                    placeholder="MM"
-                    placeholderTextColor={Colors.ink4}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.dobYear]}
-                    value={dobYear}
-                    onChangeText={(t) => setDobYear(t.replace(/\D/g, ''))}
-                    placeholder="YYYY"
-                    placeholderTextColor={Colors.ink4}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                  />
-                </View>
-                <Text style={styles.fieldHint}>Customer must be 18 or older.</Text>
-              </View>
+              <Field
+                label="Age *"
+                value={age}
+                onChangeText={(t) => setAge(formatAgeInput(t))}
+                placeholder="25"
+                keyboardType="number-pad"
+                maxLength={2}
+                hint="Customer must be 18 or older."
+              />
               <Field label="Alternate phone (optional)" value={altPhone} onChangeText={setAltPhone} placeholder="Optional" keyboardType="phone-pad" />
             </View>
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Identity</Text>
-              <Text style={styles.cardSub}>Required to create a booking.</Text>
+              <Text style={styles.cardSub}>Optional — the DL number is also taken at pickup.</Text>
               <Field
-                label="Driving Licence number *"
+                label="Driving Licence number"
                 value={dlNumber}
                 onChangeText={setDlNumber}
                 placeholder="KA01 20110012345"
@@ -477,7 +426,7 @@ export default function CreateCustomerScreen() {
                 maxLength={24}
               />
               <Field
-                label="Aadhaar number *"
+                label="Aadhaar number"
                 value={aadhaar}
                 onChangeText={(t) => setAadhaar(formatAadhaarInput(t))}
                 placeholder="1234 5678 9012"
@@ -544,9 +493,6 @@ const styles = StyleSheet.create({
   field: { gap: 6 },
   fieldLabel: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
   fieldHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },
-  dobRow: { flexDirection: 'row', gap: 8 },
-  dobPart: { flex: 1, textAlign: 'center' },
-  dobYear: { flex: 1.6, textAlign: 'center' },
   input: {
     backgroundColor: Colors.bg,
     borderRadius: 12,

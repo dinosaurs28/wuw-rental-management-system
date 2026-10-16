@@ -29,7 +29,7 @@ import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
 import { bookingWindowLastDay, rangeLengthLabel, timeLabel, timeOf, withTime } from '../../lib/dates';
-import { MAX_BOOKING_DAYS, packageLabel } from '../../lib/bookingWindow';
+import { ADVANCE_BOOKING_DAYS, packageLabel } from '../../lib/bookingWindow';
 import { formatGstRate, inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import {
   closedDayText,
@@ -531,7 +531,7 @@ export default function VehicleDetail() {
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
+        note={`Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead`}
       />
 
       {/* Pickup time — today lists only future times; only inside branch

@@ -79,6 +79,8 @@ export interface ShiftTransaction {
   // refetch the shift for a fresh one. Absent on older servers.
   proofPhoto?: { proofFileId: string; publicId: string; url: string; capturedAt: string; expiresIn: number } | null;
   proofPhotoUrl?: string | null;
+  // Every payment photo (Oct 2026: up to 3, slot order). Absent on older servers.
+  proofs?: { fileId: string; position: number; url: string }[];
   collectedAt: string | null;
   confirmedAt: string | null;
   rejectedAt: string | null;

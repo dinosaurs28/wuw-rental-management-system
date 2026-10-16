@@ -22,6 +22,8 @@ interface CustomerDetail {
   email: string | null;
   phone: string | null;
   dob: string | null;
+  /** Entered age, else derived from dob; absent on older servers. */
+  age?: number | null;
   addressLine1: string | null;
   city: string | null;
   state: string | null;
@@ -129,7 +131,7 @@ export default function CustomerDetailScreen() {
             </View>
           </View>
 
-          {/* Identity numbers (#1) — required before a booking */}
+          {/* Identity numbers (#1) — optional since Oct 2026; the DL number is taken at pickup */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Identity</Text>
             <View style={styles.card}>
@@ -176,19 +178,24 @@ export default function CustomerDetailScreen() {
             </View>
           )}
 
-          {/* DOB */}
-          {customer.dob && (
+          {/* Age (replaces the date of birth, Oct 2026) — the server derives it
+              from an older customer's dob; older servers send dob only */}
+          {(customer.age != null || customer.dob) && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Personal</Text>
               <View style={styles.card}>
-                <InfoRow
-                  label="Date of Birth"
-                  value={new Date(customer.dob).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                />
+                {customer.age != null ? (
+                  <InfoRow label="Age" value={String(customer.age)} />
+                ) : (
+                  <InfoRow
+                    label="Date of Birth"
+                    value={new Date(customer.dob as string).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  />
+                )}
               </View>
             </View>
           )}

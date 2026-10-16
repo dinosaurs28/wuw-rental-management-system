@@ -24,8 +24,10 @@ interface CustomerResult {
   isBlacklisted?: boolean;
   blacklistReason?: string | null;
   customerProfile: {
-    // Derived server-side: includes the DL + Aadhaar numbers (#1).
+    // Derived server-side (#1): name, phone, address and age.
     isProfileCompleted: boolean;
+    /** Entered age, else derived from dob; absent on older servers. */
+    age?: number | null;
     missingFields?: string[];
     drivingLicenceNumber?: string | null;
     aadhaarNumberMasked?: string | null;

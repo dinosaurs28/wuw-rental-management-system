@@ -44,6 +44,7 @@ import { couponRejection, employeeApi } from '../../../lib/api';
 import { dlInUseErrorText } from '../../../lib/dlInUse';
 import { drivingLicenceError, normalizeDrivingLicence } from '../../../lib/identity';
 import { counterCouponCapNote } from '../../../lib/discounts';
+import PickupDiscountCard, { cleanDiscountInput, pickupDiscountInputError } from '../../../components/employee/PickupDiscountCard';
 import { rangeLengthLabel } from '../../../lib/dates';
 import {
   apiErrorMessage,
@@ -59,8 +60,20 @@ import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } f
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-// Pickup and return payment sessions share one serialized shape.
-type PickupSession = ReturnSession;
+// Pickup and return payment sessions share one serialized shape; a pickup bill
+// adds the manual discount view (absent on older servers).
+type PickupSession = ReturnSession & {
+  rentDue?: string;
+  pickupDiscountMax?: string;
+  pickupDiscount?: { amount: string; reason: string | null } | null;
+};
+
+// Manual pickup discount recorded on the booking (legacy: already off remainingBalance)
+interface PickupDiscountInfo {
+  amount: string;
+  reason: string | null;
+  maxAmount: string;
+}
 
 // DlStatusFields: the original-licence status (#3) — null until recorded.
 interface BookingDetail extends DlStatusFields {
@@ -82,6 +95,8 @@ interface BookingDetail extends DlStatusFields {
   safetyDeposit?: number | null;
   // Branch "Unified Payments": pickup money goes through a payment session.
   usePaymentSessions?: boolean;
+  // Manual pickup discount given (absent on older servers)
+  pickupDiscount?: PickupDiscountInfo | null;
   kmAllowance?: KmAllowance | null;
   frozenChargeConfig?: {
     safetyDepositEnabled?: boolean;
@@ -132,7 +147,7 @@ function kycDocLabel(doc: KycDoc) {
 // Settlement methods (#3 / #11): Cash · UPI (photo of the customer's payment
 // screen) · Split · Credit — components/employee/CounterPaymentPicker.
 
-type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon';
+type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon' | 'discount' | 'removeDiscount';
 
 const LEDGER_LABELS: Record<string, string> = {
   BOOKING_BASE: 'Booking balance',
@@ -295,6 +310,9 @@ export default function PickupScreen() {
   const [reviewOpen, setReviewOpen] = useState(false);
   // New safety deposit total (car still out)
   const [editDeposit, setEditDeposit] = useState('');
+  // Manual pickup discount (₹, blank / 0 = none) and its reason
+  const [editDiscount, setEditDiscount] = useState('');
+  const [editDiscountReason, setEditDiscountReason] = useState('');
   const [editSavedNote, setEditSavedNote] = useState<string | null>(null);
   // Photos taken during the edit: deleted on the way out unless the save kept them
   const editUploadsRef = useRef(new Set<string>());
@@ -320,6 +338,12 @@ export default function PickupScreen() {
   const [couponError, setCouponError] = useState<string | null>(null);
   // Why the applied coupon is smaller than its face value (capped by the server).
   const [couponNote, setCouponNote] = useState<string | null>(null);
+  // Manual pickup discount (flat ₹ off the rent): the form, kept in the draft
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [legacyDiscountBusy, setLegacyDiscountBusy] = useState<'apply' | 'remove' | null>(null);
   const [settling, setSettling] = useState(false);
   // How the bill is settled: Cash / UPI (photo) / Split / Credit, or a refund (Cash / UPI)
   const pay = useCounterPayment('CASH');
@@ -453,11 +477,12 @@ export default function PickupScreen() {
     fields: {
       odo, fuelLevel, fastagBalance, dlStatus, dlNumberEditing, dlNumberInput, requireManager, requestDeposit,
       depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
+      discountOpen, discountAmount, discountReason,
     },
     setters: {
       setOdo, setFuelLevel, setFastagBalance, setDlStatus, setDlNumberEditing, setDlNumberInput, setRequireManager,
       setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
-      setSDepositAmt, setSDepositReason,
+      setSDepositAmt, setSDepositReason, setDiscountOpen, setDiscountAmount, setDiscountReason,
     },
     photos,
     setPhotos,
@@ -483,6 +508,8 @@ export default function PickupScreen() {
     setDlStatus(editSummary.dl.status);
     setPhotos(editSummary.photos.map((p) => ({ fileId: p.fileId, url: p.url, label: p.label ?? undefined })));
     setEditDeposit(String(Number(editSummary.safetyDeposit) || 0));
+    setEditDiscount(editSummary.pickupDiscount ? String(Number(editSummary.pickupDiscount.amount)) : '');
+    setEditDiscountReason(editSummary.pickupDiscount?.reason ?? '');
   }, [editMode, editSummary]);
   useEffect(
     () => () => {
@@ -749,6 +776,51 @@ export default function PickupScreen() {
     );
   };
 
+  // Manual pickup discount on the bill: the server checks it against the rent
+  // payable at pickup (400 PICKUP_DISCOUNT_EXCEEDS says the most it may be).
+  const applySessionDiscount = (amount: number, reason: string | null) => {
+    void runSessionAction(
+      'discount',
+      () => employeeApi.setPickupSessionDiscount(bookingId as string, { amount, reason }),
+      () => { setDiscountOpen(false); setDiscountAmount(''); setDiscountReason(''); setDiscountError(null); },
+      setDiscountError,
+      'Could not apply the discount.',
+    );
+  };
+
+  const removeSessionDiscount = () => {
+    void runSessionAction(
+      'removeDiscount',
+      () => employeeApi.removePickupSessionDiscount(bookingId as string),
+      () => setDiscountError(null),
+      setDiscountError,
+      'Could not remove the discount.',
+    );
+  };
+
+  // Legacy branches: the discount comes off the remaining balance before it is collected.
+  const changeLegacyDiscount = async (next: { amount: number; reason: string | null } | null) => {
+    if (legacyDiscountBusy) return;
+    setLegacyDiscountBusy(next ? 'apply' : 'remove');
+    setDiscountError(null);
+    try {
+      if (next) await employeeApi.setLegacyPickupDiscount(bookingId as string, next);
+      else await employeeApi.removeLegacyPickupDiscount(bookingId as string);
+      if (!mountedRef.current) return;
+      setDiscountOpen(false);
+      setDiscountAmount('');
+      setDiscountReason('');
+      await refetch();
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      setDiscountError(apiErrorMessage(err, next ? 'Could not apply the discount.' : 'Could not remove the discount.'));
+      // The balance may have been collected meanwhile
+      refetch();
+    } finally {
+      if (mountedRef.current) setLegacyDiscountBusy(null);
+    }
+  };
+
   // Session flow step 2: record the money; a COMPLETED session means the
   // server has marked the booking PICKED_UP.
   const settleSession = async () => {
@@ -801,10 +873,10 @@ export default function PickupScreen() {
               cashAmount: choice.cashAmount,
               onlineAmount: choice.upiAmount,
               onlineGateway: 'UPI',
-              proof_file_id: choice.proofFileId,
+              proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds,
             }
             : choice.method === 'UPI'
-              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId }
+              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
               : choice.method === 'CREDIT'
                 ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral }
                 : { method: 'CASH', amount: net, idempotencyKey },
@@ -1007,6 +1079,27 @@ export default function PickupScreen() {
     if (original.edit.depositEditable) {
       if (!/^\d+(\.\d{1,2})?$/.test(editDeposit.trim())) return { error: 'Enter the safety deposit in ₹ (0 for none).' };
       body.safetyDeposit = Number(editDeposit);
+    }
+    // Manual pickup discount: sent only when it changes (blank / 0 removes it)
+    if (original.edit.discountEditable) {
+      const typed = editDiscount.trim();
+      const amount = typed ? Number(typed) : 0;
+      if (typed && amount > 0) {
+        const max = original.edit.discountMax != null ? Number(original.edit.discountMax) : null;
+        const problem = pickupDiscountInputError(typed, max);
+        if (problem) return { error: problem };
+      } else if (typed && !/^0+(\.0{1,2})?$/.test(typed)) {
+        return { error: 'Enter the discount in ₹ (blank or 0 for none).' };
+      }
+      const before = original.pickupDiscount;
+      const reason = editDiscountReason.trim() || null;
+      if (amount > 0) {
+        if (!before || Number(before.amount) !== amount || (before.reason ?? null) !== reason) {
+          body.pickupDiscount = { amount, reason };
+        }
+      } else if (before) {
+        body.pickupDiscount = null;
+      }
     }
     return body;
   };
@@ -1229,7 +1322,19 @@ export default function PickupScreen() {
 
   const net = session ? num(session.netPayable) : 0;
   const depositEntry = session?.entries?.find((e) => e.entryType === 'DEPOSIT' && !e.isVoided);
-  const discountEntry = session?.entries?.find((e) => e.classification === 'DISCOUNT' && !e.isVoided);
+  // The counter coupon line (the manual pickup discount has its own card)
+  const discountEntry = session?.entries?.find(
+    (e) => e.classification === 'DISCOUNT' && !e.isVoided && e.referenceType !== 'PICKUP_DISCOUNT',
+  );
+  const manualDiscountEntry = session?.entries?.find(
+    (e) => e.classification === 'DISCOUNT' && !e.isVoided && e.referenceType === 'PICKUP_DISCOUNT',
+  );
+  const manualDiscount = session?.pickupDiscount
+    ? { amount: num(session.pickupDiscount.amount), reason: session.pickupDiscount.reason }
+    : manualDiscountEntry
+      ? { amount: Math.abs(num(manualDiscountEntry.amount)), reason: null }
+      : null;
+  const manualDiscountMax = session?.pickupDiscountMax != null ? num(session.pickupDiscountMax) : null;
   const sessionBusy = !!sessionAction || settling;
 
   const handleConfirm = () => {
@@ -1289,6 +1394,30 @@ export default function PickupScreen() {
       >
         <View ref={contentRef} collapsable={false} style={styles.contentInner}>
         <ResumedBanner draft={draft} />
+        {/* Manual discount (legacy): off the remaining balance, before it is collected */}
+        {!sessionMode && !editMode && booking.isAdvancePayment && !booking.remainingPaidAt &&
+          (num(booking.remainingBalance) > 0 || !!booking.pickupDiscount) && (
+          <PickupDiscountCard
+            applied={booking.pickupDiscount
+              ? { amount: num(booking.pickupDiscount.amount), reason: booking.pickupDiscount.reason }
+              : null}
+            max={num(booking.remainingBalance) + num(booking.pickupDiscount?.amount)}
+            finalPayable={num(booking.remainingBalance)}
+            open={discountOpen}
+            setOpen={setDiscountOpen}
+            amount={discountAmount}
+            setAmount={setDiscountAmount}
+            reason={discountReason}
+            setReason={setDiscountReason}
+            error={discountError}
+            setError={setDiscountError}
+            busy={!!legacyDiscountBusy}
+            applying={legacyDiscountBusy === 'apply'}
+            removing={legacyDiscountBusy === 'remove'}
+            onApply={(amount, reason) => { void changeLegacyDiscount({ amount, reason }); }}
+            onRemove={() => { void changeLegacyDiscount(null); }}
+          />
+        )}
         {/* Remaining balance collection (legacy — unblocks pickup once paid) */}
         {hasRemainingBalance && (
           <RemainingBalanceCollect
@@ -1708,6 +1837,26 @@ export default function PickupScreen() {
             <SectionHeader title="Bill" />
             <SessionBill session={session} />
 
+            {/* Manual discount — a flat ₹ off the rent, after the rent and before the safety deposit */}
+            <PickupDiscountCard
+              applied={manualDiscount}
+              max={manualDiscountMax}
+              finalPayable={net}
+              open={discountOpen}
+              setOpen={setDiscountOpen}
+              amount={discountAmount}
+              setAmount={setDiscountAmount}
+              reason={discountReason}
+              setReason={setDiscountReason}
+              error={discountError}
+              setError={setDiscountError}
+              busy={sessionBusy}
+              applying={sessionAction === 'discount'}
+              removing={sessionAction === 'removeDiscount'}
+              onApply={applySessionDiscount}
+              onRemove={removeSessionDiscount}
+            />
+
             {/* Safety deposit — a refundable line on the bill */}
             {depositOpen ? (
               <View style={[styles.card, { marginTop: 8 }]}>
@@ -1982,6 +2131,47 @@ export default function PickupScreen() {
                 onPendingChange={setPendingPhotos}
               />
             </View>
+
+            {/* Edit Pickup: the manual pickup discount (₹ off the rent incl. GST), before the deposit;
+                a change is collected / refunded when the edit is saved */}
+            {editMode && editSummary?.edit.discountEditable && (
+              <>
+                <SectionHeader title="Discount" />
+                <View style={styles.card}>
+                  <View style={styles.fieldGroup}>
+                    <View style={styles.fieldLabel}>
+                      <Ionicons name="pricetag-outline" size={16} color={Colors.ink3} />
+                      <Text style={styles.fieldLabelText}>Discount (₹)</Text>
+                    </View>
+                    <TextInput
+                      style={styles.odoInput}
+                      value={editDiscount}
+                      onChangeText={(t) => setEditDiscount(cleanDiscountInput(t))}
+                      placeholder="0"
+                      placeholderTextColor={Colors.ink4}
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                    />
+                    <Text style={styles.toggleSub}>
+                      A flat amount off the rent (GST included), up to {inr(num(editSummary.edit.discountMax))} — the rent
+                      payable at the pickup. Leave blank for none.
+                    </Text>
+                  </View>
+                  <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
+                    <Text style={styles.fieldLabelSolo}>Reason (optional)</Text>
+                    <TextInput
+                      style={[styles.odoInput, styles.reasonInput]}
+                      value={editDiscountReason}
+                      onChangeText={setEditDiscountReason}
+                      placeholder="Why is the customer getting a discount?"
+                      placeholderTextColor={Colors.ink4}
+                      maxLength={200}
+                      multiline
+                    />
+                  </View>
+                </View>
+              </>
+            )}
 
             {/* Safety deposit request (#49) — legacy flow, only when the branch enables it.
                 With payment sessions the deposit is added to the bill on the next step. */}

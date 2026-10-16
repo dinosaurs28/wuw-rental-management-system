@@ -342,10 +342,10 @@ export default function WalkinSummaryScreen() {
         start,
         end,
         payment_type: choice.method,
-        ...(choice.method === 'UPI' ? { proof_file_id: choice.proofFileId } : {}),
+        ...(choice.method === 'UPI' ? { proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds } : {}),
         // Both parts are sent so a total that moved on the server is refused, not re-split.
         ...(choice.method === 'SPLIT'
-          ? { cash_amount: choice.cashAmount, upi_amount: choice.upiAmount, proof_file_id: choice.proofFileId }
+          ? { cash_amount: choice.cashAmount, upi_amount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
           : {}),
         ...(choice.method === 'CREDIT' ? { collateral: choice.collateral } : {}),
         qr_photo_id: qrPhotoId,
@@ -501,7 +501,7 @@ export default function WalkinSummaryScreen() {
         return;
       }
       if (err?.response?.data?.code === 'CUSTOMER_PROFILE_INCOMPLETE') {
-        // #1 — e.g. no DL / Aadhaar number on file. Complete the profile, then
+        // #1 — e.g. no age or address on file. Complete the profile, then
         // come straight back here (vehicle, dates and KYC are kept) to retry.
         Alert.alert(
           'Complete the customer profile',

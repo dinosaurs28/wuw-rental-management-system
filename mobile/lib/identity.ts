@@ -107,7 +107,9 @@ export function formatAadhaarInput(value: string): string {
 }
 
 // ── Profile completeness (mirror of packages/schemas user.schema.ts) ─────────
-// The backend reports the empty ones as `missingFields`.
+// The backend reports the empty ones as `missingFields`. Since Oct 2026 the
+// DL / Aadhaar numbers and date of birth are no longer asked for — an age is
+// ("age" is also met by an older customer's date of birth or both numbers).
 
 export const CUSTOMER_PROFILE_REQUIRED_FIELDS = [
   "name",
@@ -117,13 +119,12 @@ export const CUSTOMER_PROFILE_REQUIRED_FIELDS = [
   "state",
   "zipCode",
   "country",
-  "drivingLicenceNumber",
-  "aadhaarNumber",
+  "age",
 ] as const;
 
 export type CustomerProfileField = (typeof CUSTOMER_PROFILE_REQUIRED_FIELDS)[number];
 
-export const CUSTOMER_PROFILE_FIELD_LABELS: Record<CustomerProfileField, string> = {
+export const CUSTOMER_PROFILE_FIELD_LABELS: Record<string, string> = {
   name: "name",
   phone: "phone number",
   addressLine1: "address",
@@ -131,16 +132,57 @@ export const CUSTOMER_PROFILE_FIELD_LABELS: Record<CustomerProfileField, string>
   state: "state",
   zipCode: "PIN code",
   country: "country",
+  age: "age",
+  // Older servers still report these
   drivingLicenceNumber: "Driving Licence number",
   aadhaarNumber: "Aadhaar number",
 };
 
-const IDENTITY_FIELDS: readonly string[] = ["drivingLicenceNumber", "aadhaarNumber"];
+// ── Age (mirror of packages/schemas user.schema.ts) ──────────────────────────
+
+export const MIN_CUSTOMER_AGE = 18;
+export const MAX_CUSTOMER_AGE = 99;
+export const AGE_REQUIRED_MESSAGE = "Age is required";
+export const AGE_INVALID_MESSAGE = "Enter your age in years";
+export const AGE_UNDER_MIN_MESSAGE = "You must be 18 or older to rent.";
+export const AGE_OVER_MAX_MESSAGE = "Enter a valid age";
+
+/** Same rules and messages as the server's age check. Null when valid. */
+export function customerAgeError(value: unknown): string | null {
+  const raw = typeof value === "string" ? value.trim() : value;
+  if (raw === "" || raw === null || raw === undefined) return AGE_REQUIRED_MESSAGE;
+  const n = typeof raw === "string" ? Number(raw) : raw;
+  if (typeof n !== "number" || !Number.isFinite(n) || !Number.isInteger(n)) return AGE_INVALID_MESSAGE;
+  if (n < MIN_CUSTOMER_AGE) return AGE_UNDER_MIN_MESSAGE;
+  if (n > MAX_CUSTOMER_AGE) return AGE_OVER_MAX_MESSAGE;
+  return null;
+}
+
+/** Age input as typed (form value). Send `Number(value)`. */
+export const ageInputSchema = z.string().superRefine((v, ctx) => {
+  const message = customerAgeError(v);
+  if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+});
+
+/** Digits only, at most 2 — for the age input. */
+export function formatAgeInput(raw: string | null | undefined): string {
+  return String(raw ?? "").replace(/\D/g, "").slice(0, 2);
+}
+
+/** Optional DL number (staff forms): blank is fine; validated when filled in. Null when valid. */
+export function optionalDrivingLicenceError(value: string): string | null {
+  return String(value ?? "").trim() ? drivingLicenceError(value) : null;
+}
+
+/** Optional Aadhaar number (staff forms): blank is fine; validated when filled in. Null when valid. */
+export function optionalAadhaarError(value: string): string | null {
+  return String(value ?? "").trim() ? aadhaarError(value) : null;
+}
 
 /** "a", "a and b", "a, b and c" from missingFields keys (unknown keys are skipped). */
 export function joinProfileFieldLabels(missing: readonly string[]): string {
   const labels = missing
-    .map((f) => CUSTOMER_PROFILE_FIELD_LABELS[f as CustomerProfileField])
+    .map((f) => CUSTOMER_PROFILE_FIELD_LABELS[f])
     .filter(Boolean);
   if (labels.length <= 1) return labels[0] ?? "";
   return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
@@ -152,17 +194,17 @@ export function joinProfileFieldLabels(missing: readonly string[]): string {
  */
 export function profileIncompleteMessage(missing: readonly string[], audience: "self" | "staff"): string {
   const known = missing.filter((f) => f in CUSTOMER_PROFILE_FIELD_LABELS);
-  const onlyIdentity = known.length > 0 && known.every((f) => IDENTITY_FIELDS.includes(f));
+  const onlyAge = known.length === 1 && known[0] === "age";
   const list = joinProfileFieldLabels(known);
   if (audience === "self") {
     if (!list) return "Complete your profile before booking.";
-    return onlyIdentity
-      ? `Add your ${list} to your profile before booking.`
+    return onlyAge
+      ? "Add your age to your profile before booking."
       : `Complete your profile before booking. Missing: ${list}.`;
   }
   if (!list) return "Complete the customer's profile before creating a booking.";
-  return onlyIdentity
-    ? `Add the customer's ${list} before creating a booking.`
+  return onlyAge
+    ? "Add the customer's age before creating a booking."
     : `Complete the customer's profile before creating a booking. Missing: ${list}.`;
 }
 

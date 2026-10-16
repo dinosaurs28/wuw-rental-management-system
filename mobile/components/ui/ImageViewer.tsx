@@ -24,6 +24,8 @@ import { Colors, Fonts } from '../../constants/colors';
 
 export interface ViewerImage {
   url: string;
+  // Smaller copy shown while `url` loads (and if it fails).
+  previewUrl?: string | null;
   label?: string | null;
 }
 
@@ -40,6 +42,7 @@ const SPRING = { damping: 20, stiffness: 200 };
 
 interface SlideProps {
   url: string;
+  previewUrl?: string | null;
   width: number;
   height: number;
   active: boolean;
@@ -49,7 +52,7 @@ interface SlideProps {
 // One zoomable page: pinch, pan (clamped to the zoomed bounds) and double-tap.
 // Pan only claims the touch while zoomed, so at 1x a horizontal swipe falls
 // through to the pager.
-function ZoomSlide({ url, width, height, active, onZoomChange }: SlideProps) {
+function ZoomSlide({ url, previewUrl, width, height, active, onZoomChange }: SlideProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   // Bumped to remount the image: one silent retry, then the Retry button.
@@ -165,12 +168,30 @@ function ZoomSlide({ url, width, height, active, onZoomChange }: SlideProps) {
   return (
     <GestureDetector gesture={gesture}>
       <View style={{ width, height, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {previewUrl && (loading || error) && (
+          <Animated.Image
+            source={{ uri: previewUrl }}
+            style={[{ width, height, position: 'absolute' }, animatedStyle]}
+            resizeMode="contain"
+          />
+        )}
         {loading && !error && (
           <View style={styles.centerOverlay}>
             <ActivityIndicator color={Colors.orange} size="large" />
           </View>
         )}
-        {error ? (
+        {error && previewUrl ? (
+          <TouchableOpacity
+            onPress={retry}
+            style={styles.previewRetry}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading the full-size photo"
+          >
+            <Ionicons name="refresh" size={15} color="#fff" />
+            <Text style={styles.retryText}>Full-size photo didn't load · Retry</Text>
+          </TouchableOpacity>
+        ) : error ? (
           <View style={styles.errorInner}>
             <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.3)" />
             <Text style={styles.errorText}>Failed to load photo</Text>
@@ -267,6 +288,7 @@ export default function ImageViewer({ visible, images, startIndex = 0, onClose }
             renderItem={({ item, index: i }) => (
               <ZoomSlide
                 url={item.url}
+                previewUrl={item.previewUrl}
                 width={width}
                 height={height}
                 active={i === index}
@@ -362,4 +384,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
   retryText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#fff' },
+  previewRetry: {
+    position: 'absolute',
+    bottom: 110,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
 });

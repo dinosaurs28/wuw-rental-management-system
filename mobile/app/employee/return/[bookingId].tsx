@@ -320,7 +320,12 @@ export default function ReturnScreen() {
 
   // Reference photos for condition comparison (#55): the handover photos of the
   // car being returned — pickup, or its mid-rental swap (item 2).
-  const { data: pickupCaptures } = useQuery({
+  // A failed fetch is retried (patchy mobile data) and then offers a Retry.
+  const {
+    data: pickupCaptures,
+    isError: pickupCapturesFailed,
+    refetch: refetchPickupCaptures,
+  } = useQuery({
     queryKey: ['employee', 'pickup-captures', bookingId],
     queryFn: async () => {
       const res = await employeeApi.getPickupCaptures(bookingId as string);
@@ -328,7 +333,7 @@ export default function ReturnScreen() {
     },
     enabled: !!bookingId,
     staleTime: 5 * 60_000,
-    retry: false,
+    retry: 2,
   });
 
   // Damages recorded at this drop. Session flow bills charged ones on compute;
@@ -972,11 +977,11 @@ export default function ReturnScreen() {
               cashAmount: choice.cashAmount,
               onlineAmount: choice.upiAmount,
               onlineGateway: 'UPI',
-              proof_file_id: choice.proofFileId,
+              proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds,
               ...depositRefund,
             }
             : choice.method === 'UPI'
-              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, ...depositRefund }
+              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds, ...depositRefund }
               : choice.method === 'CREDIT'
                 ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral, ...depositRefund }
                 : { method: 'CASH', amount: net, idempotencyKey, ...depositRefund },
@@ -1587,6 +1592,8 @@ export default function ReturnScreen() {
           <HandoverConditionPhotos
             data={pickupCaptures}
             onOpen={(images, index) => setPhotoViewer({ images, index })}
+            failed={pickupCapturesFailed}
+            onRetry={() => refetchPickupCaptures()}
           />
 
           {/* Return condition photos — required before compute / complete (like the web) */}

@@ -18,7 +18,7 @@ import PackagePicker from '../booking/PackagePicker';
 import { BranchHoursLine, TimesNotice } from '../booking/BranchHours';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
 import { bookingWindowLastDay, timeLabel, timeOf, withTime } from '../../lib/dates';
-import { MAX_BOOKING_DAYS } from '../../lib/bookingWindow';
+import { ADVANCE_BOOKING_DAYS } from '../../lib/bookingWindow';
 import {
   closedDayText,
   isClosedDay,
@@ -228,7 +228,7 @@ export default function SearchCard({
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`Bookings open up to ${MAX_BOOKING_DAYS} days ahead`}
+        note={`Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead`}
       />
       <TimeFieldPicker
         visible={pickupOpen}

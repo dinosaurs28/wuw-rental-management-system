@@ -1,5 +1,5 @@
 // Small date helpers for customer screens.
-import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS, bookingWindowEnd } from './bookingWindow';
+import { MAX_RENTAL_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS, bookingWindowEnd } from './bookingWindow';
 
 // "Starts in N days" badge — derived client-side (no API field).
 // Returns null when the booking is not upcoming (already started / past).
@@ -176,17 +176,16 @@ export function rangeLengthLabel(start: Date, end: Date): string | null {
 const HOUR_IN_MS = 3_600_000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
 
-// Last calendar day a booking can touch: today + 15 (the server's window).
+// Last calendar day a pickup can be on: today + 30 (the server's window).
 export function bookingWindowLastDay(now: Date = new Date()): Date {
   return startOfDay(bookingWindowEnd(now));
 }
 
-// Latest return for a standard booking picked up at `start`: the end of the
-// 15-day window or pickup + 15 days, whichever comes first (server rule).
-export function maxReturnFor(start: Date, now: Date = new Date()): Date {
-  const windowEnd = bookingWindowEnd(now);
-  const byLength = new Date(start.getTime() + MAX_BOOKING_DAYS * DAY_IN_MS);
-  return windowEnd.getTime() < byLength.getTime() ? windowEnd : byLength;
+// Latest return for a standard booking picked up at `start`: pickup + 15 days
+// (server rule; the return may pass the 30-day pickup window). `now` is kept
+// for callers.
+export function maxReturnFor(start: Date, _now: Date = new Date()): Date {
+  return new Date(start.getTime() + MAX_RENTAL_DAYS * DAY_IN_MS);
 }
 
 // Monthly plan (Fleet counter only): the return is 30–180 days after pickup.

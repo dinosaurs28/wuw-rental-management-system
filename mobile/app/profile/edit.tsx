@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
-  FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -13,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useForm, Controller, useController } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,217 +22,26 @@ import { userApi } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 import Input from '../../components/ui/Input';
 import Toast from '../../components/ui/Toast';
-import {
-  aadhaarNumberSchema,
-  drivingLicenceNumberSchema,
-  formatAadhaarInput,
-  joinProfileFieldLabels,
-} from '../../lib/identity';
-
-// ─── Date picker constants ────────────────────────────────────────────────────
-const NOW_YEAR = new Date().getFullYear();
-const MAX_YEAR = NOW_YEAR - 18;
-const MIN_YEAR = 1925;
-const ALL_YEARS = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
-const ALL_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const ITEM_H = 48;
+import { ageInputSchema, formatAgeInput, joinProfileFieldLabels } from '../../lib/identity';
 
 // ─── Zod schema ──────────────────────────────────────────────────────────────
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().length(10, 'Must be exactly 10 digits').regex(/^\d+$/, 'Digits only'),
-  dob: z.string().min(1, 'Date of birth is required').refine((val) => {
-    const d = new Date(val);
-    const cutoff = new Date();
-    cutoff.setFullYear(cutoff.getFullYear() - 18);
-    return d <= cutoff;
-  }, 'Must be at least 18 years old'),
+  // Replaces the date of birth (Oct 2026): whole years, 18–99, sent as a number.
+  age: ageInputSchema,
   addressLine1: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
   state: z.string().min(1, 'State is required'),
   country: z.string().min(1, 'Country is required'),
   zipCode: z.string().min(1, 'ZIP code is required'),
   alternatePhone: z.string().length(10, 'Must be exactly 10 digits').regex(/^\d+$/, 'Digits only').optional().or(z.literal('')),
-  // Required to book (#1). Same rules and messages as the web forms; the
-  // output is normalised (DL uppercase without separators, Aadhaar 12 digits).
-  drivingLicenceNumber: drivingLicenceNumberSchema,
-  aadhaarNumber: aadhaarNumberSchema,
+  // No DL / Aadhaar numbers since Oct 2026 — staff take the DL number at pickup.
 });
 
 type FormData = z.infer<typeof schema>;
 type FormField = keyof FormData;
 const FORM_FIELDS: readonly string[] = Object.keys(schema.shape);
-
-// ─── WheelPicker ─────────────────────────────────────────────────────────────
-function WheelPicker({
-  data,
-  selectedIndex,
-  onSelect,
-}: {
-  data: string[];
-  selectedIndex: number;
-  onSelect: (i: number) => void;
-}) {
-  const ref = useRef<FlatList>(null);
-
-  useEffect(() => {
-    const idx = Math.max(0, Math.min(selectedIndex, data.length - 1));
-    const timer = setTimeout(() => {
-      ref.current?.scrollToIndex({ index: idx, animated: false });
-    }, 80);
-    return () => clearTimeout(timer);
-  }, [selectedIndex, data.length]);
-
-  return (
-    <View style={{ flex: 1, height: ITEM_H * 5 }}>
-      {/* Center highlight bar — no zIndex so FlatList renders on top */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: ITEM_H * 2,
-          left: 4,
-          right: 4,
-          height: ITEM_H,
-          backgroundColor: Colors.bg,
-          borderRadius: 10,
-        }}
-      />
-      <FlatList
-        ref={ref}
-        data={data}
-        keyExtractor={(_, i) => String(i)}
-        getItemLayout={(_, index) => ({ length: ITEM_H, offset: ITEM_H * index, index })}
-        renderItem={({ item }) => (
-          <View style={{ height: ITEM_H, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: 17, color: Colors.ink }}>{item}</Text>
-          </View>
-        )}
-        snapToInterval={ITEM_H}
-        decelerationRate="fast"
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<View style={{ height: ITEM_H * 2 }} />}
-        ListFooterComponent={<View style={{ height: ITEM_H * 2 }} />}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-          onSelect(Math.max(0, Math.min(index, data.length - 1)));
-        }}
-      />
-    </View>
-  );
-}
-
-// ─── DatePickerField ─────────────────────────────────────────────────────────
-function DatePickerField({
-  control,
-  name,
-  label,
-  error,
-}: {
-  control: any;
-  name: any;
-  label: string;
-  error?: string;
-}) {
-  const { field } = useController({ control, name });
-  const [open, setOpen] = useState(false);
-
-  const parseValue = (v: string) => {
-    if (!v) return { yi: MAX_YEAR - 1995, mi: 0, di: 0 };
-    const [y, m, d] = v.split('-').map(Number);
-    return {
-      yi: Math.max(0, Math.min((y || MIN_YEAR) - MIN_YEAR, ALL_YEARS.length - 1)),
-      mi: Math.max(0, Math.min((m || 1) - 1, 11)),
-      di: Math.max(0, (d || 1) - 1),
-    };
-  };
-
-  const init = parseValue(field.value);
-  const [selYear, setSelYear] = useState(init.yi);
-  const [selMonth, setSelMonth] = useState(init.mi);
-  const [selDay, setSelDay] = useState(init.di);
-
-  // Sync when form value is set externally (profile loads)
-  useEffect(() => {
-    if (field.value) {
-      const { yi, mi, di } = parseValue(field.value);
-      setSelYear(yi);
-      setSelMonth(mi);
-      setSelDay(di);
-    }
-  }, [field.value]);
-
-  const daysInMonth = new Date(MIN_YEAR + selYear, selMonth + 1, 0).getDate();
-  const days = useMemo(
-    () => Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0')),
-    [daysInMonth],
-  );
-  const clampedDay = Math.min(selDay, daysInMonth - 1);
-
-  const confirm = () => {
-    const y = MIN_YEAR + selYear;
-    const m = selMonth + 1;
-    const d = clampedDay + 1;
-    field.onChange(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-    setOpen(false);
-  };
-
-  const displayText = field.value
-    ? (() => {
-        const d = new Date(field.value + 'T00:00:00');
-        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-      })()
-    : null;
-
-  return (
-    <View style={dp.wrapper}>
-      <Text style={dp.label}>{label}</Text>
-      <TouchableOpacity
-        style={[dp.btn, error && dp.btnError]}
-        onPress={() => setOpen(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={[dp.btnText, !displayText && dp.placeholder]}>
-          {displayText ?? 'Select date of birth'}
-        </Text>
-        <Ionicons name="calendar-outline" size={18} color={Colors.ink3} />
-      </TouchableOpacity>
-      {error ? <Text style={dp.error}>{error}</Text> : null}
-
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} activeOpacity={1} onPress={() => setOpen(false)} />
-          <View style={dp.sheet}>
-            {/* Sheet header */}
-            <View style={dp.sheetHeader}>
-              <TouchableOpacity onPress={() => setOpen(false)} hitSlop={12}>
-                <Text style={dp.cancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={dp.sheetTitle}>Date of birth</Text>
-              <TouchableOpacity onPress={confirm} hitSlop={12}>
-                <Text style={dp.done}>Done</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Column labels */}
-            <View style={dp.colLabels}>
-              <Text style={[dp.colLabel, { flex: 1 }]}>Day</Text>
-              <Text style={[dp.colLabel, { flex: 1 }]}>Month</Text>
-              <Text style={[dp.colLabel, { flex: 1 }]}>Year</Text>
-            </View>
-
-            {/* Wheels */}
-            <View style={dp.wheels}>
-              <WheelPicker key={daysInMonth} data={days} selectedIndex={clampedDay} onSelect={setSelDay} />
-              <WheelPicker data={ALL_MONTHS} selectedIndex={selMonth} onSelect={setSelMonth} />
-              <WheelPicker data={ALL_YEARS} selectedIndex={selYear} onSelect={setSelYear} />
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
 
 // ─── PhoneInput ───────────────────────────────────────────────────────────────
 function PhoneInput({
@@ -278,45 +85,6 @@ function PhoneInput({
   );
 }
 
-// ─── AadhaarInput ─────────────────────────────────────────────────────────────
-// Digits only, shown grouped as "1234 5678 9012"; the schema strips the spaces.
-function AadhaarInput({
-  control,
-  name,
-  label,
-  error,
-}: {
-  control: any;
-  name: any;
-  label: string;
-  error?: string;
-}) {
-  return (
-    <View style={ph.wrapper}>
-      <Text style={ph.label}>{label}</Text>
-      <Controller
-        control={control}
-        name={name}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <View style={[ph.row, error && ph.rowError]}>
-            <TextInput
-              style={ph.input}
-              onChangeText={(t) => onChange(formatAadhaarInput(t))}
-              onBlur={onBlur}
-              value={value}
-              keyboardType="number-pad"
-              maxLength={14}
-              placeholder="1234 5678 9012"
-              placeholderTextColor={Colors.ink4}
-            />
-          </View>
-        )}
-      />
-      {error ? <Text style={ph.error}>{error}</Text> : null}
-    </View>
-  );
-}
-
 // ─── EditProfile screen ───────────────────────────────────────────────────────
 export default function EditProfile() {
   const router = useRouter();
@@ -337,15 +105,13 @@ export default function EditProfile() {
     values: profile ? {
       name: profile.name ?? user?.name ?? '',
       phone: profile.phone ?? '',
-      dob: profile.dob ? profile.dob.split('T')[0] : '',
+      age: profile.age != null ? String(profile.age) : '',
       addressLine1: profile.addressLine1 ?? '',
       city: profile.city ?? '',
       state: profile.state ?? '',
       country: profile.country ?? 'India',
       zipCode: profile.zipCode ?? '',
       alternatePhone: profile.alternatePhone ?? '',
-      drivingLicenceNumber: profile.drivingLicenceNumber ?? '',
-      aadhaarNumber: profile.aadhaarNumber ? formatAadhaarInput(profile.aadhaarNumber) : '',
     } : undefined,
   });
 
@@ -353,8 +119,8 @@ export default function EditProfile() {
   const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
 
   const mutation = useMutation({
-    // Both numbers are always sent (already normalised by the schema).
-    mutationFn: (data: FormData) => userApi.updateProfile(data as any),
+    // The age goes as a number; stored DL / Aadhaar numbers and dob are kept.
+    mutationFn: (data: FormData) => userApi.updateProfile({ ...data, age: Number(data.age) } as any),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['profile'] });
       updateUser({ name: variables.name });
@@ -417,7 +183,28 @@ export default function EditProfile() {
             <Input control={control} name="name" label="Full name" placeholder="Jane Smith" autoCapitalize="words" error={errors.name?.message} />
             <PhoneInput control={control} name="phone" label="Phone" error={errors.phone?.message} />
             <PhoneInput control={control} name="alternatePhone" label="Alternate phone (optional)" error={errors.alternatePhone?.message} />
-            <DatePickerField control={control} name="dob" label="Date of birth" error={errors.dob?.message} />
+            <Controller
+              control={control}
+              name="age"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <View style={ph.wrapper}>
+                  <Text style={ph.label}>Age *</Text>
+                  <View style={[ph.row, errors.age && ph.rowError]}>
+                    <TextInput
+                      style={ph.input}
+                      onChangeText={(t) => onChange(formatAgeInput(t))}
+                      onBlur={onBlur}
+                      value={value}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="25"
+                      placeholderTextColor={Colors.ink4}
+                    />
+                  </View>
+                  {errors.age?.message ? <Text style={ph.error}>{errors.age.message}</Text> : null}
+                </View>
+              )}
+            />
           </View>
 
           <Text style={styles.section}>Address</Text>
@@ -427,22 +214,6 @@ export default function EditProfile() {
             <Input control={control} name="state" label="State" placeholder="Karnataka" error={errors.state?.message} />
             <Input control={control} name="country" label="Country" placeholder="India" error={errors.country?.message} />
             <Input control={control} name="zipCode" label="ZIP / PIN code" placeholder="560001" keyboardType="number-pad" error={errors.zipCode?.message} />
-          </View>
-
-          <Text style={styles.section}>Identity</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardHint}>Required to book a vehicle</Text>
-            <Input
-              control={control}
-              name="drivingLicenceNumber"
-              label="Driving Licence number *"
-              placeholder="KA01 20110012345"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={24}
-              error={errors.drivingLicenceNumber?.message}
-            />
-            <AadhaarInput control={control} name="aadhaarNumber" label="Aadhaar number *" error={errors.aadhaarNumber?.message} />
           </View>
 
           <TouchableOpacity
@@ -496,7 +267,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.hairline,
     gap: 14,
   },
-  cardHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginBottom: -4 },
   missingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -555,63 +325,4 @@ const ph = StyleSheet.create({
     color: Colors.ink,
   },
   error: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e' },
-});
-
-// Date picker styles
-const dp = StyleSheet.create({
-  wrapper: { gap: 6 },
-  label: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink2, letterSpacing: 0.2 },
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 16,
-  },
-  btnError: { borderColor: '#e53e3e' },
-  btnText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink },
-  placeholder: { color: Colors.ink4 },
-  error: { fontFamily: Fonts.body, fontSize: 12, color: '#e53e3e' },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 32,
-    overflow: 'hidden',
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
-  },
-  sheetTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
-  cancel: { fontFamily: Fonts.body, fontSize: 15, color: Colors.ink3 },
-  done: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.orange },
-  colLabels: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  colLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
-    color: Colors.ink3,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  wheels: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    gap: 4,
-  },
 });

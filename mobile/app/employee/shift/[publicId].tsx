@@ -109,7 +109,9 @@ function TransactionRow({ t, onViewProof }: { t: ShiftTransaction; onViewProof?:
           accessibilityLabel="View the UPI payment photo"
         >
           <Image source={{ uri: proofUrl }} style={styles.proofThumb} resizeMethod="resize" />
-          <Text style={styles.proofText}>UPI payment photo</Text>
+          <Text style={styles.proofText}>
+            {(t.proofs?.length ?? 0) > 1 ? `${t.proofs!.length} UPI payment photos` : 'UPI payment photo'}
+          </Text>
           <Ionicons name="expand-outline" size={14} color={Colors.ink3} />
         </TouchableOpacity>
       ) : null}
@@ -161,15 +163,23 @@ export default function ShiftDetailScreen() {
 
   // UPI payment photos (#3) are 15-minute links: reload the shift for fresh
   // ones when the loaded copy is about to lapse, then zoom.
-  const [proofView, setProofView] = useState<string | null>(null);
+  const [proofView, setProofView] = useState<string[] | null>(null);
+  // Every photo of the payment (up to 3 since Oct 2026), else the single one
+  const proofUrls = (t: ShiftTransaction | undefined): string[] => {
+    if (!t) return [];
+    if (t.proofs?.length) return t.proofs.map((p) => p.url);
+    const one = t.proofPhoto?.url ?? t.proofPhotoUrl ?? null;
+    return one ? [one] : [];
+  };
   const openProof = async (t: ShiftTransaction) => {
-    let url = t.proofPhoto?.url ?? t.proofPhotoUrl ?? null;
+    let urls = proofUrls(t);
     if (Date.now() - dataUpdatedAt > 13 * 60_000) {
       const fresh = await refetch();
       const ft = fresh.data?.transactions.find((x) => x.publicId === t.publicId);
-      url = ft?.proofPhoto?.url ?? ft?.proofPhotoUrl ?? url;
+      const freshUrls = proofUrls(ft);
+      if (freshUrls.length) urls = freshUrls;
     }
-    if (url) setProofView(url);
+    if (urls.length) setProofView(urls);
   };
 
   const header = (
@@ -350,7 +360,10 @@ export default function ShiftDetailScreen() {
       </ScrollView>
       <ImageViewer
         visible={!!proofView}
-        images={proofView ? [{ url: proofView, label: 'UPI payment photo' }] : []}
+        images={(proofView ?? []).map((url, i, all) => ({
+          url,
+          label: all.length > 1 ? `UPI payment photo ${i + 1} of ${all.length}` : 'UPI payment photo',
+        }))}
         onClose={() => setProofView(null)}
       />
     </View>

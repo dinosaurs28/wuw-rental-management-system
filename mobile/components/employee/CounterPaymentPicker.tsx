@@ -20,6 +20,7 @@ import {
   COUNTER_PAYMENT_METHODS,
   PAYMENT_PROOF_HELPER,
   PAYMENT_PROOF_LABEL,
+  PAYMENT_PROOF_MAX_PHOTOS,
   counterPaymentServerError,
   inrCounter,
   proofProblem,
@@ -160,6 +161,42 @@ export function useProofShot(onTouched?: () => void): ProofController {
   };
 }
 
+// ── Up to three payment screenshots (Oct 2026) ───────────────────────────────
+
+/**
+ * Screenshot slots of one payment: 1 is required, 2 and 3 optional (a customer
+ * who paid in several UPI transactions). Each slot uploads on its own.
+ */
+export interface ProofSetController {
+  slots: ProofController[];
+  shots: (ProofShot | null)[];
+  /** Brings back screenshots uploaded earlier (a resumed pickup / drop), in slot order. */
+  restore: (proofFileIds: string | string[]) => void;
+  /** Per slot: the screenshot being brought back by restore(), until it lands. */
+  restoringIds: (string | null)[];
+  clear: () => void;
+  clearAt: (index: number) => void;
+}
+
+export function useProofShots(onTouched?: () => void): ProofSetController {
+  // Fixed count (PAYMENT_PROOF_MAX_PHOTOS = 3), so the hooks always run in the same order.
+  const s1 = useProofShot(onTouched);
+  const s2 = useProofShot(onTouched);
+  const s3 = useProofShot(onTouched);
+  const slots = [s1, s2, s3].slice(0, PAYMENT_PROOF_MAX_PHOTOS);
+  return {
+    slots,
+    shots: slots.map((c) => c.shot),
+    restore: (ids) => {
+      const list = (Array.isArray(ids) ? ids : [ids]).filter((id) => typeof id === 'string' && id.length > 0);
+      list.slice(0, slots.length).forEach((id, i) => slots[i]!.restore(id));
+    },
+    restoringIds: slots.map((c) => c.restoringId),
+    clear: () => slots.forEach((c) => c.clear()),
+    clearAt: (index) => slots[index]?.clear(),
+  };
+}
+
 // ── Payment picker state ─────────────────────────────────────────────────────
 
 export interface CounterPaymentController {
@@ -167,7 +204,8 @@ export interface CounterPaymentController {
   setMethod: (m: PaymentMethodKey) => void;
   cash: string;
   setCash: (text: string) => void;
-  proof: ProofController;
+  /** The UPI payment screenshots (1 required, up to 3). */
+  proof: ProofSetController;
   collateral: string;
   setCollateral: (text: string) => void;
   errors: CounterPaymentErrors;
@@ -184,7 +222,9 @@ export function useCounterPayment(initial: PaymentMethodKey = 'CASH'): CounterPa
   const [cash, setCashState] = useState('');
   const [collateral, setCollateralState] = useState('');
   const [errors, setErrors] = useState<CounterPaymentErrors>({});
-  const proof = useProofShot(() => setErrors((e) => (e.proof ? { ...e, proof: undefined } : e)));
+  const proof = useProofShots(() =>
+    setErrors((e) => (e.proof ? { ...e, proof: undefined, proofIndex: undefined } : e)),
+  );
 
   return {
     method,
@@ -206,7 +246,7 @@ export function useCounterPayment(initial: PaymentMethodKey = 'CASH'): CounterPa
     errors,
     setErrors,
     resolve: (amount) => {
-      const r = resolveCounterPayment(amount, { method, cash, proof: proof.shot, collateral });
+      const r = resolveCounterPayment(amount, { method, cash, proofs: proof.shots, collateral });
       if (!r.ok) {
         setErrors(r.errors);
         return null;
@@ -217,7 +257,8 @@ export function useCounterPayment(initial: PaymentMethodKey = 'CASH'): CounterPa
     showServerError: (err) => {
       const mapped = counterPaymentServerError(err);
       if (!mapped) return false;
-      if (mapped.dropProof) proof.clear();
+      // Only the screenshot the server refused has to be taken again
+      if (mapped.dropProof) proof.clearAt(mapped.errors.proofIndex ?? 0);
       setErrors(mapped.errors);
       return true;
     },
@@ -454,6 +495,54 @@ export function PaymentProofCapture({
 }
 
 /**
+ * Payment screenshots 1–3 of one UPI payment. Screenshot 1 is required; the
+ * next slot appears once the one before it holds a photo (or when it holds one
+ * itself, e.g. after a resume).
+ */
+export function PaymentProofSlots({
+  ctl,
+  error,
+  errorIndex,
+  firstLabel,
+  disabled,
+}: {
+  ctl: ProofSetController;
+  error?: string | null;
+  errorIndex?: number;
+  /** Label of screenshot 1 (e.g. with the split's UPI amount). */
+  firstLabel?: string;
+  disabled?: boolean;
+}) {
+  const { slots, shots } = ctl;
+  const anyReady = shots.some((s) => s?.status === 'ready');
+  const errAt = errorIndex ?? 0;
+  return (
+    <View style={styles.slots}>
+      {slots.map((slot, i) => {
+        const visible = i === 0 || !!shots[i] || !!shots[i - 1] || !!ctl.restoringIds[i];
+        if (!visible) return null;
+        return (
+          <PaymentProofCapture
+            key={i}
+            ctl={slot}
+            // Screenshot 1 is the required one — unless another slot already holds a photo
+            required={i === 0 && !anyReady}
+            label={i === 0 ? (firstLabel ?? 'Payment screenshot 1') : `Payment screenshot ${i + 1} (optional)`}
+            helper={
+              i === 0
+                ? PAYMENT_PROOF_HELPER
+                : 'If the customer paid in more than one UPI transaction, photograph this one too.'
+            }
+            error={errAt === i ? error : null}
+            disabled={disabled}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+/**
  * Cash / UPI / Split / Credit (and Online where the screen offers Razorpay
  * checkout — the screen renders that part itself) for `amount`.
  */
@@ -496,7 +585,7 @@ export default function CounterPaymentPicker({
           <Text style={styles.hint}>
             Ask the customer to pay {amountText} to the shop's UPI QR, then photograph the payment-success screen on their phone.
           </Text>
-          <PaymentProofCapture ctl={ctl.proof} error={errors.proof} disabled={disabled} />
+          <PaymentProofSlots ctl={ctl.proof} error={errors.proof} errorIndex={errors.proofIndex} disabled={disabled} />
         </>
       )}
 
@@ -529,10 +618,11 @@ export default function CounterPaymentPicker({
               Of {amountText}: enter the cash part — the rest is paid by UPI to the shop's QR.
             </Text>
           )}
-          <PaymentProofCapture
+          <PaymentProofSlots
             ctl={ctl.proof}
-            label={upiPart > 0 ? `Photo of the UPI payment (${inrCounter(upiPart)})` : 'Photo of the UPI payment'}
+            firstLabel={upiPart > 0 ? `Payment screenshot 1 · UPI ${inrCounter(upiPart)}` : 'Payment screenshot 1'}
             error={errors.proof}
+            errorIndex={errors.proofIndex}
             disabled={disabled}
           />
         </>
@@ -623,6 +713,7 @@ export function CounterRefundPicker({
 const TILE = 72;
 const styles = StyleSheet.create({
   wrap: { gap: 10 },
+  slots: { gap: 10 },
   title: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink3 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {

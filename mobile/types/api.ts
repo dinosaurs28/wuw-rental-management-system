@@ -480,7 +480,10 @@ export interface UserProfile {
   // null when the account only has a walk-in placeholder address.
   email: string | null;
   phone: string | null;
+  /** Older customers only — the form asks for an age now (Oct 2026). */
   dob: string | null;
+  /** Entered age, else derived from dob on the server; absent on older servers. */
+  age?: number | null;
   addressLine1: string;
   city: string;
   state: string;

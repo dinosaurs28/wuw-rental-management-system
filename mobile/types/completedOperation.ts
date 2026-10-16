@@ -115,6 +115,8 @@ export interface PickupSummary extends SummaryBase {
   // hasFastag: it counts as a FASTag car for the booking (marked, or a balance read).
   fastag: { hasFastag: boolean; vehicleHasFastag?: boolean; balance: string | null };
   safetyDeposit: string;
+  // Manual pickup discount given (₹ off the rent incl. GST; null = none; absent on older servers)
+  pickupDiscount?: { amount: string; reason: string | null; maxAmount: string } | null;
   captureFields: Array<{ name: string; required: boolean }>;
   // The settled pickup bill (payment-session branches); null otherwise.
   bill: { lines: SummaryBillLine[]; netPayable: string } | null;
@@ -128,6 +130,9 @@ export interface PickupSummary extends SummaryBase {
     // The safety deposit can be changed (car out, nothing recorded at the drop).
     depositEditable?: boolean;
     depositLockedReason?: string | null;
+    // The manual pickup discount can be changed, up to discountMax (absent on older servers)
+    discountEditable?: boolean;
+    discountMax?: string;
     dlStatusEditable: boolean;
     dlStatusLockedReason: string | null;
   };
@@ -206,6 +211,8 @@ export interface EditPickupBody {
   pickupFastagBalance?: number;
   // New safety deposit total (car still out)
   safetyDeposit?: number;
+  // Manual pickup discount (₹ off the rent incl. GST); null removes it
+  pickupDiscount?: { amount: number; reason?: string | null } | null;
   // The difference the review showed — 409 EDIT_DELTA_CHANGED when it moved
   expectedDelta?: number;
   dlStatus?: DlCollectionStatus;

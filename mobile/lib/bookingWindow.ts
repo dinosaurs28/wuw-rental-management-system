@@ -4,20 +4,30 @@
  * Booking window rules (IST). Keep in sync with packages/schemas/src/booking-window.ts.
  *
  * Standard (hourly / 12 h / daily / multi-day) bookings:
- *   1. WINDOW   — the return must be on or before 23:59:59.999 IST on
- *                 (today IST + MAX_BOOKING_DAYS). Pickup is never in the past,
- *                 so both dates fall in [today, today + 15].
- *   2. DURATION — endAt − startAt ≤ MAX_BOOKING_DAYS × 24 h. For an
- *                 extension, startAt is the booking's original start, so the
- *                 cap includes every extension.
+ *   1. WINDOW   — the PICKUP must be on or before 23:59:59.999 IST on
+ *                 (today IST + ADVANCE_BOOKING_DAYS): customers book up to
+ *                 30 days ahead. Pickup is never in the past.
+ *   2. DURATION — endAt − startAt ≤ MAX_RENTAL_DAYS × 24 h (the longest
+ *                 single booking). For an extension, startAt is the booking's
+ *                 original start, so the cap includes every extension. The
+ *                 return may therefore fall past the advance window (a pickup
+ *                 on day 30 can still take a 15-day package).
  *
  * Monthly bookings (an explicit plan chosen at the counter; stored as
- * Booking.rentalPeriodType = MONTHLY) are exempt from both rules. Their
+ * Booking.rentalPeriodType = MONTHLY) are exempt from the length cap. Their
  * pickup must still be within the window, and their length must be between
  * MONTHLY_MIN_DAYS and MONTHLY_MAX_DAYS.
  */
 
-export const MAX_BOOKING_DAYS = 15;
+/** How far ahead a pickup can be booked (days from today, IST). */
+export const ADVANCE_BOOKING_DAYS = 30;
+/** Longest single standard booking, extensions included (days). */
+export const MAX_RENTAL_DAYS = 15;
+/**
+ * @deprecated Ambiguous — was both the advance window and the length cap.
+ * Now the length cap only; use MAX_RENTAL_DAYS or ADVANCE_BOOKING_DAYS.
+ */
+export const MAX_BOOKING_DAYS = MAX_RENTAL_DAYS;
 export const MONTHLY_MIN_DAYS = 30;
 export const MONTHLY_MAX_DAYS = 180;
 export const BOOKING_MAX_PERIOD_EXCEEDED = "BOOKING_MAX_PERIOD_EXCEEDED";
@@ -38,8 +48,8 @@ export type BookingWindowResult =
       message: string;
     };
 
-/** Last allowed instant: 23:59:59.999 IST on (today IST + days). */
-export function bookingWindowEnd(now: Date = new Date(), days: number = MAX_BOOKING_DAYS): Date {
+/** Latest allowed pickup: 23:59:59.999 IST on (today IST + days). */
+export function bookingWindowEnd(now: Date = new Date(), days: number = ADVANCE_BOOKING_DAYS): Date {
   const ist = new Date(now.getTime() + IST_OFFSET_MS);
   const endIstAsUtc = Date.UTC(
     ist.getUTCFullYear(),
@@ -68,11 +78,18 @@ export interface BookingWindowInput {
   monthly?: boolean;
 }
 
+/** Latest return of a standard booking starting at startAt: startAt + MAX_RENTAL_DAYS × 24 h. */
+export function maxRentalEnd(startAt: Date | string): Date {
+  return new Date(new Date(startAt).getTime() + MAX_RENTAL_DAYS * DAY_MS);
+}
+
 export function validateBookingWindow(input: BookingWindowInput): BookingWindowResult {
   const now = input.now ?? new Date();
   const startAt = new Date(input.startAt);
   const endAt = new Date(input.endAt);
-  const maxEndAt = bookingWindowEnd(now);
+  const pickupEnd = bookingWindowEnd(now);
+  // maxEndAt = the latest allowed return (standard), or the latest pickup (monthly)
+  const maxEndAt = input.monthly ? pickupEnd : maxRentalEnd(startAt);
   const fail = (reason: BookingWindowReason, message: string): BookingWindowResult => ({
     ok: false,
     code: BOOKING_MAX_PERIOD_EXCEEDED,
@@ -82,10 +99,10 @@ export function validateBookingWindow(input: BookingWindowInput): BookingWindowR
   });
 
   if (input.monthly) {
-    if (startAt.getTime() > maxEndAt.getTime()) {
+    if (startAt.getTime() > pickupEnd.getTime()) {
       return fail(
         "PICKUP_WINDOW",
-        `Pickup must be on or before ${istDateLabel(maxEndAt)} (bookings open ${MAX_BOOKING_DAYS} days ahead).`,
+        `Pickup must be on or before ${istDateLabel(pickupEnd)} (bookings open ${ADVANCE_BOOKING_DAYS} days ahead).`,
       );
     }
     const days = (endAt.getTime() - startAt.getTime()) / DAY_MS;
@@ -98,22 +115,22 @@ export function validateBookingWindow(input: BookingWindowInput): BookingWindowR
     return { ok: true, maxEndAt };
   }
 
-  if (endAt.getTime() > maxEndAt.getTime()) {
+  if (startAt.getTime() > pickupEnd.getTime()) {
     return fail(
       "WINDOW",
-      `Bookings can run up to ${MAX_BOOKING_DAYS} days from today. Choose a return on or before ${istDateLabel(maxEndAt)}.`,
+      `Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead. Choose a pickup on or before ${istDateLabel(pickupEnd)}.`,
     );
   }
-  if (endAt.getTime() - startAt.getTime() > MAX_BOOKING_DAYS * DAY_MS) {
-    return fail("DURATION", `A booking can be at most ${MAX_BOOKING_DAYS} days long.`);
+  if (endAt.getTime() - startAt.getTime() > MAX_RENTAL_DAYS * DAY_MS) {
+    return fail("DURATION", `A booking can be at most ${MAX_RENTAL_DAYS} days long.`);
   }
   return { ok: true, maxEndAt };
 }
 
 /**
  * Extension check: the new end is validated against the booking's ORIGINAL
- * start, so chained extensions cannot exceed the cap. Monthly bookings are
- * only held to MONTHLY_MAX_DAYS.
+ * start, so chained extensions cannot exceed the MAX_RENTAL_DAYS cap.
+ * Monthly bookings are only held to MONTHLY_MAX_DAYS.
  */
 export function validateExtensionWindow(input: {
   bookingStartAt: Date | string;
@@ -137,16 +154,15 @@ export function validateExtensionWindow(input: {
     }
     return { ok: true, maxEndAt };
   }
-  const windowEnd = bookingWindowEnd(now);
-  const durationEnd = new Date(startAt.getTime() + MAX_BOOKING_DAYS * DAY_MS);
-  const maxEndAt = windowEnd.getTime() < durationEnd.getTime() ? windowEnd : durationEnd;
+  void now; // the pickup has been fixed; only the length cap binds an extension
+  const maxEndAt = maxRentalEnd(startAt);
   if (newEndAt.getTime() > maxEndAt.getTime()) {
     return {
       ok: false,
       code: BOOKING_MAX_PERIOD_EXCEEDED,
-      reason: windowEnd.getTime() < durationEnd.getTime() ? "WINDOW" : "DURATION",
+      reason: "DURATION",
       maxEndAt,
-      message: `This booking can be extended up to ${istDateLabel(maxEndAt)} (${MAX_BOOKING_DAYS}-day limit).`,
+      message: `This booking can be extended up to ${istDateLabel(maxEndAt)} (${MAX_RENTAL_DAYS}-day limit).`,
     };
   }
   return { ok: true, maxEndAt };
@@ -205,7 +221,7 @@ function makePackage(hours: number): CustomerPackage {
 /** Every customer package, shortest first: 12 hours, 1 day … 15 days. */
 export const CUSTOMER_PACKAGES: readonly CustomerPackage[] = [
   makePackage(HALF_DAY_PACKAGE_HOURS),
-  ...Array.from({ length: MAX_BOOKING_DAYS }, (_, i) => makePackage((i + 1) * DAY_PACKAGE_HOURS)),
+  ...Array.from({ length: MAX_RENTAL_DAYS }, (_, i) => makePackage((i + 1) * DAY_PACKAGE_HOURS)),
 ];
 
 /** Allowed customer booking lengths in hours: 12, 24, 48 … 360. */
@@ -224,7 +240,7 @@ export function customerPackageEnd(startAt: Date | string, pkg: CustomerPackage 
 export function matchPackageHours(
   startAt: Date | string,
   endAt: Date | string,
-  maxDays: number = MAX_BOOKING_DAYS,
+  maxDays: number = MAX_RENTAL_DAYS,
 ): number | null {
   const span = new Date(endAt).getTime() - new Date(startAt).getTime();
   if (!Number.isFinite(span) || span <= 0) return null;
@@ -252,20 +268,20 @@ export function isCustomerPackageDuration(startAt: Date | string, endAt: Date | 
 /**
  * Customer self-extension: the added time (current end → new end) is +12 h or
  * + N × 24 h, ±1 minute. How far it may reach is the extension window's job
- * (validateExtensionWindow — 15 days, or 180 for a monthly booking).
+ * (validateExtensionWindow — 15 days from pickup, or 180 for a monthly booking).
  */
 export function isExtensionPackageDuration(currentEndAt: Date | string, newEndAt: Date | string): boolean {
   return matchPackageHours(currentEndAt, newEndAt, Number.MAX_SAFE_INTEGER) !== null;
 }
 
 /**
- * Packages a customer can pick for a pickup, each with its return, stopping at
- * the 15-day window (return ≤ 23:59 IST on today + 15). Office hours are checked
- * separately: a 12-hour return outside them is held to closing on the pickup
- * day (halfDayPackageReturn), while whole-day packages keep the pickup's clock
- * time. Pass that held return as `halfDayEndAt` so the 12-hour package is
- * listed — and checked against the window — with the return it really has
- * (an afternoon pickup on the window's last day returns at closing, in time).
+ * Packages a customer can pick for a pickup, each with its return. A pickup
+ * past the advance window (23:59 IST on today + ADVANCE_BOOKING_DAYS) gets
+ * none; otherwise every package up to MAX_RENTAL_DAYS is listed. Office hours
+ * are checked separately: a 12-hour return outside them is held to closing on
+ * the pickup day (halfDayPackageReturn), while whole-day packages keep the
+ * pickup's clock time. Pass that held return as `halfDayEndAt` so the 12-hour
+ * package is listed with the return it really has.
  */
 export function customerPackagesForPickup(
   startAt: Date | string,
@@ -273,11 +289,11 @@ export function customerPackagesForPickup(
   halfDayEndAt?: Date | null,
 ): Array<CustomerPackage & { endAt: Date }> {
   const start = new Date(startAt);
-  const windowEnd = bookingWindowEnd(now).getTime();
+  if (start.getTime() > bookingWindowEnd(now).getTime()) return [];
   return CUSTOMER_PACKAGES.map((p) => ({
     ...p,
     endAt: p.hours === HALF_DAY_PACKAGE_HOURS && halfDayEndAt ? halfDayEndAt : customerPackageEnd(start, p),
-  })).filter((p) => p.endAt.getTime() <= windowEnd);
+  }));
 }
 
 // ── 12 hours from a late pickup (client item 6) ─────────────────────────────

@@ -190,7 +190,7 @@ export default function Checkout() {
     vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string;
   }>();
   // Booking is account-based (the API requires a token and a complete profile,
-  // incl. the DL + Aadhaar numbers; KYC photos are optional — X2). Normally
+  // name, phone, address and age; KYC photos are optional — X2). Normally
   // requireAuth on the vehicle CTA stops a guest before
   // they get here; this guards a deep link or a restored navigation state.
   const isGuest = useIsGuest();
@@ -386,8 +386,8 @@ export default function Checkout() {
     setCouponError(null);
   };
 
-  // Not a sign-in problem: the profile is missing fields (e.g. DL / Aadhaar
-  // number). Saving the profile returns here (profile/edit goes back).
+  // Not a sign-in problem: the profile is missing fields (e.g. the age).
+  // Saving the profile returns here (profile/edit goes back).
   const promptCompleteProfile = (message: string) => {
     Alert.alert('Complete your profile', message, [
       { text: 'Go to Profile', onPress: () => router.push('/profile/edit') },
@@ -883,7 +883,7 @@ export default function Checkout() {
           <TimesNotice notice={timesIssue} />
         </View>
 
-        {/* #1 — profile incomplete (e.g. no DL / Aadhaar number): booking is refused until it is fixed */}
+        {/* #1 — profile incomplete (e.g. no age): booking is refused until it is fixed */}
         {profile && !profile.isProfileCompleted && (
           <TouchableOpacity
             style={[styles.kycBanner, styles.kycMissing]}

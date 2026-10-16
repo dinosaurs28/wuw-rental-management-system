@@ -34,7 +34,7 @@ interface Props {
   onConfirm: (start: Date, end: Date) => void;
   onClose: () => void;
   // Last day a pickup can be on, and by default the last return day too
-  // (the 15-day booking window). No upper limit when omitted.
+  // (the 30-day advance booking window). No upper limit when omitted.
   maxStartDay?: Date;
   // Return days allowed for a pickup day, inclusive (e.g. 30–180 days for a
   // monthly plan). Defaults to the pickup day … maxStartDay.
@@ -44,7 +44,7 @@ interface Props {
   // Open days with no pickup time left (e.g. today after the last pickup,
   // 30 min before closing): greyed out for pickup only.
   noPickupTimes?: (day: Date) => boolean;
-  // Extra line under the range hint, e.g. "Bookings open up to 15 days ahead".
+  // Extra line under the range hint, e.g. "Bookings open up to 30 days ahead".
   note?: string;
   // Package bookings (BRIEF4 P1/P4a): only the pickup day is picked; the
   // return is `returnFor(pickup at its current time)` and shown read-only.

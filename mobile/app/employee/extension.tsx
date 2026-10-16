@@ -35,7 +35,7 @@ import {
   type ExtensionGstFields,
   type ExtensionGstSplit,
 } from '../../lib/gst';
-import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS } from '../../lib/bookingWindow';
+import { MAX_RENTAL_DAYS, MONTHLY_MAX_DAYS } from '../../lib/bookingWindow';
 import {
   buildScheduleErrorMessage,
   closedDayText,
@@ -212,7 +212,7 @@ export default function ExtensionScreen() {
   const staffBranch = useAuthStore((s) => s.user?.branchPublicId ?? null);
   const { data: branchHours } = useBranchSchedule(eligibilityFailed ? staffBranch : null);
   const schedule = eligibilityHours ?? branchHours ?? null;
-  const maxDays = eligibility?.maxBookingDays ?? MAX_BOOKING_DAYS;
+  const maxDays = eligibility?.maxBookingDays ?? MAX_RENTAL_DAYS;
   // Not extendable (at the limit, or not CONFIRMED / PICKED_UP): the server says why.
   const notExtendable = eligibility && !eligibility.eligible ? eligibility.reason ?? 'This booking cannot be extended.' : null;
 
@@ -522,9 +522,9 @@ export default function ExtensionScreen() {
       const res = await employeeApi.collectExtension(
         extensionPublicId,
         choice.method === 'UPI'
-          ? { method: 'UPI', proof_file_id: choice.proofFileId }
+          ? { method: 'UPI', proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
           : choice.method === 'SPLIT'
-            ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId }
+            ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
             : choice.method === 'CREDIT'
               ? { method: 'CREDIT', collateral: choice.collateral }
               : { method: 'CASH' },

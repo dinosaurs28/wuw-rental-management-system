@@ -264,6 +264,8 @@ export default function FleetCustomerDetailScreen() {
           <View style={styles.divider} />
           <InfoRow label="Address" value={addressLine || '—'} />
           <View style={styles.divider} />
+          <InfoRow label="Age" value={c.age != null ? String(c.age) : '—'} />
+          <View style={styles.divider} />
           <InfoRow label="Driving licence" value={c.drivingLicenceNumberMasked || 'Not added'} />
           <View style={styles.divider} />
           <InfoRow label="Aadhaar" value={c.aadhaarNumberMasked || 'Not added'} />

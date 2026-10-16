@@ -34,7 +34,7 @@ import { rangeLengthLabel } from '../../lib/dates';
 import {
   EXTENSION_PACKAGE_REQUIRED,
   EXTENSION_PACKAGE_REQUIRED_MESSAGE,
-  MAX_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   isExtensionPackageDuration,
   packageLabel,
 } from '../../lib/bookingWindow';
@@ -119,7 +119,7 @@ export default function ExtendTrip() {
     const d = eligibility?.currentEndAt ? new Date(eligibility.currentEndAt) : null;
     return d && !isNaN(d.getTime()) ? d : paramEnd;
   }, [eligibility?.currentEndAt, paramEnd]);
-  const maxDays = eligibility?.maxBookingDays ?? MAX_BOOKING_DAYS;
+  const maxDays = eligibility?.maxBookingDays ?? MAX_RENTAL_DAYS;
   const atCap = eligibility?.atCap === true;
 
   // The extensions on offer: +12 hours, +1 day … up to the limit, each greyed

@@ -38,7 +38,7 @@ import {
 } from '../../../lib/packages';
 import { useBranchSchedule } from '../../../hooks/useBranchSchedule';
 import type { FestivalPricing, WeekendPricing } from '../../../types/api';
-import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
+import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS, MONTHLY_MAX_DAYS, MONTHLY_MIN_DAYS } from '../../../lib/bookingWindow';
 import {
   bookingTimesNotice,
   closedDayText,
@@ -201,7 +201,7 @@ export default function WalkinVehiclesScreen() {
   const setStorePlan = useEmployeeBookingStore((s) => s.setPlan);
 
   // Rental plan (#15/#17): Standard = up to 15 days; Monthly rental = the
-  // counter-only monthly plan, 30–180 days with the pickup inside 15 days.
+  // counter-only monthly plan, 30–180 days with the pickup inside 30 days.
   const [plan, setPlan] = useState<WalkinPlan>(() => useEmployeeBookingStore.getState().plan);
   const monthly = plan === 'MONTHLY';
 
@@ -488,8 +488,8 @@ export default function WalkinVehiclesScreen() {
         </View>
         <Text style={styles.planHint}>
           {monthly
-            ? `${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days · pickup within the next ${MAX_BOOKING_DAYS} days`
-            : `12 hours or 1–${MAX_BOOKING_DAYS} days, plus extra hours if asked · return by ${fmtDate(bookingWindowLastDay())}`}
+            ? `${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days · pickup within the next ${ADVANCE_BOOKING_DAYS} days`
+            : `12 hours or 1–${MAX_RENTAL_DAYS} days, plus extra hours if asked · pickup by ${fmtDate(bookingWindowLastDay())}`}
         </Text>
 
         <TouchableOpacity style={styles.dateRow} onPress={() => setShowDates(true)} activeOpacity={0.8}>
@@ -872,7 +872,7 @@ export default function WalkinVehiclesScreen() {
         note={
           monthly
             ? `Monthly rental: return ${MONTHLY_MIN_DAYS}–${MONTHLY_MAX_DAYS} days after pickup`
-            : `Bookings open up to ${MAX_BOOKING_DAYS} days ahead`
+            : `Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead`
         }
       />
     </View>

@@ -7,7 +7,7 @@ import {
   SAFETY_DEPOSIT_HANDLING,
   type SafetyDepositHandling,
 } from '../lib/counterPayment';
-import { draftBool, draftOneOf, draftString, proofDraftId } from '../lib/operationDraft';
+import { draftBool, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
 // Paused drop (client item 2): which drop-screen fields are kept and how they
@@ -129,7 +129,9 @@ export function useReturnDraft({
         payMethod: pay.method,
         payCash: pay.cash,
         payCollateral: pay.collateral,
-        payProofId: proofDraftId(pay.proof),
+        // Screenshot 1 (drafts saved by older builds carry only this) and all of them
+        payProofId: proofDraftIds(pay.proof)[0] ?? null,
+        payProofIds: proofDraftIds(pay.proof),
         refundMethod: refundPay.method,
         refundProofId: proofDraftId(refundPay.proof),
       },
@@ -175,8 +177,10 @@ export function useReturnDraft({
       if (method) pay.setMethod(method);
       pay.setCash(draftString(d, 'payCash'));
       pay.setCollateral(draftString(d, 'payCollateral'));
+      const payProofIds = draftStrings(d, 'payProofIds');
       const payProofId = draftString(d, 'payProofId');
-      if (payProofId) pay.proof.restore(payProofId);
+      if (payProofIds.length) pay.proof.restore(payProofIds);
+      else if (payProofId) pay.proof.restore(payProofId);
       const refundMethod = draftOneOf(d, 'refundMethod', COUNTER_REFUND_METHODS);
       if (refundMethod) refundPay.setMethod(refundMethod);
       const refundProofId = draftString(d, 'refundProofId');

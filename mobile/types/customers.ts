@@ -23,6 +23,8 @@ export interface CustomerRow {
   email: string | null;
   registeredAt: string;
   isProfileCompleted: boolean;
+  /** Entered age, else derived from dob; absent on older servers. */
+  age?: number | null;
   isBlacklisted: boolean;
   blacklistReason: string | null;
   blacklistedAt: string | null;
@@ -124,6 +126,8 @@ export interface CustomerDetail {
     };
     registeredAt: string;
     isProfileCompleted: boolean;
+    /** Entered age, else derived from dob; absent on older servers. */
+    age?: number | null;
     drivingLicenceNumberMasked: string | null;
     aadhaarNumberMasked: string | null;
   };
@@ -174,6 +178,8 @@ export interface CustomerBookingTransaction {
   createdAt: string;
   /** Private-bucket photos are presigned for 15 minutes (expiresIn seconds). */
   proofPhoto: { url: string; mime: string; expiresIn: number | null } | null;
+  // Every payment photo (Oct 2026: up to 3, slot order). Absent on older servers.
+  proofs?: { url: string; mime: string; expiresIn: number | null; position: number }[];
 }
 
 export interface CustomerBookingDetail {

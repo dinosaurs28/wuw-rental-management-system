@@ -49,9 +49,9 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
   const record = async (choice: CounterPaymentChoice) => {
     const body: RemainingPaymentBody =
       choice.method === 'UPI'
-        ? { method: 'UPI', proof_file_id: choice.proofFileId }
+        ? { method: 'UPI', proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
         : choice.method === 'SPLIT'
-          ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId }
+          ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
           : choice.method === 'CREDIT'
             ? { method: 'CREDIT', collateral: choice.collateral }
             : { method: 'CASH' };

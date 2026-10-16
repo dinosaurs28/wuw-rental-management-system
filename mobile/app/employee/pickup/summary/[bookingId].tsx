@@ -137,6 +137,16 @@ export default function PickupSummaryScreen() {
             label="Original DL"
             value={`${dlStatusLabel(data.dl.status)}${data.dl.status === 'DEPOSIT' && data.dl.depositNote ? ` · ${data.dl.depositNote}` : ''}`}
           />
+          {data.pickupDiscount && (
+            <>
+              <Divider />
+              <InfoRow
+                icon="pricetag-outline"
+                label="Pickup discount"
+                value={`−${inr(num(data.pickupDiscount.amount))}${data.pickupDiscount.reason ? ` · ${data.pickupDiscount.reason}` : ''}`}
+              />
+            </>
+          )}
           {num(data.safetyDeposit) > 0 && (
             <>
               <Divider />

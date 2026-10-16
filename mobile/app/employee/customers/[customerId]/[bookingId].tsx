@@ -64,7 +64,7 @@ export default function CustomerBookingScreen() {
   const insets = useSafeAreaInsets();
   const { data: d, isLoading, error, refetch, dataUpdatedAt } = useCustomerBooking(customerId, bookingId);
   const [pulling, setPulling] = useState(false);
-  const [proof, setProof] = useState<{ url: string; label: string } | null>(null);
+  const [proof, setProof] = useState<{ url: string; label: string }[] | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   // A failed refresh keeps the loaded booking on screen and says so.
@@ -78,18 +78,29 @@ export default function CustomerBookingScreen() {
     }
   };
 
+  // Every photo of the payment (up to 3 since Oct 2026), else the single one
+  const proofUrls = (t: CustomerBookingTransaction | undefined): string[] => {
+    if (!t) return [];
+    if (t.proofs?.length) return t.proofs.map((p) => p.url);
+    return t.proofPhoto?.url ? [t.proofPhoto.url] : [];
+  };
+
   const openProof = async (t: CustomerBookingTransaction) => {
-    let url = t.proofPhoto?.url ?? null;
+    let urls = proofUrls(t);
     if (t.proofPhoto?.expiresIn != null && Date.now() - dataUpdatedAt > PROOF_REFRESH_MS) {
       const fresh = await refetch();
       if (fresh.isError) {
-        // Still try the loaded link — it may not have lapsed yet.
+        // Still try the loaded links — they may not have lapsed yet.
         setRefreshError(apiErrorMessage(fresh.error, 'The photo link could not be renewed and may have expired.'));
       } else {
-        url = fresh.data?.payments.transactions.find((x) => x.publicId === t.publicId)?.proofPhoto?.url ?? url;
+        const freshUrls = proofUrls(fresh.data?.payments.transactions.find((x) => x.publicId === t.publicId));
+        if (freshUrls.length) urls = freshUrls;
       }
     }
-    if (url) setProof({ url, label: `${methodLabel(t.method)} payment proof` });
+    const label = `${methodLabel(t.method)} payment proof`;
+    if (urls.length) {
+      setProof(urls.map((url, i) => ({ url, label: urls.length > 1 ? `${label} ${i + 1} of ${urls.length}` : label })));
+    }
   };
 
   const header = (
@@ -273,7 +284,9 @@ export default function CustomerBookingScreen() {
               {t.proofPhoto ? (
                 <TouchableOpacity style={styles.proofLink} onPress={() => openProof(t)} hitSlop={6} activeOpacity={0.7}>
                   <Ionicons name="image-outline" size={14} color={Colors.orange} />
-                  <Text style={styles.proofText}>View payment proof</Text>
+                  <Text style={styles.proofText}>
+                    {(t.proofs?.length ?? 0) > 1 ? `View payment proofs (${t.proofs!.length})` : 'View payment proof'}
+                  </Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -305,7 +318,7 @@ export default function CustomerBookingScreen() {
 
       <ImageViewer
         visible={!!proof}
-        images={proof ? [{ url: proof.url, label: proof.label }] : []}
+        images={proof ?? []}
         onClose={() => setProof(null)}
       />
       <Toast

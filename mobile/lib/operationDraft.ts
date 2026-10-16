@@ -82,6 +82,11 @@ export function proofDraftId(proof: { shot: ProofShot | null; restoringId: strin
   return proof.restoringId;
 }
 
+// Every payment screenshot to keep with the draft (up to 3, slot order).
+export function proofDraftIds(set: { slots: { shot: ProofShot | null; restoringId: string | null }[] }): string[] {
+  return set.slots.map(proofDraftId).filter((id): id is string => !!id);
+}
+
 // ── Reading the stored fields back (never trust their shape) ────────────────
 
 export const draftString = (data: Record<string, unknown>, key: string, fallback = ''): string =>
@@ -89,6 +94,9 @@ export const draftString = (data: Record<string, unknown>, key: string, fallback
 
 export const draftBool = (data: Record<string, unknown>, key: string, fallback = false): boolean =>
   typeof data[key] === 'boolean' ? (data[key] as boolean) : fallback;
+
+export const draftStrings = (data: Record<string, unknown>, key: string): string[] =>
+  Array.isArray(data[key]) ? (data[key] as unknown[]).filter((v): v is string => typeof v === 'string' && v.length > 0) : [];
 
 export const draftNumber = (data: Record<string, unknown>, key: string): number | null =>
   typeof data[key] === 'number' && Number.isFinite(data[key]) ? (data[key] as number) : null;

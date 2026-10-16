@@ -561,6 +561,8 @@ export const employeeApi = {
       onlineAmount?: number;
       // UPI / a split's UPI part: the payment-screen photo (#3)
       proof_file_id?: string;
+      // …and every screenshot (1–3, slot order; the first = proof_file_id)
+      proof_file_ids?: string[];
       // CREDIT only: what was taken from the customer (3–300 chars)
       collateral?: string;
       // Drop bill with the deposit refunded in full (#6): how it's paid back.
@@ -592,9 +594,11 @@ export const employeeApi = {
     customer_public_id: string;
     name: string;
     email?: string;
-    /** Raw input is fine — normalised server-side. */
-    drivingLicenceNumber: string;
-    aadhaarNumber: string;
+    /** Optional (Oct 2026): omit when blank. Raw input is fine — normalised server-side. */
+    drivingLicenceNumber?: string;
+    aadhaarNumber?: string;
+    /** Age in years, 18–99 (replaces dob). */
+    age?: number;
     addressLine1: string;
     city: string;
     state: string;
@@ -671,6 +675,8 @@ export const employeeApi = {
     utr?: string;
     /** UPI / SPLIT: the payment-screen photo (#3); then confirmed via bookingPaymentStatus like CASH. */
     proof_file_id?: string;
+    /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+    proof_file_ids?: string[];
     /** SPLIT: the cash part (> 0); upi_amount, when sent, must add up to the total (400 SPLIT_AMOUNT_MISMATCH { total }). */
     cash_amount?: number;
     upi_amount?: number;
@@ -772,6 +778,7 @@ export const employeeApi = {
       method: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT';
       onlineTransactionRef?: string;
       proof_file_id?: string;
+      proof_file_ids?: string[];
       // SPLIT: cash > 0 and UPI > 0, adding up to the extension amount
       cashAmount?: number;
       onlineAmount?: number;
@@ -916,6 +923,17 @@ export const employeeApi = {
     ),
   removeDiscountFromPickupSession: (bookingId: string) =>
     api.delete(`/api/employee/bookings/${bookingId}/pickup-session/remove-discount`),
+  // Manual pickup discount: a flat ₹ off the rent on the pickup bill (replaces one
+  // already there). 400 PICKUP_DISCOUNT_EXCEEDS (+ maxAmount) above the rent payable.
+  setPickupSessionDiscount: (bookingId: string, body: { amount: number; reason?: string | null }) =>
+    api.post(`/api/employee/bookings/${bookingId}/pickup-session/manual-discount`, body),
+  removePickupSessionDiscount: (bookingId: string) =>
+    api.delete(`/api/employee/bookings/${bookingId}/pickup-session/manual-discount`),
+  // Legacy branches (no payment sessions): taken off the remaining balance before it is collected
+  setLegacyPickupDiscount: (bookingId: string, body: { amount: number; reason?: string | null }) =>
+    api.put(`/api/employee/pickup/${bookingId}/discount`, body),
+  removeLegacyPickupDiscount: (bookingId: string) =>
+    api.delete(`/api/employee/pickup/${bookingId}/discount`),
   recordRefund: (
     sessionPublicId: string,
     body: { method: 'CASH' | 'ONLINE' | 'UPI'; amount: number; idempotencyKey: string; notes?: string; proof_file_id?: string },
@@ -972,8 +990,8 @@ export const employeeCustomersApi = {
 // Legacy remaining balance (#3 / #11) — POST …/initiate-remaining-payment.
 export type RemainingPaymentBody =
   | { method: 'CASH' | 'ONLINE_RAZORPAY' }
-  | { method: 'UPI'; proof_file_id?: string; utr?: string }
-  | { method: 'SPLIT'; cashAmount: number; onlineAmount: number; proof_file_id?: string; utr?: string }
+  | { method: 'UPI'; proof_file_id?: string; proof_file_ids?: string[]; utr?: string }
+  | { method: 'SPLIT'; cashAmount: number; onlineAmount: number; proof_file_id?: string; proof_file_ids?: string[]; utr?: string }
   | { method: 'CREDIT'; collateral: string };
 
 // ─── discount ───────────────────────────────────────────────────────────────
