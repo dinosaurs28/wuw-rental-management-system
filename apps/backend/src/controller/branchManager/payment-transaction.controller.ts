@@ -7,7 +7,7 @@ import {
   financialStateService,
 } from "../../services/payment/index.js";
 import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
-import { proofPhotoFields } from "../../services/payment/payment-proof.service.js";
+import { proofPhotoFields, PROOF_PHOTOS_RELATION_SELECT } from "../../services/payment/payment-proof.service.js";
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -92,7 +92,12 @@ export const GetPaymentTransaction = async (req: Request, res: Response): Promis
           select: { id: true, publicId: true, key: true, mime: true, size: true, createdAt: true },
         })
       : null;
-    res.status(StatusCode.OK).json({ data: { ...txn, ...(await proofPhotoFields(proofFile)) } });
+    // …and every photo when the customer paid in several UPI transactions
+    const proofPhotos = await prisma.paymentTransactionProof.findMany({
+      where: { transactionId: txn.id },
+      ...PROOF_PHOTOS_RELATION_SELECT,
+    });
+    res.status(StatusCode.OK).json({ data: { ...txn, ...(await proofPhotoFields(proofFile, proofPhotos)) } });
   } catch (error) {
     console.error("GetPaymentTransaction Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

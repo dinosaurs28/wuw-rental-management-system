@@ -46,6 +46,7 @@ export async function deleteUploadedPhoto(
       id: true,
       key: true,
       url: true,
+      displayKey: true,
       uploadedBranchId: true,
       _count: { select: { bookingPhotos: true } },
     },
@@ -80,8 +81,11 @@ export async function deleteUploadedPhoto(
 
   // The row is gone, so the photo is deleted for the app; a failed queue add
   // only leaves an unreferenced object behind in R2.
-  await fileCleanupQueue.add("cleanup", { key: file.key }).catch((error) => {
-    console.warn(`[booking-photo] Could not queue R2 cleanup for ${file.key}:`, error);
-  });
+  for (const key of [file.key, file.displayKey]) {
+    if (!key) continue;
+    await fileCleanupQueue.add("cleanup", { key }).catch((error) => {
+      console.warn(`[booking-photo] Could not queue R2 cleanup for ${key}:`, error);
+    });
+  }
   return "DELETED";
 }

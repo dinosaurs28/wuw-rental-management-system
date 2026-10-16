@@ -43,6 +43,8 @@ import {
   applyCounterCouponOnSessionCompletion,
   CounterCouponError,
 } from "../../services/discount/counter-coupon.service.js";
+import { applyPickupDiscountOnSessionCompletion } from "../../services/discount/pickup-discount.service.js";
+import { PickupDiscountError } from "../../services/discount/pickup-discount-rules.js";
 import {
   CounterGuardError,
   assertOpenShift,
@@ -65,9 +67,11 @@ import {
   claimCounterUpi,
   resolvePaymentProof,
   claimPaymentProof,
+  proofPhotosCreate,
   type CounterUpi,
   type ResolvedProof,
 } from "../../services/payment/payment-proof.service.js";
+import { PAYMENT_PROOF_MAX_PHOTOS } from "../../services/payment/payment-proof-list.js";
 import {
   addFleetCredit,
   parseCollateral,
@@ -118,6 +122,9 @@ const recordPaymentSchema = z.object({
   onlineAmount: z.coerce.number().min(0).optional(),
   // Photo of the customer's UPI payment-success screen (#3) — replaces the UTR
   proof_file_id: z.string().trim().min(1).max(64).optional(),
+  // Every payment-screen photo (1–3, slot order — the customer may pay in several
+  // UPI transactions); the first one is proof_file_id. Checked in the handler.
+  proof_file_ids: z.array(z.string()).max(PAYMENT_PROOF_MAX_PHOTOS).optional(),
   // CREDIT only: what was taken from the customer until the credit is cleared
   collateral: z.string().optional(),
   // Drop bill with the safety deposit refunded in full: how it is paid back
@@ -512,7 +519,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
     }
-    const { amount, idempotencyKey, notes, onlineTransactionRef, cashAmount: splitCash, onlineAmount: splitOnline, proof_file_id, depositRefund } = validation.data;
+    const { amount, idempotencyKey, notes, onlineTransactionRef, cashAmount: splitCash, onlineAmount: splitOnline, proof_file_id, proof_file_ids, depositRefund } = validation.data;
     // "UPI" is a counter UPI (merchant QR) payment: ONLINE through the UPI gateway
     const method = validation.data.method === "UPI" ? "ONLINE" : validation.data.method;
     const onlineGateway = validation.data.method === "UPI" ? "UPI" : validation.data.onlineGateway;
@@ -592,7 +599,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
         await assertOpenShift(actor);
       }
       if (isUpi) {
-        upi = await resolveCounterUpi({ utr: onlineTransactionRef, proofFileId: proof_file_id, branchId: session.branchId });
+        upi = await resolveCounterUpi({
+          utr: onlineTransactionRef,
+          proofFileId: proof_file_id,
+          proofFileIds: proof_file_ids,
+          branchId: session.branchId,
+        });
         onlineRef = upi.utr;
         gateway = "UPI";
       } else if (hasOnlinePart) {
@@ -751,6 +763,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
             confirmedAt: new Date(),
             cashShiftId: upiShift?.id ?? null,
             proofFileId,
+            proofPhotos: proofPhotosCreate(upi?.proofs),
             notes: notes ?? null,
           },
         });
@@ -811,6 +824,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
             collectedAt: new Date(),
             cashShiftId: activeShift?.id ?? null,
             proofFileId,
+            proofPhotos: proofPhotosCreate(upi?.proofs),
             notes: notes ?? null,
           },
         });
@@ -938,6 +952,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         amount,
         sessionType: session.sessionType,
         ...(upi?.proof && { proofFileId: upi.proof.publicId }),
+        ...(upi && upi.proofs.length > 1 && { proofFileIds: upi.proofs.map((p) => p.publicId) }),
         ...(credit && { credit }),
         ...(refunded && { depositRefund: refunded }),
       },
@@ -1291,6 +1306,15 @@ async function runPostCompletionHooks(
       if (err instanceof CounterCouponError) {
         throw new SettlementConflict(err.status, { ...err.toJSON(), couponRejected: true });
       }
+      throw err;
+    }
+
+    // Manual pickup discount on the bill: folded into the booking the same way
+    // (after the coupon, which re-checks against the booking's own totals)
+    try {
+      await applyPickupDiscountOnSessionCompletion(tx, bookingId, sessionId);
+    } catch (err) {
+      if (err instanceof PickupDiscountError) throw new SettlementConflict(err.status, err.toJSON());
       throw err;
     }
 

@@ -118,18 +118,22 @@ export interface OverdueListParams {
   limit?: number;
   type?: BookingListType;
   now?: Date;
+  /** Only rents with one of these vehicles (the BM Fleet tab search); undefined = all */
+  vehicleIds?: number[];
 }
 
 const overdueWhere = (
   branchId: number,
   now: Date,
   type: BookingListType | undefined,
+  vehicleIds?: number[],
 ): Prisma.BookingWhereInput => ({
   branchId,
   status: BookingStatus.PICKED_UP,
   endAt: { lt: now },
   deletedAt: null,
   ...bookingTypeWhere(type),
+  ...(vehicleIds ? { items: { some: { vehicleId: { in: vehicleIds } } } } : {}),
 });
 
 type GracePolicyKeys = Pick<FrozenChargeConfig, "gracePolicyEnabled" | "graceType" | "graceMinutes">;
@@ -180,9 +184,10 @@ const classifyOverdue = async (
   branchId: number,
   now: Date,
   type: BookingListType | undefined,
+  vehicleIds?: number[],
 ): Promise<ClassifiedBooking[]> => {
   const rows = await prisma.booking.findMany({
-    where: overdueWhere(branchId, now, type),
+    where: overdueWhere(branchId, now, type, vehicleIds),
     select: {
       id: true,
       endAt: true,
@@ -257,7 +262,7 @@ export const listOverdueReturns = async (
   const page = params.page ?? 1;
   const limit = params.limit ?? OVERDUE_DEFAULT_LIMIT;
 
-  const classified = await classifyOverdue(branchId, now, params.type);
+  const classified = await classifyOverdue(branchId, now, params.type, params.vehicleIds);
   const counts = countStates(classified);
   const pageRows = classified.slice((page - 1) * limit, page * limit);
   const byId = new Map(pageRows.map((row) => [row.id, row]));

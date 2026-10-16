@@ -104,7 +104,8 @@ export async function assertCustomerNotBlacklisted(
 // entries carry the blacklist flag; a blacklist change drops every cached
 // search so the Fleet badge is right on the next search.
 
-export const CUSTOMER_SEARCH_CACHE_PREFIX = "customer_search:v3:";
+// v4 (Oct 2026): + age, completeness without DL / Aadhaar.
+export const CUSTOMER_SEARCH_CACHE_PREFIX = "customer_search:v4:";
 
 export async function invalidateCustomerSearchCache(): Promise<void> {
   try {

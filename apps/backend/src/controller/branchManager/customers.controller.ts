@@ -21,6 +21,7 @@
  * columns and the shared owed / financial-state computations, never re-priced.
  */
 import { Request, Response } from "express";
+import { PICKUP_DISCOUNT_REF } from "../../services/discount/pickup-discount-rules.js";
 import Decimal from "decimal.js";
 import {
   prisma,
@@ -37,6 +38,7 @@ import { maskAadhaar } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import {
   displayEmail,
+  effectiveCustomerAge,
   getMissingProfileFields,
   profileFieldsOf,
 } from "../../utils/customer/identity.js";
@@ -250,6 +252,8 @@ const CUSTOMER_SELECT = {
   state: true,
   zipCode: true,
   country: true,
+  age: true,
+  dob: true,
   drivingLicenceNumber: true,
   aadhaarNumber: true,
   isBlacklisted: true,
@@ -484,6 +488,8 @@ export const ListCustomers = async (req: Request, res: Response) => {
         email: displayEmail(c.user.email),
         registeredAt: c.user.createdAt.toISOString(),
         isProfileCompleted: getMissingProfileFields(profileFieldsOf(c.user, c)).length === 0,
+        // Entered age, else derived from an older customer's date of birth
+        age: effectiveCustomerAge(c),
         isBlacklisted: c.isBlacklisted,
         blacklistReason: c.isBlacklisted ? c.blacklistReason : null,
         blacklistedAt: c.isBlacklisted ? iso(c.blacklistedAt) : null,
@@ -600,6 +606,7 @@ export const GetCustomer = async (req: Request, res: Response) => {
           },
           registeredAt: p.user.createdAt.toISOString(),
           isProfileCompleted: getMissingProfileFields(profileFieldsOf(p.user, p)).length === 0,
+          age: effectiveCustomerAge(p),
           // Identity numbers are masked for the manager (#13).
           drivingLicenceNumberMasked: maskDrivingLicence(p.drivingLicenceNumber),
           aadhaarNumberMasked: p.aadhaarNumber ? maskAadhaar(p.aadhaarNumber) : null,
@@ -806,6 +813,8 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
             sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] },
             status: { not: PaymentSessionStatus.ABANDONED },
           },
+          // An edit's pickup discount change is in totalFinal already, not a drop charge
+          OR: [{ referenceType: null }, { referenceType: { not: PICKUP_DISCOUNT_REF } }],
         },
         orderBy: { createdAt: "asc" },
         select: {
@@ -855,6 +864,10 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           collectedBy: { select: { name: true } },
           confirmedBy: { select: { name: true } },
           proofFile: { select: { key: true, url: true, mime: true } },
+          proofPhotos: {
+            select: { position: true, file: { select: { key: true, url: true, mime: true } } },
+            orderBy: { position: "asc" },
+          },
         },
       }),
     ]);
@@ -939,17 +952,20 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
     // ── Payments ──
     const transactions = await Promise.all(
       txns.map(async (t) => {
-        let proofPhoto: { url: string; mime: string; expiresIn: number | null } | null = null;
-        if (t.proofFile) {
-          // Private-bucket files store the key in url; public ones a full URL.
-          proofPhoto = /^https?:\/\//i.test(t.proofFile.url)
-            ? { url: t.proofFile.url, mime: t.proofFile.mime, expiresIn: null }
-            : {
-                url: await generatePresignedUrl(t.proofFile.key, PROOF_URL_TTL_SECONDS),
-                mime: t.proofFile.mime,
-                expiresIn: PROOF_URL_TTL_SECONDS,
-              };
-        }
+        type ProofLink = { url: string; mime: string; expiresIn: number | null };
+        // Private-bucket files store the key in url; public ones a full URL.
+        const proofLink = async (f: { key: string; url: string; mime: string }): Promise<ProofLink> =>
+          /^https?:\/\//i.test(f.url)
+            ? { url: f.url, mime: f.mime, expiresIn: null }
+            : { url: await generatePresignedUrl(f.key, PROOF_URL_TTL_SECONDS), mime: f.mime, expiresIn: PROOF_URL_TTL_SECONDS };
+        let proofPhoto: ProofLink | null = null;
+        if (t.proofFile) proofPhoto = await proofLink(t.proofFile);
+        // Every payment photo (Oct 18 2026: up to 3); older payments have only proofFile
+        const proofs: Array<ProofLink & { position: number }> = t.proofPhotos.length
+          ? await Promise.all(t.proofPhotos.map(async (p) => ({ ...(await proofLink(p.file)), position: p.position })))
+          : proofPhoto
+            ? [{ ...proofPhoto, position: 1 }]
+            : [];
         return {
           publicId: t.publicId,
           purpose: t.purpose,
@@ -970,6 +986,7 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           notes: t.notes ?? null,
           createdAt: t.createdAt.toISOString(),
           proofPhoto,
+          proofs,
         };
       }),
     );

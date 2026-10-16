@@ -2,12 +2,44 @@ import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, Pay
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
-import { claimPaymentProof, type ResolvedProof } from "../payment/payment-proof.service.js";
+import { claimPaymentProofs, proofPhotosCreate, type ResolvedProof } from "../payment/payment-proof.service.js";
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import Decimal from "decimal.js";
 import { paymentSessionService } from "../payment/paymentSession.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
+import type { Prisma } from "@repo/database/client";
+import { lockBookingRow } from "./booking-row-lock.js";
+import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
+
+/** 409: the remaining balance moved (e.g. a pickup discount) since it was read — nothing was recorded. */
+export class RemainingBalanceChangedError extends Error {
+  readonly status = 409;
+  readonly code = "REMAINING_BALANCE_CHANGED";
+  constructor(public readonly remainingBalance: string) {
+    super(`The remaining balance changed to ₹${remainingBalance}. Check the amount and collect again.`);
+    this.name = "RemainingBalanceChangedError";
+  }
+  toJSON() {
+    return { success: false, code: this.code, message: this.message, remainingBalance: this.remainingBalance };
+  }
+}
+
+/**
+ * First thing in a remaining-balance recording: locks the booking row (serialised
+ * with a legacy pickup discount, which changes the balance under the same lock)
+ * and refuses when the balance was paid meanwhile or isn't `expected` any more.
+ */
+async function lockRemainingBalance(tx: Prisma.TransactionClient, bookingId: number, expected: Decimal): Promise<void> {
+  await lockBookingRow(tx, bookingId);
+  const fresh = await tx.booking.findUniqueOrThrow({
+    where: { id: bookingId },
+    select: { remainingBalance: true, remainingPaidAt: true },
+  });
+  if (fresh.remainingPaidAt) throw new Error("Remaining payment already collected");
+  const now = new Decimal(fresh.remainingBalance.toString()).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  if (!now.eq(expected.toDecimalPlaces(2, Decimal.ROUND_HALF_UP))) throw new RemainingBalanceChangedError(now.toFixed(2));
+}
 
 // Helper type for billing breakdown
 export interface FinalBillingBreakdown {
@@ -90,7 +122,8 @@ export class AdvanceDepositService {
     transactionId: string,
     paidDuring: "PICKUP" | "RETURN",
     // Counter UPI: the UTR (older builds) and/or the payment-screen photo (#3)
-    upi?: { utr: string | null; collectedById: number; proof?: ResolvedProof | null },
+    // (`proofs` = every photo, 1–3, first = `proof`)
+    upi?: { utr: string | null; collectedById: number; proof?: ResolvedProof | null; proofs?: ResolvedProof[] },
     cash?: { collectedById: number },
     online?: { collectedById?: number | null; gatewayPaymentId?: string | null },
     // Split at the counter: cash + UPI (backed like `upi`); one COLLECTED SPLIT transaction
@@ -99,6 +132,7 @@ export class AdvanceDepositService {
       online: Decimal;
       utr: string | null;
       proof: ResolvedProof | null;
+      proofs?: ResolvedProof[];
       collectedById: number;
     },
   ): Promise<Booking> {
@@ -118,6 +152,12 @@ export class AdvanceDepositService {
     }
 
     return await prisma.$transaction(async (tx) => {
+      // The balance being recorded (a split's parts add up to it) must still be the booking's
+      await lockRemainingBalance(
+        tx,
+        booking.id,
+        split ? split.cash.add(split.online) : new Decimal(booking.remainingBalance.toString()),
+      );
       const updatedBooking = await tx.booking.update({
         where: { id: booking.id },
         data: {
@@ -176,7 +216,8 @@ export class AdvanceDepositService {
       if (upi) {
         // Claim inside the transaction so two submissions can't share a UTR / photo
         if (upi.utr) await claimUtr(upi.utr, tx);
-        if (upi.proof) await claimPaymentProof(upi.proof, tx);
+        const upiProofs = upi.proofs?.length ? upi.proofs : upi.proof ? [upi.proof] : [];
+        if (upiProofs.length) await claimPaymentProofs(upiProofs, tx);
 
         const activeShift = await tx.cashShift.findFirst({
           where: { employeeId: upi.collectedById, status: "OPEN" },
@@ -200,6 +241,7 @@ export class AdvanceDepositService {
             onlineTransactionRef: upi.utr,
             onlineGateway: "UPI",
             proofFileId: upi.proof?.id ?? null,
+            proofPhotos: proofPhotosCreate(upiProofs),
             collectedById: upi.collectedById,
             collectedAt: now,
             confirmedById: upi.collectedById,
@@ -212,7 +254,8 @@ export class AdvanceDepositService {
 
       if (split) {
         if (split.utr) await claimUtr(split.utr, tx);
-        if (split.proof) await claimPaymentProof(split.proof, tx);
+        const splitProofs = split.proofs?.length ? split.proofs : split.proof ? [split.proof] : [];
+        if (splitProofs.length) await claimPaymentProofs(splitProofs, tx);
         const splitShift = await tx.cashShift.findFirst({
           where: { employeeId: split.collectedById, status: "OPEN" },
           select: { id: true },
@@ -234,6 +277,7 @@ export class AdvanceDepositService {
             onlineTransactionRef: split.utr,
             onlineGateway: "UPI",
             proofFileId: split.proof?.id ?? null,
+            proofPhotos: proofPhotosCreate(splitProofs),
             collectedById: split.collectedById,
             collectedAt: new Date(),
             cashShiftId: splitShift?.id ?? null,
@@ -346,6 +390,7 @@ export class AdvanceDepositService {
 
     const transactionId = `CREDIT_REM_${createID()}`;
     return prisma.$transaction(async (tx) => {
+      await lockRemainingBalance(tx, booking.id, amount);
       // Conditional: a concurrent payment of the balance wins and this throws
       const { count } = await tx.booking.updateMany({
         where: { id: booking.id, remainingPaidAt: null },
@@ -468,6 +513,8 @@ export class AdvanceDepositService {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // A legacy pickup discount for the handover that won't happen is taken back
+      await revertLegacyPickupDiscountOnCancel(tx, bookingId);
       const updatedBooking = await tx.booking.update({
         where: { id: bookingId },
         data: {

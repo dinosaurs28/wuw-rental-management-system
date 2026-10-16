@@ -15,6 +15,8 @@ import {
   RemoveDiscountFromPickupSession,
   AddDepositToPickupSession,
   RemoveDepositFromPickupSession,
+  SetPickupSessionManualDiscount,
+  RemovePickupSessionManualDiscount,
 } from "../../controller/employee/pickupSession.controller.js";
 import {
   ComputeReturnSession,
@@ -41,6 +43,9 @@ router.get("/bookings/:bookingId/pickup-session", EmployeeCheck, GetPickupSessio
 router.post("/bookings/:bookingId/pickup-session/abandon", EmployeeCheck, AbandonPickupSession);
 router.post("/bookings/:bookingId/pickup-session/apply-discount", EmployeeCheck, ApplyDiscountToPickupSession);
 router.delete("/bookings/:bookingId/pickup-session/remove-discount", EmployeeCheck, RemoveDiscountFromPickupSession);
+// Manual pickup discount (flat ₹ off the rent payable at pickup)
+router.post("/bookings/:bookingId/pickup-session/manual-discount", EmployeeCheck, SetPickupSessionManualDiscount);
+router.delete("/bookings/:bookingId/pickup-session/manual-discount", EmployeeCheck, RemovePickupSessionManualDiscount);
 router.post("/bookings/:bookingId/pickup-session/add-deposit", EmployeeCheck, AddDepositToPickupSession);
 router.delete("/bookings/:bookingId/pickup-session/remove-deposit", EmployeeCheck, RemoveDepositFromPickupSession);
 

@@ -3,9 +3,8 @@ import { randomBytes } from "crypto";
 import { prisma, Role } from "@repo/database/client";
 import { StatusCode } from "../../../types/statusCode.js";
 import {
-  aadhaarNumberSchema,
   completeWalkinProfileSchema,
-  drivingLicenceNumberSchema,
+  customerAgeSchema,
   maskAadhaar,
 } from "@repo/schemas";
 import { hashpassword } from "../../../utils/PasswordCrypt/password.js";
@@ -23,12 +22,12 @@ import {
   StaffEntityType,
 } from "../../../services/staffActivity/staffActivity.service.js";
 
-// Old staff builds send no DL/Aadhaar numbers: tolerate omission (stored values
-// are kept and the profile stays incomplete, so booking create answers 422
-// CUSTOMER_PROFILE_INCOMPLETE); a value that is sent must still be valid.
+// DL / Aadhaar numbers are optional (Oct 2026); blank or omitted keeps the
+// stored values, a value that is sent must still be valid. Old staff builds
+// send no age (they send DL + Aadhaar, and maybe a date of birth): tolerate
+// omission — the profile is complete by the earlier rules then.
 const completeWalkinProfileRequestSchema = completeWalkinProfileSchema.extend({
-  drivingLicenceNumber: drivingLicenceNumberSchema.optional(),
-  aadhaarNumber: aadhaarNumberSchema.optional(),
+  age: customerAgeSchema.optional(),
 });
 
 export const CompleteWalkinProfile = async (req: Request, res: Response) => {
@@ -52,6 +51,7 @@ export const CompleteWalkinProfile = async (req: Request, res: Response) => {
       aadhaarNumber: aadhaarInput,
       addressLine1,
       dob,
+      age: ageInput,
       alternatePhone,
       city,
       state,
@@ -152,6 +152,9 @@ export const CompleteWalkinProfile = async (req: Request, res: Response) => {
     const aadhaarNumber =
       aadhaarInput ?? user.customerProfile?.aadhaarNumber ?? null;
 
+    // Age omitted (old build) keeps the stored one; a stored dob still counts.
+    const age = ageInput ?? user.customerProfile?.age ?? null;
+
     const missingFields = getMissingProfileFields({
       name,
       phone: user.phone,
@@ -160,6 +163,8 @@ export const CompleteWalkinProfile = async (req: Request, res: Response) => {
       state,
       zipCode,
       country,
+      age,
+      dob: dob || user.customerProfile?.dob || null,
       drivingLicenceNumber,
       aadhaarNumber,
     });
@@ -181,6 +186,7 @@ export const CompleteWalkinProfile = async (req: Request, res: Response) => {
               alternatePhone: alternatePhone || "",
               country: country || "",
               dob: dob || "",
+              age,
               city: city || "",
               state: state || "",
               zipCode: zipCode || "",
@@ -196,6 +202,7 @@ export const CompleteWalkinProfile = async (req: Request, res: Response) => {
               country: country || "",
               // Optional fields only overwrite when sent.
               ...(dob ? { dob } : {}),
+              ...(ageInput !== undefined ? { age: ageInput } : {}),
               ...(alternatePhone !== undefined ? { alternatePhone } : {}),
               drivingLicenceNumber,
               aadhaarNumber,

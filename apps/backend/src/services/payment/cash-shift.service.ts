@@ -8,7 +8,7 @@ import { SYSTEM_TIMEZONE } from "../timezone/timezone.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
 import type { CashShift, Role } from "@repo/database/client";
-import { proofPhotoFields, PROOF_FILE_RELATION_SELECT } from "./payment-proof.service.js";
+import { proofPhotoFields, PROOF_FILE_RELATION_SELECT, PROOF_PHOTOS_RELATION_SELECT } from "./payment-proof.service.js";
 
 /*
  * Cash shift money model
@@ -618,6 +618,7 @@ class CashShiftService {
             rejectedBy: { select: { name: true } },
             // UPI payment-screen photo (#3) — the BM verifies UPI money with it
             proofFile: PROOF_FILE_RELATION_SELECT,
+            proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
           },
         },
       },
@@ -656,7 +657,7 @@ class CashShiftService {
       // Recorded after the close snapshot was taken, so not in its figures
       linkedAfterClose: !!shift.closedAt && t.createdAt > shift.closedAt,
       // Additive: presigned photo of the customer's UPI payment screen (#3)
-      ...(await proofPhotoFields(t.proofFile)),
+      ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
     })));
 
     return opts.legacy

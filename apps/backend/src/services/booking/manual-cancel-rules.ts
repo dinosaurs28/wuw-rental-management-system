@@ -5,10 +5,14 @@
  * Which rents can be cancelled:
  *   CONFIRMED  (upcoming)  yes — a pickup still waiting for the manager's
  *                          confirmation too (that confirmation is dropped)
- *   PICKED_UP  (active)    yes — the vehicle must be back at the branch
- *                          (vehicleReturned: true) and the manager picks its
- *                          status (Available / Maintenance); not while its
- *                          return waits for the manager's confirmation
+ *   PICKED_UP  (active)    yes — the manager says where the car is (back at
+ *                          the branch / out of the branch; legacy
+ *                          vehicleReturned: true = back) and picks its status
+ *                          (Available / Maintenance / Inactive / Out For
+ *                          Rental — not Available while it is out of the
+ *                          branch; an odometer reading only when it is back);
+ *                          not while its return waits for the manager's
+ *                          confirmation
  *   HOLD                   no — the payment is still pending; an unpaid hold
  *                          lapses on its own (and a late capture is refused)
  *   RETURNED / CANCELLED / HOLD_EXPIRED  no
@@ -54,8 +58,20 @@ export const MANUAL_CANCEL_REFUND_METHOD_LABELS: Record<ManualCancelRefundMethod
 export const ORIGINAL_PAYMENT_REFUND_REASON_PREFIX = "Rent cancelled (Original online payment)";
 
 /** What a returned car becomes once the rent is cancelled. */
-export const MANUAL_CANCEL_VEHICLE_STATUSES = ["AVAILABLE", "MAINTENANCE"] as const;
+export const MANUAL_CANCEL_VEHICLE_STATUSES = ["AVAILABLE", "MAINTENANCE", "INACTIVE", "OUT_FOR_RENTAL"] as const;
 export type ManualCancelVehicleStatus = (typeof MANUAL_CANCEL_VEHICLE_STATUSES)[number];
+
+/** Where an active rent's car is when it is cancelled. */
+export const MANUAL_CANCEL_VEHICLE_LOCATIONS = ["AT_BRANCH", "OUT_OF_BRANCH"] as const;
+export type ManualCancelVehicleLocation = (typeof MANUAL_CANCEL_VEHICLE_LOCATIONS)[number];
+
+export const MANUAL_CANCEL_VEHICLE_LOCATION_LABELS: Record<ManualCancelVehicleLocation, string> = {
+  AT_BRANCH: "The vehicle is back at the branch",
+  OUT_OF_BRANCH: "The vehicle is out of the branch",
+};
+
+/** Message when Available is chosen for a car that isn't at the branch. */
+export const OUT_OF_BRANCH_NOT_AVAILABLE = "The car isn't at the branch, so it can't be bookable.";
 
 export type ManualCancelStage = "UPCOMING" | "ACTIVE";
 
@@ -67,7 +83,6 @@ export type ManualCancelErrorCode =
   | "RETURN_PENDING_CONFIRMATION"
   | "CASH_AWAITING_CONFIRMATION"
   | "PAYMENT_IN_PROGRESS"
-  | "VEHICLE_NOT_RETURNED"
   | "REFUND_EXCEEDS_PAID"
   | "REFUND_EXCEEDS_ONLINE"
   | "DROP_IN_PROGRESS"
@@ -290,8 +305,10 @@ export interface ParsedManualCancel {
   reason: string;
   refund: { amount: Decimal; method: ManualCancelRefundMethod | null; note: string | null };
   /** ACTIVE rents only (null for an upcoming one) */
+  vehicleLocation: ManualCancelVehicleLocation | null;
+  /** ACTIVE rents only (null for an upcoming one) */
   vehicleStatus: ManualCancelVehicleStatus | null;
-  /** ACTIVE rents only — the returned car's reading (km), optional */
+  /** ACTIVE rents back at the branch only — the car's reading (km), optional */
   odometer: number | null;
 }
 
@@ -318,8 +335,7 @@ export function parseRupees(value: unknown): Decimal | null {
 
 /**
  * Validates the cancel request for a rent in `stage`. Throws ManualCancelError
- * (400 VALIDATION_ERROR, or 409 VEHICLE_NOT_RETURNED for an active rent whose
- * car isn't confirmed back). The refund amount is checked against what can be
+ * (400 VALIDATION_ERROR). The refund amount is checked against what can be
  * refunded separately (refundAmountProblem), once the money is read.
  */
 export function parseManualCancelBody(body: unknown, stage: ManualCancelStage): ParsedManualCancel {
@@ -357,23 +373,32 @@ export function parseManualCancelBody(body: unknown, stage: ManualCancelStage): 
   }
 
   if (stage === "UPCOMING") {
-    return { reason, refund: { amount, method, note }, vehicleStatus: null, odometer: null };
+    return { reason, refund: { amount, method, note }, vehicleLocation: null, vehicleStatus: null, odometer: null };
   }
 
-  // Active rent: the car must be back before the rent ends on paper
-  if (b.vehicleReturned !== true) {
-    throw new ManualCancelError(
-      StatusCode.CONFLICT,
-      "VEHICLE_NOT_RETURNED",
-      "Confirm the vehicle is back at the branch before cancelling an active rent.",
-      { field: "vehicleReturned" },
-    );
+  // Active rent: where the car is (older clients send vehicleReturned: true = back at the branch)
+  const vehicleLocation: ManualCancelVehicleLocation | null = MANUAL_CANCEL_VEHICLE_LOCATIONS.includes(
+    b.vehicleLocation as ManualCancelVehicleLocation,
+  )
+    ? (b.vehicleLocation as ManualCancelVehicleLocation)
+    : b.vehicleLocation == null && b.vehicleReturned === true
+      ? "AT_BRANCH"
+      : null;
+  if (!vehicleLocation) {
+    throw invalid("Say where the vehicle is: back at the branch or out of the branch.", "vehicleLocation");
   }
   if (!MANUAL_CANCEL_VEHICLE_STATUSES.includes(b.vehicleStatus as ManualCancelVehicleStatus)) {
-    throw invalid("Choose the vehicle's status: Available or Maintenance.", "vehicleStatus");
+    throw invalid("Choose the vehicle's status: Available, Maintenance, Inactive or Out For Rental.", "vehicleStatus");
+  }
+  const vehicleStatus = b.vehicleStatus as ManualCancelVehicleStatus;
+  if (vehicleLocation === "OUT_OF_BRANCH" && vehicleStatus === "AVAILABLE") {
+    throw invalid(OUT_OF_BRANCH_NOT_AVAILABLE, "vehicleStatus");
   }
   let odometer: number | null = null;
   if (b.odometer != null && b.odometer !== "") {
+    if (vehicleLocation !== "AT_BRANCH") {
+      throw invalid("An odometer reading can only be recorded when the vehicle is back at the branch.", "odometer");
+    }
     const n = typeof b.odometer === "string" ? Number(b.odometer.trim()) : b.odometer;
     if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > MANUAL_CANCEL_ODOMETER_MAX) {
       throw invalid("The odometer reading must be a whole number of km.", "odometer");
@@ -383,9 +408,53 @@ export function parseManualCancelBody(body: unknown, stage: ManualCancelStage): 
   return {
     reason,
     refund: { amount, method, note },
-    vehicleStatus: b.vehicleStatus as ManualCancelVehicleStatus,
+    vehicleLocation,
+    vehicleStatus,
     odometer,
   };
+}
+
+/** Why the cancel left a car's status alone. */
+export type VehicleKeptReason = "OTHER_RENTAL" | "DAMAGE_REVIEW" | "DROP_DAMAGE";
+
+/**
+ * What an active rent's car becomes when the rent is cancelled — the manager's
+ * choice, landed like a vehicle-details edit — unless another active rental now
+ * holds it or it is held for a damage review (left alone, reported back), or a
+ * drop damage already decided it (that disposition wins over Available).
+ */
+export function vehicleStatusOutcome(v: {
+  currentStatus: string;
+  heldByOtherRental: boolean;
+  /** vehicleStatusAfterDrop for this car on this booking (null: no drop damage) */
+  afterDrop: string | null;
+  chosen: ManualCancelVehicleStatus;
+}): { status: string; keptReason: VehicleKeptReason | null } {
+  if (v.heldByOtherRental) return { status: v.currentStatus, keptReason: "OTHER_RENTAL" };
+  if (v.currentStatus === "MANAGER_REPORTED") return { status: v.currentStatus, keptReason: "DAMAGE_REVIEW" };
+  if (v.afterDrop && v.afterDrop !== "AVAILABLE" && v.afterDrop !== v.chosen) {
+    return { status: v.afterDrop, keptReason: "DROP_DAMAGE" };
+  }
+  return { status: v.chosen, keptReason: null };
+}
+
+/** The toast line for cars whose status the cancel didn't set. */
+export function keptVehiclesNote(vehicles: Array<{ regNo: string; status: string; keptReason: VehicleKeptReason | null }>): string | null {
+  const kept = vehicles.filter((v) => v.keptReason);
+  if (kept.length === 0) return null;
+  const why: Record<VehicleKeptReason, string> = {
+    OTHER_RENTAL: "it is out on another rental",
+    DAMAGE_REVIEW: "it is held for a damage review",
+    DROP_DAMAGE: "a drop damage decision for it",
+  };
+  return kept
+    .map((v) => {
+      const status = v.status.replace(/_/g, " ").toLowerCase();
+      return v.keptReason === "DROP_DAMAGE"
+        ? `${v.regNo} is set to ${status} — ${why.DROP_DAMAGE}.`
+        : `${v.regNo} stays ${status} — ${why[v.keptReason!]}.`;
+    })
+    .join(" ");
 }
 
 /** Why the returned car's reading can't be recorded, or null (it can't go below the reading it went out with). */

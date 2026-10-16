@@ -33,6 +33,7 @@ import {
   VerifyKyc,
 } from "../../controller/employee/kyc.controller.js";
 import { PickupController } from "../../controller/employee/pickup.controller.js";
+import { SetLegacyPickupDiscount, RemoveLegacyPickupDiscount } from "../../controller/employee/pickupDiscount.controller.js";
 import {
   UploadPickupImage,
   DeletePickupImage,
@@ -147,6 +148,9 @@ router.post(
 router.delete("/pickup/image/:publicId", EmployeeCheck, DeletePickupImage);
 router.get("/payment/remaining-status/:transactionId", EmployeeCheck, CheckRemainingPaymentByTransaction);
 router.post("/pickup/:bookingId/initiate-remaining-payment", EmployeeCheck, InitiateRemainingPayment);
+// Manual pickup discount, legacy branches (lowers the remaining balance before it is collected)
+router.put("/pickup/:bookingId/discount", EmployeeCheck, SetLegacyPickupDiscount);
+router.delete("/pickup/:bookingId/discount", EmployeeCheck, RemoveLegacyPickupDiscount);
 router.get("/pickup/:bookingId/remaining-payment/status", EmployeeCheck, CheckRemainingPaymentStatus);
 router.post("/pickup/:bookingId", EmployeeCheck, PickupController);
 router.post(

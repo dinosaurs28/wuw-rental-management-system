@@ -1,3 +1,4 @@
+import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
 import {
   prisma,
   BookingStatus,
@@ -29,7 +30,7 @@ import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { claimUtr } from "../payment/counter-guard.service.js";
-import { claimCounterUpi, type CounterUpi } from "../payment/payment-proof.service.js";
+import { claimCounterUpi, proofPhotosCreate, type CounterUpi } from "../payment/payment-proof.service.js";
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
@@ -1167,6 +1168,7 @@ class ExtensionService {
           onlineTransactionRef: onlinePart.gt(0) ? (onlineTransactionRef ?? null) : null,
           onlineGateway: onlinePart.gt(0) ? (upiPart ? "UPI" : (options.onlineGateway ?? null)) : null,
           proofFileId: options.upi?.proof?.id ?? null,
+          proofPhotos: proofPhotosCreate(options.upi?.proofs),
           collectedById: actor.actorId,
           collectedAt: new Date(),
           cashShiftId: activeShift?.id ?? null,
@@ -1434,6 +1436,8 @@ class ExtensionService {
 
     // Cancel the booking
     await prisma.$transaction(async (tx) => {
+      // A legacy pickup discount for the handover that won't happen is taken back
+      await revertLegacyPickupDiscountOnCancel(tx, booking.id);
       await tx.booking.update({
         where: { id: booking.id },
         data: {

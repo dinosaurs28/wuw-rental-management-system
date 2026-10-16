@@ -5,7 +5,7 @@
  * ExtensionService.evaluate enforces the same rules server-side.
  */
 import { prisma, BookingStatus, RentalPeriodType } from "@repo/database/client";
-import { MAX_BOOKING_DAYS, MONTHLY_MAX_DAYS } from "@repo/schemas";
+import { MAX_RENTAL_DAYS, MONTHLY_MAX_DAYS } from "@repo/schemas";
 import { extensionMaxEndAt } from "../../utils/booking/bookingWindow.js";
 import { buildScheduleResponse } from "../../utils/booking/branchScheduleValidator.js";
 
@@ -57,7 +57,7 @@ export async function buildExtensionLimits(
   return {
     maxEndAt: maxEndAt.toISOString(),
     atCap: booking.endAt.getTime() >= maxEndAt.getTime(),
-    maxBookingDays: isMonthly ? MONTHLY_MAX_DAYS : MAX_BOOKING_DAYS,
+    maxBookingDays: isMonthly ? MONTHLY_MAX_DAYS : MAX_RENTAL_DAYS,
     isMonthly,
     rentalPeriodType: booking.rentalPeriodType,
     bookingStartAt: booking.startAt.toISOString(),

@@ -20,6 +20,7 @@ import {
   type LineGst,
 } from "../tax/gst.service.js";
 import { bookingGstRates, isGstOnTopBooking } from "../invoice-totals.service.js";
+import { PICKUP_DISCOUNT_REF } from "./pickup-discount-rules.js";
 
 /**
  * Counter (pickup-session) coupon — Unified Payments branches only.
@@ -289,17 +290,28 @@ export async function quoteCounterCoupon(
     }
   }
 
-  // What the coupon may come out of: the rental balance and extension still owed now
+  // What the coupon may come out of: the rental balance and extension still owed now,
+  // less a manual pickup discount already on the bill
   const owedLines = await db.ledgerEntry.findMany({
     where: {
       sessionId,
       isVoided: false,
-      entryType: { in: [LedgerEntryType.BOOKING_BASE, LedgerEntryType.EXTENSION] },
+      OR: [
+        { entryType: { in: [LedgerEntryType.BOOKING_BASE, LedgerEntryType.EXTENSION] } },
+        { entryType: LedgerEntryType.DISCOUNT, referenceType: PICKUP_DISCOUNT_REF },
+      ],
     },
-    select: { amount: true, gstAmount: true },
+    select: { entryType: true, amount: true, gstAmount: true },
   });
-  // A TAXABLE line's payable is amount + its stored GST (0 when amount is GST-inclusive)
-  const owed = owedLines.reduce((sum, l) => sum.add(toDec(l.amount)).add(toDec(l.gstAmount)), ZERO);
+  // A TAXABLE line's payable is amount + its stored GST (0 when amount is GST-inclusive);
+  // the manual discount line's amount is −(discount + GST) already
+  const owed = Decimal.max(
+    ZERO,
+    owedLines.reduce(
+      (sum, l) => sum.add(toDec(l.amount)).add(l.entryType === LedgerEntryType.DISCOUNT ? ZERO : toDec(l.gstAmount)),
+      ZERO,
+    ),
+  );
   if (owed.lte(0) || couponAmount.lte(0)) {
     throw new CounterCouponError(
       422,

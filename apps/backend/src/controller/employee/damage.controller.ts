@@ -18,6 +18,8 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
+import { IMMUTABLE_CACHE_CONTROL } from "../../utils/photo-variant.js";
+import { discardDisplayVariant, putDisplayVariant } from "../../services/photo-variant.service.js";
 import { publicFileUrl } from "../../utils/file-url.js";
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 
@@ -48,11 +50,16 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
         Key: key,
         Body: processed.buffer,
         ContentType: processed.mimeType,
+        CacheControl: IMMUTABLE_CACHE_CONTROL,
       }),
     );
 
     // Clean up local file
     await fs.unlink(file.path);
+
+    // Its ~1200 px copy for the drop screen strips, once the original is stored
+    // (a failed copy leaves displayKey null: the photo then shows from the original)
+    const displayKey = await putDisplayVariant(key, processed.buffer);
 
     // Create FileObject record
     const filePublicId = createID();
@@ -61,11 +68,16 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
         publicId: filePublicId,
         key: key,
         url: `${R2_PUBLIC_URL}/${key}`,
+        displayKey,
         mime: processed.mimeType,
         size: processed.size,
         // Only this branch can remove it or attach it to a swap
         uploadedBranchId: req.branch_Id ?? null,
       },
+    }).catch(async (error) => {
+      // No row will point at the copy
+      await discardDisplayVariant(displayKey);
+      throw error;
     });
 
     return res.status(StatusCode.CREATED).json({

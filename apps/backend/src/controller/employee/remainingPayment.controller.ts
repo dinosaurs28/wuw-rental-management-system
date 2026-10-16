@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, DepositMethod, BookingStatus } from "@repo/database/client";
+import { prisma, DepositMethod, BookingStatus, PaymentSessionStatus, PaymentSessionType } from "@repo/database/client";
+import { PICKUP_DISCOUNT_REF } from "../../services/discount/pickup-discount-rules.js";
 import {
   createRazorpayOrder,
   fetchOrderStatus,
 } from "../../services/payment/razorpay.service.js";
-import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
+import { AdvanceDepositService, RemainingBalanceChangedError } from "../../services/booking/advance-deposit.service.js";
 import {
   assertOpenShift,
   CounterGuardError,
@@ -114,6 +115,28 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       });
     }
 
+    // A manual pickup discount on the open pickup bill was sized against this balance:
+    // collect through the bill (paying it here would void the bill's balance and discount)
+    const discountOnBill = await prisma.ledgerEntry.findFirst({
+      where: {
+        bookingId: booking.id,
+        referenceType: PICKUP_DISCOUNT_REF,
+        isVoided: false,
+        session: {
+          sessionType: PaymentSessionType.PICKUP,
+          status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT, PaymentSessionStatus.PAYMENT_INITIATED] },
+        },
+      },
+      select: { id: true },
+    });
+    if (discountOnBill) {
+      return res.status(StatusCode.CONFLICT).json({
+        success: false,
+        code: "PICKUP_DISCOUNT_ON_SESSION",
+        message: "A pickup discount is on the bill — collect through the pickup bill.",
+      });
+    }
+
     // CREDIT (#11): nothing is paid now — the balance stays owed against the collateral
     if (method === "CREDIT") {
       const actor = await prisma.user.findUnique({
@@ -177,7 +200,12 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       }
       // UPI (and a split's UPI part): payment-screen photo or, from older builds, a UTR
       const backing = isUpi || isSplit
-        ? await resolveCounterUpi({ utr, proofFileId: req.body?.proof_file_id, branchId })
+        ? await resolveCounterUpi({
+            utr,
+            proofFileId: req.body?.proof_file_id,
+            proofFileIds: req.body?.proof_file_ids,
+            branchId,
+          })
         : null;
       // DepositMethod has no split — the cash part is what awaits confirmation
       const depositMethod = isUpi ? DepositMethod.UPI : DepositMethod.CASH;
@@ -190,12 +218,12 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
         depositMethod,
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
-        isUpi && backing ? { utr: backing.utr, collectedById: actor.id, proof: backing.proof } : undefined,
+        isUpi && backing ? { utr: backing.utr, collectedById: actor.id, proof: backing.proof, proofs: backing.proofs } : undefined,
         // Counter cash lands in the collector's open shift (asserted above)
         method === "CASH" ? { collectedById: actor.id } : undefined,
         undefined,
         split && backing
-          ? { ...split, utr: backing.utr, proof: backing.proof, collectedById: actor.id }
+          ? { ...split, utr: backing.utr, proof: backing.proof, proofs: backing.proofs, collectedById: actor.id }
           : undefined,
       );
 
@@ -239,6 +267,9 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
+    if (error instanceof RemainingBalanceChangedError) {
       return res.status(error.status).json(error.toJSON());
     }
     console.error("InitiateRemainingPayment error:", error);

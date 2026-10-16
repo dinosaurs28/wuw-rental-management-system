@@ -50,3 +50,33 @@ export async function processImage(
     throw error;
   }
 }
+
+/** Longest side of the drop-screen "display" copy of a photo. */
+export const DISPLAY_IMAGE_MAX_PX = 1200;
+
+/**
+ * The smaller "display" copy of a photo (drop screen strips): JPEG, longest
+ * side at most DISPLAY_IMAGE_MAX_PX, quality 78, baseline (not progressive) so
+ * phones decode it in one pass with less memory. Never enlarges.
+ */
+export async function processDisplayImage(inputBuffer: Buffer): Promise<ProcessedImage> {
+  const buffer = await sharp(inputBuffer)
+    .rotate()
+    .resize({
+      width: DISPLAY_IMAGE_MAX_PX,
+      height: DISPLAY_IMAGE_MAX_PX,
+      fit: sharp.fit.inside,
+      withoutEnlargement: true,
+    })
+    // mozjpeg's settings minus its progressive scans (`mozjpeg: true` forces them)
+    .jpeg({
+      quality: 78,
+      progressive: false,
+      optimiseCoding: true,
+      trellisQuantisation: true,
+      overshootDeringing: true,
+      quantisationTable: 3,
+    })
+    .toBuffer();
+  return { buffer, mimeType: "image/jpeg", extension: ".jpg", size: buffer.length };
+}

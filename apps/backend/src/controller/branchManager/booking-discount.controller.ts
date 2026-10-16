@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { readPickupDiscount, serializePickupDiscount } from "../../services/discount/pickup-discount-rules.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { applyCouponSchema } from "@repo/schemas";
@@ -89,6 +90,14 @@ function assertRepriceable(req: Request, booking: CouponBooking): void {
       409,
       "COUPON_BOOKING_ALREADY_PAID",
       "This booking is already paid in full, so its price can't be changed with a coupon.",
+    );
+  }
+  // A legacy pickup discount is already off the balance: repricing would drop it
+  if (readPickupDiscount(booking.pricingSnapshot)) {
+    throw new BookingCouponError(
+      409,
+      "PICKUP_DISCOUNT_APPLIED",
+      "A pickup discount was given on this booking. Ask Fleet to remove it first, then change the coupon.",
     );
   }
 }
@@ -589,6 +598,8 @@ export const GetBookingDiscountSummary = async (req: Request, res: Response) => 
               requiresApproval: (application.manualDiscount as any).requiresApproval ?? false,
             }
           : null,
+        // Manual pickup discount given by Fleet (included in manualDiscountAmount) — additive
+        pickupDiscount: serializePickupDiscount(readPickupDiscount(booking.pricingSnapshot)),
       };
       return res.status(StatusCode.OK).json({ data: summary });
     }
@@ -615,6 +626,7 @@ export const GetBookingDiscountSummary = async (req: Request, res: Response) => 
         totalDiscountAmount: totalDiscount.toFixed(2),
         finalTotal: parseFloat(booking.totalFinal.toString()).toFixed(2),
         manualDiscount: null,
+        pickupDiscount: serializePickupDiscount(readPickupDiscount(booking.pricingSnapshot)),
       };
       return res.status(StatusCode.OK).json({ data: summary });
     }

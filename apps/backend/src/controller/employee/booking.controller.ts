@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { readPickupDiscount, serializePickupDiscount } from "../../services/discount/pickup-discount-rules.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
@@ -290,7 +291,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     // or, from older builds, the UTR — for UPI and for a split's UPI part.
     const counterUpi =
       payment_type === "UPI" || payment_type === "SPLIT"
-        ? await resolveCounterUpi({ utr, proofFileId: req.body.proof_file_id, branchId: req.branch_Id })
+        ? await resolveCounterUpi({
+            utr,
+            proofFileId: req.body.proof_file_id,
+            proofFileIds: req.body.proof_file_ids,
+            branchId: req.branch_Id,
+          })
         : null;
     const upiUtr = counterUpi?.utr ?? null;
     // CREDIT (#11): the whole booking stays owed against the collateral noted
@@ -311,9 +317,10 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(blacklisted.status).json(blacklisted.toJSON());
     }
 
-    // #1: DL + Aadhaar numbers (and the rest of the profile) are required before
+    // #1 (revised Oct 2026): the profile — name, phone, address and an age (or
+    // an older customer's date of birth / identity numbers) — is required before
     // any counter booking. Derived from the stored values so the API can't skip
-    // the gate the staff UIs enforce.
+    // the gate the staff UIs enforce. The DL number is taken at pickup.
     const missingProfileFields = getMissingProfileFields(
       profileFieldsOf(customer, customer.customerProfile),
     );
@@ -952,11 +959,20 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             },
             // Read back by confirmBookingPayment to record the UPI transaction
             ...(payment_type === "UPI" && counterUpi && {
-              upi: { utr: upiUtr, proofFileId: counterUpi.proof?.publicId ?? null },
+              upi: {
+                utr: upiUtr,
+                proofFileId: counterUpi.proof?.publicId ?? null,
+                proofFileIds: counterUpi.proofs.map((p) => p.publicId),
+              },
             }),
             // Counter split / credit (#11), read back the same way
             ...(splitParts && counterUpi && {
-              split: { ...splitParts, utr: upiUtr, proofFileId: counterUpi.proof?.publicId ?? null },
+              split: {
+                ...splitParts,
+                utr: upiUtr,
+                proofFileId: counterUpi.proof?.publicId ?? null,
+                proofFileIds: counterUpi.proofs.map((p) => p.publicId),
+              },
             }),
             ...(creditCollateral && { credit: { collateral: creditCollateral } }),
           },
@@ -1139,6 +1155,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         branchId: true,
         // Actual vehicle return time (set when the drop completes)
         returnedAt: true,
+        // Manual pickup discount record (pricingSnapshot.pickupDiscount)
+        pricingSnapshot: true,
         fuelRecord: { select: { pickupFuelLevel: true } },
         branch: {
           select: {
@@ -1238,7 +1256,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     // Customer QR code photo (#4): booking snapshot, else the customer's current one.
     const qrPhotoFields = await getBookingQrPhotoFields({ id: booking.id });
 
-    const { id: _id, branch, fuelRecord, branchId, items, ...bookingData } = booking;
+    const { id: _id, branch, fuelRecord, branchId, items, pricingSnapshot, ...bookingData } = booking;
     return res.status(StatusCode.OK).json({
       message: "Booking details fetched successfully",
       data: {
@@ -1281,6 +1299,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         // FASTag balances across the rental (null unless PICKED_UP / RETURNED) — additive
         fastag,
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
+        // Manual pickup discount given (legacy: already off remainingBalance) — additive
+        pickupDiscount: serializePickupDiscount(readPickupDiscount(pricingSnapshot)),
       },
     });
   } catch (error) {

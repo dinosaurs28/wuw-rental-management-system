@@ -4,14 +4,21 @@
  * replacement taken at the (last) swap, plus the earlier cars' sets.
  */
 import { prisma, BookingPhotoType } from "@repo/database/client";
-import { resolveFileUrl } from "../../utils/file-url.js";
+import { isPrivateFile, resolveFileUrl } from "../../utils/file-url.js";
+import { photoUrls } from "../../utils/photo-variant.js";
+import { ensureDisplayVariants } from "../photo-variant.service.js";
 import { pickedUpAtMarker } from "../charges/km-allowance.service.js";
 import { selectReturnConditionPhotos, type ConditionPhotoSet, type VehicleRef } from "./swap-photos.js";
 
 export interface ConditionPhoto {
   publicId: string;
   captureLabel: string | null;
+  /** The original photo (full-screen viewer) */
   url: string;
+  /** Additive (Oct 18 2026): ~1200 px copy for the drop strips; `url` when there is none */
+  displayUrl: string;
+  /** Additive (Oct 18 2026): when the photo was saved, ISO */
+  takenAt: string;
   mime: string;
 }
 
@@ -38,7 +45,7 @@ const photoSelect = {
   publicId: true,
   captureLabel: true,
   createdAt: true,
-  file: { select: { key: true, url: true, mime: true } },
+  file: { select: { id: true, key: true, url: true, mime: true, displayKey: true } },
 } as const;
 
 export async function getReturnConditionPhotos(bookingId: number): Promise<ReturnConditionPhotosView> {
@@ -68,14 +75,27 @@ export async function getReturnConditionPhotos(bookingId: number): Promise<Retur
     pickedUpAtMarker(bookingId),
   ]);
 
+  // Older photos have no display copy yet: make the missing ones (briefly
+  // waited for; the rest finish in the background for the next view).
+  const displayKeys = await ensureDisplayVariants(
+    [...pickupRows, ...swaps.flatMap((s) => s.photos)].map((p) => p.file),
+  );
+
   type Row = (typeof pickupRows)[number];
-  const toPhoto = async (p: Row): Promise<ConditionPhoto & { createdAt: Date }> => ({
-    publicId: p.publicId,
-    captureLabel: p.captureLabel ?? null,
-    url: await resolveFileUrl(p.file),
-    mime: p.file.mime,
-    createdAt: p.createdAt,
-  });
+  const toPhoto = async (p: Row): Promise<ConditionPhoto & { createdAt: Date }> => {
+    const urls = isPrivateFile(p.file)
+      ? { url: await resolveFileUrl(p.file), displayUrl: "" }
+      : photoUrls({ ...p.file, displayKey: displayKeys.get(p.file.id) ?? null });
+    return {
+      publicId: p.publicId,
+      captureLabel: p.captureLabel ?? null,
+      url: urls.url,
+      displayUrl: urls.displayUrl || urls.url,
+      takenAt: p.createdAt.toISOString(),
+      mime: p.file.mime,
+      createdAt: p.createdAt,
+    };
+  };
 
   const pickupPhotos = await Promise.all(pickupRows.map(toPhoto));
   const swapsWithPhotos = await Promise.all(

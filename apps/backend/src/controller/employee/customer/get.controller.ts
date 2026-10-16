@@ -3,6 +3,7 @@ import { prisma, Role } from "@repo/database/client";
 import { StatusCode } from "../../../types/statusCode.js";
 import {
   displayEmail,
+  effectiveCustomerAge,
   getMissingProfileFields,
   profileFieldsOf,
 } from "../../../utils/customer/identity.js";
@@ -28,6 +29,7 @@ export const GetCustomerDetails = async (req: Request, res: Response) => {
         customerProfile: {
           select: {
             dob: true,
+            age: true,
             addressLine1: true,
             city: true,
             state: true,
@@ -71,6 +73,8 @@ export const GetCustomerDetails = async (req: Request, res: Response) => {
         ...(customer.customerProfile
           ? {
               isProfileCompleted: missingFields.length === 0,
+              // Entered age, else derived from an older customer's date of birth
+              age: effectiveCustomerAge(customer.customerProfile),
               drivingLicenceNumber: customer.customerProfile.drivingLicenceNumber ?? null,
               aadhaarNumber: customer.customerProfile.aadhaarNumber ?? null,
             }

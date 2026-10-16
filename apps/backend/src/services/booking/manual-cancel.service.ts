@@ -38,6 +38,7 @@
  *
  * Errors: HTTP 4xx { success:false, code, message, ...extra } (ManualCancelError).
  */
+import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
 import type { Request } from "express";
 import Decimal from "decimal.js";
 import {
@@ -65,7 +66,11 @@ import { isDropDamage, vehicleStatusAfterDrop } from "../damage/drop-damage.serv
 import { getBookingCreditSummary, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { ACTIVE_RENTAL_ITEM_WHERE } from "../../utils/availability/outForRental.js";
 import { lockBookingRow } from "./booking-row-lock.js";
-import { invalidateGroupListingCache, invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import {
+  invalidateGroupListingCache,
+  invalidateVehicleAvailability,
+  invalidateVehiclePricing,
+} from "../../utils/cache/vehicleCacheKeys.js";
 import { formatRupees } from "../../utils/pricing/weekendRule.js";
 import {
   MANUAL_CANCEL_NOTE_MAX,
@@ -73,8 +78,14 @@ import {
   MANUAL_CANCEL_REASON_MIN,
   MANUAL_CANCEL_REFUND_METHODS,
   MANUAL_CANCEL_REFUND_METHOD_LABELS,
+  MANUAL_CANCEL_VEHICLE_LOCATIONS,
+  MANUAL_CANCEL_VEHICLE_LOCATION_LABELS,
   MANUAL_CANCEL_VEHICLE_STATUSES,
   ORIGINAL_PAYMENT_REFUND_REASON_PREFIX,
+  keptVehiclesNote,
+  vehicleStatusOutcome,
+  type ManualCancelVehicleLocation,
+  type VehicleKeptReason,
   ManualCancelError,
   cancelRefusalFor,
   cashShiftRefusal,
@@ -113,9 +124,6 @@ const OPEN_DROP_SESSION_STATUSES: PaymentSessionStatus[] = [
 
 /** Extensions not settled yet — cancelled with the rent. */
 const OPEN_EXTENSION_STATUSES: ExtensionStatus[] = [ExtensionStatus.PENDING_PAYMENT, ExtensionStatus.PAYMENT_COLLECTED];
-
-/** Vehicle statuses the cancel leaves alone (damage review hold, retired). */
-const KEEP_VEHICLE_STATUSES: VehicleStatus[] = [VehicleStatus.MANAGER_REPORTED, VehicleStatus.INACTIVE];
 
 /** idempotencyKey prefix of the refund a manual cancel records (one per booking). */
 const MANUAL_CANCEL_REFUND_KEY_PREFIX = "mcr:";
@@ -341,6 +349,10 @@ export async function getManualCancelOptions(req: Request, bookingPublicId: stri
       label: MANUAL_CANCEL_REFUND_METHOD_LABELS[value],
     })),
     vehicleStatuses: [...MANUAL_CANCEL_VEHICLE_STATUSES],
+    vehicleLocations: MANUAL_CANCEL_VEHICLE_LOCATIONS.map((value) => ({
+      value,
+      label: MANUAL_CANCEL_VEHICLE_LOCATION_LABELS[value],
+    })),
     limits: {
       reasonMin: MANUAL_CANCEL_REASON_MIN,
       reasonMax: MANUAL_CANCEL_REASON_MAX,
@@ -372,7 +384,18 @@ export interface ManualCancelResult {
     methodLabel: string;
   } | null;
   /** Active rents: what each car became (unchanged when another rental holds it or it is under review / inactive). */
-  vehicles: Array<{ publicId: string; regNo: string; status: VehicleStatus; changed: boolean }>;
+  vehicles: Array<{
+    publicId: string;
+    regNo: string;
+    status: VehicleStatus;
+    changed: boolean;
+    /** Why the chosen status wasn't set (null when it was) */
+    keptReason: VehicleKeptReason | null;
+  }>;
+  /** Active rents: where the car was said to be */
+  vehicleLocation: ManualCancelVehicleLocation | null;
+  /** Toast line for cars whose status was left alone, or null */
+  vehicleNote: string | null;
   releasedCouponUses: number;
   voidedCredit: string;
   abandonedPaymentSessions: number;
@@ -460,6 +483,8 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
         }
       }
 
+      // A legacy pickup discount for the handover that won't happen is taken back
+      await revertLegacyPickupDiscountOnCancel(tx, locked.id);
       const cancelledAt = new Date();
       const updated = await tx.booking.updateMany({
         where: { id: locked.id, status: locked.status },
@@ -513,7 +538,10 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
       const releasedCouponUses = await discountApplicationService.releaseUsage(locked.id, tx);
       const voided = await voidPendingCreditOnCancel(tx, locked.id, `Rent cancelled by the branch manager: ${input.reason}`);
 
-      // Active rent: the car is back and no longer out on this rental
+      // Active rent: the car is no longer out on this rental. The chosen status lands
+      // like a vehicle-details edit — Out For Rental with no rental behind it is the
+      // manual Out For Rental (unbookable for every date), Inactive / Maintenance
+      // aren't listed — unless another rental holds the car or it is under review.
       const vehicles: ManualCancelResult["vehicles"] = [];
       if (stage === "ACTIVE") {
         for (const { vehicle } of locked.items) {
@@ -521,24 +549,30 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
             where: { vehicleId: vehicle.id, ...ACTIVE_RENTAL_ITEM_WHERE },
             select: { id: true },
           });
-          const keep = otherRental !== null || KEEP_VEHICLE_STATUSES.includes(vehicle.status);
-          // Safety net: a drop damage decided for this car (held for review, maintenance …) wins
-          const afterDrop = keep ? null : await vehicleStatusAfterDrop(locked.id, vehicle.id, tx as any);
-          const status = keep
-            ? vehicle.status
-            : afterDrop && afterDrop !== VehicleStatus.AVAILABLE
-              ? afterDrop
-              : (input.vehicleStatus as VehicleStatus);
-          if (!keep || input.odometer !== null) {
+          const outcome = vehicleStatusOutcome({
+            currentStatus: vehicle.status,
+            heldByOtherRental: otherRental !== null,
+            afterDrop: otherRental ? null : await vehicleStatusAfterDrop(locked.id, vehicle.id, tx as any),
+            chosen: input.vehicleStatus!,
+          });
+          const status = outcome.status as VehicleStatus;
+          const setStatus = outcome.keptReason === null || outcome.keptReason === "DROP_DAMAGE";
+          if (setStatus || input.odometer !== null) {
             await tx.vehicle.update({
               where: { id: vehicle.id },
               data: {
-                ...(keep ? {} : { status }),
+                ...(setStatus ? { status } : {}),
                 ...(input.odometer !== null ? { odo: input.odometer } : {}),
               },
             });
           }
-          vehicles.push({ publicId: vehicle.publicId, regNo: vehicle.regNo, status, changed: !keep && status !== vehicle.status });
+          vehicles.push({
+            publicId: vehicle.publicId,
+            regNo: vehicle.regNo,
+            status,
+            changed: setStatus && status !== vehicle.status,
+            keptReason: outcome.keptReason,
+          });
         }
       }
 
@@ -618,6 +652,8 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
         voidedCredit: new Decimal(voided?.voidedAmount ?? 0).toFixed(2),
         abandonedPaymentSessions: sessions.length,
         cancelledExtensions: extensions.count,
+        vehicleLocation: input.vehicleLocation,
+        vehicleNote: keptVehiclesNote(vehicles),
       };
 
       await auditService.log(
@@ -635,7 +671,12 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
               ? refund.status === "APPROVED"
                 ? ` Refund ₹${refund.amount} to the original online payment approved (to be completed).`
                 : ` Refund ₹${refund.amount} (${refund.methodLabel}).`
-              : " No refund."),
+              : " No refund.") +
+            (stage === "ACTIVE"
+              ? ` Vehicle ${input.vehicleLocation === "OUT_OF_BRANCH" ? "out of the branch" : "back at the branch"}; ` +
+                vehicles.map((v) => `${v.regNo} → ${v.status}${v.keptReason ? ` (kept: ${v.keptReason})` : ""}`).join(", ") +
+                "."
+              : ""),
           entity: "Booking",
           entityId: locked.publicId,
           entityLabel: locked.publicId,
@@ -649,6 +690,7 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
             refundable: refundable.toFixed(2),
             paid: money.paid.toFixed(2),
             refund,
+            vehicleLocation: input.vehicleLocation,
             vehicleStatus: input.vehicleStatus,
             odometer: input.odometer,
             vehicles,
@@ -677,7 +719,9 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
       if ((await redis.scard(key)) === 0) await redis.del(key);
     }
     await redis.del(result.booking.publicId);
+    // Same caches a vehicle-details status edit clears
     await invalidateVehicleAvailability(redis, vehicleIds);
+    await invalidateVehiclePricing(redis, vehicleIds);
     await invalidateGroupListingCache(redis as any);
   } catch (err) {
     console.warn("[manual-cancel] Redis cleanup failed (non-fatal):", err);

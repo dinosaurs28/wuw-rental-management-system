@@ -53,6 +53,7 @@ import {
   PaymentSessionType,
 } from "@repo/database/client";
 import type { TxClient } from "./paymentSession.service.js";
+import { PICKUP_DISCOUNT_REF } from "../discount/pickup-discount-rules.js";
 import { legacyReturnChargesTotal } from "../charges/legacy-return-charges.service.js";
 import { DROP_DAMAGE_REF, dropDamageAmount } from "../damage/drop-damage.service.js";
 import {
@@ -152,6 +153,12 @@ export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
     }
     // Drop-bill lines: the drop bill's own, and an edit's corrections of them
     if (e.session.sessionType !== PaymentSessionType.RETURN && !adjustment) continue;
+    // An edit's change of the manual pickup discount is already in totalFinal (folded
+    // when the edit was saved): only what is still to settle on it is reported
+    if (e.referenceType === PICKUP_DISCOUNT_REF) {
+      if (unsettled) adjustmentPending = adjustmentPending.add(amount);
+      continue;
+    }
     let charge = ZERO;
     switch (e.classification) {
       case LedgerEntryClassification.TAXABLE:

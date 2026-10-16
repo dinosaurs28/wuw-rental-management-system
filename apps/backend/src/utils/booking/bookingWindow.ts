@@ -1,6 +1,7 @@
 /**
- * 15-day booking window (#15) — backend wrapper around the shared
- * @repo/schemas booking-window helpers.
+ * Booking window (#15; advance window 30 days since Oct 2026) — backend
+ * wrapper around the shared @repo/schemas booking-window helpers: a pickup up
+ * to ADVANCE_BOOKING_DAYS (30) ahead, a booking up to MAX_RENTAL_DAYS (15) long.
  *
  * Every role is bound by it (no staff/manager bypass). Monthly-plan bookings
  * (Booking.rentalPeriodType MONTHLY, chosen at the counter) are exempt except
@@ -12,8 +13,7 @@
 import {
   validateBookingWindow,
   validateExtensionWindow,
-  bookingWindowEnd,
-  MAX_BOOKING_DAYS,
+  maxRentalEnd,
   MONTHLY_MAX_DAYS,
   BOOKING_MAX_PERIOD_EXCEEDED,
   type BookingWindowReason,
@@ -47,12 +47,11 @@ export class BookingWindowError extends Error {
 
 /**
  * Latest allowed return for a standard booking starting at `startAt`:
- * min(23:59:59.999 IST on today + 15, startAt + 15 × 24 h).
+ * startAt + MAX_RENTAL_DAYS × 24 h (the pickup itself is held to the advance
+ * window separately). `now` is kept for callers' signatures.
  */
-export function maxStandardEndAt(startAt: Date, now: Date = new Date()): Date {
-  const windowEnd = bookingWindowEnd(now);
-  const durationEnd = new Date(startAt.getTime() + MAX_BOOKING_DAYS * DAY_MS);
-  return windowEnd.getTime() < durationEnd.getTime() ? windowEnd : durationEnd;
+export function maxStandardEndAt(startAt: Date, _now: Date = new Date()): Date {
+  return maxRentalEnd(startAt);
 }
 
 /**
@@ -69,7 +68,7 @@ export function assertBookingWindow(
   if (result.ok) return opts.monthly ? monthlyMaxEnd : maxStandardEndAt(startAt, opts.now);
   // The shared helper reports the window end; report the limit that actually
   // binds this request, which is what the client should clamp the return to:
-  //   standard       → min(window end, start + 15 days)
+  //   standard       → start + 15 days (a WINDOW failure is the pickup itself)
   //   MONTHLY_LENGTH → start + 180 days
   //   PICKUP_WINDOW  → the window end (latest allowed pickup)
   const maxEndAt = !opts.monthly

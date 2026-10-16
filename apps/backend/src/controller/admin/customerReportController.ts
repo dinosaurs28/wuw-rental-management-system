@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, Prisma } from "@repo/database/client";
-import { displayEmail } from "../../utils/customer/identity.js";
+import { displayEmail, isCustomerProfileComplete, profileFieldsOf } from "../../utils/customer/identity.js";
 import {
   resolveReportRange,
   parseCategoryIds,
@@ -205,7 +205,15 @@ export const GetCustomerReport = async (req: Request, res: Response) => {
       select: {
         id: true,
         publicId: true,
-        isProfileCompleted: true,
+        addressLine1: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        country: true,
+        age: true,
+        dob: true,
+        drivingLicenceNumber: true,
+        aadhaarNumber: true,
         user: {
           select: { name: true, phone: true, email: true, createdAt: true },
         },
@@ -232,7 +240,8 @@ export const GetCustomerReport = async (req: Request, res: Response) => {
         // Walk-in placeholder / tombstone emails are blank, never shown (#1).
         email: displayEmail(c.user.email) ?? "",
         registeredAt: c.user.createdAt.toISOString(),
-        isProfileCompleted: c.isProfileCompleted,
+        // Derived from the stored values (the stored flag can predate a rule change)
+        isProfileCompleted: isCustomerProfileComplete(profileFieldsOf(c.user, c)),
         // Spec column "Total Bookings" = all-time count.
         totalBookings: allTime?.count ?? inRange.bookings,
         totalBookingsAllTime: allTime?.count ?? inRange.bookings,

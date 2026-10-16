@@ -31,19 +31,22 @@ export const GetManualCancelOptions = async (req: Request, res: Response) => {
 
 /**
  * POST /api/branchManager/bookings/:publicId/cancel
- *   { reason, refund: { amount, method?, note? }, vehicleReturned?, vehicleStatus?, odometer? }
+ *   { reason, refund: { amount, method?, note? }, vehicleLocation?, vehicleStatus?, odometer? }
+ *   (active rents: vehicleLocation AT_BRANCH | OUT_OF_BRANCH; legacy vehicleReturned: true = AT_BRANCH)
  * The Branch Manager cancels an upcoming or active rent of their branch by hand.
  */
 export const ManualCancelBooking = async (req: Request, res: Response) => {
   try {
     const result = await manualCancelBooking(req, req.params.publicId!);
+    const refundMessage = !result.refund
+      ? "Rent cancelled."
+      : result.refund.status === "APPROVED"
+        ? `Rent cancelled. ₹${result.refund.amount} refund to the original payment approved — refund it in Razorpay, then complete it in Payments → Refunds with the Razorpay refund id.`
+        : `Rent cancelled. ₹${result.refund.amount} refunded (${result.refund.methodLabel}).`;
     return res.status(StatusCode.OK).json({
       success: true,
-      message: !result.refund
-        ? "Rent cancelled."
-        : result.refund.status === "APPROVED"
-          ? `Rent cancelled. ₹${result.refund.amount} refund to the original payment approved — refund it in Razorpay, then complete it in Payments → Refunds with the Razorpay refund id.`
-          : `Rent cancelled. ₹${result.refund.amount} refunded (${result.refund.methodLabel}).`,
+      // Cars whose status the cancel left alone (another rental / damage review) are named
+      message: result.vehicleNote ? `${refundMessage} ${result.vehicleNote}` : refundMessage,
       data: result,
     });
   } catch (error) {

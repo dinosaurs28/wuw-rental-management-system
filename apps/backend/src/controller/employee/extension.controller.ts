@@ -15,6 +15,7 @@ import {
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
 import { resolveCounterUpi, type CounterUpi } from "../../services/payment/payment-proof.service.js";
+import { PAYMENT_PROOF_MAX_PHOTOS } from "../../services/payment/payment-proof-list.js";
 import { parseCollateral } from "../../services/payment/customer-credit.service.js";
 import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
 import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
@@ -43,6 +44,8 @@ const collectExtensionSchema = z.object({
   method: z.enum(["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT"]),
   onlineTransactionRef: z.string().optional(),
   proof_file_id: z.string().trim().min(1).max(64).optional(),
+  // Up to three payment-screen photos (slot order; the first = proof_file_id)
+  proof_file_ids: z.array(z.string()).max(PAYMENT_PROOF_MAX_PHOTOS).optional(),
   cashAmount: z.coerce.number().min(0).optional(),
   onlineAmount: z.coerce.number().min(0).optional(),
   collateral: z.string().optional(),
@@ -295,6 +298,7 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
           upi = await resolveCounterUpi({
             utr: validation.data.onlineTransactionRef,
             proofFileId: validation.data.proof_file_id,
+            proofFileIds: validation.data.proof_file_ids,
             branchId: req.branch_Id,
           });
         }

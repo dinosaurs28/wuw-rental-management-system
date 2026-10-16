@@ -21,6 +21,8 @@ import {
   claimCounterUpi,
   proofPhotoFields,
   PROOF_FILE_RELATION_SELECT,
+  PROOF_PHOTOS_RELATION_SELECT,
+  proofPhotosCreate,
   type CounterUpi,
 } from "../../services/payment/payment-proof.service.js";
 import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
@@ -88,6 +90,7 @@ async function clearancePayments(clearancePublicIds: string[]) {
       onlineTransactionRef: true,
       createdAt: true,
       proofFile: PROOF_FILE_RELATION_SELECT,
+      proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
     },
     orderBy: { createdAt: "asc" },
   });
@@ -105,7 +108,7 @@ async function clearancePayments(clearancePublicIds: string[]) {
       onlineGateway: t.onlineGateway,
       onlineTransactionRef: t.onlineTransactionRef,
       createdAt: t.createdAt,
-      ...(await proofPhotoFields(t.proofFile)),
+      ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
     });
     out.set(clearanceId, list);
   }
@@ -578,7 +581,12 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
     // of the customer's payment screen or a 12-digit UTR, like every counter UPI.
     const upi: CounterUpi | null =
       method === "UPI" || method === "SPLIT"
-        ? await resolveCounterUpi({ utr: transactionRef, proofFileId: parsed.data.proof_file_id, branchId: req.branch_Id })
+        ? await resolveCounterUpi({
+            utr: transactionRef,
+            proofFileId: parsed.data.proof_file_id,
+            proofFileIds: parsed.data.proof_file_ids,
+            branchId: req.branch_Id,
+          })
         : null;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -715,6 +723,7 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
             onlineTransactionRef: onlinePart.gt(0) ? (upi?.utr ?? null) : null,
             onlineGateway: onlinePart.gt(0) ? "UPI" : null,
             proofFileId: onlinePart.gt(0) ? (upi?.proof?.id ?? null) : null,
+            proofPhotos: onlinePart.gt(0) ? proofPhotosCreate(upi?.proofs) : undefined,
             collectedById: actor.actorId,
             collectedAt: now,
             confirmedById: actor.actorId,

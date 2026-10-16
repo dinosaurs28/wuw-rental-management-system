@@ -27,6 +27,8 @@ import {
   refundRecordFor,
   refundableAmount,
   remainingPaymentRefusal,
+  keptVehiclesNote,
+  vehicleStatusOutcome,
 } from "./manual-cancel-rules.js";
 
 const d = (v: number | string) => new Decimal(v);
@@ -266,32 +268,79 @@ test("refund note: optional, at most 500 characters", () => {
   assert.equal(parseManualCancelBody({ reason: "No show", refund: { amount: 0, note: "   " } }, "UPCOMING").refund.note, null);
 });
 
-test("active: the vehicle must be confirmed back at the branch", () => {
+test("active: where the car is — back at / out of the branch; legacy vehicleReturned: true = back", () => {
   const base = { reason: "Car broke down", refund: { amount: 0 }, vehicleStatus: "MAINTENANCE" };
-  expectError(() => parseManualCancelBody(base, "ACTIVE"), "VEHICLE_NOT_RETURNED", "vehicleReturned");
-  expectError(() => parseManualCancelBody({ ...base, vehicleReturned: false }, "ACTIVE"), "VEHICLE_NOT_RETURNED");
-  expectError(() => parseManualCancelBody({ ...base, vehicleReturned: "true" }, "ACTIVE"), "VEHICLE_NOT_RETURNED");
-  const ok = parseManualCancelBody({ ...base, vehicleReturned: true }, "ACTIVE");
-  assert.equal(ok.vehicleStatus, "MAINTENANCE");
-  assert.equal(ok.odometer, null);
+  expectError(() => parseManualCancelBody(base, "ACTIVE"), "VALIDATION_ERROR", "vehicleLocation");
+  expectError(() => parseManualCancelBody({ ...base, vehicleReturned: false }, "ACTIVE"), "VALIDATION_ERROR", "vehicleLocation");
+  expectError(() => parseManualCancelBody({ ...base, vehicleReturned: "true" }, "ACTIVE"), "VALIDATION_ERROR", "vehicleLocation");
+  expectError(() => parseManualCancelBody({ ...base, vehicleLocation: "AT_HOME" }, "ACTIVE"), "VALIDATION_ERROR", "vehicleLocation");
+  const legacy = parseManualCancelBody({ ...base, vehicleReturned: true }, "ACTIVE");
+  assert.equal(legacy.vehicleLocation, "AT_BRANCH");
+  assert.equal(legacy.vehicleStatus, "MAINTENANCE");
+  assert.equal(parseManualCancelBody({ ...base, vehicleLocation: "AT_BRANCH" }, "ACTIVE").vehicleLocation, "AT_BRANCH");
+  assert.equal(parseManualCancelBody({ ...base, vehicleLocation: "OUT_OF_BRANCH" }, "ACTIVE").vehicleLocation, "OUT_OF_BRANCH");
+  // An explicit location wins over the legacy flag
+  assert.equal(parseManualCancelBody({ ...base, vehicleLocation: "OUT_OF_BRANCH", vehicleReturned: true }, "ACTIVE").vehicleLocation, "OUT_OF_BRANCH");
 });
 
-test("active: the vehicle status must be Available or Maintenance", () => {
-  const base = { reason: "Customer returned early", refund: { amount: 0 }, vehicleReturned: true };
+test("active: status Available / Maintenance / Inactive / Out For Rental", () => {
+  const base = { reason: "Customer returned early", refund: { amount: 0 }, vehicleLocation: "AT_BRANCH" };
   expectError(() => parseManualCancelBody(base, "ACTIVE"), "VALIDATION_ERROR", "vehicleStatus");
-  expectError(() => parseManualCancelBody({ ...base, vehicleStatus: "OUT_FOR_RENTAL" }, "ACTIVE"), "VALIDATION_ERROR", "vehicleStatus");
-  expectError(() => parseManualCancelBody({ ...base, vehicleStatus: "INACTIVE" }, "ACTIVE"), "VALIDATION_ERROR", "vehicleStatus");
-  assert.equal(parseManualCancelBody({ ...base, vehicleStatus: "AVAILABLE" }, "ACTIVE").vehicleStatus, "AVAILABLE");
+  expectError(() => parseManualCancelBody({ ...base, vehicleStatus: "MANAGER_REPORTED" }, "ACTIVE"), "VALIDATION_ERROR", "vehicleStatus");
+  for (const status of ["AVAILABLE", "MAINTENANCE", "INACTIVE", "OUT_FOR_RENTAL"]) {
+    assert.equal(parseManualCancelBody({ ...base, vehicleStatus: status }, "ACTIVE").vehicleStatus, status);
+  }
 });
 
-test("active: optional odometer, a whole number of km", () => {
-  const base = { reason: "Customer returned early", refund: { amount: 0 }, vehicleReturned: true, vehicleStatus: "AVAILABLE" };
+test("active: a car out of the branch can't be made Available", () => {
+  const base = { reason: "Customer kept the car", refund: { amount: 0 }, vehicleLocation: "OUT_OF_BRANCH" };
+  assert.throws(
+    () => parseManualCancelBody({ ...base, vehicleStatus: "AVAILABLE" }, "ACTIVE"),
+    (err: unknown) => err instanceof ManualCancelError && err.status === 400 && err.extra.field === "vehicleStatus" &&
+      err.message === "The car isn't at the branch, so it can't be bookable.",
+  );
+  for (const status of ["MAINTENANCE", "INACTIVE", "OUT_FOR_RENTAL"]) {
+    assert.equal(parseManualCancelBody({ ...base, vehicleStatus: status }, "ACTIVE").vehicleStatus, status);
+  }
+});
+
+test("active: optional odometer, a whole number of km, only when the car is back", () => {
+  const base = { reason: "Customer returned early", refund: { amount: 0 }, vehicleLocation: "AT_BRANCH", vehicleStatus: "AVAILABLE" };
   assert.equal(parseManualCancelBody({ ...base, odometer: 45210 }, "ACTIVE").odometer, 45210);
   assert.equal(parseManualCancelBody({ ...base, odometer: "45210" }, "ACTIVE").odometer, 45210);
   assert.equal(parseManualCancelBody({ ...base, odometer: "" }, "ACTIVE").odometer, null);
   expectError(() => parseManualCancelBody({ ...base, odometer: 12.5 }, "ACTIVE"), "VALIDATION_ERROR", "odometer");
   expectError(() => parseManualCancelBody({ ...base, odometer: -1 }, "ACTIVE"), "VALIDATION_ERROR", "odometer");
   expectError(() => parseManualCancelBody({ ...base, odometer: "abc" }, "ACTIVE"), "VALIDATION_ERROR", "odometer");
+  const out = { ...base, vehicleLocation: "OUT_OF_BRANCH", vehicleStatus: "OUT_FOR_RENTAL" };
+  expectError(() => parseManualCancelBody({ ...out, odometer: 45210 }, "ACTIVE"), "VALIDATION_ERROR", "odometer");
+  assert.equal(parseManualCancelBody(out, "ACTIVE").odometer, null);
+});
+
+test("vehicle outcome: the choice lands unless another rental holds the car or it is under review", () => {
+  const base = { currentStatus: "OUT_FOR_RENTAL", heldByOtherRental: false, afterDrop: null };
+  for (const chosen of ["AVAILABLE", "MAINTENANCE", "INACTIVE", "OUT_FOR_RENTAL"] as const) {
+    assert.deepEqual(vehicleStatusOutcome({ ...base, chosen }), { status: chosen, keptReason: null });
+  }
+  assert.deepEqual(vehicleStatusOutcome({ ...base, heldByOtherRental: true, chosen: "AVAILABLE" }), { status: "OUT_FOR_RENTAL", keptReason: "OTHER_RENTAL" });
+  assert.deepEqual(vehicleStatusOutcome({ ...base, currentStatus: "MANAGER_REPORTED", chosen: "AVAILABLE" }), { status: "MANAGER_REPORTED", keptReason: "DAMAGE_REVIEW" });
+  // A drop damage decision (not Available) wins; the same as chosen is no override
+  assert.deepEqual(vehicleStatusOutcome({ ...base, afterDrop: "MAINTENANCE", chosen: "AVAILABLE" }), { status: "MAINTENANCE", keptReason: "DROP_DAMAGE" });
+  assert.deepEqual(vehicleStatusOutcome({ ...base, afterDrop: "MAINTENANCE", chosen: "MAINTENANCE" }), { status: "MAINTENANCE", keptReason: null });
+  assert.deepEqual(vehicleStatusOutcome({ ...base, afterDrop: "AVAILABLE", chosen: "INACTIVE" }), { status: "INACTIVE", keptReason: null });
+  // A car that was set Inactive is changed like any other
+  assert.deepEqual(vehicleStatusOutcome({ ...base, currentStatus: "INACTIVE", chosen: "AVAILABLE" }), { status: "AVAILABLE", keptReason: null });
+});
+
+test("kept-vehicles note names the cars and why", () => {
+  assert.equal(keptVehiclesNote([{ regNo: "KA20A1", status: "AVAILABLE", keptReason: null }]), null);
+  assert.equal(
+    keptVehiclesNote([
+      { regNo: "KA20A1", status: "OUT_FOR_RENTAL", keptReason: "OTHER_RENTAL" },
+      { regNo: "KA20A2", status: "MANAGER_REPORTED", keptReason: "DAMAGE_REVIEW" },
+    ]),
+    "KA20A1 stays out for rental — it is out on another rental. KA20A2 stays manager reported — it is held for a damage review.",
+  );
 });
 
 test("upcoming ignores vehicle fields sent by mistake", () => {

@@ -17,6 +17,8 @@ import {
   claimCounterUpi,
   proofPhotoFields,
   PROOF_FILE_RELATION_SELECT,
+  PROOF_PHOTOS_RELATION_SELECT,
+  proofPhotosCreate,
   type CounterUpi,
 } from "./payment-proof.service.js";
 import { redis } from "../../lib/redisconfig.js";
@@ -39,6 +41,8 @@ export interface RecordPaymentInput {
   notes?: string;
   /** Photo of the customer's UPI payment screen (#3) — backs the UPI part instead of a UTR */
   proof_file_id?: string;
+  /** Every payment-screen photo (1–3, slot order); the first = proof_file_id */
+  proof_file_ids?: string[];
 }
 
 interface ActorContext {
@@ -137,6 +141,7 @@ class PaymentTransactionService {
         upi = await resolveCounterUpi({
           utr: input.onlineTransactionRef,
           proofFileId: input.proof_file_id,
+          proofFileIds: input.proof_file_ids,
           branchId,
         });
         onlineRef = upi.utr;
@@ -198,6 +203,7 @@ class PaymentTransactionService {
           onlineTransactionRef: onlineRef,
           onlineGateway: onlineRef || upi ? onlineGateway : null,
           proofFileId: upi?.proof?.id ?? null,
+          proofPhotos: proofPhotosCreate(upi?.proofs),
           collectedById: input.method !== "ONLINE" ? actor.actorId : null,
           collectedAt: input.method !== "ONLINE" ? now : null,
           confirmedById: status === "CONFIRMED" ? actor.actorId : null,
@@ -559,6 +565,7 @@ class PaymentTransactionService {
           collectedBy: { select: { publicId: true, name: true } },
           confirmedBy: { select: { publicId: true, name: true } },
           proofFile: PROOF_FILE_RELATION_SELECT,
+          proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -569,7 +576,7 @@ class PaymentTransactionService {
 
     const mapped = await Promise.all((transactions as any[]).map(async (t) => ({
       // Additive (Oct 2026): UPI payment-screen photo (#3)
-      ...(await proofPhotoFields(t.proofFile)),
+      ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
       transactionPublicId: t.publicId,
       bookingPublicId: t.booking.publicId,
       customerName: t.booking.customer?.user?.name ?? "Unknown",
@@ -621,6 +628,7 @@ class PaymentTransactionService {
           },
           collectedBy: { select: { publicId: true, name: true } },
           proofFile: PROOF_FILE_RELATION_SELECT,
+          proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
         },
         orderBy: { collectedAt: "asc" },
         skip,
@@ -647,7 +655,7 @@ class PaymentTransactionService {
       onlineGateway: t.onlineGateway ?? null,
       onlineTransactionRef: t.onlineTransactionRef ?? null,
       notes: t.notes ?? null,
-      ...(await proofPhotoFields(t.proofFile)),
+      ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
     })));
 
     return { transactions: mapped as any, total, page, pageSize };

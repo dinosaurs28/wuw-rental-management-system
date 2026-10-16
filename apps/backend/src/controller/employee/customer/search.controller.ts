@@ -5,6 +5,7 @@ import { redis } from "../../../lib/redisconfig.js";
 import { maskAadhaar } from "@repo/schemas";
 import {
   displayEmail,
+  effectiveCustomerAge,
   getMissingProfileFields,
   profileFieldsOf,
 } from "../../../utils/customer/identity.js";
@@ -68,6 +69,8 @@ export const SearchCustomer = async (req: Request, res: Response) => {
             state: true,
             zipCode: true,
             country: true,
+            age: true,
+            dob: true,
             drivingLicenceNumber: true,
             aadhaarNumber: true,
             isBlacklisted: true,
@@ -99,6 +102,7 @@ export const SearchCustomer = async (req: Request, res: Response) => {
               isProfileCompleted: missingFields.length === 0,
               publicId: p.publicId,
               missingFields,
+              age: effectiveCustomerAge(p),
               drivingLicenceNumber: p.drivingLicenceNumber ?? null,
               aadhaarNumberMasked: p.aadhaarNumber ? maskAadhaar(p.aadhaarNumber) : null,
               isBlacklisted: p.isBlacklisted,

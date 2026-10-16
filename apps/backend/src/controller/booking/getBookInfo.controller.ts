@@ -43,7 +43,7 @@ import {
 } from "../../services/tax/gst.service.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import {
-  MAX_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   isCustomerPackageDuration,
   BOOKING_PACKAGE_REQUIRED,
   BOOKING_PACKAGE_REQUIRED_MESSAGE,
@@ -297,7 +297,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    // ── 15-day booking window (#15) — customers can't choose a monthly plan ──
+    // ── Booking window (#15): pickup ≤ 30 days ahead, ≤ 15 days long — customers can't choose a monthly plan ──
     try {
       assertBookingWindow(startDate, endDate);
     } catch (windowErr) {
@@ -527,14 +527,14 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         }
 
         if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
-          // Never offer an adjusted return past the 15-day limit
+          // Never offer an adjusted return past the 15-day length limit
           try {
             assertBookingWindow(startDate, verdict.adjustedReturn);
           } catch (windowErr) {
             if (windowErr instanceof BookingWindowError) {
               return res.status(StatusCode.BAD_REQUEST).json({
                 ...windowErr.toJSON(),
-                message: `The branch is closed at the chosen return time, and the next open return (${verdict.nextOpenLabel ?? "next available time"}) is past the ${MAX_BOOKING_DAYS}-day limit. Please choose an earlier return.`,
+                message: `The branch is closed at the chosen return time, and the next open return (${verdict.nextOpenLabel ?? "next available time"}) is past the ${MAX_RENTAL_DAYS}-day limit. Please choose an earlier return.`,
               });
             }
             throw windowErr;

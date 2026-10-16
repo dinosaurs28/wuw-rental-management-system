@@ -161,6 +161,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
           data: {
             alternatePhone: null,
             dob: null,
+            age: null,
             addressLine1: "",
             city: "",
             state: "",

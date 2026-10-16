@@ -361,7 +361,7 @@ export const DeleteDropDamage = async (req: Request, res: Response) => {
 
       const found = await tx.damageReport.findFirst({
         where: { publicId: req.params.damagePublicId!, bookingId: booking.id },
-        include: { photos: { select: { fileId: true, file: { select: { key: true } } } } },
+        include: { photos: { select: { fileId: true, file: { select: { key: true, displayKey: true } } } } },
       });
       if (!found || !isDropDamage(found.notes)) {
         throw new DropDamageRejection(StatusCode.NOT_FOUND, { message: "Damage not found" });
@@ -384,6 +384,7 @@ export const DeleteDropDamage = async (req: Request, res: Response) => {
         if (stillUsed > 0) continue;
         await prisma.fileObject.delete({ where: { id: photo.fileId } });
         await fileCleanupQueue.add("cleanup", { key: photo.file.key });
+        if (photo.file.displayKey) await fileCleanupQueue.add("cleanup", { key: photo.file.displayKey });
       } catch (cleanupErr) {
         console.warn("[drop-damage] Photo cleanup failed (non-fatal):", cleanupErr);
       }

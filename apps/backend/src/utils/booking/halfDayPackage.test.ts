@@ -221,16 +221,15 @@ test("a 12-hour booking with no 12-hour return from the new pickup can't move th
   assert.equal(rescheduledReturn(heldBooking, ist("2026-10-12T14:30:00"), short), null);
 });
 
-// ── Last day of the 15-day window (review #3) ────────────────────────────────
+// ── Last day of the advance window (review #3; 30 days since Oct 2026) ───────
 
-test("the held 12-hour return fits the window's last afternoon", () => {
-  const now = ist("2026-10-10T10:00:00"); // window ends 25 Oct 23:59 IST
-  const pickup = ist("2026-10-25T14:00:00");
-  assert.equal(customerPackagesForPickup(pickup, now).length, 0); // 14:00 + 12 h = 26 Oct 02:00
+test("a pickup on the window's last afternoon gets every package, 12 hours held to closing", () => {
+  const now = ist("2026-10-10T10:00:00"); // pickups open until 9 Nov 23:59 IST
+  const pickup = ist("2026-11-09T14:00:00");
   const held = halfDayReturnFor(manipal, pickup);
   const offered = customerPackagesForPickup(pickup, now, held?.clamped ? held.endAt : null);
-  assert.deepEqual(
-    offered.map((p) => [p.hours, p.endAt.toISOString()]),
-    [[12, ist("2026-10-25T22:30:00").toISOString()]],
-  );
+  assert.equal(offered.length, 16); // 12 hours + 1…15 days — the return may pass the window
+  assert.deepEqual([offered[0]!.hours, offered[0]!.endAt.toISOString()], [12, ist("2026-11-09T22:30:00").toISOString()]);
+  assert.equal(offered[15]!.endAt.toISOString(), ist("2026-11-24T14:00:00").toISOString());
+  assert.equal(customerPackagesForPickup(ist("2026-11-10T09:00:00"), now).length, 0); // day 31
 });

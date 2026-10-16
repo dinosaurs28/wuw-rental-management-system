@@ -24,6 +24,11 @@ import {
   type BookingListType,
 } from "../../utils/booking/bookingTypeFilter.js";
 import { listOverdueReturns, parseOverduePaging } from "../../services/booking/overdue-returns.service.js";
+import {
+  fleetSearchBookingWhere,
+  fleetSearchVehicleIds,
+  parseFleetQuery,
+} from "../../utils/booking/fleetSearch.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { publicFileUrl } from "../../utils/file-url.js";
@@ -51,12 +56,20 @@ const managerTabWheres = (
   status: BookingStatus,
   dateFilter: Prisma.BookingWhereInput,
   type: BookingListType | undefined,
+  // Fleet tab search (?q=): only bookings with a matching vehicle — rows and counts alike
+  search: Prisma.BookingWhereInput = {},
 ) => {
-  const dailyWhere: Prisma.BookingWhereInput = { branchId, status, ...dateFilter, ...bookingTypeWhere("DAILY") };
-  const monthlyWhere: Prisma.BookingWhereInput = { branchId, status, ...bookingTypeWhere("MONTHLY") };
+  const dailyWhere: Prisma.BookingWhereInput = { branchId, status, ...dateFilter, ...bookingTypeWhere("DAILY"), ...search };
+  const monthlyWhere: Prisma.BookingWhereInput = { branchId, status, ...bookingTypeWhere("MONTHLY"), ...search };
   const listWhere: Prisma.BookingWhereInput =
-    type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : { branchId, status, ...dateFilter };
+    type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : { branchId, status, ...dateFilter, ...search };
   return { dailyWhere, monthlyWhere, listWhere };
+};
+
+/** `?q=` of the Fleet lists as a booking filter (vehicle make / model / reg no), or {} when absent. */
+const fleetSearchWhere = async (branchId: number, raw: unknown): Promise<Prisma.BookingWhereInput> => {
+  const q = parseFleetQuery(raw);
+  return q ? fleetSearchBookingWhere(await fleetSearchVehicleIds(branchId, q)) : {};
 };
 
 // Upcoming pickups (CONFIRMED). `?type=DAILY|MONTHLY` splits the list into tabs.
@@ -98,6 +111,7 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
       BookingStatus.CONFIRMED,
       dateFilter,
       type,
+      await fleetSearchWhere(branchId, req.query.q),
     );
 
     const [totalCount, dailyCount, monthlyCount] = await Promise.all([
@@ -240,6 +254,7 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
       BookingStatus.PICKED_UP,
       dateFilter,
       type,
+      await fleetSearchWhere(branchId, req.query.q),
     );
 
     const [totalCount, dailyCount, monthlyCount] = await Promise.all([
@@ -355,7 +370,10 @@ export const GetOverdueReturns = async (req: Request, res: Response) => {
     }
 
     const { page, limit } = parseOverduePaging(req.query.page, req.query.limit);
-    const result = await listOverdueReturns(req.branch_Id, { page, limit, type: parsedType.type });
+    // Fleet tab search (?q=): only rents with a matching vehicle — rows and counts alike
+    const q = parseFleetQuery(req.query.q);
+    const vehicleIds = q ? await fleetSearchVehicleIds(req.branch_Id, q) : undefined;
+    const result = await listOverdueReturns(req.branch_Id, { page, limit, type: parsedType.type, vehicleIds });
 
     return res.status(StatusCode.OK).json({
       success: true,

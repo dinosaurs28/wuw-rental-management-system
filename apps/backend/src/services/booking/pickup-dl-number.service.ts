@@ -93,6 +93,8 @@ export async function resolvePickupDlNumber(
       state: true,
       zipCode: true,
       country: true,
+      age: true,
+      dob: true,
       drivingLicenceNumber: true,
       aadhaarNumber: true,
       user: { select: { publicId: true, name: true, phone: true } },

@@ -24,8 +24,8 @@
  * paid-but-unconfirmed extension (an uncommitted customer quote is released),
  * no open UPI QR. The new window must keep the vehicle(s) free (other bookings,
  * unexpired holds — DB and Redis), keep the pickup and the return inside office
- * hours (no auto-adjust: the length is fixed), stay inside the 15-day window
- * (a monthly booking: its pickup inside the window), keep the driving licence
+ * hours (no auto-adjust: the length is fixed), stay inside the booking window
+ * (pickup ≤ 30 days ahead; a monthly booking likewise), keep the driving licence
  * free (one vehicle per DL) and the customer's type-class limit.
  *
  * Confirmed extensions move with the booking (their old / new ends shift by the
@@ -46,7 +46,7 @@ import {
 import type { Prisma } from "@repo/database/client";
 import { DateTime } from "luxon";
 import Decimal from "decimal.js";
-import { bookingWindowEnd, HALF_DAY_PACKAGE_HOURS, MAX_BOOKING_DAYS } from "@repo/schemas";
+import { ADVANCE_BOOKING_DAYS, bookingWindowEnd, HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { TimezoneService } from "../timezone/timezone.service.js";
 import { redis } from "../../lib/redisconfig.js";
@@ -326,12 +326,9 @@ const HALF_DAY_MS = HALF_DAY_PACKAGE_HOURS * 60 * MINUTE_MS;
 
 // ── Window rules ─────────────────────────────────────────────────────────────
 
-/** Latest pickup this booking can move to: its return within the 15-day window (monthly: the pickup). */
-function latestStartFor(booking: RescheduleBooking, durationMs: number, now: Date): Date {
-  const windowEnd = bookingWindowEnd(now);
-  return booking.rentalPeriodType === RentalPeriodType.MONTHLY
-    ? windowEnd
-    : new Date(windowEnd.getTime() - durationMs);
+/** Latest pickup this booking can move to: the end of the 30-day advance window (any plan). */
+function latestStartFor(_booking: RescheduleBooking, _durationMs: number, now: Date): Date {
+  return bookingWindowEnd(now);
 }
 
 function windowError(
@@ -342,7 +339,7 @@ function windowError(
   if (err.reason !== "WINDOW") return err;
   const body = err.toJSON();
   return new RescheduleWindowError(
-    `Bookings can run up to ${MAX_BOOKING_DAYS} days from today, so with its length of ${durationLabel(durationMinutes)} this booking must start by ${formatIst(latestStartAt)}.`,
+    `Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead, so this booking (${durationLabel(durationMinutes)}) must start by ${formatIst(latestStartAt)}.`,
     body,
     latestStartAt,
   );
@@ -805,7 +802,7 @@ export async function rescheduleBooking(
   const durationMinutes = Math.round(durationMs / MINUTE_MS);
   const isMonthly = booking.rentalPeriodType === RentalPeriodType.MONTHLY;
 
-  // 15-day window (a monthly booking: its pickup inside the window)
+  // Booking window: pickup ≤ 30 days ahead, ≤ 15 days long (monthly: 30–180 days)
   try {
     assertBookingWindow(newStart, newEnd, { monthly: isMonthly, now });
   } catch (err) {

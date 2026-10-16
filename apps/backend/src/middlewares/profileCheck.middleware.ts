@@ -32,6 +32,8 @@ export const checkProfileCompletion = async (
             state: true,
             zipCode: true,
             country: true,
+            age: true,
+            dob: true,
             drivingLicenceNumber: true,
             aadhaarNumber: true,
           },
@@ -39,8 +41,9 @@ export const checkProfileCompletion = async (
       },
     });
 
-    // Completeness is derived from the stored values (DL + Aadhaar numbers
-    // included), so a stale isProfileCompleted flag can never let a booking by.
+    // Completeness is derived from the stored values (age, or a date of birth /
+    // both identity numbers for older profiles), so a stale isProfileCompleted
+    // flag can never let a booking by.
     const missingFields = user
       ? getMissingProfileFields(profileFieldsOf(user, user.customerProfile))
       : [];

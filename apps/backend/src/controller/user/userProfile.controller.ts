@@ -3,20 +3,26 @@ import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import {
   aadhaarNumberSchema,
+  customerAgeSchema,
   drivingLicenceNumberSchema,
+  legacyDobSchema,
   updateProfileSchema,
 } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import {
   displayEmail,
+  effectiveCustomerAge,
   getMissingProfileFields,
   profileFieldsOf,
 } from "../../utils/customer/identity.js";
 
-// Old mobile builds send no DL/Aadhaar numbers: tolerate omission (the stored
-// values are kept and the profile stays incomplete without them); a value that
-// is sent must still be valid.
+// The profile form (Oct 2026) sends an age and no DL / Aadhaar / date of
+// birth. Old app builds send DL + Aadhaar numbers and a date of birth but no
+// age: tolerate both shapes. Omitted values keep what is stored; a value that
+// is sent must still be valid. Completeness: see utils/customer/identity.ts.
 const updateProfileRequestSchema = updateProfileSchema.extend({
+  age: customerAgeSchema.optional(),
+  dob: legacyDobSchema.optional(),
   drivingLicenceNumber: drivingLicenceNumberSchema.optional(),
   aadhaarNumber: aadhaarNumberSchema.optional(),
 });
@@ -53,6 +59,8 @@ export const getUserProfile = async (req: Request, res: Response) => {
       email: displayEmail(user.email),
       phone: user.phone,
       dob: user.customerProfile?.dob || null,
+      // Entered age, else derived from an older customer's date of birth
+      age: effectiveCustomerAge(user.customerProfile),
       addressLine1: user.customerProfile?.addressLine1 || "",
       city: user.customerProfile?.city || "",
       state: user.customerProfile?.state || "",
@@ -95,7 +103,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       where: { publicId },
       include: {
         customerProfile: {
-          select: { id: true, drivingLicenceNumber: true, aadhaarNumber: true },
+          select: { id: true, drivingLicenceNumber: true, aadhaarNumber: true, age: true, dob: true },
         },
       },
     });
@@ -138,9 +146,13 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     const aadhaarNumber =
       data.aadhaarNumber ?? user.customerProfile?.aadhaarNumber ?? null;
 
-    // Check if profile is completed (DL + Aadhaar numbers included, #1)
+    // Age / date of birth omitted keep their stored values
+    const age = data.age ?? user.customerProfile?.age ?? null;
+    const dob = data.dob ?? user.customerProfile?.dob ?? null;
+
+    // Check if profile is completed (age, or dob / both numbers for old profiles)
     const isProfileCompleted =
-      getMissingProfileFields({ ...data, drivingLicenceNumber, aadhaarNumber }).length === 0;
+      getMissingProfileFields({ ...data, age, dob, drivingLicenceNumber, aadhaarNumber }).length === 0;
 
     // Transaction to update User and Upsert Customer
     const updatedProfile = await prisma.$transaction(async (tx) => {
@@ -155,6 +167,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         where: { userId: user.id },
         update: {
           dob: data.dob,
+          ...(data.age !== undefined ? { age: data.age } : {}),
           addressLine1: data.addressLine1,
           city: data.city,
           state: data.state,
@@ -169,6 +182,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
           userId: user.id,
           publicId: createID(),
           dob: data.dob,
+          age: data.age ?? null,
           addressLine1: data.addressLine1,
           city: data.city,
           state: data.state,
@@ -200,6 +214,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         email: displayEmail(updatedProfile.email),
         phone: updatedProfile.phone,
         dob: updatedProfile.customerProfile.dob,
+        age: effectiveCustomerAge(updatedProfile.customerProfile),
         addressLine1: updatedProfile.customerProfile.addressLine1,
         city: updatedProfile.customerProfile.city,
         state: updatedProfile.customerProfile.state,

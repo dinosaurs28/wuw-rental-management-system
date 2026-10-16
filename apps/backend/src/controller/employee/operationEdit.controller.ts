@@ -138,6 +138,26 @@ import {
   type PickupDlNumber,
 } from "../../services/booking/pickup-dl-number.service.js";
 import { assertDlFree, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import {
+  completedPickupRentDue,
+  foldPickupDiscountIntoBooking,
+  pickupDiscountRecord,
+  quotePickupDiscount,
+} from "../../services/discount/pickup-discount.service.js";
+import {
+  PickupDiscountError,
+  ZERO_SPLIT,
+  parsePickupDiscountAmount,
+  parsePickupDiscountReason,
+  pendingPickupDiscountChange,
+  pickupDiscountAdjustmentLine,
+  readPickupDiscount,
+  recordSplit,
+  serializePickupDiscount,
+  subtractSplit,
+  type PickupDiscountRecord,
+  type PickupDiscountSplit,
+} from "../../services/discount/pickup-discount-rules.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import {
   staffActivityService,
@@ -172,6 +192,15 @@ const editPickupSchema = z.object({
   removeFileIds: fileIdList(60).optional(),
   // New safety deposit total (car still out, nothing recorded at the drop yet)
   safetyDeposit: z.coerce.number().min(0, "The deposit can't be negative").max(1_000_000).optional(),
+  // Manual pickup discount (flat ₹ off the rent payable at pickup, incl. GST): null or
+  // amount 0 removes it; absent = as recorded
+  pickupDiscount: z
+    .object({
+      amount: z.coerce.number().min(0, "The discount can't be negative").max(10_000_000),
+      reason: z.string().nullish(),
+    })
+    .nullable()
+    .optional(),
   // The money difference the screen showed (preview) — 409 EDIT_DELTA_CHANGED when it moved
   expectedDelta: z.coerce.number().optional(),
 });
@@ -275,6 +304,7 @@ function sendError(res: Response, error: unknown, where: string) {
   if (error instanceof DlStatusError) return res.status(error.status).json(error.toJSON());
   if (error instanceof PickupDlNumberError) return res.status(error.status).json(error.toJSON());
   if (error instanceof DlInUseError) return res.status(error.status).json(error.toJSON("staff"));
+  if (error instanceof PickupDiscountError) return res.status(error.status).json(error.toJSON());
   console.error(`${where} Error:`, error);
   return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Something went wrong. Please try again." });
 }
@@ -487,6 +517,15 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
   const dlStatusEditable = STAFF_DL_EDITABLE_STATUSES.includes(booking.status);
   const returnDone = isDone(returnQueueState(booking));
   const depositConfig = (booking.frozenChargeConfig ?? {}) as { safetyDepositEnabled?: boolean };
+  // Manual pickup discount: what was given and the most it may be (the rent payable at the pickup)
+  const [discountRow, discountMax] = isDone(state)
+    ? await Promise.all([
+        prisma.booking.findUnique({ where: { id: booking.id }, select: { pricingSnapshot: true } }),
+        completedPickupRentDue(prisma, booking.id),
+      ])
+    : [null, new Decimal(0)];
+  const pickupDiscount = readPickupDiscount(discountRow?.pricingSnapshot ?? null);
+  const discountEditable = isDone(state) && !booking.requiresManagerConfirmation && (discountMax.gt(0) || !!pickupDiscount);
   // The deposit is changed only while the car is out with nothing recorded at the drop
   const depositEditable =
     booking.status === BookingStatus.PICKED_UP &&
@@ -511,6 +550,8 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
       balance: money(booking.pickupFastagBalance)?.toFixed(2) ?? null,
     },
     safetyDeposit: new Decimal(booking.safetyDeposit.toString()).toFixed(2),
+    // Manual pickup discount given (incl. GST; null = none) — additive
+    pickupDiscount: serializePickupDiscount(pickupDiscount),
     photos,
     captureFields,
     bill,
@@ -524,6 +565,9 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
       // Corrected pickup readings re-price the completed drop's km / FASTag
       readingsMoveDropCharges: returnDone,
       depositEditable,
+      // Manual pickup discount: editable up to discountMax (the rent payable at the pickup)
+      discountEditable,
+      discountMax: discountMax.toFixed(2),
       depositLockedReason: depositEditable
         ? null
         : returnDone
@@ -872,6 +916,63 @@ async function depositChangeFor(booking: SummaryBooking, sent: number | undefine
   return next;
 }
 
+/** What an edit does to the manual pickup discount. */
+interface PickupDiscountEdit {
+  current: PickupDiscountRecord | null;
+  /** The discount after the edit (the current one when its amount isn't changed) */
+  target: PickupDiscountSplit;
+  /** The record after the edit (null = none) */
+  record: PickupDiscountRecord | null;
+  /** Its amount or reason changes */
+  changed: boolean;
+  /** Its amount changes */
+  moneyChanged: boolean;
+}
+
+/**
+ * The manual pickup discount an edit sets: capped at the rent that was payable
+ * at the pickup (incl. GST, after a counter coupon) — 400 PICKUP_DISCOUNT_EXCEEDS
+ * above it. Absent = as recorded; null / 0 removes it.
+ */
+async function pickupDiscountEditFor(
+  booking: SummaryBooking,
+  sent: z.infer<typeof editPickupSchema>["pickupDiscount"],
+  db: TxClient,
+  actorId: number | null,
+): Promise<PickupDiscountEdit> {
+  const row = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { pricingSnapshot: true } });
+  const current = readPickupDiscount(row.pricingSnapshot);
+  const currentSplit = recordSplit(current);
+  const unchanged: PickupDiscountEdit = { current, target: currentSplit, record: current, changed: false, moneyChanged: false };
+  if (sent === undefined) return unchanged;
+  const amount = sent && sent.amount > 0 ? parsePickupDiscountAmount(sent.amount) : null;
+  const reason = amount ? parsePickupDiscountReason(sent?.reason) : null;
+  const sameAmount = amount ? currentSplit.total.eq(amount) : !current;
+  if (sameAmount && (!amount || (current?.reason ?? null) === reason)) return unchanged;
+  if (booking.requiresManagerConfirmation) {
+    throw new EditRejection(StatusCode.CONFLICT, {
+      code: "PICKUP_AWAITING_MANAGER",
+      message: "This handover is waiting for a manager to confirm it, so the discount can't be changed yet.",
+      field: "pickupDiscount",
+    });
+  }
+  // Only the reason changes: no money moves
+  if (sameAmount && current) {
+    return { current, target: currentSplit, record: { ...current, reason }, changed: true, moneyChanged: false };
+  }
+  const cap = await completedPickupRentDue(db, booking.id);
+  const target = amount ? (await quotePickupDiscount(db, booking.id, amount, cap)).split : ZERO_SPLIT;
+  const record = pickupDiscountRecord(target, {
+    reason,
+    cap: cap.toFixed(2),
+    source: "EDIT",
+    sessionId: current?.sessionId ?? null,
+    ledgerEntryPublicId: current?.ledgerEntryPublicId ?? null,
+    appliedById: actorId,
+  });
+  return { current, target, record, changed: true, moneyChanged: true };
+}
+
 /**
  * Money a pickup edit moves: a new safety deposit (car still out), or — once
  * the return is done — the completed drop's bill worked out again with the
@@ -1022,15 +1123,30 @@ async function pickupMoneyTx(
   locked: SummaryBooking,
   input: z.infer<typeof editPickupSchema>,
   changes: { odoChange: number | null; fastagChange: number | null },
+  actorId: number | null = null,
 ) {
   const depositChange = await depositChangeFor(locked, input.safetyDeposit, tx);
+  const discountEdit = await pickupDiscountEditFor(locked, input.pickupDiscount, tx, actorId);
   const touchesMoney =
     depositChange != null ||
+    discountEdit.moneyChanged ||
     ((changes.odoChange != null || changes.fastagChange != null) && isDone(returnQueueState(locked)));
   const superseded = touchesMoney ? await pendingToSupersede(locked.id, tx) : null;
   if (superseded) await abandonSuperseded(tx, superseded);
-  const { plan, drop } = await planPickupMoney(locked, { ...changes, depositChange, superseded }, tx);
-  return { plan: await withCreditOffset(plan, locked.id, "PICKUP", tx), drop, depositChange, superseded };
+  const { plan: planned, drop } = await planPickupMoney(locked, { ...changes, depositChange, superseded }, tx);
+  // The pickup discount, from the discount as last settled (a replaced difference's
+  // change is already folded into the booking) to the edited one
+  const discountLine = pickupDiscountAdjustmentLine({
+    settled: subtractSplit(
+      recordSplit(discountEdit.current),
+      superseded ? pendingPickupDiscountChange(superseded.session.entries) : ZERO_SPLIT,
+    ),
+    target: discountEdit.target,
+  });
+  const plan = discountLine
+    ? { ...planned, lines: [...planned.lines, discountLine], delta: planned.delta.plus(discountLine.delta) }
+    : planned;
+  return { plan: await withCreditOffset(plan, locked.id, "PICKUP", tx), drop, depositChange, superseded, discountEdit };
 }
 
 /** The money of a return edit, under the booking lock (see pickupMoneyTx). */
@@ -1052,7 +1168,42 @@ async function returnMoneyTx(tx: TxClient, locked: SummaryBooking, input: z.infe
   const superseded = touchesMoney ? await pendingToSupersede(locked.id, tx) : null;
   if (superseded) await abandonSuperseded(tx, superseded);
   const planned = await planReturnMoney(locked, input, tx, superseded);
-  return { ...planned, plan: await withCreditOffset(planned.plan, locked.id, "DROP", tx), superseded };
+  // The pickup side of a replaced difference (deposit / pickup discount change, already
+  // on the booking) is carried into the new one, or it would never be settled
+  const carried = superseded ? await carriedPickupLines(locked, superseded, tx) : [];
+  const plan: AdjustmentPlan = carried.length
+    ? {
+        ...planned.plan,
+        lines: [...planned.plan.lines, ...carried],
+        delta: carried.reduce((s, l) => s.plus(l.delta), planned.plan.delta),
+        depositIncrease: planned.plan.depositIncrease || carried.some((l) => l.entryType === "DEPOSIT" && l.delta.gt(0)),
+      }
+    : planned.plan;
+  return { ...planned, plan: await withCreditOffset(plan, locked.id, "DROP", tx), superseded };
+}
+
+/**
+ * The pickup lines of an unsettled difference being replaced by a return edit:
+ * its safety deposit and pickup discount changes, from the state as last settled
+ * to what the booking holds now (it already holds them).
+ */
+async function carriedPickupLines(
+  booking: SummaryBooking,
+  superseded: SupersededAdjustment,
+  db: TxClient,
+): Promise<AdjustmentDeltaLine[]> {
+  const lines: AdjustmentDeltaLine[] = [];
+  const current = new Decimal(booking.safetyDeposit.toString());
+  const deposit = depositAdjustmentLine({ current, pendingDelta: superseded.depositDelta, target: current });
+  if (deposit) lines.push(deposit);
+  const row = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { pricingSnapshot: true } });
+  const held = recordSplit(readPickupDiscount(row.pricingSnapshot));
+  const discount = pickupDiscountAdjustmentLine({
+    settled: subtractSplit(held, pendingPickupDiscountChange(superseded.session.entries)),
+    target: held,
+  });
+  if (discount) lines.push(discount);
+  return lines;
 }
 
 /** Thrown to roll a preview back once it has its answer. */
@@ -1227,6 +1378,7 @@ export const EditPickup = async (req: Request, res: Response) => {
       ? null
       : input.pickupFastagBalance!;
     const depositChange = await depositChangeFor(booking, input.safetyDeposit, prisma);
+    const discountCheck = await pickupDiscountEditFor(booking, input.pickupDiscount, prisma, actor.id);
     const dlStatusChange =
       input.dlStatus !== undefined && input.dlStatus !== booking.dlStatus
         ? (input.dlStatus as "COLLECTED" | "NOT_COLLECTED")
@@ -1289,7 +1441,7 @@ export const EditPickup = async (req: Request, res: Response) => {
 
     if (
       odoChange == null && !fuelChange && fastagChange == null && !depositChange &&
-      !dlStatusChange && !dlNumber && !photosChange
+      !dlStatusChange && !dlNumber && !photosChange && !discountCheck.changed
     ) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
@@ -1320,13 +1472,26 @@ export const EditPickup = async (req: Request, res: Response) => {
 
         // ── Money: re-worked under the lock (replacing an unsettled difference),
         // refused when it moved since the preview ──
-        const { plan, drop, depositChange: lockedDeposit, superseded } = await pickupMoneyTx(
+        const { plan, drop, depositChange: lockedDeposit, superseded, discountEdit } = await pickupMoneyTx(
           tx as any,
           locked,
           input,
           { odoChange, fastagChange },
+          actor.id,
         );
         assertExpectedDelta(input.expectedDelta, plan.delta, plan.lines.some((l) => !l.delta.isZero()));
+
+        // The manual pickup discount: folded into the booking now (its difference is
+        // settled on the adjustment session below)
+        if (discountEdit.changed) {
+          await foldPickupDiscountIntoBooking(
+            tx as any,
+            booking.id,
+            subtractSplit(discountEdit.target, recordSplit(discountEdit.current)),
+            discountEdit.record,
+            { adjustRemaining: false },
+          );
+        }
 
         if (odoChange != null) {
           update.startOdometer = odoChange;
@@ -1419,12 +1584,13 @@ export const EditPickup = async (req: Request, res: Response) => {
           });
         }
         if (superseded) await linkSuperseded(tx as any, superseded, session?.publicId ?? null);
-        return { plan, flow: drop?.state.flow ?? null, session };
+        return { plan, flow: drop?.state.flow ?? null, session, discountEdit };
       },
       { timeout: 30000 },
     );
 
     refreshInvoiceAfterEdit(booking.id, outcome.flow, outcome.session);
+    const discountAmount = (r: PickupDiscountRecord | null) => (r ? new Decimal(r.amount).toFixed(2) : "0.00");
 
     const diff = changedFields(
       {
@@ -1432,6 +1598,8 @@ export const EditPickup = async (req: Request, res: Response) => {
         fuelLevel: currentFuel,
         fastagBalance: money(booking.pickupFastagBalance)?.toFixed(2) ?? null,
         safetyDeposit: new Decimal(booking.safetyDeposit.toString()).toFixed(2),
+        pickupDiscount: discountAmount(outcome.discountEdit.current),
+        pickupDiscountReason: outcome.discountEdit.current?.reason ?? null,
         dlStatus: booking.dlStatus,
         drivingLicenceNumber: dlNumber?.previous ?? null,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel }))),
@@ -1441,6 +1609,8 @@ export const EditPickup = async (req: Request, res: Response) => {
         fuelLevel: fuelChange ?? undefined,
         fastagBalance: fastagChange != null ? fastagChange.toFixed(2) : undefined,
         safetyDeposit: depositChange ? depositChange.toFixed(2) : undefined,
+        pickupDiscount: outcome.discountEdit.moneyChanged ? discountAmount(outcome.discountEdit.record) : undefined,
+        pickupDiscountReason: outcome.discountEdit.changed ? outcome.discountEdit.record?.reason ?? null : undefined,
         dlStatus: dlStatusChange ?? undefined,
         drivingLicenceNumber: dlNumber?.drivingLicenceNumber,
         photos: photosChange

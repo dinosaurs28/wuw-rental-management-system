@@ -35,13 +35,15 @@ export class CounterGuardError extends Error {
     public readonly status: StatusCode,
     public readonly code: CounterGuardCode,
     message: string,
+    /** Extra fields for the client, e.g. `proofPosition` (which payment photo, 1–3). */
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "CounterGuardError";
   }
 
   toJSON() {
-    return { success: false, message: this.message, code: this.code };
+    return { success: false, message: this.message, code: this.code, ...this.details };
   }
 }
 

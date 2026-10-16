@@ -13,7 +13,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
 import { claimUtr, CounterGuardError, normalizeUtr } from "./counter-guard.service.js";
-import { claimPaymentProof } from "./payment-proof.service.js";
+import { claimPaymentProofs, proofPhotosCreate } from "./payment-proof.service.js";
 import { addFleetCredit } from "./customer-credit.service.js";
 import Decimal from "decimal.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
@@ -132,17 +132,27 @@ export async function confirmBookingPayment(
   // The UTR / payment photo given at booking time rides on the pricing snapshot
   // until now (UPI: `upi`; split: `split` with its cash and UPI parts; credit: `credit`).
   const snapshot = booking.pricingSnapshot as {
-    upi?: { utr?: string | null; proofFileId?: string | null };
-    split?: { cash?: number; upi?: number; utr?: string | null; proofFileId?: string | null };
+    upi?: { utr?: string | null; proofFileId?: string | null; proofFileIds?: string[] };
+    split?: { cash?: number; upi?: number; utr?: string | null; proofFileId?: string | null; proofFileIds?: string[] };
     credit?: { collateral?: string };
   } | null;
   const counterSnap = isUpi ? snapshot?.upi : isSplit ? snapshot?.split : undefined;
-  const proofFile = counterSnap?.proofFileId
-    ? await prisma.fileObject.findUnique({
-        where: { publicId: counterSnap.proofFileId },
+  // Every payment photo (Oct 18 2026: up to 3, slot order); older holds carry one
+  const proofIds = Array.isArray(counterSnap?.proofFileIds) && counterSnap.proofFileIds.length
+    ? counterSnap.proofFileIds
+    : counterSnap?.proofFileId
+      ? [counterSnap.proofFileId]
+      : [];
+  const proofRows = proofIds.length
+    ? await prisma.fileObject.findMany({
+        where: { publicId: { in: proofIds } },
         select: { id: true, publicId: true },
       })
-    : null;
+    : [];
+  const proofFiles = proofIds
+    .map((publicId) => proofRows.find((f) => f.publicId === publicId))
+    .filter((f): f is { id: number; publicId: string } => !!f);
+  const proofFile = proofFiles[0] ?? null;
   // Older holds carry only a UTR — still required then (INVALID_UTR as before)
   const upiUtr = (isUpi || isSplit) && (counterSnap?.utr || !proofFile)
     ? normalizeUtr(counterSnap?.utr)
@@ -181,7 +191,7 @@ export async function confirmBookingPayment(
         // Claim inside the transaction: the UTR / payment photo may have been used
         // for another payment while this booking sat on HOLD.
         if (upiUtr) await claimUtr(upiUtr, tx);
-        if (proofFile) await claimPaymentProof(proofFile, tx);
+        if (proofFiles.length) await claimPaymentProofs(proofFiles, tx);
 
         const bookingUpdateData: any = {
           status: BookingStatus.CONFIRMED,
@@ -338,6 +348,7 @@ export async function confirmBookingPayment(
             onlineGateway:       isCash ? null : isUpi || isSplit ? "UPI" : "RAZORPAY",
             // Photo of the customer's payment screen (#3)
             proofFileId:         proofFile?.id ?? null,
+            proofPhotos:         proofPhotosCreate(proofFiles),
             notes:               !isCash && gatewayPaymentId ? `razorpay_payment_id=${gatewayPaymentId}` : null,
             collectedById:       collectedAtCounter ? booking.createdById : null,
             collectedAt:         collectedAtCounter ? now : null,
