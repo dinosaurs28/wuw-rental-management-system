@@ -180,7 +180,10 @@ jobs:
               20261015110000_special_pricing_flat \
               20261016090000_operation_adjustments \
               20261016100000_special_pricing_groups \
-              20261017090000_manual_cancel
+              20261017090000_manual_cancel \
+              20261018090000_customer_age \
+              20261018110000_payment_proofs \
+              20261018120000_photo_variants
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

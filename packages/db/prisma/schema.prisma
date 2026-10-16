@@ -343,6 +343,9 @@ model Customer {
   user               User          @relation(fields: [userId], references: [id])
   alternatePhone     String?
   dob                String?
+  // Age in years, entered on the profile form (replaced dob, Oct 2026). Old
+  // customers may have only dob — derive their age from it.
+  age                Int?
   addressLine1       String        @default("")
   city               String        @default("")
   state              String        @default("")
@@ -411,6 +414,9 @@ model FileObject {
   // (null = other files and photos uploaded before Oct 15 2026): such a photo
   // can only be removed or attached to a swap from that branch
   uploadedBranchId Int?
+  // Smaller copy (~1200 px JPEG) of a public pickup / return / damage photo,
+  // shown in the drop screen strips; null = not generated (yet) — use `key`
+  displayKey    String?
   createdAt     DateTime       @default(now())
   bookingPhotos BookingPhoto[]
   customerKycs  CustomerKyc[]
@@ -423,6 +429,7 @@ model FileObject {
   customerQrPhotos  Customer[]     @relation("CustomerQrPhoto")
   bookingQrPhotos   Booking[]      @relation("BookingQrPhoto")
   paymentProofs     PaymentTransaction[] @relation("PaymentProof")
+  paymentProofPhotos PaymentTransactionProof[] @relation("PaymentTransactionProofFile")
   promoBanners      PromoBanner[]  @relation("PromoBannerImage")
 
   @@index([publicId])
@@ -1835,6 +1842,9 @@ model PaymentTransaction {
   // (merchant QR) payments; replaces typing the UTR
   proofFileId     Int?
   proofFile       FileObject?         @relation("PaymentProof", fields: [proofFileId], references: [id], onDelete: SetNull)
+  // Every payment-screen photo (1–3, a customer may pay in several UPI
+  // transactions); proofFileId stays the first one for older readers
+  proofPhotos     PaymentTransactionProof[]
 
   notes           String?
 
@@ -1856,6 +1866,24 @@ model PaymentTransaction {
   @@index([status, createdAt])
   @@index([onlineTransactionRef])
   @@index([proofFileId])
+}
+
+// Photos of the customer's UPI payment-success screens backing one counter UPI
+// payment (Oct 2026): position 1 is required (= PaymentTransaction.proofFileId),
+// 2 and 3 are optional for a payment split over several UPI transactions.
+model PaymentTransactionProof {
+  id            Int                @id @default(autoincrement())
+  transactionId Int
+  fileId        Int
+  position      Int
+  createdAt     DateTime           @default(now())
+
+  transaction   PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  file          FileObject         @relation("PaymentTransactionProofFile", fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([transactionId, position])
+  @@unique([transactionId, fileId])
+  @@index([fileId])
 }
 
 // Refund request lifecycle. Cash refunds require manager approval before payout.
