@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { updateVehicleUseCasesSchema } from "@repo/schemas";
+import { normalizeUseCases, updateVehicleUseCasesSchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 
@@ -36,7 +36,7 @@ export const GetAllVehicles = async (req: Request, res: Response) => {
 
     return res.status(StatusCode.OK).json({
       message: "Vehicles fetched successfully",
-      data: vehicles,
+      data: vehicles.map((v) => ({ ...v, useCases: normalizeUseCases(v.useCases) })),
     });
   } catch (error) {
     console.error("Get All Vehicles Error:", error);
@@ -50,8 +50,8 @@ export const GetAllVehicles = async (req: Request, res: Response) => {
  * Update Vehicle Trip-type Tags (Admin)
  * PATCH /admin/dashboard/vehicles/:publicId/use-cases
  *
- * Body: { useCases: ("HIGHWAY" | "HILL_STATION" | "LONG_DRIVE")[] } — replaces the full set;
- * an empty array clears all tags.
+ * Body: { useCases: ("LOCAL" | "OUT_OF_UDUPI")[] } — replaces the full set; an empty
+ * array clears all tags. Legacy HIGHWAY / HILL_STATION / LONG_DRIVE save as OUT_OF_UDUPI.
  */
 export const UpdateVehicleUseCases = async (req: Request, res: Response) => {
   try {
@@ -61,7 +61,7 @@ export const UpdateVehicleUseCases = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({
         success: false,
         code: "INVALID_USE_CASES",
-        message: "Trip types must be any of HIGHWAY, HILL_STATION, LONG_DRIVE",
+        message: "Trip types must be any of LOCAL (Udupi/Manipal), OUT_OF_UDUPI (Out of Udupi)",
       });
     }
 
@@ -92,7 +92,7 @@ export const UpdateVehicleUseCases = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Vehicle trip types updated",
-      data: updated,
+      data: { ...updated, useCases: normalizeUseCases(updated.useCases) },
     });
   } catch (error) {
     console.error("Update Vehicle Use Cases Error:", error);

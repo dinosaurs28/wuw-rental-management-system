@@ -1,5 +1,10 @@
-import { prisma, BookingStatus, Vehicle, VehicleStatus } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleTypeClass } from "@repo/database/client";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
+import {
+  classifyReplacements,
+  swapWindowFor,
+  type SwapWindowBooking,
+} from "../vehicle-swap/swap-replacements.js";
 
 export interface ConflictingBooking {
   bookingId: number;
@@ -125,39 +130,38 @@ class ExtensionAvailabilityService {
   }
 
   /**
-   * Find alternative vehicles of same or higher category that are not booked
-   * during the specified window.
+   * Cars `booking` could be moved onto: the vehicle swap rule
+   * (classifyReplacements — same branch and vehicle type, same or higher
+   * category, insurance through the end, free by the customer booking rule
+   * from max(now, booking start) to its end, or `availabilityEndAt` when later
+   * — the extended end). The swap itself re-checks the pick under its locks.
    */
-  async findAlternativeVehicles(
-    branchId: number,
-    minCategoryRank: number,
-    fromAt: Date,
-    toAt: Date,
-    excludeVehicleIds: number[],
-  ): Promise<AlternativeVehicle[]> {
-    // Get vehicles of same/higher category not currently booked in the window
-    const vehicles = await prisma.vehicle.findMany({
+  async findAlternativeVehicles(params: {
+    booking: SwapWindowBooking;
+    currentVehicle: { id: number; typeClass: VehicleTypeClass; categoryRank: number };
+    availabilityEndAt?: Date;
+    excludeVehicleIds?: number[];
+  }): Promise<AlternativeVehicle[]> {
+    const now = new Date();
+    const window = await swapWindowFor(params.booking, now, params.availabilityEndAt);
+    const fleet = await prisma.vehicle.findMany({
       where: {
-        branchId,
-        status: VehicleStatus.AVAILABLE,
+        branchId: params.booking.branchId,
         deletedAt: null,
-        id: { notIn: excludeVehicleIds },
-        category: { rank: { gte: minCategoryRank } },
-        // Exclude vehicles that have conflicting bookings in the window
-        bookingItems: {
-          none: {
-            booking: {
-              status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
-              AND: [{ endAt: { gt: fromAt } }, { startAt: { lt: toAt } }],
-            },
-          },
-        },
+        id: { notIn: [params.currentVehicle.id, ...(params.excludeVehicleIds ?? [])] },
+        category: { typeClass: params.currentVehicle.typeClass },
       },
       include: { category: true },
       orderBy: [{ category: { rank: "asc" } }, { make: "asc" }],
     });
+    const { free } = await classifyReplacements(fleet, {
+      booking: params.booking,
+      currentRank: params.currentVehicle.categoryRank,
+      window,
+      now,
+    });
 
-    return vehicles.map((v) => ({
+    return free.map((v) => ({
       id: v.id,
       publicId: v.publicId,
       make: v.make,

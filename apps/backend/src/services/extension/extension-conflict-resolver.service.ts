@@ -5,6 +5,7 @@ import {
   type AlternativeVehicle,
 } from "./extension-availability.service.js";
 import { ExtensionResolutionType } from "@repo/database/client";
+import { SWAP_WINDOW_BOOKING_SELECT } from "../vehicle-swap/swap-replacements.js";
 
 export interface ResolutionOption {
   type: ExtensionResolutionType;
@@ -63,14 +64,25 @@ class ExtensionConflictResolverService {
     // Vehicle not available — compute resolution alternatives
     const conflictingBookings = availability.conflictingBookings;
 
-    // 2. Can we swap the current booking to another vehicle?
-    const alternativesForCurrent = await extensionAvailabilityService.findAlternativeVehicles(
-      branchId,
-      currentCategoryRank,
-      currentEndAt, // from current end (extension window)
-      newEndAt,
-      [currentVehicleId],
-    );
+    // 2. Can we swap the current booking to another vehicle? The swap happens
+    // now, so the replacement must be free from now (or the start) through the
+    // extended end — the swap rule, as the commit re-checks it
+    const [booking, currentVehicle] = await Promise.all([
+      prisma.booking.findUniqueOrThrow({ where: { id: bookingId }, select: SWAP_WINDOW_BOOKING_SELECT }),
+      prisma.vehicle.findUniqueOrThrow({
+        where: { id: currentVehicleId },
+        select: { id: true, category: { select: { typeClass: true } } },
+      }),
+    ]);
+    const alternativesForCurrent = await extensionAvailabilityService.findAlternativeVehicles({
+      booking,
+      currentVehicle: {
+        id: currentVehicle.id,
+        typeClass: currentVehicle.category.typeClass,
+        categoryRank: currentCategoryRank,
+      },
+      availabilityEndAt: newEndAt,
+    });
 
     if (alternativesForCurrent.length > 0) {
       options.push({
@@ -143,20 +155,25 @@ class ExtensionConflictResolverService {
       // A checkout in progress isn't a booking to reassign — only waited out
       if (conflict.kind === "HOLD") return null;
 
-      // Get category rank for the conflicting booking's vehicle
-      const vehicle = await prisma.vehicle.findUnique({
-        where: { id: conflict.vehicleId },
-        include: { category: true },
-      });
-      if (!vehicle) return null;
+      // The conflicting booking's car (type and category it must keep)
+      const [vehicle, conflictBooking] = await Promise.all([
+        prisma.vehicle.findUnique({
+          where: { id: conflict.vehicleId },
+          include: { category: true },
+        }),
+        prisma.booking.findUnique({ where: { id: conflict.bookingId }, select: SWAP_WINDOW_BOOKING_SELECT }),
+      ]);
+      if (!vehicle || !conflictBooking || conflictBooking.branchId !== branchId) return null;
 
-      const alternatives = await extensionAvailabilityService.findAlternativeVehicles(
-        branchId,
-        vehicle.category.rank,
-        conflict.startAt,
-        conflict.endAt,
-        [conflict.vehicleId],
-      );
+      // Moving that booking is a swap too: the same rule over its own window
+      const alternatives = await extensionAvailabilityService.findAlternativeVehicles({
+        booking: conflictBooking,
+        currentVehicle: {
+          id: vehicle.id,
+          typeClass: vehicle.category.typeClass,
+          categoryRank: vehicle.category.rank,
+        },
+      });
 
       if (alternatives.length === 0) return null; // Can't resolve all conflicts
 

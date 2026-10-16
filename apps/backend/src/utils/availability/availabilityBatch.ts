@@ -67,10 +67,15 @@ async function findBlockingItems(
   start: Date,
   end: Date,
   now: Date,
+  excludeBookingId?: number,
 ) {
   if (vehicleIds.length === 0) return [];
   const rows = await db.bookingItem.findMany({
-    where: { vehicleId: { in: vehicleIds }, ...blockingCandidateItemWhere(start, end) },
+    where: {
+      vehicleId: { in: vehicleIds },
+      ...blockingCandidateItemWhere(start, end),
+      ...(excludeBookingId != null && { NOT: { bookingId: excludeBookingId } }),
+    },
     select: { vehicleId: true, booking: { select: { publicId: true, ...BLOCKING_BOOKING_SELECT } } },
     orderBy: { booking: { startAt: "asc" } },
   });
@@ -117,6 +122,7 @@ async function checkHoldsForVehicles(
   vehicleIdToPublicId: Map<number, string>,
   start: Date,
   end: Date,
+  excludeHoldIds: ReadonlySet<string> = new Set(),
 ): Promise<Set<number>> {
   const unavailable = new Set<number>();
   if (vehicleIdToPublicId.size === 0) return unavailable;
@@ -137,7 +143,9 @@ async function checkHoldsForVehicles(
     for (let i = 0; i < entries.length; i++) {
       const [vehicleId] = entries[i]!;
       const result = results[i];
-      const holdIds = (result && !result[0] ? (result[1] as string[]) : null) ?? [];
+      const holdIds = ((result && !result[0] ? (result[1] as string[]) : null) ?? []).filter(
+        (id) => !excludeHoldIds.has(id),
+      );
       if (holdIds.length > 0) {
         vehicleHoldIds.push({ vehicleId, holdIds });
       }
@@ -326,29 +334,66 @@ export type UnavailableReason =
   | { code: "ON_RENT"; endAt: Date }
   /** A confirmed booking overlaps the window. */
   | { code: "BOOKED"; startAt: Date; endAt: Date }
-  /** A customer checkout is holding it for part of the window. */
+  /**
+   * A customer checkout is holding it for part of the window (a Redis hold, or
+   * with includeHoldRows an unexpired HOLD booking).
+   */
   | { code: "ON_HOLD" };
+
+export interface ExplainUnavailableOptions {
+  /** Read through this client (a transaction that holds the vehicle row locks). */
+  db?: Prisma.TransactionClient;
+  /**
+   * Also count unexpired HOLD bookings overlapping the window — the extra check
+   * booking creation makes under its lock (lockAndFindBlockedVehicleIds).
+   */
+  includeHoldRows?: boolean;
+  /** Ignore this booking's own rows (a booking moved onto another car). */
+  excludeBookingId?: number;
+  /** Ignore these Redis holds (a booking's own hold id is its publicId). */
+  excludeHoldIds?: ReadonlySet<string>;
+  now?: Date;
+}
 
 /**
  * getUnavailableVehicleIds with the reason per vehicle — the same three checks
  * (blocking bookings, Redis holds, hand-set OUT_FOR_RENTAL), so a vehicle is in
  * this map exactly when it is in that set. One reason per vehicle, most
  * lasting first: hand-set OUT_FOR_RENTAL, overdue, on rent, booked, hold.
+ * `options` adds booking creation's live-HOLD-row check, a transaction client
+ * and the moved booking's own rows to ignore (vehicle swaps).
  */
 export async function explainUnavailableVehicles(
   vehicleIds: number[],
   start: Date,
   end: Date,
   vehicleIdToPublicId: Map<number, string>,
+  options: ExplainUnavailableOptions = {},
 ): Promise<Map<number, UnavailableReason>> {
   const reasons = new Map<number, UnavailableReason>();
   if (vehicleIds.length === 0) return reasons;
 
-  const now = new Date();
-  const [items, holdConflicts, manualOutForRental] = await Promise.all([
-    findBlockingItems(prisma, vehicleIds, start, end, now),
-    checkHoldsForVehicles(vehicleIdToPublicId, start, end),
-    getManualOutForRentalIds(vehicleIds),
+  const db = options.db ?? prisma;
+  const now = options.now ?? new Date();
+  const [items, holdConflicts, manualOutForRental, holdRows] = await Promise.all([
+    findBlockingItems(db, vehicleIds, start, end, now, options.excludeBookingId),
+    checkHoldsForVehicles(vehicleIdToPublicId, start, end, options.excludeHoldIds),
+    getManualOutForRentalIds(vehicleIds, db),
+    options.includeHoldRows
+      ? db.bookingItem.findMany({
+          where: {
+            vehicleId: { in: vehicleIds },
+            booking: {
+              status: BookingStatus.HOLD,
+              holdExpiresAt: { gt: now },
+              startAt: { lt: end },
+              endAt: { gt: start },
+              ...(options.excludeBookingId != null && { id: { not: options.excludeBookingId } }),
+            },
+          },
+          select: { vehicleId: true },
+        })
+      : Promise.resolve([] as Array<{ vehicleId: number }>),
   ]);
 
   const rank = (r: UnavailableReason): number =>
@@ -370,6 +415,7 @@ export async function explainUnavailableVehicles(
     }
   }
   for (const id of holdConflicts) offer(id, { code: "ON_HOLD" });
+  for (const { vehicleId } of holdRows) offer(vehicleId, { code: "ON_HOLD" });
 
   return reasons;
 }

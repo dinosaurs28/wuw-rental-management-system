@@ -7,7 +7,7 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../se
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability, invalidateVehiclePricing, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { VehicleStatus } from "@repo/database/client";
-import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS } from "@repo/schemas";
+import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS, normalizeUseCases } from "@repo/schemas";
 import { z } from "zod";
 import Decimal from "decimal.js";
 import { branchRentRates, rentColumns, weekendRentColumns } from "../../services/pricing/rent-columns.service.js";
@@ -582,6 +582,7 @@ export const GetVehicleById = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       data: {
         ...vehicle,
+        useCases: normalizeUseCases(vehicle.useCases),
         policyNumber: latestInsurance?.policyNumber || "",
         provider: latestInsurance?.provider || "",
         gstRates,

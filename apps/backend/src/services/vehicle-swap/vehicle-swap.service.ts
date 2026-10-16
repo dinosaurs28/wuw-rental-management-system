@@ -45,9 +45,13 @@ import { PricingEngineService, heldToClosingOf, weekendDaysOf } from "../pricing
 import { bookingCouponCode } from "../discount/coupon-validation.service.js";
 import { recordBookingSpecialRules } from "../pricing/branch-special-rules.service.js";
 import {
-  explainUnavailableVehicles,
-  getUnavailableVehicleIds,
-} from "../../utils/availability/availabilityBatch.js";
+  DATE_CONFLICT_CODES,
+  SWAP_VEHICLE_UNAVAILABLE,
+  swapUnavailableMessage,
+  type SwapExclusionCode,
+  type SwapWindow,
+} from "./swap-availability.js";
+import { classifyReplacements, swapWindowFor } from "./swap-replacements.js";
 import {
   invalidateVehicleAvailability,
   invalidateGroupListingCache,
@@ -245,17 +249,7 @@ export interface SwapExcludedVehicle {
   model: string;
   regNo: string;
   categoryName: string;
-  code:
-    | "STATUS_OUT_FOR_RENTAL"
-    | "MANUAL_OUT_FOR_RENTAL"
-    | "STATUS_MAINTENANCE"
-    | "STATUS_INACTIVE"
-    | "DAMAGE_REVIEW_PENDING"
-    | "INSURANCE_EXPIRES"
-    | "LOWER_CATEGORY"
-    | "STILL_OUT"
-    | "BOOKED"
-    | "ON_HOLD";
+  code: SwapExclusionCode;
   reason: string;
 }
 
@@ -440,11 +434,11 @@ export class VehicleSwapService {
   /**
    * Replacement candidates for a booking, with the price-difference preview.
    *
-   * Valid replacement: same branch and vehicle type, AVAILABLE, not deleted,
-   * insurance valid past the booking's end, category rank ≥ the current car's,
-   * not out on any PICKED_UP booking (covers overdue rentals), and no
-   * CONFIRMED/PICKED_UP booking or checkout hold overlapping
-   * [max(now, startAt), endAt). Same-category cars first, then upgrades.
+   * Valid replacement: same branch and vehicle type, not deleted, and free for
+   * the rest of the rental by the customer booking rule (swap-availability.ts:
+   * eligibility, then CONFIRMED / PICKED_UP bookings with the turnaround grace,
+   * checkouts in progress and hand-set Out for Rental over
+   * [max(now, startAt), endAt)). Same-category cars first, then upgrades.
    *
    * Refuses (VehicleSwapError) exactly like the swap itself would, so the
    * screen can show why before staff pick a car. The other same-type cars of
@@ -459,11 +453,10 @@ export class VehicleSwapService {
     await this.assertSwappable(booking, { source: "STAFF", effectiveEndAt: booking.endAt, now });
 
     const currentVehicle = booking.items[0]!.vehicle;
-    const windowStart = new Date(Math.max(now.getTime(), booking.startAt.getTime()));
-    const windowEnd = booking.endAt;
+    const window = await swapWindowFor(booking, now);
 
-    // Every same-type car of the branch; the rules above are applied below so
-    // the ones that fail come back in `excluded` with the reason
+    // Every same-type car of the branch; the rule is applied below so the ones
+    // that fail come back in `excluded` with the reason
     const fleet = await prisma.vehicle.findMany({
       where: {
         branchId: booking.branchId,
@@ -480,72 +473,23 @@ export class VehicleSwapService {
         },
       },
     });
-    // Still out with a customer (incl. overdue rentals past their endAt)
-    const outOnRental = new Set(
-      (
-        await prisma.bookingItem.findMany({
-          where: { vehicleId: { in: fleet.map((v) => v.id) }, booking: { status: BookingStatus.PICKED_UP } },
-          select: { vehicleId: true },
-        })
-      ).map((i) => i.vehicleId),
-    );
 
-    const excluded: SwapExcludedVehicle[] = [];
-    const exclude = (v: (typeof fleet)[number], code: SwapExcludedVehicle["code"], reason: string) =>
-      excluded.push({
-        id: v.id,
-        publicId: v.publicId,
-        make: v.make,
-        model: v.model,
-        regNo: v.regNo,
-        categoryName: v.category.name,
-        code,
-        reason,
-      });
-
-    const vehicles = fleet.filter((v) => {
-      if (v.status !== VehicleStatus.AVAILABLE) {
-        if (v.status === VehicleStatus.OUT_FOR_RENTAL) {
-          if (outOnRental.has(v.id)) exclude(v, "STATUS_OUT_FOR_RENTAL", "Out on another rental");
-          else exclude(v, "MANUAL_OUT_FOR_RENTAL", "Set Out for Rental by the branch manager");
-        } else if (v.status === VehicleStatus.MAINTENANCE) exclude(v, "STATUS_MAINTENANCE", "In maintenance");
-        else if (v.status === VehicleStatus.MANAGER_REPORTED) {
-          exclude(v, "DAMAGE_REVIEW_PENDING", "Damage review pending with the branch manager");
-        } else exclude(v, "STATUS_INACTIVE", "Inactive");
-        return false;
-      }
-      if (v.insuranceExpiry.getTime() <= windowEnd.getTime()) {
-        exclude(v, "INSURANCE_EXPIRES", `Insurance expires on ${formatIst(v.insuranceExpiry)}, before this rental ends`);
-        return false;
-      }
-      if (v.category.rank < currentVehicle.category.rank) {
-        exclude(v, "LOWER_CATEGORY", `Lower category (${v.category.name})`);
-        return false;
-      }
-      if (outOnRental.has(v.id)) {
-        exclude(v, "STILL_OUT", "Still out on another rental");
-        return false;
-      }
-      return true;
+    const { free, excluded: rejected } = await classifyReplacements(fleet, {
+      booking,
+      currentRank: currentVehicle.category.rank,
+      window,
+      now,
     });
-
-    // Bookings and checkout holds in the rest of the rental (the same checks as
-    // getUnavailableVehicleIds, with the reason)
-    const unavailable = await explainUnavailableVehicles(
-      vehicles.map((v) => v.id),
-      windowStart,
-      windowEnd,
-      new Map(vehicles.map((v) => [v.id, v.publicId])),
-    );
-    const free = vehicles.filter((v) => {
-      const why = unavailable.get(v.id);
-      if (!why) return true;
-      if (why.code === "ON_HOLD") exclude(v, "ON_HOLD", "Being booked by a customer for part of this rental");
-      else if (why.code === "BOOKED") {
-        exclude(v, "BOOKED", `Booked ${formatIst(why.startAt)} – ${formatIst(why.endAt)}, during this rental`);
-      } else exclude(v, "STILL_OUT", "Still out on another rental");
-      return false;
-    });
+    const excluded: SwapExcludedVehicle[] = rejected.map(({ vehicle: v, exclusion }) => ({
+      id: v.id,
+      publicId: v.publicId,
+      make: v.make,
+      model: v.model,
+      regNo: v.regNo,
+      categoryName: v.category.name,
+      code: exclusion.code,
+      reason: exclusion.reason,
+    }));
     excluded.sort(
       (a, b) => a.make.localeCompare(b.make) || a.model.localeCompare(b.model) || a.regNo.localeCompare(b.regNo),
     );
@@ -622,7 +566,7 @@ export class VehicleSwapService {
         readingsRequired: stage === "ACTIVE_RENTAL",
         startAt: booking.startAt,
         endAt: booking.endAt,
-        remainingFrom: windowStart,
+        remainingFrom: new Date(Math.max(now.getTime(), booking.startAt.getTime())),
         remainingFraction: fraction.toFixed(4),
         currentVehicle: {
           id: currentVehicle.id,
@@ -844,7 +788,8 @@ export class VehicleSwapService {
       }
     }
 
-    // Serialise with extension commits on either car (the extension path already holds them)
+    // Serialise with extension commits and other swaps on either car (the
+    // extension path already holds them); the row locks below are the backstop
     const lockedVehicleIds: number[] = [];
     if (source === "STAFF") {
       const ids = [originalVehicle.id, replacement.id];
@@ -859,7 +804,7 @@ export class VehicleSwapService {
         throw new VehicleSwapError(
           StatusCode.CONFLICT,
           "VEHICLE_BUSY",
-          "One of these vehicles is being processed by an extension right now. Try again in a moment.",
+          "One of these vehicles is being swapped or extended right now. Try again in a moment.",
         );
       }
       if (acquired) lockedVehicleIds.push(...acquired.acquired);
@@ -901,8 +846,11 @@ export class VehicleSwapService {
             tx.vehicle.findUniqueOrThrow({ where: { id: replacement.id }, include: { category: true } }),
           ]);
 
-          const windowStart = new Date(Math.max(now.getTime(), locked.startAt.getTime()));
-          await this.assertReplacementValid(db, locked, lockedOriginal, newVehicle, windowStart, effectiveEndAt);
+          // The rest of the rental (to the extension end on the extension path),
+          // checked by the customer booking rule now the rows are locked: a
+          // concurrent swap, booking or checkout for the car has committed or waits
+          const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx);
+          await this.assertReplacementValid(tx, locked, lockedOriginal, newVehicle, window, now);
 
           // The returning car can't come back below the reading it started this segment at
           if (stage === "ACTIVE_RENTAL" && storedReadings.originalVehicleEndOdometer != null) {
@@ -1457,24 +1405,18 @@ export class VehicleSwapService {
 
   /**
    * Replacement checks under the vehicle row locks: same branch and vehicle
-   * type, AVAILABLE, not deleted, insurance valid past the end, rank ≥ the
-   * current car, not out on any PICKED_UP booking, and no CONFIRMED/PICKED_UP
-   * booking or checkout hold overlapping [windowStart, windowEnd).
+   * type, not deleted, and free for `window` by the swap rule
+   * (classifyReplacements — the candidate list's rule, read through the
+   * transaction). Taken for part of the window → 409 SWAP_VEHICLE_UNAVAILABLE.
    */
   private async assertReplacementValid(
-    db: Db,
+    tx: Prisma.TransactionClient,
     booking: SwapBooking,
     original: SwapBooking["items"][number]["vehicle"],
     replacement: SwapBooking["items"][number]["vehicle"],
-    windowStart: Date,
-    windowEnd: Date,
+    window: SwapWindow,
+    now: Date,
   ): Promise<void> {
-    const unavailable = (message: string) =>
-      new VehicleSwapError(StatusCode.CONFLICT, "VEHICLE_NOT_AVAILABLE", message, {
-        vehicleId: replacement.id,
-        regNo: replacement.regNo,
-      });
-
     if (replacement.branchId !== booking.branchId) {
       throw new VehicleSwapError(
         StatusCode.NOT_FOUND,
@@ -1483,14 +1425,11 @@ export class VehicleSwapService {
       );
     }
     if (replacement.deletedAt) {
-      throw unavailable(`${replacement.regNo} has been removed from the fleet.`);
-    }
-    if (replacement.status !== VehicleStatus.AVAILABLE) {
-      throw unavailable(`${replacement.regNo} is not available right now (status: ${replacement.status}).`);
-    }
-    if (replacement.insuranceExpiry.getTime() <= windowEnd.getTime()) {
-      throw unavailable(
-        `${replacement.regNo}'s insurance expires on ${formatIst(replacement.insuranceExpiry)}, before this rental ends.`,
+      throw new VehicleSwapError(
+        StatusCode.CONFLICT,
+        "VEHICLE_NOT_AVAILABLE",
+        `${replacement.regNo} has been removed from the fleet.`,
+        { vehicleId: replacement.id, regNo: replacement.regNo },
       );
     }
     if (replacement.category.typeClass !== original.category.typeClass) {
@@ -1500,52 +1439,43 @@ export class VehicleSwapService {
         `${replacement.regNo} is a different type of vehicle from ${original.regNo}.`,
       );
     }
-    if (replacement.category.rank < original.category.rank) {
+
+    const { excluded } = await classifyReplacements([replacement], {
+      booking,
+      currentRank: original.category.rank,
+      window,
+      now,
+      db: tx,
+    });
+    const exclusion = excluded[0]?.exclusion;
+    if (!exclusion) return;
+    if (exclusion.code === "LOWER_CATEGORY") {
       throw new VehicleSwapError(
         StatusCode.BAD_REQUEST,
         "CATEGORY_DOWNGRADE",
         "Cannot swap to a lower category vehicle",
       );
     }
-
-    const [outOnRental, overlapping] = await Promise.all([
-      db.bookingItem.findFirst({
-        where: {
-          vehicleId: replacement.id,
-          booking: { status: BookingStatus.PICKED_UP, id: { not: booking.id } },
-        },
-        select: { id: true },
-      }),
-      db.bookingItem.findFirst({
-        where: {
-          vehicleId: replacement.id,
-          booking: {
-            id: { not: booking.id },
-            status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
-            startAt: { lt: windowEnd },
-            endAt: { gt: windowStart },
-          },
-        },
-        select: { id: true },
-      }),
-    ]);
-    if (outOnRental) {
-      throw unavailable(`${replacement.regNo} is still out on another rental.`);
+    const extra = {
+      vehicleId: replacement.id,
+      regNo: replacement.regNo,
+      reasonCode: exclusion.code,
+      reason: exclusion.reason,
+    };
+    if (DATE_CONFLICT_CODES.has(exclusion.code)) {
+      throw new VehicleSwapError(
+        StatusCode.CONFLICT,
+        SWAP_VEHICLE_UNAVAILABLE,
+        swapUnavailableMessage(replacement.regNo, exclusion),
+        extra,
+      );
     }
-    if (overlapping) {
-      throw unavailable(`${replacement.regNo} is booked for part of this rental period.`);
-    }
-
-    // Checkout holds live in Redis (falls back to the database check above if Redis is down)
-    const held = await getUnavailableVehicleIds(
-      [replacement.id],
-      windowStart,
-      windowEnd,
-      new Map([[replacement.id, replacement.publicId]]),
+    throw new VehicleSwapError(
+      StatusCode.CONFLICT,
+      "VEHICLE_NOT_AVAILABLE",
+      `${replacement.regNo} can't take over this booking: ${exclusion.reason}.`,
+      extra,
     );
-    if (held.has(replacement.id)) {
-      throw unavailable(`${replacement.regNo} is being booked by a customer for part of this rental period.`);
-    }
   }
 
   /**

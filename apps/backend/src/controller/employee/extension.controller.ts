@@ -28,6 +28,7 @@ import {
 import { BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { BranchScheduleError } from "../../utils/booking/branchScheduleValidator.js";
 import { DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import { VehicleSwapError } from "../../services/vehicle-swap/vehicle-swap.service.js";
 import { UpiQrError } from "../../services/payment/upi-qr.service.js";
 import {
   buildExtensionLimits,
@@ -220,6 +221,12 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });
       return;
     }
+    // A swap the extension tried and the vehicle swap rule refused (e.g. 409
+    // SWAP_VEHICLE_UNAVAILABLE: the car is taken for part of the rental)
+    if (error instanceof VehicleSwapError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("CommitExtension Error:", error);
     if (error.message?.includes("not found")) {
       res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -232,6 +239,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     if (
       error.message?.includes("availability changed") ||
       error.message?.includes("being processed") ||
+      // the next booking can't be moved onto that car (vehicle swap rule)
+      error.message?.includes("no longer available") ||
+      error.message?.includes("can't be assigned") ||
+      error.message?.includes("can't be reassigned") ||
       error.message?.includes("cannot be committed")
     ) {
       res.status(StatusCode.CONFLICT).json({ message: error.message });

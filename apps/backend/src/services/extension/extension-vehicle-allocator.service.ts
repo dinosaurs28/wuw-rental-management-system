@@ -2,7 +2,9 @@ import { prisma, SwapReason, VehicleSwap } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { VehicleSwapService } from "../vehicle-swap/vehicle-swap.service.js";
 import { auditService } from "../audit/audit.service.js";
-import { AuditCategory, AuditSeverity } from "@repo/database/client";
+import { AuditCategory, AuditSeverity, BookingStatus } from "@repo/database/client";
+import { classifyReplacements, swapWindowFor } from "../vehicle-swap/swap-replacements.js";
+import { swapUnavailableMessage } from "../vehicle-swap/swap-availability.js";
 
 const vehicleSwapService = new VehicleSwapService();
 
@@ -82,6 +84,36 @@ class ExtensionVehicleAllocatorService {
       throw new Error(
         `Cannot assign ${newVehicle.publicId} to booking — it is a lower category than the original vehicle`,
       );
+    }
+
+    // Moving the booking is a vehicle swap: same branch and type, a booking not
+    // yet picked up, and the car free for the booking's window by the swap rule
+    // — checked with both vehicle rows locked (id order, as every booking and
+    // swap path locks them), so a concurrent swap or booking can't take it too.
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new Error(`Booking ${booking.publicId} is ${booking.status} — its vehicle can't be reassigned`);
+    }
+    if (
+      newVehicle.branchId !== booking.branchId ||
+      newVehicle.deletedAt ||
+      newVehicle.category.typeClass !== originalVehicle.category.typeClass
+    ) {
+      throw new Error(`${newVehicle.regNo} can't be assigned to booking ${booking.publicId}`);
+    }
+    for (const id of [newVehicle.id, originalVehicle.id].sort((a, b) => a - b)) {
+      await tx.$queryRaw`SELECT id FROM "Vehicle" WHERE id = ${id} FOR UPDATE`;
+    }
+    const lockedNew = await tx.vehicle.findUniqueOrThrow({ where: { id: newVehicle.id }, include: { category: true } });
+    const now = new Date();
+    const { excluded } = await classifyReplacements([lockedNew], {
+      booking,
+      currentRank: originalVehicle.category.rank,
+      window: await swapWindowFor(booking, now, null, tx),
+      now,
+      db: tx,
+    });
+    if (excluded[0]) {
+      throw new Error(swapUnavailableMessage(lockedNew.regNo, excluded[0].exclusion));
     }
 
     // Update the BookingItem to the new vehicle

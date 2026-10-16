@@ -33,9 +33,12 @@ export async function findActiveRental(
  * Of `vehicleIds`, the ones set OUT_FOR_RENTAL by hand: the status is on but no
  * PICKED_UP booking holds the vehicle. These are unavailable for any window.
  */
-export async function getManualOutForRentalIds(vehicleIds: number[]): Promise<Set<number>> {
+export async function getManualOutForRentalIds(
+  vehicleIds: number[],
+  db: Pick<Prisma.TransactionClient, "vehicle"> = prisma,
+): Promise<Set<number>> {
   if (vehicleIds.length === 0) return new Set();
-  const rows = await prisma.vehicle.findMany({
+  const rows = await db.vehicle.findMany({
     where: {
       id: { in: vehicleIds },
       status: VehicleStatus.OUT_FOR_RENTAL,

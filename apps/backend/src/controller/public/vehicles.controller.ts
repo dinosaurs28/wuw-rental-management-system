@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { getVehicleDetailsSchema, parseUseCasesFilter } from "@repo/schemas";
+import { getVehicleDetailsSchema, normalizeUseCases, parseUseCasesFilter, useCaseStoredValues } from "@repo/schemas";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
@@ -93,6 +93,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       offset = "0",
     } = req.query as any;
     // Trip-type tags: comma list or repeated key; unknown values are ignored. OR semantics.
+    // Legacy tags from older app builds (HIGHWAY / HILL_STATION / LONG_DRIVE) filter as OUT_OF_UDUPI.
     const useCaseFilter = parseUseCasesFilter((req.query as any).useCases).sort();
 
     // Parse and validate dates
@@ -160,7 +161,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     }
     if (categoryObj) filters.categoryId = categoryObj.id;
     if (branchObj) filters.branchId = branchObj.id;
-    if (useCaseFilter.length > 0) filters.useCases = { hasSome: useCaseFilter };
+    if (useCaseFilter.length > 0) filters.useCases = { hasSome: useCaseStoredValues(useCaseFilter) };
 
     // ── Fetch vehicles (single query, no skip/take — pagination applied after grouping) ───
 
@@ -396,7 +397,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       imageUrl:       g.imageUrl,
       pricing:        g.pricing,
       pricingDetails: g.pricingDetails,
-      useCases:       Array.from(g.useCases).sort(),
+      useCases:       normalizeUseCases(Array.from(g.useCases)),
     }));
 
     if (sort === "price_low_to_high") {
@@ -594,7 +595,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       advancePayAmount: Number(representativeVehicle.advancePayAmount ?? 0),
       customerPaymentMode: groupCustomerPaymentMode,
       paymentOptions: groupPaymentOptions,
-      useCases: Array.from(new Set(groupVehicles.flatMap((v) => v.useCases))).sort(),
+      useCases: normalizeUseCases(groupVehicles.flatMap((v) => v.useCases)),
     };
 
     try {
@@ -801,7 +802,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       status:           vehicleData.status,
       fastagNumber:     vehicleData.fastagNumber,
       hasFastag:       vehicleData.hasFastag,
-      useCases:         vehicleData.useCases,
+      useCases:         normalizeUseCases(vehicleData.useCases),
       category:         vehicleData.category.name,
       branch:           vehicleData.branch.name,
       branchPublicId:   vehicleData.branch.publicId,
