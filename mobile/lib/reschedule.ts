@@ -69,7 +69,7 @@ export function rescheduleSlots(day: Date, opts: RescheduleOptions, now: Date = 
     !slots.some((s) => s.value === own) &&
     ownAt.getTime() > now.getTime() &&
     ownAt.getTime() <= latest.getTime() &&
-    (!hasOfficeHours(config) || isPickupTimeAllowed(config, ownAt))
+    (!hasOfficeHours(config) || isPickupTimeAllowed(config, ownAt, now))
   ) {
     slots = [...slots, { value: own, label: timeLabel(own) }].sort((a, b) => a.value.localeCompare(b.value));
   }

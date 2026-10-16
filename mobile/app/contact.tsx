@@ -152,7 +152,6 @@ export default function Contact() {
                       {hasOfficeHours(config) ? (
                         <Text style={styles.hoursMuted}>
                           Last pickup {pickupCutoffOf(config)} min before closing
-                          {config.graceMinutes > 0 ? ` · returns accepted up to ${config.graceMinutes} min after closing` : ''}
                         </Text>
                       ) : null}
                     </View>

@@ -7,7 +7,15 @@
 // so a Date instant gives the same answer whatever zone the device is set to.
 // Below the mirror, a mobile-only section turns the rules into picker helpers
 // (time slots, closed days, range fitting, hours labels).
-import { halfDayPackageReturn, isClampedHalfDayReturn, validateBookingWindow, type HalfDayReturn } from './bookingWindow';
+import {
+  LATE_PICKUP_GRACE_MINUTES,
+  halfDayPackageReturn,
+  isClampedHalfDayReturn,
+  istDayNumber,
+  sameDayPickupStatus,
+  validateBookingWindow,
+  type HalfDayReturn,
+} from './bookingWindow';
 import { startOfDay, timeLabel, timeSlotsFor, withTime, type TimeSlot } from './dates';
 
 /**
@@ -19,6 +27,9 @@ export const DEFAULT_BRANCH_HOURS = { openTime: '08:00', closeTime: '23:00' } as
 /**
  * A booking's pickup time must be at least this many minutes before closing
  * (default hours → last pickup 10:30 PM). Returns keep [open, close + grace].
+ * Tonight only, after the last pickup and until closing, a pickup from now up
+ * to closing is taken; after closing, today takes no pickups
+ * (sameDayPickupStatus in ./bookingWindow).
  */
 export const PICKUP_CUTOFF_MINUTES = 30;
 
@@ -50,6 +61,8 @@ export type ScheduleVerdictStatus =
   | 'PICKUP_CLOSED_DAY'
   | 'PICKUP_BEFORE_OPEN'
   | 'PICKUP_AT_OR_AFTER_CLOSE'
+  /** Same-day pickup after the branch closed today (only with `now`). */
+  | 'PICKUP_TODAY_CLOSED'
   | 'RETURN_GRACE'
   | 'RETURN_BUMPED'
   | 'NO_OPEN_DAY_IN_WINDOW'
@@ -77,6 +90,8 @@ export interface ScheduleVerdict {
   reason?: ReturnScheduleReason;
   /** Latest allowed pickup that day (closing − PICKUP_CUTOFF_MINUTES), e.g. "10:30 PM" — set on PICKUP_AT_OR_AFTER_CLOSE */
   lastPickupTime?: string;
+  /** Tonight's late window is open: pickups from now until this time, e.g. "11:00 PM" — set on a same-day PICKUP_AT_OR_AFTER_CLOSE */
+  latePickupUntil?: string;
 }
 
 /** A verdict as it arrives in a 400 body — dates are ISO strings on the wire. */
@@ -258,6 +273,8 @@ export function validateBookingSchedule(
   config: BranchScheduleConfig,
   pickupLocal: Date,
   returnLocal: Date,
+  /** `now` turns on the same-day rules (tonight's late window; nothing after closing), as the server does. */
+  opts: { now?: Date } = {},
 ): ScheduleVerdict {
   // 24-hour branch — no restrictions (no saved rows = default hours, not 24/7)
   if (config.is24Hours) {
@@ -280,7 +297,26 @@ export function validateBookingSchedule(
 
   // Last pickup is PICKUP_CUTOFF_MINUTES before closing (status name kept for old clients)
   const lastPickupMins = pickupDay.closeMinutes - pickupCutoffOf(config);
-  if (pickupMins > lastPickupMins) {
+  const now = opts.now;
+  if (now && istDayNumber(now) === istDayNumber(pickupLocal)) {
+    // Same day: tonight's late window, and nothing once the branch has closed
+    const { hours: nowHours, minutes: nowMinsVal } = getBranchLocalTime(now);
+    const nowMins = nowHours * 60 + nowMinsVal;
+    const day = { lastPickupMin: lastPickupMins, closeMin: pickupDay.closeMinutes };
+    const same = sameDayPickupStatus(day, pickupMins, nowMins, LATE_PICKUP_GRACE_MINUTES);
+    if (same === 'TODAY_CLOSED') {
+      return { status: 'PICKUP_TODAY_CLOSED', closingTime: minutesToDisplay(pickupDay.closeMinutes) };
+    }
+    if (same === 'AFTER_LAST_PICKUP') {
+      const lateOpen = sameDayPickupStatus(day, pickupDay.closeMinutes, nowMins, LATE_PICKUP_GRACE_MINUTES) === 'LATE_OK';
+      return {
+        status: 'PICKUP_AT_OR_AFTER_CLOSE',
+        closingTime: minutesToDisplay(pickupDay.closeMinutes),
+        lastPickupTime: minutesToDisplay(lastPickupMins),
+        ...(lateOpen && { latePickupUntil: minutesToDisplay(pickupDay.closeMinutes) }),
+      };
+    }
+  } else if (pickupMins > lastPickupMins) {
     return {
       status: 'PICKUP_AT_OR_AFTER_CLOSE',
       closingTime: minutesToDisplay(pickupDay.closeMinutes),
@@ -413,7 +449,12 @@ export function buildScheduleErrorMessage(verdict: Pick<ScheduleVerdict, Exclude
       return `Branch is closed on ${verdict.closedDayName ?? 'that day'}. Please select a different pickup date.`;
     case 'PICKUP_BEFORE_OPEN':
       return `Branch opens at ${verdict.openingTime ?? 'opening time'}. Please select a later pickup time.`;
+    case 'PICKUP_TODAY_CLOSED':
+      return `The branch has closed for today (${verdict.closingTime ?? 'closing time'}). Please choose a pickup on the next day the branch is open.`;
     case 'PICKUP_AT_OR_AFTER_CLOSE':
+      if (verdict.latePickupUntil) {
+        return `After the last pickup (${verdict.lastPickupTime ?? '30 minutes before closing'}), same-day pickups are taken from now until ${verdict.latePickupUntil}. Please choose a time in that window or another day.`;
+      }
       if (verdict.lastPickupTime) {
         return `Last pickup is ${verdict.lastPickupTime} (${PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an earlier pickup time.`;
       }
@@ -486,12 +527,19 @@ function minutesOf(at: Date): number {
   return hours * 60 + minutes;
 }
 
-/** Pickup allowed at this instant: open day, open ≤ time ≤ close − PICKUP_CUTOFF_MINUTES. */
-export function isPickupTimeAllowed(config: BranchScheduleConfig, at: Date): boolean {
+/**
+ * Pickup allowed at this instant: open day, open ≤ time ≤ close −
+ * PICKUP_CUTOFF_MINUTES. Today (IST, per `now`) also: after the last pickup,
+ * from now until closing; after closing, nothing (sameDayPickupStatus).
+ */
+export function isPickupTimeAllowed(config: BranchScheduleConfig, at: Date, now: Date = new Date()): boolean {
   const w = getDayWindow(config, at);
   if (!w) return true;
   const m = minutesOf(at);
-  return w.isOpen && m >= w.openMin && m <= w.lastPickupMin;
+  if (!w.isOpen || m < w.openMin) return false;
+  if (istDayNumber(at) !== istDayNumber(now)) return m <= w.lastPickupMin;
+  const status = sameDayPickupStatus(w, m, minutesOf(now));
+  return status === 'OK' || status === 'LATE_OK';
 }
 
 /** Return allowed at this instant: open day, open ≤ time ≤ close + grace. */
@@ -538,7 +586,8 @@ export function slotsWithinHours(
   let slots = timeSlotsFor(day, { after: opts.after, now });
   const w = hasOfficeHours(config) ? getDayWindow(config, withTime(day, '12:00')) : null;
   if (w && w.isOpen) {
-    const edges = kind === 'pickup' ? [w.openMin, w.lastPickupMin] : [w.openMin, w.closeMin, w.graceEndMin];
+    // Pickups: closing too, for tonight's late window (the filter below drops it otherwise)
+    const edges = kind === 'pickup' ? [w.openMin, w.lastPickupMin, w.closeMin] : [w.openMin, w.closeMin, w.graceEndMin];
     for (const mins of edges) {
       if (mins < 0 || mins >= 1440) continue;
       const value = hhmm(mins);
@@ -553,13 +602,14 @@ export function slotsWithinHours(
     const at = withTime(day, s.value);
     if (before && at.getTime() > before.getTime()) return false;
     if (!hasOfficeHours(config)) return true;
-    return kind === 'pickup' ? isPickupTimeAllowed(config, at) : isReturnTimeAllowed(config, at);
+    return kind === 'pickup' ? isPickupTimeAllowed(config, at, now) : isReturnTimeAllowed(config, at);
   });
 }
 
 /**
- * An open day with no pickup time left — today after the last pickup (closing
- * − PICKUP_CUTOFF_MINUTES), or a day whose hours leave no pickup at all.
+ * An open day with no pickup time left — today after closing (after the last
+ * pickup, tonight's late window still runs to closing), or a day whose hours
+ * leave no pickup at all.
  * Calendars grey these out for pickup; closed days are isClosedDay's job.
  */
 export function noPickupTimesLeft(config: BranchScheduleConfig | null | undefined, day: Date, now?: Date): boolean {
@@ -693,7 +743,7 @@ export function rangeScheduleIssue(
   end: Date,
 ): string | null {
   if (!hasOfficeHours(config)) return null;
-  const v = validateBookingSchedule(config, start, end);
+  const v = validateBookingSchedule(config, start, end, { now: new Date() });
   if (v.status === 'OK' || v.status === 'RETURN_GRACE') return null;
   if (v.status === 'RETURN_BUMPED') return `the return would be outside branch hours (${returnRefusalReason(v)})`;
   return buildScheduleErrorMessage(v);
@@ -718,7 +768,7 @@ export function bookingTimesNotice(
   const window = validateBookingWindow({ startAt: start, endAt: end, now: opts.now, monthly: opts.monthly });
   if (!window.ok) return { tone: 'error', text: window.message };
   if (!hasOfficeHours(config)) return null;
-  const v = validateBookingSchedule(config, start, end);
+  const v = validateBookingSchedule(config, start, end, { now: opts.now ?? new Date() });
   switch (v.status) {
     case 'OK':
       return null;
@@ -759,20 +809,12 @@ export function lastPickupTimeLabel(config: BranchScheduleConfig | null | undefi
   return minutesToDisplay(w.lastPickupMin);
 }
 
-/** Latest accepted return on this calendar day when the branch gives grace after closing, e.g. "11:30 PM". */
-function returnsUntilLabel(config: BranchScheduleConfig, day: Date): string | null {
-  if (config.graceMinutes <= 0) return null;
-  const w = getDayWindow(config, withTime(day, '12:00'));
-  if (!w || !w.isOpen) return null;
-  // The return window ends with the day (a grace past midnight isn't carried over).
-  return minutesToDisplay(Math.min(w.graceEndMin, 1439));
-}
-
 /**
  * One line of branch hours for a pickup/return pair, e.g.
- * "Branch hours 8:00 AM – 11:00 PM · last pickup 10:30 PM · returns until 11:30 PM",
- * or one part per day when they differ. `returnOnly` (extension screens, which
- * pick only a return) leaves the pickup out. null while the hours are unknown.
+ * "Branch hours 8:00 AM – 11:00 PM · last pickup 10:30 PM", or one part per
+ * day when they differ. `returnOnly` (extension screens, which pick only a
+ * return) leaves the pickup out. The return grace after closing is not
+ * advertised (client, Oct 19). null while the hours are unknown.
  */
 export function rangeHoursLine(
   config: BranchScheduleConfig | null | undefined,
@@ -786,13 +828,9 @@ export function rangeHoursLine(
   const ret = dayHoursLabel(config, end);
   if (!pickup || !ret) return null;
   const lastPickup = lastPickupTimeLabel(config, start);
-  const returnsUntil = returnsUntilLabel(config, end);
-  const returnPart = returnsUntil ? ` · returns until ${returnsUntil}` : '';
-  if (opts.returnOnly) return `Branch hours ${ret}${returnPart}`;
-  if (pickup === ret) return `Branch hours ${pickup}${lastPickup ? ` · last pickup ${lastPickup}` : ''}${returnPart}`;
-  return `Pickup day ${pickup}${lastPickup ? ` (last pickup ${lastPickup})` : ''} · Return day ${ret}${
-    returnsUntil ? ` (returns until ${returnsUntil})` : ''
-  }`;
+  if (opts.returnOnly) return `Branch hours ${ret}`;
+  if (pickup === ret) return `Branch hours ${pickup}${lastPickup ? ` · last pickup ${lastPickup}` : ''}`;
+  return `Pickup day ${pickup}${lastPickup ? ` (last pickup ${lastPickup})` : ''} · Return day ${ret}`;
 }
 
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

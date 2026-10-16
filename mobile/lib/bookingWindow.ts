@@ -363,3 +363,55 @@ export function extensionPackageOptions(
   }
   return options;
 }
+
+// ── Late-evening same-day pickups (Oct 19 client rule) ──────────────────────
+/**
+ * Pickups normally run from opening to the LAST PICKUP (closing − the branch's
+ * pickup cutoff, 30 min: 8:00 AM – 11:00 PM → last pickup 10:30 PM).
+ * Exception for TODAY: once the last pickup has gone by and the branch hasn't
+ * closed yet, a pickup from now up to closing is allowed (at 10:40 PM:
+ * 10:45 PM … 11:00 PM). After closing, today takes no pickups at all — the
+ * next opening is the first. Other days keep opening … last pickup.
+ *
+ * Pickers call it with graceMinutes 0; the server with
+ * LATE_PICKUP_GRACE_MINUTES, so a request picked just before closing (or a
+ * slot a few minutes old) still goes through. Opening / closed-day checks stay
+ * with the schedule validators (backend, web, mobile), which call this only
+ * when the pickup is on the same branch-local day as `now`.
+ */
+export const LATE_PICKUP_GRACE_MINUTES = 5;
+
+/**
+ * OK          — at or before the last pickup (the usual rule);
+ * LATE_OK     — after the last pickup, up to closing, allowed tonight;
+ * AFTER_LAST_PICKUP — after the last pickup and not allowed (too early in the
+ *               evening to book it, already past, or after closing);
+ * TODAY_CLOSED — the branch has closed for today: no same-day pickup.
+ */
+export type SameDayPickupStatus = "OK" | "LATE_OK" | "AFTER_LAST_PICKUP" | "TODAY_CLOSED";
+
+/** Minutes are since branch-local midnight; pickup and now on the same branch-local day. */
+export function sameDayPickupStatus(
+  day: { lastPickupMin: number; closeMin: number },
+  pickupMin: number,
+  nowMin: number,
+  graceMinutes: number = 0,
+): SameDayPickupStatus {
+  if (nowMin > day.closeMin + graceMinutes) return "TODAY_CLOSED";
+  if (pickupMin <= day.lastPickupMin) return "OK";
+  if (pickupMin > day.closeMin) return "AFTER_LAST_PICKUP";
+  // The late window opens once the last pickup has gone by, from now on
+  if (nowMin > day.lastPickupMin - graceMinutes && pickupMin >= nowMin - graceMinutes) return "LATE_OK";
+  return "AFTER_LAST_PICKUP";
+}
+
+/** Branch-local (IST) day number of an instant — equal for two instants on the same IST calendar day. */
+export function istDayNumber(d: Date | string): number {
+  return Math.floor((new Date(d).getTime() + IST_OFFSET_MS) / DAY_MS);
+}
+
+/** Minutes since IST midnight of an instant (0 … 1439). */
+export function istMinuteOfDay(d: Date | string): number {
+  const t = new Date(d).getTime() + IST_OFFSET_MS;
+  return Math.floor((((t % DAY_MS) + DAY_MS) % DAY_MS) / 60_000);
+}

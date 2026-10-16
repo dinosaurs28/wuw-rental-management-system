@@ -230,7 +230,7 @@ export function fitPackageRange<R extends PackageRange>(
   const now = opts.now ?? new Date();
   const config = hasOfficeHours(opts.config) ? opts.config : null;
   let start = r.start.getTime() > now.getTime() ? r.start : nextFiveMinuteMark(now);
-  if (config && !isPickupTimeAllowed(config, start)) {
+  if (config && !isPickupTimeAllowed(config, start, now)) {
     const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now, config) });
     if (next) start = next;
   }
@@ -318,7 +318,7 @@ export function fitWalkinPackage(
   const now = opts.now ?? new Date();
   const config = hasOfficeHours(opts.config) ? opts.config : null;
   let start = r.start.getTime() > now.getTime() ? r.start : nextFiveMinuteMark(now);
-  if (config && !isPickupTimeAllowed(config, start)) {
+  if (config && !isPickupTimeAllowed(config, start, now)) {
     const next = firstAllowedFrom(config, start, 'pickup', { now, before: latestPackagePickup(now, config) });
     if (next) start = next;
   }
