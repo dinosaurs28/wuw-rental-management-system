@@ -231,6 +231,7 @@ export const CustomerCreditPage = () => {
                               <ProofPhotoThumb
                                 key={p.publicId}
                                 photo={p.proofPhoto ?? { url: p.proofPhotoUrl! }}
+                                photos={p.proofs}
                                 caption={`${entry.booking.publicId} · UPI ${formatAmount(p.onlineAmount)}`}
                               />
                             ))}

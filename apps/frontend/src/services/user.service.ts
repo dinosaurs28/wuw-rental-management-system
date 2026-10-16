@@ -6,7 +6,10 @@ export interface UserProfile {
   /** null when the account only has a placeholder email. */
   email: string | null;
   phone: string;
+  /** Kept for older customers; no longer asked for (Oct 2026). */
   dob: string | null;
+  /** Entered age, else derived from dob on the server; absent from older servers. */
+  age?: number | null;
   addressLine1: string;
   city: string;
   state: string;
@@ -17,7 +20,7 @@ export interface UserProfile {
   drivingLicenceNumber: string | null;
   /** Full 12 digits (owner only) — never log it. */
   aadhaarNumber: string | null;
-  /** Derived on the server: every required field, both numbers included. */
+  /** Derived on the server: every required field (age, or dob / both numbers for older profiles). */
   isProfileCompleted: boolean;
   /** Empty required fields (keys of CUSTOMER_PROFILE_FIELD_LABELS). */
   missingFields?: string[];

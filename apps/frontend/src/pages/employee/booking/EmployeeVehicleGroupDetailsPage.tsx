@@ -58,6 +58,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
     setGroupKey,
     paymentType,
     upiProof,
+    upiExtraProofs,
     splitCash,
     collateral,
     customerKycId,
@@ -266,7 +267,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       // collateral for credit; ONLINE = Razorpay checkout on the next screen
       ...(paymentType === "ONLINE"
         ? { payment_type: "ONLINE" as const }
-        : walkInPaymentFields({ method: paymentType || "CASH", proof: upiProof, splitCash, collateral })),
+        : walkInPaymentFields({ method: paymentType || "CASH", proof: upiProof, extraProofs: upiExtraProofs, splitCash, collateral })),
       // Monthly rental (30–180 days) is an explicit counter plan
       plan,
     };
@@ -476,7 +477,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     <div>
                       <h3 className="font-semibold text-amber-900">Profile Incomplete</h3>
                       <p className="text-amber-700 text-sm mt-1 max-w-sm mx-auto">
-                        Customer profile is missing required details (such as the Driving Licence or Aadhaar number). Complete the profile to book — uploading KYC documents is optional.
+                        Customer profile is missing required details (such as the age or address). Complete the profile to book — uploading KYC documents is optional.
                       </p>
                     </div>
                     <Button

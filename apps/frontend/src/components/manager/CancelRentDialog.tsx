@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +29,7 @@ import {
   type ManualCancelOptions,
   type ManualCancelRefundMethod,
   type ManualCancelResult,
+  type ManualCancelVehicleLocation,
   type ManualCancelVehicleStatus,
 } from "@/services/manualCancel.service";
 
@@ -44,7 +44,17 @@ interface CancelRentDialogProps {
 const VEHICLE_STATUS_LABELS: Record<ManualCancelVehicleStatus, string> = {
   AVAILABLE: "Available",
   MAINTENANCE: "Maintenance",
+  INACTIVE: "Inactive",
+  OUT_FOR_RENTAL: "Out For Rental",
 };
+
+/** Where the car is — older servers don't send their labels. */
+const VEHICLE_LOCATIONS: { value: ManualCancelVehicleLocation; label: string }[] = [
+  { value: "AT_BRANCH", label: "The vehicle is back at the branch" },
+  { value: "OUT_OF_BRANCH", label: "The vehicle is out of the branch" },
+];
+
+const OUT_OF_BRANCH_HINT = "The car isn't at the branch, so it can't be bookable.";
 
 const toNumber = (v: string) => {
   const n = parseFloat(v);
@@ -171,7 +181,7 @@ function CancelRentForm({
   const [amount, setAmount] = useState(refundable.toFixed(2));
   const [method, setMethod] = useState<ManualCancelRefundMethod | "">("");
   const [note, setNote] = useState("");
-  const [vehicleReturned, setVehicleReturned] = useState(false);
+  const [vehicleLocation, setVehicleLocation] = useState<ManualCancelVehicleLocation | "">("");
   const [vehicleStatus, setVehicleStatus] = useState<ManualCancelVehicleStatus | "">("");
   const [odometer, setOdometer] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -181,6 +191,9 @@ function CancelRentForm({
   const amountValid = /^\d+(\.\d{1,2})?$/.test(amountTrimmed);
   const amountNum = amountValid ? toNumber(amountTrimmed) : NaN;
   const refunding = amountValid && amountNum > 0;
+
+  const atBranch = vehicleLocation === "AT_BRANCH";
+  const outOfBranch = vehicleLocation === "OUT_OF_BRANCH";
 
   const problem = (() => {
     if (reason.trim().length < options.limits.reasonMin) {
@@ -197,9 +210,10 @@ function CancelRentForm({
         ? `Only ${formatRupees(onlineRefundable)} was paid online through Razorpay. Refund the rest by cash, UPI or bank transfer.`
         : "Nothing on this booking was paid online through Razorpay. Refund by cash, UPI or bank transfer.";
     }
-    if (active && !vehicleReturned) return "Confirm the vehicle is back at the branch.";
+    if (active && !vehicleLocation) return "Say where the vehicle is: back at the branch or out of the branch.";
     if (active && !vehicleStatus) return "Choose the vehicle's status.";
-    if (active && odometer.trim()) {
+    if (active && outOfBranch && vehicleStatus === "AVAILABLE") return OUT_OF_BRANCH_HINT;
+    if (active && atBranch && odometer.trim()) {
       const n = Number(odometer.trim());
       if (!Number.isInteger(n) || n < 0) return "The odometer reading must be a whole number of km.";
       if (singleVehicle && n < singleVehicle.odo) {
@@ -223,13 +237,15 @@ function CancelRentForm({
         },
         ...(active
           ? {
-              vehicleReturned: true,
+              vehicleLocation: vehicleLocation as ManualCancelVehicleLocation,
               vehicleStatus: vehicleStatus as ManualCancelVehicleStatus,
-              ...(singleVehicle && odometer.trim() ? { odometer: Number(odometer.trim()) } : {}),
+              ...(atBranch && singleVehicle && odometer.trim() ? { odometer: Number(odometer.trim()) } : {}),
             }
           : {}),
       });
-      toast.success(res.message || "Rent cancelled.");
+      // A car whose status was left alone (another rental / damage review) is named in the message
+      if (res.data.vehicleNote) toast.warning(res.message, { duration: 10000 });
+      else toast.success(res.message || "Rent cancelled.");
       onCancelled?.(res.data);
       onClose();
     } catch (err) {
@@ -367,44 +383,71 @@ function CancelRentForm({
           )}
         </div>
 
-        {/* Active rent: the car is back */}
+        {/* Active rent: where the car is, and what it becomes */}
         {active && (
           <div className="space-y-3 rounded-xl border border-zinc-200 px-4 py-3">
-            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-zinc-800">
-              <Checkbox
-                checked={vehicleReturned}
-                onCheckedChange={(c) => setVehicleReturned(c === true)}
-                className="mt-0.5"
-              />
-              <span>
-                The vehicle is back at the branch <span className="text-red-500">*</span>
-              </span>
-            </label>
+            <div className="space-y-1.5">
+              <Label>
+                Where is the vehicle? <span className="text-red-500">*</span>
+              </Label>
+              <div className="grid gap-2" role="radiogroup" aria-label="Where is the vehicle">
+                {(options.vehicleLocations ?? VEHICLE_LOCATIONS).map((l) => (
+                  <button
+                    key={l.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={vehicleLocation === l.value}
+                    onClick={() => {
+                      setVehicleLocation(l.value);
+                      if (l.value === "OUT_OF_BRANCH") {
+                        setOdometer("");
+                        if (vehicleStatus === "AVAILABLE") setVehicleStatus("");
+                      }
+                    }}
+                    className={cn(
+                      "min-h-10 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors",
+                      vehicleLocation === l.value
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                    )}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label>
                 Vehicle status after cancelling <span className="text-red-500">*</span>
               </Label>
               <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Vehicle status">
-                {options.vehicleStatuses.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    role="radio"
-                    aria-checked={vehicleStatus === s}
-                    onClick={() => setVehicleStatus(s)}
-                    className={cn(
-                      "h-10 rounded-lg border text-sm font-medium transition-colors",
-                      vehicleStatus === s
-                        ? "border-zinc-900 bg-zinc-900 text-white"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
-                    )}
-                  >
-                    {VEHICLE_STATUS_LABELS[s]}
-                  </button>
-                ))}
+                {options.vehicleStatuses.map((s) => {
+                  const blocked = outOfBranch && s === "AVAILABLE";
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      role="radio"
+                      aria-checked={vehicleStatus === s}
+                      disabled={blocked}
+                      title={blocked ? OUT_OF_BRANCH_HINT : undefined}
+                      onClick={() => setVehicleStatus(s)}
+                      className={cn(
+                        "h-10 rounded-lg border text-sm font-medium transition-colors",
+                        vehicleStatus === s
+                          ? "border-zinc-900 bg-zinc-900 text-white"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                        "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-200",
+                      )}
+                    >
+                      {VEHICLE_STATUS_LABELS[s]}
+                    </button>
+                  );
+                })}
               </div>
+              {outOfBranch && <p className="text-[11px] text-zinc-500">{OUT_OF_BRANCH_HINT}</p>}
             </div>
-            {singleVehicle && (
+            {atBranch && singleVehicle && (
               <div className="space-y-1.5">
                 <Label htmlFor="cancel-odometer">Odometer (km, optional)</Label>
                 <Input

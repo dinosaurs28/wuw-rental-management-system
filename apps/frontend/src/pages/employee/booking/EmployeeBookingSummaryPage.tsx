@@ -30,10 +30,12 @@ import { qrPhotoKeys } from "@/hooks/useQrPhoto";
 import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
 import {
   apiCode,
+  counterFieldErrors,
   counterPaymentErrorField,
   counterPaymentProblem,
   formatRupees,
   walkInPaymentFields,
+  withCounterProofAt,
   type CounterPaymentMethod,
   type CounterPaymentValue,
 } from "@/lib/counterPayment";
@@ -80,7 +82,7 @@ export const EmployeeBookingSummaryPage = () => {
   const [retryPayment, setRetryPayment] = useState<CounterPaymentValue | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const { activeShift } = useActiveShift();
-  const { upiProof } = useEmployeeBookingStore();
+  const { upiProof, upiExtraProofs } = useEmployeeBookingStore();
   const { openCheckout, isOpening } = useRazorpayCheckout();
   // Held in state so a payment retry can re-create with the corrected payload.
   const [bookingPayload, setBookingPayload] = useState(
@@ -114,8 +116,15 @@ export const EmployeeBookingSummaryPage = () => {
     });
     setRetryPayment({
       method: method as CounterPaymentMethod,
-      // A refused photo has to be taken again
-      proof: field === "proof" ? null : store.upiProof,
+      // A refused photo has to be taken again (just that one when the server says which)
+      ...(field === "proof"
+        ? (() => {
+            const position = counterFieldErrors(error).proofPosition;
+            return position
+              ? withCounterProofAt({ proof: store.upiProof, extraProofs: store.upiExtraProofs }, position - 1, null)
+              : { proof: null, extraProofs: [] };
+          })()
+        : { proof: store.upiProof, extraProofs: store.upiExtraProofs }),
       splitCash: store.splitCash,
       collateral: store.collateral,
     });
@@ -159,7 +168,7 @@ export const EmployeeBookingSummaryPage = () => {
         });
       }
 
-      // Customer profile incomplete (e.g. DL / Aadhaar number missing): mark
+      // Customer profile incomplete (e.g. age or address missing): mark
       // the session so the page we go back to offers "Complete Profile".
       if (error?.response?.data?.code === CUSTOMER_PROFILE_INCOMPLETE) {
         const session = customerSession.get();
@@ -243,12 +252,13 @@ export const EmployeeBookingSummaryPage = () => {
     if (!retryPayment) return;
     // Drop the refused payment fields (and an old UTR) and send the corrected ones
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { utr, proof_file_id, cash_amount, upi_amount, collateral, payment_type, ...rest } = bookingPayload ?? {};
+    const { utr, proof_file_id, proof_file_ids, cash_amount, upi_amount, collateral, payment_type, ...rest } = bookingPayload ?? {};
     const payload = { ...rest, ...walkInPaymentFields(retryPayment) };
     // Keep the pricing card in sync if staff go back
     const store = useEmployeeBookingStore.getState();
     store.setPaymentType(retryPayment.method);
     store.setUpiProof(retryPayment.proof);
+    store.setUpiExtraProofs(retryPayment.extraProofs ?? []);
     store.setSplitCash(retryPayment.splitCash);
     store.setCollateral(retryPayment.collateral);
     setBookingPayload(payload);
@@ -677,8 +687,15 @@ export const EmployeeBookingSummaryPage = () => {
                   upiProof &&
                   upiProof.proofFileId === bookingPayload?.proof_file_id && (
                     <div className="mt-2 flex items-center justify-center gap-2 text-xs font-normal text-green-700">
-                      <ProofPhotoThumb photo={upiProof} caption="Customer's UPI payment screen" size="md" />
-                      Payment photo attached
+                      <ProofPhotoThumb
+                        photo={upiProof}
+                        photos={[upiProof, ...upiExtraProofs]}
+                        caption="Customer's UPI payment screen"
+                        size="md"
+                      />
+                      {upiExtraProofs.length > 0
+                        ? `${upiExtraProofs.length + 1} payment photos attached`
+                        : "Payment photo attached"}
                     </div>
                   )}
               </div>

@@ -32,7 +32,7 @@ import {
     PackageSelect,
     formatPackageReturn,
 } from "@/components/booking/PackagePicker";
-import { bookingPickerLimits, MAX_BOOKING_DAYS, snapPickupPastClosedToday } from "@/utils/bookingPickers";
+import { ADVANCE_BOOKING_DAYS, bookingPickerLimits, MAX_RENTAL_DAYS, snapPickupPastClosedToday } from "@/utils/bookingPickers";
 import { packageRangeState, returnForNewPickup, returnForPackage } from "@/utils/bookingPackages";
 
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export const SearchForm = () => {
         setSearchCriteria,
     } = useSearchStore();
 
-    // Office hours (#2) and the 15-day window (#15) for the pickers
+    // Office hours (#2) and the booking window (#15: pickup ≤ 30 days ahead) for the pickers
     const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
     const limits = useMemo(
         () =>
@@ -334,7 +334,7 @@ export const SearchForm = () => {
                             )}
                         </motion.button>
                         <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
-                            Book 12 hours or 1–{MAX_BOOKING_DAYS} days, up to {MAX_BOOKING_DAYS} days ahead.
+                            Book 12 hours or 1–{MAX_RENTAL_DAYS} days, up to {ADVANCE_BOOKING_DAYS} days ahead.
                         </p>
                     </div>
                 </div>

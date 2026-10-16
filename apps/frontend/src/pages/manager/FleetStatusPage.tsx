@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2, Ban } from "lucide-react";
+import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2, Ban, Search, X } from "lucide-react";
 import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
 import { CancelRentDialog } from "@/components/manager/CancelRentDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ import { canSwapVehicle, managerSwapPath } from "@/components/manager/vehicle-sw
 import { managerDashboardService, type FleetBooking } from "@/services/managerDashboard.service";
 import type { BookingListType, OverdueReturn } from "@/types/overdueReturns";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   RETURN_STATE_META,
   formatIstDateTime,
@@ -299,6 +300,16 @@ function OverdueRow({ row, fetchedAt, now }: { row: OverdueReturn; fetchedAt: nu
   );
 }
 
+function NoSearchMatch({ q }: { q: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+      <Search className="w-9 h-9 mb-3" style={{ color: "#e8e6e1" }} />
+      <p className="text-sm font-medium text-[#6b6860]">No rents match “{q}”</p>
+      <p className="text-xs text-[#9ca3af] mt-1">Search by car make, model or registration number</p>
+    </div>
+  );
+}
+
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#f0ede8]">
@@ -334,6 +345,10 @@ export const FleetStatusPage = () => {
   const [rescheduleFor, setRescheduleFor] = useState<FleetBooking | null>(null);
   // Active / upcoming rent being cancelled by hand
   const [cancelFor, setCancelFor] = useState<FleetBooking | null>(null);
+  // Search by vehicle make / model or registration number — filtered on the server,
+  // so every list, page and tab count reflects it
+  const [search, setSearch] = useState("");
+  const q = useDebounce(search.trim(), 300);
   const queryClient = useQueryClient();
 
   const updateParams = (patch: Record<string, string>) => {
@@ -353,27 +368,30 @@ export const FleetStatusPage = () => {
   // every badge is exact. No backend date filter: all PICKED_UP vehicles
   // (including ones picked up on earlier days) are always included.
   const fleetQuery = useQuery({
-    queryKey: ["manager-fleet-status"],
+    queryKey: ["manager-fleet-status", q],
     queryFn: async () => {
       const [pickedUpDaily, pickedUpMonthly, upcomingDaily, upcomingMonthly] = await Promise.all([
-        managerDashboardService.getFleetTab("picked_up", "DAILY", FLEET_LIMIT),
-        managerDashboardService.getFleetTab("picked_up", "MONTHLY", FLEET_LIMIT),
-        managerDashboardService.getFleetTab("upcoming", "DAILY", FLEET_LIMIT),
-        managerDashboardService.getFleetTab("upcoming", "MONTHLY", FLEET_LIMIT),
+        managerDashboardService.getFleetTab("picked_up", "DAILY", FLEET_LIMIT, q),
+        managerDashboardService.getFleetTab("picked_up", "MONTHLY", FLEET_LIMIT, q),
+        managerDashboardService.getFleetTab("upcoming", "DAILY", FLEET_LIMIT, q),
+        managerDashboardService.getFleetTab("upcoming", "MONTHLY", FLEET_LIMIT, q),
       ]);
       return {
         pickedUp: { DAILY: pickedUpDaily, MONTHLY: pickedUpMonthly },
         upcoming: { DAILY: upcomingDaily, MONTHLY: upcomingMonthly },
       };
     },
+    // Keep the rows on screen while a new search loads
+    placeholderData: (previous) => previous,
     refetchInterval: 60_000,
     refetchOnMount: "always",
   });
 
   // Overdue / no-show returns, most overdue first. Polled every minute.
   const overdueQuery = useQuery({
-    queryKey: ["manager-overdue-returns"],
-    queryFn: () => managerDashboardService.getOverdueReturns({ limit: FLEET_LIMIT }),
+    queryKey: ["manager-overdue-returns", q],
+    queryFn: () => managerDashboardService.getOverdueReturns({ limit: FLEET_LIMIT, ...(q ? { q } : {}) }),
+    placeholderData: (previous) => previous,
     refetchInterval: 60_000,
     refetchOnMount: "always",
   });
@@ -499,6 +517,31 @@ export const FleetStatusPage = () => {
               )}
             </div>
 
+            {/* Search — vehicle make / model or registration number */}
+            <div className="px-5 pt-3">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+                <Input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by car model or registration number"
+                  aria-label="Search rents by car model or registration number"
+                  className="h-9 pl-8 pr-8 text-sm border-[#e8e6e1] bg-white"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#9ca3af] hover:text-[#1a1917]"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Tabs */}
             <div className="flex px-5 pt-3 border-b border-[#e8e6e1] overflow-x-auto">
               {(
@@ -588,6 +631,9 @@ export const FleetStatusPage = () => {
                 </div>
               ) : tab === "overdue" ? (
                 overdueRows.length === 0 ? (
+                  q ? (
+                    <NoSearchMatch q={q} />
+                  ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                     <CheckCircle2 className="w-9 h-9 mb-3" style={{ color: "#bbf7d0" }} />
                     <p className="text-sm font-medium text-[#6b6860]">Nothing to recover</p>
@@ -595,6 +641,7 @@ export const FleetStatusPage = () => {
                       Every vehicle out on the road is within its booked time
                     </p>
                   </div>
+                  )
                 ) : (
                   <>
                     {overdueRows.map((row) => (
@@ -613,6 +660,8 @@ export const FleetStatusPage = () => {
                     )}
                   </>
                 )
+              ) : sorted.length === 0 && q ? (
+                <NoSearchMatch q={q} />
               ) : sorted.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                   <Clock className="w-9 h-9 mb-3" style={{ color: "#e8e6e1" }} />

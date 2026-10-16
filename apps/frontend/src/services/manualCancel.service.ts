@@ -2,8 +2,10 @@ import apiClient from "@/lib/axios";
 
 /** How the money goes back to the customer (backend MANUAL_CANCEL_REFUND_METHODS). */
 export type ManualCancelRefundMethod = "CASH" | "UPI" | "BANK_TRANSFER" | "ORIGINAL_PAYMENT";
-/** What a returned car becomes once its rent is cancelled. */
-export type ManualCancelVehicleStatus = "AVAILABLE" | "MAINTENANCE";
+/** What an active rent's car becomes once its rent is cancelled. */
+export type ManualCancelVehicleStatus = "AVAILABLE" | "MAINTENANCE" | "INACTIVE" | "OUT_FOR_RENTAL";
+/** Where an active rent's car is (OUT_OF_BRANCH: not Available, no odometer). */
+export type ManualCancelVehicleLocation = "AT_BRANCH" | "OUT_OF_BRANCH";
 
 /** GET /branchManager/bookings/:publicId/cancel — what the Cancel rent dialog needs. */
 export interface ManualCancelOptions {
@@ -47,16 +49,18 @@ export interface ManualCancelOptions {
   openExtensions: number;
   refundMethods: { value: ManualCancelRefundMethod; label: string }[];
   vehicleStatuses: ManualCancelVehicleStatus[];
+  /** Absent on servers before the location choice. */
+  vehicleLocations?: { value: ManualCancelVehicleLocation; label: string }[];
   limits: { reasonMin: number; reasonMax: number; noteMax: number };
 }
 
 export interface ManualCancelBody {
   reason: string;
   refund: { amount: number; method?: ManualCancelRefundMethod; note?: string };
-  /** Active rents: the car is back at the branch (must be true). */
-  vehicleReturned?: boolean;
+  /** Active rents: where the car is. */
+  vehicleLocation?: ManualCancelVehicleLocation;
   vehicleStatus?: ManualCancelVehicleStatus;
-  /** Active rents, optional: the returned car's reading (km). */
+  /** Active rents back at the branch, optional: the car's reading (km). */
   odometer?: number;
 }
 
@@ -79,7 +83,17 @@ export interface ManualCancelResult {
     method: ManualCancelRefundMethod;
     methodLabel: string;
   } | null;
-  vehicles: { publicId: string; regNo: string; status: string; changed: boolean }[];
+  vehicles: {
+    publicId: string;
+    regNo: string;
+    status: string;
+    changed: boolean;
+    /** Why the chosen status wasn't set (another rental / damage review / drop damage). */
+    keptReason?: "OTHER_RENTAL" | "DAMAGE_REVIEW" | "DROP_DAMAGE" | null;
+  }[];
+  vehicleLocation?: ManualCancelVehicleLocation | null;
+  /** Names the cars whose status the cancel didn't set (also in the message). */
+  vehicleNote?: string | null;
   releasedCouponUses: number;
   voidedCredit: string;
   abandonedPaymentSessions: number;

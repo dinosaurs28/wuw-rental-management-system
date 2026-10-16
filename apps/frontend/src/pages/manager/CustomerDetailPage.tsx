@@ -366,6 +366,10 @@ export const CustomerDetailPage = ({ portal = MANAGER_CUSTOMERS_PORTAL }: { port
                   <dd>{addressLine || "—"}</dd>
                 </div>
                 <div>
+                  <dt className="text-xs text-zinc-400">Age</dt>
+                  <dd>{c.age ?? "—"}</dd>
+                </div>
+                <div>
                   <dt className="text-xs text-zinc-400">Driving licence</dt>
                   <dd className="font-mono">{c.drivingLicenceNumberMasked || "—"}</dd>
                 </div>

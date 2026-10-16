@@ -15,6 +15,12 @@ export interface ProofPhotoInfo {
 
 interface ProofPhotoThumbProps {
   photo: ProofPhotoInfo | null | undefined;
+  /**
+   * Every photo of the payment (`proofs` on transaction rows — up to 3 when the
+   * customer paid in several UPI transactions). The thumbnail shows the first;
+   * the viewer pages through all of them.
+   */
+  photos?: (ProofPhotoInfo | null | undefined)[] | null;
   /** Caption in the zoom viewer, e.g. "UPI payment · BK123 · ₹1,200". */
   caption?: string;
   size?: "sm" | "md" | "lg";
@@ -32,10 +38,14 @@ const SIZES = {
  * can check the amount and time before confirming. A broken link (the URL
  * expired) asks for a refresh.
  */
-export function ProofPhotoThumb({ photo, caption, size = "sm", className }: ProofPhotoThumbProps) {
+export function ProofPhotoThumb({ photo, photos, caption, size = "sm", className }: ProofPhotoThumbProps) {
   const [open, setOpen] = useState(false);
   const [broken, setBroken] = useState(false);
-  if (!photo?.url) return null;
+  const all = (photos ?? []).filter((p): p is ProofPhotoInfo => !!p?.url);
+  const list = all.length > 0 ? all : photo?.url ? [photo] : [];
+  const first = list[0];
+  if (!first) return null;
+  const many = list.length > 1;
 
   if (broken) {
     return (
@@ -65,17 +75,26 @@ export function ProofPhotoThumb({ photo, caption, size = "sm", className }: Proo
           SIZES[size],
           className,
         )}
-        aria-label="View the UPI payment photo"
-        title="View the UPI payment photo"
+        aria-label={many ? `View the ${list.length} UPI payment photos` : "View the UPI payment photo"}
+        title={many ? `View the ${list.length} UPI payment photos` : "View the UPI payment photo"}
       >
-        <img src={photo.url} alt="UPI payment screen" className="h-full w-full object-cover" onError={() => setBroken(true)} />
+        <img src={first.url} alt="UPI payment screen" className="h-full w-full object-cover" onError={() => setBroken(true)} />
+        {many ? (
+          <span className="pointer-events-none absolute left-0.5 top-0.5 rounded bg-black/60 px-1 text-[10px] font-semibold leading-4 text-white">
+            {list.length}
+          </span>
+        ) : null}
         {size !== "sm" && <ZoomBadge />}
       </button>
       <PhotoLightbox
         open={open}
         onOpenChange={setOpen}
-        title="UPI payment photo"
-        items={[{ url: photo.url, mime: photo.mime ?? "image/jpeg", label: caption ?? null }]}
+        title={many ? "UPI payment photos" : "UPI payment photo"}
+        items={list.map((p, i) => ({
+          url: p.url,
+          mime: p.mime ?? "image/jpeg",
+          label: many ? `${caption ? `${caption} · ` : ""}Screenshot ${i + 1} of ${list.length}` : (caption ?? null),
+        }))}
       />
     </>
   );

@@ -65,7 +65,7 @@ export function BookingDrawer({
   bookingId: string | null;
   onClose: () => void;
 }) {
-  const [proof, setProof] = useState<{ url: string; mime: string; label: string } | null>(null);
+  const [proof, setProof] = useState<{ url: string; mime: string; label: string }[] | null>(null);
 
   const query = useQuery({
     queryKey: [...queryKey, customerId, bookingId],
@@ -253,14 +253,20 @@ export function BookingDrawer({
                               type="button"
                               className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-orange-600 hover:underline"
                               onClick={() =>
-                                setProof({
-                                  url: t.proofPhoto!.url,
-                                  mime: t.proofPhoto!.mime,
-                                  label: `${methodLabel(t.method)} payment proof`,
-                                })
+                                setProof(
+                                  (t.proofs?.length ? t.proofs : [t.proofPhoto!]).map((p, i, all) => ({
+                                    url: p.url,
+                                    mime: p.mime,
+                                    label:
+                                      all.length > 1
+                                        ? `${methodLabel(t.method)} payment proof ${i + 1} of ${all.length}`
+                                        : `${methodLabel(t.method)} payment proof`,
+                                  })),
+                                )
                               }
                             >
                               <ImageIcon className="h-3.5 w-3.5" /> View payment proof
+                              {(t.proofs?.length ?? 0) > 1 ? `s (${t.proofs!.length})` : ""}
                             </button>
                           )}
                         </div>
@@ -300,7 +306,7 @@ export function BookingDrawer({
       <PhotoLightbox
         open={!!proof}
         onOpenChange={(o) => !o && setProof(null)}
-        items={proof ? [{ url: proof.url, mime: proof.mime, label: proof.label }] : []}
+        items={proof ?? []}
         title="Payment proof"
       />
     </>

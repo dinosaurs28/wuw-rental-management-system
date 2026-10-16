@@ -48,6 +48,8 @@ export interface ClearancePayment {
     expiresIn: number;
   } | null;
   proofPhotoUrl?: string | null;
+  /** Every photo of the payment (Oct 2026, up to 3); absent on older servers. */
+  proofs?: { fileId: string; position: number; url: string; mime: string }[];
 }
 
 /** POST /ledger/entry/:id/clear (#11): Cash, UPI (photo) or Split. */
@@ -55,6 +57,8 @@ export interface ClearCreditPayload {
   sectionKeys: string[];
   paymentMethod: "CASH" | "UPI" | "SPLIT";
   proof_file_id?: string;
+  /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+  proof_file_ids?: string[];
   cashAmount?: number;
   onlineAmount?: number;
   notes?: string;

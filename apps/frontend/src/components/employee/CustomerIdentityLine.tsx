@@ -13,9 +13,10 @@ interface CustomerIdentityLineProps {
 }
 
 /**
- * The session customer's DL number and masked Aadhaar number (#1), so staff
- * can cross-check them against the documents at the counter. Renders nothing
- * until loaded; shows "Not added" for a number the profile doesn't have yet.
+ * The session customer's age, DL number and masked Aadhaar number (#1), so
+ * staff can cross-check them against the documents at the counter. Renders
+ * nothing until loaded; shows "Not added" for a number the profile doesn't
+ * have (both are optional since Oct 2026 — the DL number is taken at pickup).
  */
 export function CustomerIdentityLine({
   publicId,
@@ -35,6 +36,7 @@ export function CustomerIdentityLine({
 
   return (
     <p className={cn("text-xs font-mono", className)}>
+      {data.age != null && <>Age {data.age} &middot; </>}
       DL {data.drivingLicenceNumber || "Not added"} &middot; Aadhaar{" "}
       {aadhaar || "Not added"}
     </p>

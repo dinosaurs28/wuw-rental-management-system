@@ -20,6 +20,7 @@ import {
 } from "@/lib/counterPayment";
 import type { PaymentProofRole } from "@/services/paymentProof.service";
 import { PaymentProofField } from "./PaymentProofField";
+import { PaymentProofSlots } from "./PaymentProofSlots";
 
 const METHOD_ICONS: Record<CounterPaymentMethod, ReactNode> = {
   CASH: <Banknote className="h-4 w-4" />,
@@ -155,12 +156,14 @@ export function CounterPaymentFields({
       {active === "CASH" && cashNote}
 
       {active === "UPI" && (
-        <PaymentProofField
-          id={`${idPrefix}-proof`}
+        <PaymentProofSlots
+          idPrefix={idPrefix}
           role={proofRole}
-          value={value.proof}
-          onChange={(proof) => update({ proof })}
+          proof={value.proof}
+          extraProofs={value.extraProofs}
+          onChange={(next) => update(next)}
           error={errors?.proof}
+          errorPosition={errors?.proofPosition}
           disabled={disabled}
         />
       )}
@@ -199,13 +202,15 @@ export function CounterPaymentFields({
             </div>
           </div>
           {errors?.split && <p className="text-xs text-red-600">{errors.split}</p>}
-          <PaymentProofField
-            id={`${idPrefix}-proof`}
+          <PaymentProofSlots
+            idPrefix={idPrefix}
             role={proofRole}
-            value={value.proof}
-            onChange={(proof) => update({ proof })}
+            proof={value.proof}
+            extraProofs={value.extraProofs}
+            onChange={(next) => update(next)}
             error={errors?.proof}
-            label="Photo of the UPI payment screen"
+            errorPosition={errors?.proofPosition}
+            helper="Photograph the UPI part's payment-success screen on the customer's phone."
             disabled={disabled}
           />
         </div>

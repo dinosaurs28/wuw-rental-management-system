@@ -39,7 +39,7 @@ import {
   PackageSelect,
   formatPackageReturn,
 } from "@/components/booking/PackagePicker";
-import { bookingPickerLimits, MAX_BOOKING_DAYS } from "@/utils/bookingPickers";
+import { ADVANCE_BOOKING_DAYS, bookingPickerLimits, MAX_RENTAL_DAYS } from "@/utils/bookingPickers";
 import {
   MAX_EXTRA_HOURS,
   packageRangeState,
@@ -74,7 +74,7 @@ interface VehicleFiltersProps {
   scheduleVerdict?: ScheduleVerdict | null;
   useCases?: VehicleUseCase[];
   onUseCasesChange?: (useCases: VehicleUseCase[]) => void;
-  /** Fleet "Monthly rental" plan: 30–180 days, no 15-day limit on the return. */
+  /** Fleet "Monthly rental" plan: 30–180 days, no 15-day length limit. */
   monthly?: boolean;
   /**
    * Package lengths instead of a free return picker (not on the monthly plan):
@@ -184,7 +184,7 @@ export const VehicleFilters = ({
     );
   };
 
-  // Office hours (#2) + 15-day window (#15) for the date/time pickers
+  // Office hours (#2) + booking window (#15: pickup ≤ 30 days ahead, ≤ 15 days long) for the pickers
   const limits = useMemo(
     () =>
       bookingPickerLimits({
@@ -499,12 +499,12 @@ export const VehicleFilters = ({
         )}
         <p className="text-[11px] font-medium text-zinc-400 sm:pt-2">
           {monthly
-            ? "Monthly rental: 30 to 180 days, pickup within the next 15 days"
+            ? `Monthly rental: 30 to 180 days, pickup within the next ${ADVANCE_BOOKING_DAYS} days`
             : usePackages
               ? packageMode === "fleet"
-                ? `12 hours or 1–${MAX_BOOKING_DAYS} days, plus up to ${MAX_EXTRA_HOURS} extra hours · up to ${MAX_BOOKING_DAYS} days ahead`
-                : `12 hours or 1–${MAX_BOOKING_DAYS} days · book up to ${MAX_BOOKING_DAYS} days ahead`
-              : `Book up to ${MAX_BOOKING_DAYS} days ahead, up to ${MAX_BOOKING_DAYS} days long`}
+                ? `12 hours or 1–${MAX_RENTAL_DAYS} days, plus up to ${MAX_EXTRA_HOURS} extra hours · up to ${ADVANCE_BOOKING_DAYS} days ahead`
+                : `12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`
+              : `Book up to ${ADVANCE_BOOKING_DAYS} days ahead, up to ${MAX_RENTAL_DAYS} days long`}
         </p>
       </div>
       {limits.windowError && (

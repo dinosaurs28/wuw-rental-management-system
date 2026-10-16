@@ -240,6 +240,8 @@ export const extensionService = {
       method: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
       onlineTransactionRef?: string;
       proof_file_id?: string;
+      /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+      proof_file_ids?: string[];
       cashAmount?: number;
       onlineAmount?: number;
       collateral?: string;

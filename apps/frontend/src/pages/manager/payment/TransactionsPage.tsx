@@ -160,6 +160,7 @@ export function TransactionsTab() {
                           <span className="inline-flex items-center gap-2">
                             <ProofPhotoThumb
                               photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
+                              photos={txn.proofs}
                               caption={`${txn.bookingPublicId} · ${txn.customerName}`}
                             />
                             {txn.onlineTransactionRef ?? <span className="font-sans text-neutral-500">UPI photo</span>}

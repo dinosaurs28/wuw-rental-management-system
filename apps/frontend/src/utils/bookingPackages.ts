@@ -16,7 +16,7 @@
 import {
   CUSTOMER_PACKAGES,
   HALF_DAY_PACKAGE_HOURS,
-  MAX_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   PACKAGE_TOLERANCE_MS,
   packageLabel,
 } from "@repo/schemas";
@@ -77,7 +77,7 @@ export interface PackageChoice {
 }
 
 export interface PackageRangeState {
-  /** Packages whose return is inside the 15-day window, shortest first. */
+  /** Packages up to the 15-day length limit, shortest first. */
   options: PackageOption[];
   /** The package the range is (null when nothing can be booked for this pickup). */
   selected: PackageOption | null;
@@ -113,7 +113,7 @@ export function packageReturnProblem(
   maxReturnAt: Date | null,
 ): string | null {
   if (maxReturnAt && returnAt.getTime() > maxReturnAt.getTime()) {
-    return `Past the ${MAX_BOOKING_DAYS}-day booking limit`;
+    return `Past the ${MAX_RENTAL_DAYS}-day booking limit`;
   }
   if (!schedule) return null;
   const verdict = validateReturnTime(schedule, returnAt);
@@ -162,7 +162,7 @@ export function nearestPackageHours(startAt: Date, endAt: Date): number {
   const hours = (endAt.getTime() - startAt.getTime()) / HOUR_MS;
   if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_PACKAGE_HOURS;
   if (hours <= 12) return 12;
-  const days = Math.min(MAX_BOOKING_DAYS, Math.max(1, Math.round(hours / 24)));
+  const days = Math.min(MAX_RENTAL_DAYS, Math.max(1, Math.round(hours / 24)));
   return days * 24;
 }
 
@@ -203,8 +203,8 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
     });
 
   const options = CUSTOMER_PACKAGES.map((pkg) => ({ pkg, returnAt: returnOf(pkg.hours, 0) }))
-    // Capped by the 15-day window (from today) and the 15-day length — on the
-    // actual return (12 hours held to closing fits the window's last afternoon)
+    // Capped by the 15-day length (the pickup itself is held to the 30-day
+    // window by the pickers) — on the actual return
     .filter(({ returnAt }) => returnAt.getTime() <= maxReturnAt.getTime())
     .map(({ pkg, returnAt }) => {
       let disabledReason = packageReturnProblem(input.schedule, returnAt, null);

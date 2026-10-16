@@ -1,12 +1,35 @@
+import { z } from "zod";
 import {
   CUSTOMER_PROFILE_FIELD_LABELS,
+  customerAgeError,
   type CustomerProfileField,
 } from "@repo/schemas";
 
 /**
- * Customer profile completeness (#1): DL + Aadhaar numbers are required before
- * any booking. The backend reports the empty fields as `missingFields`.
+ * Customer profile completeness (#1, revised Oct 2026): name, phone, address
+ * and an age are required before any booking — no longer the DL / Aadhaar
+ * numbers or a date of birth. The backend reports the empty fields as
+ * `missingFields`.
  */
+
+/** Age input as typed (form value): whole years, 18–99. Send `Number(value)`. */
+export const ageInputSchema = z.string().superRefine((v, ctx) => {
+  const message = customerAgeError(v);
+  if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+});
+
+/** Digits only, at most 2 — for the age input's onChange. */
+export function formatAgeInput(raw: string | null | undefined): string {
+  return String(raw ?? "").replace(/\D/g, "").slice(0, 2);
+}
+
+/** Optional identity number input (staff forms): blank is fine, a value must pass `schema`. */
+export const optionalIdNumberInput = (schema: z.ZodTypeAny) =>
+  z.string().superRefine((v, ctx) => {
+    if (!v.trim()) return;
+    const r = schema.safeParse(v);
+    if (!r.success) ctx.addIssue({ code: z.ZodIssueCode.custom, message: r.error.errors[0]?.message });
+  });
 
 /** Customer booking gate (403) — the profile is missing required fields. */
 export const PROFILE_INCOMPLETE = "PROFILE_INCOMPLETE";

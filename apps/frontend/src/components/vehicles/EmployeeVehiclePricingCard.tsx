@@ -75,6 +75,8 @@ export const EmployeeVehiclePricingCard = ({
     setPaymentType,
     upiProof,
     setUpiProof,
+    upiExtraProofs,
+    setUpiExtraProofs,
     splitCash,
     setSplitCash,
     collateral,
@@ -88,6 +90,7 @@ export const EmployeeVehiclePricingCard = ({
   const counterValue: CounterPaymentValue = {
     method: isOnline ? "CASH" : paymentType,
     proof: upiProof,
+    extraProofs: upiExtraProofs,
     splitCash,
     collateral,
   };
@@ -537,6 +540,7 @@ export const EmployeeVehiclePricingCard = ({
             onChange={(next) => {
               setPaymentType(next.method);
               setUpiProof(next.proof);
+              setUpiExtraProofs(next.extraProofs ?? []);
               setSplitCash(next.splitCash);
               setCollateral(next.collateral);
             }}

@@ -348,12 +348,17 @@ export const managerDashboardService = {
     list: "picked_up" | "upcoming",
     type: BookingListType,
     limit = 200,
+    /** Search by vehicle make / model or registration number (server-side). */
+    q?: string,
   ): Promise<FleetTabResult> => {
     const path =
       list === "picked_up"
         ? "/branchManager/dashboard/bookings/pending"
         : "/branchManager/dashboard/bookings/active";
-    const response = await apiClient.get(path, { params: { limit, type }, timeout: 10000 });
+    const response = await apiClient.get(path, {
+      params: { limit, type, ...(q ? { q } : {}) },
+      timeout: 10000,
+    });
     const data = response.data.data ?? {};
     return {
       bookings: data.bookings ?? [],
@@ -367,7 +372,7 @@ export const managerDashboardService = {
    * GET /branchManager/dashboard/bookings/overdue — always 200 (empty = []).
    */
   getOverdueReturns: async (
-    params: { page?: number; limit?: number; type?: BookingListType } = {},
+    params: { page?: number; limit?: number; type?: BookingListType; q?: string } = {},
   ): Promise<OverdueReturnsSnapshot> => {
     const response = await apiClient.get<OverdueReturnsResponse>(
       "/branchManager/dashboard/bookings/overdue",

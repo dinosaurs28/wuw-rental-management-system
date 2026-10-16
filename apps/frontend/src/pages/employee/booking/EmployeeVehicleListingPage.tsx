@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
 import {
   MONTHLY_MIN_DAYS,
   MONTHLY_MAX_DAYS,
-  MAX_BOOKING_DAYS,
+  ADVANCE_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   snapPickupPastClosedToday,
 } from "@/utils/bookingPickers";
 
@@ -275,7 +276,7 @@ export default function EmployeeVehicleListingPage() {
     if (next === "MONTHLY") {
       setSelectedReturnDate(addDays(selectedPickupDate, MONTHLY_MIN_DAYS));
       setReturnTime(pickupTime);
-    } else if (selectedReturnDate && selectedReturnDate > addDays(selectedPickupDate, MAX_BOOKING_DAYS)) {
+    } else if (selectedReturnDate && selectedReturnDate > addDays(selectedPickupDate, MAX_RENTAL_DAYS)) {
       setSelectedReturnDate(addDays(selectedPickupDate, 1));
       setReturnTime(pickupTime);
     }
@@ -323,7 +324,7 @@ export default function EmployeeVehicleListingPage() {
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div role="radiogroup" aria-label="Rental plan" className="inline-flex rounded-full border border-zinc-200 bg-white p-1">
             {([
-              { value: "STANDARD", label: `Standard (up to ${MAX_BOOKING_DAYS} days)` },
+              { value: "STANDARD", label: `Standard (up to ${MAX_RENTAL_DAYS} days)` },
               { value: "MONTHLY", label: "Monthly rental" },
             ] as const).map((opt) => (
               <button
@@ -344,7 +345,7 @@ export default function EmployeeVehicleListingPage() {
           </div>
           {isMonthly && (
             <p className="text-xs text-zinc-500">
-              {MONTHLY_MIN_DAYS} to {MONTHLY_MAX_DAYS} days, pickup within the next {MAX_BOOKING_DAYS} days.
+              {MONTHLY_MIN_DAYS} to {MONTHLY_MAX_DAYS} days, pickup within the next {ADVANCE_BOOKING_DAYS} days.
               Priced on the monthly rate.
             </p>
           )}

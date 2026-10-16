@@ -11,13 +11,31 @@ interface ZoomableImageProps {
   canvasClassName?: string;
   /** Max height of the image area (CSS value). Defaults to 65vh. */
   maxHeight?: string;
+  /** Smaller copy shown until `src` has loaded (kept if `src` fails). */
+  placeholderSrc?: string | null;
 }
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
 
-export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight = "65vh" }: ZoomableImageProps) {
+export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight = "65vh", placeholderSrc }: ZoomableImageProps) {
+  const usePlaceholder = !!placeholderSrc && placeholderSrc !== src;
+  const [fullReady, setFullReady] = useState(!usePlaceholder);
+  useEffect(() => {
+    if (!usePlaceholder) {
+      setFullReady(true);
+      return;
+    }
+    setFullReady(false);
+    const full = new Image();
+    full.onload = () => setFullReady(true);
+    full.src = src;
+    return () => {
+      full.onload = null;
+    };
+  }, [src, usePlaceholder]);
+  const shownSrc = fullReady || !placeholderSrc ? src : placeholderSrc;
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -234,7 +252,7 @@ export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight 
       >
         <img
           ref={imgRef}
-          src={src}
+          src={shownSrc}
           alt={alt}
           draggable={false}
           className="max-w-full object-contain pointer-events-none"

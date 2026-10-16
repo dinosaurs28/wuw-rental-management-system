@@ -4,13 +4,13 @@ import { Footer } from "./Footer";
 import { HeroOfferSlider } from "./HeroOfferSlider";
 import { StoreButtons } from "./StoreButtons";
 import { Timer, CarFront, ClipboardCheck } from "lucide-react";
-import { MAX_BOOKING_DAYS } from "@/utils/bookingPickers";
+import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS } from "@/utils/bookingPickers";
 
 const FEATURES = [
   {
     icon: Timer,
     title: "12 hours or by the day",
-    body: `Book 12 hours or 1–${MAX_BOOKING_DAYS} days. The price you see includes GST and free kilometres.`,
+    body: `Book 12 hours or 1–${MAX_RENTAL_DAYS} days, up to ${ADVANCE_BOOKING_DAYS} days ahead. The price you see includes GST and free kilometres.`,
   },
   {
     icon: CarFront,

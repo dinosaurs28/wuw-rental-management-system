@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { AlertCircle, Loader2 } from "lucide-react";
 import axios from "axios";
+import { z } from "zod";
 import { updateProfileSchema } from "@repo/schemas";
-import type { UpdateProfileInput } from "@repo/schemas";
 
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -24,45 +24,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format, parse } from "date-fns";
 
 import { useAuthStore } from "@/store/auth.store";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { userService, type UserProfile } from "@/services/user.service";
-import { cn } from "@/lib/utils";
-import {
-  describeMissingProfileFields,
-  formatAadhaarInput,
-  formatDrivingLicenceInput,
-} from "@/lib/customerProfile";
+import { ageInputSchema, describeMissingProfileFields, formatAgeInput } from "@/lib/customerProfile";
+
+// The form holds the age as typed (18–99, whole years); it is sent as a number.
+const profileFormSchema = updateProfileSchema.extend({ age: ageInputSchema });
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 // Form values from a profile (GET /user/profile or the PUT response's data).
 const toFormValues = (
   profile: Omit<UserProfile, "isProfileCompleted" | "missingFields">,
-): UpdateProfileInput => ({
+): ProfileFormValues => ({
   name: profile.name || "",
   phone: profile.phone || "",
-  dob: profile.dob || "",
+  age: profile.age != null ? String(profile.age) : "",
   addressLine1: profile.addressLine1 || "",
   city: profile.city || "",
   state: profile.state || "",
   country: profile.country || "",
   zipCode: profile.zipCode || "",
   alternatePhone: profile.alternatePhone || "",
-  drivingLicenceNumber: formatDrivingLicenceInput(profile.drivingLicenceNumber),
-  aadhaarNumber: formatAadhaarInput(profile.aadhaarNumber),
 });
 
 export const PersonalInformationPage = () => {
@@ -78,20 +67,18 @@ export const PersonalInformationPage = () => {
     missing: string[];
   } | null>(null);
 
-  const form = useForm<UpdateProfileInput>({
-    resolver: zodResolver(updateProfileSchema),
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: "",
       phone: "",
-      dob: "",
+      age: "",
       addressLine1: "",
       city: "",
       state: "",
       country: "",
       zipCode: "",
       alternatePhone: "",
-      drivingLicenceNumber: "",
-      aadhaarNumber: "",
     },
   });
 
@@ -135,10 +122,10 @@ export const PersonalInformationPage = () => {
     }
   }, [isAuthenticated, form, navigate]);
 
-  const onSubmit = async (data: UpdateProfileInput) => {
+  const onSubmit = async (data: ProfileFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await userService.updateProfile(data);
+      const response = await userService.updateProfile({ ...data, age: Number(data.age) });
       // The server stores normalised numbers — show what it saved.
       form.reset(toFormValues(response.data));
       setCompleteness({
@@ -168,7 +155,7 @@ export const PersonalInformationPage = () => {
           for (const issue of issues) {
             const field = issue?.path?.[0];
             if (typeof field === "string" && field in data) {
-              form.setError(field as keyof UpdateProfileInput, {
+              form.setError(field as keyof ProfileFormValues, {
                 message: issue.message,
               });
             }
@@ -182,16 +169,6 @@ export const PersonalInformationPage = () => {
       }
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Parse DOB string to Date object for calendar
-  const parseDobToDate = (dob: string | undefined): Date | undefined => {
-    if (!dob) return undefined;
-    try {
-      return parse(dob, "yyyy-MM-dd", new Date());
-    } catch {
-      return undefined;
     }
   };
 
@@ -345,125 +322,27 @@ export const PersonalInformationPage = () => {
                       Personal Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Date of Birth */}
+                      {/* Age (replaces the date of birth, Oct 2026) */}
                       <FormField
                         control={form.control}
-                        name="dob"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Date of Birth</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      "h-12 w-full justify-start text-left font-normal",
-                                      !field.value && "text-muted-foreground",
-                                    )}
-                                  >
-                                    {field.value
-                                      ? format(
-                                          parseDobToDate(field.value) ||
-                                            new Date(),
-                                          "PPP",
-                                        )
-                                      : "dd-mm-yyyy"}
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-auto p-0"
-                                align="start"
-                              >
-                                <Calendar
-                                  mode="single"
-                                  selected={parseDobToDate(field.value)}
-                                  onSelect={(date) => {
-                                    if (date) {
-                                      field.onChange(
-                                        format(date, "yyyy-MM-dd"),
-                                      );
-                                    }
-                                  }}
-                                  disabled={(date) =>
-                                    date > new Date() ||
-                                    date < new Date("1900-01-01")
-                                  }
-                                  captionLayout="dropdown"
-                                  fromYear={1900}
-                                  toYear={new Date().getFullYear()}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </section>
-
-                  {/* Identity Section — DL + Aadhaar numbers (#1) */}
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-                      Identity
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Driving Licence Number */}
-                      <FormField
-                        control={form.control}
-                        name="drivingLicenceNumber"
+                        name="age"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Driving Licence Number *</FormLabel>
+                            <FormLabel>Age *</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="KA01 20110012345"
-                                autoComplete="off"
-                                autoCapitalize="characters"
-                                spellCheck={false}
-                                className="h-12"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    formatDrivingLicenceInput(e.target.value),
-                                  )
-                                }
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Required to book a vehicle
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Aadhaar Number */}
-                      <FormField
-                        control={form.control}
-                        name="aadhaarNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Aadhaar Number *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="1234 5678 9012"
+                                placeholder="25"
                                 inputMode="numeric"
                                 autoComplete="off"
-                                maxLength={14}
-                                className="h-12 tabular-nums"
+                                maxLength={2}
+                                className="h-12"
                                 {...field}
+                                value={field.value ?? ""}
                                 onChange={(e) =>
-                                  field.onChange(
-                                    formatAadhaarInput(e.target.value),
-                                  )
+                                  field.onChange(formatAgeInput(e.target.value))
                                 }
                               />
                             </FormControl>
-                            <FormDescription>
-                              Required to book a vehicle
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}

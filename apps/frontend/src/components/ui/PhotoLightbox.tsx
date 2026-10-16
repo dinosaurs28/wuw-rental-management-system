@@ -14,6 +14,8 @@ export interface LightboxItem {
   /** Caption shown under the photo, e.g. vehicle reg no / photo type. */
   label?: string | null;
   mime?: string | null;
+  /** Smaller copy: the thumbnails, and shown while `url` loads. */
+  previewUrl?: string | null;
 }
 
 interface PhotoLightboxProps {
@@ -95,6 +97,7 @@ export function PhotoLightbox({
               <ZoomableImage
                 key={`${index}-${item.url}`}
                 src={item.url}
+                placeholderSrc={item.previewUrl}
                 alt={item.label || `Photo ${index + 1}`}
                 maxHeight="70vh"
                 canvasClassName="min-h-[40vh]"
@@ -153,7 +156,13 @@ export function PhotoLightbox({
                 }`}
               >
                 {isImageItem(it) ? (
-                  <img src={it.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  <img
+                    src={it.previewUrl || it.url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <FileText className="w-5 h-5 text-zinc-400" />
                 )}

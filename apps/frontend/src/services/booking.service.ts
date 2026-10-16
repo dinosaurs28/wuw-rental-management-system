@@ -276,6 +276,8 @@ export interface EmployeeBooking {
   remainingBalance?: string;
   remainingPaidAt?: string | null;
   remainingPaidDuring?: string | null;
+  /** Manual pickup discount given (₹ off the rent incl. GST; legacy: already off remainingBalance). Details only. */
+  pickupDiscount?: { amount: string; reason: string | null; maxAmount: string } | null;
   requiresManagerConfirmation?: boolean;
   frozenChargeConfig?: FrozenChargeConfig | null;
   startOdometer?: number | null;
@@ -704,6 +706,8 @@ export const bookingService = {
       /** UPI = counter UPI backed by proof_file_id; SPLIT = cashAmount + onlineAmount; CREDIT needs collateral (#11). */
       method: "CASH" | "UPI" | "ONLINE" | "SPLIT" | "CREDIT";
       proof_file_id?: string;
+      /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+      proof_file_ids?: string[];
       cashAmount?: number;
       onlineAmount?: number;
       collateral?: string;
@@ -831,6 +835,8 @@ export const bookingService = {
     utr?: string;
     /** Photo of the customer's UPI payment screen (#3) — UPI and the UPI part of SPLIT. */
     proof_file_id?: string;
+    /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+    proof_file_ids?: string[];
     /** SPLIT: the cash part (the UPI part is the rest of the total). */
     cash_amount?: number;
     /** SPLIT (optional): the UPI part — cash + UPI must equal the total. */

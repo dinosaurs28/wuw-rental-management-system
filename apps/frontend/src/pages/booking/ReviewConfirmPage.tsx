@@ -213,8 +213,8 @@ export const ReviewConfirmPage = () => {
   // Check if we have vehicle selected
   const hasVehicle = hasVehicleSelected();
 
-  // Profile completeness (#1): bookings need the DL + Aadhaar numbers (and the
-  // rest of the profile). Pre-checked here so the customer isn't bounced at
+  // Profile completeness (#1, revised Oct 2026): bookings need the profile —
+  // name, phone, address and age (no DL / Aadhaar numbers). Pre-checked here so the customer isn't bounced at
   // payment; the server enforces it too (403 PROFILE_INCOMPLETE).
   const { data: profile } = useQuery({
     queryKey: ["user-profile"],
@@ -235,7 +235,7 @@ export const ReviewConfirmPage = () => {
   };
 
   // Check if form is valid for submission. The KYC document is optional (X2):
-  // the DL + Aadhaar numbers on the profile are what the booking needs.
+  // a complete profile is what the booking needs.
   const isFormValid = paymentType && termsAccepted && !profileIncomplete;
 
   // Handle Confirm & Pay click - validate, check type-class limits, then navigate

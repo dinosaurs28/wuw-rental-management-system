@@ -6,7 +6,10 @@ export interface EmployeeCustomerDetail {
   /** null for a walk-in without a real email (placeholder hidden). */
   email: string | null;
   phone: string;
+  /** Older customers only — the form asks for an age now. */
   dob?: string | null;
+  /** Entered age, else derived from dob on the server; absent from older servers. */
+  age?: number | null;
   addressLine1?: string | null;
   city?: string | null;
   state?: string | null;
@@ -30,8 +33,12 @@ export interface CompleteWalkinProfilePayload {
   name: string;
   /** Omit when blank — the stored email (real or placeholder) is kept. */
   email?: string;
-  drivingLicenceNumber: string;
-  aadhaarNumber: string;
+  /** Optional (Oct 2026): omit when blank — the stored number is kept. */
+  drivingLicenceNumber?: string;
+  aadhaarNumber?: string;
+  /** Age in years, 18–99 (replaces dob). */
+  age: number;
+  /** Old builds only. */
   dob?: string;
   addressLine1: string;
   city: string;

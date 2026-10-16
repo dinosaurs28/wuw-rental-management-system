@@ -1822,11 +1822,7 @@ export default function ReturnProcessPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <HandoverConditionPhotos
-              data={pickupCapturesData}
-              onOpen={openLightbox}
-              gridClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-            />
+            <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} />
           </CardContent>
         </Card>
       )}

@@ -4,8 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import {
@@ -26,12 +25,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import {
   aadhaarNumberSchema,
@@ -45,12 +38,15 @@ import {
   type CompleteWalkinProfilePayload,
 } from "@/services/employeeCustomer.service";
 import {
+  ageInputSchema,
   apiErrorCode,
   describeMissingProfileFields,
   EMAIL_CHANGE_NOT_ALLOWED,
   formatAadhaarInput,
+  formatAgeInput,
   formatDrivingLicenceInput,
   isVerificationPendingError,
+  optionalIdNumberInput,
 } from "@/lib/customerProfile";
 import { useNavigate } from "react-router-dom";
 
@@ -58,11 +54,11 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
   // Optional at the counter (#1) — left out of the payload when blank.
   email: optionalEmailSchema,
-  drivingLicenceNumber: drivingLicenceNumberSchema,
-  aadhaarNumber: aadhaarNumberSchema,
-  dob: z.date({
-    required_error: "Date of birth is required.",
-  }),
+  // Optional since Oct 2026 (the DL number is taken at pickup) — left out when blank.
+  drivingLicenceNumber: optionalIdNumberInput(drivingLicenceNumberSchema),
+  aadhaarNumber: optionalIdNumberInput(aadhaarNumberSchema),
+  // Replaces the date of birth (Oct 2026): whole years, 18–99.
+  age: ageInputSchema,
   addressLine1: z.string().min(5, "Address is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().min(2, "State is required"),
@@ -89,7 +85,7 @@ export const CompleteProfileDialog = ({
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
-  // Empty required fields reported by the server (e.g. the DL/Aadhaar numbers).
+  // Empty required fields reported by the server (e.g. the age).
   const [missingFields, setMissingFields] = useState<string[]>([]);
   // The customer already has a real (sign-in) email — read-only at the counter.
   const [hasStoredEmail, setHasStoredEmail] = useState(false);
@@ -101,6 +97,7 @@ export const CompleteProfileDialog = ({
       email: "",
       drivingLicenceNumber: "",
       aadhaarNumber: "",
+      age: "",
       country: "India",
       city: "",
       state: "",
@@ -133,7 +130,7 @@ export const CompleteProfileDialog = ({
             state: data.state || "",
             addressLine1: data.addressLine1 || "",
             zipCode: data.zipCode || "",
-            dob: data.dob ? new Date(data.dob) : undefined,
+            age: data.age != null ? String(data.age) : "",
           });
           setMissingFields(data.missingFields ?? []);
           setHasStoredEmail(!!data.email);
@@ -160,9 +157,9 @@ export const CompleteProfileDialog = ({
         // Blank = keep the stored email (real or placeholder). A real stored
         // email is never resent: the counter can't change it.
         ...(email && !hasStoredEmail ? { email } : {}),
-        drivingLicenceNumber: data.drivingLicenceNumber,
-        aadhaarNumber: data.aadhaarNumber,
-        dob: data.dob ? format(data.dob, "yyyy-MM-dd") : undefined,
+        ...(data.drivingLicenceNumber.trim() ? { drivingLicenceNumber: data.drivingLicenceNumber } : {}),
+        ...(data.aadhaarNumber.trim() ? { aadhaarNumber: data.aadhaarNumber } : {}),
+        age: Number(data.age),
         addressLine1: data.addressLine1,
         city: data.city,
         state: data.state,
@@ -307,7 +304,7 @@ export const CompleteProfileDialog = ({
                   name="drivingLicenceNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driving Licence number *</FormLabel>
+                      <FormLabel>Driving Licence number (optional)</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="KA01 20110012345"
@@ -331,7 +328,7 @@ export const CompleteProfileDialog = ({
                   name="aadhaarNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Aadhaar number *</FormLabel>
+                      <FormLabel>Aadhaar number (optional)</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="1234 5678 9012"
@@ -352,44 +349,23 @@ export const CompleteProfileDialog = ({
               </div>
               <FormField
                 control={form.control}
-                name="dob"
+                name="age"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date of Birth</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                          captionLayout="dropdown"
-                          fromYear={1900}
-                          toYear={new Date().getFullYear()}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>Age *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="25"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={2}
+                        className="tabular-nums"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(formatAgeInput(e.target.value))
+                        }
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { AlertCircle, Loader2 } from "lucide-react";
 import axios from "axios";
+import { z } from "zod";
 import { updateProfileSchema } from "@repo/schemas";
-import type { UpdateProfileInput } from "@repo/schemas";
 
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -23,45 +23,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format, parse } from "date-fns";
 
 import { useAuthStore } from "@/store/auth.store";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { userService, type UserProfile } from "@/services/user.service";
-import { cn } from "@/lib/utils";
-import {
-  describeMissingProfileFields,
-  formatAadhaarInput,
-  formatDrivingLicenceInput,
-} from "@/lib/customerProfile";
+import { ageInputSchema, describeMissingProfileFields, formatAgeInput } from "@/lib/customerProfile";
+
+// The form holds the age as typed (18–99, whole years); it is sent as a number.
+const profileFormSchema = updateProfileSchema.extend({ age: ageInputSchema });
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 // Form values from a profile (GET /user/profile or the PUT response's data).
 const toFormValues = (
   profile: Omit<UserProfile, "isProfileCompleted" | "missingFields">,
-): UpdateProfileInput => ({
+): ProfileFormValues => ({
   name: profile.name || "",
   phone: profile.phone || "",
-  dob: profile.dob || "",
+  age: profile.age != null ? String(profile.age) : "",
   addressLine1: profile.addressLine1 || "",
   city: profile.city || "",
   state: profile.state || "",
   country: profile.country || "",
   zipCode: profile.zipCode || "",
   alternatePhone: profile.alternatePhone || "",
-  drivingLicenceNumber: formatDrivingLicenceInput(profile.drivingLicenceNumber),
-  aadhaarNumber: formatAadhaarInput(profile.aadhaarNumber),
 });
 
 export function ProfilePage() {
@@ -70,7 +59,7 @@ export function ProfilePage() {
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [originalData, setOriginalData] = useState<UpdateProfileInput | null>(
+  const [originalData, setOriginalData] = useState<ProfileFormValues | null>(
     null,
   );
   const [userEmail, setUserEmail] = useState<string>("");
@@ -80,23 +69,21 @@ export function ProfilePage() {
     missing: string[];
   } | null>(null);
 
-  const form = useForm<UpdateProfileInput>({
-    resolver: zodResolver(updateProfileSchema),
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
     // Submit stays disabled while invalid, so show each error once the field
     // is left (e.g. an Aadhaar number that fails the checksum).
     mode: "onTouched",
     defaultValues: {
       name: "",
       phone: "",
-      dob: "",
+      age: "",
       addressLine1: "",
       city: "",
       state: "",
       country: "",
       zipCode: "",
       alternatePhone: "",
-      drivingLicenceNumber: "",
-      aadhaarNumber: "",
     },
   });
 
@@ -141,10 +128,10 @@ export function ProfilePage() {
     }
   }, [isAuthenticated, form, navigate]);
 
-  const onSubmit = async (data: UpdateProfileInput) => {
+  const onSubmit = async (data: ProfileFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await userService.updateProfile(data);
+      const response = await userService.updateProfile({ ...data, age: Number(data.age) });
       // The server stores normalised numbers — show what it saved.
       const saved = toFormValues(response.data);
       form.reset(saved);
@@ -177,7 +164,7 @@ export function ProfilePage() {
           for (const issue of issues) {
             const field = issue?.path?.[0];
             if (typeof field === "string" && field in data) {
-              form.setError(field as keyof UpdateProfileInput, {
+              form.setError(field as keyof ProfileFormValues, {
                 message: issue.message,
               });
             }
@@ -191,16 +178,6 @@ export function ProfilePage() {
       }
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Parse DOB string to Date object for calendar
-  const parseDobToDate = (dob: string | undefined): Date | undefined => {
-    if (!dob) return undefined;
-    try {
-      return parse(dob, "yyyy-MM-dd", new Date());
-    } catch {
-      return undefined;
     }
   };
 
@@ -393,132 +370,28 @@ export function ProfilePage() {
                       Personal Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Date of Birth */}
+                      {/* Age (replaces the date of birth, Oct 2026) */}
                       <FormField
                         control={form.control}
-                        name="dob"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">
-                              Date of Birth
-                            </FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      "h-14 rounded-full bg-white border-zinc-200 text-zinc-900 px-6 w-full justify-start text-left font-medium hover:bg-zinc-100 hover:text-zinc-900 transition-all duration-300",
-                                      !field.value && "text-zinc-400",
-                                    )}
-                                  >
-                                    {field.value
-                                      ? format(
-                                          parseDobToDate(field.value) ||
-                                            new Date(),
-                                          "PPP",
-                                        )
-                                      : "Select your birth date"}
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-auto p-0 border-zinc-200 bg-white text-zinc-900"
-                                align="start"
-                              >
-                                <Calendar
-                                  mode="single"
-                                  selected={parseDobToDate(field.value)}
-                                  onSelect={(date) => {
-                                    if (date) {
-                                      field.onChange(
-                                        format(date, "yyyy-MM-dd"),
-                                      );
-                                    }
-                                  }}
-                                  disabled={(date) =>
-                                    date > new Date() ||
-                                    date < new Date("1900-01-01")
-                                  }
-                                  captionLayout="dropdown"
-                                  fromYear={1900}
-                                  toYear={new Date().getFullYear()}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </section>
-
-                  {/* Identity Section — DL + Aadhaar numbers (#1) */}
-                  <section>
-                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
-                      Identity
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Driving Licence Number */}
-                      <FormField
-                        control={form.control}
-                        name="drivingLicenceNumber"
+                        name="age"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">
-                              Driving Licence Number *
-                            </FormLabel>
+                            <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Age *</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="KA01 20110012345"
-                                autoComplete="off"
-                                autoCapitalize="characters"
-                                spellCheck={false}
-                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    formatDrivingLicenceInput(e.target.value),
-                                  )
-                                }
-                              />
-                            </FormControl>
-                            <FormDescription className="px-6 text-xs text-zinc-400">
-                              Required to book a vehicle
-                            </FormDescription>
-                            <FormMessage className="text-red-400/90" />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Aadhaar Number */}
-                      <FormField
-                        control={form.control}
-                        name="aadhaarNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">
-                              Aadhaar Number *
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="1234 5678 9012"
+                                placeholder="25"
                                 inputMode="numeric"
                                 autoComplete="off"
-                                maxLength={14}
-                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6 tabular-nums"
+                                maxLength={2}
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
+                                value={field.value ?? ""}
                                 onChange={(e) =>
-                                  field.onChange(
-                                    formatAadhaarInput(e.target.value),
-                                  )
+                                  field.onChange(formatAgeInput(e.target.value))
                                 }
                               />
                             </FormControl>
-                            <FormDescription className="px-6 text-xs text-zinc-400">
-                              Required to book a vehicle
-                            </FormDescription>
-                            <FormMessage className="text-red-400/90" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />

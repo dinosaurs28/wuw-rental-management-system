@@ -114,6 +114,7 @@ import {
   type PickupSummary,
 } from "@/services/completedOperation.service";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
+import { PickupDiscountPanel, cleanDiscountInput, pickupDiscountInputError } from "@/components/payment/PickupDiscountPanel";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
 import { isDlInUse, dlInUseToastOptions } from "@/lib/dlInUse";
@@ -419,6 +420,10 @@ export default function StaffPickupsPage() {
   const [pendingDiscountCode, setPendingDiscountCode] = useState<string | null>(null);
   /** Last counter-coupon refusal (server message), shown under the coupon field. */
   const [couponError, setCouponError] = useState<string | null>(null);
+  // Manual pickup discount: staged before the session (sent with the initiate), and
+  // the last server refusal
+  const [pendingManualDiscount, setPendingManualDiscount] = useState<{ amount: number; reason: string | null } | null>(null);
+  const [manualDiscountError, setManualDiscountError] = useState<string | null>(null);
 
   // --- STEP 3: DL number (required, X2) + KYC documents (optional) ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
@@ -657,7 +662,12 @@ export default function StaffPickupsPage() {
     },
     onError: (error: any) => {
       const status = error?.response?.status;
-      if (error?.response?.data?.couponRejected) {
+      if (error?.response?.data?.pickupDiscountRejected) {
+        // The staged discount didn't fit the bill — nothing was saved; fix it and start again
+        setPendingManualDiscount(null);
+        setManualDiscountError(error.response.data.message || "This discount can't be given.");
+        toast.error(error.response.data.message || "This discount can't be given.");
+      } else if (error?.response?.data?.couponRejected) {
         // The saved counter coupon failed its full check — nothing was saved.
         // Drop it so staff can fix the code or start the payment without it.
         setPendingDiscountCode(null);
@@ -707,6 +717,51 @@ export default function StaffPickupsPage() {
       toast.success("Discount removed");
     },
     onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to remove discount"),
+  });
+
+  // Manual pickup discount on the open bill (Unified Payments)
+  const setManualDiscountMutation = useMutation({
+    mutationFn: (payload: { amount: number; reason: string | null }) =>
+      paymentSessionService.setPickupSessionDiscount(bookingId!, payload),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      setManualDiscountError(null);
+      toast.success("Discount applied");
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || "Could not apply the discount";
+      setManualDiscountError(message);
+      toast.error(message);
+    },
+  });
+
+  const removeManualDiscountMutation = useMutation({
+    mutationFn: () => paymentSessionService.removePickupSessionDiscount(bookingId!),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      setManualDiscountError(null);
+      toast.success("Discount removed");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to remove discount"),
+  });
+
+  // Legacy branches: the discount comes off the remaining balance before it is collected
+  const legacyDiscountMutation = useMutation({
+    mutationFn: (payload: { amount: number; reason: string | null } | null) =>
+      payload
+        ? paymentSessionService.setLegacyPickupDiscount(bookingId!, payload)
+        : paymentSessionService.removeLegacyPickupDiscount(bookingId!),
+    onSuccess: (_, payload) => {
+      setManualDiscountError(null);
+      toast.success(payload ? "Discount applied" : "Discount removed");
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || "Could not change the discount";
+      setManualDiscountError(message);
+      toast.error(message);
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
   });
 
   const addDepositMutation = useMutation({
@@ -822,6 +877,58 @@ export default function StaffPickupsPage() {
     fastagReady;
   // The DL status may be left unset (X1); only Collected / Not collected can be chosen.
   const dlChoiceReady = pickupDlChoiceError(dlStatus) === null;
+
+  // Manual pickup discount: the bill's (session), staged for the initiate, or the
+  // legacy one already off the remaining balance
+  const remainingUnpaid =
+    booking?.isAdvancePayment && !booking.remainingPaidAt ? parseFloat(booking.remainingBalance ?? "0") || 0 : 0;
+  const manualDiscountView = !booking ? null : useSessionFlow ? (
+    pickupSession ? (
+      <PickupDiscountPanel
+        applied={pickupSession.pickupDiscount
+          ? { amount: Number(pickupSession.pickupDiscount.amount), reason: pickupSession.pickupDiscount.reason }
+          : null}
+        max={pickupSession.pickupDiscountMax != null ? Number(pickupSession.pickupDiscountMax) : null}
+        finalPayable={Number(pickupSession.netPayable)}
+        busy={setManualDiscountMutation.isPending || removeManualDiscountMutation.isPending}
+        applying={setManualDiscountMutation.isPending}
+        removing={removeManualDiscountMutation.isPending}
+        error={manualDiscountError}
+        disabled={pickupSession.status !== "AWAITING_PAYMENT" && pickupSession.status !== "OPEN"}
+        onApply={(amount, reason) => setManualDiscountMutation.mutateAsync({ amount, reason })}
+        onRemove={() => removeManualDiscountMutation.mutate()}
+      />
+    ) : (
+      <PickupDiscountPanel
+        applied={pendingManualDiscount}
+        max={remainingUnpaid}
+        finalPayable={remainingUnpaid - (pendingManualDiscount?.amount ?? 0)}
+        note="Checked and added to the bill when you start the payment."
+        error={manualDiscountError}
+        onApply={(amount, reason) => {
+          setManualDiscountError(null);
+          setPendingManualDiscount({ amount, reason });
+        }}
+        onRemove={() => setPendingManualDiscount(null)}
+      />
+    )
+  ) : booking.isAdvancePayment && !booking.remainingPaidAt && (remainingUnpaid > 0 || booking.pickupDiscount) ? (
+    <PickupDiscountPanel
+      applied={booking.pickupDiscount
+        ? { amount: Number(booking.pickupDiscount.amount), reason: booking.pickupDiscount.reason }
+        : null}
+      max={remainingUnpaid + Number(booking.pickupDiscount?.amount ?? 0)}
+      finalPayable={remainingUnpaid}
+      busy={legacyDiscountMutation.isPending}
+      applying={legacyDiscountMutation.isPending && legacyDiscountMutation.variables != null}
+      removing={legacyDiscountMutation.isPending && legacyDiscountMutation.variables == null}
+      error={manualDiscountError}
+      onApply={(amount, reason) => legacyDiscountMutation.mutateAsync({ amount, reason })}
+      onRemove={() => legacyDiscountMutation.mutate(null)}
+    />
+  ) : (
+    <p className="text-xs text-muted-foreground">No rent is payable at this pickup, so there is nothing to discount.</p>
+  );
 
   // --- HANDLERS ---
   const handleFileSelect = async (file: File) => {
@@ -998,6 +1105,7 @@ export default function StaffPickupsPage() {
           : undefined,
         // extensionPublicId: pendingExtensionPublicId ?? undefined, // extension disabled
         discountCode: pendingDiscountCode ?? undefined,
+        pickupDiscount: pendingManualDiscount ?? undefined,
         dlStatus: payload.dlStatus,
         drivingLicenceNumber: payload.drivingLicenceNumber,
       });
@@ -1763,12 +1871,21 @@ export default function StaffPickupsPage() {
         {/* ─────────────────────────────────────────────────────────── */}
         <StepCard
           stepNum={6}
-          title="Safety Deposit"
-          subtitle="Optional — collect a refundable deposit before handover"
+          title="Discount & Safety Deposit"
+          subtitle="Optional — a flat ₹ discount on the rent, then a refundable deposit before handover"
           isCompleted={requestSafetyDeposit === false || (requestSafetyDeposit && !!safetyDepositAmount && !!safetyDepositReason)}
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4 space-y-4">
+            {/* Manual discount — off the rent payable at pickup, before the safety deposit */}
+            <div className="space-y-2 border-b pb-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Tag className="h-4 w-4 text-[#FF5F00]" />
+                Discount
+              </div>
+              {manualDiscountView}
+            </div>
+
             <div className="flex items-center gap-3">
               <Checkbox
                 id="requestDeposit"
@@ -1866,7 +1983,9 @@ export default function StaffPickupsPage() {
             ) : pickupSession ? (
               // Session is open — apply/remove discount live
               (() => {
-                const discountEntry = pickupSession.entries.find((e) => e.classification === "DISCOUNT");
+                const discountEntry = pickupSession.entries.find(
+                  (e) => e.classification === "DISCOUNT" && !e.isVoided && e.referenceType !== "PICKUP_DISCOUNT",
+                );
                 return discountEntry ? (
                   <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-4 py-3">
                     <div className="flex items-center gap-2 text-green-800">
@@ -2022,11 +2141,18 @@ export default function StaffPickupsPage() {
                           <span className="text-xs">Applied at payment</span>
                         </div>
                       )}
+                      {pendingManualDiscount && (
+                        <div className="flex items-center justify-between px-4 py-2.5 text-green-700">
+                          <span className="flex items-center gap-1"><Tag className="h-3 w-3" /> Discount</span>
+                          <span className="font-medium">−{formatPrice(pendingManualDiscount.amount)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
                         <span className="font-semibold text-sm">Estimated total</span>
                         <span className="font-bold text-base">
                           {formatPrice(
-                            (parseFloat(booking.remainingBalance ?? "0") || 0) +
+                            (parseFloat(booking.remainingBalance ?? "0") || 0) -
+                            (pendingManualDiscount?.amount ?? 0) +
                             // extension charge removed (feature disabled)
                             (requestSafetyDeposit ? parseFloat(safetyDepositAmount || "0") || 0 : 0),
                           )}
@@ -2089,7 +2215,11 @@ export default function StaffPickupsPage() {
                     />
                     <LedgerSummaryCard
                       session={pickupSession}
-                      onRemoveDiscount={() => removeDiscountMutation.mutate()}
+                      onRemoveDiscount={(entry) =>
+                        entry.referenceType === "PICKUP_DISCOUNT"
+                          ? removeManualDiscountMutation.mutate()
+                          : removeDiscountMutation.mutate()
+                      }
                     />
                     <RecordPaymentPanel
                       session={pickupSession}
@@ -2427,7 +2557,7 @@ export default function StaffPickupsPage() {
 // ============================================================================
 
 /** Fields of Edit Pickup a refusal can point at (anything else is shown above Save). */
-const PICKUP_EDIT_FIELDS = ["odo", "pickupFuelLevel", "pickupFastagBalance", "safetyDeposit", "drivingLicenceNumber", "dlStatus"];
+const PICKUP_EDIT_FIELDS = ["odo", "pickupFuelLevel", "pickupFastagBalance", "safetyDeposit", "pickupDiscount", "drivingLicenceNumber", "dlStatus"];
 
 interface PickupEditModeProps {
   booking: EmployeeBooking;
@@ -2480,6 +2610,9 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
   const [dlNumberEditing, setDlNumberEditing] = useState(false);
   const [photos, setPhotos] = useState<EditablePhoto[]>(() => photosOf(summary.photos));
   const [deposit, setDeposit] = useState(String(Number(summary.safetyDeposit) || 0));
+  // Manual pickup discount (₹, blank / 0 = none) and its reason
+  const [discount, setDiscount] = useState(summary.pickupDiscount ? String(Number(summary.pickupDiscount.amount)) : "");
+  const [discountReason, setDiscountReason] = useState(summary.pickupDiscount?.reason ?? "");
   const [uploading, setUploading] = useState(false);
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -2512,8 +2645,21 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
     if (summary.edit.depositEditable && isMoneyInput(deposit) && !sameMoney(deposit, summary.safetyDeposit)) {
       out.safetyDeposit = Number(deposit);
     }
+    // Manual pickup discount: sent only when it changes (blank / 0 removes it)
+    if (summary.edit.discountEditable && (!discount.trim() || isMoneyInput(discount))) {
+      const amount = discount.trim() ? Number(discount) : 0;
+      const before = summary.pickupDiscount;
+      const reason = discountReason.trim() || null;
+      if (amount > 0) {
+        if (!before || !sameMoney(String(amount), before.amount) || (before.reason ?? null) !== reason) {
+          out.pickupDiscount = { amount, reason };
+        }
+      } else if (before) {
+        out.pickupDiscount = null;
+      }
+    }
     return out;
-  }, [odoValue, fuelLevel, fastag.value, dlStatus, dlNumber.toSend, photos, deposit, summary]);
+  }, [odoValue, fuelLevel, fastag.value, dlStatus, dlNumber.toSend, photos, deposit, discount, discountReason, summary]);
 
   // ── The handover's own validations ──
   // Old pickups saved without a reading may stay without one
@@ -2528,6 +2674,13 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
   const dlProblem = dlNumberInput.trim() ? dlNumber.problem : null;
   const depositProblem =
     summary.edit.depositEditable && !isMoneyInput(deposit) ? "Enter the safety deposit in ₹ (0 for none)." : null;
+  const discountMax = summary.edit.discountMax != null ? Number(summary.edit.discountMax) : null;
+  const discountProblem =
+    summary.edit.discountEditable && discount.trim() && Number(discount) > 0
+      ? pickupDiscountInputError(discount, discountMax)
+      : summary.edit.discountEditable && discount.trim() && !/^0+(\.0{1,2})?$/.test(discount.trim())
+        ? "Enter the discount in ₹ (blank or 0 for none)."
+        : null;
   const hadLabel = new Set(summary.photos.map((p) => p.label).filter(Boolean));
   const emptied = summary.captureFields.filter(
     (f) => f.required && hadLabel.has(f.name) && !photos.some((p) => p.label === f.name),
@@ -2540,7 +2693,7 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
       ? `Take the required photo${emptied.length > 1 ? "s" : ""}: ${emptied.map((f) => f.name).join(", ")}.`
       : null) ??
     (uploading ? "Wait for the photos to upload." : null);
-  const blocker = dlProblem ?? odoProblem ?? fastagProblem ?? photosProblem ?? depositProblem;
+  const blocker = dlProblem ?? odoProblem ?? fastagProblem ?? photosProblem ?? discountProblem ?? depositProblem;
   const changed = Object.keys(body).length > 0;
 
   /** A refusal of the preview / save that belongs to a field. */
@@ -2817,6 +2970,60 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
               </CardContent>
             </StepCard>
 
+            {/* DISCOUNT — the manual pickup discount (₹ off the rent incl. GST), before the deposit;
+                a change is collected / refunded when the edit is saved */}
+            {summary.edit.discountEditable && (
+              <Card className="shadow-sm border border-gray-200 bg-white">
+                <CardContent className="pt-5 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Tag className="h-4 w-4 text-[#FF5F00]" />
+                    Discount
+                  </div>
+                  <div id="edit-pickup-pickupDiscount" className="space-y-2 max-w-xs">
+                    <Label htmlFor="edit-pickup-discount" className="text-xs text-neutral-600">
+                      Discount (₹)
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                      <Input
+                        id="edit-pickup-discount"
+                        inputMode="decimal"
+                        placeholder="0"
+                        className={cn("pl-7 h-10", (errorFor("pickupDiscount") || discountProblem) && "border-red-500")}
+                        value={discount}
+                        onChange={(e) => {
+                          setDiscount(cleanDiscountInput(e.target.value));
+                          clearFieldError("pickupDiscount");
+                        }}
+                      />
+                    </div>
+                    {errorFor("pickupDiscount") || discountProblem ? (
+                      <p className="text-xs text-red-500">{errorFor("pickupDiscount") ?? discountProblem}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        A flat amount off the rent (GST included)
+                        {discountMax != null ? `, up to ${formatRupees(discountMax)} — the rent payable at the pickup` : ""}.
+                        Blank for none.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2 max-w-md">
+                    <Label htmlFor="edit-pickup-discount-reason" className="text-xs text-neutral-600">
+                      Reason (optional)
+                    </Label>
+                    <Input
+                      id="edit-pickup-discount-reason"
+                      className="h-10"
+                      maxLength={200}
+                      placeholder="Why is the customer getting a discount?"
+                      value={discountReason}
+                      onChange={(e) => setDiscountReason(e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* STEP 4: SAFETY DEPOSIT — changeable while the car is out and the drop hasn't billed it */}
             {depositShown && (
               <StepCard
@@ -2876,7 +3083,7 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
 
             <div className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-600">
               <Tag className="h-4 w-4 mt-0.5 shrink-0 text-neutral-400" />
-              <span>Rent, coupons and extensions aren't changed here — ask the branch manager.</span>
+              <span>Rent, coupons and extensions aren't changed here — ask the branch manager.{summary.edit.discountEditable ? " The pickup discount is changed above." : ""}</span>
             </div>
 
             {formError && (

@@ -21,6 +21,8 @@ export interface CustomerRow {
   email: string | null;
   registeredAt: string;
   isProfileCompleted: boolean;
+  /** Entered age, else derived from dob; absent from older servers. */
+  age?: number | null;
   isBlacklisted: boolean;
   blacklistReason: string | null;
   blacklistedAt: string | null;
@@ -120,6 +122,8 @@ export interface CustomerDetail {
     };
     registeredAt: string;
     isProfileCompleted: boolean;
+    /** Entered age, else derived from dob; absent from older servers. */
+    age?: number | null;
     drivingLicenceNumberMasked: string | null;
     aadhaarNumberMasked: string | null;
   };
@@ -178,6 +182,8 @@ export interface DrawerTransaction {
   notes: string | null;
   createdAt: string;
   proofPhoto: ProofPhoto | null;
+  /** Every photo of the payment (Oct 2026, up to 3); absent on older servers. */
+  proofs?: (ProofPhoto & { position: number })[];
 }
 
 export interface BookingDrawerData {

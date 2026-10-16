@@ -245,6 +245,12 @@ function SummaryContent({ summary }: { summary: Summary }) {
               label="Original DL"
               value={`${dlStatusLabel(summary.dl.status)}${summary.dl.status === "DEPOSIT" && summary.dl.depositNote ? ` · ${summary.dl.depositNote}` : ""}`}
             />
+            {summary.pickupDiscount && (
+              <Row
+                label="Pickup discount"
+                value={`−${inr(num(summary.pickupDiscount.amount))}${summary.pickupDiscount.reason ? ` · ${summary.pickupDiscount.reason}` : ""}`}
+              />
+            )}
             {num(summary.safetyDeposit) > 0 && <Row label="Safety deposit" value={inr(num(summary.safetyDeposit))} />}
           </Section>
           <Section title={`Photos (${summary.photos.length})`}>

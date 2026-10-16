@@ -46,6 +46,7 @@ export interface BranchTransaction {
   // Additive (#3): the UPI payment-screen photo and the cash / UPI split. Absent on older servers.
   proofPhoto?: PaymentProofPhoto | null;
   proofPhotoUrl?: string | null;
+  proofs?: PaymentProofItem[];
   onlineGateway?: string | null;
   cashAmount?: string;
   onlineAmount?: string;
@@ -110,10 +111,18 @@ export interface PaymentProofPhoto {
   expiresIn: number;
 }
 
+/** One of a payment's photos (`proofs`, slot order) — up to 3 when paid in several UPI transactions. */
+export interface PaymentProofItem extends PaymentProofPhoto {
+  fileId: string;
+  position: number;
+}
+
 /** Additive proof fields on transaction rows (absent on older servers). */
 export interface ProofPhotoRowFields {
   proofPhoto?: PaymentProofPhoto | null;
   proofPhotoUrl?: string | null;
+  /** Every photo of the payment (Oct 2026); absent on older servers. */
+  proofs?: PaymentProofItem[];
 }
 
 export interface PaymentTransaction {
@@ -329,6 +338,8 @@ export interface ShiftTransaction {
   /** UPI payment-screen photo (#3); absent on older servers. */
   proofPhoto?: PaymentProofPhoto | null;
   proofPhotoUrl?: string | null;
+  /** Every photo of the payment (Oct 2026); absent on older servers. */
+  proofs?: PaymentProofItem[];
 }
 
 export interface ShiftDetail extends ShiftView {

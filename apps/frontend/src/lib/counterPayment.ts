@@ -5,6 +5,7 @@ import {
   COUNTER_PAYMENT_METHODS,
   COUNTER_PAYMENT_METHOD_LABELS,
   PAYMENT_PROOF_MAX_BYTES,
+  PAYMENT_PROOF_MAX_PHOTOS,
   PAYMENT_PROOF_REQUIRED_MESSAGE,
   round2,
   type CounterPaymentMethod,
@@ -18,7 +19,9 @@ import { compressImage } from "@/lib/utils";
  * shape is built from it:
  *  - CASH
  *  - UPI: the customer paid the branch's merchant QR; a PHOTO of their
- *    payment-success screen is required (uploaded first → `proof_file_id`)
+ *    payment-success screen is required (uploaded first → `proof_file_id`),
+ *    plus up to two more when they paid in several UPI transactions (all of
+ *    them, in slot order → `proof_file_ids`)
  *  - SPLIT: a cash part + the UPI part (the rest), the UPI part backed by a photo
  *  - CREDIT: nothing is paid now; the amount stays owed against the collateral
  *    noted until the branch manager clears it
@@ -36,8 +39,10 @@ export interface CounterProof {
 
 export interface CounterPaymentValue {
   method: CounterPaymentMethod;
-  /** UPI, or the UPI part of a split. */
+  /** UPI, or the UPI part of a split: payment screenshot 1 (required). */
   proof: CounterProof | null;
+  /** Payment screenshots 2 and 3 (optional — a payment split over several UPI transactions). */
+  extraProofs?: CounterProof[];
   /** SPLIT: the cash part as typed (the UPI part is the rest). */
   splitCash: string;
   /** CREDIT: what was taken from the customer until it is cleared. */
@@ -47,6 +52,7 @@ export interface CounterPaymentValue {
 export const emptyCounterPayment = (method: CounterPaymentMethod = "CASH"): CounterPaymentValue => ({
   method,
   proof: null,
+  extraProofs: [],
   splitCash: "",
   collateral: "",
 });
@@ -58,7 +64,34 @@ export const PAYMENT_PROOF_LABEL = "Photo of the customer's payment screen";
 export const PAYMENT_PROOF_HELPER =
   "After the customer pays the branch UPI QR, photograph the payment-success screen on their phone.";
 export const PAYMENT_PROOF_ACCEPT = "image/*";
-export { COLLATERAL_REQUIRED_MESSAGE, PAYMENT_PROOF_REQUIRED_MESSAGE };
+export { COLLATERAL_REQUIRED_MESSAGE, PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENT_PROOF_MAX_PHOTOS };
+
+/** Every payment screenshot of a form, in slot order (screenshot 1 first). */
+export function counterProofList(value: Pick<CounterPaymentValue, "proof" | "extraProofs">): CounterProof[] {
+  if (!value.proof) return [];
+  return [value.proof, ...(value.extraProofs ?? [])].slice(0, PAYMENT_PROOF_MAX_PHOTOS);
+}
+
+/**
+ * The form after slot `index` (0-based) is set or cleared. Slots stay packed:
+ * clearing one moves the later screenshots up, so screenshot 1 is always filled
+ * while any is.
+ */
+export function withCounterProofAt(
+  value: Pick<CounterPaymentValue, "proof" | "extraProofs">,
+  index: number,
+  proof: CounterProof | null,
+): { proof: CounterProof | null; extraProofs: CounterProof[] } {
+  const list = counterProofList(value);
+  if (proof) {
+    if (index < list.length) list[index] = proof;
+    else list.push(proof);
+  } else if (index < list.length) {
+    list.splice(index, 1);
+  }
+  const [first = null, ...rest] = list;
+  return { proof: first, extraProofs: rest };
+}
 
 /** Cash and UPI parts a payment form stands for (CREDIT: both 0). */
 export function counterPaymentParts(
@@ -145,14 +178,20 @@ export function depositRefundOnSession(session: { entries: SessionEntryLike[] })
 
 const proofId = (value: CounterPaymentValue) => value.proof?.proofFileId;
 
+/** Every screenshot id, in slot order — sent alongside proof_file_id (older servers ignore it). */
+const proofIds = (value: CounterPaymentValue) => {
+  const ids = counterProofList(value).map((p) => p.proofFileId);
+  return ids.length > 0 ? ids : undefined;
+};
+
 /** POST /employee/sessions/:id/record-payment (pickup / drop bill). */
 export function sessionPaymentFields(value: CounterPaymentValue, amount: number) {
   const { cash, upi } = counterPaymentParts(value, amount);
   switch (value.method) {
     case "UPI":
-      return { method: "UPI" as const, proof_file_id: proofId(value) };
+      return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
-      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, onlineGateway: "UPI", proof_file_id: proofId(value) };
+      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, onlineGateway: "UPI", proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
       return { method: "CREDIT" as const, collateral: value.collateral.trim() };
     default:
@@ -165,9 +204,9 @@ export function extensionCollectFields(value: CounterPaymentValue, amount: numbe
   const { cash, upi } = counterPaymentParts(value, amount);
   switch (value.method) {
     case "UPI":
-      return { method: "UPI" as const, proof_file_id: proofId(value) };
+      return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
-      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value) };
+      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
       return { method: "CREDIT" as const, collateral: value.collateral.trim() };
     default:
@@ -180,9 +219,9 @@ export function remainingPaymentFields(value: CounterPaymentValue, amount: numbe
   const { cash, upi } = counterPaymentParts(value, amount);
   switch (value.method) {
     case "UPI":
-      return { method: "UPI" as const, proof_file_id: proofId(value) };
+      return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
-      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value) };
+      return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
       return { method: "CREDIT" as const, collateral: value.collateral.trim() };
     default:
@@ -194,12 +233,12 @@ export function remainingPaymentFields(value: CounterPaymentValue, amount: numbe
 export function walkInPaymentFields(value: CounterPaymentValue) {
   switch (value.method) {
     case "UPI":
-      return { payment_type: "UPI" as const, proof_file_id: proofId(value) };
+      return { payment_type: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return {
         payment_type: "SPLIT" as const,
         cash_amount: counterPaymentParts(value, null).cash,
-        proof_file_id: proofId(value),
+        proof_file_id: proofId(value), proof_file_ids: proofIds(value),
       };
     case "CREDIT":
       return { payment_type: "CREDIT" as const, collateral: value.collateral.trim() };
@@ -213,9 +252,9 @@ export function creditClearanceFields(value: CounterPaymentValue, amount: number
   const { cash, upi } = counterPaymentParts(value, amount);
   switch (value.method) {
     case "UPI":
-      return { paymentMethod: "UPI" as const, proof_file_id: proofId(value) };
+      return { paymentMethod: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
-      return { paymentMethod: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value) };
+      return { paymentMethod: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     default:
       return { paymentMethod: "CASH" as const };
   }
@@ -249,6 +288,8 @@ export function counterPaymentErrorField(err: unknown): "proof" | "collateral" |
 
 export interface CounterFieldErrors {
   proof?: string | null;
+  /** Which payment screenshot (1–3) `proof` is about, when the server says. */
+  proofPosition?: number | null;
   collateral?: string | null;
   split?: string | null;
 }
@@ -257,8 +298,14 @@ export interface CounterFieldErrors {
 export function counterFieldErrors(err: unknown): CounterFieldErrors {
   const field = counterPaymentErrorField(err);
   if (!field) return {};
-  const message = (err as ApiErrorLike | undefined)?.response?.data?.message;
-  return { [field]: typeof message === "string" ? message : "Check this and try again." };
+  const data = (err as ApiErrorLike | undefined)?.response?.data as
+    | { message?: unknown; proofPosition?: unknown }
+    | undefined;
+  const message = typeof data?.message === "string" ? data.message : "Check this and try again.";
+  if (field === "proof" && typeof data?.proofPosition === "number") {
+    return { proof: message, proofPosition: data.proofPosition };
+  }
+  return { [field]: message };
 }
 
 // ── Photo file ───────────────────────────────────────────────────────────────

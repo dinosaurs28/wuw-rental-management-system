@@ -277,7 +277,7 @@ export const BookingConfirmationPage = () => {
           "Failed to create booking. Please try again.";
         const errorCode = err?.response?.data?.code;
 
-        // Profile incomplete (e.g. DL / Aadhaar number missing) is not a
+        // Profile incomplete (e.g. age or address missing) is not a
         // sign-in problem — send the customer to their profile, then back here.
         if (errorCode === "PROFILE_INCOMPLETE") {
           toast.error(message);

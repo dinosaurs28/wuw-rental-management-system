@@ -229,6 +229,7 @@ function TransactionRow({ txn }: { txn: ShiftTransaction }) {
           <span className="inline-flex items-center gap-1.5">
             <ProofPhotoThumb
               photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
+              photos={txn.proofs}
               caption={`${txn.bookingPublicId}${txn.customerName ? ` · ${txn.customerName}` : ""} · ${formatMoney(txn.totalAmount)}`}
             />
             UPI photo

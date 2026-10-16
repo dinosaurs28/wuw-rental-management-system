@@ -1,10 +1,13 @@
 // Limits for booking date/time pickers: branch office hours (#2 — pickups from
 // opening to 30 minutes before closing, default 8:00 AM – 11:00 PM when the
-// branch saved none) and the 15-day booking window (#15). Pickers hold a calendar day (local-midnight
+// branch saved none) and the booking window (#15: pickup up to 30 days ahead, up to 15 days long).
+// Pickers hold a calendar day (local-midnight
 // Date) plus an "HH:mm" wall-clock time that the server reads as IST, so all
 // instants here are built as IST regardless of the browser's timezone.
 import {
+  ADVANCE_BOOKING_DAYS,
   MAX_BOOKING_DAYS,
+  MAX_RENTAL_DAYS,
   MONTHLY_MAX_DAYS,
   MONTHLY_MIN_DAYS,
   bookingWindowEnd,
@@ -23,7 +26,7 @@ import {
 const IST_OFFSET_MS = 330 * 60_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export { MAX_BOOKING_DAYS, MONTHLY_MIN_DAYS, MONTHLY_MAX_DAYS };
+export { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS, MAX_BOOKING_DAYS, MONTHLY_MIN_DAYS, MONTHLY_MAX_DAYS };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -51,20 +54,18 @@ export function addHoursToSlot(day: Date, time: string, hours: number): { day: D
 
 const startOfCalendarDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-/** Last calendar day a standard booking may run to (today IST + 15). */
+/** Last calendar day a pickup may be on (today IST + 30). */
 export function windowLastDay(now: Date = new Date()): Date {
   return istCalendarParts(bookingWindowEnd(now)).day;
 }
 
 /**
- * Latest allowed return for a pickup instant: standard → min(window end,
- * pickup + 15 days); monthly → pickup + 180 days.
+ * Latest allowed return for a pickup instant: standard → pickup + 15 days
+ * (the return may pass the 30-day pickup window); monthly → pickup + 180 days.
  */
 export function maxReturnFor(startAt: Date, opts: { monthly?: boolean; now?: Date } = {}): Date {
   if (opts.monthly) return new Date(startAt.getTime() + MONTHLY_MAX_DAYS * DAY_MS);
-  const windowEnd = bookingWindowEnd(opts.now ?? new Date());
-  const durationEnd = new Date(startAt.getTime() + MAX_BOOKING_DAYS * DAY_MS);
-  return windowEnd.getTime() < durationEnd.getTime() ? windowEnd : durationEnd;
+  return new Date(startAt.getTime() + MAX_RENTAL_DAYS * DAY_MS);
 }
 
 /**
@@ -118,7 +119,7 @@ export interface BookingPickerLimits {
   isPickupSlotDisabled?: (hour: number, minute: number) => boolean;
   /** TimeSelect `isDisabled` for the return time. */
   isReturnSlotDisabled?: (hour: number, minute: number) => boolean;
-  /** Server-identical 15-day / monthly-length message when the range breaks the rule. */
+  /** Server-identical window / length / monthly-length message when the range breaks the rule. */
   windowError: string | null;
   /** Latest allowed return instant for the current pickup (null without a pickup). */
   maxReturnAt: Date | null;

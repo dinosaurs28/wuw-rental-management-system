@@ -8,7 +8,8 @@ import { X } from "lucide-react";
 interface LedgerSummaryCardProps {
   session: PaymentSession;
   className?: string;
-  onRemoveDiscount?: () => void;
+  /** Called with the discount line to remove (counter coupon or manual pickup discount). */
+  onRemoveDiscount?: (entry: LedgerEntry) => void;
 }
 
 const ENTRY_TYPE_LABELS: Record<string, string> = {
@@ -135,7 +136,7 @@ export function LedgerSummaryCard({ session, className, onRemoveDiscount }: Ledg
                 {onRemoveDiscount && session.status === "AWAITING_PAYMENT" && (
                   <button
                     type="button"
-                    onClick={onRemoveDiscount}
+                    onClick={() => onRemoveDiscount(e)}
                     className="ml-2 text-muted-foreground hover:text-red-500 transition-colors"
                     title="Remove discount"
                   >

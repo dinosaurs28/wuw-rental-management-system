@@ -45,6 +45,12 @@ export interface PaymentSession {
   gstAmount: string;
   isRefund: boolean;
   entries: LedgerEntry[];
+  /** PICKUP: rent payable on the bill incl. GST (absent on older servers) */
+  rentDue?: string;
+  /** PICKUP: the most a manual discount may be (rent due less a counter coupon) */
+  pickupDiscountMax?: string;
+  /** PICKUP: the manual discount on the bill (₹ off the rent incl. GST) */
+  pickupDiscount?: { amount: string; reason: string | null; entryPublicId: string } | null;
 }
 
 export interface ReturnChargeEntry {
@@ -200,6 +206,8 @@ export const paymentSessionService = {
       safetyDepositReason?: string;
       extensionPublicId?: string;
       discountCode?: string;
+      /** Manual pickup discount (₹ off the rent incl. GST) — 400 PICKUP_DISCOUNT_EXCEEDS (pickupDiscountRejected) */
+      pickupDiscount?: { amount: number; reason?: string | null };
       odo?: number;
       fuelLevel?: number;
       pickupFuelLevel?: string;
@@ -274,6 +282,39 @@ export const paymentSessionService = {
       `/employee/bookings/${bookingPublicId}/pickup-session/remove-discount`,
     );
     return data.data;
+  },
+
+  /**
+   * Manual pickup discount: a flat ₹ off the rent on the PICKUP bill (replaces one
+   * already there). 400 PICKUP_DISCOUNT_EXCEEDS (+ maxAmount) above the rent payable.
+   */
+  async setPickupSessionDiscount(
+    bookingPublicId: string,
+    payload: { amount: number; reason?: string | null },
+  ): Promise<PaymentSession> {
+    const { data } = await apiClient.post(
+      `/employee/bookings/${bookingPublicId}/pickup-session/manual-discount`,
+      payload,
+    );
+    return data.data;
+  },
+
+  async removePickupSessionDiscount(bookingPublicId: string): Promise<PaymentSession> {
+    const { data } = await apiClient.delete(
+      `/employee/bookings/${bookingPublicId}/pickup-session/manual-discount`,
+    );
+    return data.data;
+  },
+
+  /** Legacy branches: the discount comes off the remaining balance before it is collected. */
+  async setLegacyPickupDiscount(bookingPublicId: string, payload: { amount: number; reason?: string | null }) {
+    const { data } = await apiClient.put(`/employee/pickup/${bookingPublicId}/discount`, payload);
+    return data.data as { remainingBalance: string; totalFinal: string };
+  },
+
+  async removeLegacyPickupDiscount(bookingPublicId: string) {
+    const { data } = await apiClient.delete(`/employee/pickup/${bookingPublicId}/discount`);
+    return data.data as { remainingBalance: string; totalFinal: string };
   },
 
   /**
@@ -377,6 +418,8 @@ export const paymentSessionService = {
       onlineAmount?: number;
       /** Photo of the customer's UPI payment screen (UPI / split's UPI part). */
       proof_file_id?: string;
+      /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
+      proof_file_ids?: string[];
       /** CREDIT: what was taken from the customer until it is cleared. */
       collateral?: string;
       /** Drop bill refunding the safety deposit in full (#6): how it is paid back. */

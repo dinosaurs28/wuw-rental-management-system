@@ -27,6 +27,8 @@ interface EmployeeBookingState {
   paymentType: EmployeePaymentType;
   /** UPI / split walk-ins: the photo of the customer's payment screen (#3). */
   upiProof: CounterProof | null;
+  /** Payment screenshots 2 and 3 (optional — the customer paid in several UPI transactions). */
+  upiExtraProofs: CounterProof[];
   /** Split walk-ins: the cash part as typed — the server takes the rest as UPI. */
   splitCash: string;
   /** Credit walk-ins: what was taken from the customer until it is cleared (#11). */
@@ -43,6 +45,7 @@ interface EmployeeBookingState {
   setPlan: (plan: EmployeeBookingPlan) => void;
   setPaymentType: (type: EmployeePaymentType) => void;
   setUpiProof: (proof: CounterProof | null) => void;
+  setUpiExtraProofs: (proofs: CounterProof[]) => void;
   setSplitCash: (cash: string) => void;
   setCollateral: (note: string) => void;
   /** Drops the photo, split and collateral (another customer / a new booking). */
@@ -64,6 +67,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       plan: "STANDARD",
       paymentType: "CASH",
       upiProof: null,
+      upiExtraProofs: [],
       splitCash: "",
       collateral: "",
       pricing: null,
@@ -77,9 +81,10 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
       setPlan: (plan) => set({ plan }),
       setPaymentType: (type) => set({ paymentType: type }),
       setUpiProof: (proof) => set({ upiProof: proof }),
+      setUpiExtraProofs: (proofs) => set({ upiExtraProofs: proofs }),
       setSplitCash: (cash) => set({ splitCash: cash }),
       setCollateral: (note) => set({ collateral: note }),
-      clearCounterPayment: () => set({ upiProof: null, splitCash: "", collateral: "" }),
+      clearCounterPayment: () => set({ upiProof: null, upiExtraProofs: [], splitCash: "", collateral: "" }),
       setPricing: (pricing) => set({ pricing }),
       setCustomerKycId: (id) => set({ customerKycId: id }),
       reset: () =>
@@ -93,6 +98,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
           plan: "STANDARD",
           paymentType: "CASH",
           upiProof: null,
+          upiExtraProofs: [],
           splitCash: "",
           collateral: "",
           pricing: null,
@@ -105,7 +111,7 @@ export const useEmployeeBookingStore = create<EmployeeBookingState>()(
         // Payment photo, split and collateral stay in memory only so they can't carry
         // over to another customer's booking
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { startTime, endTime, upiProof, splitCash, collateral, ...rest } = state;
+        const { startTime, endTime, upiProof, upiExtraProofs, splitCash, collateral, ...rest } = state;
         return rest;
       },
       storage: createJSONStorage(() => ({

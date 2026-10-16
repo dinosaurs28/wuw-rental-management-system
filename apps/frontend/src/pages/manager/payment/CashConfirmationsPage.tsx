@@ -144,6 +144,7 @@ function ReviewModal({ item, onClose, onDone }: { item: PendingCashItem; onClose
                   <div className="flex items-start gap-3 rounded-xl border border-neutral-100 px-4 py-3">
                     <ProofPhotoThumb
                       photo={photo}
+                      photos={item.proofs}
                       size="lg"
                       caption={`${item.customerName} · ${item.bookingPublicId} · ${method === "Split" ? `UPI part ${formatRupee(item.onlineAmount)}` : formatRupee(item.amount)}`}
                     />
@@ -300,6 +301,7 @@ export function CashConfirmationsTab() {
                             {(item.proofPhoto || item.proofPhotoUrl) && (
                               <ProofPhotoThumb
                                 photo={item.proofPhoto ?? { url: item.proofPhotoUrl! }}
+                                photos={item.proofs}
                                 caption={`${item.customerName} · ${item.bookingPublicId}`}
                               />
                             )}

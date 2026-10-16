@@ -39,6 +39,8 @@ interface SearchResult {
     isProfileCompleted: boolean;
     publicId: string;
     missingFields?: string[];
+    /** Entered age, else derived from dob; absent from older servers. */
+    age?: number | null;
     drivingLicenceNumber?: string | null;
     /** "XXXX XXXX 1234" — search never returns the full number. */
     aadhaarNumberMasked?: string | null;
@@ -251,9 +253,13 @@ export default function EmployeeCustomerSelectPage() {
                             {customer.publicId.slice(-6)}
                           </span>
                         </div>
-                        {(customer.customerProfile?.drivingLicenceNumber ||
+                        {(customer.customerProfile?.age != null ||
+                          customer.customerProfile?.drivingLicenceNumber ||
                           customer.customerProfile?.aadhaarNumberMasked) && (
                           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground font-mono">
+                            {customer.customerProfile?.age != null && (
+                              <span>Age {customer.customerProfile.age}</span>
+                            )}
                             {customer.customerProfile?.drivingLicenceNumber && (
                               <span>
                                 DL {customer.customerProfile.drivingLicenceNumber}

@@ -5,16 +5,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowLeft, Ban, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
@@ -55,10 +45,13 @@ import {
   type CompleteWalkinProfilePayload,
 } from "@/services/employeeCustomer.service";
 import {
+  ageInputSchema,
   apiErrorCode,
   formatAadhaarInput,
+  formatAgeInput,
   formatDrivingLicenceInput,
   isVerificationPendingError,
+  optionalIdNumberInput,
 } from "@/lib/customerProfile";
 import { apiErrorMessage } from "@/lib/counterErrors";
 
@@ -75,11 +68,11 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
   // Optional for walk-ins (#1) — left out of the payload when blank.
   email: optionalEmailSchema,
-  drivingLicenceNumber: drivingLicenceNumberSchema,
-  aadhaarNumber: aadhaarNumberSchema,
-  dob: z.date({
-    required_error: "Date of birth is required.",
-  }),
+  // Optional since Oct 2026 (the DL number is taken at pickup) — left out when blank.
+  drivingLicenceNumber: optionalIdNumberInput(drivingLicenceNumberSchema),
+  aadhaarNumber: optionalIdNumberInput(aadhaarNumberSchema),
+  // Replaces the date of birth (Oct 2026): whole years, 18–99.
+  age: ageInputSchema,
   addressLine1: z.string().min(5, "Address is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().min(2, "State is required"),
@@ -126,6 +119,7 @@ export default function EmployeeCreateCustomerPage() {
       email: "",
       drivingLicenceNumber: "",
       aadhaarNumber: "",
+      age: "",
       addressLine1: "",
       city: "",
       state: "",
@@ -264,9 +258,9 @@ export default function EmployeeCreateCustomerPage() {
         name: data.name,
         // Blank = the walk-in keeps its (hidden) placeholder email.
         ...(email ? { email } : {}),
-        drivingLicenceNumber: data.drivingLicenceNumber,
-        aadhaarNumber: data.aadhaarNumber,
-        dob: format(data.dob, "yyyy-MM-dd"),
+        ...(data.drivingLicenceNumber.trim() ? { drivingLicenceNumber: data.drivingLicenceNumber } : {}),
+        ...(data.aadhaarNumber.trim() ? { aadhaarNumber: data.aadhaarNumber } : {}),
+        age: Number(data.age),
         addressLine1: data.addressLine1,
         city: data.city,
         state: data.state,
@@ -521,7 +515,7 @@ export default function EmployeeCreateCustomerPage() {
                     name="drivingLicenceNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Driving Licence number *</FormLabel>
+                        <FormLabel>Driving Licence number (optional)</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="KA01 20110012345"
@@ -545,7 +539,7 @@ export default function EmployeeCreateCustomerPage() {
                     name="aadhaarNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Aadhaar number *</FormLabel>
+                        <FormLabel>Aadhaar number (optional)</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="1234 5678 9012"
@@ -565,45 +559,21 @@ export default function EmployeeCreateCustomerPage() {
                   />
                   <FormField
                     control={profileForm.control}
-                    name="dob"
+                    name="age"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date of Birth</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() ||
-                                date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                              captionLayout="dropdown"
-                              fromYear={1900}
-                              toYear={new Date().getFullYear()}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>Age *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="25"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={2}
+                            className="tabular-nums"
+                            {...field}
+                            onChange={(e) => field.onChange(formatAgeInput(e.target.value))}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
