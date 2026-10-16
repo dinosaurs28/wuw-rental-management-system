@@ -8,9 +8,12 @@ import { prisma } from "@repo/database/client";
 import {
   HALF_DAY_CLAMP_MIN_MINUTES,
   HALF_DAY_PACKAGE_HOURS,
+  LATE_PICKUP_GRACE_MINUTES,
   PACKAGE_TOLERANCE_MS,
   halfDayPackageReturn,
   isClampedHalfDayReturn,
+  istDayNumber,
+  sameDayPickupStatus,
   type HalfDayReturn,
 } from "@repo/schemas";
 
@@ -23,6 +26,9 @@ export const DEFAULT_BRANCH_HOURS = { openTime: "08:00", closeTime: "23:00" } as
 /**
  * A booking's pickup time must be at least this many minutes before closing
  * (default hours → last pickup 10:30 PM). Returns keep [open, close + grace].
+ * Tonight only, after the last pickup and until closing, a pickup from now up
+ * to closing is taken; after closing, today takes no pickups
+ * (sameDayPickupStatus in @repo/schemas — pass `now` to validateBookingSchedule).
  */
 export const PICKUP_CUTOFF_MINUTES = 30;
 
@@ -44,6 +50,8 @@ export type ScheduleVerdictStatus =
   | "PICKUP_CLOSED_DAY"
   | "PICKUP_BEFORE_OPEN"
   | "PICKUP_AT_OR_AFTER_CLOSE"
+  /** Same-day pickup asked for after the branch closed today (only with `now`). */
+  | "PICKUP_TODAY_CLOSED"
   | "RETURN_GRACE"
   | "RETURN_BUMPED"
   | "NO_OPEN_DAY_IN_WINDOW"
@@ -71,6 +79,12 @@ export interface ScheduleVerdict {
   reason?: ReturnScheduleReason;
   /** Latest allowed pickup that day (closing − PICKUP_CUTOFF_MINUTES), e.g. "10:30 PM" — set on PICKUP_AT_OR_AFTER_CLOSE */
   lastPickupTime?: string;
+  /**
+   * Tonight's late window is open (after the last pickup, before closing):
+   * pickups from now until this time, e.g. "11:00 PM" — set on a same-day
+   * PICKUP_AT_OR_AFTER_CLOSE (a pickup already past, or after closing).
+   */
+  latePickupUntil?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -287,6 +301,12 @@ export function validateBookingSchedule(
   config: BranchScheduleConfig,
   pickupLocal: Date,
   returnLocal: Date,
+  /**
+   * `now` (booking create, walk-in, reschedule) turns on the same-day rules:
+   * tonight's late window after the last pickup, and no same-day pickup once
+   * the branch has closed — LATE_PICKUP_GRACE_MINUTES of slack either way.
+   */
+  opts: { now?: Date } = {},
 ): ScheduleVerdict {
   // 24-hour branch — no restrictions (no saved rows = default hours, not 24/7)
   if (config.is24Hours) {
@@ -315,7 +335,26 @@ export function validateBookingSchedule(
 
   // Last pickup is PICKUP_CUTOFF_MINUTES before closing (status name kept for old clients)
   const lastPickupMins = pickupDay.closeMinutes - PICKUP_CUTOFF_MINUTES;
-  if (pickupMins > lastPickupMins) {
+  const now = opts.now;
+  if (now && istDayNumber(now) === istDayNumber(pickupLocal)) {
+    // Same day: tonight's late window, and nothing once the branch has closed
+    const { hours: nowHours, minutes: nowMinsVal } = getBranchLocalTime(now);
+    const nowMins = nowHours * 60 + nowMinsVal;
+    const day = { lastPickupMin: lastPickupMins, closeMin: pickupDay.closeMinutes };
+    const same = sameDayPickupStatus(day, pickupMins, nowMins, LATE_PICKUP_GRACE_MINUTES);
+    if (same === "TODAY_CLOSED") {
+      return { status: "PICKUP_TODAY_CLOSED", closingTime: minutesToDisplay(pickupDay.closeMinutes) };
+    }
+    if (same === "AFTER_LAST_PICKUP") {
+      const lateOpen = sameDayPickupStatus(day, pickupDay.closeMinutes, nowMins, LATE_PICKUP_GRACE_MINUTES) === "LATE_OK";
+      return {
+        status: "PICKUP_AT_OR_AFTER_CLOSE",
+        closingTime: minutesToDisplay(pickupDay.closeMinutes),
+        lastPickupTime: minutesToDisplay(lastPickupMins),
+        ...(lateOpen && { latePickupUntil: minutesToDisplay(pickupDay.closeMinutes) }),
+      };
+    }
+  } else if (pickupMins > lastPickupMins) {
     return {
       status: "PICKUP_AT_OR_AFTER_CLOSE",
       closingTime: minutesToDisplay(pickupDay.closeMinutes),
@@ -555,7 +594,12 @@ export function buildScheduleErrorMessage(verdict: ScheduleVerdict): string {
       return `Branch is closed on ${verdict.closedDayName ?? "that day"}. Please select a different pickup date.`;
     case "PICKUP_BEFORE_OPEN":
       return `Branch opens at ${verdict.openingTime ?? "opening time"}. Please select a later pickup time.`;
+    case "PICKUP_TODAY_CLOSED":
+      return `The branch has closed for today (${verdict.closingTime ?? "closing time"}). Please choose a pickup on the next day the branch is open.`;
     case "PICKUP_AT_OR_AFTER_CLOSE":
+      if (verdict.latePickupUntil) {
+        return `After the last pickup (${verdict.lastPickupTime ?? "30 minutes before closing"}), same-day pickups are taken from now until ${verdict.latePickupUntil}. Please choose a time in that window or another day.`;
+      }
       if (verdict.lastPickupTime) {
         return `Last pickup is ${verdict.lastPickupTime} (${PICKUP_CUTOFF_MINUTES} minutes before closing). Please select an earlier pickup time.`;
       }

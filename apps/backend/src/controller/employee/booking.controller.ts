@@ -584,7 +584,10 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           is24Hours: branchData.is24Hours,
         };
 
-        const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate());
+        // Walk-ins follow the customer rule: tonight's late window, nothing same-day after closing
+        const verdict = validateBookingSchedule(scheduleConfig, startDateDt.toJSDate(), endDateDt.toJSDate(), {
+          now: new Date(),
+        });
         heldToClosing = !isMonthlyPlan && isClampedHalfDay(scheduleConfig, startDate, endDate);
 
         if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {

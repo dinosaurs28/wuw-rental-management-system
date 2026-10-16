@@ -365,9 +365,11 @@ function hoursError(
   schedule: Awaited<ReturnType<typeof loadBranchScheduleConfig>>,
   newStart: Date,
   newEnd: Date,
+  now: Date,
 ): RescheduleError | null {
   if (!schedule) return null;
-  const pickupVerdict = validateBookingSchedule(schedule, newStart, newEnd);
+  // now: tonight's late window after the last pickup; no same-day pickup after closing
+  const pickupVerdict = validateBookingSchedule(schedule, newStart, newEnd, { now });
   if (pickupVerdict.status.startsWith("PICKUP_")) {
     return new RescheduleError(StatusCode.BAD_REQUEST, "BRANCH_SCHEDULE_VIOLATION", buildScheduleErrorMessage(pickupVerdict), {
       verdict: pickupVerdict,
@@ -786,7 +788,7 @@ export async function rescheduleBooking(
   const nextWindow = rescheduledReturn(booking, newStart, schedule);
   if (!nextWindow) {
     throw (
-      hoursError(schedule, newStart, newStart) ??
+      hoursError(schedule, newStart, newStart, now) ??
       new RescheduleError(
         StatusCode.BAD_REQUEST,
         "BRANCH_SCHEDULE_VIOLATION",
@@ -813,7 +815,7 @@ export async function rescheduleBooking(
   }
 
   // Office hours: pickup slot (last pickup 30 min before closing) and the return window
-  const hoursProblem = hoursError(schedule, newStart, newEnd);
+  const hoursProblem = hoursError(schedule, newStart, newEnd, now);
   if (hoursProblem) throw hoursProblem;
 
   // One vehicle per driving licence — re-checked under a lock below

@@ -516,7 +516,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         const pickupLocal = startDateDt.toJSDate();
         const returnLocal = endDateDt.toJSDate();
 
-        const verdict = validateBookingSchedule(scheduleConfig, pickupLocal, returnLocal);
+        // now: tonight's late window after the last pickup; no same-day pickup after closing
+        const verdict = validateBookingSchedule(scheduleConfig, pickupLocal, returnLocal, { now: new Date() });
 
         if (verdict.status.startsWith("PICKUP_") || verdict.status === "NO_OPEN_DAY_IN_WINDOW") {
           return res.status(StatusCode.BAD_REQUEST).json({

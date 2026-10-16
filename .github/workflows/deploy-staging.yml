@@ -183,7 +183,8 @@ jobs:
               20261017090000_manual_cancel \
               20261018090000_customer_age \
               20261018110000_payment_proofs \
-              20261018120000_photo_variants
+              20261018120000_photo_variants \
+              20261019090000_branch_hours_11pm
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \
