@@ -27,20 +27,49 @@ export const bookingSummarySchema = z
     { message: "At least one vehicle or group key is required", path: ["vehicles"] },
   );
 
-export const VEHICLE_USE_CASES = ["HIGHWAY", "HILL_STATION", "LONG_DRIVE"] as const;
+/**
+ * Trip-type tags (Oct 20 2026): "Udupi/Manipal" and "Out of Udupi". The old tags
+ * (Highway / Hill Station / Long Drive) are legacy: older app builds still send
+ * them, and every one of them means a trip out of Udupi.
+ */
+export const VEHICLE_USE_CASES = ["LOCAL", "OUT_OF_UDUPI"] as const;
 export type VehicleUseCaseValue = (typeof VEHICLE_USE_CASES)[number];
 export const vehicleUseCaseSchema = z.enum(VEHICLE_USE_CASES);
 
+export const VEHICLE_USE_CASE_LABELS: Record<VehicleUseCaseValue, string> = {
+  LOCAL: "Udupi/Manipal",
+  OUT_OF_UDUPI: "Out of Udupi",
+};
+
+/** Tags no longer offered; read (filters, saves, stored rows) as OUT_OF_UDUPI. */
+export const LEGACY_VEHICLE_USE_CASES = ["HIGHWAY", "HILL_STATION", "LONG_DRIVE"] as const;
+
+function mapLegacyUseCase(x: unknown): unknown {
+  return (LEGACY_VEHICLE_USE_CASES as readonly unknown[]).includes(x) ? "OUT_OF_UDUPI" : x;
+}
+
+/**
+ * The offered tags in a stored / received list: legacy tags become OUT_OF_UDUPI,
+ * unknown values are dropped, duplicates removed, in VEHICLE_USE_CASES order.
+ * Every API response serialises a vehicle's tags through this.
+ */
+export function normalizeUseCases(v: readonly unknown[] | null | undefined): VehicleUseCaseValue[] {
+  const set = new Set((v ?? []).map((x) => mapLegacyUseCase(typeof x === "string" ? x.trim().toUpperCase() : x)));
+  return VEHICLE_USE_CASES.filter((t) => set.has(t));
+}
+
 /**
  * Normalises a multipart/query tag value (undefined, '', 'A', 'A,B', ['A','B']) into a
- * de-duplicated array. Unknown values are kept so the enum check can reject them.
+ * de-duplicated array, legacy tags mapped to OUT_OF_UDUPI. Unknown values are kept so
+ * the enum check can reject them.
  */
 function toUseCaseArray(v: unknown): unknown {
   if (v === undefined || v === null) return v === null ? [] : undefined;
   const parts = Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : [v];
   const out = parts
     .map((x) => (typeof x === "string" ? x.trim().toUpperCase() : x))
-    .filter((x) => x !== "");
+    .filter((x) => x !== "")
+    .map(mapLegacyUseCase);
   return Array.from(new Set(out));
 }
 
@@ -48,9 +77,17 @@ function toUseCaseArray(v: unknown): unknown {
 export function parseUseCasesFilter(v: unknown): VehicleUseCaseValue[] {
   const arr = toUseCaseArray(v);
   if (!Array.isArray(arr)) return [];
-  return arr.filter((x): x is VehicleUseCaseValue =>
-    (VEHICLE_USE_CASES as readonly unknown[]).includes(x),
-  );
+  return normalizeUseCases(arr);
+}
+
+/**
+ * The stored values a tag filter matches (Prisma `hasSome`): OUT_OF_UDUPI also
+ * matches a row that still holds a legacy tag.
+ */
+export function useCaseStoredValues(
+  tags: readonly VehicleUseCaseValue[],
+): (VehicleUseCaseValue | (typeof LEGACY_VEHICLE_USE_CASES)[number])[] {
+  return tags.includes("OUT_OF_UDUPI") ? [...tags, ...LEGACY_VEHICLE_USE_CASES] : [...tags];
 }
 
 export const useCasesFieldSchema = z.preprocess(
@@ -127,8 +164,9 @@ export const createVehicleSchema = z.object({
     .optional()
     .default(false),
   // Trip-type tags. Multipart: single value => string, repeated => array, '' => [].
-  // Absent key => default [] on create, untouched on edit (partial()).
-  useCases: useCasesFieldSchema.default([]),
+  // Absent key => default [LOCAL] on create (every car can do Udupi/Manipal trips),
+  // untouched on edit (partial()).
+  useCases: useCasesFieldSchema.default(["LOCAL"]),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({

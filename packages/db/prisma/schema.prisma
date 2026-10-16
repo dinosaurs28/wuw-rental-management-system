@@ -200,10 +200,15 @@ enum DlCollectionStatus {
 }
 
 // Trip-type tags a vehicle is suited for; customers filter the fleet by them.
+// Offered: LOCAL ("Udupi/Manipal") and OUT_OF_UDUPI ("Out of Udupi") (Oct 20 2026).
+// HIGHWAY / HILL_STATION / LONG_DRIVE are legacy: kept only because Postgres can't
+// drop enum values; never stored again (the API maps them to OUT_OF_UDUPI).
 enum VehicleUseCase {
   HIGHWAY
   HILL_STATION
   LONG_DRIVE
+  LOCAL
+  OUT_OF_UDUPI
 }
 
 enum NotificationType {
