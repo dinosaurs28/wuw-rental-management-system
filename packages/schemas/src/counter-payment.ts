@@ -48,6 +48,13 @@ export const PAYMENT_PROOF_REQUIRED_MESSAGE =
 /** Largest payment-proof photo the upload endpoint accepts. */
 export const PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Payment-screen photos one counter UPI payment can carry (`proof_file_ids`):
+ * the first is required, the rest optional — a customer may pay in several
+ * UPI transactions.
+ */
+export const PAYMENT_PROOF_MAX_PHOTOS = 3;
+
 /** How the safety deposit taken at pickup is returned at drop. */
 export const SAFETY_DEPOSIT_HANDLING = ["SET_OFF", "REFUND_IN_FULL"] as const;
 export type SafetyDepositHandling = (typeof SAFETY_DEPOSIT_HANDLING)[number];

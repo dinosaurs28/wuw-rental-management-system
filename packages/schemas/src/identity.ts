@@ -85,6 +85,18 @@ export const aadhaarNumberSchema = z
   .refine((v) => /^[0-9]{12}$/.test(v), AADHAAR_LENGTH_MESSAGE)
   .refine((v) => isValidAadhaar(v), AADHAAR_INVALID_MESSAGE);
 
+/** Optional DL number (staff walk-in forms): blank = not given; validated when filled in. */
+export const optionalDrivingLicenceNumberSchema = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  drivingLicenceNumberSchema.optional(),
+);
+
+/** Optional Aadhaar number (staff walk-in forms): blank = not given; validated when filled in. */
+export const optionalAadhaarNumberSchema = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  aadhaarNumberSchema.optional(),
+);
+
 // ── Placeholder emails ───────────────────────────────────────────────────────
 // User.email is NOT NULL + unique, so customers without one get a reserved
 // (RFC 2606 `.invalid`) placeholder. None can reach a real inbox; never show

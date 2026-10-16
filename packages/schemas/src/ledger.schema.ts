@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PAYMENT_PROOF_MAX_PHOTOS } from "./counter-payment.js";
 
 export const searchCustomersSchema = z.object({
   search: z.string().optional(),
@@ -36,6 +37,8 @@ export const clearCreditSchema = z
     paymentMethod: z.enum(["CASH", "ONLINE", "UPI", "SPLIT"]),
     transactionRef: z.string().optional(),
     proof_file_id: z.string().trim().min(1).max(64).optional(),
+    // Up to three payment-screen photos (the first one = proof_file_id)
+    proof_file_ids: z.array(z.string().trim().min(1).max(64)).max(PAYMENT_PROOF_MAX_PHOTOS).optional(),
     cashAmount: z.number().min(0).optional(),
     onlineAmount: z.number().min(0).optional(),
     notes: z.string().max(500).optional(),
@@ -44,6 +47,7 @@ export const clearCreditSchema = z
     (data) =>
       data.paymentMethod === "CASH" ||
       !!data.proof_file_id ||
+      !!data.proof_file_ids?.length ||
       (!!data.transactionRef && data.transactionRef.trim().length > 0),
     {
       message: "Add a photo of the customer's UPI payment-success screen (or the 12-digit UTR)",

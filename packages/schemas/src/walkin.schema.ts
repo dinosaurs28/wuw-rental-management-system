@@ -1,5 +1,6 @@
 import z from "zod";
-import { aadhaarNumberSchema, drivingLicenceNumberSchema } from "./identity.js";
+import { optionalAadhaarNumberSchema, optionalDrivingLicenceNumberSchema } from "./identity.js";
+import { customerAgeSchema } from "./user.schema.js";
 
 /** Email for staff walk-in forms: optional, but must be valid when filled in. */
 export const optionalEmailSchema = z
@@ -29,11 +30,14 @@ export const completeWalkinProfileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   // Optional for walk-ins (#1): blank keeps the stored email (or placeholder).
   email: optionalEmailSchema,
-  // Required for a complete profile (#1). The server still accepts a body
-  // without them (old mobile builds); the profile then stays incomplete.
-  drivingLicenceNumber: drivingLicenceNumberSchema,
-  aadhaarNumber: aadhaarNumberSchema,
+  // Optional since Oct 2026 (the DL number is taken at pickup); validated when filled in.
+  drivingLicenceNumber: optionalDrivingLicenceNumberSchema,
+  aadhaarNumber: optionalAadhaarNumberSchema,
+  // Replaces the date of birth on the form (Oct 2026). The server still
+  // accepts a body without it (old staff builds).
+  age: customerAgeSchema,
   alternatePhone: z.string().optional(),
+  // Old staff builds only; new forms send `age`.
   dob: z
     .string()
     .optional()

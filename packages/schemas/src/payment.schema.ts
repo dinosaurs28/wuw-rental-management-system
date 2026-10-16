@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PAYMENT_PROOF_MAX_PHOTOS } from "./counter-payment.js";
 
 // ─── Branch Payment Config ─────────────────────────────────────────────────
 
@@ -50,6 +51,9 @@ const recordPaymentBase = z.object({
   // Photo of the customer's UPI payment-success screen (POST …/payment/proof);
   // backs the UPI part instead of typing the UTR (#3)
   proof_file_id: z.string().trim().min(1).max(64).optional(),
+  // Every payment-screen photo (1–3, slot order — the customer may pay in
+  // several UPI transactions); the first one is proof_file_id
+  proof_file_ids: z.array(z.string().trim().min(1).max(64)).max(PAYMENT_PROOF_MAX_PHOTOS).optional(),
 });
 
 export const recordPaymentSchema = recordPaymentBase
@@ -69,7 +73,7 @@ export const recordPaymentSchema = recordPaymentBase
   )
   .refine(
     (d) => {
-      if (d.method === "ONLINE") return !!d.onlineTransactionRef || !!d.proof_file_id;
+      if (d.method === "ONLINE") return !!d.onlineTransactionRef || !!d.proof_file_id || !!d.proof_file_ids?.length;
       return true;
     },
     { message: "onlineTransactionRef (or a proof_file_id photo for UPI) is required for ONLINE payments", path: ["onlineTransactionRef"] },
@@ -86,7 +90,7 @@ export const recordPaymentSchema = recordPaymentBase
   )
   .refine(
     (d) => {
-      if (d.method === "SPLIT") return !!d.onlineTransactionRef || !!d.proof_file_id;
+      if (d.method === "SPLIT") return !!d.onlineTransactionRef || !!d.proof_file_id || !!d.proof_file_ids?.length;
       return true;
     },
     { message: "onlineTransactionRef (or a proof_file_id photo for UPI) is required for SPLIT payments", path: ["onlineTransactionRef"] },
