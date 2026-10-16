@@ -52,7 +52,7 @@ export function DurationPresetChips({
     // Only the 12-hour chip is held to the exact return time: a 1-day return on
     // a closed day is moved to the next open day by the usual adjustment.
     if (!disabledReason && preset.hours === 12 && schedule) {
-      const verdict = validateBookingSchedule(schedule, start, end);
+      const verdict = validateBookingSchedule(schedule, start, end, { now: new Date() });
       const pickupProblem = verdict.status.startsWith("PICKUP_");
       if (!pickupProblem && verdict.status !== "OK" && verdict.status !== "RETURN_GRACE") {
         disabledReason =

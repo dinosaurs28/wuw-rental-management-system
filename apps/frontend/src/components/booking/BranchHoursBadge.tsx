@@ -14,15 +14,16 @@ interface BranchHoursBadgeProps {
   schedule: BranchScheduleConfig | undefined;
   /** The picked calendar day. */
   date: Date | null;
-  /** "pickup" hides the return grace window (it only applies to returns). */
+  /** "pickup" adds the last pickup time. */
   kind?: "pickup" | "return";
   className?: string;
 }
 
 /**
  * One-line office hours for a picked date (the saved hours, or the default
- * 8:00 AM – 11:00 PM), e.g. "9:00 AM – 10:00 PM +30min grace" for a return or
- * "8:00 AM – 11:00 PM · last pickup 10:30 PM" for a pickup.
+ * 8:00 AM – 11:00 PM), e.g. "8:00 AM – 11:00 PM" for a return or
+ * "8:00 AM – 11:00 PM · last pickup 10:30 PM" for a pickup. The return grace
+ * after closing is not advertised (client, Oct 19).
  */
 export const BranchHoursBadge = ({ schedule, date, kind, className }: BranchHoursBadgeProps) => {
   if (!schedule || !date) return null;
@@ -67,9 +68,6 @@ export const BranchHoursBadge = ({ schedule, date, kind, className }: BranchHour
       {formatScheduleTime(row.openTime)} – {formatScheduleTime(row.closeTime)}
       {kind === "pickup" && lastPickupMin !== undefined && (
         <span className="text-zinc-300">· last pickup {minutesToDisplay(lastPickupMin)}</span>
-      )}
-      {kind !== "pickup" && schedule.graceMinutes > 0 && (
-        <span className="text-zinc-300">+{schedule.graceMinutes}min grace</span>
       )}
     </p>
   );

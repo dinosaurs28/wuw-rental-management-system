@@ -170,6 +170,7 @@ export const ReviewConfirmPage = () => {
     scheduleVerdict?.status === "PICKUP_CLOSED_DAY" ||
     scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" ||
     scheduleVerdict?.status === "PICKUP_AT_OR_AFTER_CLOSE" ||
+    scheduleVerdict?.status === "PICKUP_TODAY_CLOSED" ||
     scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW" ||
     scheduleVerdict?.status === "RETURN_OUTSIDE_HOURS";
 

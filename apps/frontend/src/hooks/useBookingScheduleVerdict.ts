@@ -39,7 +39,8 @@ export function useBookingScheduleVerdict(
       return { verdict: null, adjustedEndDateTime: undefined };
     }
 
-    let verdict = validateBookingSchedule(schedule, pickup, ret);
+    // now: tonight's late window after the last pickup; nothing same-day after closing (as the server)
+    let verdict = validateBookingSchedule(schedule, pickup, ret, { now: new Date() });
     if (
       verdict.status === "RETURN_BUMPED" &&
       verdict.adjustedReturn &&

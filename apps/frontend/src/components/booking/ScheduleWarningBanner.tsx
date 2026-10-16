@@ -41,6 +41,30 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
     );
   }
 
+  if (verdict.status === "PICKUP_TODAY_CLOSED") {
+    return (
+      <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3.5 text-red-800">
+        <XCircle className="size-4 shrink-0 mt-0.5 text-red-500" />
+        <div className="text-sm">
+          <span className="font-semibold">Closed for today — </span>
+          {buildScheduleUserMessage(verdict)}
+        </div>
+      </div>
+    );
+  }
+
+  if (verdict.status === "PICKUP_AT_OR_AFTER_CLOSE" && verdict.latePickupUntil) {
+    return (
+      <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3.5 text-red-800">
+        <XCircle className="size-4 shrink-0 mt-0.5 text-red-500" />
+        <div className="text-sm">
+          <span className="font-semibold">Too late — </span>
+          {buildScheduleUserMessage(verdict)}
+        </div>
+      </div>
+    );
+  }
+
   if (verdict.status === "PICKUP_AT_OR_AFTER_CLOSE") {
     return (
       <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3.5 text-red-800">

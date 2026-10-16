@@ -1,6 +1,7 @@
 // Limits for booking date/time pickers: branch office hours (#2 — pickups from
 // opening to 30 minutes before closing, default 8:00 AM – 11:00 PM when the
-// branch saved none) and the booking window (#15: pickup up to 30 days ahead, up to 15 days long).
+// branch saved none; tonight, after the last pickup, from now until closing,
+// and nothing today once the branch has closed) and the booking window (#15: pickup up to 30 days ahead, up to 15 days long).
 // Pickers hold a calendar day (local-midnight
 // Date) plus an "HH:mm" wall-clock time that the server reads as IST, so all
 // instants here are built as IST regardless of the browser's timezone.
@@ -70,8 +71,9 @@ export function maxReturnFor(startAt: Date, opts: { monthly?: boolean; now?: Dat
 
 /**
  * Default-range fix-up: when the pickup is today but no pickup slot is left
- * today (closed, or the last pickup — 30 minutes before closing — has gone
- * by, e.g. 22:35 with a 23:00 close), the pickup moves to the next opening
+ * today (closed, or the branch has closed for the night — after the last
+ * pickup the late window still runs to closing, e.g. 22:40 → 22:45 with a
+ * 23:00 close; at 23:05 nothing is left), the pickup moves to the next opening
  * and the return to one day later (or stays, if it is already after the new
  * pickup). null = no change needed.
  */
@@ -163,7 +165,8 @@ export function bookingPickerLimits(input: BookingPickerInput): BookingPickerLim
   const isPickupSlotDisabled =
     pickupDate && (schedule || pickupIsToday)
       ? (hour: number, minute: number) => {
-          if (!isPickupSlotAllowed(schedule, pickupDate, hour * 60 + minute)) return true;
+          // Today after the last pickup: from now until closing; after closing: none
+          if (!isPickupSlotAllowed(schedule, pickupDate, hour * 60 + minute, now)) return true;
           return pickupIsToday && istInstant(pickupDate, `${pad(hour)}:${pad(minute)}`) < nowFloor;
         }
       : undefined;
