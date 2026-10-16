@@ -91,7 +91,7 @@ export interface VehicleListParams {
   branch?: string;
   search?: string;
   sort?: 'price_low_to_high' | 'price_high_to_low';
-  // Comma list of trip-type tags (HIGHWAY,HILL_STATION,LONG_DRIVE); OR match.
+  // Comma list of trip-type tags (LOCAL,OUT_OF_UDUPI); OR match.
   useCases?: string;
   start?: string;
   end?: string;

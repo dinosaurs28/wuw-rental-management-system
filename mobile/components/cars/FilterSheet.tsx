@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
+import { VEHICLE_USE_CASES, VEHICLE_USE_CASE_LABELS } from '../../lib/tripTypes';
 
 export interface Option {
   id: string;
@@ -20,15 +21,14 @@ export interface FilterValue {
   branch: string | null;
   category: string | null;
   sort: string | null;
-  // Trip-type tags (HIGHWAY | HILL_STATION | LONG_DRIVE); multi-select, OR.
+  // Trip-type tags (LOCAL | OUT_OF_UDUPI); multi-select, OR.
   useCases: string[];
 }
 
-export const TRIP_TYPE_OPTIONS: Option[] = [
-  { id: 'HIGHWAY', label: 'Highway' },
-  { id: 'HILL_STATION', label: 'Hill Station' },
-  { id: 'LONG_DRIVE', label: 'Long Drive' },
-];
+export const TRIP_TYPE_OPTIONS: Option[] = VEHICLE_USE_CASES.map((id) => ({
+  id,
+  label: VEHICLE_USE_CASE_LABELS[id],
+}));
 
 const SORT_OPTIONS: Option[] = [
   { id: 'price_low_to_high', label: 'Price: Low to High' },

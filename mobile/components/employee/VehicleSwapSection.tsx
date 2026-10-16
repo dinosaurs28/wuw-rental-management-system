@@ -86,7 +86,7 @@ export default function VehicleSwapSection({ bookingId, onSwapped }: { bookingId
     } catch (err: any) {
       const code = err?.response?.data?.code;
       // The picked car can't take this booking any more — reload the list.
-      if (code === 'VEHICLE_NOT_AVAILABLE' || code === 'VEHICLE_BUSY' || code === 'BOOKING_CHANGED' || code === 'VEHICLE_NOT_FOUND') {
+      if (code === 'VEHICLE_NOT_AVAILABLE' || code === 'SWAP_VEHICLE_UNAVAILABLE' || code === 'VEHICLE_BUSY' || code === 'BOOKING_CHANGED' || code === 'VEHICLE_NOT_FOUND') {
         qc.invalidateQueries({ queryKey: swapCandidatesKey(bookingId) });
       }
       Alert.alert('Swap failed', apiErrorMessage(err, 'Could not swap the vehicle.'));

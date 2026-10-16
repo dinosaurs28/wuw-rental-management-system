@@ -1,6 +1,7 @@
 // Shared normalisation for the grouped vehicle-list endpoint.
 // Used by Home (index) and Search so both render an identical card model.
 import type { Vehicle } from '../types/api';
+import { normalizeUseCases } from './tripTypes';
 
 export function normalizeGroup(g: any): Vehicle {
   const images: string[] = (g.imageUrl ?? [])
@@ -15,7 +16,7 @@ export function normalizeGroup(g: any): Vehicle {
     // Optional (#2): cached listing payloads may not carry it yet.
     branchPublicId: g.branchPublicId ?? null,
     availableCount: g.availableCount,
-    useCases: Array.isArray(g.useCases) ? g.useCases : [],
+    useCases: normalizeUseCases(Array.isArray(g.useCases) ? g.useCases : []),
     images,
     pricing: {
       daily: g.pricing?.daily ?? null,

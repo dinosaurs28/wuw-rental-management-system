@@ -54,17 +54,12 @@ import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHou
 import { paymentOptionsFor, payNowSplit, payNowText, serverPaymentOptions } from '../../lib/paymentPlan';
 import { quoteDiscountLines } from '../../lib/discounts';
 import type { VehicleDetail } from '../../types/api';
+import { VEHICLE_USE_CASE_LABELS, normalizeUseCases, type VehicleUseCase } from '../../lib/tripTypes';
 
 const { width, height } = Dimensions.get('window');
 const HERO_HEIGHT = height * 0.38;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const TRIP_TYPE_LABELS: Record<string, string> = {
-  HIGHWAY: 'Highway',
-  HILL_STATION: 'Hill Station',
-  LONG_DRIVE: 'Long Drive',
-};
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -144,7 +139,7 @@ export default function VehicleDetail() {
         category: d.category,
         branch: d.branch,
         availableCount: d.availableCount,
-        useCases: Array.isArray(d.useCases) ? d.useCases : [],
+        useCases: normalizeUseCases(Array.isArray(d.useCases) ? d.useCases : []),
         images: d.images ?? [],
         pricing: { daily: d.pricing?.daily ?? null },
         availability: d.availability,
@@ -346,7 +341,7 @@ export default function VehicleDetail() {
             <View style={styles.tripRow}>
               {(vehicle.useCases ?? []).map((u) => (
                 <View key={u} style={styles.tripChip}>
-                  <Text style={styles.tripChipText}>{TRIP_TYPE_LABELS[u] ?? u}</Text>
+                  <Text style={styles.tripChipText}>{VEHICLE_USE_CASE_LABELS[u as VehicleUseCase] ?? u}</Text>
                 </View>
               ))}
             </View>

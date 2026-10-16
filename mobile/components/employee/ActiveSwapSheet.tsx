@@ -376,6 +376,7 @@ export default function ActiveSwapSheet({
           setErrors((e) => ({ ...e, startOdo: message }));
           break;
         case 'VEHICLE_NOT_AVAILABLE':
+        case 'SWAP_VEHICLE_UNAVAILABLE':
         case 'VEHICLE_NOT_FOUND':
         case 'VEHICLE_TYPE_MISMATCH':
         case 'CATEGORY_DOWNGRADE':

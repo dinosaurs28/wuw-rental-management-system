@@ -110,7 +110,7 @@ export interface Vehicle {
   priceInfo?: ListPricing | null;
   availability: boolean | null;
   availableCount?: number;
-  // Trip-type tags (HIGHWAY | HILL_STATION | LONG_DRIVE)
+  // Trip-type tags (LOCAL | OUT_OF_UDUPI)
   useCases?: string[];
   // The vehicle's branch, for its office hours (#2). Optional: cached payloads may lack it.
   branchPublicId?: string | null;

@@ -219,6 +219,8 @@ export type SwapErrorCode =
   | 'PICKUP_IN_PROGRESS'
   | 'VEHICLE_NOT_FOUND'
   | 'VEHICLE_NOT_AVAILABLE'
+  // The car is booked / out / in a checkout for part of the rest of the rental
+  | 'SWAP_VEHICLE_UNAVAILABLE'
   | 'VEHICLE_TYPE_MISMATCH'
   | 'CATEGORY_DOWNGRADE'
   | 'VEHICLE_BUSY'
