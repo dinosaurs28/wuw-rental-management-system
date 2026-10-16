@@ -23,6 +23,7 @@ import {
 import { UseCaseBadges, UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
 import { adminService } from "@/services/admin.service";
 import type { VehicleUseCase } from "@/services/vehicle.service";
+import { normalizeUseCases } from "@repo/schemas";
 
 interface AdminVehicleRow {
   publicId: string;
@@ -69,7 +70,7 @@ export const AdminVehiclesPage = () => {
 
   const openEditor = (v: AdminVehicleRow) => {
     setEditing(v);
-    setDraft(v.useCases ?? []);
+    setDraft(normalizeUseCases(v.useCases));
   };
 
   const handleSave = async () => {
@@ -101,7 +102,7 @@ export const AdminVehiclesPage = () => {
           Vehicles
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Tag vehicles with trip types (Highway, Hill Station, Long Drive) so customers can filter by them.
+          Tag vehicles with trip types (Udupi/Manipal, Out of Udupi) so customers can filter by them.
         </p>
       </div>
 

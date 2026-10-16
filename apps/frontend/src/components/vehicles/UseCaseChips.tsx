@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { normalizeUseCases } from "@repo/schemas";
 import {
   VEHICLE_USE_CASES,
   VEHICLE_USE_CASE_LABELS,
@@ -59,9 +60,8 @@ export const UseCaseBadges = ({
   tone = "light",
   className,
 }: UseCaseBadgesProps) => {
-  const tags = (useCases ?? []).filter(
-    (t): t is VehicleUseCase => t in VEHICLE_USE_CASE_LABELS,
-  );
+  // Legacy Highway / Hill Station / Long Drive show as Out of Udupi
+  const tags = normalizeUseCases(useCases);
   if (tags.length === 0) return null;
   return (
     <div className={cn("flex flex-wrap gap-1.5", className)}>

@@ -1,16 +1,13 @@
 import axios from "axios";
 import type { PaymentOptions } from "@/lib/paymentPlan";
+import type { VehicleUseCaseValue } from "@repo/schemas";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Trip-type tags (#16) — exact enum strings used by the backend
-export const VEHICLE_USE_CASES = ["HIGHWAY", "HILL_STATION", "LONG_DRIVE"] as const;
-export type VehicleUseCase = (typeof VEHICLE_USE_CASES)[number];
-export const VEHICLE_USE_CASE_LABELS: Record<VehicleUseCase, string> = {
-  HIGHWAY: "Highway",
-  HILL_STATION: "Hill Station",
-  LONG_DRIVE: "Long Drive",
-};
+// Trip-type tags — "Udupi/Manipal" (LOCAL) and "Out of Udupi" (OUT_OF_UDUPI);
+// the shared list and labels live in @repo/schemas
+export { VEHICLE_USE_CASES, VEHICLE_USE_CASE_LABELS } from "@repo/schemas";
+export type VehicleUseCase = VehicleUseCaseValue;
 
 export interface VehicleFilters {
   branch?: string;

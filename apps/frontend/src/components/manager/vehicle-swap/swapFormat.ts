@@ -62,6 +62,10 @@ export function swapStageLabel(bookingStatusAtSwap: string | null | undefined): 
 /** Refusals that mean the chosen car is no longer a valid pick — reload the list and choose again. */
 export const SWAP_PICK_AGAIN_CODES: ReadonlySet<string> = new Set([
   "VEHICLE_NOT_AVAILABLE",
+  // Booked / out / in a checkout for part of the rest of the rental (taken meanwhile)
+  "SWAP_VEHICLE_UNAVAILABLE",
+  // Another swap / extension on the car right now — the fresh list shows the outcome
+  "VEHICLE_BUSY",
   "VEHICLE_NOT_FOUND",
   "VEHICLE_TYPE_MISMATCH",
   "CATEGORY_DOWNGRADE",

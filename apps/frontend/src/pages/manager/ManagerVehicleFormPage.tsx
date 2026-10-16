@@ -72,7 +72,7 @@ import {
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
 import { fetchGSTRule } from "@/services/gst.service";
 import { fetchWeekendDays, weekendDaysLabel } from "@/services/weekendDays.service";
-import { splitRentTotal, type GstRates } from "@repo/schemas";
+import { normalizeUseCases, splitRentTotal, type GstRates } from "@repo/schemas";
 import { formatInrExact, formatGstRate } from "@/lib/gst";
 
 /**
@@ -214,7 +214,8 @@ export const ManagerVehicleFormPage = () => {
       images: [],
       hasFastag: false,
       fastagNumber: "",
-      useCases: [],
+      // Every car can do Udupi/Manipal trips; the manager adds Out of Udupi
+      useCases: ["LOCAL"],
     },
   });
 
@@ -302,9 +303,8 @@ export const ManagerVehicleFormPage = () => {
                 .map((img: any) => img.file.url),
             hasFastag: vehicle.hasFastag ?? false,
             fastagNumber: vehicle.fastagNumber ?? "",
-            useCases: (vehicle.useCases ?? []).filter((t: string) =>
-              (VEHICLE_USE_CASES as readonly string[]).includes(t),
-            ),
+            // Legacy Highway / Hill Station / Long Drive read as Out of Udupi
+            useCases: normalizeUseCases(vehicle.useCases),
           });
         } catch (error) {
           toast.error("Failed to load vehicle details");

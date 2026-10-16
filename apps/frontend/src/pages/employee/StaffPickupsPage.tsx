@@ -69,6 +69,7 @@ import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSh
 import { SwapVehiclePickerField } from "@/components/swap/SwapVehiclePickerField";
 import { SwapExcludedList } from "@/components/swap/SwapExcludedList";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
+import { SWAP_PICK_AGAIN_CODES, swapErrorCode } from "@/components/manager/vehicle-swap/swapFormat";
 
 import apiClient from "@/lib/axios";
 import { bookingService, type EmployeeBooking } from "@/services/booking.service";
@@ -808,6 +809,12 @@ export default function StaffPickupsPage() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to swap vehicle");
+      if (SWAP_PICK_AGAIN_CODES.has(swapErrorCode(error) ?? "")) {
+        // The car was taken meanwhile (booked, another swap, a checkout) — reload the list and pick again
+        setShowSwapConfirmModal(false);
+        setSelectedVehicle(null);
+        void refetchVehicles();
+      }
     },
   });
 
