@@ -1,6 +1,6 @@
 import { prisma, SwapReason, VehicleSwap } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
-import { VehicleSwapService } from "../vehicle-swap/vehicle-swap.service.js";
+import { VehicleSwapService, type PreparedSwap } from "../vehicle-swap/vehicle-swap.service.js";
 import { auditService } from "../audit/audit.service.js";
 import { AuditCategory, AuditSeverity, BookingStatus } from "@repo/database/client";
 import { classifyReplacements, swapWindowFor } from "../vehicle-swap/swap-replacements.js";
@@ -20,28 +20,45 @@ interface ActorContext {
 
 class ExtensionVehicleAllocatorService {
   /**
-   * Swap the current booking's vehicle to a new one using the existing
-   * VehicleSwapService. Returns the VehicleSwap record.
+   * The SWAP_CURRENT_TO_OTHER swap, checked and priced before the extension's
+   * transaction (VehicleSwapService.prepareSwap, source EXTENSION: readings
+   * optional, the difference never billed — the company moved the customer to
+   * free the original car). The replacement must be free until the extended
+   * end (`availabilityEndAt`), not just the current end.
    */
-  async swapCurrentBookingVehicle(
+  async prepareCurrentBookingSwap(
     bookingPublicId: string,
     newVehicleId: number,
     actor: ActorContext,
-    // The extended end — the replacement must be free until then, not just the current end
-    availabilityEndAt?: Date,
-  ): Promise<VehicleSwap> {
-    const vehicleSwap = await vehicleSwapService.performVehicleSwap(
+    availabilityEndAt: Date,
+  ): Promise<PreparedSwap> {
+    return vehicleSwapService.prepareSwap({
       bookingPublicId,
       newVehicleId,
-      actor.actorId,
-      SwapReason.CUSTOMER_REQUEST,
-      "Extension vehicle swap — booking extended beyond current vehicle availability",
-      false,
-      undefined,
-      { branchId: actor.actorBranchId, availabilityEndAt },
-    );
+      swappedById: actor.actorId,
+      reason: SwapReason.CUSTOMER_REQUEST,
+      reasonNotes: "Extension vehicle swap — booking extended beyond current vehicle availability",
+      markOriginalForMaintenance: false,
+      branchId: actor.actorBranchId,
+      availabilityEndAt,
+      source: "EXTENSION",
+    });
+  }
 
-    return vehicleSwap;
+  /**
+   * Runs the prepared swap inside the extension commit's transaction: booking
+   * row lock, FOR UPDATE on both vehicle rows and the swap availability rule
+   * over [now, extended end (+ grace)] re-checked under them, then the move.
+   * The caller extends the booking in the same transaction and calls
+   * afterCurrentBookingSwap once it has committed.
+   */
+  async applyCurrentBookingSwap(tx: PrismaTx, prepared: PreparedSwap): Promise<VehicleSwap> {
+    return vehicleSwapService.applySwap(tx, prepared);
+  }
+
+  /** After the extension commit's transaction: caches and the swap notification. */
+  async afterCurrentBookingSwap(prepared: PreparedSwap, swap: Pick<VehicleSwap, "id">): Promise<void> {
+    await vehicleSwapService.afterSwapCommit(prepared, swap);
   }
 
   /**
@@ -56,6 +73,8 @@ class ExtensionVehicleAllocatorService {
     actor: ActorContext,
     tx: PrismaTx,
   ): Promise<void> {
+    // Lock order: booking row, then vehicle rows by id — as the swap path
+    await tx.$queryRaw`SELECT id FROM "Booking" WHERE id = ${affectedBookingId} FOR UPDATE`;
     // Load the affected booking with its current vehicle
     const booking = await tx.booking.findUnique({
       where: { id: affectedBookingId },

@@ -1,4 +1,4 @@
-import { prisma, BookingStatus, VehicleTypeClass } from "@repo/database/client";
+import { prisma, BookingStatus, Prisma, VehicleTypeClass } from "@repo/database/client";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
 import {
   classifyReplacements,
@@ -48,9 +48,11 @@ class ExtensionAvailabilityService {
     fromAt: Date,
     toAt: Date,
     excludeBookingId: number,
+    // Read through this transaction (it holds the vehicle row lock) — the commit's re-check
+    db: Prisma.TransactionClient = prisma,
   ): Promise<AvailabilityResult> {
     const now = new Date();
-    const conflicts = await prisma.bookingItem.findMany({
+    const conflicts = await db.bookingItem.findMany({
       where: {
         vehicleId,
         booking: {
@@ -92,8 +94,8 @@ class ExtensionAvailabilityService {
 
     // Customer checkouts (Redis holds) — never the extended booking's own
     const [vehicle, extended] = await Promise.all([
-      conflicts[0]?.vehicle ?? prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { publicId: true } }),
-      prisma.booking.findUnique({ where: { id: excludeBookingId }, select: { publicId: true } }),
+      conflicts[0]?.vehicle ?? db.vehicle.findUnique({ where: { id: vehicleId }, select: { publicId: true } }),
+      db.booking.findUnique({ where: { id: excludeBookingId }, select: { publicId: true } }),
     ]);
     if (vehicle) {
       const holds = await listOverlappingHolds(
@@ -105,7 +107,7 @@ class ExtensionAvailabilityService {
       const known = new Set(conflictingBookings.map((c) => c.bookingPublicId));
       const fresh = holds.filter((h) => !known.has(h.holdId));
       if (fresh.length > 0) {
-        const rows = await prisma.booking.findMany({
+        const rows = await db.booking.findMany({
           where: { publicId: { in: fresh.map((h) => h.holdId) } },
           select: { id: true, publicId: true },
         });

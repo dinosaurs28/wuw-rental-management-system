@@ -26,6 +26,7 @@ import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
 import { extensionVehicleAllocatorService } from "./extension-vehicle-allocator.service.js";
+import type { PreparedSwap } from "../vehicle-swap/vehicle-swap.service.js";
 import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
@@ -578,9 +579,9 @@ class ExtensionService {
         finalSplit = extensionSplitData(partialPricing);
       }
 
-      // Handle SWAP_CURRENT_TO_OTHER before the DB transaction
-      // (vehicleSwapService runs its own transaction internally)
-      let vehicleSwapId: number | null = null;
+      // SWAP_CURRENT_TO_OTHER: the swap is checked and priced before the
+      // transaction (the pricing engine is slow) and applied inside it
+      let preparedSwap: PreparedSwap | null = null;
       if (input.resolutionType === "SWAP_CURRENT_TO_OTHER" && input.selectedVehiclePublicId) {
         const newVehicle = await prisma.vehicle.findUnique({
           where: { publicId: input.selectedVehiclePublicId },
@@ -588,76 +589,112 @@ class ExtensionService {
         });
         if (!newVehicle) throw new Error("Selected replacement vehicle not found");
 
-        const vehicleSwap = await extensionVehicleAllocatorService.swapCurrentBookingVehicle(
+        preparedSwap = await extensionVehicleAllocatorService.prepareCurrentBookingSwap(
           booking.publicId,
           newVehicle.id,
           actor,
           effectiveNewEndAt,
         );
-        vehicleSwapId = vehicleSwap.id;
       }
 
-      // Handle SWAP_FUTURE_BOOKING
-      if (
-        input.resolutionType === "SWAP_FUTURE_BOOKING" &&
-        input.affectedBookingSwaps &&
-        input.affectedBookingSwaps.length > 0
-      ) {
-        await prisma.$transaction(async (tx) => {
-          for (const swap of input.affectedBookingSwaps!) {
-            const affectedBooking = await tx.booking.findUnique({
-              where: { publicId: swap.bookingPublicId },
-              select: { id: true },
-            });
-            if (!affectedBooking) throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
-            await extensionVehicleAllocatorService.swapFutureBookingVehicle(
-              affectedBooking.id,
-              swap.newVehiclePublicId,
-              extension.id,
-              actor,
+      // ── One transaction: vehicle move(s) + vehicle hold + resolution ─────
+      // The swap (or the next booking's reassignment), booking.endAt — which
+      // blocks the slot for other bookings while payment is pending — and the
+      // extension's resolution commit together, so the car never holds this
+      // booking without its extended end (or the reverse). Lock order: driving
+      // licence, booking row, vehicle rows by id — booking creation takes the
+      // licence then the vehicles, swaps the booking then the vehicles. The
+      // driving licence is re-checked under its lock (X3); availability is
+      // re-checked under the vehicle row locks (the swap rule for a swap, the
+      // extension check for the car this booking keeps).
+      let vehicleSwapId: number | null = null;
+      const updatedExtension = await prisma.$transaction(
+        async (tx) => {
+          await lockAndAssertDlFree(
+            {
+              customerId: booking.customerId,
+              mode: "extend",
+              window: { startAt: booking.endAt, endAt: effectiveNewEndAt },
+              excludeBookingId: booking.id,
+            },
+            tx,
+          );
+          await tx.$queryRaw`SELECT id FROM "Booking" WHERE id = ${booking.id} FOR UPDATE`;
+
+          if (preparedSwap) {
+            // Locks both vehicle rows and re-checks the replacement over
+            // [now, extended end (+ grace)] before moving the booking item
+            const vehicleSwap = await extensionVehicleAllocatorService.applyCurrentBookingSwap(tx, preparedSwap);
+            vehicleSwapId = vehicleSwap.id;
+          }
+
+          if (
+            input.resolutionType === "SWAP_FUTURE_BOOKING" &&
+            input.affectedBookingSwaps &&
+            input.affectedBookingSwaps.length > 0
+          ) {
+            for (const swap of input.affectedBookingSwaps) {
+              const affectedBooking = await tx.booking.findUnique({
+                where: { publicId: swap.bookingPublicId },
+                select: { id: true },
+              });
+              if (!affectedBooking) throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
+              await extensionVehicleAllocatorService.swapFutureBookingVehicle(
+                affectedBooking.id,
+                swap.newVehiclePublicId,
+                extension.id,
+                actor,
+                tx,
+              );
+            }
+          }
+
+          if (input.resolutionType !== "SWAP_CURRENT_TO_OTHER") {
+            // The car this booking keeps must be free for the added time — now,
+            // with its row locked (after the next booking moved off it)
+            await tx.$queryRaw`SELECT id FROM "Vehicle" WHERE id = ${currentVehicleId} FOR UPDATE`;
+            const lockedCheck = await extensionAvailabilityService.checkVehicleAvailability(
+              currentVehicleId,
+              booking.endAt,
+              effectiveNewEndAt,
+              booking.id,
               tx,
             );
+            if (!lockedCheck.available) {
+              throw new Error(
+                "Vehicle availability changed during extension — please re-evaluate",
+              );
+            }
           }
-        });
-      }
 
-      // ── Vehicle hold ──────────────────────────────────────────────────────
-      // Update booking.endAt immediately so the vehicle slot is blocked for
-      // other bookings while payment is pending. Reverted in the catch block
-      // if the commit rolls back. The driving licence is re-checked under its
-      // lock (X3) so a booking made since the quote can't end up overlapping.
-      await prisma.$transaction(async (tx) => {
-        await lockAndAssertDlFree(
-          {
-            customerId: booking.customerId,
-            mode: "extend",
-            window: { startAt: booking.endAt, endAt: effectiveNewEndAt },
-            excludeBookingId: booking.id,
-          },
-          tx,
-        );
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: { endAt: effectiveNewEndAt },
-        });
-      });
+          await tx.booking.update({
+            where: { id: booking.id },
+            data: { endAt: effectiveNewEndAt },
+          });
 
-      // Persist extension resolution details. requestedEndAt becomes the end
-      // actually held (the partial end for PARTIAL_EXTENSION) — every finalizer
-      // extends the booking to requestedEndAt.
-      const updatedExtension = await prisma.bookingExtension.update({
-        where: { id: extension.id },
-        data: {
-          extensionStatus: ExtensionStatus.PENDING_PAYMENT,
-          requestedEndAt: effectiveNewEndAt,
-          resolutionType: input.resolutionType as ExtensionResolutionType,
-          vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
-          vehicleSwapId: vehicleSwapId,
-          additionalAmount: finalAdditionalAmount,
-          newTotalFinal: finalNewTotalFinal,
-          ...(finalSplit ?? {}),
+          // Persist extension resolution details. requestedEndAt becomes the end
+          // actually held (the partial end for PARTIAL_EXTENSION) — every finalizer
+          // extends the booking to requestedEndAt.
+          return tx.bookingExtension.update({
+            where: { id: extension.id },
+            data: {
+              extensionStatus: ExtensionStatus.PENDING_PAYMENT,
+              requestedEndAt: effectiveNewEndAt,
+              resolutionType: input.resolutionType as ExtensionResolutionType,
+              vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
+              vehicleSwapId: vehicleSwapId,
+              additionalAmount: finalAdditionalAmount,
+              newTotalFinal: finalNewTotalFinal,
+              ...(finalSplit ?? {}),
+            },
+          });
         },
-      });
+        { maxWait: 5000, timeout: 20000 },
+      );
+
+      if (preparedSwap && vehicleSwapId != null) {
+        await extensionVehicleAllocatorService.afterCurrentBookingSwap(preparedSwap, { id: vehicleSwapId });
+      }
 
       await Promise.all([
         auditService.log({

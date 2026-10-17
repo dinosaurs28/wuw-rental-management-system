@@ -57,6 +57,19 @@ test("window: an active rental runs from now to its end plus the turnaround grac
   assert.equal(noGrace.end.toISOString(), "2026-10-17T04:30:00.000Z");
 });
 
+test("window: an extension swap of a rental out is checked from now to the extended end plus grace", () => {
+  // The extension commit applies the swap and the extended end in one
+  // transaction; the replacement is re-checked over this window under its row lock
+  const w = swapAvailabilityWindow(
+    { status: "PICKED_UP", startAt: at("2026-10-15T04:30:00Z"), endAt: at("2026-10-17T04:30:00Z") },
+    NOW,
+    { availabilityEndAt: at("2026-10-19T04:30:00Z"), graceMinutes: 30 },
+  );
+  assert.equal(w.start.toISOString(), NOW.toISOString());
+  assert.equal(w.coverUntil.toISOString(), "2026-10-19T04:30:00.000Z");
+  assert.equal(w.end.toISOString(), "2026-10-19T05:00:00.000Z");
+});
+
 test("window: a rental picked up before its booked start still runs from now", () => {
   const w = swapAvailabilityWindow(
     { status: "PICKED_UP", startAt: at("2026-10-16T10:00:00Z"), endAt: at("2026-10-17T10:00:00Z") },

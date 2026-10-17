@@ -18,8 +18,10 @@
  *
  * Callers:
  *  - swapVehicle()          the swap screens (Fleet Executive / Branch Manager)
- *  - performVehicleSwap()   the extension SWAP_CURRENT_TO_OTHER path (positional,
- *                           kept for extension-vehicle-allocator.service)
+ *  - prepareSwap() + applySwap() + afterSwapCommit()
+ *                           the extension SWAP_CURRENT_TO_OTHER commit, which runs
+ *                           applySwap inside its own transaction together with
+ *                           the extended end (extension-vehicle-allocator.service)
  */
 import {
   prisma,
@@ -290,11 +292,6 @@ export interface SwapVehicleInput {
   availabilityEndAt?: Date;
 }
 
-export interface LegacySwapOptions {
-  branchId?: number;
-  availabilityEndAt?: Date;
-}
-
 const vehicleSummarySelect = {
   publicId: true,
   make: true,
@@ -427,6 +424,32 @@ function proratedDifference(originalTaxable: Decimal, newTaxable: Decimal, fract
   return Decimal.max(new Decimal(0), newTaxable.minus(originalTaxable))
     .mul(fraction)
     .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+}
+
+/** A swap checked and priced outside any lock (VehicleSwapService.prepareSwap). */
+export interface PreparedSwap {
+  input: SwapVehicleInput;
+  source: SwapSource;
+  now: Date;
+  booking: SwapBooking;
+  effectiveEndAt: Date;
+  originalItem: SwapBooking["items"][number];
+  originalVehicle: SwapBooking["items"][number]["vehicle"];
+  stage: SwapStage;
+  storedReadings: {
+    originalVehicleEndOdometer: number | null;
+    originalVehicleFuelLevel: string | null;
+    newVehicleStartOdometer: number | null;
+    newVehicleFuelLevel: string | null;
+  };
+  replacement: { id: number; regNo: string; categoryId: number; hasFastag: boolean };
+  photoMode: ReturnType<typeof swapPhotoMode>;
+  replacementPhotos: ReplacementPhotoInput[];
+  storedFastag: { oldVehicleFastagBalance: string | null; newVehicleFastagBalance: string | null };
+  photosMissing: boolean;
+  chargeDifference: boolean;
+  priceDifference: Decimal;
+  pricingError: string | null;
 }
 
 export class VehicleSwapService {
@@ -596,36 +619,6 @@ export class VehicleSwapService {
   }
 
   /**
-   * Extension SWAP_CURRENT_TO_OTHER entry point (positional signature kept for
-   * extension-vehicle-allocator.service). The caller already holds the
-   * extension vehicle locks; readings are optional and the difference is never
-   * billed — the company moved the customer to free the original car.
-   */
-  async performVehicleSwap(
-    bookingId: string,
-    newVehicleId: number,
-    swappedById: number,
-    reason: SwapReason,
-    reasonNotes?: string,
-    markOriginalForMaintenance: boolean = false,
-    originalVehicleNotes?: string,
-    options: LegacySwapOptions = {},
-  ): Promise<VehicleSwap> {
-    return this.swapVehicle({
-      bookingPublicId: bookingId,
-      newVehicleId,
-      swappedById,
-      reason,
-      reasonNotes,
-      markOriginalForMaintenance,
-      originalVehicleNotes,
-      branchId: options.branchId,
-      availabilityEndAt: options.availabilityEndAt,
-      source: "EXTENSION",
-    });
-  }
-
-  /**
    * Swap the booking's vehicle. Under the booking + vehicle row locks it
    * re-checks the booking and the replacement, moves the booking item, sets
    * both cars' statuses (and odometer / fuel from the readings), and writes the
@@ -633,6 +626,55 @@ export class VehicleSwapService {
    * log. Vehicle availability caches are cleared after commit.
    */
   async swapVehicle(input: SwapVehicleInput): Promise<VehicleSwapWithRelations> {
+    const prepared = await this.prepareSwap(input);
+    const { source, originalVehicle, replacement } = prepared;
+
+    // Serialise with extension commits and other swaps on either car (the
+    // extension path already holds them); the row locks below are the backstop
+    const lockedVehicleIds: number[] = [];
+    if (source === "STAFF") {
+      const ids = [originalVehicle.id, replacement.id];
+      let acquired: { acquired: number[]; failed: number[] } | null = null;
+      try {
+        acquired = await extensionLockService.acquireMultipleLocks(ids);
+      } catch (err) {
+        // Redis down — the database row locks below still serialise swaps
+        console.warn("[vehicle-swap] extension lock unavailable, continuing with row locks:", err);
+      }
+      if (acquired && acquired.failed.length > 0) {
+        throw new VehicleSwapError(
+          StatusCode.CONFLICT,
+          "VEHICLE_BUSY",
+          "One of these vehicles is being swapped or extended right now. Try again in a moment.",
+        );
+      }
+      if (acquired) lockedVehicleIds.push(...acquired.acquired);
+    }
+
+    let swap: VehicleSwapWithRelations;
+    try {
+      swap = await prisma.$transaction((tx) => this.applySwap(tx, prepared), { maxWait: 5000, timeout: 15000 });
+    } finally {
+      if (lockedVehicleIds.length > 0) {
+        await extensionLockService.releaseMultipleLocks(lockedVehicleIds).catch((err) => {
+          console.warn("[vehicle-swap] releasing extension locks failed:", err);
+        });
+      }
+    }
+
+    await this.afterSwapCommit(prepared, swap);
+    return swap;
+  }
+
+  /**
+   * The checks and work a swap does before any lock: loads and checks the
+   * booking and the replacement, the readings, photos and FASTag balances, and
+   * the price difference (the engine is slow). swapVehicle runs it and then
+   * applySwap in its own transaction; the extension commit runs it before its
+   * transaction and applySwap inside it, so the vehicle move and the extended
+   * end commit together (extension-vehicle-allocator.service).
+   */
+  async prepareSwap(input: SwapVehicleInput): Promise<PreparedSwap> {
     const source: SwapSource = input.source ?? "STAFF";
     if (!input.bookingPublicId || !input.newVehicleId || !input.swappedById) {
       throw new VehicleSwapError(StatusCode.BAD_REQUEST, "VALIDATION_ERROR", "Missing required parameters");
@@ -788,257 +830,274 @@ export class VehicleSwapService {
       }
     }
 
-    // Serialise with extension commits and other swaps on either car (the
-    // extension path already holds them); the row locks below are the backstop
-    const lockedVehicleIds: number[] = [];
-    if (source === "STAFF") {
-      const ids = [originalVehicle.id, replacement.id];
-      let acquired: { acquired: number[]; failed: number[] } | null = null;
-      try {
-        acquired = await extensionLockService.acquireMultipleLocks(ids);
-      } catch (err) {
-        // Redis down — the database row locks below still serialise swaps
-        console.warn("[vehicle-swap] extension lock unavailable, continuing with row locks:", err);
-      }
-      if (acquired && acquired.failed.length > 0) {
+    return {
+      input,
+      source,
+      now,
+      booking,
+      effectiveEndAt,
+      originalItem,
+      originalVehicle,
+      stage,
+      storedReadings,
+      replacement,
+      photoMode,
+      replacementPhotos,
+      storedFastag,
+      photosMissing,
+      chargeDifference,
+      priceDifference,
+      pricingError,
+    };
+  }
+
+  /**
+   * The swap itself, inside `tx`: locks the booking row, then both vehicle rows
+   * (FOR UPDATE, id order), re-checks the booking and the replacement (the swap
+   * availability rule over the rest of the rental, to `availabilityEndAt` on
+   * the extension path), moves the booking item, sets both cars' statuses and
+   * readings, and writes the VehicleSwap row, its photos and the audit log.
+   * Run afterSwapCommit once `tx` has committed.
+   */
+  async applySwap(tx: Prisma.TransactionClient, prepared: PreparedSwap): Promise<VehicleSwapWithRelations> {
+    const {
+      input,
+      source,
+      now,
+      booking,
+      effectiveEndAt,
+      originalItem,
+      originalVehicle,
+      stage,
+      storedReadings,
+      replacement,
+      photoMode,
+      replacementPhotos,
+      storedFastag,
+      photosMissing,
+      chargeDifference,
+      priceDifference,
+      pricingError,
+    } = prepared;
+    const db = tx as unknown as Db;
+    // Lock order: booking, then vehicles by id — same as the drop and extension paths
+    await lockBookingForDrop(db, booking.id);
+    const locked = await tx.booking.findUniqueOrThrow({
+      where: { id: booking.id },
+      include: swapBookingInclude,
+    });
+    const lockedItem = locked.items[0];
+    if (
+      !lockedItem ||
+      lockedItem.id !== originalItem.id ||
+      lockedItem.vehicleId !== originalVehicle.id ||
+      locked.startAt.getTime() !== booking.startAt.getTime() ||
+      locked.endAt.getTime() !== booking.endAt.getTime() ||
+      locked.status !== booking.status
+    ) {
+      throw new VehicleSwapError(
+        StatusCode.CONFLICT,
+        "BOOKING_CHANGED",
+        "This booking changed while the swap was being prepared. Reload and try again.",
+      );
+    }
+    await this.assertSwappable(locked, { source, effectiveEndAt, now }, db);
+
+    for (const id of [originalVehicle.id, replacement.id].sort((a, b) => a - b)) {
+      await tx.$queryRaw`SELECT id FROM "Vehicle" WHERE id = ${id} FOR UPDATE`;
+    }
+    const [lockedOriginal, newVehicle] = await Promise.all([
+      tx.vehicle.findUniqueOrThrow({ where: { id: originalVehicle.id }, include: { category: true } }),
+      tx.vehicle.findUniqueOrThrow({ where: { id: replacement.id }, include: { category: true } }),
+    ]);
+
+    // The rest of the rental (to the extension end on the extension path),
+    // checked by the customer booking rule now the rows are locked: a
+    // concurrent swap, booking or checkout for the car has committed or waits
+    const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx);
+    await this.assertReplacementValid(tx, locked, lockedOriginal, newVehicle, window, now);
+
+    // The returning car can't come back below the reading it started this segment at
+    if (stage === "ACTIVE_RENTAL" && storedReadings.originalVehicleEndOdometer != null) {
+      const segmentStart = await this.segmentStartOdometer(locked, db);
+      if (segmentStart != null && storedReadings.originalVehicleEndOdometer < segmentStart) {
         throw new VehicleSwapError(
-          StatusCode.CONFLICT,
-          "VEHICLE_BUSY",
-          "One of these vehicles is being swapped or extended right now. Try again in a moment.",
+          StatusCode.BAD_REQUEST,
+          "ODOMETER_BELOW_START",
+          `${lockedOriginal.regNo}'s odometer (${storedReadings.originalVehicleEndOdometer} km) can't be below its start reading for this rental (${segmentStart} km).`,
+          { segmentStartOdometer: segmentStart },
         );
       }
-      if (acquired) lockedVehicleIds.push(...acquired.acquired);
     }
 
-    let swap: VehicleSwapWithRelations;
-    try {
-      swap = await prisma.$transaction(
-        async (tx) => {
-          const db = tx as unknown as Db;
-          // Lock order: booking, then vehicles by id — same as the drop and extension paths
-          await lockBookingForDrop(db, booking.id);
-          const locked = await tx.booking.findUniqueOrThrow({
-            where: { id: booking.id },
-            include: swapBookingInclude,
-          });
-          const lockedItem = locked.items[0];
-          if (
-            !lockedItem ||
-            lockedItem.id !== originalItem.id ||
-            lockedItem.vehicleId !== originalVehicle.id ||
-            locked.startAt.getTime() !== booking.startAt.getTime() ||
-            locked.endAt.getTime() !== booking.endAt.getTime() ||
-            locked.status !== booking.status
-          ) {
-            throw new VehicleSwapError(
-              StatusCode.CONFLICT,
-              "BOOKING_CHANGED",
-              "This booking changed while the swap was being prepared. Reload and try again.",
-            );
-          }
-          await this.assertSwappable(locked, { source, effectiveEndAt, now }, db);
-
-          for (const id of [originalVehicle.id, replacement.id].sort((a, b) => a - b)) {
-            await tx.$queryRaw`SELECT id FROM "Vehicle" WHERE id = ${id} FOR UPDATE`;
-          }
-          const [lockedOriginal, newVehicle] = await Promise.all([
-            tx.vehicle.findUniqueOrThrow({ where: { id: originalVehicle.id }, include: { category: true } }),
-            tx.vehicle.findUniqueOrThrow({ where: { id: replacement.id }, include: { category: true } }),
-          ]);
-
-          // The rest of the rental (to the extension end on the extension path),
-          // checked by the customer booking rule now the rows are locked: a
-          // concurrent swap, booking or checkout for the car has committed or waits
-          const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx);
-          await this.assertReplacementValid(tx, locked, lockedOriginal, newVehicle, window, now);
-
-          // The returning car can't come back below the reading it started this segment at
-          if (stage === "ACTIVE_RENTAL" && storedReadings.originalVehicleEndOdometer != null) {
-            const segmentStart = await this.segmentStartOdometer(locked, db);
-            if (segmentStart != null && storedReadings.originalVehicleEndOdometer < segmentStart) {
-              throw new VehicleSwapError(
-                StatusCode.BAD_REQUEST,
-                "ODOMETER_BELOW_START",
-                `${lockedOriginal.regNo}'s odometer (${storedReadings.originalVehicleEndOdometer} km) can't be below its start reading for this rental (${segmentStart} km).`,
-                { segmentStartOdometer: segmentStart },
-              );
-            }
-          }
-
-          // …and the replacement can't start below its own recorded reading: a
-          // mistyped low reading would roll the fleet odometer back and become
-          // the start of the drop's last km segment.
-          if (
-            stage === "ACTIVE_RENTAL" &&
-            storedReadings.newVehicleStartOdometer != null &&
-            storedReadings.newVehicleStartOdometer < newVehicle.odo
-          ) {
-            throw new VehicleSwapError(
-              StatusCode.BAD_REQUEST,
-              "ODOMETER_BELOW_RECORDED",
-              `${newVehicle.regNo}'s start odometer (${storedReadings.newVehicleStartOdometer} km) can't be below its last recorded reading (${newVehicle.odo} km). Check the dashboard; if the recorded reading is wrong, ask the branch manager to correct it.`,
-              { recordedOdometer: newVehicle.odo, vehicleId: newVehicle.id },
-            );
-          }
-
-          // The photos must be fresh pickup-photo uploads not saved anywhere yet
-          const photoFileIds =
-            replacementPhotos.length > 0
-              ? await this.claimSwapPhotoFiles(db, replacementPhotos, locked.branchId)
-              : new Map<string, number>();
-
-          await tx.bookingItem.update({
-            where: { id: lockedItem.id },
-            data: { vehicleId: newVehicle.id },
-          });
-          // Festival rules: today's touching the window both cars were priced over
-          // join the booking's stored ones (a stored version wins)
-          await recordBookingSpecialRules(tx, locked.id, locked.startAt, locked.endAt);
-
-          // ── Vehicle statuses / readings ──────────────────────────────────
-          let originalStatusAfter: VehicleStatus;
-          let maintenanceNotApplied = false;
-          if (stage === "ACTIVE_RENTAL") {
-            // Pending drop damage on the returning car → MANAGER_REPORTED (manager decides)
-            const damageStatus = await vehicleStatusAfterDrop(locked.id, lockedOriginal.id, db);
-            originalStatusAfter =
-              damageStatus && damageStatus !== VehicleStatus.AVAILABLE
-                ? damageStatus
-                : input.markOriginalForMaintenance
-                  ? VehicleStatus.MAINTENANCE
-                  : VehicleStatus.AVAILABLE;
-
-            await tx.vehicle.update({
-              where: { id: newVehicle.id },
-              data: {
-                status: VehicleStatus.OUT_FOR_RENTAL,
-                ...(storedReadings.newVehicleStartOdometer != null && { odo: storedReadings.newVehicleStartOdometer }),
-                ...(storedReadings.newVehicleFuelLevel != null && { fuelLevel: fuelBarsToPercent(storedReadings.newVehicleFuelLevel) }),
-              },
-            });
-          } else {
-            // Before pickup the replacement keeps its status (pickup marks it
-            // OUT_FOR_RENTAL). The original is only touched when flagged for
-            // maintenance, and never while it is still out on another rental.
-            const onOtherRental = await tx.bookingItem.findFirst({
-              where: {
-                vehicleId: lockedOriginal.id,
-                booking: { status: BookingStatus.PICKED_UP, id: { not: locked.id } },
-              },
-              select: { id: true },
-            });
-            maintenanceNotApplied = !!onOtherRental && input.markOriginalForMaintenance === true;
-            originalStatusAfter =
-              !onOtherRental && input.markOriginalForMaintenance
-                ? VehicleStatus.MAINTENANCE
-                : lockedOriginal.status;
-          }
-
-          const originalData: Prisma.VehicleUpdateInput = {};
-          if (originalStatusAfter !== lockedOriginal.status) originalData.status = originalStatusAfter;
-          if (storedReadings.originalVehicleEndOdometer != null) originalData.odo = storedReadings.originalVehicleEndOdometer;
-          if (storedReadings.originalVehicleFuelLevel != null) originalData.fuelLevel = fuelBarsToPercent(storedReadings.originalVehicleFuelLevel);
-          if (Object.keys(originalData).length > 0) {
-            await tx.vehicle.update({ where: { id: lockedOriginal.id }, data: originalData });
-          }
-
-          const createdRow = await tx.vehicleSwap.create({
-            data: {
-              publicId: createID(),
-              bookingId: locked.id,
-              originalVehicleId: lockedOriginal.id,
-              newVehicleId: newVehicle.id,
-              swappedById: input.swappedById,
-              reason: input.reason,
-              reasonNotes: input.reasonNotes,
-              originalVehicleStatus: originalStatusAfter,
-              originalVehicleNotes: input.originalVehicleNotes,
-              swappedAt: new Date(),
-              bookingStatusAtSwap: locked.status,
-              ...storedReadings,
-              priceDifference: priceDifference.toFixed(2),
-              chargeDifference,
-              ...storedFastag,
-            },
-            select: { id: true },
-          });
-          if (replacementPhotos.length > 0) {
-            await tx.bookingPhoto.createMany({
-              data: replacementPhotos.map((photo) => ({
-                publicId: createID(),
-                bookingId: locked.id,
-                fileId: photoFileIds.get(photo.fileId)!,
-                type: BookingPhotoType.SWAP_DELIVERY,
-                captureLabel: photo.label ?? null,
-                swapId: createdRow.id,
-                vehicleId: newVehicle.id,
-              })),
-            });
-          }
-          const created = await tx.vehicleSwap.findUniqueOrThrow({
-            where: { id: createdRow.id },
-            include: swapRelations,
-          });
-
-          const actor = await tx.user.findUnique({
-            where: { id: input.swappedById },
-            select: { name: true, role: true, branchId: true },
-          });
-          const differenceNote = priceDifference.gt(0)
-            ? `; price difference ₹${priceDifference.toFixed(2)} ${chargeDifference ? "to be billed at drop" : "waived"}`
-            : "";
-          const photoNote = photosMissing
-            ? `; no photos of ${newVehicle.regNo} were taken at the swap${photoMode === "LEGACY" ? " (older app build)" : ""}`
-            : "";
-          await auditService.log(
-            {
-              actorId: input.swappedById,
-              actorName: actor?.name ?? "Unknown",
-              actorRole: actor?.role ?? Role.STAFF,
-              actorBranchId: actor?.branchId ?? undefined,
-              action: "VEHICLE_SWAP",
-              category: AuditCategory.VEHICLE,
-              description:
-                `Vehicle swapped from ${lockedOriginal.regNo} to ${newVehicle.regNo} on booking ${locked.publicId} ` +
-                `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}${photoNote}`,
-              entity: "Booking",
-              entityId: locked.publicId,
-              metadata: {
-                swapPublicId: created.publicId,
-                source,
-                stage,
-                bookingStatusAtSwap: locked.status,
-                originalVehicle: { publicId: lockedOriginal.publicId, regNo: lockedOriginal.regNo },
-                newVehicle: { publicId: newVehicle.publicId, regNo: newVehicle.regNo },
-                reason: input.reason,
-                markOriginalForMaintenance: input.markOriginalForMaintenance === true,
-                maintenanceNotApplied,
-                originalVehicleStatus: originalStatusAfter,
-                readings: storedReadings,
-                priceDifference: priceDifference.toFixed(2),
-                chargeDifference,
-                pricingError,
-                photoMode,
-                replacementPhotoCount: replacementPhotos.length,
-                photosMissing,
-                fastagBalances: storedFastag,
-              },
-            },
-            tx,
-          );
-
-          return toSwapView(created);
-        },
-        { maxWait: 5000, timeout: 15000 },
+    // …and the replacement can't start below its own recorded reading: a
+    // mistyped low reading would roll the fleet odometer back and become
+    // the start of the drop's last km segment.
+    if (
+      stage === "ACTIVE_RENTAL" &&
+      storedReadings.newVehicleStartOdometer != null &&
+      storedReadings.newVehicleStartOdometer < newVehicle.odo
+    ) {
+      throw new VehicleSwapError(
+        StatusCode.BAD_REQUEST,
+        "ODOMETER_BELOW_RECORDED",
+        `${newVehicle.regNo}'s start odometer (${storedReadings.newVehicleStartOdometer} km) can't be below its last recorded reading (${newVehicle.odo} km). Check the dashboard; if the recorded reading is wrong, ask the branch manager to correct it.`,
+        { recordedOdometer: newVehicle.odo, vehicleId: newVehicle.id },
       );
-    } finally {
-      if (lockedVehicleIds.length > 0) {
-        await extensionLockService.releaseMultipleLocks(lockedVehicleIds).catch((err) => {
-          console.warn("[vehicle-swap] releasing extension locks failed:", err);
-        });
-      }
     }
 
+    // The photos must be fresh pickup-photo uploads not saved anywhere yet
+    const photoFileIds =
+      replacementPhotos.length > 0
+        ? await this.claimSwapPhotoFiles(db, replacementPhotos, locked.branchId)
+        : new Map<string, number>();
+
+    await tx.bookingItem.update({
+      where: { id: lockedItem.id },
+      data: { vehicleId: newVehicle.id },
+    });
+    // Festival rules: today's touching the window both cars were priced over
+    // join the booking's stored ones (a stored version wins)
+    await recordBookingSpecialRules(tx, locked.id, locked.startAt, locked.endAt);
+
+    // ── Vehicle statuses / readings ──────────────────────────────────
+    let originalStatusAfter: VehicleStatus;
+    let maintenanceNotApplied = false;
+    if (stage === "ACTIVE_RENTAL") {
+      // Pending drop damage on the returning car → MANAGER_REPORTED (manager decides)
+      const damageStatus = await vehicleStatusAfterDrop(locked.id, lockedOriginal.id, db);
+      originalStatusAfter =
+        damageStatus && damageStatus !== VehicleStatus.AVAILABLE
+          ? damageStatus
+          : input.markOriginalForMaintenance
+            ? VehicleStatus.MAINTENANCE
+            : VehicleStatus.AVAILABLE;
+
+      await tx.vehicle.update({
+        where: { id: newVehicle.id },
+        data: {
+          status: VehicleStatus.OUT_FOR_RENTAL,
+          ...(storedReadings.newVehicleStartOdometer != null && { odo: storedReadings.newVehicleStartOdometer }),
+          ...(storedReadings.newVehicleFuelLevel != null && { fuelLevel: fuelBarsToPercent(storedReadings.newVehicleFuelLevel) }),
+        },
+      });
+    } else {
+      // Before pickup the replacement keeps its status (pickup marks it
+      // OUT_FOR_RENTAL). The original is only touched when flagged for
+      // maintenance, and never while it is still out on another rental.
+      const onOtherRental = await tx.bookingItem.findFirst({
+        where: {
+          vehicleId: lockedOriginal.id,
+          booking: { status: BookingStatus.PICKED_UP, id: { not: locked.id } },
+        },
+        select: { id: true },
+      });
+      maintenanceNotApplied = !!onOtherRental && input.markOriginalForMaintenance === true;
+      originalStatusAfter =
+        !onOtherRental && input.markOriginalForMaintenance
+          ? VehicleStatus.MAINTENANCE
+          : lockedOriginal.status;
+    }
+
+    const originalData: Prisma.VehicleUpdateInput = {};
+    if (originalStatusAfter !== lockedOriginal.status) originalData.status = originalStatusAfter;
+    if (storedReadings.originalVehicleEndOdometer != null) originalData.odo = storedReadings.originalVehicleEndOdometer;
+    if (storedReadings.originalVehicleFuelLevel != null) originalData.fuelLevel = fuelBarsToPercent(storedReadings.originalVehicleFuelLevel);
+    if (Object.keys(originalData).length > 0) {
+      await tx.vehicle.update({ where: { id: lockedOriginal.id }, data: originalData });
+    }
+
+    const createdRow = await tx.vehicleSwap.create({
+      data: {
+        publicId: createID(),
+        bookingId: locked.id,
+        originalVehicleId: lockedOriginal.id,
+        newVehicleId: newVehicle.id,
+        swappedById: input.swappedById,
+        reason: input.reason,
+        reasonNotes: input.reasonNotes,
+        originalVehicleStatus: originalStatusAfter,
+        originalVehicleNotes: input.originalVehicleNotes,
+        swappedAt: new Date(),
+        bookingStatusAtSwap: locked.status,
+        ...storedReadings,
+        priceDifference: priceDifference.toFixed(2),
+        chargeDifference,
+        ...storedFastag,
+      },
+      select: { id: true },
+    });
+    if (replacementPhotos.length > 0) {
+      await tx.bookingPhoto.createMany({
+        data: replacementPhotos.map((photo) => ({
+          publicId: createID(),
+          bookingId: locked.id,
+          fileId: photoFileIds.get(photo.fileId)!,
+          type: BookingPhotoType.SWAP_DELIVERY,
+          captureLabel: photo.label ?? null,
+          swapId: createdRow.id,
+          vehicleId: newVehicle.id,
+        })),
+      });
+    }
+    const created = await tx.vehicleSwap.findUniqueOrThrow({
+      where: { id: createdRow.id },
+      include: swapRelations,
+    });
+
+    const actor = await tx.user.findUnique({
+      where: { id: input.swappedById },
+      select: { name: true, role: true, branchId: true },
+    });
+    const differenceNote = priceDifference.gt(0)
+      ? `; price difference ₹${priceDifference.toFixed(2)} ${chargeDifference ? "to be billed at drop" : "waived"}`
+      : "";
+    const photoNote = photosMissing
+      ? `; no photos of ${newVehicle.regNo} were taken at the swap${photoMode === "LEGACY" ? " (older app build)" : ""}`
+      : "";
+    await auditService.log(
+      {
+        actorId: input.swappedById,
+        actorName: actor?.name ?? "Unknown",
+        actorRole: actor?.role ?? Role.STAFF,
+        actorBranchId: actor?.branchId ?? undefined,
+        action: "VEHICLE_SWAP",
+        category: AuditCategory.VEHICLE,
+        description:
+          `Vehicle swapped from ${lockedOriginal.regNo} to ${newVehicle.regNo} on booking ${locked.publicId} ` +
+          `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}${photoNote}`,
+        entity: "Booking",
+        entityId: locked.publicId,
+        metadata: {
+          swapPublicId: created.publicId,
+          source,
+          stage,
+          bookingStatusAtSwap: locked.status,
+          originalVehicle: { publicId: lockedOriginal.publicId, regNo: lockedOriginal.regNo },
+          newVehicle: { publicId: newVehicle.publicId, regNo: newVehicle.regNo },
+          reason: input.reason,
+          markOriginalForMaintenance: input.markOriginalForMaintenance === true,
+          maintenanceNotApplied,
+          originalVehicleStatus: originalStatusAfter,
+          readings: storedReadings,
+          priceDifference: priceDifference.toFixed(2),
+          chargeDifference,
+          pricingError,
+          photoMode,
+          replacementPhotoCount: replacementPhotos.length,
+          photosMissing,
+          fastagBalances: storedFastag,
+        },
+      },
+      tx,
+    );
+
+    return toSwapView(created);
+  }
+
+  /** After the swap's transaction committed: clear availability caches, notify. */
+  async afterSwapCommit(prepared: PreparedSwap, swap: Pick<VehicleSwap, "id">): Promise<void> {
+    const { input, originalVehicle, replacement } = prepared;
     try {
       await invalidateVehicleAvailability(redis, [originalVehicle.id, replacement.id]);
       await invalidateGroupListingCache(redis as any);
@@ -1048,7 +1107,6 @@ export class VehicleSwapService {
 
     void notifyEvents.vehicleSwapped({ swapId: swap.id, actorUserId: input.swappedById });
 
-    return swap;
   }
 
   /**
