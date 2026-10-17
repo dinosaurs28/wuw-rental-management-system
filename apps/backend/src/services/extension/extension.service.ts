@@ -531,6 +531,9 @@ class ExtensionService {
       );
     }
 
+    // Set once the commit transaction (swap + extended end + resolution) has
+    // committed: a later failure (audit, notification) must not undo it
+    let committed = false;
     try {
       // Stale data check: re-validate availability after lock acquisition
       const effectiveNewEndAt =
@@ -691,6 +694,7 @@ class ExtensionService {
         },
         { maxWait: 5000, timeout: 20000 },
       );
+      committed = true;
 
       if (preparedSwap && vehicleSwapId != null) {
         await extensionVehicleAllocatorService.afterCurrentBookingSwap(preparedSwap, { id: vehicleSwapId });
@@ -744,6 +748,9 @@ class ExtensionService {
         },
       };
     } catch (error) {
+      // Committed already (the car may have been swapped): a retry returns the
+      // committed extension (resolutionType is set) — nothing to roll back
+      if (committed) throw error;
       // Rollback: cancel extension, clear activeExtensionId, and revert vehicle hold
       await prisma.bookingExtension.update({
         where: { id: extension.id },

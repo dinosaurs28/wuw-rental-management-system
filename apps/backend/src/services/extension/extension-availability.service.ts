@@ -174,40 +174,6 @@ class ExtensionAvailabilityService {
       categoryRank: v.category.rank,
     }));
   }
-
-  /**
-   * Compute the latest datetime before which the vehicle is free,
-   * starting from `fromAt`. Returns null if not available at all.
-   */
-  async getMaxAvailableEndAt(
-    vehicleId: number,
-    fromAt: Date,
-    excludeBookingId: number,
-  ): Promise<Date | null> {
-    const nextConflict = await prisma.bookingItem.findFirst({
-      where: {
-        vehicleId,
-        booking: {
-          id: { not: excludeBookingId },
-          OR: [
-            { status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] } },
-            // A checkout in progress for a later window
-            { status: BookingStatus.HOLD, holdExpiresAt: { gt: new Date() } },
-          ],
-          startAt: { gt: fromAt },
-        },
-      },
-      orderBy: { booking: { startAt: "asc" } },
-      select: { booking: { select: { startAt: true } } },
-    });
-
-    if (!nextConflict) {
-      // No future bookings — vehicle is free indefinitely from fromAt
-      return null; // caller interprets null as "unlimited"
-    }
-
-    return nextConflict.booking.startAt;
-  }
 }
 
 export const extensionAvailabilityService = new ExtensionAvailabilityService();

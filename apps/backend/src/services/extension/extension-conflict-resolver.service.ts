@@ -6,6 +6,7 @@ import {
 } from "./extension-availability.service.js";
 import { ExtensionResolutionType } from "@repo/database/client";
 import { SWAP_WINDOW_BOOKING_SELECT } from "../vehicle-swap/swap-replacements.js";
+import { partialExtensionEnd } from "./partial-extension.js";
 
 export interface ResolutionOption {
   type: ExtensionResolutionType;
@@ -108,15 +109,11 @@ class ExtensionConflictResolverService {
       });
     }
 
-    // 4. Partial extension — up to the first conflict
-    const maxEndAt = await extensionAvailabilityService.getMaxAvailableEndAt(
-      currentVehicleId,
-      currentEndAt,
-      bookingId,
-    );
-
-    const partialEnd = maxEndAt ?? newEndAt;
-    if (partialEnd > currentEndAt && partialEnd < newEndAt) {
+    // 4. Partial extension — up to the first conflict of the same list the
+    // commit re-checks (bookings, rentals, checkouts incl. Redis holds), so an
+    // offered partial never fails as "availability changed"
+    const partialEnd = partialExtensionEnd(currentEndAt, newEndAt, conflictingBookings);
+    if (partialEnd) {
       options.push({
         type: ExtensionResolutionType.PARTIAL_EXTENSION,
         description: `Extend partially until ${partialEnd.toISOString()} (latest available window).`,
