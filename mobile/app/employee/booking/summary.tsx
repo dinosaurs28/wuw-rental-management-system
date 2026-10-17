@@ -39,6 +39,7 @@ import {
 } from '../../../lib/counterPayment';
 import { durationLabel } from '../../../lib/pricing';
 import { handleDlInUse } from '../../../lib/dlInUse';
+import { DL_PHOTOS_REQUIRED, DL_PHOTOS_REQUIRED_STAFF_MESSAGE } from '../../../lib/dlPhotos';
 import { rangeLengthLabel, toLocalMinuteIso } from '../../../lib/dates';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import { profileIncompleteMessage } from '../../../lib/identity';
@@ -194,7 +195,8 @@ export default function WalkinSummaryScreen() {
     return () => clearInterval(t);
   }, [secondsLeft]);
 
-  // customerKycId may be null: a KYC document is optional (X2).
+  // customerKycId may be null: the server attaches the customer's DL photo
+  // (both sides are required — checked on the documents step and by the server).
   if (!customer || !vehicle || !start || !end) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -532,7 +534,7 @@ export default function WalkinSummaryScreen() {
         ]);
         return;
       }
-      // #2 / #15 — pickup outside hours, past the 15-day / monthly limits, bad dates.
+      // #2 / #15 — pickup outside hours, past the 30-day / monthly limits, bad dates.
       if (
         body?.code === 'BRANCH_SCHEDULE_VIOLATION' ||
         body?.code === 'BOOKING_MAX_PERIOD_EXCEEDED' ||
@@ -546,6 +548,17 @@ export default function WalkinSummaryScreen() {
             { text: 'Not now', style: 'cancel' },
             { text: 'Change times', onPress: backToVehicles },
           ],
+        );
+        return;
+      }
+      if (err?.response?.data?.code === DL_PHOTOS_REQUIRED) {
+        // Both licence photos are required — capture them on the documents step.
+        qc.invalidateQueries({ queryKey: ['employee', 'walkin-kyc', customer.publicId] });
+        Alert.alert(
+          'Driving licence photos',
+          apiErrorMessage(err, DL_PHOTOS_REQUIRED_STAFF_MESSAGE),
+          [{ text: 'OK', onPress: () => router.back() }],
+          { cancelable: false },
         );
         return;
       }

@@ -13,13 +13,13 @@ const documentTypes: DocumentTypeOption[] = [
   {
     type: "DL",
     label: "Driver's License",
-    description: "Front & back image required",
+    description: "Required to book · front & back photos",
     icon: <CreditCard className="w-6 h-6" />,
   },
   {
     type: "AADHAAR",
     label: "Aadhaar",
-    description: "Valid government-issued ID",
+    description: "Optional · government-issued ID",
     icon: <User className="w-6 h-6" />,
   },
 ];

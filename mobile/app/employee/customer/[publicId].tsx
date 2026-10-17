@@ -131,7 +131,7 @@ export default function CustomerDetailScreen() {
             </View>
           </View>
 
-          {/* Identity numbers (#1) — optional since Oct 2026; the DL number is taken at pickup */}
+          {/* Identity numbers (#1) — optional since Oct 2026 */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Identity</Text>
             <View style={styles.card}>

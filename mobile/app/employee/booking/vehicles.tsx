@@ -200,7 +200,7 @@ export default function WalkinVehiclesScreen() {
   const setDates = useEmployeeBookingStore((s) => s.setDates);
   const setStorePlan = useEmployeeBookingStore((s) => s.setPlan);
 
-  // Rental plan (#15/#17): Standard = up to 15 days; Monthly rental = the
+  // Rental plan (#15/#17): Standard = up to 30 days; Monthly rental = the
   // counter-only monthly plan, 30–180 days with the pickup inside 30 days.
   const [plan, setPlan] = useState<WalkinPlan>(() => useEmployeeBookingStore.getState().plan);
   const monthly = plan === 'MONTHLY';
@@ -357,7 +357,7 @@ export default function WalkinVehiclesScreen() {
       if (nextStd) setStd(nextStd);
       else setRange(next);
     }
-    // Times the server would refuse (15-day / monthly limits, pickup outside
+    // Times the server would refuse (30-day / monthly limits, pickup outside
     // branch hours): stop here with the same message.
     const blocking = nextStd
       ? packageTimesNotice(schedule, { start: nextStd.start, hours: nextStd.hours + nextStd.extra })

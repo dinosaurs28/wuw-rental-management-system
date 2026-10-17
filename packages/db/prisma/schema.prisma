@@ -1510,6 +1510,18 @@ model VehicleSwap {
   // returning car's closing balance and the replacement's opening balance
   oldVehicleFastagBalance    Decimal?       @db.Decimal(10, 2)
   newVehicleFastagBalance    Decimal?       @db.Decimal(10, 2)
+  // Km of the returning car at a mid-rental swap with readings, by the drop's
+  // rule (the booking's free km pooled across the cars, used in order):
+  // km driven this segment, the booking's total free km, the free km left for
+  // this segment, the extra km and its charge (₹, whole rupees) at the rate the
+  // drop bills with. Billed once, on the drop bill; NULL = not recorded.
+  segmentKmDriven            Int?
+  segmentIncludedKm          Int?
+  segmentAllowanceKm         Int?
+  segmentExtraKm             Int?
+  segmentExtraKmRate         Decimal?       @db.Decimal(10, 2)
+  segmentExtraKmCharge       Decimal?       @db.Decimal(10, 2)
+  segmentExtraKmEnabled      Boolean?
 
   booking                Booking        @relation(fields: [bookingId], references: [id])
   originalVehicle        Vehicle        @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])

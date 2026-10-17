@@ -23,6 +23,8 @@ import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon'
 import { normalizeGroups } from '../../lib/vehicles';
 import CarCard from '../../components/cars/CarCard';
 import SearchCard, { type SearchQuery } from '../../components/cars/SearchCard';
+import TripTypePicker, { TRIP_TYPE_HINT } from '../../components/cars/TripTypePicker';
+import { useTripTypeStore } from '../../store/tripType';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
 import OfferHeroSlider from '../../components/offers/OfferHeroSlider';
@@ -132,19 +134,25 @@ export default function Home() {
     });
   };
 
+  // Trip type (client, Oct 2026): required before any vehicles are shown — the
+  // rail is filtered by the session's choice and asks for one until it is made.
+  const tripType = useTripTypeStore((s) => s.tripType);
+  const setTripType = useTripTypeStore((s) => s.setTripType);
+
   // Recommended rail — real availability for a default next-day window.
   const today = new Date().toISOString().slice(0, 10);
   const browseStart = useMemo(() => new Date(Date.now() + 86_400_000).toISOString(), [today]);
   const browseEnd = useMemo(() => new Date(Date.now() + 2 * 86_400_000).toISOString(), [today]);
 
   const { data: recommendedData, isLoading: recommendedLoading } = useQuery({
-    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today],
+    queryKey: ['vehicles', selectedBranch?.publicId ?? 'all', today, tripType ?? ''],
     queryFn: () =>
       vehiclesApi.list({
         limit: 100,
         start: browseStart,
         end: browseEnd,
         branch: selectedBranch?.publicId,
+        useCases: tripType ?? undefined,
       }),
     // The rail shows the first few cards; total = every card for the window
     select: (res) => ({
@@ -152,12 +160,13 @@ export default function Home() {
       total: Number(res.data?.count ?? 0),
     }),
     staleTime: 30_000,
-    enabled: !!selectedBranch,
+    enabled: !!selectedBranch && !!tripType,
   });
   const recommended = recommendedData?.cards;
   const recommendedTotal = recommendedData?.total ?? 0;
 
-  // "See all (n)": the full list for the same window (client item 7)
+  // "See all (n)": the full list for the same window (client item 7) — the
+  // search screen asks for a trip type first when none has been chosen
   const seeAllRecommended = () =>
     router.push({
       pathname: '/search',
@@ -165,13 +174,14 @@ export default function Home() {
         ...(selectedBranch ? { branch: selectedBranch.publicId, branchName: selectedBranch.name } : {}),
         start: browseStart,
         end: browseEnd,
+        ...(tripType ? { tripType } : {}),
       },
     });
 
   const onSearch = (q: SearchQuery) =>
     router.push({
       pathname: '/search',
-      params: { branch: q.branchId, branchName: q.branchName, start: q.start, end: q.end },
+      params: { branch: q.branchId, branchName: q.branchName, start: q.start, end: q.end, tripType: q.tripType },
     });
 
   // Brand + profile
@@ -236,7 +246,12 @@ export default function Home() {
             </TouchableOpacity>
           ) : null}
         </View>
-        {recommendedLoading ? (
+        {!tripType ? (
+          <View style={styles.tripGate}>
+            <Text style={styles.tripGateText}>{TRIP_TYPE_HINT} to see the cars for it.</Text>
+            <TripTypePicker value={null} onSelect={setTripType} showHint={false} />
+          </View>
+        ) : recommendedLoading ? (
           <ActivityIndicator style={{ marginTop: 24 }} color={Colors.orange} size="large" />
         ) : (recommended?.length ?? 0) > 0 ? (
           <FlatList
@@ -319,6 +334,8 @@ const styles = StyleSheet.create({
   sectionTitleInRow: { flexShrink: 1 },
   seeAll: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
   rail: { paddingHorizontal: 20, gap: 12 },
+  tripGate: { paddingHorizontal: 20, gap: 10 },
+  tripGateText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.onDarkMuted },
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: 14,

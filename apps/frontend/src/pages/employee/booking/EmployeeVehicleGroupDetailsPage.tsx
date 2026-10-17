@@ -40,6 +40,7 @@ import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
+import { DL_PHOTOS_REQUIRED_STAFF_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
 import { employeeService } from "@/services/employee.service";
 import type { VehicleGroupDetails } from "@/services/vehicle.service";
 
@@ -249,10 +250,17 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       toast.error("Please select booking dates");
       return;
     }
-    // The KYC document is optional (X2); the QR code photo is still required.
+    // The QR code photo is required.
     if (!qrPhotoId) {
       toast.error("Capture the customer's QR code photo before booking");
       document.getElementById("qr-photo-section")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    // Both driving licence photos are required (Oct 17 2026; server: 422
+    // DL_PHOTOS_REQUIRED) — captured in the KYC section.
+    if (!hasDlPhotosOnFile(kycDocuments)) {
+      toast.error(DL_PHOTOS_REQUIRED_STAFF_MESSAGE);
+      document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
 
@@ -454,8 +462,8 @@ export const EmployeeVehicleGroupDetailsPage = () => {
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-black flex items-center gap-2">
                   <Shield className="size-4" style={{ color: "#FF5F00" }} />
-                  KYC Document
-                  <span className="text-xs font-normal text-[#666666]">(Optional)</span>
+                  KYC Documents
+                  <span className="text-xs font-normal text-[#666666]">(driving licence required)</span>
                 </h2>
                 <button
                   onClick={() => fetchKycDocuments()}
@@ -477,7 +485,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     <div>
                       <h3 className="font-semibold text-amber-900">Profile Incomplete</h3>
                       <p className="text-amber-700 text-sm mt-1 max-w-sm mx-auto">
-                        Customer profile is missing required details (such as the age or address). Complete the profile to book — uploading KYC documents is optional.
+                        Customer profile is missing required details (such as the age or address). Complete the profile to book — both driving licence photos are required too.
                       </p>
                     </div>
                     <Button

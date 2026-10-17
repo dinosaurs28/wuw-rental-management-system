@@ -189,7 +189,7 @@ export interface ExtensionEligibility {
   eligible: boolean;
   reason: string | null;
   hoursUntilEnd?: number;
-  /** Latest end an extension may request (ISO) — 15 days, or 180 for a monthly plan. */
+  /** Latest end an extension may request (ISO) — 30 days, or 180 for a monthly plan. */
   maxEndAt?: string;
   /** The booking already ends at maxEndAt — nothing left to extend. */
   atCap?: boolean;

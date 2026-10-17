@@ -5,6 +5,7 @@ import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 import { resolveFileUrl } from "../../utils/file-url.js";
+import { dlPhotosState } from "@repo/schemas";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -25,6 +26,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
             user: {
               select: {
                 name: true,
+                publicId: true,
               },
             },
           },
@@ -65,16 +67,27 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         })),
     );
 
+    // Driving licence photos (required to book, Oct 17 2026): an older booking
+    // may have none — the pickup screens ask staff to capture them (walk-in KYC
+    // upload, keyed by customerUserPublicId).
+    const dl = dlPhotosState(allKycRecords.filter((k) => k.file));
+    const dlPhotos = { ok: dl.ok, missingSides: dl.missingSides, rejectedSides: dl.rejectedSides };
+    const customerUserPublicId = booking.customer.user.publicId;
+
     if (kycDocs.length === 0) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "No KYC documents found for this customer",
         customerName: booking.customer.user.name,
+        customerUserPublicId,
+        dlPhotos,
       });
     }
 
     return res.status(StatusCode.OK).json({
       message: "KYC Documents fetched successfully",
       customerName: booking.customer.user.name,
+      customerUserPublicId,
+      dlPhotos,
       kyc: kycDocs,
     });
   } catch (error) {

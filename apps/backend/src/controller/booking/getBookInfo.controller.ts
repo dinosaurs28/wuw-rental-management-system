@@ -42,6 +42,7 @@ import {
   GST_RULE_MISSING_MESSAGE,
 } from "../../services/tax/gst.service.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
+import { standardRentalPeriodType } from "../../utils/booking/rentalPeriod.js";
 import {
   MAX_RENTAL_DAYS,
   isCustomerPackageDuration,
@@ -62,6 +63,11 @@ import {
   lockAndAssertDlFree,
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
+import {
+  assertDlPhotosOnFile,
+  bookingDlKycFileId,
+  DlPhotosRequiredError,
+} from "../../services/booking/dl-photos.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -231,8 +237,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     const { vehicles, groupKeys, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
     const customerId = userData.customerProfile.id;
-    // KYC picture (X2): optional — the profile gate (DL + Aadhaar NUMBERS) already
-    // ran. Omitted ⇒ Booking.kycFileId stays null; when sent it must be valid.
+    // KYC picture: when sent it must be one of the caller's own documents. The
+    // booking keeps the customer's DL photo either way (DL photos gate below).
     let kycFile: { id: number } | null = null;
     if (file_public_id) {
       const sentKycFile = await prisma.fileObject.findUnique({
@@ -267,6 +273,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         kycFile = { id: sentKycFile.id };
       }
     }
+    // ── Driving licence photos are compulsory (Oct 17 2026): FRONT + BACK on
+    // file, not rejected — 422 DL_PHOTOS_REQUIRED otherwise. The booking's KYC
+    // reference is the DL photo sent, else the DL front (auto-attached).
+    const dlPhotos = await assertDlPhotosOnFile(customerId, "customer");
+    kycFile = { id: bookingDlKycFileId(dlPhotos, kycFile?.id) };
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
 
@@ -297,7 +308,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    // ── Booking window (#15): pickup ≤ 30 days ahead, ≤ 15 days long — customers can't choose a monthly plan ──
+    // ── Booking window (#15): pickup ≤ 30 days ahead, ≤ 30 days long — customers can't choose a monthly plan ──
     try {
       assertBookingWindow(startDate, endDate);
     } catch (windowErr) {
@@ -528,7 +539,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         }
 
         if (verdict.status === "RETURN_BUMPED" && verdict.adjustedReturn) {
-          // Never offer an adjusted return past the 15-day length limit
+          // Never offer an adjusted return past the 30-day length limit
           try {
             assertBookingWindow(startDate, verdict.adjustedReturn);
           } catch (windowErr) {
@@ -988,7 +999,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           startAt: startDate,
           endAt: endDate,
           days: bookingDuration.days,
-          rentalPeriodType: bookingDuration.periodType,
+          // 30-day packages price as MONTHLY but are standard bookings (not the monthly plan)
+          rentalPeriodType: standardRentalPeriodType(bookingDuration.periodType),
           actualHours: new Decimal(bookingDuration.actualDuration.toString()),
           billableHours: new Decimal(
             bookingDuration.billableDuration.toString(),
@@ -1229,6 +1241,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: e.message,
         couponRejected: true,
       });
+    }
+    if (e instanceof DlPhotosRequiredError) {
+      return res.status(e.status).json(e.toJSON());
     }
     if (e instanceof DlInUseError) {
       // Customer-safe: never names the other booking

@@ -42,6 +42,8 @@ import {
   GetSwapHistory,
   GetBookingSwapHistory,
 } from "../../controller/branchManager/vehicle-swap.controller.js";
+// Same handler as the Fleet route (branch-scoped by req.branch_Id)
+import { PreviewSwapKm } from "../../controller/employee/vehicle-swap.controller.js";
 
 import {
   GetDamageReports,
@@ -253,6 +255,12 @@ router.get(
   "/dashboard/bookings/:bookingId/swap-history",
   ManagerCheck,
   GetBookingSwapHistory,
+);
+// The returning car's km at a mid-rental swap (live preview by the drop's rule)
+router.get(
+  "/dashboard/bookings/:bookingId/swap-km-preview",
+  ManagerCheck,
+  PreviewSwapKm,
 );
 // Photos of the replacement at a mid-rental swap — the Fleet pickup photo
 // upload (pickup/ keys), so the swap attaches them like the Fleet screens do

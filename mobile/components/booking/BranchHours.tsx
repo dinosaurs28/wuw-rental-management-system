@@ -19,7 +19,7 @@ export function BranchHoursLine({ text, tone = 'light' }: { text: string | null;
 }
 
 // Amber note (grace / adjusted return) or red block (pickup outside hours,
-// 15-day limit) for the chosen times. Renders nothing without a notice.
+// 30-day limit) for the chosen times. Renders nothing without a notice.
 export function TimesNotice({ notice, tone = 'light' }: { notice: BookingTimesNotice | null; tone?: Tone }) {
   if (!notice) return null;
   const dark = tone === 'dark';

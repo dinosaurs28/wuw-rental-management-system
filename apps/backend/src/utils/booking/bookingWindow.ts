@@ -1,7 +1,7 @@
 /**
  * Booking window (#15; advance window 30 days since Oct 2026) — backend
  * wrapper around the shared @repo/schemas booking-window helpers: a pickup up
- * to ADVANCE_BOOKING_DAYS (30) ahead, a booking up to MAX_RENTAL_DAYS (15) long.
+ * to ADVANCE_BOOKING_DAYS (30) ahead, a booking up to MAX_RENTAL_DAYS (30) long.
  *
  * Every role is bound by it (no staff/manager bypass). Monthly-plan bookings
  * (Booking.rentalPeriodType MONTHLY, chosen at the counter) are exempt except
@@ -68,7 +68,7 @@ export function assertBookingWindow(
   if (result.ok) return opts.monthly ? monthlyMaxEnd : maxStandardEndAt(startAt, opts.now);
   // The shared helper reports the window end; report the limit that actually
   // binds this request, which is what the client should clamp the return to:
-  //   standard       → start + 15 days (a WINDOW failure is the pickup itself)
+  //   standard       → start + 30 days (a WINDOW failure is the pickup itself)
   //   MONTHLY_LENGTH → start + 180 days
   //   PICKUP_WINDOW  → the window end (latest allowed pickup)
   const maxEndAt = !opts.monthly

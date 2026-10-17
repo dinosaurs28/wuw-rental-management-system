@@ -47,7 +47,7 @@ import {
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VehicleSummaryCard } from "@/components/booking/VehicleSummaryCard";
-import { KycSelectionCard } from "@/components/booking/KycSelectionCard";
+import { DlPhotosCheckoutCard } from "@/components/booking/DlPhotosCheckoutCard";
 import { PaymentMethodCard } from "@/components/booking/PaymentMethodCard";
 import { EmptyBookingState } from "@/components/booking/EmptyBookingState";
 import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
@@ -55,6 +55,8 @@ import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useSearchStore } from "@/store/search.store";
+import { useKycStore } from "@/store/kyc.store";
+import { DL_PHOTOS_REQUIRED_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
 
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
@@ -165,7 +167,7 @@ export const ReviewConfirmPage = () => {
   const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
   const { verdict: scheduleVerdict } = useBookingScheduleVerdict(schedule, startISO, endISO);
   // Office hours that block the booking (pickup outside hours, or a return that
-  // can't be moved inside the 15-day limit)
+  // can't be moved inside the 30-day limit)
   const scheduleBlocks =
     scheduleVerdict?.status === "PICKUP_CLOSED_DAY" ||
     scheduleVerdict?.status === "PICKUP_BEFORE_OPEN" ||
@@ -174,7 +176,7 @@ export const ReviewConfirmPage = () => {
     scheduleVerdict?.status === "NO_OPEN_DAY_IN_WINDOW" ||
     scheduleVerdict?.status === "RETURN_OUTSIDE_HOURS";
 
-  // 15-day booking window (#15) — same rule and message as the server
+  // 30-day booking window (#15) — same rule and message as the server
   const windowError = useMemo(() => {
     if (!startISO || !endISO) return null;
     const res = validateBookingWindow({ startAt: startISO, endAt: endISO });
@@ -235,9 +237,16 @@ export const ReviewConfirmPage = () => {
     navigate("/profile/personal-information");
   };
 
-  // Check if form is valid for submission. The KYC document is optional (X2):
-  // a complete profile is what the booking needs.
-  const isFormValid = paymentType && termsAccepted && !profileIncomplete;
+  // Driving licence photos are required to book (Oct 17 2026): both sides on
+  // file, not rejected (server: 422 DL_PHOTOS_REQUIRED). Uploaded inline in
+  // DlPhotosCheckoutCard, which keeps the KYC store current.
+  // Not while the card is (re)loading them: the store may still hold another
+  // session's documents (the KYC store isn't cleared on logout).
+  const dlPhotosReady = useKycStore((s) => !s.isFetching && hasDlPhotosOnFile(s.uploadedDocuments));
+
+  // Check if form is valid for submission: a complete profile, both DL photos,
+  // a payment method and the terms.
+  const isFormValid = paymentType && termsAccepted && !profileIncomplete && dlPhotosReady;
 
   // Handle Confirm & Pay click - validate, check type-class limits, then navigate
   const handleConfirmAndPay = () => {
@@ -248,6 +257,11 @@ export const ReviewConfirmPage = () => {
           : "Complete your profile before booking.",
       );
       goCompleteProfile();
+      return;
+    }
+
+    if (!dlPhotosReady) {
+      toast.error(DL_PHOTOS_REQUIRED_MESSAGE);
       return;
     }
 
@@ -267,7 +281,7 @@ export const ReviewConfirmPage = () => {
       return;
     }
 
-    // Pre-flight: 15-day booking window
+    // Pre-flight: 30-day booking window
     if (windowError) {
       toast.error(windowError);
       return;
@@ -394,8 +408,8 @@ export const ReviewConfirmPage = () => {
                   }
                 />
 
-                {/* KYC Selection */}
-                <KycSelectionCard />
+                {/* Driving licence photos — required, attached as the booking's KYC */}
+                <DlPhotosCheckoutCard />
 
                 {/* Payment Method */}
                 <PaymentMethodCard />
@@ -561,6 +575,7 @@ export const ReviewConfirmPage = () => {
                   {!isFormValid && (
                     <p className="text-xs text-muted-foreground text-center mt-3">
                       {profileIncomplete && "Complete your profile • "}
+                      {!dlPhotosReady && "Upload both driving licence photos • "}
                       {!paymentType && "Select payment method • "}
                       {!termsAccepted && "Accept terms & conditions"}
                     </p>

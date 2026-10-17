@@ -335,9 +335,8 @@ export interface EmployeeBooking {
   };
   customer: {
     /**
-     * Pickup / return details only (X2, staff): the customer's full normalised
-     * DL number to check against the card; null = none on file — the pickup
-     * must send one (422 DL_NUMBER_REQUIRED otherwise).
+     * Pickup / return details only (staff): the customer's full normalised DL
+     * number; null = none on file. No longer asked or shown at pickup.
      */
     drivingLicenceNumber?: string | null;
     user: {
@@ -381,6 +380,8 @@ const fetchEmployeeQueue = async (
   path: "/employee/booking" | "/employee/return",
   date: Date,
   type: BookingListType,
+  /** Registration number search (also make / model words); blank = everything */
+  q?: string,
 ): Promise<EmployeeBookingQueue> => {
   try {
     // includeCompleted: done pickups / returns stay on their day (client item 1);
@@ -389,7 +390,9 @@ const fetchEmployeeQueue = async (
       data?: EmployeeBooking[];
       counts?: BookingListCounts;
       completed?: EmployeeBooking[];
-    }>(path, { params: { date: format(date, "yyyy-MM-dd"), type, includeCompleted: 1 } });
+    }>(path, {
+      params: { date: format(date, "yyyy-MM-dd"), type, includeCompleted: 1, ...(q ? { q } : {}) },
+    });
     return {
       data: response.data.data ?? [],
       counts: response.data.counts ?? null,
@@ -522,15 +525,15 @@ export const bookingService = {
    * Daily is scoped to `date` (IST day); Monthly ignores it and lists every
    * CONFIRMED monthly booking. `counts` covers both tabs.
    */
-  getEmployeePickupQueue: (date: Date, type: BookingListType) =>
-    fetchEmployeeQueue("/employee/booking", date, type),
+  getEmployeePickupQueue: (date: Date, type: BookingListType, q?: string) =>
+    fetchEmployeeQueue("/employee/booking", date, type, q),
 
   /**
    * Return queue for one Daily / Monthly tab (GET /employee/return?type=).
    * Daily is the IST day's returns; Monthly lists every PICKED_UP monthly booking.
    */
-  getEmployeeReturnQueue: (date: Date, type: BookingListType) =>
-    fetchEmployeeQueue("/employee/return", date, type),
+  getEmployeeReturnQueue: (date: Date, type: BookingListType, q?: string) =>
+    fetchEmployeeQueue("/employee/return", date, type, q),
 
   // Upload Pickup Image
   uploadPickupImage: async (formData: FormData) => {
@@ -565,11 +568,6 @@ export const bookingService = {
       dlStatus?: UpdateDlStatusBody["dlStatus"] | null;
       /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
       dlDepositNote?: string | null;
-      /**
-       * Customer's DL number typed at the counter (X2) — saved to the customer.
-       * Required when none is on file (422 DL_NUMBER_REQUIRED); 400 INVALID_DL_NUMBER.
-       */
-      drivingLicenceNumber?: string;
     },
   ) => {
     const response = await apiClient.post(

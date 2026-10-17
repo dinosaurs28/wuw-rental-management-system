@@ -58,7 +58,6 @@ import {
   lockBookingForDrop,
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
-import { lockAndAssertDlFreeForPickup, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
@@ -1202,17 +1201,6 @@ async function runPostCompletionHooks(
       await lockBookingForPickup(tx, bookingId);
     } catch (err) {
       if (err instanceof PickupStateError) throw new SettlementConflict(err.status, err.toJSON());
-      throw err;
-    }
-
-    // One vehicle per driving licence (X3): the handover is refused (and the
-    // payment rolled back) while another booking on this DL is out.
-    try {
-      await lockAndAssertDlFreeForPickup(bookingId, tx);
-    } catch (err) {
-      if (err instanceof DlInUseError) {
-        throw new SettlementConflict(err.status, err.toJSON("staff"));
-      }
       throw err;
     }
 

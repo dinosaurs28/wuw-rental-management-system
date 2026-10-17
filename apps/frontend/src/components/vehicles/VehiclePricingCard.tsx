@@ -102,7 +102,7 @@ export const VehiclePricingCard = ({
   // Paise are shown when present: GST is rounded to the paisa, not the rupee.
   const formatCurrency = (amount: number) => formatInrExact(amount);
 
-  // Office hours (#2) + 15-day window (#15). Also catches stale dates from the
+  // Office hours (#2) + 30-day window (#15). Also catches stale dates from the
   // persisted store, the URL or a schedule adjustment.
   const pickupDayKey = pickupDate?.getTime();
   const returnDayKey = returnDate?.getTime();
@@ -119,7 +119,7 @@ export const VehiclePricingCard = ({
     [schedule, pickupDayKey, startTime, returnDayKey, endTime],
   );
 
-  // Customers book packages (12 hours / 1–15 days): the return is pickup + the
+  // Customers book packages (12 hours / 1–30 days): the return is pickup + the
   // package, computed and shown read-only
   const packageInput = {
     schedule,

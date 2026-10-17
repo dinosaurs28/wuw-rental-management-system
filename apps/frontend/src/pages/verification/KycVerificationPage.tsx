@@ -123,10 +123,10 @@ export const KycVerificationPage = () => {
         // Auto-deselect type once both sides are uploaded
         const allDocs = useKycStore.getState().uploadedDocuments;
         const hasFront = allDocs.some(
-          (d) => d.type === selectedDocumentType && d.side === "FRONT",
+          (d) => d.type === selectedDocumentType && d.side === "FRONT" && d.status !== "REJECTED",
         );
         const hasBack = allDocs.some(
-          (d) => d.type === selectedDocumentType && d.side === "BACK",
+          (d) => d.type === selectedDocumentType && d.side === "BACK" && d.status !== "REJECTED",
         );
         if (hasFront && hasBack) {
           setSelectedDocumentType(null);
@@ -197,10 +197,10 @@ export const KycVerificationPage = () => {
   // Types where BOTH sides are uploaded → disabled in selector
   const fullyUploadedTypes = KYC_TYPES.filter((type) => {
     const hasFront = uploadedDocuments.some(
-      (d) => d.type === type && d.side === "FRONT",
+      (d) => d.type === type && d.side === "FRONT" && d.status !== "REJECTED",
     );
     const hasBack = uploadedDocuments.some(
-      (d) => d.type === type && d.side === "BACK",
+      (d) => d.type === type && d.side === "BACK" && d.status !== "REJECTED",
     );
     return hasFront && hasBack;
   });
@@ -208,10 +208,10 @@ export const KycVerificationPage = () => {
   // Types where only one side is uploaded → partial badge
   const partialTypes = KYC_TYPES.filter((type) => {
     const hasFront = uploadedDocuments.some(
-      (d) => d.type === type && d.side === "FRONT",
+      (d) => d.type === type && d.side === "FRONT" && d.status !== "REJECTED",
     );
     const hasBack = uploadedDocuments.some(
-      (d) => d.type === type && d.side === "BACK",
+      (d) => d.type === type && d.side === "BACK" && d.status !== "REJECTED",
     );
     return (hasFront || hasBack) && !(hasFront && hasBack);
   });
@@ -219,12 +219,12 @@ export const KycVerificationPage = () => {
   // Which sides are already uploaded for the selected type
   const frontDoc = selectedDocumentType
     ? uploadedDocuments.find(
-        (d) => d.type === selectedDocumentType && d.side === "FRONT",
+        (d) => d.type === selectedDocumentType && d.side === "FRONT" && d.status !== "REJECTED",
       )
     : null;
   const backDoc = selectedDocumentType
     ? uploadedDocuments.find(
-        (d) => d.type === selectedDocumentType && d.side === "BACK",
+        (d) => d.type === selectedDocumentType && d.side === "BACK" && d.status !== "REJECTED",
       )
     : null;
 

@@ -27,7 +27,7 @@ router.get("/vehicles", getPublicVehicles);
 router.get("/vehicles/group/:groupKey", getVehicleGroupDetails);
 router.get("/vehicles/:id", getPublicVehiclesDetails);
 router.get("/customer/booking-limits", authCheckJwt, checkProfileCompletion, getCustomerBookingLimits);
-// The KYC picture is optional (X2): the profile gate (DL + Aadhaar numbers) decides.
+// Profile gate here; both driving licence photos are required in the controller (422 DL_PHOTOS_REQUIRED).
 // Blacklisted customers (#13) are refused first: 403 CUSTOMER_BLACKLISTED.
 router
   .route("/vehicles/booking")

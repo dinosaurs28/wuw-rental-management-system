@@ -39,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DropSwapSection } from "@/components/employee/drop/DropSwapSection";
 
 /**
  * Completed pickups / returns (client item 1): the read-only summary, and the
@@ -223,9 +224,6 @@ function SummaryContent({ summary }: { summary: Summary }) {
         <Section title="Customer">
           <Row label="Name" value={summary.customer.name} />
           {summary.customer.phone && <Row label="Phone" value={summary.customer.phone} />}
-          {summary.phase === "PICKUP" && (
-            <Row label="DL number" value={summary.customer.drivingLicenceNumber ?? "Not on file"} />
-          )}
         </Section>
         <Section title="Vehicle">
           {summary.vehicles.map((v) => (
@@ -281,6 +279,13 @@ function SummaryContent({ summary }: { summary: Summary }) {
               <p className="text-xs text-muted-foreground py-1">
                 The vehicle was swapped without odometer readings — km driven can't be measured.
               </p>
+            )}
+            {(summary.odometer.swaps ?? []).length > 0 && (
+              <DropSwapSection
+                segments={summary.odometer.swaps ?? []}
+                currentStartOdometer={summary.odometer.start}
+                className="my-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-sm space-y-3"
+              />
             )}
             <Row label="Fuel at pickup" value={fuel(summary.fuel.pickup)} />
             <Row label="Fuel at drop" value={fuel(summary.fuel.return)} />

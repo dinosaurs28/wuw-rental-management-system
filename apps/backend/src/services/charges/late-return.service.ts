@@ -2,7 +2,10 @@
  * Late return — the automatic charge for a vehicle dropped after booking.endAt
  * without a formal extension.
  *
- *   charge = vehicle extraHourRate × ceil(late minutes left after grace / 60)
+ *   charge = vehicle extraHourRate × floor(late minutes left after grace / 60)
+ *
+ * Whole hours only, rounded DOWN (client, Oct 17 2026): 1 h 30 min → 1 hr,
+ * 2 h 59 min → 2 hr, under an hour → nothing (status UNDER_ONE_HOUR).
  *
  * It is an EXTRA_TIME line billed at face value with NO GST — a recovery
  * charge (item 8, Oct 3 2026; it used to carry the branch GST). Lateness is
@@ -39,6 +42,7 @@ export interface LateReturnPolicy {
 /**
  *  - ON_TIME           returned at or before endAt
  *  - WITHIN_GRACE      late, but the grace applied covers it
+ *  - UNDER_ONE_HOUR    late past any grace, but by less than one whole hour — nothing billed
  *  - CHARGED           billed (amount may be ₹0 if the rate is ₹0)
  *  - WAIVED            staff waived it with a reason
  *  - DISABLED          the branch has extra-time charges turned off
@@ -47,6 +51,7 @@ export interface LateReturnPolicy {
 export type LateReturnStatus =
   | "ON_TIME"
   | "WITHIN_GRACE"
+  | "UNDER_ONE_HOUR"
   | "CHARGED"
   | "WAIVED"
   | "DISABLED"
@@ -62,7 +67,7 @@ export interface LateReturnCharge {
   graceApplied: boolean;
   /** Late minutes left after grace. */
   chargeableMinutes: number;
-  /** ceil(chargeableMinutes / 60) */
+  /** floor(chargeableMinutes / 60) — whole hours only */
   hours: number;
   rate: Decimal | null;
   /** Pre-GST amount billed: rate × hours when CHARGED, else 0. */
@@ -165,7 +170,8 @@ export function calculateLateReturnCharge(
     policy.graceMinutes > 0 &&
     (policy.graceType === "AUTOMATIC" || opts.applyGrace === true);
   const chargeableMinutes = Math.max(0, lateMinutes - (graceApplied ? policy.graceMinutes : 0));
-  const hours = Math.ceil(chargeableMinutes / 60);
+  // Whole hours only, rounded down: a part hour is never billed
+  const hours = Math.floor(chargeableMinutes / 60);
   const fullAmount = policy.extraHourRate
     ? policy.extraHourRate.mul(hours).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
     : new Decimal(0);
@@ -174,6 +180,7 @@ export function calculateLateReturnCharge(
   if (lateMinutes === 0) status = "ON_TIME";
   else if (chargeableMinutes === 0) status = "WITHIN_GRACE";
   else if (!policy.extraTimeEnabled) status = "DISABLED";
+  else if (hours === 0) status = "UNDER_ONE_HOUR";
   else if (opts.waive) status = "WAIVED";
   else if (policy.extraHourRate == null) status = "RATE_UNAVAILABLE";
   else status = "CHARGED";

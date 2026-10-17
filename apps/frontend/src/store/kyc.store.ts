@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { hasDlPhotosOnFile } from "@repo/schemas";
 import type { KycDocument, KycDocumentType, KycSide } from "@/services/kyc.service";
 
 interface KycState {
@@ -40,9 +41,13 @@ export const useKycStore = create<KycState>((set, get) => ({
 
   setUploadedDocuments: (documents) => set({ uploadedDocuments: documents }),
 
+  // A replaced document (a rejected side uploaded again) keeps its publicId
   addDocument: (document) =>
     set((state) => ({
-      uploadedDocuments: [document, ...state.uploadedDocuments],
+      uploadedDocuments: [
+        document,
+        ...state.uploadedDocuments.filter((doc) => doc.publicId !== document.publicId),
+      ],
     })),
 
   removeDocument: (publicId) =>
@@ -59,18 +64,8 @@ export const useKycStore = create<KycState>((set, get) => ({
   setDeletingDocumentId: (publicId) => set({ deletingDocumentId: publicId }),
 
   // Computed helpers
-  hasRequiredDocuments: () => {
-    const { uploadedDocuments } = get();
-    // A type is complete when it has both FRONT and BACK, or has an APPROVED side (backwards compat)
-    const types = [...new Set(uploadedDocuments.map((doc) => doc.type))];
-    return types.some((type) => {
-      const docs = uploadedDocuments.filter((d) => d.type === type);
-      const hasApproved = docs.some((d) => d.status === "APPROVED");
-      const hasFront = docs.some((d) => d.side === "FRONT");
-      const hasBack = docs.some((d) => d.side === "BACK");
-      return hasApproved || (hasFront && hasBack);
-    });
-  },
+  // Both driving licence photos (front + back, not rejected) — required to book
+  hasRequiredDocuments: () => hasDlPhotosOnFile(get().uploadedDocuments),
 
   getDocumentByType: (type, side) => {
     const { uploadedDocuments } = get();

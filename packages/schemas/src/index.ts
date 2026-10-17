@@ -19,3 +19,4 @@ export * from "./counter-payment.js";
 export * from "./share-link.js";
 export * from "./special-pricing.schema.js";
 export * from "./fastag.js";
+export * from "./dl-photos.js";

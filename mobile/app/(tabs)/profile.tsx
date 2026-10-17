@@ -27,6 +27,7 @@ import { displayEmail, joinProfileFieldLabels } from '../../lib/identity';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
 import DlPhotosSheet, { dlPairCompletedByUpload } from '../../components/ui/DlPhotosSheet';
+import { describeDlPhotoSides, dlPhotosState } from '../../lib/dlPhotos';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { notificationsScreenHref, unreadBadgeLabel } from '../../lib/notifications';
 import type { KycDocument, KycType, KycSide } from '../../types/api';
@@ -170,6 +171,7 @@ export default function Profile() {
   const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
 
   const approvedCount = kyc.filter((d) => d.status === 'APPROVED').length;
+  const dlPhotos = dlPhotosState(kyc);
   const isProfileComplete = profile?.isProfileCompleted ?? false;
 
   return (
@@ -291,17 +293,20 @@ export default function Profile() {
           <LinkRow icon="receipt-outline" label="Cancellations & fees" onPress={() => router.push('/cancellations')} last />
         </View>
 
-        {/* KYC documents */}
-        {/* X2 — document photos are optional; a complete profile is what booking needs */}
+        {/* KYC documents — both driving licence photos are required to book
+            (Oct 17 2026); Aadhaar / student ID stay optional */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionTitleGroup}>
             <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Identity Documents</Text>
-            <Text style={styles.optionalTag}>Optional</Text>
           </View>
           {kycLoading && <ActivityIndicator size="small" color={Colors.orange} />}
         </View>
         <Text style={styles.docsHint}>
-          Not needed to book. Upload photos if you want them on file — bring your original driving licence to pickup.
+          {kycLoading
+            ? 'Both sides of your driving licence are required to book. Aadhaar is optional.'
+            : dlPhotos.ok
+            ? 'Your driving licence photos are on file. Bring your original licence to pickup.'
+            : `Upload the ${describeDlPhotoSides(dlPhotos.missingSides)} of your driving licence to book. Aadhaar is optional.`}
         </Text>
 
         {!isProfileComplete && (
@@ -326,6 +331,9 @@ export default function Profile() {
                   <Ionicons name={docType.icon} size={18} color={Colors.ink3} />
                 </View>
                 <Text style={styles.docLabel}>{docType.label}</Text>
+                <Text style={docType.type === 'DL' ? styles.requiredTag : styles.optionalTag}>
+                  {docType.type === 'DL' ? 'Required to book' : 'Optional'}
+                </Text>
               </View>
 
               <View style={styles.sideRow}>
@@ -353,6 +361,21 @@ export default function Profile() {
                               onPress={() => router.push({ pathname: '/document-viewer', params: { url: uploaded.file.url, title: `${docType.label} · ${SIDE_LABEL[side]}` } } as any)}
                             >
                               <Ionicons name="eye-outline" size={16} color={Colors.ink2} />
+                            </TouchableOpacity>
+                          ) : null}
+                          {uploaded.status === 'REJECTED' ? (
+                            // A rejected photo is replaced by a new upload
+                            <TouchableOpacity
+                              style={[styles.docActionBtn, { backgroundColor: Colors.orange }]}
+                              onPress={() => uploadDoc(docType.type, side)}
+                              disabled={isUploading}
+                              accessibilityLabel={`Replace ${docType.label} ${SIDE_LABEL[side].toLowerCase()}`}
+                            >
+                              {isUploading ? (
+                                <ActivityIndicator size="small" color={Colors.white} />
+                              ) : (
+                                <Ionicons name="refresh" size={16} color={Colors.white} />
+                              )}
                             </TouchableOpacity>
                           ) : null}
                           <TouchableOpacity
@@ -595,6 +618,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.ink3,
     backgroundColor: '#0a0a0a0d',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  requiredTag: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    color: Colors.orange,
+    backgroundColor: Colors.orangeSoft,
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 2,

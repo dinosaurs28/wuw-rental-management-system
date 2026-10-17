@@ -30,7 +30,7 @@ import { ScheduleWarningBanner } from "@/components/booking/ScheduleWarningBanne
 import type { BranchScheduleConfig } from "@/services/branch.service";
 import type { ScheduleVerdict } from "@/utils/branchScheduleValidator";
 import type { VehicleUseCase } from "@/services/vehicle.service";
-import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
+import { TRIP_TYPE_HINT, TripTypeChips } from "@/components/vehicles/UseCaseChips";
 import { DurationPresetChips } from "@/components/booking/DurationPresetChips";
 import {
   ExtraHoursSelect,
@@ -72,13 +72,14 @@ interface VehicleFiltersProps {
   onReturnTimeChange?: (time: string) => void;
   schedule?: BranchScheduleConfig;
   scheduleVerdict?: ScheduleVerdict | null;
-  useCases?: VehicleUseCase[];
-  onUseCasesChange?: (useCases: VehicleUseCase[]) => void;
-  /** Fleet "Monthly rental" plan: 30–180 days, no 15-day length limit. */
+  /** Customer search: the required trip type (single choice); shown when onTripTypeChange is set. */
+  tripType?: VehicleUseCase | null;
+  onTripTypeChange?: (tripType: VehicleUseCase) => void;
+  /** Fleet "Monthly rental" plan: 30–180 days, no 30-day length limit. */
   monthly?: boolean;
   /**
    * Package lengths instead of a free return picker (not on the monthly plan):
-   * "customer" = 12 hours / 1–15 days only; "fleet" = the same plus 0–11 extra
+   * "customer" = 12 hours / 1–30 days only; "fleet" = the same plus 0–11 extra
    * hours. The return is computed and shown read-only.
    */
   packageMode?: "customer" | "fleet";
@@ -119,8 +120,8 @@ export const VehicleFilters = ({
   onReturnTimeChange,
   schedule,
   scheduleVerdict,
-  useCases = [],
-  onUseCasesChange,
+  tripType = null,
+  onTripTypeChange,
   monthly = false,
   packageMode,
   searchPlaceholder,
@@ -184,7 +185,7 @@ export const VehicleFilters = ({
     );
   };
 
-  // Office hours (#2) + booking window (#15: pickup ≤ 30 days ahead, ≤ 15 days long) for the pickers
+  // Office hours (#2) + booking window (#15: pickup ≤ 30 days ahead, ≤ 30 days long) for the pickers
   const limits = useMemo(
     () =>
       bookingPickerLimits({
@@ -511,13 +512,14 @@ export const VehicleFilters = ({
         <p className="mt-3 ml-2 relative z-10 text-sm font-semibold text-red-500">{limits.windowError}</p>
       )}
 
-      {/* Trip type (multi-select, OR) */}
-      {onUseCasesChange && (
+      {/* Trip type — one required choice, right after the dates and package */}
+      {onTripTypeChange && (
         <div className="mt-6 relative z-10">
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Trip Type
           </label>
-          <UseCaseFilterChips value={useCases} onChange={onUseCasesChange} />
+          <TripTypeChips value={tripType} onChange={onTripTypeChange} />
+          {!tripType && <p className="mt-2 ml-2 text-xs font-medium text-[#f0500a]">{TRIP_TYPE_HINT}</p>}
         </div>
       )}
 

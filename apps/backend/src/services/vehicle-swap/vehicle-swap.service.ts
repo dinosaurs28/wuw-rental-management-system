@@ -11,6 +11,12 @@
  *                   linked to the swap) and both cars' FASTag balances are read
  *                   (cars with a FASTag) — see swap-photos.ts for who must send them.
  *
+ * An ACTIVE_RENTAL swap with readings also stores the returning car's km by the
+ * drop's rule (segment* columns, segment-km.ts): km driven this segment, the
+ * free km left for it, the extra km and the extra-km charge. previewSwapKm shows
+ * the same figures live while staff type the reading. The drop still bills km
+ * once for the whole rental; the snapshot is that car's line of it.
+ *
  * Every swap stores the pro-rated price difference of the GST-inclusive rents
  * for the remaining period (never negative) and whether staff chose to bill it
  * (chargeDifference). The drop bill turns a charged difference into a
@@ -64,7 +70,13 @@ import { lockBookingForDrop, vehicleStatusAfterDrop } from "../damage/drop-damag
 import { displayEmail } from "../../utils/customer/identity.js";
 import { isPrivateFile, publicFileUrl } from "../../utils/file-url.js";
 import { uploadedFromBranch } from "../booking-photo-file.service.js";
-import { pickedUpAtMarker } from "../charges/km-allowance.service.js";
+import {
+  getOdometerSegments,
+  pickedUpAtMarker,
+  resolveKmAllowance,
+  type KmAllowance,
+} from "../charges/km-allowance.service.js";
+import { swapKmSnapshot, type SwapKmSnapshot } from "../charges/segment-km.js";
 import { getFastagLegs } from "../charges/fastag-usage.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import {
@@ -450,6 +462,37 @@ export interface PreparedSwap {
   chargeDifference: boolean;
   priceDifference: Decimal;
   pricingError: string | null;
+  /**
+   * The free km and rate the drop will bill the returning car's km with (on the
+   * replacement — the booking's car from now on). ACTIVE_RENTAL with readings
+   * only; null otherwise or when it can't be worked out (no snapshot then).
+   */
+  kmAllowance: KmAllowance | null;
+}
+
+/** The returning car's km at a mid-rental swap, previewed while staff type its odometer. */
+export interface SwapKmPreview {
+  bookingId: string;
+  vehicleRegNo: string;
+  /** Car whose pricing gives the free km / rate (the replacement when one is picked) */
+  rateVehicleRegNo: string;
+  /** The returning car's reading at the start of this segment (pickup, or the last swap) */
+  segmentStartOdometer: number | null;
+  endOdometer: number;
+  /** false: km can't be worked out — see unavailableReason */
+  available: boolean;
+  unavailableReason: string | null;
+  kmDriven: number;
+  /** Booking's total free km (null when it can't be worked out) */
+  includedKm: number | null;
+  /** km already driven on cars handed back at earlier swaps */
+  priorKm: number;
+  /** Free km left for this car's segment */
+  allowanceKm: number | null;
+  extraKm: number | null;
+  extraKmRate: string | null;
+  extraKmCharge: string | null;
+  extraKmEnabled: boolean | null;
 }
 
 export class VehicleSwapService {
@@ -830,6 +873,21 @@ export class VehicleSwapService {
       }
     }
 
+    // Free km + rate for the returning car's km snapshot (outside the locks — the
+    // engine is slow): worked out on the replacement, the car the drop will
+    // price the booking's km on. A failure only skips the snapshot.
+    let kmAllowance: KmAllowance | null = null;
+    if (stage === "ACTIVE_RENTAL" && storedReadings.originalVehicleEndOdometer != null) {
+      try {
+        kmAllowance = await resolveKmAllowance(booking.id, {
+          vehicleId: replacement.id,
+          categoryId: replacement.categoryId,
+        });
+      } catch (err) {
+        console.warn(`[vehicle-swap] km allowance unavailable for booking ${booking.publicId}:`, err);
+      }
+    }
+
     return {
       input,
       source,
@@ -848,6 +906,107 @@ export class VehicleSwapService {
       chargeDifference,
       priceDifference,
       pricingError,
+      kmAllowance,
+    };
+  }
+
+  /**
+   * The returning car's km for a mid-rental swap, by the rule the drop bills it
+   * with (segment-km.ts) — shown live next to its odometer field. `newVehicleId`
+   * (optional) prices the free km / rate on the replacement, as the swap
+   * records it; without it the current car's are used.
+   */
+  async previewSwapKm(
+    bookingPublicId: string,
+    branchId: number,
+    opts: { endOdometer: number; newVehicleId?: number },
+  ): Promise<SwapKmPreview> {
+    const booking = await this.loadBooking(bookingPublicId, branchId);
+    const current = booking.items[0]?.vehicle;
+    if (booking.status !== BookingStatus.PICKED_UP || !current) {
+      throw new VehicleSwapError(
+        StatusCode.BAD_REQUEST,
+        "SWAP_KM_NOT_APPLICABLE",
+        "Km are only worked out for a swap during a rental.",
+        { bookingStatus: booking.status },
+      );
+    }
+    const replacement =
+      opts.newVehicleId != null && opts.newVehicleId !== current.id
+        ? await prisma.vehicle.findFirst({
+            where: { id: opts.newVehicleId, branchId: booking.branchId },
+            select: { id: true, regNo: true, categoryId: true },
+          })
+        : null;
+    if (opts.newVehicleId != null && opts.newVehicleId !== current.id && !replacement) {
+      throw new VehicleSwapError(StatusCode.NOT_FOUND, "VEHICLE_NOT_FOUND", "Replacement vehicle not found in this branch");
+    }
+
+    const segments = await getOdometerSegments(booking.id);
+    const segmentStart = segments.complete ? segments.currentStartOdometer : await this.segmentStartOdometer(booking);
+    if (segmentStart != null && opts.endOdometer < segmentStart) {
+      throw new VehicleSwapError(
+        StatusCode.BAD_REQUEST,
+        "ODOMETER_BELOW_START",
+        `${current.regNo}'s odometer (${opts.endOdometer} km) can't be below its start reading for this rental (${segmentStart} km).`,
+        { segmentStartOdometer: segmentStart },
+      );
+    }
+    const kmDriven = Math.max(0, opts.endOdometer - (segmentStart ?? opts.endOdometer));
+    const base = {
+      bookingId: booking.publicId,
+      vehicleRegNo: current.regNo,
+      rateVehicleRegNo: replacement?.regNo ?? current.regNo,
+      segmentStartOdometer: segmentStart,
+      endOdometer: opts.endOdometer,
+      kmDriven,
+      priorKm: segments.priorKm,
+    };
+    const unavailable = (reason: string): SwapKmPreview => ({
+      ...base,
+      available: false,
+      unavailableReason: reason,
+      includedKm: null,
+      allowanceKm: null,
+      extraKm: null,
+      extraKmRate: null,
+      extraKmCharge: null,
+      extraKmEnabled: null,
+    });
+    if (!segments.complete) {
+      return unavailable(
+        "An earlier swap on this booking was recorded without odometer readings, so the km can't be worked out — staff enter the extra km at drop.",
+      );
+    }
+
+    let allowance: KmAllowance;
+    try {
+      allowance = await resolveKmAllowance(
+        booking.id,
+        replacement ? { vehicleId: replacement.id, categoryId: replacement.categoryId } : undefined,
+      );
+    } catch (err) {
+      console.warn(`[vehicle-swap] km preview: allowance unavailable for ${booking.publicId}:`, err);
+      return unavailable("The free-km allowance for this booking can't be worked out — check the vehicle's pricing setup.");
+    }
+    const snapshot = swapKmSnapshot({
+      priorSegmentKms: segments.segments.map((s) => s.km),
+      segmentStartOdometer: segmentStart,
+      endOdometer: opts.endOdometer,
+      allowance,
+    });
+    if (!snapshot) return unavailable("The km can't be worked out for this booking.");
+    return {
+      ...base,
+      available: true,
+      unavailableReason: null,
+      kmDriven: snapshot.segmentKmDriven,
+      includedKm: snapshot.segmentIncludedKm,
+      allowanceKm: snapshot.segmentAllowanceKm,
+      extraKm: snapshot.segmentExtraKm,
+      extraKmRate: snapshot.segmentExtraKmRate,
+      extraKmCharge: snapshot.segmentExtraKmCharge,
+      extraKmEnabled: snapshot.segmentExtraKmEnabled,
     };
   }
 
@@ -878,6 +1037,7 @@ export class VehicleSwapService {
       chargeDifference,
       priceDifference,
       pricingError,
+      kmAllowance,
     } = prepared;
     const db = tx as unknown as Db;
     // Lock order: booking, then vehicles by id — same as the drop and extension paths
@@ -928,6 +1088,19 @@ export class VehicleSwapService {
           { segmentStartOdometer: segmentStart },
         );
       }
+    }
+
+    // The returning car's km, recorded with the swap by the drop's rule: its
+    // segment after the cars handed back at earlier swaps (read under the lock)
+    let kmSnapshot: SwapKmSnapshot | null = null;
+    if (stage === "ACTIVE_RENTAL" && storedReadings.originalVehicleEndOdometer != null && kmAllowance) {
+      const segments = await getOdometerSegments(locked.id, db);
+      kmSnapshot = swapKmSnapshot({
+        priorSegmentKms: segments.segments.map((s) => s.km),
+        segmentStartOdometer: segments.currentStartOdometer,
+        endOdometer: storedReadings.originalVehicleEndOdometer,
+        allowance: segments.complete ? kmAllowance : null,
+      });
     }
 
     // …and the replacement can't start below its own recorded reading: a
@@ -1024,6 +1197,7 @@ export class VehicleSwapService {
         priceDifference: priceDifference.toFixed(2),
         chargeDifference,
         ...storedFastag,
+        ...(kmSnapshot ?? {}),
       },
       select: { id: true },
     });
@@ -1052,6 +1226,10 @@ export class VehicleSwapService {
     const differenceNote = priceDifference.gt(0)
       ? `; price difference ₹${priceDifference.toFixed(2)} ${chargeDifference ? "to be billed at drop" : "waived"}`
       : "";
+    const kmNote =
+      kmSnapshot && kmSnapshot.segmentExtraKm > 0
+        ? `; extra km on ${lockedOriginal.regNo}: ${kmSnapshot.segmentExtraKm} km${kmSnapshot.segmentExtraKmEnabled ? ` · ₹${kmSnapshot.segmentExtraKmCharge}` : ""} — billed at drop`
+        : "";
     const photoNote = photosMissing
       ? `; no photos of ${newVehicle.regNo} were taken at the swap${photoMode === "LEGACY" ? " (older app build)" : ""}`
       : "";
@@ -1065,7 +1243,7 @@ export class VehicleSwapService {
         category: AuditCategory.VEHICLE,
         description:
           `Vehicle swapped from ${lockedOriginal.regNo} to ${newVehicle.regNo} on booking ${locked.publicId} ` +
-          `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}${photoNote}`,
+          `(${stage === "ACTIVE_RENTAL" ? "during the rental" : "before pickup"}) — reason: ${input.reason}${differenceNote}${kmNote}${photoNote}`,
         entity: "Booking",
         entityId: locked.publicId,
         metadata: {
@@ -1087,6 +1265,7 @@ export class VehicleSwapService {
           replacementPhotoCount: replacementPhotos.length,
           photosMissing,
           fastagBalances: storedFastag,
+          kmSnapshot,
         },
       },
       tx,

@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors, Fonts } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../../lib/image';
+import { describeDlPhotoSides, dlPhotosState } from '../../../lib/dlPhotos';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
 import type { KycType, KycSide } from '../../../types/api';
@@ -35,10 +36,11 @@ const TYPES: { type: KycType; label: string }[] = [
   { type: 'STUDENT_ID', label: 'Student' },
 ];
 const SIDES: KycSide[] = ['FRONT', 'BACK'];
-// Documents are optional (X2) — the customer's DL number is what's required.
-// To attach one to the booking it needs BOTH sides of one of these (same rule
-// as the web); a student ID can be uploaded but can't be attached. PAN is no
-// longer accepted — an older PAN upload still lists but can't be attached.
+// Both driving licence photos (front + back, not rejected) are required to
+// book (Oct 17 2026; server: 422 DL_PHOTOS_REQUIRED); Aadhaar is optional.
+// To attach a document it needs BOTH sides of one of these (same rule as the
+// web); a student ID can be uploaded but can't be attached. PAN is no longer
+// accepted — an older PAN upload still lists but can't be attached.
 const BOOKABLE_TYPES: KycType[] = ['DL', 'AADHAAR'];
 const TYPE_LABEL: Record<string, string> = { DL: 'Licence', AADHAAR: 'Aadhaar' };
 const STATUS_COLOR: Record<string, string> = { PENDING: '#d97706', APPROVED: '#059669', REJECTED: '#dc2626' };
@@ -73,21 +75,22 @@ export default function WalkinKycScreen() {
   // The FRONT of each bookable type that also has its BACK uploaded.
   const completeFronts = new Map<KycType, string>();
   for (const type of BOOKABLE_TYPES) {
-    const front = docs.find((d) => d.type === type && d.side === 'FRONT');
-    const back = docs.find((d) => d.type === type && d.side === 'BACK');
+    const front = docs.find((d) => d.type === type && d.side === 'FRONT' && d.status !== 'REJECTED');
+    const back = docs.find((d) => d.type === type && d.side === 'BACK' && d.status !== 'REJECTED');
     if (front && back) completeFronts.set(type, front.publicId);
   }
+  const dl = dlPhotosState(docs);
   // Staff may pick a document; the booking is tied to its type's FRONT.
   const selectedType = docs.find((d) => d.publicId === customerKycId)?.type;
   const bookingKycId = selectedType ? completeFronts.get(selectedType) : undefined;
 
-  // Only the QR code photo is required (#4); a document is optional (X2).
-  const canContinue = !!qrPhotoId;
+  // The QR code photo (#4) and both driving licence photos are required.
+  const canContinue = !!qrPhotoId && dl.ok;
 
   const continueToSummary = () => {
-    if (!qrPhotoId) return;
-    // A document with only one side uploaded isn't attached.
-    setCustomerKycId(bookingKycId ?? null);
+    if (!qrPhotoId || !dl.ok) return;
+    // A document with only one side uploaded isn't attached; the licence is by default.
+    setCustomerKycId(bookingKycId ?? dl.front?.publicId ?? null);
     router.push('/employee/booking/summary');
   };
 
@@ -126,6 +129,11 @@ export default function WalkinKycScreen() {
       const newId: string | undefined = res.data?.fileId;
       if (newId) setCustomerKycId(newId);
       await qc.invalidateQueries({ queryKey: ['employee', 'walkin-kyc', customer.publicId] });
+      // Licence front captured → the back is next (and vice versa)
+      if (docType === 'DL') {
+        const other: KycSide = side === 'FRONT' ? 'BACK' : 'FRONT';
+        if (dl.missingSides.includes(other)) setSide(other);
+      }
     } catch (err: any) {
       Alert.alert('Upload failed', uploadErrorMessage(err, 'Could not upload the document.'));
     } finally {
@@ -196,10 +204,10 @@ export default function WalkinKycScreen() {
           required
         />
 
-        {/* Add a document — optional (X2) */}
+        {/* Add a document — both licence sides required, Aadhaar optional */}
         <View style={styles.sectionLabelRow}>
           <Text style={[styles.sectionLabel, styles.sectionLabelInline]}>Add a document</Text>
-          <Text style={styles.optionalTag}>Optional</Text>
+          <Text style={styles.requiredTag}>Licence front + back required</Text>
         </View>
         <View style={styles.card}>
           <Text style={styles.miniLabel}>Type</Text>
@@ -251,7 +259,8 @@ export default function WalkinKycScreen() {
         {docs.length > 0 && (
           <View style={styles.sidesRow}>
             {BOOKABLE_TYPES.map((type) => {
-              const has = (side: KycSide) => docs.some((d) => d.type === type && d.side === side);
+              const has = (side: KycSide) =>
+                docs.some((d) => d.type === type && d.side === side && d.status !== 'REJECTED');
               const done = completeFronts.has(type);
               return (
                 <View key={type} style={[styles.sidesChip, done && styles.sidesChipDone]}>
@@ -274,7 +283,7 @@ export default function WalkinKycScreen() {
           <View style={styles.emptyCard}>
             <Ionicons name="document-outline" size={22} color={Colors.ink4} />
             <Text style={styles.emptyCardText}>
-              No documents yet. They&apos;re optional — to attach one, add the front and back of a licence or Aadhaar.
+              No documents yet. Capture the front and back of the customer&apos;s driving licence — required to book. Aadhaar is optional.
             </Text>
           </View>
         ) : (
@@ -315,18 +324,23 @@ export default function WalkinKycScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {/* Documents are optional (X2): these only say what will be attached. */}
-        {selectedType && !bookingKycId ? (
+        {/* Both licence photos gate the booking; the rest says what will be attached. */}
+        {!isLoading && !dl.ok ? (
+          <Text style={styles.footerHint}>
+            {`Capture the ${describeDlPhotoSides(dl.missingSides)} of the driving licence to continue`}
+            {dl.rejectedSides.length > 0 ? ` (the ${describeDlPhotoSides(dl.rejectedSides)} was rejected).` : '.'}
+          </Text>
+        ) : selectedType && !bookingKycId ? (
           <Text style={styles.footerHint}>
             {BOOKABLE_TYPES.includes(selectedType)
-              ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to attach it, or continue without a document.`
-              : 'Only a licence or Aadhaar can be attached. Select one, or continue without a document.'}
+              ? `Upload both sides of the ${TYPE_LABEL[selectedType]} to attach it — otherwise the licence is attached.`
+              : 'Only a licence or Aadhaar can be attached — otherwise the licence is attached.'}
           </Text>
         ) : (
           <Text style={styles.footerNote}>
             {bookingKycId && selectedType
               ? `${TYPE_LABEL[selectedType]} will be attached to the booking.`
-              : 'No document attached — that\'s fine, it\'s optional.'}
+              : 'The driving licence will be attached to the booking.'}
           </Text>
         )}
         {!qrPhotoId && (
@@ -397,9 +411,9 @@ const styles = StyleSheet.create({
   footerNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'center' },
   sectionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   sectionLabelInline: { marginTop: 0 },
-  optionalTag: {
-    fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.ink3,
-    backgroundColor: '#0a0a0a0d', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden',
+  requiredTag: {
+    fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.orange,
+    backgroundColor: Colors.orangeSoft, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden',
   },
 
   sidesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

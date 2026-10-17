@@ -14,6 +14,7 @@ import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
 import VerifyLicenseCard, { type DLStatus } from '../../components/ui/VerifyLicenseCard';
+import { dlPhotosState } from '../../lib/dlPhotos';
 import type { BookingTrip, BookingVehicle, ExtensionEligibility } from '../../types/api';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -36,13 +37,13 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   CANCELLED: 'bad',
 };
 
+// Both licence sides are required (Oct 17 2026): "verified" only when the
+// front and the back are both approved; a missing side reads as none, a
+// rejected one as rejected.
 function dlStatusFrom(rows: any[]): DLStatus {
-  const dls = (rows ?? []).filter((d) => d?.type === 'DL');
-  if (dls.length === 0) return 'none';
-  if (dls.some((d) => d.status === 'APPROVED')) return 'approved';
-  if (dls.some((d) => d.status === 'PENDING')) return 'pending';
-  if (dls.some((d) => d.status === 'REJECTED')) return 'rejected';
-  return 'none';
+  const dl = dlPhotosState((rows ?? []).filter((d) => !!d));
+  if (!dl.ok) return dl.rejectedSides.length > 0 ? 'rejected' : 'none';
+  return dl.front?.status === 'APPROVED' && dl.back?.status === 'APPROVED' ? 'approved' : 'pending';
 }
 
 // The list endpoint is the only customer booking read; page through it for

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Calendar as CalendarIcon, QrCode, RefreshCw } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, QrCode, RefreshCw, Search, X } from "lucide-react";
 import { motion } from "motion/react";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
@@ -13,6 +13,7 @@ import {
 } from "@/services/booking.service";
 import { employeeService } from "@/services/employee.service";
 import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { BookingListCounts, BookingListType } from "@/types/overdueReturns";
 
 
@@ -31,6 +32,7 @@ import {
 import { usePaymentStore } from "@/store/payment.store";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -50,6 +52,9 @@ const TAB_PARAM: Record<QueueFilter, string> = {
 
 const filterFromParam = (value: string | null): QueueFilter =>
   value === "returns" ? "RETURN" : value === "overdue" ? "OVERDUE" : "PICKUP";
+
+/** Longest registration number search kept (the server keeps 60 characters). */
+const SEARCH_MAX = 60;
 
 /** Overdue rows fetched in one go — the list is sorted most overdue first. */
 const OVERDUE_LIMIT = 200;
@@ -71,6 +76,9 @@ export default function EmployeeDashboardPage() {
   // A completed row opened: its summary (Edit Pickup / Edit Return open the workflow page in edit mode)
   const [completedOpen, setCompletedOpen] = useState<string | null>(null);
   const [counts, setCounts] = useState<BookingListCounts | null>(null);
+  // Registration number search on the Pickup / Return queues (any tab and date)
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebounce(searchInput.trim(), 300);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [showShiftNotice, setShowShiftNotice] = useState(false);
@@ -134,15 +142,15 @@ export default function EmployeeDashboardPage() {
   const fetchData = async () => {
     if (filter === "OVERDUE") return;
     const seq = ++requestSeq.current;
-    const key = `${filter}|${format(date, "yyyy-MM-dd")}`;
+    const key = `${filter}|${format(date, "yyyy-MM-dd")}|${search}`;
     // Counts from another queue or date would mislabel the tabs while loading.
     if (countsKey.current !== key) setCounts(null);
     setIsLoading(true);
     try {
       const result =
         filter === "PICKUP"
-          ? await bookingService.getEmployeePickupQueue(date, bookingType)
-          : await bookingService.getEmployeeReturnQueue(date, bookingType);
+          ? await bookingService.getEmployeePickupQueue(date, bookingType, search)
+          : await bookingService.getEmployeeReturnQueue(date, bookingType, search);
       if (seq !== requestSeq.current) return;
       setBookings(result.data);
       setCompletedRows(result.completed);
@@ -168,7 +176,7 @@ export default function EmployeeDashboardPage() {
     if (isAuthenticated) {
       fetchData();
     }
-  }, [date, filter, bookingType, isAuthenticated]);
+  }, [date, filter, bookingType, search, isAuthenticated]);
 
   const handleRefresh = () => {
     fetchData();
@@ -462,6 +470,31 @@ export default function EmployeeDashboardPage() {
               )}
             </div>
 
+            {filter !== "OVERDUE" && (
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value.slice(0, SEARCH_MAX))}
+                  maxLength={SEARCH_MAX}
+                  placeholder="Search by registration number"
+                  aria-label="Search by registration number"
+                  autoComplete="off"
+                  className="h-9 bg-background pl-9 pr-9"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground">
               {filter === "OVERDUE"
                 ? "Recovery — customers not back after the rental period, most overdue first. Updates every minute."
@@ -504,6 +537,7 @@ export default function EmployeeDashboardPage() {
                 onAction={handleAction}
                 isLoading={isLoading}
                 bookingType={bookingType}
+                search={search}
               />
             )}
           </div>

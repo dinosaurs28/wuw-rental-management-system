@@ -41,6 +41,7 @@ interface LateReturnPanelProps {
 const STATUS_BADGE: Record<LateReturnStatus, { label: string; className: string }> = {
   ON_TIME: { label: "On time", className: "bg-green-50 text-green-700 border-green-200" },
   WITHIN_GRACE: { label: "Within grace", className: "bg-green-50 text-green-700 border-green-200" },
+  UNDER_ONE_HOUR: { label: "Under an hour", className: "bg-green-50 text-green-700 border-green-200" },
   CHARGED: { label: "Charged", className: "bg-red-50 text-red-700 border-red-200" },
   WAIVED: { label: "Waived", className: "bg-gray-50 text-gray-600 border-gray-200" },
   DISABLED: { label: "Not charged", className: "bg-gray-50 text-gray-600 border-gray-200" },
@@ -65,8 +66,8 @@ function billedAsPreview(late: ReturnLateSummary): LateChargePreview {
 }
 
 /**
- * Automatic late-return charge at drop: vehicle extra-hour rate × hours late after
- * the branch grace, charged at face value with no GST (item 8; a bill computed
+ * Automatic late-return charge at drop: vehicle extra-hour rate × whole hours late
+ * after the branch grace, rounded down (1 h 30 min → 1 hr; under an hour → none), charged at face value with no GST (item 8; a bill computed
  * before that may still show its GST). Staff can tick "Apply grace" on
  * MANUAL-grace branches and waive the charge with a reason.
  */
@@ -225,6 +226,10 @@ export function LateReturnPanel({
         </div>
       ) : status === "WITHIN_GRACE" ? (
         <p className="text-sm text-green-800">Within the {graceMinutes}-min grace — no charge.</p>
+      ) : status === "UNDER_ONE_HOUR" ? (
+        <p className="text-sm text-green-800">
+          Late by less than one whole hour{preview.graceApplied ? " after the grace" : ""} — no charge. Only whole hours are charged.
+        </p>
       ) : status === "DISABLED" ? (
         <p className="text-sm text-gray-700">Late-return charges are turned off for this branch — no charge.</p>
       ) : status === "RATE_UNAVAILABLE" ? (

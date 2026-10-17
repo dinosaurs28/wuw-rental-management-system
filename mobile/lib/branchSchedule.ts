@@ -660,7 +660,7 @@ const floorToMinute = (d: Date) => new Date(Math.floor(d.getTime() / 60_000) * 6
  * Keeps a pickup/return pair bookable once the pickers move it:
  *  1. a pickup outside office hours moves to the next accepted pickup, and the
  *     return moves with it (the rental keeps its length);
- *  2. the return is held to the length limits — `maxEnd` (15-day rule, or 180
+ *  2. the return is held to the length limits — `maxEnd` (30-day rule, or 180
  *     days for a monthly plan) and `minEnd` (30 days for a monthly plan);
  *  3. a return outside the return window moves to the next accepted return
  *     within the limit, else back to the last accepted one before it.
@@ -756,7 +756,7 @@ export interface BookingTimesNotice {
 
 /**
  * What a booking screen should say about its current times: the server's
- * 15-day / monthly-length message, a pickup outside hours, an after-hours
+ * 30-day / monthly-length message, a pickup outside hours, an after-hours
  * return, or the grace note. null when the times are fine.
  */
 export function bookingTimesNotice(

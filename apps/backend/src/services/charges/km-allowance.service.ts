@@ -24,6 +24,7 @@ import { PricingEngineService, heldToClosingOf, specialRulesOf, weekendDaysOf } 
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
 import { extensionFreeKm, extensionMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
+import { segmentKmShares, swapKmRecorded, swapKmSnapshot, type SwapKmRecorded } from "./segment-km.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -76,6 +77,13 @@ export interface OdometerSegment {
   endOdometer: number | null;
   /** null when a reading is missing */
   km: number | null;
+  /** The swap that ended it: when, the car handed back, the replacement and its start reading */
+  swappedAt?: Date;
+  vehicleRegNo?: string | null;
+  replacementRegNo?: string | null;
+  replacementStartOdometer?: number | null;
+  /** This car's km recorded at the swap (VehicleSwap segment* columns); null = not recorded */
+  recorded?: SwapKmRecorded | null;
 }
 
 export interface OdometerSegments {
@@ -93,6 +101,16 @@ export interface OdometerSegments {
   currentStartFuelLevel: string | null;
   /** Finished segments, oldest first (the current vehicle's segment ends at the drop). */
   segments: OdometerSegment[];
+}
+
+/**
+ * Work the allowance out on another car than the booking's current one — a
+ * mid-rental swap previews / records it on the replacement, the car the booking
+ * is on (items[0]) when the drop bills it.
+ */
+export interface AllowanceVehicle {
+  vehicleId: number;
+  categoryId: number;
 }
 
 /** Neither the pricing engine nor the booking's pricing snapshot can give the allowance. */
@@ -171,12 +189,15 @@ function splitBookedPeriod(booking: AllowanceBooking): { originalEndAt: Date; ex
 }
 
 /** Σ free km the extensions add at the vehicle's slab rates (throws when the rates are missing). */
-async function sumExtensionFreeKm(booking: AllowanceBooking, extensionMinutesList: number[]): Promise<number> {
+async function sumExtensionFreeKm(
+  booking: AllowanceBooking,
+  extensionMinutesList: number[],
+  vehicle?: AllowanceVehicle,
+): Promise<number> {
   if (extensionMinutesList.length === 0) return 0;
   const item = booking.items[0];
-  const rates: FreeKmRates | null = item
-    ? await loadFreeKmRates({ vehicleId: item.vehicleId, categoryId: item.vehicle.categoryId }, booking.branchId)
-    : null;
+  const car = vehicle ?? (item ? { vehicleId: item.vehicleId, categoryId: item.vehicle.categoryId } : null);
+  const rates: FreeKmRates | null = car ? await loadFreeKmRates(car, booking.branchId) : null;
   if (!rates) throw new Error("The vehicle's free-km rates aren't configured");
   return extensionMinutesList.reduce((sum, minutes) => sum + extensionFreeKm(minutes, rates).km, 0);
 }
@@ -190,16 +211,17 @@ async function sumExtensionFreeKm(booking: AllowanceBooking, extensionMinutesLis
  * period), even if the plan rules changed since — plus the free km of every
  * extension by the #7 rule.
  */
-export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
+export async function getKmAllowance(bookingId: number, vehicle?: AllowanceVehicle): Promise<KmAllowance> {
   const booking = await loadAllowanceBooking(bookingId);
   if (!booking) throw new Error("Booking not found");
 
   const item = booking.items[0];
   if (!item) throw new Error("Booking has no vehicle assigned");
+  const car = vehicle ?? { vehicleId: item.vehicleId, categoryId: item.vehicle.categoryId };
 
   const period = splitBookedPeriod(booking);
   const pricing = await pricingEngine.calculateBookingPrice(
-    item.vehicleId,
+    car.vehicleId,
     DateTime.fromJSDate(booking.startAt, { zone: "Asia/Kolkata" }),
     DateTime.fromJSDate(period.originalEndAt, { zone: "Asia/Kolkata" }),
     booking.branchId,
@@ -207,7 +229,7 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
     undefined,
     undefined,
     undefined,
-    item.vehicle.categoryId,
+    car.categoryId,
     undefined,
     // Booked as 12 hours held to closing (item 6): the 12-hour free km
     // (festival rules never change free km — the booked ones spare a lookup)
@@ -219,7 +241,7 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
   );
 
   const freeKmOriginal = Math.max(pricing.freeKmLimit, snapshotFreeKm(booking.pricingSnapshot) ?? 0);
-  const freeKmExtensions = await sumExtensionFreeKm(booking, period.extensionMinutes);
+  const freeKmExtensions = await sumExtensionFreeKm(booking, period.extensionMinutes, car);
 
   return {
     includedKm: freeKmOriginal + freeKmExtensions,
@@ -240,9 +262,9 @@ export async function getKmAllowance(bookingId: number): Promise<KmAllowance> {
  * km can still be read.
  * Throws KmAllowanceUnavailableError when neither source works.
  */
-export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance> {
+export async function resolveKmAllowance(bookingId: number, vehicle?: AllowanceVehicle): Promise<KmAllowance> {
   try {
-    return await getKmAllowance(bookingId);
+    return await getKmAllowance(bookingId, vehicle);
   } catch (pricingErr) {
     console.warn(`[km-allowance] Pricing engine failed for booking ${bookingId}:`, pricingErr);
 
@@ -260,7 +282,7 @@ export async function resolveKmAllowance(bookingId: number): Promise<KmAllowance
       const { extensionMinutes: extensionMinutesList } = splitBookedPeriod(booking);
       let freeKmExtensions: number | null = null;
       try {
-        freeKmExtensions = await sumExtensionFreeKm(booking, extensionMinutesList);
+        freeKmExtensions = await sumExtensionFreeKm(booking, extensionMinutesList, vehicle);
       } catch (extensionErr) {
         console.warn(`[km-allowance] Extension free km unavailable for booking ${bookingId}:`, extensionErr);
       }
@@ -329,6 +351,15 @@ export async function getOdometerSegments(bookingId: number, tx?: TxClient): Pro
         originalVehicleEndOdometer: true,
         newVehicleStartOdometer: true,
         newVehicleFuelLevel: true,
+        originalVehicle: { select: { regNo: true } },
+        newVehicle: { select: { regNo: true } },
+        segmentKmDriven: true,
+        segmentIncludedKm: true,
+        segmentAllowanceKm: true,
+        segmentExtraKm: true,
+        segmentExtraKmRate: true,
+        segmentExtraKmCharge: true,
+        segmentExtraKmEnabled: true,
       },
     }),
   ]);
@@ -369,6 +400,11 @@ export async function getOdometerSegments(bookingId: number, tx?: TxClient): Pro
       endOdometer: end,
       // A missing pickup reading counts as no km driven, as for an unswapped booking
       km: end == null ? null : segmentStart == null ? 0 : Math.max(0, end - segmentStart),
+      swappedAt: swap.swappedAt,
+      vehicleRegNo: swap.originalVehicle?.regNo ?? null,
+      replacementRegNo: swap.newVehicle?.regNo ?? null,
+      replacementStartOdometer: swap.newVehicleStartOdometer ?? null,
+      recorded: swapKmRecorded(swap),
     });
     segmentStart = swap.newVehicleStartOdometer;
   }
@@ -467,8 +503,36 @@ export function calculateKmCharge(
   };
 }
 
+/** JSON shape of one odometer segment (the swap details are additive). */
+export function serializeOdometerSegment(s: OdometerSegment) {
+  return {
+    endedBySwapPublicId: s.endedBySwapPublicId,
+    startOdometer: s.startOdometer,
+    endOdometer: s.endOdometer,
+    km: s.km,
+    swappedAt: s.swappedAt?.toISOString() ?? null,
+    vehicleRegNo: s.vehicleRegNo ?? null,
+    replacementRegNo: s.replacementRegNo ?? null,
+    replacementStartOdometer: s.replacementStartOdometer ?? null,
+    recorded: s.recorded ?? null,
+  };
+}
+
 /** JSON shape of a km charge for clients, session metadata and legacy responses. */
 export function serializeKmCharge(km: KmCharge, segments?: OdometerSegments | null) {
+  // After mid-rental swaps with readings: the one km charge split per car
+  // (segmentKmShares — the same totals, the line for each car's segment)
+  const shares =
+    km.kmSource === "ODOMETER" && segments && segments.swapCount > 0 && segments.complete
+      ? segmentKmShares([...segments.segments.map((s) => s.km ?? 0), Math.max(0, km.kmDriven - km.priorKm)], km)
+      : null;
+  const billed = (i: number) => {
+    const share = shares?.[i];
+    return share
+      ? { allowanceKm: share.allowanceKm, extraKm: share.extraKm, extraKmCharge: share.extraKmCharge.toFixed(2) }
+      : null;
+  };
+  const segmentCount = segments?.segments.length ?? 0;
   return {
     startOdometer: km.startOdometer,
     endOdometer: km.endOdometer,
@@ -486,11 +550,55 @@ export function serializeKmCharge(km: KmCharge, segments?: OdometerSegments | nu
     freeKmOriginal: km.freeKmOriginal,
     freeKmExtensions: km.freeKmExtensions,
     swapCount: segments?.swapCount ?? 0,
-    segments: (segments?.segments ?? []).map((s) => ({
-      endedBySwapPublicId: s.endedBySwapPublicId,
-      startOdometer: s.startOdometer,
-      endOdometer: s.endOdometer,
-      km: s.km,
-    })),
+    segments: (segments?.segments ?? []).map((s, i) => ({ ...serializeOdometerSegment(s), billed: billed(i) })),
+    // The vehicle handed back now, when the rental had mid-rental swaps with readings
+    currentSegment: shares
+      ? {
+          startOdometer: km.startOdometer,
+          endOdometer: km.endOdometer,
+          km: Math.max(0, km.kmDriven - km.priorKm),
+          billed: billed(segmentCount),
+        }
+      : null,
   };
+}
+
+/**
+ * Re-records the km snapshot of the booking's mid-rental swaps from the current
+ * readings — after the pickup reading is corrected (Edit Pickup), which moves
+ * the first car's km and so every later car's share. Each swap keeps the free
+ * km, rate and billing switch it recorded; only the km are worked out again.
+ * Swaps without a snapshot are left alone.
+ */
+export async function refreshSwapKmSnapshots(bookingId: number, tx: TxClient): Promise<number> {
+  const segments = await getOdometerSegments(bookingId, tx);
+  let updated = 0;
+  for (let i = 0; i < segments.segments.length; i++) {
+    const segment = segments.segments[i]!;
+    const recorded = segment.recorded;
+    if (
+      !segment.endedBySwapPublicId ||
+      segment.endOdometer == null ||
+      !recorded ||
+      recorded.includedKm == null ||
+      recorded.extraKmRate == null ||
+      recorded.extraKmEnabled == null
+    ) {
+      continue;
+    }
+    const snapshot = swapKmSnapshot({
+      priorSegmentKms: segments.segments.slice(0, i).map((s) => s.km),
+      segmentStartOdometer: segment.startOdometer,
+      endOdometer: segment.endOdometer,
+      allowance: {
+        includedKm: recorded.includedKm,
+        extraKmRate: new Decimal(recorded.extraKmRate),
+        extraKmEnabled: recorded.extraKmEnabled,
+      },
+    });
+    if (!snapshot) continue;
+    await tx.vehicleSwap.update({ where: { publicId: segment.endedBySwapPublicId }, data: snapshot });
+    updated += 1;
+  }
+  return updated;
 }

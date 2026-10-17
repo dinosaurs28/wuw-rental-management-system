@@ -25,9 +25,14 @@ import {
 import { parseGroupKey, normalizeStr } from "./vehicle.controller.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
-import { MONTHLY_MIN_DAYS } from "@repo/schemas";
+import { MAX_RENTAL_DAYS } from "@repo/schemas";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
+import {
+  fleetSearchBookingWhere,
+  fleetSearchVehicleIds,
+  parseFleetQuery,
+} from "../../utils/booking/fleetSearch.js";
 import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -81,6 +86,11 @@ import {
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
 import { blacklistRefusal } from "../../services/customer/customer-blacklist.service.js";
+import {
+  assertDlPhotosOnFile,
+  bookingDlKycFileId,
+  DlPhotosRequiredError,
+} from "../../services/booking/dl-photos.service.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -96,6 +106,9 @@ function dailyPriceToPaise(price: number): number {
 // `?includeCompleted=1` (client item 1, new clients only) adds the day's done
 // pickups in `completed`; the waiting list and counts then leave out pickups
 // sent to a manager (they are listed as completed, "Awaiting manager").
+// `?q=` (new clients only) keeps the bookings whose vehicle matches the search
+// (registration number, spaces / hyphens ignored, or make / model words) in the
+// list, the counts and `completed`.
 export const BookingController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -107,6 +120,9 @@ export const BookingController = async (req: Request, res: Response) => {
     }
     const type = parsedType.type;
     const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
+    const search = parseFleetQuery(req.query.q);
+    const searchVehicleIds = search ? await fleetSearchVehicleIds(branchId, search) : undefined;
+    const searchWhere = searchVehicleIds ? fleetSearchBookingWhere(searchVehicleIds) : {};
 
     let dateFilter: any = {};
 
@@ -144,19 +160,21 @@ export const BookingController = async (req: Request, res: Response) => {
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("DAILY"),
       ...pendingOnly,
+      ...searchWhere,
     };
     const monthlyWhere = {
       branchId,
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("MONTHLY"),
       ...pendingOnly,
+      ...searchWhere,
     };
     const listWhere =
       type === "MONTHLY"
         ? monthlyWhere
         : type === "DAILY"
           ? dailyWhere
-          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED, ...pendingOnly };
+          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED, ...pendingOnly, ...searchWhere };
 
     const [dailyCount, monthlyCount] = await Promise.all([
       prisma.booking.count({ where: dailyWhere }),
@@ -218,7 +236,7 @@ export const BookingController = async (req: Request, res: Response) => {
     const counts = { daily: dailyCount, monthly: monthlyCount };
     // Done (or sent to a manager) for the day — additive, new clients only
     const completed = includeCompleted
-      ? await listCompletedQueue("PICKUP", { branchId, type, day: completedDay })
+      ? await listCompletedQueue("PICKUP", { branchId, type, day: completedDay, vehicleIds: searchVehicleIds })
       : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
@@ -320,7 +338,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     // #1 (revised Oct 2026): the profile — name, phone, address and an age (or
     // an older customer's date of birth / identity numbers) — is required before
     // any counter booking. Derived from the stored values so the API can't skip
-    // the gate the staff UIs enforce. The DL number is taken at pickup.
+    // the gate the staff UIs enforce.
     const missingProfileFields = getMissingProfileFields(
       profileFieldsOf(customer, customer.customerProfile),
     );
@@ -343,9 +361,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(qrPhotoProblem.status).json(qrPhotoProblem.body);
     }
 
-    // KYC picture (X2): optional — the DL + Aadhaar NUMBERS above gate the
-    // booking. Omitted / blank / null ⇒ no KYC document on the booking; when
-    // sent it must be one of this customer's documents.
+    // KYC picture: when sent it must be one of this customer's documents. The
+    // booking keeps the customer's DL photo either way (DL photos gate below).
     const kycIdInput: unknown =
       typeof customer_kyc_id === "string" ? customer_kyc_id.trim() : customer_kyc_id;
     let kycFileId: number | null = null;
@@ -375,6 +392,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       if (kycRecord.type !== "PAN") kycFileId = kycRecord.fileId;
     }
 
+    // Driving licence photos are compulsory (Oct 17 2026): FRONT + BACK on file
+    // (captured on the walk-in KYC screen), not rejected — 422
+    // DL_PHOTOS_REQUIRED otherwise. The booking keeps the DL photo staff
+    // selected, else the DL front.
+    const dlPhotos = await assertDlPhotosOnFile(customer.customerProfile.id, "staff");
+    kycFileId = bookingDlKycFileId(dlPhotos, kycFileId);
+
     // Parse dates (IST) — used as Luxon DateTime for pricing engine
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
@@ -386,8 +410,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
     // ── Rental plan + period rules (#15 / #17) ───────────────────────────────
     // plan 'MONTHLY' is the counter-only monthly plan (30–180 days, pickup within
-    // the 15-day window). Omitted (old app builds) or 'STANDARD' = a normal
-    // booking, held to the 15-day window. No staff bypass.
+    // the advance window). Omitted (old app builds) or 'STANDARD' = a normal
+    // booking, up to 30 days long. No staff bypass.
     const rawPlan: unknown = req.body.plan;
     if (rawPlan != null && rawPlan !== "STANDARD" && rawPlan !== "MONTHLY") {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -418,8 +442,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       if (windowErr instanceof BookingWindowError) {
         const body = windowErr.toJSON();
         const spanDays = (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000);
-        if (!isMonthlyPlan && spanDays >= MONTHLY_MIN_DAYS) {
-          body.message = `${body.message} For ${MONTHLY_MIN_DAYS} days or more, choose the Monthly rental plan.`;
+        if (!isMonthlyPlan && spanDays > MAX_RENTAL_DAYS) {
+          body.message = `${body.message} For more than ${MAX_RENTAL_DAYS} days, choose the Monthly rental plan.`;
         }
         return res.status(StatusCode.BAD_REQUEST).json(body);
       }
@@ -1089,6 +1113,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return res.status(error.status).json(error.toJSON());
     }
     if (error instanceof BookingWindowError) {
+      return res.status(error.status).json(error.toJSON());
+    }
+    if (error instanceof DlPhotosRequiredError) {
       return res.status(error.status).json(error.toJSON());
     }
     // Staff see which booking holds the licence (conflictingBooking)

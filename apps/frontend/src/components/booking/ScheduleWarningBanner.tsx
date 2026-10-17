@@ -1,4 +1,5 @@
 import { AlertTriangle, Clock, XCircle, RefreshCw } from "lucide-react";
+import { MAX_RENTAL_DAYS } from "@repo/schemas";
 import {
   buildScheduleUserMessage,
   PICKUP_CUTOFF_MINUTES,
@@ -142,7 +143,7 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
     );
   }
 
-  // ── Return outside hours (extensions; or an adjusted return past the 15-day limit) ──
+  // ── Return outside hours (extensions; or an adjusted return past the 30-day limit) ──
   if (verdict.status === "RETURN_OUTSIDE_HOURS") {
     return (
       <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3.5 text-red-800">
@@ -150,7 +151,7 @@ export const ScheduleWarningBanner = ({ verdict }: ScheduleWarningBannerProps) =
         <div className="text-sm">
           <span className="font-semibold">Branch closed at that return time — </span>
           {verdict.nextOpenLabel
-            ? `${returnReasonText(verdict)} The next open return (${verdict.nextOpenLabel}) is past the 15-day limit. Please choose an earlier return.`
+            ? `${returnReasonText(verdict)} The next open return (${verdict.nextOpenLabel}) is past the ${MAX_RENTAL_DAYS}-day limit. Please choose an earlier return.`
             : buildScheduleUserMessage(verdict)}
         </div>
       </div>

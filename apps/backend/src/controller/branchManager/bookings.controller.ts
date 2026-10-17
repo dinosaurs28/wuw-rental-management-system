@@ -32,11 +32,6 @@ import {
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { publicFileUrl } from "../../utils/file-url.js";
-import {
-  assertDlFree,
-  lockAndAssertDlFreeForPickup,
-  DlInUseError,
-} from "../../services/booking/dl-in-use.service.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 
 const advanceDepositService = new AdvanceDepositService();
@@ -406,13 +401,6 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
         .json({ message: "Booking not found" });
     }
 
-    // Collected just before the manager confirms the handover: refuse it up
-    // front when that handover would be refused anyway because another
-    // booking on the same driving licence is out (X3) — nothing recorded.
-    if (booking.status === BookingStatus.CONFIRMED) {
-      await assertDlFree({ customerId: booking.customerId, mode: "pickup", excludeBookingId: booking.id });
-    }
-
     const result = await advanceDepositService.recordSafetyDeposit(
       booking.id,
       Number(amount),
@@ -432,9 +420,6 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error: any) {
-    if (error instanceof DlInUseError) {
-      return res.status(error.status).json(error.toJSON("staff"));
-    }
     console.error("Collect Safety Deposit Error:", error);
     if (error.message.includes("not found"))
       return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
@@ -726,10 +711,6 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       return res.status(StatusCode.CONFLICT).json(notReady);
     }
 
-    // One vehicle per driving licence (X3): not while another booking on this
-    // DL is out. Re-checked under a lock below.
-    await assertDlFree({ customerId: booking.customerId, mode: "pickup", excludeBookingId: booking.id });
-
     const actingUser = await prisma.user.findUnique({
       where: { publicId: userId },
     });
@@ -744,7 +725,6 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       // Booking row lock first (shared with the manual cancel), then still
       // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
       await lockBookingForPickup(tx, booking.id);
-      await lockAndAssertDlFreeForPickup(booking.id, tx);
 
       await tx.booking.update({
         where: { id: booking.id },
@@ -785,9 +765,6 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       message: "Pickup confirmed successfully. Vehicle is now OUT_FOR_RENTAL.",
     });
   } catch (error: any) {
-    if (error instanceof DlInUseError) {
-      return res.status(error.status).json(error.toJSON("staff"));
-    }
     if (error instanceof PickupStateError) {
       return res.status(error.status).json(error.toJSON());
     }

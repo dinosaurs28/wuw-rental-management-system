@@ -6,10 +6,12 @@
 
 import type { ExtensionFreeKm } from "@/services/extension.service";
 
-/** ON_TIME · WITHIN_GRACE · CHARGED · WAIVED · DISABLED · RATE_UNAVAILABLE */
+/** ON_TIME · WITHIN_GRACE · UNDER_ONE_HOUR · CHARGED · WAIVED · DISABLED · RATE_UNAVAILABLE */
 export type LateReturnStatus =
   | "ON_TIME"
   | "WITHIN_GRACE"
+  /** Late past any grace by less than one whole hour — whole hours only, nothing billed. */
+  | "UNDER_ONE_HOUR"
   | "CHARGED"
   | "WAIVED"
   | "DISABLED"
@@ -117,6 +119,44 @@ export interface OdometerSegment {
   endOdometer: number | null;
   /** null when a reading is missing */
   km: number | null;
+  /** The swap that ended it (absent on older servers) */
+  swappedAt?: string | null;
+  /** The car handed back at the swap */
+  vehicleRegNo?: string | null;
+  /** The replacement and its start reading at the swap */
+  replacementRegNo?: string | null;
+  replacementStartOdometer?: number | null;
+  /** This car's km recorded at the swap, by the drop's rule (null = not recorded) */
+  recorded?: SwapKmRecorded | null;
+  /** On a computed drop bill: this car's line of the one extra-km charge */
+  billed?: SegmentKmBilled | null;
+}
+
+/** The returning car's km recorded at a mid-rental swap (money as 2-dp strings). */
+export interface SwapKmRecorded {
+  kmDriven: number;
+  includedKm: number | null;
+  /** Free km left for this car's segment */
+  allowanceKm: number | null;
+  extraKm: number | null;
+  extraKmRate: string | null;
+  extraKmCharge: string | null;
+  extraKmEnabled: boolean | null;
+}
+
+/** A car's share of the drop bill's extra-km charge (they add up to the bill's line). */
+export interface SegmentKmBilled {
+  allowanceKm: number;
+  extraKm: number;
+  extraKmCharge: string;
+}
+
+/** The car handed back at the drop, after mid-rental swaps with readings. */
+export interface CurrentKmSegment {
+  startOdometer: number | null;
+  endOdometer: number;
+  km: number;
+  billed: SegmentKmBilled | null;
 }
 
 /** GET /employee/return/:id `kmSegments` (null unless PICKED_UP). */

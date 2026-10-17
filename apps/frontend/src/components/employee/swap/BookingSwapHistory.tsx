@@ -96,6 +96,19 @@ function SwapRow({ swap }: { swap: VehicleSwap }) {
         </p>
       )}
 
+      {swap.segmentKmDriven != null && (
+        <p className={(swap.segmentExtraKm ?? 0) > 0 ? "text-xs text-orange-700" : "text-xs text-gray-600"}>
+          {formatKm(swap.segmentKmDriven)} driven on {swap.originalVehicle?.regNo ?? "the returned car"}
+          {(swap.segmentExtraKm ?? 0) > 0
+            ? ` · extra ${formatKm(swap.segmentExtraKm!)}${
+                swap.segmentExtraKmEnabled && swap.segmentExtraKmCharge != null
+                  ? ` · ${formatSwapRupees(swapAmount(swap.segmentExtraKmCharge) ?? 0)}`
+                  : ""
+              } — billed at drop`
+            : " · no extra km"}
+        </p>
+      )}
+
       {(oldFastag !== null || newFastag !== null) && (
         <p className="text-xs text-gray-600">
           FASTag at swap:{" "}

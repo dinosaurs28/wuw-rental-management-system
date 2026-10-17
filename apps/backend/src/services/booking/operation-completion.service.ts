@@ -20,6 +20,7 @@ import {
 } from "@repo/database/client";
 import { bookingListTypeOf, type BookingListType } from "../../utils/booking/bookingTypeFilter.js";
 import { displayEmail } from "../../utils/customer/identity.js";
+import { fleetSearchBookingWhere } from "../../utils/booking/fleetSearch.js";
 import {
   activityMarkerKind,
   completedPickupWhere,
@@ -181,7 +182,13 @@ const completedRowSelect = {
  */
 export async function listCompletedQueue(
   phase: QueuePhase,
-  opts: { branchId: number; type: BookingListType | undefined; day: DayRange },
+  opts: {
+    branchId: number;
+    type: BookingListType | undefined;
+    day: DayRange;
+    /** Fleet search (`q`): only bookings with one of these vehicles */
+    vehicleIds?: number[];
+  },
 ) {
   const range = { gte: opts.day.gte, lte: opts.day.lte };
   // Pickups completed / sent to a manager that day per their activity entry (no booking column for it)
@@ -201,11 +208,12 @@ export async function listCompletedQueue(
           .filter((entry) => activityMarkerKind("PICKUP", entry) != null)
           .map((entry) => entry.entityRef)
       : [];
+  const phaseWhere =
+    phase === "PICKUP"
+      ? completedPickupWhere(opts.branchId, opts.type, opts.day, [...new Set(activityRefs)])
+      : completedReturnWhere(opts.branchId, opts.type, opts.day);
   const rows = await prisma.booking.findMany({
-    where:
-      phase === "PICKUP"
-        ? completedPickupWhere(opts.branchId, opts.type, opts.day, [...new Set(activityRefs)])
-        : completedReturnWhere(opts.branchId, opts.type, opts.day),
+    where: opts.vehicleIds ? { AND: [phaseWhere, fleetSearchBookingWhere(opts.vehicleIds)] } : phaseWhere,
     select: completedRowSelect,
   });
   const info = await loadCompletionInfo(phase, rows);

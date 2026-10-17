@@ -60,7 +60,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
   // Left on credit at the counter (#11): owed to the branch, not due at a pickup / drop step
   const onCredit = Math.min(balanceDue, Number(booking.balanceOnCredit ?? 0) || 0);
   const dueAtStep = Math.max(0, balanceDue - onCredit);
-  // At the 15-day (or monthly 180-day) limit — or less than 12 hours left before
+  // At the 30-day (or monthly 180-day) limit — or less than 12 hours left before
   // it, the shortest extension a customer can buy (P3): say why there is no Extend button
   const noExtensionPackageFits =
     eligibility?.packageOptions?.length === 0 && (eligibility.hoursUntilEnd ?? 0) > 0;

@@ -68,7 +68,7 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name is required"),
   // Optional for walk-ins (#1) — left out of the payload when blank.
   email: optionalEmailSchema,
-  // Optional since Oct 2026 (the DL number is taken at pickup) — left out when blank.
+  // Optional since Oct 2026 — left out when blank.
   drivingLicenceNumber: optionalIdNumberInput(drivingLicenceNumberSchema),
   aadhaarNumber: optionalIdNumberInput(aadhaarNumberSchema),
   // Replaces the date of birth (Oct 2026): whole years, 18–99.

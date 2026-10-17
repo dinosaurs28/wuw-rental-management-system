@@ -1,7 +1,8 @@
 import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Shield, Loader2, User } from "lucide-react";
+import { Shield, Loader2, User, AlertCircle, CheckCircle2 } from "lucide-react";
+import { describeDlPhotoSides, dlPhotosState } from "@repo/schemas";
 import axios from "axios";
 import type { KycDocumentType, KycSide } from "@/services/kyc.service";
 
@@ -123,10 +124,10 @@ export function DocumentsPage() {
         // Auto-deselect type once both sides are uploaded
         const allDocs = useKycStore.getState().uploadedDocuments;
         const hasFront = allDocs.some(
-          (d) => d.type === selectedDocumentType && d.side === "FRONT",
+          (d) => d.type === selectedDocumentType && d.side === "FRONT" && d.status !== "REJECTED",
         );
         const hasBack = allDocs.some(
-          (d) => d.type === selectedDocumentType && d.side === "BACK",
+          (d) => d.type === selectedDocumentType && d.side === "BACK" && d.status !== "REJECTED",
         );
         if (hasFront && hasBack) {
           setSelectedDocumentType(null);
@@ -193,24 +194,25 @@ export function DocumentsPage() {
   );
 
   const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR"];
+  const dlPhotos = dlPhotosState(uploadedDocuments);
 
   const fullyUploadedTypes = KYC_TYPES.filter((type) => {
-    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT");
-    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK");
+    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT" && d.status !== "REJECTED");
+    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK" && d.status !== "REJECTED");
     return hasFront && hasBack;
   });
 
   const partialTypes = KYC_TYPES.filter((type) => {
-    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT");
-    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK");
+    const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT" && d.status !== "REJECTED");
+    const hasBack = uploadedDocuments.some((d) => d.type === type && d.side === "BACK" && d.status !== "REJECTED");
     return (hasFront || hasBack) && !(hasFront && hasBack);
   });
 
   const frontDoc = selectedDocumentType
-    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "FRONT")
+    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "FRONT" && d.status !== "REJECTED")
     : null;
   const backDoc = selectedDocumentType
-    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "BACK")
+    ? uploadedDocuments.find((d) => d.type === selectedDocumentType && d.side === "BACK" && d.status !== "REJECTED")
     : null;
 
   // Loading state
@@ -277,6 +279,36 @@ export function DocumentsPage() {
               </div>
             ) : (
               <>
+                {/* Driving licence photos are required to book (Oct 17 2026); Aadhaar is optional */}
+                {!isFetching && (
+                  <div
+                    role="status"
+                    className={
+                      dlPhotos.ok
+                        ? "flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4"
+                        : "flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4"
+                    }
+                  >
+                    {dlPhotos.ok ? (
+                      <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 shrink-0 text-orange-600 mt-0.5" />
+                    )}
+                    <div>
+                      <p className={dlPhotos.ok ? "font-bold text-emerald-900" : "font-bold text-orange-900"}>
+                        Driving licence photos — required to book
+                      </p>
+                      <p className={dlPhotos.ok ? "text-sm text-emerald-800" : "text-sm text-orange-800"}>
+                        {dlPhotos.ok
+                          ? "Both sides are on file. Aadhaar is optional."
+                          : dlPhotos.rejectedSides.length > 0
+                            ? `Upload a clearer photo of the ${describeDlPhotoSides(dlPhotos.missingSides)} of your licence — our team couldn't accept the last one.`
+                            : `Upload the ${describeDlPhotoSides(dlPhotos.missingSides)} of your driving licence. Aadhaar is optional.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Step 1 — Document Type */}
                 <section>
                   <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">

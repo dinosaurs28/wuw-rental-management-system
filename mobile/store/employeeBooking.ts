@@ -38,7 +38,7 @@ interface EmployeeBookingState {
   // before the summary, sent as qr_photo_id on create.
   qrPhotoId: string | null;
   // Rental plan (#15/#17): MONTHLY = the counter monthly plan (30–180 days),
-  // sent as plan on create. STANDARD bookings follow the 15-day rule.
+  // sent as plan on create. STANDARD bookings follow the 30-day rule.
   plan: WalkinPlan;
 
   setCustomer: (c: EmployeeBookingCustomer) => void;

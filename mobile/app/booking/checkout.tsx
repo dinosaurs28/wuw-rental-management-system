@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   ScrollView,
   StyleSheet,
@@ -48,6 +47,8 @@ import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon'
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import { profileIncompleteMessage } from '../../lib/identity';
 import { handleDlInUse } from '../../lib/dlInUse';
+import { DL_PHOTOS_REQUIRED, DL_PHOTOS_REQUIRED_MESSAGE, dlPhotosState } from '../../lib/dlPhotos';
+import DlPhotosUpload from '../../components/booking/DlPhotosUpload';
 import { inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
@@ -109,30 +110,6 @@ function askToContinue(title: string, message: string, okText: string): Promise<
   });
 }
 
-// X2 — KYC photos are optional at checkout. NO_KYC = "don't attach a document".
-const NO_KYC = '__none__';
-
-/**
- * Documents that can be attached: the FRONT of a licence or Aadhaar whose BACK
- * is uploaded too (same rule as the web and the walk-in screen). PAN is no
- * longer accepted, so an older PAN upload isn't offered.
- */
-function attachableKycDocs(docs: KycDocument[] | undefined): KycDocument[] {
-  const uploaded = (docs ?? []).filter((d) => !!d.file?.publicId);
-  return uploaded.filter(
-    (d) =>
-      (d.type === 'DL' || d.type === 'AADHAAR') &&
-      d.side === 'FRONT' &&
-      uploaded.some((b) => b.type === d.type && b.side === 'BACK'),
-  );
-}
-
-/** The KYC document to attach: the chosen one, else the first attachable; null for none. */
-function pickKyc(docs: KycDocument[] | undefined, selectedId: string | null): KycDocument | null {
-  if (selectedId === NO_KYC) return null;
-  const usable = attachableKycDocs(docs);
-  return usable.find((d) => d.publicId === selectedId) ?? usable[0] ?? null;
-}
 
 function DateInput({ label, value }: { label: string; value: string }) {
   return (
@@ -190,7 +167,7 @@ export default function Checkout() {
     vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string;
   }>();
   // Booking is account-based (the API requires a token and a complete profile,
-  // name, phone, address and age; KYC photos are optional — X2). Normally
+  // name, phone, address and age, and both driving licence photos). Normally
   // requireAuth on the vehicle CTA stops a guest before
   // they get here; this guards a deep link or a restored navigation state.
   const isGuest = useIsGuest();
@@ -210,9 +187,6 @@ export default function Checkout() {
   const upiQrEnabled = useUpiQrAvailable(!isGuest);
   // The pay footer grows with the QR option / no-UPI note; keep content clear of it.
   const [ctaHeight, setCtaHeight] = useState(0);
-  // #36 — which uploaded KYC doc to attach (defaults to the first). Optional
-  // (X2): NO_KYC = the customer chose not to attach one.
-  const [selectedKycId, setSelectedKycId] = useState<string | null>(null);
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');
@@ -294,7 +268,7 @@ export default function Checkout() {
   // Back to the vehicle page to pick new times.
   const changeTimes = () => (router.canGoBack() ? router.back() : router.replace(`/vehicle/${vehicleId}`));
 
-  const { data: kyc, isLoading: kycLoading } = useQuery({
+  const { data: kyc, isLoading: kycLoading, refetch: refetchKyc } = useQuery({
     queryKey: ['kyc'],
     queryFn: () => userApi.kyc(),
     select: (res) => (res.data.data ?? []) as KycDocument[],
@@ -565,6 +539,13 @@ export default function Checkout() {
         return;
       }
     }
+    // Both driving licence photos are required (Oct 17 2026; server: 422
+    // DL_PHOTOS_REQUIRED) — uploaded in the step above.
+    const dlNow = dlPhotosState(kyc);
+    if (!dlNow.ok || !dlNow.front) {
+      Alert.alert('Driving licence photos', DL_PHOTOS_REQUIRED_MESSAGE);
+      return;
+    }
     if (!terms) {
       Alert.alert('Accept terms', 'Please accept the Terms & Conditions to continue.');
       return;
@@ -597,9 +578,6 @@ export default function Checkout() {
     // re-decides and converts (never rejects) it, flagging any difference.
     const sendFlow: PaymentFlow = checkoutPaymentOptions(vehicle, appliedCoupon, totalNow).defaultFlow;
 
-    // #36 — attach the customer-chosen KYC doc (default: first), if any (X2: optional).
-    const chosenKyc = pickKyc(kyc, selectedKycId);
-
     setPayMode(mode);
     setLoading(true);
     try {
@@ -608,8 +586,8 @@ export default function Checkout() {
         groupKeys: isGroupKey ? [vehicle.publicId] : [],
         start: startDate.toISOString(),
         end: endDate.toISOString(),
-        // Only when a document is attached — omitted = no KYC file on the booking.
-        ...(chosenKyc ? { file_public_id: chosenKyc.file.publicId } : {}),
+        // The DL front is the booking's KYC document (the server attaches it anyway)
+        ...(dlNow.front.file?.publicId ? { file_public_id: dlNow.front.file.publicId } : {}),
         payment_type: 'ONLINE',
         payment_flow: sendFlow,
         ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
@@ -698,6 +676,11 @@ export default function Checkout() {
         );
         return;
       }
+      if (err?.response?.data?.code === DL_PHOTOS_REQUIRED) {
+        void refetchKyc(); // a photo was removed or rejected elsewhere
+        Alert.alert('Driving licence photos', err.response.data.message ?? DL_PHOTOS_REQUIRED_MESSAGE);
+        return;
+      }
       if (err?.response?.data?.code === 'PROFILE_INCOMPLETE') {
         void refetchProfile(); // the cached copy was out of date — refresh the banner
         promptCompleteProfile(
@@ -732,7 +715,7 @@ export default function Checkout() {
         ]);
         return;
       }
-      // #2 / #15 — pickup outside branch hours, or past the 15-day limit;
+      // #2 / #15 — pickup outside branch hours, or past the 30-day limit;
       // P2 — not a 12-hour / whole-day package.
       if (
         body?.code === 'BRANCH_SCHEDULE_VIOLATION' ||
@@ -812,9 +795,8 @@ export default function Checkout() {
   // baseTotal − coupon (only an older server without a breakdown).
   const total = couponPricing ? couponPricing.payableTotal : Math.max(0, baseTotal - couponDiscount);
 
-  // Uploaded documents that can be attached (X2: optional), and the one that will be.
-  const kycDocs = attachableKycDocs(kyc);
-  const chosenKyc = pickKyc(kyc, selectedKycId);
+  // Both driving licence photos on file (front + back, not rejected)
+  const dlReady = dlPhotosState(kyc).ok;
   // Advance only (item 18): the one plan the server allows for this total
   // ("Pay ₹X now · ₹Y at pickup"); handleBook sends the same plan.
   const payOptions = checkoutPaymentOptions(vehicle, appliedCoupon, pd ? total : null);
@@ -896,73 +878,20 @@ export default function Checkout() {
           </TouchableOpacity>
         )}
 
-        {/* X2 — licence / ID photos are optional: the DL number on the profile is
-            what's required. #36 — pick which uploaded document to attach, or none. */}
+        {/* Driving licence photos — required to book (Oct 17 2026); the front is
+            attached to the booking. Aadhaar stays optional (profile tab). */}
         <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Licence / ID document</Text>
-          <Text style={styles.optionalTag}>Optional</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Driving licence photos</Text>
+          <Text style={styles.requiredTag}>Required</Text>
         </View>
-        {kycDocs.length === 0 ? (
-          <View style={styles.kycNote}>
-            <Ionicons name="document-outline" size={18} color={Colors.ink3} />
-            <View style={styles.kycNoteBody}>
-              <Text style={styles.kycNoteText}>
-                {(kyc ?? []).length > 0
-                  ? 'To attach a document, upload both sides of your licence or Aadhaar. You can book without one — bring your original driving licence to pickup.'
-                  : 'No document uploaded. You can book without one — bring your original driving licence to pickup.'}
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
-                <Text style={styles.editLink}>Upload in Profile</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <>
-            <View style={{ gap: 8 }}>
-              {kycDocs.map((doc) => {
-                const selected = doc.publicId === (chosenKyc?.publicId ?? null);
-                return (
-                  <TouchableOpacity
-                    key={doc.publicId}
-                    style={[styles.kycPick, selected && styles.kycPickActive]}
-                    onPress={() => setSelectedKycId(doc.publicId)}
-                    activeOpacity={0.85}
-                  >
-                    <Image source={{ uri: doc.file.url }} style={styles.kycPickThumb} resizeMode="cover" />
-                    <View style={styles.kycPickInfo}>
-                      <Text style={styles.kycPickType}>
-                        {doc.type.replace(/_/g, ' ')}{doc.side ? ` · ${doc.side}` : ''}
-                      </Text>
-                      <Text style={styles.kycPickStatus}>{doc.status}</Text>
-                    </View>
-                    <Ionicons
-                      name={selected ? 'radio-button-on' : 'radio-button-off'}
-                      size={20}
-                      color={selected ? Colors.orange : Colors.ink4}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-              <TouchableOpacity
-                style={[styles.kycPick, !chosenKyc && styles.kycPickActive]}
-                onPress={() => setSelectedKycId(NO_KYC)}
-                activeOpacity={0.85}
-              >
-                <View style={[styles.kycPickThumb, styles.kycPickNone]}>
-                  <Ionicons name="remove-circle-outline" size={18} color={Colors.ink3} />
-                </View>
-                <View style={styles.kycPickInfo}>
-                  <Text style={styles.kycPickType}>Don&apos;t attach a document</Text>
-                </View>
-                <Ionicons
-                  name={!chosenKyc ? 'radio-button-on' : 'radio-button-off'}
-                  size={20}
-                  color={!chosenKyc ? Colors.orange : Colors.ink4}
-                />
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+        <DlPhotosUpload
+          docs={kyc}
+          onBlocked={
+            profile && !profile.isProfileCompleted
+              ? () => promptCompleteProfile(profileIncompleteMessage(profile.missingFields ?? [], 'self'))
+              : undefined
+          }
+        />
 
         {/* Coupon */}
         <Text style={styles.sectionTitle}>Coupon</Text>
@@ -1139,7 +1068,7 @@ export default function Checkout() {
           <RazorpayPayOptions
             payLabel="Confirm & pay"
             onPay={handleBook}
-            disabled={loading || !terms || !pd || couponBusy || (!bookedPackage && !packageUnknown)}
+            disabled={loading || !terms || !pd || couponBusy || !dlReady || (!bookedPackage && !packageUnknown)}
             busyMode={loading ? payMode : null}
             busyLabel={checkingPayment ? CHECKING_PAYMENT_TEXT : undefined}
             // Item 2 — with the server's UPI QR on, the QR option opens the QR
@@ -1233,48 +1162,19 @@ const styles = StyleSheet.create({
   kycText: { fontFamily: Fonts.bodyMedium, fontSize: 13 },
   kycTextMissing: { color: '#856404' },
 
-  // Licence / ID document (X2: optional)
+  // Driving licence photos (required)
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 10 },
   sectionTitleInline: { marginTop: 0, marginBottom: 0 },
-  optionalTag: {
+  requiredTag: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,
-    color: Colors.ink3,
-    backgroundColor: '#0a0a0a0d',
+    color: Colors.orange,
+    backgroundColor: Colors.orangeSoft,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
     overflow: 'hidden',
   },
-  kycNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    padding: 12,
-  },
-  kycNoteBody: { flex: 1, gap: 6 },
-  kycNoteText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2, lineHeight: 18 },
-  kycPickNone: { alignItems: 'center', justifyContent: 'center' },
-
-  kycPick: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: Colors.hairline,
-    padding: 10,
-  },
-  kycPickActive: { borderColor: Colors.orange, backgroundColor: '#fff7f2' },
-  kycPickThumb: { width: 48, height: 40, borderRadius: 8, backgroundColor: Colors.bg },
-  kycPickInfo: { flex: 1 },
-  kycPickType: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink, textTransform: 'capitalize' },
-  kycPickStatus: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginTop: 2 },
 
   // Coupon
   couponRow: { flexDirection: 'row', gap: 10 },

@@ -27,6 +27,7 @@ import CounterPaymentPicker, {
 } from '../../../components/employee/CounterPaymentPicker';
 import SafetyDepositAtDrop from '../../../components/employee/SafetyDepositAtDrop';
 import ActiveRentalSwap from '../../../components/employee/ActiveRentalSwap';
+import DropSwapSection from '../../../components/employee/DropSwapSection';
 import HandoverConditionPhotos, {
   type ReturnConditionCaptures,
 } from '../../../components/employee/drop/HandoverConditionPhotos';
@@ -1588,6 +1589,11 @@ export default function ReturnScreen() {
             </>
           )}
 
+          {/* Vehicle swap: the replaced car's km recorded at the swap, and the replacement checked at this drop */}
+          {swappedMidRental && (kmSegments?.segments?.length ?? 0) > 0 && (
+            <DropSwapSection segments={kmSegments!.segments} currentStartOdometer={kmSegments!.currentStartOdometer} />
+          )}
+
           {/* Reference photos (#55): the returning car's handover — pickup, or its swap (item 2) */}
           <HandoverConditionPhotos
             data={pickupCaptures}
@@ -2201,6 +2207,29 @@ export default function ReturnScreen() {
                           : `${km(kmSummary.extraKm)} · not charged`}
                         valueColor={num(kmSummary.extraKmCharge) > 0 ? '#f59e0b' : undefined}
                       />
+                      {/* After mid-rental swaps: each vehicle's line of that one charge (not billed again) */}
+                      {(kmSummary.segments ?? []).some((s) => s.billed) && (
+                        <>
+                          <View style={styles.divider} />
+                          <Text style={styles.hintTight}>
+                            Per vehicle — one free-km allowance, used in the order they were driven:
+                          </Text>
+                          {(kmSummary.segments ?? []).map((s, i) => (
+                            <Text key={s.endedBySwapPublicId ?? i} style={styles.hintTight}>
+                              {s.vehicleRegNo ?? `Vehicle ${i + 1}`} (swapped out): {km(s.km ?? 0)}
+                              {s.billed ? ` · extra ${km(s.billed.extraKm)} = ${inr(num(s.billed.extraKmCharge))}` : ''}
+                            </Text>
+                          ))}
+                          {kmSummary.currentSegment && (
+                            <Text style={styles.hintTight}>
+                              This vehicle: {km(kmSummary.currentSegment.km)}
+                              {kmSummary.currentSegment.billed
+                                ? ` · extra ${km(kmSummary.currentSegment.billed.extraKm)} = ${inr(num(kmSummary.currentSegment.billed.extraKmCharge))}`
+                                : ''}
+                            </Text>
+                          )}
+                        </>
+                      )}
                     </View>
                   )}
                 </>

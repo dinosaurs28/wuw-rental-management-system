@@ -27,6 +27,7 @@ import {
   num,
 } from '../../../../components/employee/completed/CompletedParts';
 import type { ReturnSummary } from '../../../../types/completedOperation';
+import DropSwapSection from '../../../../components/employee/DropSwapSection';
 import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
 
 // A completed return (client item 1): read-only. Changes go through Edit Return.
@@ -156,6 +157,13 @@ export default function ReturnSummaryScreen() {
             <Text style={[s.hint, { marginTop: 12 }]}>
               The vehicle was swapped without odometer readings — km driven can't be measured.
             </Text>
+          )}
+          {(odo.swaps ?? []).length > 0 && (
+            <DropSwapSection
+              segments={odo.swaps ?? []}
+              currentStartOdometer={odo.start}
+              style={{ marginTop: 12, marginBottom: 0, padding: 0, borderWidth: 0 }}
+            />
           )}
           <Divider />
           <InfoRow icon="water-outline" label="Fuel at pickup" value={fuelText(data.fuel.pickup)} />

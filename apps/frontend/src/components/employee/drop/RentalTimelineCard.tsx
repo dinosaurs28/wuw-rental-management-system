@@ -46,6 +46,7 @@ function lateNote(timeline: RentalTimeline): string | null {
   const status = timeline.lateChargePreview?.status;
   const grace = timeline.graceMinutes;
   if (status === "WITHIN_GRACE") return `Within the ${grace}-min grace — not charged`;
+  if (status === "UNDER_ONE_HOUR") return "Under one whole hour — not charged (whole hours only)";
   if (timeline.graceApplied && grace > 0) return `Includes ${grace} min grace, not charged`;
   if (timeline.gracePolicyEnabled && timeline.graceType === "MANUAL" && grace > 0) {
     return `${grace}-min grace not applied`;

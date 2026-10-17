@@ -159,6 +159,38 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
   }
 };
 
+const swapKmPreviewQuerySchema = z.object({
+  endOdometer: z.coerce.number().int("Odometer must be a whole number").min(0, "Odometer can't be negative"),
+  newVehicleId: z.coerce.number().int().positive().optional(),
+});
+
+/**
+ * The returning car's km at a mid-rental swap — km driven this segment, free km
+ * left for it, extra km and ₹ — by the rule the drop bills with, for the live
+ * preview next to its odometer field (the swap records the same figures).
+ * GET /api/employee/bookings/:bookingId/swap-km-preview?endOdometer&newVehicleId
+ * (also mounted for the branch manager)
+ */
+export const PreviewSwapKm = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const validation = swapKmPreviewQuerySchema.safeParse(req.query);
+  if (!bookingId || !validation.success) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: !bookingId ? "Booking ID is required" : validation.error?.issues[0]?.message ?? "Validation failed",
+    });
+  }
+  try {
+    const preview = await vehicleSwapService.previewSwapKm(bookingId, req.branch_Id, validation.data);
+    return res.status(StatusCode.OK).json({ success: true, data: preview });
+  } catch (error: unknown) {
+    const { status, body } = swapErrorResponse(error, "Failed to work out the km for this swap");
+    if (status >= 500) console.error("Error previewing swap km:", error);
+    return res.status(status).json(body);
+  }
+};
+
 /**
  * Swap history of one booking of this branch (newest first)
  * GET /api/employee/bookings/:bookingId/swap-history

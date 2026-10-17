@@ -1,7 +1,7 @@
 // Booking packages for the date pickers (Oct 3 follow-up, P1 / P4a).
 //
 // Customers book PACKAGES only: a pickup date + time and "12 hours" or
-// "1 day" … "15 days". The return is the pickup + 12 h / N × 24 h, computed
+// "1 day" … "30 days". The return is the pickup + 12 h / N × 24 h, computed
 // here and shown read-only — there is no free return picker, so odd lengths
 // (6 PM → 8 AM = 14 h) can't be asked for. The server refuses anything else
 // with BOOKING_PACKAGE_REQUIRED. When pickup + 12 h is outside office hours the
@@ -77,7 +77,7 @@ export interface PackageChoice {
 }
 
 export interface PackageRangeState {
-  /** Packages up to the 15-day length limit, shortest first. */
+  /** Packages up to the 30-day length limit, shortest first. */
   options: PackageOption[];
   /** The package the range is (null when nothing can be booked for this pickup). */
   selected: PackageOption | null;
@@ -157,7 +157,7 @@ export function splitPackageSpan(
   return null;
 }
 
-/** The package closest to a span that isn't one: ≤ 12 h → 12 hours, else the nearest whole days (1–15). */
+/** The package closest to a span that isn't one: ≤ 12 h → 12 hours, else the nearest whole days (1–30). */
 export function nearestPackageHours(startAt: Date, endAt: Date): number {
   const hours = (endAt.getTime() - startAt.getTime()) / HOUR_MS;
   if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_PACKAGE_HOURS;
@@ -203,7 +203,7 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
     });
 
   const options = CUSTOMER_PACKAGES.map((pkg) => ({ pkg, returnAt: returnOf(pkg.hours, 0) }))
-    // Capped by the 15-day length (the pickup itself is held to the 30-day
+    // Capped by the 30-day length (the pickup itself is held to the 30-day
     // window by the pickers) — on the actual return
     .filter(({ returnAt }) => returnAt.getTime() <= maxReturnAt.getTime())
     .map(({ pkg, returnAt }) => {

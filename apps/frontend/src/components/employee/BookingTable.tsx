@@ -30,6 +30,8 @@ interface BookingTableProps {
   isLoading?: boolean;
   /** Daily / Monthly tab being shown (Monthly lists are not tied to a date). */
   bookingType?: "DAILY" | "MONTHLY";
+  /** Registration number search the list is filtered by ("" when none). */
+  search?: string;
 }
 
 export function BookingTable({
@@ -38,6 +40,7 @@ export function BookingTable({
   onAction,
   isLoading,
   bookingType,
+  search,
 }: BookingTableProps) {
   const getActionLabel = () =>
     filterType === "PICKUP" ? "Approve Pickup" : "Approve Handover";
@@ -77,7 +80,16 @@ export function BookingTable({
     return (
       <div className="text-center py-16 bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2">
         <Car className="h-10 w-10 text-muted-foreground/50" />
-        {bookingType === "MONTHLY" ? (
+        {search ? (
+          <>
+            <p className="text-muted-foreground text-lg font-medium">
+              No vehicles match “{search}”.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Try a different registration number.
+            </p>
+          </>
+        ) : bookingType === "MONTHLY" ? (
           <>
             <p className="text-muted-foreground text-lg font-medium">
               {filterType === "PICKUP"

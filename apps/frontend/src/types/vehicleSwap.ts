@@ -207,6 +207,18 @@ export interface VehicleSwap {
   /** Decimal strings: the returning car's / the replacement's FASTag balance at a mid-rental swap */
   oldVehicleFastagBalance?: string | null;
   newVehicleFastagBalance?: string | null;
+  /**
+   * The returning car's km recorded at a mid-rental swap, by the drop's rule
+   * (null / absent = not recorded): km driven this segment, the booking's free
+   * km, the free km left for it, extra km and ₹ (decimal strings) — billed at drop.
+   */
+  segmentKmDriven?: number | null;
+  segmentIncludedKm?: number | null;
+  segmentAllowanceKm?: number | null;
+  segmentExtraKm?: number | null;
+  segmentExtraKmRate?: string | null;
+  segmentExtraKmCharge?: string | null;
+  segmentExtraKmEnabled?: boolean | null;
   /** Photos of the replacement taken at the swap */
   photos?: SwapPhoto[];
   /** A mid-rental swap with no photo of the replacement (older app build) */
@@ -236,6 +248,27 @@ export interface VehicleSwap {
     email: string;
     role?: string;
   };
+}
+
+/** GET …/bookings/:id/swap-km-preview — the returning car's km at a mid-rental swap. */
+export interface SwapKmPreview {
+  bookingId: string;
+  vehicleRegNo: string;
+  rateVehicleRegNo: string;
+  segmentStartOdometer: number | null;
+  endOdometer: number;
+  /** false: km can't be worked out (unavailableReason) */
+  available: boolean;
+  unavailableReason: string | null;
+  kmDriven: number;
+  includedKm: number | null;
+  priorKm: number;
+  /** Free km left for this car's segment */
+  allowanceKm: number | null;
+  extraKm: number | null;
+  extraKmRate: string | null;
+  extraKmCharge: string | null;
+  extraKmEnabled: boolean | null;
 }
 
 export interface SwapHistoryFilters {

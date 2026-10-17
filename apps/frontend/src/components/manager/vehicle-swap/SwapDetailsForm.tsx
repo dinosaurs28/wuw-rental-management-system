@@ -24,6 +24,7 @@ import {
   swapPhotosShortfall,
   type SwapUploadedPhoto,
 } from "@/components/swap/SwapReplacementPhotos";
+import { SwapKmPreview } from "@/components/swap/SwapKmPreview";
 import {
   SWAP_FUEL_BAR_OPTIONS,
   formatKm,
@@ -283,6 +284,17 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                     Taken out at {formatKm(segmentStart)}
                   </p>
                 ) : null}
+                {/* Its km this rental and any extra km — by the drop's rule, billed at drop */}
+                {swapContext?.bookingId && (
+                  <SwapKmPreview
+                    bookingId={swapContext.bookingId}
+                    role={role}
+                    endOdometer={originalEndValue}
+                    segmentStart={segmentStart}
+                    newVehicleId={newVehicle.id}
+                    regNo={currentVehicleRegNo ?? swapContext.currentVehicle.regNo}
+                  />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="originalFuel" className="text-sm">

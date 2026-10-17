@@ -113,7 +113,7 @@ export const EmployeeVehiclePricingCard = ({
   // Paise are shown when present: GST is rounded to the paisa, not the rupee.
   const formatCurrency = (amount: number) => formatInrExact(amount);
 
-  // Office hours (#2) + 15-day window (#15) / monthly plan length (30–180 days).
+  // Office hours (#2) + 30-day window (#15) / monthly plan length (30–180 days).
   // Same calendar day as pickup stays selectable for the return.
   const startDayKey = startDate?.getTime();
   const endDayKey = endDate?.getTime();
@@ -148,7 +148,7 @@ export const EmployeeVehiclePricingCard = ({
     return end > start;
   }, [startDate, endDate, startTime, endTime]);
 
-  // Standard plan: a package (12 hours / 1–15 days) + 0–11 extra hours, the
+  // Standard plan: a package (12 hours / 1–30 days) + 0–11 extra hours, the
   // return computed (P4a). The monthly plan keeps its own return picker.
   const usePackages = !isMonthly;
   const packageInput = {

@@ -19,18 +19,6 @@ import {
   dlValidationError,
   DlStatusError,
 } from "../../services/booking/dl-status.service.js";
-import {
-  parsePickupDlNumber,
-  resolvePickupDlNumber,
-  savePickupDlNumber,
-  logPickupDlNumber,
-  PickupDlNumberError,
-} from "../../services/booking/pickup-dl-number.service.js";
-import {
-  assertDlFree,
-  lockAndAssertDlFreeForPickup,
-  DlInUseError,
-} from "../../services/booking/dl-in-use.service.js";
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
@@ -74,8 +62,8 @@ export const PickupController = async (req: Request, res: Response) => {
   }
   const pickupFastagBalance = parsedFastag.data;
   try {
-    // DL number typed at the counter (X2), optional: 400 INVALID_DL_NUMBER when invalid
-    const sentDlNumber = parsePickupDlNumber(req.body?.drivingLicenceNumber);
+    // The DL number is no longer asked at pickup (client, Oct 17 2026): a
+    // `drivingLicenceNumber` older app builds still send is ignored.
 
     const booking = await prisma.booking.findFirst({
       where: {
@@ -89,6 +77,7 @@ export const PickupController = async (req: Request, res: Response) => {
         customer: {
           select: {
             id: true,
+            drivingLicenceNumber: true,
           },
         },
       },
@@ -122,10 +111,6 @@ export const PickupController = async (req: Request, res: Response) => {
       });
     }
 
-    // X2: the customer's DL NUMBER is required (the DL picture is optional) —
-    // sent now or already on file; 422 DL_NUMBER_REQUIRED otherwise.
-    const pickupDl = await resolvePickupDlNumber(booking.customer.id, sentDlNumber);
-
     // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED
     // (DEPOSIT is rejected: DL_STATUS_INVALID). Old builds send the boolean tick instead (true ⇒
     // COLLECTED, false ⇒ NOT_COLLECTED); sending neither (or dlStatus null)
@@ -142,14 +127,6 @@ export const PickupController = async (req: Request, res: Response) => {
     if (notReady) {
       return res.status(StatusCode.CONFLICT).json(notReady);
     }
-
-    // One vehicle per driving licence (X3): refused while another booking on
-    // this DL is out. Re-checked under a lock when the status flips below.
-    await assertDlFree({
-      dlNumber: pickupDl.drivingLicenceNumber,
-      mode: "pickup",
-      excludeBookingId: booking.id,
-    });
 
     const actingUserPublicId = req.public_Id;
     const actingUser = await prisma.user.findUnique({
@@ -201,9 +178,6 @@ export const PickupController = async (req: Request, res: Response) => {
       // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
       await lockBookingForPickup(tx, booking.id);
 
-      // DL number entered / corrected at the counter (X2)
-      await savePickupDlNumber(pickupDl, tx);
-
       if (parsedVehicleDetails.requireManagerConfirmation) {
         await tx.booking.update({
           where: { id: booking.id },
@@ -221,9 +195,6 @@ export const PickupController = async (req: Request, res: Response) => {
           },
         });
       } else {
-        // Two handovers on the same DL at once: serialised here, one wins (X3)
-        await lockAndAssertDlFreeForPickup(booking.id, tx);
-
         await tx.booking.update({
           where: { id: booking.id },
           data: {
@@ -417,7 +388,6 @@ export const PickupController = async (req: Request, res: Response) => {
         metadata: { dlStatus: dlChoice.dlStatus, dlDepositNote: dlChoice.dlDepositNote },
       }),
     });
-    await logPickupDlNumber(req, pickupDl, booking.publicId);
 
     if (!parsedVehicleDetails.requireManagerConfirmation) {
       await auditService.log({
@@ -452,8 +422,8 @@ export const PickupController = async (req: Request, res: Response) => {
       data: {
         dlStatus: dlChoice?.dlStatus ?? booking.dlStatus ?? null,
         dlDepositNote: dlChoice ? dlChoice.dlDepositNote : booking.dlDepositNote ?? null,
-        // The customer's DL number on file after this pickup (X2)
-        drivingLicenceNumber: pickupDl.drivingLicenceNumber,
+        // The customer's DL number on file (kept for older builds; not asked at pickup)
+        drivingLicenceNumber: booking.customer.drivingLicenceNumber ?? null,
       },
     });
   } catch (error) {
@@ -462,12 +432,6 @@ export const PickupController = async (req: Request, res: Response) => {
     }
     if (error instanceof DlStatusError) {
       return res.status(error.status).json(error.toJSON());
-    }
-    if (error instanceof PickupDlNumberError) {
-      return res.status(error.status).json(error.toJSON());
-    }
-    if (error instanceof DlInUseError) {
-      return res.status(error.status).json(error.toJSON("staff"));
     }
     if (error instanceof PickupStateError) {
       return res.status(error.status).json(error.toJSON());

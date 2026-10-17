@@ -14,7 +14,7 @@ import type { KycSide } from "@/services/kyc.service";
 export const DL_PHOTOS_ALERT_MESSAGE =
   "Original DL and Safety Deposit will be collected during the vehicle pickup";
 
-type DocLike = { type: string; side: KycSide | string };
+type DocLike = { type: string; side: KycSide | string; status?: string };
 
 /**
  * True only on the transition: uploading `side` of a DL completes the
@@ -23,7 +23,8 @@ type DocLike = { type: string; side: KycSide | string };
  */
 export function dlPairCompletedByUpload(before: DocLike[], type: string, side: KycSide): boolean {
   if (type !== "DL") return false;
-  const sides = new Set(before.filter((d) => d.type === "DL").map((d) => d.side));
+  // A side staff rejected doesn't count (it is replaced by the upload)
+  const sides = new Set(before.filter((d) => d.type === "DL" && d.status !== "REJECTED").map((d) => d.side));
   if (sides.has("FRONT") && sides.has("BACK")) return false;
   sides.add(side);
   return sides.has("FRONT") && sides.has("BACK");

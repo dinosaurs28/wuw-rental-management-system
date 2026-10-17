@@ -111,9 +111,17 @@ export const kycService = {
    * GET /employee/kyc/:bookingId
    */
   getBookingKyc: async (bookingId: string) => {
-    const response = await apiClient.get<{
+    type BookingKycResponse = {
       message: string;
       customerName: string;
+      /** The customer's user publicId (walk-in KYC upload) — newer servers */
+      customerUserPublicId?: string;
+      /** Driving licence photos on file (required to book, Oct 17 2026) — newer servers */
+      dlPhotos?: {
+        ok: boolean;
+        missingSides: KycSide[];
+        rejectedSides: KycSide[];
+      };
       kyc: {
         publicId: string;
         type: KycDocumentType;
@@ -125,8 +133,19 @@ export const kycService = {
           mime: string;
         };
       }[];
-    }>(`/employee/kyc/${bookingId}`);
-    return response.data;
+    };
+    try {
+      const response = await apiClient.get<BookingKycResponse>(`/employee/kyc/${bookingId}`);
+      return response.data;
+    } catch (error: any) {
+      // 404 = the customer has no KYC documents: the body still names the
+      // customer and the missing licence photos.
+      const body = error?.response?.status === 404 ? error.response.data : null;
+      if (body && typeof body === "object" && "customerName" in body) {
+        return { ...(body as BookingKycResponse), kyc: [] };
+      }
+      throw error;
+    }
   },
 
   /**

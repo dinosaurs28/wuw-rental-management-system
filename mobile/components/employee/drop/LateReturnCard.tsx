@@ -6,7 +6,8 @@ import type { LateChargePreview, RentalTimeline } from '../../../types/return';
 import { inr2, num, pct } from './format';
 
 // Late return without a formal extension (#12). The server bills it
-// automatically: extraHourRate × ceil(late hours left after the branch grace),
+// automatically: extraHourRate × whole hours late left after the branch grace,
+// rounded down (1 h 30 min → 1 hr; under an hour → nothing),
 // at face value — no GST on drop / recovery charges (item 8). Staff can tick
 // "Apply grace" on MANUAL-grace branches, or waive the charge with a reason
 // (audit-logged).
@@ -106,6 +107,10 @@ export default function LateReturnCard({
             <Text style={styles.previewText}>The late charge is worked out {when}.</Text>
           ) : status === 'WITHIN_GRACE' ? (
             <Text style={styles.previewText}>Within the grace period — no late charge.</Text>
+          ) : status === 'UNDER_ONE_HOUR' ? (
+            <Text style={styles.previewText}>
+              Late by less than one whole hour{preview.graceApplied ? ' after the grace' : ''} — no late charge. Only whole hours are charged.
+            </Text>
           ) : status === 'DISABLED' ? (
             <Text style={styles.previewText}>Late-return charges are turned off for this branch — nothing is billed.</Text>
           ) : status === 'RATE_UNAVAILABLE' ? (

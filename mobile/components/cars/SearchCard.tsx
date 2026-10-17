@@ -18,7 +18,10 @@ import PackagePicker from '../booking/PackagePicker';
 import { BranchHoursLine, TimesNotice } from '../booking/BranchHours';
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
 import { bookingWindowLastDay, timeLabel, timeOf, withTime } from '../../lib/dates';
-import { ADVANCE_BOOKING_DAYS } from '../../lib/bookingWindow';
+import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS } from '../../lib/bookingWindow';
+import type { VehicleUseCase } from '../../lib/tripTypes';
+import { useTripTypeStore } from '../../store/tripType';
+import TripTypePicker from './TripTypePicker';
 import {
   closedDayText,
   isClosedDay,
@@ -42,6 +45,8 @@ export interface SearchQuery {
   branchName: string;
   start: string; // ISO
   end: string; // ISO
+  /** Required trip type — the list is filtered by it (useCases). */
+  tripType: VehicleUseCase;
 }
 
 interface Branch {
@@ -77,11 +82,11 @@ export default function SearchCard({
   onSubmit,
 }: Props) {
   // Customers book a pickup + a PACKAGE (BRIEF4 P1): "12 hours" or "1 day" …
-  // "15 days". The return is pickup + the package — shown, never picked.
+  // "30 days". The return is pickup + the package — shown, never picked.
   const [pkg, setPkg] = useState(() => initialPackageRange(initialStart, initialEnd));
   const start = pkg.start;
 
-  // The branch's office hours (#2) and the 15-day limit (#15): pickers only
+  // The branch's office hours (#2) and the 30-day limit (#15): pickers only
   // offer accepted pickups, a pickup outside them moves back in, and a package
   // whose return the branch wouldn't take becomes the nearest one it would
   // (12 hours past closing returns at closing — client item 6).
@@ -113,6 +118,15 @@ export default function SearchCard({
     }, []),
   );
 
+  // Trip type (client, Oct 2026): required, right after the dates + package.
+  // Starts from the last search's choice; saved to the store on submit.
+  const storedTripType = useTripTypeStore((s) => s.tripType);
+  const setStoredTripType = useTripTypeStore((s) => s.setTripType);
+  const [tripType, setTripType] = useState<VehicleUseCase | null>(storedTripType);
+  useEffect(() => {
+    if (storedTripType) setTripType(storedTripType);
+  }, [storedTripType]);
+
   const [branchOpen, setBranchOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [pickupOpen, setPickupOpen] = useState(false);
@@ -122,6 +136,8 @@ export default function SearchCard({
       setBranchOpen(true);
       return;
     }
+    if (!tripType) return;
+    setStoredTripType(tripType);
     // The card may have sat open past its pickup time — bump it first.
     const next = fit(pkg);
     setPkg(next);
@@ -130,6 +146,7 @@ export default function SearchCard({
       branchName: branch.name,
       start: next.start.toISOString(),
       end: packageRangeEnd(next, 0, schedule).toISOString(),
+      tripType,
     });
   };
 
@@ -198,7 +215,7 @@ export default function SearchCard({
         </View>
       </View>
 
-      {/* Package (P1): 12 hours or whole days, up to the 15-day window + branch hours (#2) */}
+      {/* Package (P1): 12 hours or whole days, up to the 30-day window + branch hours (#2) */}
       <View style={styles.extras}>
         <PackagePicker
           tone="dark"
@@ -211,8 +228,23 @@ export default function SearchCard({
       </View>
       <View style={styles.underline} />
 
+      {/* Trip type — required before the offers can be shown */}
+      <View style={styles.row}>
+        <Ionicons name="navigate-outline" size={19} color={Colors.white} />
+        <View style={styles.tripWrap}>
+          <TripTypePicker value={tripType} onSelect={setTripType} />
+        </View>
+      </View>
+      <View style={styles.underline} />
+
       {/* CTA */}
-      <TouchableOpacity style={styles.cta} onPress={submit} activeOpacity={0.88}>
+      <TouchableOpacity
+        style={[styles.cta, !tripType && styles.ctaDisabled]}
+        onPress={submit}
+        disabled={!tripType}
+        activeOpacity={0.88}
+        accessibilityState={{ disabled: !tripType }}
+      >
         <Text style={styles.ctaText}>{ctaLabel}</Text>
       </TouchableOpacity>
 
@@ -228,7 +260,7 @@ export default function SearchCard({
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead`}
+        note={`12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`}
       />
       <TimeFieldPicker
         visible={pickupOpen}
@@ -267,6 +299,7 @@ const styles = StyleSheet.create({
   dash: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginHorizontal: 2 },
   underline: { height: 1, backgroundColor: Colors.hairlineOnDark, marginLeft: 34 },
   extras: { marginLeft: 34, paddingBottom: 16, gap: 10 },
+  tripWrap: { flex: 1 },
 
   cta: {
     backgroundColor: Colors.orange,
@@ -275,6 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 22,
   },
+  ctaDisabled: { opacity: 0.45 },
   ctaText: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.white, letterSpacing: 0.1 },
 
   // Branch picker sheet (dark)

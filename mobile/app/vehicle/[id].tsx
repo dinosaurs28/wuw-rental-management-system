@@ -29,7 +29,7 @@ import ImageCarousel from '../../components/cars/ImageCarousel';
 import { unitLabel, periodLabel, durationLabel } from '../../lib/pricing';
 import { availabilityColor, availabilityLabel } from '../../lib/availability';
 import { bookingWindowLastDay, rangeLengthLabel, timeLabel, timeOf, withTime } from '../../lib/dates';
-import { ADVANCE_BOOKING_DAYS, packageLabel } from '../../lib/bookingWindow';
+import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS, packageLabel } from '../../lib/bookingWindow';
 import { formatGstRate, inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import {
   closedDayText,
@@ -81,7 +81,7 @@ export default function VehicleDetail() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const [showPicker, setShowPicker] = useState(false);
-  // A pickup + PACKAGE (BRIEF4 P1) — "12 hours" or "1 day" … "15 days"; the
+  // A pickup + PACKAGE (BRIEF4 P1) — "12 hours" or "1 day" … "30 days"; the
   // return is pickup + the package, shown read-only. Search params win (their
   // length read as a package); otherwise the next 5-minute mark and 1 day.
   const [pkg, setPkg] = useState(() => initialPackageRange(startParam, endParam));
@@ -156,7 +156,7 @@ export default function VehicleDetail() {
     enabled: !!id,
   });
 
-  // Office hours (#2) + the 15-day limit (#15): the pickers offer only pickups
+  // Office hours (#2) + the 30-day limit (#15): the pickers offer only pickups
   // the branch accepts, a pickup outside them moves back in, and a package
   // whose return the branch wouldn't take becomes the nearest one it would.
   const branchPublicId = vehicle?.branchPublicId ?? branchParam ?? null;
@@ -381,7 +381,7 @@ export default function VehicleDetail() {
           </View>
         </TouchableOpacity>
 
-        {/* Package (P1): 12 hours or whole days in the 15-day window + branch hours (#2) */}
+        {/* Package (P1): 12 hours or whole days in the 30-day window + branch hours (#2) */}
         <View style={styles.itinExtras}>
           <PackagePicker
             tone="dark"
@@ -488,7 +488,7 @@ export default function VehicleDetail() {
             // The page may have sat open past its pickup time — bump it first.
             const next = fit(refreshPackageRange(pkg));
             setPkg(next);
-            // Times the server would refuse (15-day limit, pickup outside
+            // Times the server would refuse (30-day limit, pickup outside
             // branch hours) — say so here instead of after checkout.
             const blocking = packageTimesNotice(schedule, next);
             if (blocking?.tone === 'error') {
@@ -526,7 +526,7 @@ export default function VehicleDetail() {
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`Bookings open up to ${ADVANCE_BOOKING_DAYS} days ahead`}
+        note={`12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`}
       />
 
       {/* Pickup time — today lists only future times; only inside branch

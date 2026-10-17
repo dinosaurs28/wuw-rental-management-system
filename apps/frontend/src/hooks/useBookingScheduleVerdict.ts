@@ -12,7 +12,7 @@ import type { BranchScheduleConfig } from "@/services/branch.service";
  * `adjustedEndDateTime` as an ISO string that callers should write back to
  * their booking store.
  *
- * An adjusted return that would pass the 15-day limit (or 180 days on the
+ * An adjusted return that would pass the 30-day limit (or 180 days on the
  * monthly plan) is not offered — the server refuses it with
  * BOOKING_MAX_PERIOD_EXCEEDED — so the verdict becomes RETURN_OUTSIDE_HOURS
  * and the caller asks for an earlier return instead.

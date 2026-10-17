@@ -112,7 +112,9 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
       where: { customerId_type_side: { customerId, type: type as KycType, side: side as KycSide } },
     });
 
-    if (existingKyc) {
+    // A side staff REJECTED is replaced in place (driving licence photos are
+    // required to book, Oct 17 2026); any other existing side must be deleted first.
+    if (existingKyc && existingKyc.status !== KycStatus.REJECTED) {
       await fs.unlink(file.path).catch(() => {});
       return res.status(StatusCode.CONFLICT).json({
         message: `Document of type ${type} (${side}) already exists. Please delete it first if you want to replace it.`,
@@ -127,17 +129,45 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
 
     const { fileId } = await uploadKycToR2(fileContent, key, file.mimetype, file.size);
 
-    const kycRecord = await prisma.customerKyc.create({
-      data: {
-        publicId: createID(),
-        customerId,
-        type: type as KycType,
-        side: side as KycSide,
-        fileId,
-        status: KycStatus.PENDING,
-      },
-      include: { file: { select: { id: true, publicId: true, key: true, mime: true, size: true } } },
-    });
+    const fileSelect = { select: { id: true, publicId: true, key: true, mime: true, size: true } } as const;
+    let kycRecord;
+    if (existingKyc) {
+      // Replace the rejected photo. The old file stays when a booking snapshotted
+      // it (Booking.kycFileId), as on delete.
+      const oldFile = await prisma.fileObject.findUnique({
+        where: { id: existingKyc.fileId },
+        select: { id: true, key: true },
+      });
+      const { record, removeOldKey } = await prisma.$transaction(async (tx) => {
+        const record = await tx.customerKyc.update({
+          where: { id: existingKyc.id },
+          data: { fileId, status: KycStatus.PENDING },
+          include: { file: fileSelect },
+        });
+        if (!oldFile) return { record, removeOldKey: null };
+        const usedByBookings = await tx.booking.count({ where: { kycFileId: oldFile.id } });
+        const usedByOtherKyc = await tx.customerKyc.count({ where: { fileId: oldFile.id } });
+        if (usedByBookings > 0 || usedByOtherKyc > 0) return { record, removeOldKey: null };
+        await tx.fileObject.delete({ where: { id: oldFile.id } });
+        return { record, removeOldKey: oldFile.key };
+      });
+      kycRecord = record;
+      if (removeOldKey) {
+        await fileCleanupQueue.add("delete-kyc-file", { key: removeOldKey, bucket: PRIVATE_BUCKET });
+      }
+    } else {
+      kycRecord = await prisma.customerKyc.create({
+        data: {
+          publicId: createID(),
+          customerId,
+          type: type as KycType,
+          side: side as KycSide,
+          fileId,
+          status: KycStatus.PENDING,
+        },
+        include: { file: fileSelect },
+      });
+    }
 
     const presignedUrl = await generatePresignedUrl(key);
 

@@ -40,6 +40,7 @@ import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
+import { DL_PHOTOS_REQUIRED_STAFF_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
 import { employeeService } from "@/services/employee.service";
 
 export const EmployeeVehicleDetailsPage = () => {
@@ -279,12 +280,19 @@ export const EmployeeVehicleDetailsPage = () => {
       return;
     }
 
-    // The KYC document is optional (X2); the QR code photo is still required.
+    // The QR code photo is required.
     if (!qrPhotoId) {
       toast.error("Capture the customer's QR code photo before booking");
       document
         .getElementById("qr-photo-section")
         ?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    // Both driving licence photos are required (Oct 17 2026; server: 422
+    // DL_PHOTOS_REQUIRED) — captured in the KYC section.
+    if (!hasDlPhotosOnFile(kycDocuments)) {
+      toast.error(DL_PHOTOS_REQUIRED_STAFF_MESSAGE);
+      document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
 
@@ -495,7 +503,7 @@ export const EmployeeVehicleDetailsPage = () => {
                 <h2 className="text-xl font-semibold text-zinc-900 flex items-center gap-2">
                   <Shield className="size-5 text-orange-600" />
                   Employee Verified KYC
-                  <span className="text-sm font-normal text-zinc-500">(Optional)</span>
+                  <span className="text-sm font-normal text-zinc-500">(driving licence required)</span>
                 </h2>
                 <Button
                   variant="outline"
@@ -521,8 +529,8 @@ export const EmployeeVehicleDetailsPage = () => {
                     </h3>
                     <p className="text-amber-700 max-w-sm mx-auto mt-1">
                       Customer profile details are missing (such as the age or
-                      address). Complete the profile to book — uploading KYC
-                      documents is optional.
+                      address). Complete the profile to book — both driving
+                      licence photos are required too.
                     </p>
                   </div>
                   <Button onClick={() => setShowCompleteProfile(true)}>

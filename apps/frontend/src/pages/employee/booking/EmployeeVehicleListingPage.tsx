@@ -320,7 +320,7 @@ export default function EmployeeVehicleListingPage() {
       </div>
 
       <main className="container max-w-7xl mx-auto px-4">
-        {/* Rental plan: standard (up to 15 days) or monthly (30–180 days) */}
+        {/* Rental plan: standard (up to 30 days) or monthly (30–180 days) */}
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div role="radiogroup" aria-label="Rental plan" className="inline-flex rounded-full border border-zinc-200 bg-white p-1">
             {([

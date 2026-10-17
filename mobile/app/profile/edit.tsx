@@ -36,7 +36,7 @@ const schema = z.object({
   country: z.string().min(1, 'Country is required'),
   zipCode: z.string().min(1, 'ZIP code is required'),
   alternatePhone: z.string().length(10, 'Must be exactly 10 digits').regex(/^\d+$/, 'Digits only').optional().or(z.literal('')),
-  // No DL / Aadhaar numbers since Oct 2026 — staff take the DL number at pickup.
+  // No DL / Aadhaar numbers since Oct 2026.
 });
 
 type FormData = z.infer<typeof schema>;

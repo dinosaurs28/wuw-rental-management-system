@@ -4,6 +4,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
+import { TripTypeChooser } from "@/components/vehicles/UseCaseChips";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,7 +36,7 @@ export const VehiclesPage = () => {
   const {
     branchPublicId,
     categoryPublicId,
-    useCases,
+    tripType,
     pickupDate,
     returnDate,
     pickupTime: storePickupTime,
@@ -100,7 +101,7 @@ export const VehiclesPage = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBranch, category, debouncedSearch, sortBy, useCases]);
+  }, [selectedBranch, category, debouncedSearch, sortBy, tripType]);
 
   // Initialize state from store or set default branch
   useEffect(() => {
@@ -137,7 +138,7 @@ export const VehiclesPage = () => {
     if (selectedBranch) f.branch = selectedBranch;
     if (category && category !== "all") f.category = category;
     if (debouncedSearch) f.search = debouncedSearch;
-    if (useCases.length > 0) f.useCases = useCases;
+    if (tripType) f.useCases = [tripType];
     if (sortBy && sortBy !== "default")
       f.sort = sortBy as "price_low_to_high" | "price_high_to_low";
 
@@ -164,7 +165,7 @@ export const VehiclesPage = () => {
     category,
     debouncedSearch,
     sortBy,
-    useCases,
+    tripType,
     selectedPickupDate,
     selectedReturnDate,
     pickupTime,
@@ -172,10 +173,11 @@ export const VehiclesPage = () => {
     currentPage,
   ]);
 
-  // Fetch vehicles - only when branch is selected and date range is valid
+  // Fetch vehicles - only when branch is selected, date range is valid and a
+  // trip type is chosen (required — without it a chooser shows instead)
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(
     filters,
-    { enabled: !!selectedBranch && isDateRangeValid },
+    { enabled: !!selectedBranch && isDateRangeValid && !!tripType },
   );
 
   const vehicles = vehiclesData?.data || [];
@@ -251,9 +253,9 @@ export const VehiclesPage = () => {
     setSearchCriteria({ categoryPublicId: cat });
   }, [setSearchCriteria]);
 
-  const handleUseCasesChange = useCallback(
-    (next: VehicleUseCase[]) => {
-      setSearchCriteria({ useCases: next });
+  const handleTripTypeChange = useCallback(
+    (next: VehicleUseCase) => {
+      setSearchCriteria({ tripType: next });
     },
     [setSearchCriteria],
   );
@@ -402,7 +404,7 @@ export const VehiclesPage = () => {
             </p>
           </div>
           <div className="text-xs font-black text-white tracking-widest uppercase bg-[#1A1A1A] px-5 py-3 rounded-none shadow-md">
-            <span className="text-[#FF5F00] text-lg mr-2">{vehicleCount}</span>
+            <span className="text-[#FF5F00] text-lg mr-2">{tripType ? vehicleCount : "—"}</span>
             Results
           </div>
         </div>
@@ -476,28 +478,32 @@ export const VehiclesPage = () => {
             onReturnTimeChange={handleReturnTimeChange}
             schedule={schedule}
             scheduleVerdict={scheduleVerdict}
-            useCases={useCases}
-            onUseCasesChange={handleUseCasesChange}
+            tripType={tripType}
+            onTripTypeChange={handleTripTypeChange}
             packageMode="customer"
           />
         </div>
 
-        {/* Vehicle Grid with Pagination */}
-        <VehicleGrid
-          vehicles={vehicles}
-          isLoading={vehiclesLoading || branchesLoading}
-          onReset={handleReset}
-          currentPage={currentPage}
-          totalCount={vehicleCount}
-          itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={handlePageChange}
-          startDateTime={startDateTime}
-          endDateTime={endDateTime}
-          variant="dark"
-          restrictedTypeClasses={restrictedTypeClasses}
-          blockedAll={blockedAll}
-          limitsLoading={limitsLoading}
-        />
+        {/* Vehicle Grid with Pagination — or the trip type chooser until one is picked */}
+        {!tripType ? (
+          <TripTypeChooser onChoose={handleTripTypeChange} className="my-4" />
+        ) : (
+          <VehicleGrid
+            vehicles={vehicles}
+            isLoading={vehiclesLoading || branchesLoading}
+            onReset={handleReset}
+            currentPage={currentPage}
+            totalCount={vehicleCount}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={handlePageChange}
+            startDateTime={startDateTime}
+            endDateTime={endDateTime}
+            variant="dark"
+            restrictedTypeClasses={restrictedTypeClasses}
+            blockedAll={blockedAll}
+            limitsLoading={limitsLoading}
+          />
+        )}
       </main>
 
       <Footer />

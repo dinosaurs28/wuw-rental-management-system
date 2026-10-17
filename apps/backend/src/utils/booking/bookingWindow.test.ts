@@ -20,16 +20,16 @@ const ist = (local: string) => new Date(`${local}+05:30`);
 const HOUR = 3_600_000;
 const now = ist("2026-10-16T10:00:00");
 
-test("constants: 30 days ahead, 15 days long", () => {
+test("constants: 30 days ahead, 30 days long", () => {
   assert.equal(ADVANCE_BOOKING_DAYS, 30);
-  assert.equal(MAX_RENTAL_DAYS, 15);
+  assert.equal(MAX_RENTAL_DAYS, 30);
   assert.equal(bookingWindowEnd(now).toISOString(), ist("2026-11-15T23:59:59.999").toISOString());
 });
 
-test("a pickup on day 30 is accepted, with any package up to 15 days", () => {
+test("a pickup on day 30 is accepted, with any package up to 30 days", () => {
   const start = ist("2026-11-15T10:00:00");
   assert.equal(validateBookingWindow({ startAt: start, endAt: new Date(start.getTime() + 12 * HOUR), now }).ok, true);
-  const longest = new Date(start.getTime() + 15 * 24 * HOUR);
+  const longest = new Date(start.getTime() + 30 * 24 * HOUR);
   assert.equal(validateBookingWindow({ startAt: start, endAt: longest, now }).ok, true);
   assert.equal(assertBookingWindow(start, longest, { now }).toISOString(), longest.toISOString());
   // late evening on day 30 is still day 30
@@ -52,16 +52,21 @@ test("a pickup on day 31 is refused (WINDOW)", () => {
   assert.equal(validateBookingWindow({ startAt: midnight, endAt: new Date(midnight.getTime() + 12 * HOUR), now }).ok, false);
 });
 
-test("a booking longer than 15 days is refused (DURATION), even inside the window", () => {
+test("a booking longer than 30 days is refused (DURATION), even inside the window", () => {
   const start = ist("2026-10-20T10:00:00");
-  const r = validateBookingWindow({ startAt: start, endAt: new Date(start.getTime() + 16 * 24 * HOUR), now });
+  const r = validateBookingWindow({ startAt: start, endAt: new Date(start.getTime() + 31 * 24 * HOUR), now });
   assert.equal(!r.ok && r.reason, "DURATION");
-  assert.equal(maxStandardEndAt(start, now).toISOString(), new Date(start.getTime() + 15 * 24 * HOUR).toISOString());
+  assert.match(!r.ok ? r.message : "", /at most 30 days/);
+  // 30 days + 1 minute is over; exactly 30 days is the longest package
+  const just = validateBookingWindow({ startAt: start, endAt: new Date(start.getTime() + 30 * 24 * HOUR + 60_000), now });
+  assert.equal(!just.ok && just.reason, "DURATION");
+  assert.equal(validateBookingWindow({ startAt: start, endAt: new Date(start.getTime() + 30 * 24 * HOUR), now }).ok, true);
+  assert.equal(maxStandardEndAt(start, now).toISOString(), new Date(start.getTime() + 30 * 24 * HOUR).toISOString());
 });
 
-test("extensions are capped at 15 days from the original start, not by the advance window", () => {
+test("extensions are capped at 30 days from the original start, not by the advance window", () => {
   const start = ist("2026-11-10T10:00:00");
-  const cap = new Date(start.getTime() + 15 * 24 * HOUR); // 25 Nov — past the 15 Nov window end
+  const cap = new Date(start.getTime() + 30 * 24 * HOUR); // 10 Dec — past the 15 Nov window end
   assert.equal(extensionMaxEndAt(start, { now }).toISOString(), cap.toISOString());
   assert.equal(validateExtensionWindow({ bookingStartAt: start, newEndAt: cap, now }).ok, true);
   const over = validateExtensionWindow({ bookingStartAt: start, newEndAt: new Date(cap.getTime() + HOUR), now });

@@ -41,6 +41,7 @@ import {
   useSwapCandidates,
 } from './SwapParts';
 import SwapVehiclePicker from './SwapVehiclePicker';
+import SwapKmPreview from './SwapKmPreview';
 import PhotoCaptureSection, { type CapturedPhoto } from './PhotoCaptureSection';
 import { cleanFastagInput, fastagBalanceError, parseFastagBalance } from '../../lib/fastag';
 
@@ -543,6 +544,14 @@ export default function ActiveSwapSheet({
                       ) : segmentStart != null ? (
                         <Text style={styles.hint}>Started this rental at {km(segmentStart)}.</Text>
                       ) : null}
+                      {/* Its km this rental and any extra km — by the drop's rule, billed at drop */}
+                      <SwapKmPreview
+                        bookingId={bookingId}
+                        endOdometer={parseOdo(endOdo)}
+                        segmentStart={segmentStart}
+                        newVehicleId={selected?.id ?? null}
+                        regNo={current?.regNo ?? 'the returning car'}
+                      />
                       <Text style={styles.subLabel}>Fuel now (bars)</Text>
                       <SwapFuelBars value={endFuel} onChange={(v) => { setEndFuel(v); clearError('endFuel'); }} disabled={swapping} />
                       {errors.endFuel ? <Text style={styles.fieldError}>{errors.endFuel}</Text> : null}

@@ -16,7 +16,7 @@ interface CustomerIdentityLineProps {
  * The session customer's age, DL number and masked Aadhaar number (#1), so
  * staff can cross-check them against the documents at the counter. Renders
  * nothing until loaded; shows "Not added" for a number the profile doesn't
- * have (both are optional since Oct 2026 — the DL number is taken at pickup).
+ * have (both are optional since Oct 2026).
  */
 export function CustomerIdentityLine({
   publicId,

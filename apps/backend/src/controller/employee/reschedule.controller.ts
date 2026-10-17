@@ -21,7 +21,7 @@ export function sendRescheduleError(res: Response, error: unknown, label: string
   if (error instanceof RescheduleError) {
     return res.status(error.status).json(error.toJSON());
   }
-  // 15-day window (BOOKING_MAX_PERIOD_EXCEEDED, + latestStartAt for WINDOW)
+  // 30-day window (BOOKING_MAX_PERIOD_EXCEEDED, + latestStartAt for WINDOW)
   if (error instanceof BookingWindowError) {
     return res.status(StatusCode.BAD_REQUEST).json(error.toJSON());
   }

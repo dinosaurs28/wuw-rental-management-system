@@ -316,7 +316,7 @@ export interface CustomerExtensionQuote {
 }
 
 export const extensionApi = {
-  // { data: ExtensionEligibility } (types/api.ts) — the 15-day cap (maxEndAt,
+  // { data: ExtensionEligibility } (types/api.ts) — the 30-day cap (maxEndAt,
   // atCap) and the branch's officeHours ride along; early returns omit them.
   eligibility: (bookingPublicId: string) =>
     api.get(`/api/user/bookings/${bookingPublicId}/extension-eligibility`),
@@ -372,9 +372,9 @@ export const employeeApi = {
   // both add { type, counts: { daily, monthly } }.
   // includeCompleted=1 (client item 1) adds the day's done pickups / returns in
   // `completed` (QueueListResponse); the list and counts then hold waiting ones only.
-  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1 }) =>
+  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string }) =>
     api.get('/api/employee/booking', { params }),
-  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1 }) =>
+  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string }) =>
     api.get('/api/employee/return', { params }),
   // ── completed pickup / return (client item 1) — types/completedOperation.ts ──
   // Read-only summary: { data: PickupSummary | ReturnSummary }.
@@ -437,9 +437,6 @@ export const employeeApi = {
     dlDepositNote?: string | null;
     // Deprecated alias kept for old builds (dlStatus wins). Never send false.
     licenseCollected?: boolean;
-    // X2: the customer's DL number typed at the counter (saved to the customer).
-    // Required when none is on file: 422 DL_NUMBER_REQUIRED, 400 INVALID_DL_NUMBER.
-    drivingLicenceNumber?: string;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
@@ -731,6 +728,12 @@ export const employeeApi = {
       newVehicleFastagBalance?: number;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/swap-vehicle`, body),
+  // The returning car's km at a mid-rental swap by the drop's rule (SwapKmPreview in
+  // types/vehicleSwap); newVehicleId prices the free km / rate on the replacement.
+  previewSwapKm: (bookingId: string, endOdometer: number, newVehicleId?: number) =>
+    api.get(`/api/employee/bookings/${bookingId}/swap-km-preview`, {
+      params: { endOdometer, ...(newVehicleId != null ? { newVehicleId } : {}) },
+    }),
   // This booking's swaps, newest first (VehicleSwapRecord[] in types/vehicleSwap).
   getBookingSwapHistory: (bookingId: string) =>
     api.get(`/api/employee/bookings/${bookingId}/swap-history`),
@@ -747,7 +750,7 @@ export const employeeApi = {
 
   // ── booking extension at counter (#53) — newEndAt MUST be ISO-8601 UTC 'Z' ─
   // { data: ExtensionEligibility } (types/api.ts): how far the booking may run
-  // (15 days, 180 for a monthly plan) and the branch's office hours. 404 when
+  // (30 days, 180 for a monthly plan) and the branch's office hours. 404 when
   // the booking isn't in this branch.
   extensionEligibility: (bookingPublicId: string) =>
     api.get(`/api/employee/extensions/eligibility/${encodeURIComponent(bookingPublicId)}`),
@@ -897,8 +900,6 @@ export const employeeApi = {
       dlDepositNote?: string | null;
       // Deprecated alias kept for old builds (dlStatus wins). Never send false.
       licenseCollected?: boolean;
-      // X2: DL number typed at the counter — same rules as completePickup.
-      drivingLicenceNumber?: string;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
   // Fleet changes the original-licence status (#3) — CONFIRMED / PICKED_UP only

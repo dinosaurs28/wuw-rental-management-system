@@ -11,18 +11,23 @@
  *                 single booking). For an extension, startAt is the booking's
  *                 original start, so the cap includes every extension. The
  *                 return may therefore fall past the advance window (a pickup
- *                 on day 30 can still take a 15-day package).
+ *                 on day 30 can still take a 30-day package).
  *
  * Monthly bookings (an explicit plan chosen at the counter; stored as
  * Booking.rentalPeriodType = MONTHLY) are exempt from the length cap. Their
  * pickup must still be within the window, and their length must be between
  * MONTHLY_MIN_DAYS and MONTHLY_MAX_DAYS.
+ *
+ * The two meet at 30 days: a 30-day standard booking (the longest customer
+ * package) and a 30-day monthly plan are both allowed. The standard one is
+ * still a standard booking (stored as MULTI_DAY, 30-day extension cap); only
+ * the plan chosen at the counter is MONTHLY (180-day cap).
  */
 
 /** How far ahead a pickup can be booked (days from today, IST). */
 export const ADVANCE_BOOKING_DAYS = 30;
 /** Longest single standard booking, extensions included (days). */
-export const MAX_RENTAL_DAYS = 15;
+export const MAX_RENTAL_DAYS = 30;
 /**
  * @deprecated Ambiguous — was both the advance window and the length cap.
  * Now the length cap only; use MAX_RENTAL_DAYS or ADVANCE_BOOKING_DAYS.
@@ -170,7 +175,7 @@ export function validateExtensionWindow(input: {
 
 // ── Customer packages (12 hours / whole days) ────────────────────────────────
 /**
- * Customers book PACKAGES only: "12 hours", or "1 day" … "15 days" (whole
+ * Customers book PACKAGES only: "12 hours", or "1 day" … "30 days" (whole
  * 24-hour blocks). The return is the pickup + the package length — customers
  * never pick a free return time, so odd lengths (e.g. 6 PM → 8 AM = 14 h) can't
  * be booked. Customer booking create refuses any other length with
@@ -218,13 +223,13 @@ function makePackage(hours: number): CustomerPackage {
   return { id: days === null ? "12H" : `${days}D`, hours, days, label: packageLabel(hours) };
 }
 
-/** Every customer package, shortest first: 12 hours, 1 day … 15 days. */
+/** Every customer package, shortest first: 12 hours, 1 day … 30 days. */
 export const CUSTOMER_PACKAGES: readonly CustomerPackage[] = [
   makePackage(HALF_DAY_PACKAGE_HOURS),
   ...Array.from({ length: MAX_RENTAL_DAYS }, (_, i) => makePackage((i + 1) * DAY_PACKAGE_HOURS)),
 ];
 
-/** Allowed customer booking lengths in hours: 12, 24, 48 … 360. */
+/** Allowed customer booking lengths in hours: 12, 24, 48 … 720. */
 export const CUSTOMER_PACKAGE_HOURS: readonly number[] = CUSTOMER_PACKAGES.map((p) => p.hours);
 
 /** Return of a package: pickup + its length (12 h or N × 24 h). */
@@ -260,7 +265,7 @@ export function customerPackageFor(startAt: Date | string, endAt: Date | string)
   return hours === null ? null : makePackage(hours);
 }
 
-/** Customer booking create: exactly 12 h or N × 24 h (N = 1…15), ±1 minute. */
+/** Customer booking create: exactly 12 h or N × 24 h (N = 1…30), ±1 minute. */
 export function isCustomerPackageDuration(startAt: Date | string, endAt: Date | string): boolean {
   return matchPackageHours(startAt, endAt) !== null;
 }
@@ -268,7 +273,7 @@ export function isCustomerPackageDuration(startAt: Date | string, endAt: Date | 
 /**
  * Customer self-extension: the added time (current end → new end) is +12 h or
  * + N × 24 h, ±1 minute. How far it may reach is the extension window's job
- * (validateExtensionWindow — 15 days from pickup, or 180 for a monthly booking).
+ * (validateExtensionWindow — 30 days from pickup, or 180 for a monthly booking).
  */
 export function isExtensionPackageDuration(currentEndAt: Date | string, newEndAt: Date | string): boolean {
   return matchPackageHours(currentEndAt, newEndAt, Number.MAX_SAFE_INTEGER) !== null;

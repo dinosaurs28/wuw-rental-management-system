@@ -804,7 +804,7 @@ export async function rescheduleBooking(
   const durationMinutes = Math.round(durationMs / MINUTE_MS);
   const isMonthly = booking.rentalPeriodType === RentalPeriodType.MONTHLY;
 
-  // Booking window: pickup ≤ 30 days ahead, ≤ 15 days long (monthly: 30–180 days)
+  // Booking window: pickup ≤ 30 days ahead, ≤ 30 days long (monthly: 30–180 days)
   try {
     assertBookingWindow(newStart, newEnd, { monthly: isMonthly, now });
   } catch (err) {

@@ -161,6 +161,8 @@ export interface KmAllowance {
 export type LateReturnStatus =
   | 'ON_TIME'
   | 'WITHIN_GRACE'
+  // Late past any grace by less than one whole hour — whole hours only, nothing billed
+  | 'UNDER_ONE_HOUR'
   | 'CHARGED'
   | 'WAIVED'
   | 'DISABLED'
@@ -261,6 +263,34 @@ export interface KmSegment {
   startOdometer: number | null;
   endOdometer: number | null;
   km: number | null;
+  // The swap that ended it (absent on older servers): when, the car handed back,
+  // the replacement and its start reading
+  swappedAt?: string | null;
+  vehicleRegNo?: string | null;
+  replacementRegNo?: string | null;
+  replacementStartOdometer?: number | null;
+  // This car's km recorded at the swap by the drop's rule (null = not recorded)
+  recorded?: SwapKmRecorded | null;
+  // On a computed drop bill: this car's line of the one extra-km charge
+  billed?: SegmentKmBilled | null;
+}
+
+// The returning car's km recorded at a mid-rental swap (money as 2-dp strings).
+export interface SwapKmRecorded {
+  kmDriven: number;
+  includedKm: number | null;
+  allowanceKm: number | null; // free km left for this car's segment
+  extraKm: number | null;
+  extraKmRate: string | null;
+  extraKmCharge: string | null;
+  extraKmEnabled: boolean | null;
+}
+
+// A car's share of the drop bill's extra-km charge (the shares add up to the bill's line).
+export interface SegmentKmBilled {
+  allowanceKm: number;
+  extraKm: number;
+  extraKmCharge: string;
 }
 
 // Odometer segments across mid-rental swaps (null unless PICKED_UP).
@@ -485,6 +515,13 @@ export interface ReturnKmSummary {
   kmSource?: 'ODOMETER' | 'STAFF_ENTERED' | 'NONE';
   swapCount?: number;
   segments?: KmSegment[];
+  // The car handed back now, after mid-rental swaps with readings (its line of the charge)
+  currentSegment?: {
+    startOdometer: number | null;
+    endOdometer: number;
+    km: number;
+    billed: SegmentKmBilled | null;
+  } | null;
   // includedKm = free km of the original period + free km the extensions add (#7)
   freeKmOriginal?: number;
   freeKmExtensions?: number;

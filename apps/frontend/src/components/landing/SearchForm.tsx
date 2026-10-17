@@ -24,7 +24,8 @@ import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
 import { useBranchSchedule } from "@/hooks/useBranchSchedule";
 import { useSearchStore } from "@/store/search.store";
 import { cn } from "@/lib/utils";
-import { UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
+import { TRIP_TYPE_HINT } from "@/components/vehicles/UseCaseChips";
+import { VEHICLE_USE_CASES, VEHICLE_USE_CASE_LABELS } from "@/services/vehicle.service";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import {
     PackageHints,
@@ -60,7 +61,7 @@ export const SearchForm = () => {
     const {
         branchPublicId,
         categoryPublicId,
-        useCases,
+        tripType,
         pickupDate,
         returnDate,
         pickupTime,
@@ -82,7 +83,7 @@ export const SearchForm = () => {
         [schedule, pickupDate, pickupTime, returnDate, returnTime],
     );
 
-    // Customers book packages (12 hours / 1–15 days): the return is pickup + the
+    // Customers book packages (12 hours / 1–30 days): the return is pickup + the
     // package, computed — never picked freely
     const packageInput = {
         schedule,
@@ -130,8 +131,10 @@ export const SearchForm = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule]);
 
+    // Trip type is required (client, Oct 2026): no vehicles until it's chosen
     const isFormValid =
-        !!branchPublicId && !!pickupDate && !!returnDate && !limits.windowError && !!pkg.selected && !pkg.correction;
+        !!branchPublicId && !!pickupDate && !!returnDate && !limits.windowError && !!pkg.selected && !pkg.correction &&
+        !!tripType;
 
     const handleSearch = () => {
         if (isFormValid) {
@@ -158,7 +161,7 @@ export const SearchForm = () => {
         >
             <div className="relative rounded-[20px] bg-white border border-zinc-200/70 shadow-[0_1px_2px_rgba(20,20,30,0.04),0_18px_50px_-24px_rgba(20,20,30,0.22)] p-4 sm:p-6 lg:p-7">
                 {/* Category Row */}
-                <div className={cn(chipScroll, "gap-2 mb-3 sm:mb-4")}>
+                <div className={cn(chipScroll, "gap-2 mb-4 sm:mb-6")}>
                     <button
                         type="button"
                         onClick={() => setSearchCriteria({ categoryPublicId: "all" })}
@@ -199,18 +202,8 @@ export const SearchForm = () => {
                     )}
                 </div>
 
-                {/* Trip type Row */}
-                <div className={cn(chipScroll, "gap-2 sm:gap-x-3 sm:gap-y-2 mb-4 sm:mb-6")}>
-                    <span className={cn(fieldLabel, "shrink-0 whitespace-nowrap")}>Trip type</span>
-                    <UseCaseFilterChips
-                        value={useCases}
-                        onChange={(next) => setSearchCriteria({ useCases: next })}
-                        className="shrink-0 flex-nowrap sm:flex-wrap [&>button]:h-8 [&>button]:px-3.5 [&>button]:text-[13px] sm:[&>button]:h-10 sm:[&>button]:px-5 sm:[&>button]:text-sm"
-                    />
-                </div>
-
                 {/* Main Search Row — every column is label row (h-8) + 56 px field + its own note */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(180px,0.8fr)] gap-x-4 gap-y-3 sm:gap-y-5 w-full items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1.05fr)_minmax(0,1.1fr)_minmax(150px,0.7fr)] gap-x-4 gap-y-3 sm:gap-y-5 w-full items-start">
                     {/* Location */}
                     <div className="sm:col-span-2 xl:col-span-1 min-w-0">
                         <div className={labelRow}>
@@ -313,6 +306,40 @@ export const SearchForm = () => {
                         <PackageHints state={pkg} className="mt-1" />
                     </div>
 
+                    {/* Trip type — required, right after the dates and package */}
+                    <div className="sm:col-span-2 xl:col-span-1 min-w-0">
+                        <div className={labelRow}>
+                            <span id="search-trip-type" className={fieldLabel}>Trip type</span>
+                        </div>
+                        <div
+                            role="radiogroup"
+                            aria-labelledby="search-trip-type"
+                            className={cn(fieldBox, "grid grid-cols-2 gap-1 p-1 hover:border-zinc-300")}
+                        >
+                            {VEHICLE_USE_CASES.map((tag) => {
+                                const active = tripType === tag;
+                                return (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={active}
+                                        onClick={() => setSearchCriteria({ tripType: tag })}
+                                        className={cn(
+                                            "min-w-0 rounded-[9px] px-2 text-[13px] sm:text-sm font-semibold whitespace-nowrap truncate transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900",
+                                            active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100",
+                                        )}
+                                    >
+                                        {VEHICLE_USE_CASE_LABELS[tag]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {!tripType && (
+                            <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] font-medium text-[#f0500a]">{TRIP_TYPE_HINT}</p>
+                        )}
+                    </div>
+
                     {/* Search Button */}
                     <div className="sm:col-span-2 xl:col-span-1 min-w-0">
                         <div className="hidden xl:block h-8 mb-1.5" aria-hidden="true" />
@@ -334,7 +361,7 @@ export const SearchForm = () => {
                             )}
                         </motion.button>
                         <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
-                            Book 12 hours or 1–{MAX_RENTAL_DAYS} days, up to {ADVANCE_BOOKING_DAYS} days ahead.
+                            12 hours or 1–{MAX_RENTAL_DAYS} days · book up to {ADVANCE_BOOKING_DAYS} days ahead
                         </p>
                     </div>
                 </div>

@@ -14,7 +14,7 @@ interface Props {
   emptyText?: string;
 }
 
-// Booking packages as one-tap chips: "12 hours", "1 day" … "15 days" (or
+// Booking packages as one-tap chips: "12 hours", "1 day" … "30 days" (or
 // "+12 hours", "+1 day" … for an extension). A package the branch can't take
 // (its return falls outside office hours) is greyed out with the reason
 // underneath; chips sharing a reason share one line. A 12-hour package held to
@@ -46,7 +46,7 @@ export default function PackagePicker({ choices, selectedHours, onSelect, tone =
         keyExtractor={(c) => String(c.hours)}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.row}
-        initialNumToRender={20}
+        initialNumToRender={32}
         renderItem={({ item: c }) => {
           const active = selectedHours === c.hours;
           const blocked = !!c.issue;

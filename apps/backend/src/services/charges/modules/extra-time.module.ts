@@ -58,8 +58,21 @@ export class ExtraTimeModule implements ChargeModuleInterface {
       };
     }
 
-    // Round up to nearest hour
-    const extraHours = Math.ceil(lateMinutes / 60);
+    // Whole hours only, rounded down (1 h 30 min → 1 hr): a part hour is never billed
+    const extraHours = Math.floor(lateMinutes / 60);
+
+    if (extraHours === 0) {
+      return {
+        chargeType: "EXTRA_TIME",
+        moduleKey: "extra_time",
+        label: "Extra Time Charge (under one hour)",
+        originalAmount: new Decimal(0),
+        finalAmount: new Decimal(0),
+        skip: false,
+        notes: "Late by less than one whole hour — no extra time charge",
+      };
+    }
+
     const amount = extraHourRate.mul(extraHours);
 
     return {

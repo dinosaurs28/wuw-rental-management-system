@@ -104,8 +104,6 @@ export default function PickupSummaryScreen() {
               <InfoRow icon="call-outline" label="Phone" value={data.customer.phone} />
             </>
           ) : null}
-          <Divider />
-          <InfoRow icon="card-outline" label="DL number" value={data.customer.drivingLicenceNumber ?? 'Not on file'} />
         </Card>
 
         <SectionHeader title="Vehicle" />

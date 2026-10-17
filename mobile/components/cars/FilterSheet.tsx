@@ -21,8 +21,8 @@ export interface FilterValue {
   branch: string | null;
   category: string | null;
   sort: string | null;
-  // Trip-type tags (LOCAL | OUT_OF_UDUPI); multi-select, OR.
-  useCases: string[];
+  // Trip type (LOCAL | OUT_OF_UDUPI): one required choice, sent as useCases.
+  tripType: string | null;
 }
 
 export const TRIP_TYPE_OPTIONS: Option[] = VEHICLE_USE_CASES.map((id) => ({
@@ -61,16 +61,14 @@ export default function FilterSheet({
     if (visible) setDraft(value);
   }, [visible]);
 
-  const toggleUseCase = (id: string) =>
-    setDraft((d) => ({
-      ...d,
-      useCases: d.useCases.includes(id) ? d.useCases.filter((u) => u !== id) : [...d.useCases, id],
-    }));
+  // Single choice: tapping the chosen one keeps it (a trip type is required).
+  const chooseTripType = (id: string) => setDraft((d) => ({ ...d, tripType: id }));
 
   const toggle = (key: 'branch' | 'category' | 'sort', id: string) =>
     setDraft((d) => ({ ...d, [key]: d[key] === id ? null : id }));
 
-  const clearAll = () => setDraft({ branch: null, category: null, sort: null, useCases: [] });
+  // The trip type stays: vehicles are only listed for a chosen one.
+  const clearAll = () => setDraft((d) => ({ branch: null, category: null, sort: null, tripType: d.tripType }));
 
   const renderChips = (key: 'branch' | 'category' | 'sort', options: Option[]) => (
     <View style={styles.chipWrap}>
@@ -123,13 +121,15 @@ export default function FilterSheet({
             <Text style={styles.sectionLabel}>Trip type</Text>
             <View style={styles.chipWrap}>
               {TRIP_TYPE_OPTIONS.map((opt) => {
-                const active = draft.useCases.includes(opt.id);
+                const active = draft.tripType === opt.id;
                 return (
                   <TouchableOpacity
                     key={opt.id}
                     style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => toggleUseCase(opt.id)}
+                    onPress={() => chooseTripType(opt.id)}
                     activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: active }}
                   >
                     {active && <Ionicons name="checkmark" size={13} color={Colors.white} />}
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>

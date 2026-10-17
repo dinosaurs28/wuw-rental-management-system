@@ -112,7 +112,11 @@ import {
   type DropEditState,
   type DropFlow,
 } from "../../services/booking/drop-edit.service.js";
-import { getOdometerSegments } from "../../services/charges/km-allowance.service.js";
+import {
+  getOdometerSegments,
+  refreshSwapKmSnapshots,
+  serializeOdometerSegment,
+} from "../../services/charges/km-allowance.service.js";
 import { LEGACY_RETURN_CHARGE_TYPES } from "../../services/charges/legacy-return-charges.service.js";
 import { calculateFastagUsage, fastagBalanceField } from "../../services/charges/fastag-usage.js";
 import { recordDepositHandling } from "../../services/payment/safety-deposit.service.js";
@@ -129,15 +133,6 @@ import {
   dlStatusUpdateData,
   invalidateDlStatusListCaches,
 } from "../../services/booking/dl-status.service.js";
-import {
-  parsePickupDlNumber,
-  resolvePickupDlNumber,
-  savePickupDlNumber,
-  logPickupDlNumber,
-  PickupDlNumberError,
-  type PickupDlNumber,
-} from "../../services/booking/pickup-dl-number.service.js";
-import { assertDlFree, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 import {
   completedPickupRentDue,
   foldPickupDiscountIntoBooking,
@@ -181,8 +176,8 @@ const editPickupSchema = z.object({
   pickupFastagBalance: fastagBalanceField,
   // Licence custody (#3): Collected / Not collected (DEPOSIT was removed)
   dlStatus: z.string().optional(),
-  // Customer's DL number (X2) — raw input, validated like the pickup's
-  drivingLicenceNumber: z.string().optional(),
+  // No longer asked at pickup (client, Oct 17 2026): accepted from older builds and ignored
+  drivingLicenceNumber: z.unknown().optional(),
   // New photos, uploaded first via POST /employee/pickup/upload; label = capture slot
   addPhotos: z
     .array(z.object({ fileId: z.string().trim().min(1), label: z.string().trim().min(1).max(80).nullish() }))
@@ -302,8 +297,6 @@ function validationBody(error: z.ZodError) {
 function sendError(res: Response, error: unknown, where: string) {
   if (error instanceof EditRejection) return res.status(error.status).json(error.body);
   if (error instanceof DlStatusError) return res.status(error.status).json(error.toJSON());
-  if (error instanceof PickupDlNumberError) return res.status(error.status).json(error.toJSON());
-  if (error instanceof DlInUseError) return res.status(error.status).json(error.toJSON("staff"));
   if (error instanceof PickupDiscountError) return res.status(error.status).json(error.toJSON());
   console.error(`${where} Error:`, error);
   return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Something went wrong. Please try again." });
@@ -677,6 +670,9 @@ async function buildReturnSummary(booking: SummaryBooking) {
       swapCount: segments.swapCount,
       // false: a swap was recorded without readings, km can't be measured
       measured: segments.complete,
+      // Each mid-rental swap: the car handed back (start → end, km recorded at the
+      // swap) and the replacement's start reading — additive
+      swaps: segments.segments.map(serializeOdometerSegment),
     },
     fuel: {
       pickup: segments.currentStartFuelLevel ?? booking.fuelRecord?.pickupFuelLevel ?? null,
@@ -1355,9 +1351,6 @@ export const EditPickup = async (req: Request, res: Response) => {
     if (input.dlStatus !== undefined && input.dlStatus !== "COLLECTED" && input.dlStatus !== "NOT_COLLECTED") {
       throw new DlStatusError(StatusCode.BAD_REQUEST, "DL_STATUS_INVALID", DL_STATUS_DEPOSIT_REMOVED_MESSAGE);
     }
-    // 400 INVALID_DL_NUMBER when invalid; blank = not sent (the number can't be cleared)
-    const sentDlNumber = parsePickupDlNumber(input.drivingLicenceNumber);
-
     const actor = await resolveActor(req);
     if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
     const branchId = req.branch_Id;
@@ -1389,17 +1382,6 @@ export const EditPickup = async (req: Request, res: Response) => {
         "DL_STATUS_LOCKED",
         "The DL status can't be changed after the return. Ask your branch manager to update it.",
       );
-    }
-    let dlNumber: PickupDlNumber | null = null;
-    if (sentDlNumber) {
-      const resolved = await resolvePickupDlNumber(booking.customerId, sentDlNumber);
-      if (resolved.changed) {
-        // One vehicle per driving licence (X3) while this rental is out
-        if (booking.status === BookingStatus.PICKED_UP) {
-          await assertDlFree({ dlNumber: resolved.drivingLicenceNumber, mode: "pickup", excludeBookingId: booking.id });
-        }
-        dlNumber = resolved;
-      }
     }
 
     const existing = await photosOf(booking.id, BookingPhotoType.PRE_DELIVERY);
@@ -1441,7 +1423,7 @@ export const EditPickup = async (req: Request, res: Response) => {
 
     if (
       odoChange == null && !fuelChange && fastagChange == null && !depositChange &&
-      !dlStatusChange && !dlNumber && !photosChange && !discountCheck.changed
+      !dlStatusChange && !photosChange && !discountCheck.changed
     ) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
@@ -1528,7 +1510,6 @@ export const EditPickup = async (req: Request, res: Response) => {
         if (dlStatusChange) {
           Object.assign(update, dlStatusUpdateData({ dlStatus: dlStatusChange, dlDepositNote: null }, actor.id, locked));
         }
-        if (dlNumber) await savePickupDlNumber(dlNumber, tx);
 
         if (lockedDeposit) {
           update.safetyDeposit = lockedDeposit.toFixed(2);
@@ -1568,6 +1549,8 @@ export const EditPickup = async (req: Request, res: Response) => {
         if (Object.keys(update).length > 0) {
           await tx.booking.update({ where: { id: booking.id }, data: update });
         }
+        // The km recorded at mid-rental swaps follow the corrected pickup reading
+        if (odoChange != null) await refreshSwapKmSnapshots(booking.id, tx as any);
 
         // The difference: a legacy drop's return charges go back to the branch manager's
         // Settlements; everything else is settled on an ADJUSTMENT session
@@ -1601,7 +1584,6 @@ export const EditPickup = async (req: Request, res: Response) => {
         pickupDiscount: discountAmount(outcome.discountEdit.current),
         pickupDiscountReason: outcome.discountEdit.current?.reason ?? null,
         dlStatus: booking.dlStatus,
-        drivingLicenceNumber: dlNumber?.previous ?? null,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel }))),
       } as Record<string, unknown>,
       {
@@ -1612,7 +1594,6 @@ export const EditPickup = async (req: Request, res: Response) => {
         pickupDiscount: outcome.discountEdit.moneyChanged ? discountAmount(outcome.discountEdit.record) : undefined,
         pickupDiscountReason: outcome.discountEdit.changed ? outcome.discountEdit.record?.reason ?? null : undefined,
         dlStatus: dlStatusChange ?? undefined,
-        drivingLicenceNumber: dlNumber?.drivingLicenceNumber,
         photos: photosChange
           ? photoList([
               ...kept.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel })),
@@ -1622,7 +1603,6 @@ export const EditPickup = async (req: Request, res: Response) => {
       },
     );
     await logEdit(req, actor, "PICKUP", booking.publicId, diff, outcome.plan, outcome.session);
-    if (dlNumber) await logPickupDlNumber(req, dlNumber, booking.publicId);
     if (dlStatusChange) await invalidateDlStatusListCaches(branchId);
 
     const fresh = await loadBooking(booking.publicId, branchId);

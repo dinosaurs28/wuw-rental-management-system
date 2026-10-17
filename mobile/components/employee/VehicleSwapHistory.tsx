@@ -73,6 +73,16 @@ function SwapRow({ swap }: { swap: VehicleSwapRecord }) {
           {out && <Text style={styles.reading}>Handed over at {out}</Text>}
         </View>
       )}
+      {swap.segmentKmDriven != null && (
+        <Text style={styles.meta}>
+          {swap.segmentKmDriven.toLocaleString('en-IN')} km on {from.regNo}
+          {(swap.segmentExtraKm ?? 0) > 0
+            ? ` · extra ${(swap.segmentExtraKm ?? 0).toLocaleString('en-IN')} km${
+                swap.segmentExtraKmEnabled ? ` · ${swapInr(priceDifferenceOf(swap.segmentExtraKmCharge) ?? 0)}` : ''
+              } — billed at drop`
+            : ' · no extra km'}
+        </Text>
+      )}
       {(oldFastag != null || newFastag != null) && (
         <Text style={styles.meta}>
           FASTag at swap: {[

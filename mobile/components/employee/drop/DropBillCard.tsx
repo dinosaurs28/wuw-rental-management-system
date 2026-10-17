@@ -40,6 +40,8 @@ function lateNote(late: ReturnLateSummary | null | undefined): string | null {
       return `Late return (${by}): ${inr2(num(late.waivedAmount))} waived${late.waiverReason ? ` — ${late.waiverReason}` : ''}.`;
     case 'WITHIN_GRACE':
       return `Returned ${by} late — within the grace period, no charge.`;
+    case 'UNDER_ONE_HOUR':
+      return `Returned ${by} late — under one whole hour${late.graceApplied ? ' after the grace' : ''}, no charge.`;
     case 'DISABLED':
       return `Returned ${by} late — late-return charges are off for this branch.`;
     case 'CHARGED':

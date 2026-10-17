@@ -26,6 +26,9 @@ import { useBranchSchedule } from '../hooks/useBranchSchedule';
 import { bookingTimesNotice } from '../lib/branchSchedule';
 import { timeLabel, timeOf } from '../lib/dates';
 import { bookedPackageFor } from '../lib/packages';
+import { VEHICLE_USE_CASE_LABELS, type VehicleUseCase } from '../lib/tripTypes';
+import { parseTripType, useTripTypeStore } from '../store/tripType';
+import TripTypePicker, { TRIP_TYPE_HINT } from '../components/cars/TripTypePicker';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -46,7 +49,7 @@ export default function Search() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const params = useLocalSearchParams<{ branch?: string; branchName?: string; start?: string; end?: string }>();
+  const params = useLocalSearchParams<{ branch?: string; branchName?: string; start?: string; end?: string; tripType?: string }>();
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -57,7 +60,18 @@ export default function Search() {
   const [end, setEnd] = useState<string | null>(params.end ?? null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<string | null>(null);
-  const [useCases, setUseCases] = useState<string[]>([]);
+  // Trip type (client, Oct 2026): required — from the search card, else the
+  // session's last choice. Without one (deep link, "See all", back navigation)
+  // a chooser shows in place of the offers and nothing is listed.
+  const storedTripType = useTripTypeStore((s) => s.tripType);
+  const setStoredTripType = useTripTypeStore((s) => s.setTripType);
+  const [tripType, setTripTypeState] = useState<VehicleUseCase | null>(
+    () => parseTripType(params.tripType) ?? storedTripType,
+  );
+  const setTripType = (t: VehicleUseCase) => {
+    setTripTypeState(t);
+    setStoredTripType(t);
+  };
 
   const { data: branches } = useQuery({
     queryKey: ['branches'],
@@ -80,13 +94,13 @@ export default function Search() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', useCases.join(','), start ?? '', end ?? ''],
+    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', tripType ?? '', start ?? '', end ?? ''],
     queryFn: async ({ pageParam }) => {
       const res = await vehiclesApi.list({
         branch: branchId || undefined,
         category: categoryId || undefined,
         sort: (sort as any) || undefined,
-        useCases: useCases.length ? useCases.join(',') : undefined,
+        useCases: tripType ?? undefined,
         start: start || undefined,
         end: end || undefined,
         limit: PAGE_SIZE,
@@ -94,6 +108,7 @@ export default function Search() {
       });
       return { rows: (res.data?.data ?? []) as any[], count: Number(res.data?.count ?? 0), offset: pageParam };
     },
+    enabled: !!tripType,
     initialPageParam: 0,
     getNextPageParam: (last) =>
       last.rows.length > 0 && last.offset + last.rows.length < last.count ? last.offset + last.rows.length : undefined,
@@ -105,13 +120,14 @@ export default function Search() {
     setBranchName(q.branchName);
     setStart(q.start);
     setEnd(q.end);
+    setTripType(q.tripType);
     setEditOpen(false);
   };
 
   const startStamp = fmtStamp(start);
   const endStamp = fmtStamp(end);
   // Searched times the branch won't accept (outside office hours, past the
-  // 15-day limit) — flagged above the offers so it isn't a checkout surprise.
+  // 30-day limit) — flagged above the offers so it isn't a checkout surprise.
   const { data: schedule } = useBranchSchedule(branchId);
   const startD = start ? new Date(start) : null;
   const endD = end ? new Date(end) : null;
@@ -140,6 +156,7 @@ export default function Search() {
             <Text style={styles.summaryDates}>
               {startStamp} - {endStamp}
               {searchedPackage ? ` · ${searchedPackage}` : ''}
+              {tripType ? ` · ${VEHICLE_USE_CASE_LABELS[tripType]}` : ''}
             </Text>
           ) : null}
         </View>
@@ -148,14 +165,12 @@ export default function Search() {
 
       {/* Filter & sort */}
       <TouchableOpacity
-        style={[styles.filterChip, (sort || categoryId || useCases.length > 0) && styles.filterChipActive]}
+        style={[styles.filterChip, (sort || categoryId) && styles.filterChipActive]}
         onPress={() => setFilterOpen(true)}
         activeOpacity={0.85}
       >
         <Ionicons name="filter-outline" size={17} color={Colors.white} />
-        <Text style={styles.filterChipText}>
-          {useCases.length > 0 ? `Filter & sort · ${useCases.length} trip type${useCases.length > 1 ? 's' : ''}` : 'Filter & sort'}
-        </Text>
+        <Text style={styles.filterChipText}>Filter & sort</Text>
       </TouchableOpacity>
 
       {timesNotice ? (
@@ -164,8 +179,14 @@ export default function Search() {
         </View>
       ) : null}
 
-      {/* Offers — one big card per row */}
-      {isLoading ? (
+      {/* Offers — one big card per row; the trip type chooser until one is picked */}
+      {!tripType ? (
+        <View style={styles.tripGate}>
+          <Text style={styles.tripGateTitle}>{TRIP_TYPE_HINT}</Text>
+          <Text style={styles.tripGateText}>Pick a trip type to see the cars for it.</Text>
+          <TripTypePicker value={null} onSelect={setTripType} showHint={false} />
+        </View>
+      ) : isLoading ? (
         <ActivityIndicator style={styles.loader} color={Colors.orange} size="large" />
       ) : (
         <FlatList
@@ -208,13 +229,14 @@ export default function Search() {
         visible={filterOpen}
         branches={(branches ?? []).map((b) => ({ id: b.publicId, label: b.name }))}
         categories={(categories ?? []).map((c) => ({ id: c.publicId, label: c.name }))}
-        value={{ branch: branchId, category: categoryId, sort, useCases }}
+        value={{ branch: branchId, category: categoryId, sort, tripType }}
         onApply={(v: FilterValue) => {
           setBranchId(v.branch);
           setBranchName(v.branch ? (branches ?? []).find((b) => b.publicId === v.branch)?.name ?? branchName : null);
           setCategoryId(v.category);
           setSort(v.sort);
-          setUseCases(v.useCases);
+          const t = parseTripType(v.tripType);
+          if (t) setTripType(t);
         }}
         onClose={() => setFilterOpen(false)}
       />
@@ -287,6 +309,17 @@ const styles = StyleSheet.create({
   filterChipText: { fontFamily: Fonts.bodyMedium, fontSize: 15, color: Colors.white },
 
   noticeWrap: { paddingHorizontal: 16, marginTop: 12 },
+  tripGate: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    gap: 6,
+  },
+  tripGateTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.white, letterSpacing: -0.2 },
+  tripGateText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.onDarkMuted, marginBottom: 8 },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32, gap: 14 },
   loader: { marginTop: 60 },
   footerLoader: { marginVertical: 20 },

@@ -61,14 +61,6 @@ import {
   dlValidationError,
   DlStatusError,
 } from "../../services/booking/dl-status.service.js";
-import {
-  parsePickupDlNumber,
-  resolvePickupDlNumber,
-  savePickupDlNumber,
-  logPickupDlNumber,
-  PickupDlNumberError,
-} from "../../services/booking/pickup-dl-number.service.js";
-import { assertDlFree, DlInUseError } from "../../services/booking/dl-in-use.service.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 
 const initiatePickupSessionSchema = z.object({
@@ -189,13 +181,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       });
     }
 
-    // X2: the customer's DL NUMBER is required (the DL picture is optional) —
-    // sent now (400 INVALID_DL_NUMBER when invalid) or already on file;
-    // 422 DL_NUMBER_REQUIRED otherwise.
-    const pickupDl = await resolvePickupDlNumber(
-      booking.customerId,
-      parsePickupDlNumber(req.body?.drivingLicenceNumber),
-    );
+    // The DL number is no longer asked at pickup (client, Oct 17 2026): a
+    // `drivingLicenceNumber` older app builds still send is ignored.
 
     // Original licence custody (#3), optional (X1). Old builds send the boolean
     // tick instead (true ⇒ COLLECTED, false ⇒ NOT_COLLECTED); sending neither
@@ -205,14 +192,6 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     // A re-initiated session may change the choice; licenseCollectedAt is only
     // written while unset, so it keeps the first collection time.
     const licenseCollectedData = dlChoice ? dlStatusUpdateData(dlChoice, actor.id, booking) : null;
-
-    // One vehicle per driving licence (X3): no session while another booking on
-    // this DL is out. Re-checked under a lock when the session completes.
-    await assertDlFree({
-      dlNumber: pickupDl.drivingLicenceNumber,
-      mode: "pickup",
-      excludeBookingId: booking.id,
-    });
 
     // The car must be here and AVAILABLE before any money is taken: 409
     // VEHICLE_STILL_OUT (another rental hasn't come back) / VEHICLE_NOT_READY
@@ -224,11 +203,6 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     if (notReady) {
       return res.status(StatusCode.CONFLICT).json(notReady);
     }
-
-    // A DL number sent with the request is saved to the customer (X2) once the
-    // request is known to be valid, so a retry finds it on file.
-    await savePickupDlNumber(pickupDl);
-    await logPickupDlNumber(req, pickupDl, booking.publicId);
 
     // Create or return existing PICKUP session
     const session = await paymentSessionService.createSession(
@@ -572,12 +546,6 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
   } catch (err: any) {
     if (err instanceof DlStatusError) {
       return res.status(err.status).json(err.toJSON());
-    }
-    if (err instanceof PickupDlNumberError) {
-      return res.status(err.status).json(err.toJSON());
-    }
-    if (err instanceof DlInUseError) {
-      return res.status(err.status).json(err.toJSON("staff"));
     }
     if (err instanceof CounterCouponError) {
       return res.status(err.status).json({ ...err.toJSON(), couponRejected: true });

@@ -123,7 +123,7 @@ export class DurationCalculatorService {
    *
    * @param expectedReturnTime - Expected return datetime
    * @param actualReturnTime - Actual return datetime
-   * @returns Number of extra hours to charge (0 if within grace period)
+   * @returns Whole extra hours to charge, rounded down (0 if within grace or under an hour)
    */
   static calculateExtraHours(
     expectedReturnTime: DateTime,
@@ -142,9 +142,9 @@ export class DurationCalculatorService {
       return 0;
     }
 
-    // Calculate extra hours (round up to nearest hour)
+    // Whole extra hours only, rounded down (1 h 30 min → 1): a part hour is never charged
     const extraMinutes = delayMinutes - GRACE_PERIOD_MINUTES;
-    return Math.ceil(extraMinutes / 60);
+    return Math.floor(extraMinutes / 60);
   }
 
   /**

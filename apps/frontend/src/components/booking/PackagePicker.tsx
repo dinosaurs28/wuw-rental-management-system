@@ -45,7 +45,7 @@ interface PackageSelectProps {
   icon?: ReactNode;
 }
 
-/** "12 hours", "1 day" … "15 days" — packages past the window aren't listed; out-of-hours ones are greyed with the reason. */
+/** "12 hours", "1 day" … "30 days" — packages past the window aren't listed; out-of-hours ones are greyed with the reason. */
 export function PackageSelect({ state, onSelect, disabled, triggerClassName, icon }: PackageSelectProps) {
   const noPickup = state.options.length === 0;
   return (

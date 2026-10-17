@@ -181,7 +181,7 @@ export function bookingWindowLastDay(now: Date = new Date()): Date {
   return startOfDay(bookingWindowEnd(now));
 }
 
-// Latest return for a standard booking picked up at `start`: pickup + 15 days
+// Latest return for a standard booking picked up at `start`: pickup + 30 days
 // (server rule; the return may pass the 30-day pickup window). `now` is kept
 // for callers.
 export function maxReturnFor(start: Date, _now: Date = new Date()): Date {

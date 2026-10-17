@@ -3,15 +3,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import type { KycDocument, KycSide } from '../../types/api';
+import { hasDlPhotosOnFile } from '../../lib/dlPhotos';
 
 export const DL_PHOTOS_ALERT_MESSAGE =
   'Original DL and Safety Deposit will be collected during the vehicle pickup';
 
-/** True when both DL sides (FRONT + BACK) are present in the document list. */
-export function hasBothDlSides(docs: Pick<KycDocument, 'type' | 'side'>[] | undefined): boolean {
-  if (!docs) return false;
-  const sides = new Set(docs.filter((d) => d.type === 'DL').map((d) => d.side));
-  return sides.has('FRONT') && sides.has('BACK');
+type DocLike = Pick<KycDocument, 'type' | 'side'> & { status?: KycDocument['status'] };
+
+/** True when both DL sides (FRONT + BACK) are on file — a rejected side doesn't count. */
+export function hasBothDlSides(docs: DocLike[] | undefined): boolean {
+  return hasDlPhotosOnFile(docs);
 }
 
 /**
@@ -19,12 +20,14 @@ export function hasBothDlSides(docs: Pick<KycDocument, 'type' | 'side'>[] | unde
  * was not complete before it (`before` = documents prior to the upload).
  */
 export function dlPairCompletedByUpload(
-  before: Pick<KycDocument, 'type' | 'side'>[] | undefined,
+  before: DocLike[] | undefined,
   type: string,
   side: KycSide,
 ): boolean {
   if (type !== 'DL' || hasBothDlSides(before)) return false;
-  return hasBothDlSides([...(before ?? []), { type: 'DL', side } as Pick<KycDocument, 'type' | 'side'>]);
+  // The upload replaces a rejected photo of that side
+  const others = (before ?? []).filter((d) => !(d.type === 'DL' && d.side === side));
+  return hasBothDlSides([...others, { type: 'DL', side }]);
 }
 
 interface Props {

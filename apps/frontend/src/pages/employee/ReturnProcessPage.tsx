@@ -25,6 +25,7 @@ import { LateReturnPanel, type LateReturnOptions } from "@/components/employee/d
 import { DropBillSummary, LegacyReturnChargesSummary } from "@/components/employee/drop/DropBillSummary";
 import { SwapChargesNote } from "@/components/employee/drop/SwapChargesNote";
 import { DropOdometerFields } from "@/components/employee/drop/DropOdometerFields";
+import { DropSwapSection } from "@/components/employee/drop/DropSwapSection";
 import { FastagReturnField, FastagUsageNotes } from "@/components/employee/drop/FastagReturnField";
 import { readFastagBalance } from "@/components/employee/drop/fastag";
 import { ExtendBookingModal } from "@/components/employee/extension/ExtendBookingModal";
@@ -725,6 +726,7 @@ export default function ReturnProcessPage() {
           autoKmSkipped: serverKm.autoKmSkipped ?? null,
           priorKm: serverKm.priorKm ?? 0,
           segments: serverKm.segments ?? [],
+          currentSegment: serverKm.currentSegment ?? null,
           manualExtraKm: serverKm.manualExtraKm ?? null,
           kmSource: serverKm.kmSource,
           freeKmOriginal: serverKm.freeKmOriginal ?? null,
@@ -1346,6 +1348,8 @@ export default function ReturnProcessPage() {
           isLocked={!step2Complete || isCompleted}
         >
           <CardContent className="pt-4 space-y-5">
+            {/* ── Vehicle swap: the replaced car's km recorded at the swap + the replacement checked here ── */}
+            <DropSwapSection segments={kmSegments?.segments ?? []} currentStartOdometer={currentStartOdometer} />
             {/* ── Odometer (km across mid-rental swaps; staff-entered km after a swap without readings) ── */}
             <DropOdometerFields
               endOdometer={endOdometer}
@@ -1864,6 +1868,7 @@ export default function ReturnProcessPage() {
             <CardTitle className="text-2xl">2. Km &amp; Time Check</CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6 space-y-4">
+            <DropSwapSection segments={kmSegments?.segments ?? []} currentStartOdometer={currentStartOdometer} />
             <DropOdometerFields
               endOdometer={endOdometer}
               onEndOdometerChange={setEndOdometer}
@@ -2393,6 +2398,7 @@ function ReturnEditForm({
         isLocked={false}
       >
         <CardContent className="pt-4 space-y-5">
+          <DropSwapSection segments={kmSegments?.segments ?? []} currentStartOdometer={currentStartOdometer} />
           <div id="edit-return-endOdometer" className="space-y-1">
             <DropOdometerFields
               endOdometer={endOdometer}

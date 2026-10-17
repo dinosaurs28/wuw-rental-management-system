@@ -1,4 +1,4 @@
-import type { OdometerSegment } from "@/types/drop";
+import type { CurrentKmSegment, OdometerSegment } from "@/types/drop";
 
 /** Extra-km figures shown at drop — either a live preview or the server's computed values. */
 export interface KmChargeFigures {
@@ -15,6 +15,8 @@ export interface KmChargeFigures {
   priorKm?: number;
   /** Finished odometer segments (one per mid-rental swap with readings). */
   segments?: OdometerSegment[];
+  /** The car handed back now with its line of the charge (computed bills after swaps). */
+  currentSegment?: CurrentKmSegment | null;
   /** Extra km typed by staff (swap without readings). */
   manualExtraKm?: number | null;
   kmSource?: "ODOMETER" | "STAFF_ENTERED" | "NONE";

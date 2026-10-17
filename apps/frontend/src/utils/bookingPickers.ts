@@ -1,7 +1,7 @@
 // Limits for booking date/time pickers: branch office hours (#2 — pickups from
 // opening to 30 minutes before closing, default 8:00 AM – 11:00 PM when the
 // branch saved none; tonight, after the last pickup, from now until closing,
-// and nothing today once the branch has closed) and the booking window (#15: pickup up to 30 days ahead, up to 15 days long).
+// and nothing today once the branch has closed) and the booking window (#15: pickup up to 30 days ahead, up to 30 days long).
 // Pickers hold a calendar day (local-midnight
 // Date) plus an "HH:mm" wall-clock time that the server reads as IST, so all
 // instants here are built as IST regardless of the browser's timezone.
@@ -61,7 +61,7 @@ export function windowLastDay(now: Date = new Date()): Date {
 }
 
 /**
- * Latest allowed return for a pickup instant: standard → pickup + 15 days
+ * Latest allowed return for a pickup instant: standard → pickup + 30 days
  * (the return may pass the 30-day pickup window); monthly → pickup + 180 days.
  */
 export function maxReturnFor(startAt: Date, opts: { monthly?: boolean; now?: Date } = {}): Date {
@@ -107,7 +107,7 @@ export interface BookingPickerInput {
   pickupTime: string;
   returnDate: Date | null;
   returnTime: string;
-  /** Counter monthly plan: pickup within the window, 30–180 days, no 15-day rule. */
+  /** Counter monthly plan: pickup within the window, 30–180 days, no 30-day rule. */
   monthly?: boolean;
   now?: Date;
 }

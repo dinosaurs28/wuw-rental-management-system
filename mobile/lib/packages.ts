@@ -2,7 +2,7 @@
 // shared rule in ./bookingWindow (CUSTOMER_PACKAGES, customerPackageEnd …).
 //
 // Customers pick a pickup (up to 30 days ahead) and a PACKAGE — "12 hours" or
-// "1 day" … "15 days" —
+// "1 day" … "30 days" —
 // and the return is computed from them (never picked freely), so customer
 // booking create's BOOKING_PACKAGE_REQUIRED can't be hit from the app.
 // Self-extensions add +12 hours or + N days. Fleet walk-ins use the same
@@ -79,7 +79,7 @@ export function packageRangeEnd(r: PackageRange, extraHours = 0, config?: Branch
 /**
  * The package hours a pickup → return asks for: the exact package when it is
  * one, else the shortest package at least that long (the server's office-hours
- * adjust lengthens too), capped at 15 days. 1 day when there is no return.
+ * adjust lengthens too), capped at 30 days. 1 day when there is no return.
  */
 export function packageHoursFor(start: Date, end?: Date | null): number {
   if (!end || isNaN(end.getTime())) return DEFAULT_PACKAGE_HOURS;
@@ -120,7 +120,7 @@ export function refreshPackageRange<R extends PackageRange>(r: R, now: Date = ne
 /**
  * Latest pickup a customer can book: 23:59 IST on the advance window's last
  * day (today + 30). Every package fits from it — the return may pass the
- * window, up to 15 days after pickup. `config` is kept for callers.
+ * window, up to 30 days after pickup. `config` is kept for callers.
  */
 export function latestPackagePickup(now: Date = new Date(), _config?: BranchScheduleConfig | null): Date {
   return bookingWindowEnd(now);

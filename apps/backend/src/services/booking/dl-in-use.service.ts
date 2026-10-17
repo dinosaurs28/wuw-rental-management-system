@@ -7,11 +7,13 @@
  *  - A DL with an unexpired HOLD or a CONFIRMED booking can't get a second
  *    booking whose window overlaps it.
  *
- * Checked at customer create, staff walk-in create, pickup (both paths and the
- * manager's pickup confirmation) and extension evaluate/commit. Creates and
- * pickups re-check inside their transaction under a per-DL advisory lock, so
- * two requests for the same licence can't both pass. A customer with no DL
- * number on file skips the check.
+ * Checked at customer create, staff walk-in create, reschedule and extension
+ * evaluate/commit. Creates re-check inside their transaction under a per-DL
+ * advisory lock, so two requests for the same licence can't both pass. A
+ * customer with no DL number on file skips the check.
+ *
+ * Not checked at pickup any more: the DL number was taken out of the pickup
+ * flow (client, Oct 17 2026), so a handover never blocks on it.
  *
  * Refusals are 409 DL_IN_USE. Customers get a message that never names another
  * person's booking; staff and branch managers get the booking named plus
@@ -19,7 +21,7 @@
  */
 import { prisma, BookingStatus } from "@repo/database/client";
 import type { Prisma } from "@repo/database/client";
-import { normalizeDrivingLicence, isValidDrivingLicence } from "@repo/schemas";
+import { normalizeDrivingLicence } from "@repo/schemas";
 import { DateTime } from "luxon";
 import { StatusCode } from "../../types/statusCode.js";
 
@@ -29,12 +31,11 @@ export const DL_IN_USE = "DL_IN_USE" as const;
 
 /**
  * create  — a new booking for `window` (customer hold or walk-in).
- * pickup  — handing over a vehicle: refused while another booking on the DL is out.
  * extend  — an extension adding `window` (current end → new end) to a booking.
  * reschedule — a confirmed booking moved to `window` (its new pickup → return);
  *           checked like extend: an out vehicle blocks only while it overlaps.
  */
-export type DlCheckMode = "create" | "pickup" | "extend" | "reschedule";
+export type DlCheckMode = "create" | "extend" | "reschedule";
 
 /** Who reads the refusal: customers never see another booking's details. */
 export type DlAudience = "customer" | "staff";
@@ -101,9 +102,6 @@ function staffMessage(kind: DlConflictKind, mode: DlCheckMode, b: DlConflictingB
   const named = `booking ${b.publicId} — ${b.customerName}, ${vehicle}`;
   const dates = `${formatIst(new Date(b.startAt))} – ${formatIst(new Date(b.endAt))}`;
   if (kind === "VEHICLE_OUT") {
-    if (mode === "pickup") {
-      return `This driving licence is linked to ${named}, which hasn't been returned. That vehicle must be returned before another is handed over.`;
-    }
     if (mode === "extend") {
       return `This driving licence is linked to ${named}, which hasn't been returned and overlaps the extended dates.`;
     }
@@ -135,25 +133,14 @@ export function cleanDl(value: string | null | undefined): string | null {
   return dl.length > 0 ? dl : null;
 }
 
-/**
- * The DL a pickup request will leave on file: a valid `drivingLicenceNumber`
- * sent with the request (entered at the counter) wins over the stored one.
- */
-export function pickupDlCandidate(requestValue: unknown, stored: string | null | undefined): string | null {
-  if (typeof requestValue === "string" && isValidDrivingLicence(requestValue)) {
-    return normalizeDrivingLicence(requestValue);
-  }
-  return cleanDl(stored);
-}
-
 export interface DlCheckInput {
   /** The DL to check. Omit to load it from `customerId`. */
   dlNumber?: string | null;
   customerId?: number;
   mode: DlCheckMode;
-  /** create: the new booking's window. extend: current end → requested end. Unused for pickup. */
+  /** create: the new booking's window. extend: current end → requested end. */
   window?: { startAt: Date; endAt: Date };
-  /** The booking being picked up / extended — never its own conflict. */
+  /** The booking being extended / rescheduled — never its own conflict. */
   excludeBookingId?: number;
   now?: Date;
 }
@@ -165,7 +152,7 @@ function conflictWhere(dl: string, input: DlCheckInput, now: Date): Prisma.Booki
   });
 
   const or: Prisma.BookingWhereInput[] = [];
-  if (input.mode === "pickup" || input.mode === "create" || !input.window) {
+  if (input.mode === "create" || !input.window) {
     // Out vehicles block every other start, whatever the dates
     or.push({ status: BookingStatus.PICKED_UP });
   } else {
@@ -178,7 +165,7 @@ function conflictWhere(dl: string, input: DlCheckInput, now: Date): Prisma.Booki
         : { status: BookingStatus.PICKED_UP, ...overlaps(w) },
     );
   }
-  if (input.mode !== "pickup" && input.window) {
+  if (input.window) {
     or.push({ status: BookingStatus.CONFIRMED, ...overlaps(input.window) });
     or.push({ status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, ...overlaps(input.window) });
   }
@@ -250,7 +237,7 @@ export async function assertDlFree(input: DlCheckInput, db: Db = prisma): Promis
 
 /**
  * Race-safe check. Call INSIDE the interactive transaction that writes the
- * booking (create) or its PICKED_UP status: takes a transaction-scoped advisory
+ * booking (create), extension or reschedule: takes a transaction-scoped advisory
  * lock on the DL, then re-checks. Two requests for the same licence serialise
  * on the lock and the second sees the first one's committed row.
  */
@@ -264,24 +251,4 @@ export async function lockAndAssertDlFree(input: DlCheckInput, tx: Prisma.Transa
   if (!dl) return;
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dl:" + dl}))`;
   await assertDlFree({ ...input, dlNumber: dl }, tx);
-}
-
-/**
- * Pickup guard for a booking id: reads the customer's DL inside `tx` (so a DL
- * number saved earlier in the same pickup is used), locks it and refuses while
- * another booking on that DL is out.
- */
-export async function lockAndAssertDlFreeForPickup(bookingId: number, tx: Prisma.TransactionClient): Promise<void> {
-  const booking = await tx.booking.findUnique({
-    where: { id: bookingId },
-    select: { customer: { select: { drivingLicenceNumber: true } } },
-  });
-  await lockAndAssertDlFree(
-    {
-      dlNumber: booking?.customer.drivingLicenceNumber ?? null,
-      mode: "pickup",
-      excludeBookingId: bookingId,
-    },
-    tx,
-  );
 }

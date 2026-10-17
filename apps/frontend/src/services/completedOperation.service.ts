@@ -2,6 +2,7 @@ import apiClient from "@/lib/axios";
 import type { DlStatus } from "@/services/dlStatus.service";
 import type { PaymentSession } from "@/services/paymentSession.service";
 import type { BookingListType } from "@/types/overdueReturns";
+import type { OdometerSegment } from "@/types/drop";
 
 /**
  * Completed pickups / returns (client item 1): the read-only summary and the
@@ -186,6 +187,8 @@ export interface ReturnSummary extends SummaryBase {
     swapCount: number;
     /** false: a swap was recorded without readings */
     measured: boolean;
+    /** Each mid-rental swap: the car handed back and the replacement (absent on older servers) */
+    swaps?: OdometerSegment[];
   };
   fuel: { pickup: string | null; return: string | null };
   /**
@@ -226,7 +229,6 @@ export interface EditPickupBody {
   pickupFuelLevel?: string;
   pickupFastagBalance?: number;
   dlStatus?: "COLLECTED" | "NOT_COLLECTED";
-  drivingLicenceNumber?: string;
   addPhotos?: { fileId: string; label?: string | null }[];
   removeFileIds?: string[];
 }

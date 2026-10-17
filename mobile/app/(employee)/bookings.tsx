@@ -8,12 +8,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type Query } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
@@ -24,6 +25,7 @@ import { fmtDurationMinutes } from '../../lib/dates';
 import { DlStatusLine } from '../../components/employee/DlStatus';
 import { PausedChip } from '../../components/employee/OperationDraftParts';
 import PausedOperations from '../../components/employee/PausedOperations';
+import { useDebouncedValue } from '../../components/employee/customers/useCustomers';
 import type {
   BookingListType,
   QueueBooking,
@@ -48,6 +50,8 @@ function parseYmd(s?: string): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Registration number search (server keeps 60 characters).
+const SEARCH_MAX = 60;
 
 interface QueueResult {
   rows: QueueBooking[];
@@ -239,6 +243,10 @@ export default function BookingsQueue() {
     router.setParams({ tab: undefined, view: undefined, date: undefined });
   }, [tab, view, date]);
   const dateParam = ymd(selectedDate);
+  // Registration number search, for both queues, Daily / Monthly and the day.
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebouncedValue(searchInput.trim(), 300);
+  const typing = searchInput.trim() !== search;
 
   // Date strip: 3 days back → 13 days ahead (Daily tab). Rentals still out
   // from any earlier day are on the Recovery tab.
@@ -257,7 +265,7 @@ export default function BookingsQueue() {
   // counts.daily (the Daily chip) matches the selected day.
   // includeCompleted: the day's done pickups / returns stay listed (client item 1).
   const fetchQueue = async (kind: ListTab): Promise<QueueResult> => {
-    const params = { date: dateParam, type: listType, includeCompleted: 1 as const };
+    const params = { date: dateParam, type: listType, includeCompleted: 1 as const, ...(search ? { q: search } : {}) };
     try {
       const res = kind === 'pickups' ? await employeeApi.listPickups(params) : await employeeApi.listReturns(params);
       const body = res.data as QueueListResponse;
@@ -269,14 +277,20 @@ export default function BookingsQueue() {
     }
   };
 
+  // A new search keeps the current list on screen until the results arrive;
+  // a new tab or day still shows the loader.
+  const keepWhileSearching = (prev: QueueResult | undefined, prevQuery?: Query<QueueResult, Error, QueueResult, readonly unknown[]>) =>
+    prevQuery?.queryKey[2] === listType && prevQuery?.queryKey[3] === dateParam ? prev : undefined;
+
   const {
     data: pickups,
     isLoading: pickupsLoading,
     refetch: refetchPickups,
     isError: pickupsError,
   } = useQuery<QueueResult>({
-    queryKey: ['employee', 'pickups', listType, dateParam],
+    queryKey: ['employee', 'pickups', listType, dateParam, search],
     queryFn: () => fetchQueue('pickups'),
+    placeholderData: keepWhileSearching,
     staleTime: 30_000,
     retry: false,
   });
@@ -287,8 +301,9 @@ export default function BookingsQueue() {
     refetch: refetchReturns,
     isError: returnsError,
   } = useQuery<QueueResult>({
-    queryKey: ['employee', 'returns', listType, dateParam],
+    queryKey: ['employee', 'returns', listType, dateParam, search],
     queryFn: () => fetchQueue('returns'),
+    placeholderData: keepWhileSearching,
     staleTime: 30_000,
     retry: false,
   });
@@ -322,8 +337,9 @@ export default function BookingsQueue() {
     else refetchReturns();
   };
 
-  const emptyTitle =
-    activeTab === 'pickups'
+  const emptyTitle = search
+    ? `No vehicles match “${search}”`
+    : activeTab === 'pickups'
       ? monthly ? 'No monthly rentals waiting for pickup' : 'No pickups on this day'
       : monthly ? 'No monthly rentals on the road' : 'No returns due on this day';
 
@@ -364,6 +380,29 @@ export default function BookingsQueue() {
             </View>
           ) : null}
         </TouchableOpacity>
+      </View>
+
+      {/* Registration number search */}
+      <View style={styles.searchWrap}>
+        <Ionicons name="search-outline" size={17} color={Colors.ink3} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by registration number"
+          placeholderTextColor={Colors.ink4}
+          value={searchInput}
+          onChangeText={(t) => setSearchInput(t.slice(0, SEARCH_MAX))}
+          maxLength={SEARCH_MAX}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="characters"
+        />
+        {typing ? (
+          <ActivityIndicator size="small" color={Colors.ink3} />
+        ) : searchInput.length > 0 ? (
+          <TouchableOpacity onPress={() => setSearchInput('')} hitSlop={8} accessibilityLabel="Clear search">
+            <Ionicons name="close-circle" size={17} color={Colors.ink4} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {(
@@ -453,8 +492,8 @@ export default function BookingsQueue() {
           }
           ListHeaderComponent={
             <>
-            {/* Paused pickups / drops of any day (client item 2) */}
-            <PausedOperations type={activeTab === 'pickups' ? 'PICKUP' : 'RETURN'} />
+            {/* Paused pickups / drops of any day (client item 2) — not part of a search */}
+            {search ? null : <PausedOperations type={activeTab === 'pickups' ? 'PICKUP' : 'RETURN'} />}
             {/* The Daily return list covers one day; rentals still out from
                 earlier days live on the Recovery tab. */}
             {activeTab === 'returns' && overdueCount > 0 ? (
@@ -486,7 +525,9 @@ export default function BookingsQueue() {
                   color={Colors.ink4}
                 />
                 <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-                <Text style={styles.emptySub}>Check back after a refresh.</Text>
+                <Text style={styles.emptySub}>
+                  {search ? 'Try a different registration number.' : 'Check back after a refresh.'}
+                </Text>
               </View>
             )
           }
@@ -558,6 +599,21 @@ const styles = StyleSheet.create({
   tabCountActive: { backgroundColor: Colors.orange },
   tabCountText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3 },
   tabCountTextActive: { color: Colors.white },
+
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    paddingHorizontal: 14,
+    height: 44,
+    gap: 10,
+  },
+  searchInput: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.ink, padding: 0 },
 
   segment: {
     flexDirection: 'row',

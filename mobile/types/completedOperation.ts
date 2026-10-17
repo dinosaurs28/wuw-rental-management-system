@@ -4,7 +4,7 @@
 import type { DlCollectionStatus } from '../lib/dlStatus';
 import type { SafetyDepositHandling } from '../lib/counterPayment';
 import type { ReturnSession } from './api';
-import type { DropBill, ReturnLateSummary } from './return';
+import type { DropBill, KmSegment, ReturnLateSummary } from './return';
 import type { BookingListType } from './queue';
 
 // PENDING = not done yet (open the workflow); null = not on that queue (cancelled …).
@@ -161,6 +161,8 @@ export interface ReturnSummary extends SummaryBase {
     extraKm: number | null;
     swapCount: number;
     measured: boolean; // false: a swap without readings
+    // Each mid-rental swap: the car handed back and the replacement (absent on older servers)
+    swaps?: KmSegment[];
   };
   fuel: { pickup: string | null; return: string | null };
   // FASTag of the car handed back — shown / editable (and required) when hasFastag:
@@ -216,7 +218,6 @@ export interface EditPickupBody {
   // The difference the review showed — 409 EDIT_DELTA_CHANGED when it moved
   expectedDelta?: number;
   dlStatus?: DlCollectionStatus;
-  drivingLicenceNumber?: string;
   addPhotos?: Array<{ fileId: string; label?: string | null }>;
   removeFileIds?: string[];
 }

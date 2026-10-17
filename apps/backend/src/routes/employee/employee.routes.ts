@@ -96,6 +96,7 @@ import {
   GetBookingSwapHistoryForEmployee,
   GetRecentSwapsForEmployee,
   GetPickupPricingRules,
+  PreviewSwapKm,
 } from "../../controller/employee/vehicle-swap.controller.js";
 import sessionRouter from "./session.routes.js";
 import dashboardRouter from "./dashboard.routes.js";
@@ -242,6 +243,7 @@ router.use("/", sessionRouter);
 router.get("/bookings/:bookingId/available-vehicles", EmployeeCheck, GetAvailableVehiclesForEmployee);
 router.post("/bookings/:bookingId/swap-vehicle", EmployeeCheck, SwapVehicleByEmployee);
 router.get("/bookings/:bookingId/swap-history", EmployeeCheck, GetBookingSwapHistoryForEmployee);
+router.get("/bookings/:bookingId/swap-km-preview", EmployeeCheck, PreviewSwapKm);
 router.get("/swap-history", EmployeeCheck, GetRecentSwapsForEmployee);
 router.get("/pickup/:bookingId/pricing-rules", EmployeeCheck, GetPickupPricingRules);
 

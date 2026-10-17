@@ -415,7 +415,7 @@ export default function CreateCustomerScreen() {
             </View>
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Identity</Text>
-              <Text style={styles.cardSub}>Optional — the DL number is also taken at pickup.</Text>
+              <Text style={styles.cardSub}>Optional.</Text>
               <Field
                 label="Driving Licence number"
                 value={dlNumber}

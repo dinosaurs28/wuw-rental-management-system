@@ -20,6 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { KycDocument, KycDocumentType } from "@/services/kyc.service";
+import { describeDlPhotoSides, dlPhotosState } from "@repo/schemas";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -90,7 +91,7 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -108,7 +109,7 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-orange-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -131,6 +132,31 @@ export const KycDocumentList = ({
     );
   }
 
+  // Both driving licence photos are required to book (Oct 17 2026; server: 422
+  // DL_PHOTOS_REQUIRED). A side staff rejected doesn't count — capture it again.
+  const dl = dlPhotosState(documents);
+  const dlNotice = dl.ok ? null : (
+    <div
+      role="alert"
+      className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-orange-200 bg-orange-50 p-3 text-left"
+    >
+      <AlertCircle className="size-5 shrink-0 text-orange-600" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-orange-900">Driving licence photos required</p>
+        <p className="text-xs text-orange-800 mt-0.5">
+          Capture the {describeDlPhotoSides(dl.missingSides)} of the customer's driving licence before booking
+          {dl.rejectedSides.length > 0 ? ` (the ${describeDlPhotoSides(dl.rejectedSides)} was rejected)` : ""}.
+        </p>
+      </div>
+      {onUploadClick && (
+        <Button size="sm" onClick={onUploadClick} className="bg-orange-600 hover:bg-orange-700 shrink-0">
+          Capture licence
+          <Upload className="ml-2 size-4" />
+        </Button>
+      )}
+    </div>
+  );
+
   const errorAlert = error ? (
     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
       {error}
@@ -143,11 +169,12 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {errorAlert}
+          {dlNotice}
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <FileText className="size-14 text-zinc-300 mb-4" />
             {pendingCount > 0 ? (
@@ -161,8 +188,7 @@ export const KycDocumentList = ({
               <>
                 <p className="text-base font-medium text-foreground mb-1">No documents uploaded</p>
                 <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                  Not required — the booking can go ahead without one. Upload both sides
-                  of a government ID to attach it.
+                  Both sides of the driving licence are required to book. Aadhaar is optional.
                 </p>
               </>
             )}
@@ -206,16 +232,17 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Document <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Optional. A document with both sides can be attached — tap to select, tap
-            again to remove.
+            Both sides of the driving licence are required to book and are attached to
+            the booking. Aadhaar is optional.
           </p>
         </CardHeader>
 
         <CardContent className="space-y-3">
           {errorAlert}
+          {dlNotice}
 
           {/* Complete groups — selectable */}
           {completeGroups.map((group) => {

@@ -97,10 +97,13 @@ export const classifyRentalPeriod = (
 ): PeriodTypeKey => {
   if (stored === "MONTHLY") return "MONTHLY";
   try {
-    return DurationCalculatorService.calculate(
+    const computed = DurationCalculatorService.calculate(
       DateTime.fromJSDate(startAt, { zone: SYSTEM_TIMEZONE }),
       DateTime.fromJSDate(endAt, { zone: SYSTEM_TIMEZONE }),
     ).periodType as PeriodTypeKey;
+    // A standard booking of 30 days (the longest package) bills 720 h, which the
+    // calculator calls MONTHLY; it isn't the monthly plan (stored type says so).
+    return computed === "MONTHLY" && stored ? "MULTI_DAY" : computed;
   } catch {
     // endAt <= startAt (corrupt row) — fall back to what was stored.
     return (stored ?? "FULL_DAY") as PeriodTypeKey;

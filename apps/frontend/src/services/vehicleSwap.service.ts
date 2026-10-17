@@ -5,6 +5,7 @@ import type {
   VehicleSwap,
   SwapHistoryFilters,
   SwapCandidates,
+  SwapKmPreview,
 } from "@/types/vehicleSwap";
 
 export interface BookingVehicleDetails {
@@ -64,6 +65,14 @@ export const employeeVehicleSwapService = {
     return response.data.data ?? [];
   },
 
+  /** The returning car's km at a mid-rental swap, by the drop's rule (employee) */
+  async previewSwapKm(bookingId: string, endOdometer: number, newVehicleId?: number): Promise<SwapKmPreview> {
+    const response = await apiClient.get(`/employee/bookings/${bookingId}/swap-km-preview`, {
+      params: { endOdometer, ...(newVehicleId != null && { newVehicleId }) },
+    });
+    return response.data.data;
+  },
+
   /** Photo of the replacement for a mid-rental swap (the pickup photo upload) */
   async uploadSwapPhoto(formData: FormData): Promise<{ fileId: string; url: string }> {
     const response = await apiClient.post("/employee/pickup/upload", formData, {
@@ -97,6 +106,14 @@ export const vehicleSwapService = {
     const response = await apiClient.get(
       `/branchManager/dashboard/bookings/${bookingId}/available-vehicles`,
     );
+    return response.data.data;
+  },
+
+  /** The returning car's km at a mid-rental swap, by the drop's rule (branch manager) */
+  async previewSwapKm(bookingId: string, endOdometer: number, newVehicleId?: number): Promise<SwapKmPreview> {
+    const response = await apiClient.get(`/branchManager/dashboard/bookings/${bookingId}/swap-km-preview`, {
+      params: { endOdometer, ...(newVehicleId != null && { newVehicleId }) },
+    });
     return response.data.data;
   },
 

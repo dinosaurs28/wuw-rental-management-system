@@ -286,6 +286,15 @@ export const BookingConfirmationPage = () => {
           return;
         }
 
+        // Both driving licence photos are required (Oct 17 2026): back to review,
+        // where they're uploaded inline.
+        if (errorCode === "DL_PHOTOS_REQUIRED") {
+          toast.error(message, { duration: 8000 });
+          useVehicleRentalStore.getState().setSelectedKyc(null);
+          navigate("/booking/review-confirm", { replace: true });
+          return;
+        }
+
         // The selected KYC file isn't one of this customer's documents — pick again.
         if (errorCode === "KYC_DOCUMENT_INVALID" || errorCode === "KYC_NOT_OWNED") {
           toast.error(message);
@@ -800,12 +809,10 @@ export const BookingConfirmationPage = () => {
               <div className="flex items-center justify-between py-2 border-b border-zinc-100">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
                   <FileText className="size-4" />
-                  KYC Document
+                  Driving licence
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {selectedKycFilePublicId
-                    ? `•••• ${selectedKycFilePublicId.slice(-4)}`
-                    : "Not attached"}
+                  {selectedKycFilePublicId ? "Photos attached" : "Photos required"}
                 </span>
               </div>
 

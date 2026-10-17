@@ -81,12 +81,37 @@ export function KmChargeSummary({ figures, source }: KmChargeSummaryProps) {
             </p>
           )}
           {segments.length > 0 && (
-            <p className="text-xs text-neutral-600 mt-1">
-              Across {segments.length + 1} vehicles:{" "}
-              {segments.map((s) => `${inr(s.km ?? 0)} km`).join(" + ")} on the vehicle
-              {segments.length === 1 ? "" : "s"} handed back at the swap{segments.length === 1 ? "" : "s"} +{" "}
-              {inr(Math.max(0, currentVehicleKm))} km on this vehicle.
-            </p>
+            <div className="text-xs text-neutral-600 mt-1 space-y-0.5">
+              <p>
+                Across {segments.length + 1} vehicles — one free-km allowance, used in the order they were driven
+                {source === "computed" ? " (each vehicle's line of the charge above, not billed again)" : ""}:
+              </p>
+              <ul className="space-y-0.5 pl-3">
+                {segments.map((s, i) => (
+                  <li key={s.endedBySwapPublicId ?? i}>
+                    <span className="font-mono">{s.vehicleRegNo ?? `Vehicle ${i + 1}`}</span> (handed back at the swap):{" "}
+                    {inr(s.km ?? 0)} km
+                    {s.billed
+                      ? ` · extra ${inr(s.billed.extraKm)} km = ₹${inr(parseFloat(s.billed.extraKmCharge) || 0)}`
+                      : s.recorded?.extraKm != null
+                        ? ` · extra ${inr(s.recorded.extraKm)} km${
+                            s.recorded.extraKmEnabled && s.recorded.extraKmCharge != null
+                              ? ` = ₹${inr(parseFloat(s.recorded.extraKmCharge) || 0)}`
+                              : ""
+                          } (recorded at the swap)`
+                        : ""}
+                  </li>
+                ))}
+                <li>
+                  This vehicle: {inr(Math.max(0, currentVehicleKm))} km
+                  {figures.currentSegment?.billed
+                    ? ` · extra ${inr(figures.currentSegment.billed.extraKm)} km = ₹${inr(
+                        parseFloat(figures.currentSegment.billed.extraKmCharge) || 0,
+                      )}`
+                    : ""}
+                </li>
+              </ul>
+            </div>
           )}
         </>
       )}

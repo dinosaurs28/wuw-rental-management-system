@@ -20,15 +20,15 @@ const CONFIG: Record<DLStatus, {
     eyebrow: 'UNDER REVIEW', eyebrowColor: Colors.availLow, icon: 'time-outline',
     title: 'Licence under review', sub: 'We’ll verify your driving licence shortly.',
   },
-  // X2 — a licence PHOTO is optional (pickup needs the DL number on the profile
-  // and the original card), so these two never read as a blocker.
+  // Both licence photos are required (Oct 17 2026): new bookings can't be made
+  // without them; an older booking's photos are captured at pickup if missing.
   none: {
-    eyebrow: 'OPTIONAL', eyebrowColor: Colors.ink3, icon: 'card-outline',
-    title: 'Licence photo', sub: 'Uploading a photo of your driving licence is optional. Bring the original licence to pickup.', cta: 'Upload photo',
+    eyebrow: 'REQUIRED', eyebrowColor: Colors.orange, icon: 'card-outline',
+    title: 'Licence photos', sub: 'Upload both sides of your driving licence. Bring the original licence to pickup.', cta: 'Upload photos',
   },
   rejected: {
-    eyebrow: 'OPTIONAL', eyebrowColor: Colors.availLow, icon: 'alert-circle-outline',
-    title: 'Licence photo not accepted', sub: 'Your licence photo couldn’t be verified. You can re-upload it — it isn’t needed for pickup. Bring the original licence.', cta: 'Re-upload',
+    eyebrow: 'ACTION NEEDED', eyebrowColor: Colors.availLow, icon: 'alert-circle-outline',
+    title: 'Licence photo not accepted', sub: 'Your licence photo couldn’t be verified. Upload a clearer photo, and bring the original licence to pickup.', cta: 'Re-upload',
   },
 };
 

@@ -228,8 +228,8 @@ test("a pickup on the window's last afternoon gets every package, 12 hours held 
   const pickup = ist("2026-11-09T14:00:00");
   const held = halfDayReturnFor(manipal, pickup);
   const offered = customerPackagesForPickup(pickup, now, held?.clamped ? held.endAt : null);
-  assert.equal(offered.length, 16); // 12 hours + 1…15 days — the return may pass the window
+  assert.equal(offered.length, 31); // 12 hours + 1…30 days — the return may pass the window
   assert.deepEqual([offered[0]!.hours, offered[0]!.endAt.toISOString()], [12, ist("2026-11-09T22:30:00").toISOString()]);
-  assert.equal(offered[15]!.endAt.toISOString(), ist("2026-11-24T14:00:00").toISOString());
+  assert.equal(offered[30]!.endAt.toISOString(), ist("2026-12-09T14:00:00").toISOString());
   assert.equal(customerPackagesForPickup(ist("2026-11-10T09:00:00"), now).length, 0); // day 31
 });

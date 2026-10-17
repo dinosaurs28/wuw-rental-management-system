@@ -11,6 +11,11 @@ import {
 import { displayEmail } from "../../utils/customer/identity.js";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
+import {
+  fleetSearchBookingWhere,
+  fleetSearchVehicleIds,
+  parseFleetQuery,
+} from "../../utils/booking/fleetSearch.js";
 import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
 
 // Return queue. The day is the IST business day (a return due 00:00–05:29 IST
@@ -21,6 +26,9 @@ import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/com
 // `?includeCompleted=1` (client item 1, new clients only) adds the day's done
 // returns in `completed`; the waiting list and counts then leave out drops sent
 // to a manager (they are listed as completed, "Awaiting manager").
+// `?q=` (new clients only) keeps the bookings whose vehicle matches the search
+// (registration number, spaces / hyphens ignored, or make / model words) in the
+// list, the counts and `completed`.
 export const returnController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -33,6 +41,9 @@ export const returnController = async (req: Request, res: Response) => {
     const type = parsedType.type;
     const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
     const pendingOnly = pendingOnlyWhere(includeCompleted);
+    const search = parseFleetQuery(req.query.q);
+    const searchVehicleIds = search ? await fleetSearchVehicleIds(branchId, search) : undefined;
+    const searchWhere = searchVehicleIds ? fleetSearchBookingWhere(searchVehicleIds) : {};
 
     let dayDt = TimezoneService.getCurrentTime();
     if (date) {
@@ -54,6 +65,7 @@ export const returnController = async (req: Request, res: Response) => {
         in: [BookingStatus.PICKED_UP],
       },
       ...pendingOnly,
+      ...searchWhere,
     };
     const dailyWhere = { ...dayWhere, ...bookingTypeWhere("DAILY") };
     const monthlyWhere = {
@@ -61,6 +73,7 @@ export const returnController = async (req: Request, res: Response) => {
       status: BookingStatus.PICKED_UP,
       ...bookingTypeWhere("MONTHLY"),
       ...pendingOnly,
+      ...searchWhere,
     };
     const listWhere = type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : dayWhere;
 
@@ -139,7 +152,12 @@ export const returnController = async (req: Request, res: Response) => {
     const counts = { daily: dailyCount, monthly: monthlyCount };
     // Done (or sent to a manager) for the day — additive, new clients only
     const completed = includeCompleted
-      ? await listCompletedQueue("RETURN", { branchId, type, day: { gte: startOfDay, lte: endOfDay } })
+      ? await listCompletedQueue("RETURN", {
+          branchId,
+          type,
+          day: { gte: startOfDay, lte: endOfDay },
+          vehicleIds: searchVehicleIds,
+        })
       : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].

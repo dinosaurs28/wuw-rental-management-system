@@ -178,7 +178,11 @@ export const EmployeeBookingSummaryPage = () => {
       }
 
       // The KYC document isn't this customer's — make staff pick one again.
-      if (error?.response?.data?.code === "KYC_CUSTOMER_MISMATCH") {
+      // DL_PHOTOS_REQUIRED: the page we go back to asks for the licence photos.
+      if (
+        error?.response?.data?.code === "KYC_CUSTOMER_MISMATCH" ||
+        error?.response?.data?.code === "DL_PHOTOS_REQUIRED"
+      ) {
         useEmployeeBookingStore.getState().setCustomerKycId(null);
       }
 

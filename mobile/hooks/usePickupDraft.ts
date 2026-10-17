@@ -18,8 +18,6 @@ export interface PickupDraftFields {
   // FASTag balance typed for the car (cars with a FASTag)
   fastagBalance: string;
   dlStatus: DlCollectionStatus | null;
-  dlNumberEditing: boolean;
-  dlNumberInput: string;
   // Legacy flow
   requireManager: boolean;
   requestDeposit: boolean;
@@ -72,8 +70,6 @@ export function usePickupDraft({
     f.fuelLevel == null &&
     !f.fastagBalance &&
     f.dlStatus == null &&
-    !f.dlNumberEditing &&
-    !f.dlNumberInput.trim() &&
     !f.requireManager &&
     !f.requestDeposit &&
     !f.depositAmount &&
@@ -127,8 +123,6 @@ export function usePickupDraft({
         );
       }
       s.setDlStatus(draftOneOf(d, 'dlStatus', DL_SELECTABLE_STATUSES));
-      s.setDlNumberEditing(draftBool(d, 'dlNumberEditing'));
-      s.setDlNumberInput(draftString(d, 'dlNumberInput'));
       s.setRequireManager(draftBool(d, 'requireManager'));
       s.setRequestDeposit(draftBool(d, 'requestDeposit'));
       s.setDepositAmount(draftString(d, 'depositAmount'));

@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { DropBill, FastagUsageSummary, OdometerSegment, RentalTimeline, ReturnLateSummary } from "@/types/drop";
+import type { CurrentKmSegment, DropBill, FastagUsageSummary, OdometerSegment, RentalTimeline, ReturnLateSummary } from "@/types/drop";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 
@@ -84,6 +84,8 @@ export interface ReturnKmSummary {
   kmSource?: "ODOMETER" | "STAFF_ENTERED" | "NONE";
   swapCount?: number;
   segments?: OdometerSegment[];
+  /** The car handed back now, after mid-rental swaps with readings (its line of the charge) */
+  currentSegment?: CurrentKmSegment | null;
   /** includedKm = free km of the original period + free km the extensions add (#7). */
   freeKmOriginal?: number;
   freeKmExtensions?: number;
@@ -219,11 +221,6 @@ export const paymentSessionService = {
       dlStatus?: "COLLECTED" | "NOT_COLLECTED" | "DEPOSIT" | null;
       /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
       dlDepositNote?: string | null;
-      /**
-       * Customer's DL number typed at the counter (X2) — saved to the customer.
-       * Required when none is on file (422 DL_NUMBER_REQUIRED); 400 INVALID_DL_NUMBER.
-       */
-      drivingLicenceNumber?: string;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(
