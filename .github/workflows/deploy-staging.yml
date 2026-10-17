@@ -5,10 +5,12 @@ on:
     branches:
       - staging
 
-# Cancel in-progress runs on the same branch
+# Queue runs on the same branch instead of cancelling them: each run only
+# deploys the apps changed since the previous push, so a cancelled run's
+# changes would otherwise never reach the server.
 concurrency:
   group: deploy-staging-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # ──────────────────────────────────────────────
