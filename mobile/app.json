@@ -2,7 +2,7 @@
   "expo": {
     "name": "WUW Rentals",
     "slug": "wuw-cars",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "scheme": "wuw",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
