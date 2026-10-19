@@ -7,8 +7,10 @@
  * end (an extension swap: the extended end). "Free" is what a customer booking
  * for that window checks (availabilityBatch): no CONFIRMED booking overlapping
  * it, no rental out over it (a PICKED_UP booking until its return plus the
- * turnaround grace; for good once overdue), no checkout in progress (an
- * unexpired HOLD booking or a Redis hold) and not set Out for Rental by hand —
+ * turnaround; for good once overdue, until the drop is recorded), no checkout
+ * in progress (an unexpired HOLD booking or a Redis hold) and not set Out for
+ * Rental by hand — every booking and hold keeping the 3 h turnaround either
+ * side (BOOKING_TURNAROUND_HOURS; the swapped booking's grace when longer) —
  * plus the eligibility rules (status, insurance through the rental's end,
  * vehicle type, no downgrade). After the swap the booking item points at the
  * replacement, so the same rule keeps it reserved for this booking until the
@@ -17,8 +19,9 @@
  * Pure: no database (swap-replacements.ts runs it against the data).
  */
 import { DateTime } from "luxon";
+import { BOOKING_TURNAROUND_MS } from "@repo/schemas";
 import type { UnavailableReason } from "../../utils/availability/availabilityBatch.js";
-import { isInsuranceValid } from "../../utils/availability/vehicleEligibility.js";
+import { isInsuranceValid, turnaroundMsFor } from "../../utils/availability/vehicleEligibility.js";
 
 /** PRE_PICKUP = booking CONFIRMED; ACTIVE_RENTAL = booking PICKED_UP (car with the customer). */
 export type SwapAvailabilityStage = "PRE_PICKUP" | "ACTIVE_RENTAL";
@@ -63,28 +66,32 @@ export const formatSwapIst = (d: Date) =>
 export interface SwapWindow {
   /** max(now, booking start); now for a rental already out (picked up early or not) */
   start: Date;
-  /**
-   * The checked end: the booking's end (or the later extension end), plus the
-   * turnaround grace for a rental already out — once the replacement is on a
-   * PICKED_UP booking, customers can't book it before its return plus grace
-   * (bookingBlocksWindow), so a booking starting inside that grace conflicts.
-   */
+  /** The checked end: the booking's end (or the later extension end). */
   end: Date;
-  /** The end the rental runs to (no grace): the replacement's insurance must cover it. */
+  /** The end the rental runs to: the replacement's insurance must cover it. */
   coverUntil: Date;
+  /**
+   * Turnaround either side of the window (explainUnavailableVehicles): another
+   * booking on the replacement must end this long before `start` and start
+   * this long after `end`. BOOKING_TURNAROUND_MS, or the booking's automatic
+   * grace when longer for a rental already out (a return inside the grace is
+   * on time); an extension swap passes its own buffer.
+   */
+  turnaroundMs: number;
 }
 
 /**
  * The window a replacement must be free for: from max(now, booking start) —
  * from now for a rental already out, since the replacement is handed over now
  * even when the car was picked up before the booked start — to the booking's end — or `availabilityEndAt` when later (an extension
- * swap) — plus `graceMinutes` (the booking's automatic grace) when the
- * booking is PICKED_UP.
+ * swap), with the turnaround either side: `turnaroundMs` (default
+ * BOOKING_TURNAROUND_MS) or `graceMinutes` (the booking's automatic grace)
+ * when longer and the booking is PICKED_UP.
  */
 export function swapAvailabilityWindow(
   booking: { status: string; startAt: Date; endAt: Date },
   now: Date,
-  opts: { availabilityEndAt?: Date | null; graceMinutes?: number | null } = {},
+  opts: { availabilityEndAt?: Date | null; graceMinutes?: number | null; turnaroundMs?: number | null } = {},
 ): SwapWindow {
   const coverUntil =
     opts.availabilityEndAt && opts.availabilityEndAt.getTime() > booking.endAt.getTime()
@@ -92,8 +99,8 @@ export function swapAvailabilityWindow(
       : booking.endAt;
   const active = booking.status === "PICKED_UP";
   const start = active ? now : new Date(Math.max(now.getTime(), booking.startAt.getTime()));
-  const grace = active ? Math.max(0, opts.graceMinutes ?? 0) : 0;
-  return { start, end: new Date(coverUntil.getTime() + grace * 60_000), coverUntil };
+  const turnaroundMs = turnaroundMsFor(active ? opts.graceMinutes : null, opts.turnaroundMs ?? BOOKING_TURNAROUND_MS);
+  return { start, end: coverUntil, coverUntil, turnaroundMs };
 }
 
 /**
@@ -103,7 +110,7 @@ export function swapAvailabilityWindow(
  *  - MAINTENANCE / damage review / INACTIVE never qualify; a hand-set Out for
  *    Rental neither (no return time).
  *  - A car out on another rental qualifies for a swap before pickup when it is
- *    back (return + grace) before this booking starts — the booking rule
+ *    back (return + turnaround) before this booking starts — the booking rule
  *    decides — but never for a mid-rental swap: it is handed over now.
  *  - Insurance valid through the rental's last day; same or higher category.
  */
@@ -156,9 +163,15 @@ export function blockerExclusion(r: UnavailableReason): SwapExclusion {
     case "OVERDUE_RENTAL":
       return { code: "STILL_OUT", reason: `Out on another rental (was due back ${formatSwapIst(r.endAt)})` };
     case "ON_RENT":
-      return { code: "STILL_OUT", reason: `Out on another rental until ${formatSwapIst(r.endAt)}` };
+      return {
+        code: "STILL_OUT",
+        reason: `Out on another rental until ${formatSwapIst(r.endAt)} (available from ${formatSwapIst(r.availableFrom)})`,
+      };
     case "BOOKED":
-      return { code: "BOOKED", reason: `Booked ${formatSwapIst(r.startAt)} – ${formatSwapIst(r.endAt)}` };
+      return {
+        code: "BOOKED",
+        reason: `Booked ${formatSwapIst(r.startAt)} – ${formatSwapIst(r.endAt)} (free again from ${formatSwapIst(r.availableFrom)})`,
+      };
     case "ON_HOLD":
       return { code: "ON_HOLD", reason: "Checkout in progress — a customer is booking it for part of this rental" };
   }

@@ -15,6 +15,7 @@ import {
   uploadErrorMessage,
   type UploadProfile,
 } from '../../lib/image';
+import { insertInCaptureOrder, nextCaptureAt } from '../../lib/photoOrder';
 import ImageViewer from '../ui/ImageViewer';
 import CameraCapture, { type CapturedSize } from './CameraCapture';
 
@@ -22,6 +23,10 @@ export interface CapturedPhoto {
   fileId: string;
   url: string;
   label?: string;
+  // When the shot was taken (ms, this screen only). `value` is kept in this
+  // order whatever order the uploads finish in; photos without it (saved
+  // earlier / brought back from a paused pickup or drop) stay first, as they were.
+  capturedAt?: number;
 }
 
 export interface CaptureField {
@@ -53,6 +58,7 @@ interface PendingShot {
   uri: string;
   width: number;
   label?: string;
+  capturedAt: number;
   failed: boolean;
 }
 
@@ -118,12 +124,18 @@ export default function PhotoCaptureSection({
       }
       const { fileId, url } = result;
       if (!mounted.current) return;
-      // Replace any existing photo for a labeled slot; append for generic.
+      // Replace any existing photo for a labeled slot. Either way the photo goes
+      // where it was taken in the sequence, not where its upload finished.
       const current = valueRef.current;
       commit(
         shot.label
-          ? [...current.filter((p) => p.label !== shot.label), { fileId, url, label: shot.label }]
-          : [...current, { fileId, url }],
+          ? insertInCaptureOrder(current.filter((p) => p.label !== shot.label), {
+              fileId,
+              url,
+              label: shot.label,
+              capturedAt: shot.capturedAt,
+            })
+          : insertInCaptureOrder(current, { fileId, url, capturedAt: shot.capturedAt }),
       );
       setPending((list) => list.filter((p) => p.key !== shot.key));
     } catch (err: any) {
@@ -140,6 +152,7 @@ export default function PhotoCaptureSection({
       uri,
       width: size.width,
       label: camera?.label,
+      capturedAt: nextCaptureAt(),
       failed: false,
     };
     setPending((list) => [...list, shot]);
@@ -161,8 +174,29 @@ export default function PhotoCaptureSection({
     setViewer({ images: value.map((p) => ({ url: p.url, label: p.label })), index });
   };
 
-  const genericPhotos = value.filter((p) => !p.label);
-  const genericPending = pending.filter((p) => !p.label);
+  // Every shot, uploaded or not, in the order taken: its number (1, 2, 3…) is
+  // the place it's saved at and shown at on the drop.
+  type Entry = { photo: CapturedPhoto; shot?: undefined } | { photo?: undefined; shot: PendingShot };
+  const sequence = pending.reduce<Entry[]>((list, shot) => {
+    const index = list.findIndex((e) => {
+      const at = e.photo ? e.photo.capturedAt : e.shot.capturedAt;
+      return at != null && at > shot.capturedAt;
+    });
+    const entry: Entry = { shot };
+    return index < 0 ? [...list, entry] : [...list.slice(0, index), entry, ...list.slice(index)];
+  }, value.map((photo): Entry => ({ photo })));
+  const numberOf = (key: string) =>
+    sequence.findIndex((e) => (e.photo ? e.photo.fileId === key : e.shot.key === key)) + 1;
+  const genericSequence = sequence.filter((e) => !(e.photo ?? e.shot).label);
+
+  const renderNumber = (key: string) => {
+    const n = numberOf(key);
+    return n > 0 ? (
+      <View style={styles.numBadge} pointerEvents="none">
+        <Text style={styles.numBadgeText}>{n}</Text>
+      </View>
+    ) : null;
+  };
 
   const renderPending = (shot: PendingShot) => (
     <View key={shot.key} style={styles.thumbWrap}>
@@ -188,6 +222,7 @@ export default function PhotoCaptureSection({
           <Ionicons name="close" size={13} color={Colors.white} />
         </TouchableOpacity>
       )}
+      {renderNumber(shot.key)}
     </View>
   );
 
@@ -219,6 +254,7 @@ export default function PhotoCaptureSection({
                     <TouchableOpacity style={styles.removeBtn} onPress={() => remove(shot.fileId)} hitSlop={6}>
                       <Ionicons name="close" size={13} color={Colors.white} />
                     </TouchableOpacity>
+                    {renderNumber(shot.fileId)}
                   </View>
                 ) : inFlight ? (
                   renderPending(inFlight)
@@ -240,7 +276,10 @@ export default function PhotoCaptureSection({
       {/* Generic photos */}
       {allowGeneric && (
         <View style={styles.genericGrid}>
-          {genericPhotos.map((p) => (
+          {genericSequence.map((e) => {
+            if (e.shot) return renderPending(e.shot);
+            const p = e.photo;
+            return (
             <View key={p.fileId} style={styles.thumbWrap}>
               <TouchableOpacity
                 style={styles.thumb}
@@ -254,9 +293,10 @@ export default function PhotoCaptureSection({
               <TouchableOpacity style={styles.removeBtn} onPress={() => remove(p.fileId)} hitSlop={6}>
                 <Ionicons name="close" size={13} color={Colors.white} />
               </TouchableOpacity>
+              {renderNumber(p.fileId)}
             </View>
-          ))}
-          {genericPending.map(renderPending)}
+            );
+          })}
           <TouchableOpacity
             style={styles.addTile}
             onPress={() => setCamera({ multiple: true })}
@@ -327,6 +367,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
+  numBadge: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white },
   shotOverlayFailed: { backgroundColor: 'rgba(220,53,69,0.72)' },
   shotOverlayText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white },
   addTile: {

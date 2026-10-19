@@ -1,9 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, ImageOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, GitCompare, ImageOff, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
 import { SWAP_PHOTOS_MISSING_NOTE } from "@/components/swap/SwapPhotoStrip";
+import { PhotoCompareDialog, type ComparePhoto } from "./PhotoCompareDialog";
+
+/** A photo's number in its set (the order taken): #1 at pickup is compared with #1 at the drop. */
+export function PhotoNumber({ n, className }: { n: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "absolute top-1 left-1 z-[1] min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center tabular-nums pointer-events-none",
+        className,
+      )}
+    >
+      {n}
+    </span>
+  );
+}
 
 /**
  * GET /employee/return/:bookingId/pickup-captures. `photos` = the pickup
@@ -84,13 +99,14 @@ function setTitle(set: ConditionPhotoSet): string {
   return set.replaced ? `Original pickup — ${reg ?? "first vehicle"} (replaced)` : `Pickup${reg ? ` — ${reg}` : ""}`;
 }
 
+/** The photos come in the order they were taken (older ones: as saved), numbered #1, #2… */
 function lightboxItems(set: ConditionPhotoSet): LightboxItem[] {
   const prefix = set.source === "SWAP" ? `${set.vehicle?.regNo ?? "Swap"} at swap` : "Pickup";
   return set.photos.map((p, i) => ({
     url: p.url,
     previewUrl: p.displayUrl && p.displayUrl !== p.url ? p.displayUrl : null,
     mime: p.mime,
-    label: p.captureLabel ? `${prefix}: ${p.captureLabel}` : `${prefix} photo ${i + 1}`,
+    label: `${prefix} #${i + 1}${p.captureLabel ? ` · ${p.captureLabel}` : ""}`,
   }));
 }
 
@@ -219,10 +235,13 @@ function PhotoStrip({
               aria-label={`View handover photo ${i + 1} of ${total}${photo.captureLabel ? `, ${photo.captureLabel}` : ""}`}
             >
               <StripImage photo={photo} alt={photo.captureLabel ?? "Handover photo"} />
+              <PhotoNumber n={i + 1} className="top-2 left-2 min-w-6 h-6 text-xs" />
               <ZoomBadge />
             </button>
             <div className="flex items-baseline gap-2 px-3 py-2 border-t">
-              <p className="flex-1 text-sm font-medium truncate">{photo.captureLabel ?? `Photo ${i + 1}`}</p>
+              <p className="flex-1 text-sm font-medium truncate">
+                {photo.captureLabel ? `#${i + 1} · ${photo.captureLabel}` : `Photo #${i + 1}`}
+              </p>
               {photo.takenAt && <p className="text-xs text-gray-500 shrink-0">{fmt(photo.takenAt)}</p>}
             </div>
           </div>
@@ -313,10 +332,14 @@ function EarlierSet({
 export function HandoverConditionPhotos({
   data,
   onOpen,
+  dropPhotos,
 }: {
   data: ReturnConditionCaptures;
   onOpen: (items: LightboxItem[], index: number) => void;
+  /** The drop photos taken so far, in the order taken: offers "Compare" (#n beside #n) */
+  dropPhotos?: ComparePhoto[];
 }) {
+  const [comparing, setComparing] = useState(false);
   const current: ConditionPhotoSet = data.currentVehicleCaptures ?? {
     source: "PICKUP",
     vehicle: null,
@@ -345,6 +368,24 @@ export function HandoverConditionPhotos({
             <p className="text-xs font-medium text-gray-600">{setTitle(current)}</p>
           )}
           <PhotoStrip set={current} onOpen={onOpen} />
+          {(dropPhotos?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => setComparing(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50"
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+              Compare with drop photos
+            </button>
+          )}
+          <PhotoCompareDialog
+            open={comparing}
+            onOpenChange={setComparing}
+            before={current.photos.map((p) => ({ url: p.url, displayUrl: p.displayUrl, label: p.captureLabel }))}
+            after={dropPhotos ?? []}
+            beforeTitle={current.source === "SWAP" ? "At swap" : "Pickup"}
+            afterTitle="Drop"
+          />
         </>
       )}
       {earlier.map((set) => (

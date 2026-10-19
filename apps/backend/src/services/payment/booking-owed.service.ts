@@ -26,6 +26,10 @@
  * Paid = CONFIRMED money in (refund rows excluded) − refunds paid out
  * (OVERPAYMENT_REFUND / CANCELLATION_REFUND rows).
  *
+ * A "Refund to customer" (Oct 2026, any booking, no cap) paid beyond what the
+ * booking owed the customer back is goodwill (goodwillAmount on its refund row):
+ * it comes off what is owed too, so it never makes the balance due rise.
+ *
  * Legacy drop (no drop bill) with a recorded safety-deposit choice (#6,
  * services/payment/safety-deposit.service.ts): SET_OFF counts the held deposit
  * as credited against the charges at once (a deposit above them then shows as
@@ -97,8 +101,15 @@ export interface BookingOwed {
   safetyDepositCredited: Decimal;
   /** max(0, charged − credited) — the refundable deposit still held */
   safetyDepositHeld: Decimal;
-  /** totalFinal + returnCharges + safetyDepositCharged − safetyDepositCredited */
+  /** totalFinal + returnCharges + safetyDepositCharged − safetyDepositCredited − refundsGoodwill */
   totalOwed: Decimal;
+  /**
+   * "Refund to customer" paid beyond what the booking owed back (goodwill,
+   * PaymentTransaction.goodwillAmount on refund rows): the business gave it up,
+   * so it comes off what is owed as well as off what was paid — the balance due
+   * doesn't move.
+   */
+  refundsGoodwill: Decimal;
   /** Legacy drop's recorded deposit choice (honoured by the BM settlement); null otherwise */
   safetyDepositHandling: SafetyDepositHandling | null;
   /** Deposit refunds recorded through the BM settlement (`sdr:` refund rows) */
@@ -188,7 +199,7 @@ export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
 export async function computeBookingOwed(bookingId: number, tx?: TxClient): Promise<BookingOwed> {
   const db = tx ?? prisma;
 
-  const [booking, entries, legacyReturnCharges, dropDamages, standaloneDeposits, legacyDepositRefunds] = await Promise.all([
+  const [booking, entries, legacyReturnCharges, dropDamages, standaloneDeposits, legacyDepositRefunds, goodwill] = await Promise.all([
     db.booking.findUnique({ where: { id: bookingId }, select: { totalFinal: true, pricingSnapshot: true } }),
     // Drop bill lines and safety-deposit lines of every payment session still in play
     db.ledgerEntry.findMany({
@@ -236,6 +247,16 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
       },
       select: { totalAmount: true },
     }),
+    // "Refund to customer" beyond what the booking owed back (goodwill)
+    db.paymentTransaction.aggregate({
+      where: {
+        bookingId,
+        purpose: { in: REFUND_PAYMENT_PURPOSES },
+        status: { in: ["COLLECTED", "CONFIRMED"] },
+        goodwillAmount: { gt: 0 },
+      },
+      _sum: { goodwillAmount: true },
+    }),
   ]);
   if (!booking) throw new Error("Booking not found.");
 
@@ -265,7 +286,8 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     .reduce((acc, d) => acc.add(dropDamageAmount(d)), ZERO);
 
   const returnCharges = dropBillCharges.add(legacyReturnCharges).add(dropDamageOutsideBill);
-  const totalOwed = totalFinal.add(returnCharges).add(safetyDepositCharged).sub(safetyDepositCredited);
+  const refundsGoodwill = dec(goodwill._sum.goodwillAmount);
+  const totalOwed = totalFinal.add(returnCharges).add(safetyDepositCharged).sub(safetyDepositCredited).sub(refundsGoodwill);
 
   return {
     totalFinal,
@@ -277,6 +299,7 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     safetyDepositCredited,
     safetyDepositHeld: Decimal.max(ZERO, safetyDepositCharged.sub(safetyDepositCredited)),
     totalOwed,
+    refundsGoodwill,
     safetyDepositHandling,
     legacyDepositRefunded,
     legacyDepositSetOff,

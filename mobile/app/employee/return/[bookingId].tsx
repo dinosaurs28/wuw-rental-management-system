@@ -1600,6 +1600,7 @@ export default function ReturnScreen() {
             onOpen={(images, index) => setPhotoViewer({ images, index })}
             failed={pickupCapturesFailed}
             onRetry={() => refetchPickupCaptures()}
+            dropPhotos={returnPhotos.map((p) => ({ url: p.url, label: p.label }))}
           />
 
           {/* Return condition photos — required before compute / complete (like the web) */}
@@ -1608,7 +1609,7 @@ export default function ReturnScreen() {
               <SectionHeader title="Return Condition Photos" />
               <View style={styles.card}>
                 <Text style={styles.hintInline}>
-                  Photograph the vehicle's condition at return — at least one photo is required (4–6 recommended).
+                  Photograph the vehicle's condition at return — at least one photo is required (4–6 recommended). Take them in the same order as the pickup photos to compare #1 with #1.
                 </Text>
                 <View style={{ height: 12 }} />
                 <PhotoCaptureSection

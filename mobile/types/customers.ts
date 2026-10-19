@@ -163,6 +163,10 @@ export interface CustomerBookingTransaction {
   method: string;
   status: string;
   isRefund: boolean;
+  // "Refund to customer" row / cash refund with no cash shift open (Oct 2026). Absent on older servers.
+  isCustomerRefund?: boolean;
+  cashOutsideShift?: boolean;
+  goodwillAmount?: string;
   totalAmount: string;
   cashAmount: string;
   onlineAmount: string;

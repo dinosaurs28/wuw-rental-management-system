@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { validateExtensionWindow } from "@repo/schemas";
+import { EXTENSION_BUFFER_HOURS, validateExtensionWindow } from "@repo/schemas";
 import { CalendarIcon } from "lucide-react";
 import { ExtensionVehiclePicker } from "@/components/swap/ExtensionVehiclePicker";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,7 @@ import {
 } from "@/lib/gst";
 import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
 import { ExtensionFreeKmLine } from "@/components/extension/ExtensionFreeKmLine";
+import { ExtensionAvailabilityPanel } from "@/components/extension/ExtensionAvailabilityPanel";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import {
   buildScheduleUserMessage,
@@ -105,6 +106,11 @@ function fmt(iso: string) {
 }
 
 const EXT_MINUTES = ["00", "15", "30", "45"];
+
+/** "+1 day 11 hr 30 min" between two ISO instants (null when not after). */
+function addedLength(fromIso: string, toIso: string) {
+  return formatExtensionHours((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 3_600_000);
+}
 
 export function ExtendBookingModal({
   open,
@@ -180,6 +186,13 @@ export function ExtendBookingModal({
   const maxEndDay = maxEndAt ? istCalendarParts(maxEndAt).day : null;
   const capReached = eligibility?.eligible === false;
   const currentEndDay = istCalendarParts(new Date(currentEndAt)).day;
+  // Latest return this car is free for (2 h before its next pickup, or the cap)
+  // — later times stay pickable (a swap may cover them) but are flagged
+  const availableUntil = eligibility?.availableUntil ? new Date(eligibility.availableUntil) : null;
+  const slotPastAvailable = (h: number, m: number) =>
+    !!newDate &&
+    !!availableUntil &&
+    istInstant(newDate, `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`) > availableUntil;
 
   const newEndAt = newDate ? istInstant(newDate, `${newHour}:${newMinute}`) : null;
   const windowMessage = (() => {
@@ -202,6 +215,9 @@ export function ExtendBookingModal({
     return !!maxEndAt && istInstant(newDate, `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`) > maxEndAt;
   };
   const hourDisabled = (h: number) => EXT_MINUTES.every((m) => slotDisabled(h, Number(m)));
+  const hourPastAvailable = (h: number) =>
+    EXT_MINUTES.every((m) => slotDisabled(h, Number(m)) || slotPastAvailable(h, Number(m)));
+  const pastAvailable = !!newEndAt && !!availableUntil && newEndAt > availableUntil;
 
   // A new day can have different hours — move the time into them
   useEffect(() => {
@@ -229,7 +245,8 @@ export function ExtendBookingModal({
     const at = istInstant(parts.day, `${hour}:${minute}`);
     const verdict = officeHours ? validateReturnTime(officeHours, at) : null;
     const blocked = (!!maxEndAt && at > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
-    return { hours, day: parts.day, hour, minute, at, blocked };
+    const past = !!availableUntil && at > availableUntil;
+    return { hours, day: parts.day, hour, minute, at, blocked, past };
   });
 
   const reset = useCallback(() => {
@@ -453,6 +470,9 @@ export function ExtendBookingModal({
                 <span className="font-semibold text-neutral-900">{fmt(currentEndAt)}</span>
               </div>
 
+              {/* The car's next booking and how far it can go (server figures) */}
+              <ExtensionAvailabilityPanel availability={eligibility} maxBookingDays={eligibility?.maxBookingDays} />
+
               {/* New end date picker */}
               <div className="space-y-2">
                 <Label>New End Date <span className="text-red-500">*</span></Label>
@@ -503,7 +523,12 @@ export function ExtendBookingModal({
                     </SelectTrigger>
                     <SelectContent>
                       {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
-                        <SelectItem key={h} value={h} disabled={hourDisabled(Number(h))}>{h}:00</SelectItem>
+                        <SelectItem key={h} value={h} disabled={hourDisabled(Number(h))}>
+                          {h}:00
+                          {!hourDisabled(Number(h)) && hourPastAvailable(Number(h)) && (
+                            <span className="ml-1 text-xs text-amber-700">· after available time</span>
+                          )}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -518,6 +543,9 @@ export function ExtendBookingModal({
                       {EXT_MINUTES.map((m) => (
                         <SelectItem key={m} value={m} disabled={slotDisabled(Number(newHour), Number(m))}>
                           :{m}
+                          {!slotDisabled(Number(newHour), Number(m)) && slotPastAvailable(Number(newHour), Number(m)) && (
+                            <span className="ml-1 text-xs text-amber-700">· after available time</span>
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -541,7 +569,9 @@ export function ExtendBookingModal({
                       "h-8 px-3 rounded-full border text-xs font-semibold transition-colors",
                       newEndAt && newEndAt.getTime() === opt.at.getTime()
                         ? "bg-orange-500 border-orange-500 text-white"
-                        : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400",
+                        : opt.past
+                          ? "bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400",
                       "disabled:opacity-45 disabled:cursor-not-allowed",
                     )}
                   >
@@ -558,6 +588,15 @@ export function ExtendBookingModal({
               ) : (
                 <>
                   {windowMessage && <p className="text-xs text-red-600">{windowMessage}</p>}
+                  {!windowMessage && pastAvailable && availableUntil && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      {eligibility?.vehicleRegNo ?? "This car"} is only free until {fmt(availableUntil.toISOString())}
+                      {eligibility?.limitReason === "NEXT_BOOKING"
+                        ? ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
+                        : ""}
+                      . Checking this time will offer a swap to another car or a shorter extension, if possible.
+                    </p>
+                  )}
                   {!windowMessage && hoursMessage && <p className="text-xs text-red-600">{hoursMessage}</p>}
                   {hoursVerdict?.status === "RETURN_GRACE" && (
                     <p className="text-xs text-amber-700">
@@ -613,6 +652,17 @@ export function ExtendBookingModal({
             >
               {/* Pricing summary */}
               <div className="bg-neutral-50 rounded-lg px-4 py-3.5 text-sm space-y-2">
+                <div className="flex justify-between gap-3 text-neutral-600">
+                  <span>Current return</span>
+                  <span className="text-right">
+                    <span className="font-medium">{fmt(evaluation.oldEndAt ?? currentEndAt)}</span>
+                    {formatRentalHours(evaluation.pricing.originalHours) && (
+                      <span className="block text-xs text-neutral-500">
+                        {formatRentalHours(evaluation.pricing.originalHours)} rental
+                      </span>
+                    )}
+                  </span>
+                </div>
                 {formatExtensionHours(evaluation.pricing.extensionHours) ? (
                   <div className="flex justify-between text-neutral-600">
                     <span>Extra time</span>
@@ -636,9 +686,16 @@ export function ExtendBookingModal({
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-neutral-600">
-                  <span>New end date</span>
-                  <span className="font-medium">{fmt(evaluation.requestedEndAt)}</span>
+                <div className="flex justify-between gap-3 text-neutral-600">
+                  <span>New return</span>
+                  <span className="text-right">
+                    <span className="font-medium">{fmt(evaluation.requestedEndAt)}</span>
+                    {addedLength(evaluation.oldEndAt ?? currentEndAt, evaluation.requestedEndAt) && (
+                      <span className="block text-xs text-orange-600">
+                        {addedLength(evaluation.oldEndAt ?? currentEndAt, evaluation.requestedEndAt)}
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <ExtensionFreeKmLine freeKm={evaluation.pricing.extensionFreeKm} />
                 <ExtensionChargeBreakdown
@@ -653,6 +710,12 @@ export function ExtendBookingModal({
                   </p>
                 )}
               </div>
+
+              {/* The car's next booking and how far it can go — fresh from evaluate */}
+              <ExtensionAvailabilityPanel
+                availability={evaluation.availableUntil ? evaluation : eligibility}
+                maxBookingDays={eligibility?.maxBookingDays}
+              />
 
               {/* Resolution options */}
               <div className="space-y-2">
@@ -764,6 +827,45 @@ export function ExtendBookingModal({
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4 py-2"
             >
+              {/* Current and new return, with their lengths */}
+              {(() => {
+                const oldEnd = committedExtension.oldEndAt ?? evaluation?.oldEndAt ?? currentEndAt;
+                const newEnd =
+                  committedExtension.newEndAt ??
+                  (selectedResolution === "PARTIAL_EXTENSION"
+                    ? evaluation?.resolutionOptions.find((o) => o.type === "PARTIAL_EXTENSION")?.partialNewEndAt
+                    : evaluation?.requestedEndAt);
+                const rental = formatRentalHours(evaluation?.pricing.originalHours);
+                const added = newEnd ? addedLength(oldEnd, newEnd) : null;
+                return (
+                  <div className="bg-neutral-50 rounded-lg px-4 py-3 space-y-2 text-sm">
+                    <div className="flex justify-between gap-3 text-neutral-600">
+                      <span>Current return</span>
+                      <span className="text-right">
+                        <span className="font-medium text-neutral-900">{fmt(oldEnd)}</span>
+                        {rental && <span className="block text-xs text-neutral-500">{rental} rental</span>}
+                      </span>
+                    </div>
+                    {newEnd && (
+                      <div className="flex justify-between gap-3 text-neutral-600">
+                        <span>New return</span>
+                        <span className="text-right">
+                          <span className="font-semibold text-orange-600">{fmt(newEnd)}</span>
+                          {added && <span className="block text-xs text-orange-600">{added}</span>}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* The car's next booking after the new return */}
+              <ExtensionAvailabilityPanel
+                availability={committedExtension}
+                maxBookingDays={eligibility?.maxBookingDays}
+                afterExtension
+              />
+
               {/* Amount due */}
               <div className="bg-neutral-50 rounded-lg px-4 py-4 space-y-1 text-sm">
                 <div className="flex justify-between text-neutral-600">

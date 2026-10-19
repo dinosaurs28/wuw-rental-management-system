@@ -12,7 +12,7 @@ import { z } from "zod";
 import Decimal from "decimal.js";
 import { branchRentRates, rentColumns, weekendRentColumns } from "../../services/pricing/rent-columns.service.js";
 import { ACTIVE_RENTAL_ITEM_WHERE, findActiveRental } from "../../utils/availability/outForRental.js";
-import { vehicleHiddenReasons } from "../../utils/availability/vehicleEligibility.js";
+import { isDropRecorded, vehicleHiddenReasons } from "../../utils/availability/vehicleEligibility.js";
 import { getBatchFallbackPrices } from "../../utils/pricing/batchListingPrice.js";
 const updateVehicleFastagSchema = z.object({
   fastagNumber: z.string().min(1).nullable(),
@@ -760,15 +760,21 @@ export const GetVehicles = async (req: Request, res: Response) => {
     const [activeRentals, rents] = await Promise.all([
       prisma.bookingItem.findMany({
         where: { vehicleId: { in: data.map((v) => v.id) }, ...ACTIVE_RENTAL_ITEM_WHERE },
-        select: { vehicleId: true, booking: { select: { publicId: true, endAt: true } } },
+        select: {
+          vehicleId: true,
+          booking: {
+            select: { publicId: true, endAt: true, status: true, requiresManagerConfirmation: true, returnedAt: true },
+          },
+        },
       }),
       getBatchFallbackPrices(data),
     ]);
     const onRental = new Set(activeRentals.map((i) => i.vehicleId));
     const now = new Date();
+    // A drop already recorded (waiting for the manager) no longer holds the car
     const overdueOf = new Map(
       activeRentals
-        .filter((i) => i.booking.endAt.getTime() <= now.getTime())
+        .filter((i) => !isDropRecorded(i.booking) && i.booking.endAt.getTime() <= now.getTime())
         .map((i) => [i.vehicleId, { bookingId: i.booking.publicId, endAt: i.booking.endAt }]),
     );
 

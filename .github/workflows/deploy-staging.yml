@@ -188,7 +188,9 @@ jobs:
               20261018120000_photo_variants \
               20261019090000_branch_hours_11pm \
               20261020090000_trip_types_local \
-              20261021090000_swap_km_snapshot
+              20261021090000_swap_km_snapshot \
+              20261022093000_booking_photo_capture_order \
+              20261023090000_customer_refund
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

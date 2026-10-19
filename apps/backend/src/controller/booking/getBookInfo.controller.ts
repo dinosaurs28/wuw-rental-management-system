@@ -138,7 +138,7 @@ function parseGroupKey(groupKey: string): {
 /**
  * Atomically resolves a groupKey to the best available vehicle within a Prisma transaction.
  * The candidates are locked and re-checked (lockAndFindBlockedVehicleIds: blocking
- * bookings with turnaround grace, overdue rentals, a hand-set Out for Rental,
+ * bookings with the 3 h turnaround, overdue rentals, a hand-set Out for Rental,
  * other checkouts' live HOLD rows) — Redis holds are checked outside. Listable
  * units only (vehicleEligibility).
  * Selects the lowest-odometer candidate to distribute fleet wear evenly, trying

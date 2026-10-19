@@ -37,6 +37,7 @@ import {
   reviewIsDispositionOnly,
   vehicleStatusAfterDrop,
 } from "../../services/damage/drop-damage.service.js";
+import { bookingPhotoOrderBy } from "../../utils/photo-order.js";
 
 export const GetDamageReports = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
@@ -333,6 +334,7 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
           where: {
             type: "DAMAGE",
           },
+          orderBy: bookingPhotoOrderBy(),
           select: {
             file: {
               select: {

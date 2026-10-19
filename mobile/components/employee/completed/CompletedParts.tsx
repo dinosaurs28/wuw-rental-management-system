@@ -98,7 +98,7 @@ export function CompletionBanner({
   );
 }
 
-// Saved photos, tap to open the viewer.
+// Saved photos, numbered in the order they were taken, tap to open the viewer.
 export function PhotoGrid({ photos, emptyText }: { photos: Array<{ url: string; label?: string | null }>; emptyText: string }) {
   const [viewer, setViewer] = useState<{ images: ViewerImage[]; index: number } | null>(null);
   if (photos.length === 0) return <Text style={styles.hint}>{emptyText}</Text>;
@@ -109,12 +109,15 @@ export function PhotoGrid({ photos, emptyText }: { photos: Array<{ url: string; 
           <TouchableOpacity
             key={`${p.url}_${i}`}
             style={styles.photoTile}
-            onPress={() => setViewer({ images: photos.map((x) => ({ url: x.url, label: x.label ?? undefined })), index: i })}
+            onPress={() => setViewer({ images: photos.map((x, n) => ({ url: x.url, label: `#${n + 1}${x.label ? ` · ${x.label}` : ''}` })), index: i })}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel={p.label ? `View ${p.label} photo` : 'View photo'}
           >
             <Image source={{ uri: p.url }} style={styles.photo} resizeMethod="resize" />
+            <View style={styles.photoNum} pointerEvents="none">
+              <Text style={styles.photoNumText}>{i + 1}</Text>
+            </View>
             {p.label ? (
               <View style={styles.photoLabel}>
                 <Text style={styles.photoLabelText} numberOfLines={1}>{p.label}</Text>
@@ -317,6 +320,11 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   photoTile: { width: 84, height: 84, borderRadius: 12, overflow: 'hidden', backgroundColor: Colors.bg },
   photo: { width: '100%', height: '100%' },
+  photoNum: {
+    position: 'absolute', left: 4, top: 4, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9,
+    backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',
+  },
+  photoNumText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.white },
   photoLabel: {
     position: 'absolute',
     left: 0,

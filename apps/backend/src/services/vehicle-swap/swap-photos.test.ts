@@ -88,6 +88,20 @@ test("two files for one shot: the last is kept, the earlier one is reported (nev
   );
 });
 
+test("photos keep the order sent (the order taken): labelled shots and extras interleaved", () => {
+  const result = normalizeReplacementPhotos(
+    [{ fileId: "x" }, { fileId: "a", label: "back" }, { fileId: "y" }, { fileId: "b", label: "Front" }],
+    FIELDS,
+  );
+  assert.deepEqual(result.photos.map((p) => p.fileId), ["x", "a", "y", "b"]);
+  // a retaken shot takes the place of its last take
+  const retaken = normalizeReplacementPhotos(
+    [{ fileId: "a", label: "Front" }, { fileId: "x" }, { fileId: "b", label: "Front" }],
+    FIELDS,
+  );
+  assert.deepEqual(retaken.photos.map((p) => p.fileId), ["x", "b"]);
+});
+
 test("FASTag balances: required in strict mode for cars with a FASTag, stored for any car mid-rental", () => {
   const base = { stage: "ACTIVE_RENTAL" as const, oldVehicleHasFastag: true, newVehicleHasFastag: true };
   assert.deepEqual(missingFastagBalances("STRICT", base), ["oldVehicleFastagBalance", "newVehicleFastagBalance"]);

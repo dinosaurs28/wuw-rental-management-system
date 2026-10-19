@@ -7,9 +7,10 @@
  * OUT_FOR_RENTAL, and its insurance is valid through the end of its expiry day
  * (Asia/Kolkata). OUT_FOR_RENTAL is listable because a car out on a rental is
  * part of the fleet: the PICKED_UP booking blocks the dates it is out for
- * (availabilityBatch), so it shows for windows after its return. A car set
- * OUT_FOR_RENTAL by hand (no booking behind it) or overdue on its rental stays
- * unbookable for every window (getUnavailableVehicleIds).
+ * (availabilityBatch), so it shows for windows from its return plus the 3 h
+ * turnaround (bookingBlocksWindow). A car set OUT_FOR_RENTAL by hand (no
+ * booking behind it) or overdue on its rental stays unbookable for every window
+ * (getUnavailableVehicleIds) — the overdue one until fleet records its drop.
  *
  * MAINTENANCE, INACTIVE and MANAGER_REPORTED (drop damage awaiting review) stay
  * hidden for all dates.
@@ -19,6 +20,7 @@ import { VehicleStatus, BookingStatus, Prisma } from "@repo/database/client";
 import { DateTime } from "luxon";
 import { SYSTEM_TIMEZONE } from "../../services/timezone/timezone.service.js";
 import { DEFAULT_FROZEN_CHARGE_CONFIG, type FrozenChargeConfig } from "../../types/charge-engine.types.js";
+import { BOOKING_TURNAROUND_MS, windowsConflictWithTurnaround } from "@repo/schemas";
 
 /** Statuses a listed (and bookable) car may have. */
 export const LISTABLE_STATUSES: VehicleStatus[] = [VehicleStatus.AVAILABLE, VehicleStatus.OUT_FOR_RENTAL];
@@ -146,29 +148,75 @@ export function automaticGraceMinutes(
 }
 
 /**
- * Whether a booking keeps its car from the window [start, end):
- *  - CONFIRMED: it overlaps the window;
- *  - PICKED_UP: the car is out until its return time plus the automatic grace
- *    (a return inside the grace is on time, so a pickup at the return time
- *    can't be promised), and for every window once the return is overdue.
- * Other statuses never block here (HOLD rows are checked where a booking is
- * created — they may expire).
+ * The turnaround a booking keeps around itself (client request, Oct 2026):
+ * BOOKING_TURNAROUND_HOURS (3 h), or the booking's automatic grace when that is
+ * longer (a return inside the grace is on time, so a pickup inside it can't be
+ * promised). `baseMs` overrides the 3 h (an extension swap uses its own buffer).
+ */
+export function turnaroundMsFor(graceMinutes: number | null | undefined, baseMs: number = BOOKING_TURNAROUND_MS): number {
+  return Math.max(Math.max(0, baseMs), Math.max(0, graceMinutes ?? 0) * 60_000);
+}
+
+/**
+ * Fleet has recorded the drop and only the branch manager's confirmation is
+ * left (legacy drop "send to manager": the booking stays PICKED_UP with
+ * requiresManagerConfirmation, and the drop stamps returnedAt in the same
+ * transaction). The car is back, so it no longer blocks other customers — a
+ * drop that raised damage holds the car by its status instead
+ * (MANAGER_REPORTED, set at the drop). returnedAt is required too: a pickup
+ * sent to the manager and then completed another way could leave the flag on
+ * a car that is really out (no returnedAt), and that must keep blocking.
+ */
+export function isDropRecorded(b: {
+  status: string;
+  requiresManagerConfirmation?: boolean | null;
+  returnedAt?: Date | null;
+}): boolean {
+  return b.status === BookingStatus.PICKED_UP && b.requiresManagerConfirmation === true && b.returnedAt != null;
+}
+
+/** Prisma filter: a PICKED_UP booking whose drop is NOT recorded (isDropRecorded false) — the car is out. */
+export const DROP_NOT_RECORDED_WHERE = {
+  OR: [{ requiresManagerConfirmation: false }, { returnedAt: null }],
+} satisfies Prisma.BookingWhereInput;
+
+/**
+ * Whether a booking keeps its car from the window [start, end), with the
+ * turnaround T = turnaroundMsFor(graceMinutes, turnaroundMs) on both sides:
+ *  - CONFIRMED, or a HOLD not yet expired (a checkout in progress): the window
+ *    must start at least T after the booking's return and end at least T before
+ *    its pickup;
+ *  - PICKED_UP: the car is out until its return plus T, and for every window
+ *    once the return is overdue — until fleet records the drop (isDropRecorded),
+ *    after which it blocks nothing.
+ * Other statuses (RETURNED, CANCELLED, HOLD_EXPIRED) never block.
  */
 export function bookingBlocksWindow(
-  b: { status: string; startAt: Date; endAt: Date },
+  b: {
+    status: string;
+    startAt: Date;
+    endAt: Date;
+    holdExpiresAt?: Date | null;
+    requiresManagerConfirmation?: boolean | null;
+    returnedAt?: Date | null;
+  },
   start: Date,
   end: Date,
   now: Date,
   graceMinutes: number | null,
+  turnaroundMs: number = BOOKING_TURNAROUND_MS,
 ): boolean {
+  const t = turnaroundMsFor(graceMinutes, turnaroundMs);
   if (b.status === BookingStatus.PICKED_UP) {
+    if (isDropRecorded(b)) return false;
     if (b.endAt.getTime() <= now.getTime()) return true;
-    return start.getTime() < b.endAt.getTime() + (graceMinutes ?? 0) * 60_000;
+    return start.getTime() < b.endAt.getTime() + t;
   }
-  if (b.status === BookingStatus.CONFIRMED) {
-    return b.startAt.getTime() < end.getTime() && b.endAt.getTime() > start.getTime();
-  }
-  return false;
+  const live =
+    b.status === BookingStatus.CONFIRMED ||
+    (b.status === BookingStatus.HOLD && !!b.holdExpiresAt && b.holdExpiresAt.getTime() > now.getTime());
+  if (!live) return false;
+  return windowsConflictWithTurnaround(b.startAt.getTime(), b.endAt.getTime(), start.getTime(), end.getTime(), t);
 }
 
 // ── Registration numbers ──────────────────────────────────────────────────────

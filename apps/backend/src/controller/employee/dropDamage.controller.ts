@@ -33,6 +33,7 @@ import {
 } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { createID } from "../../utils/nanoID.js";
+import { bookingPhotoOrderBy, orderByCapture } from "../../utils/photo-order.js";
 import { publicFileUrl } from "../../utils/file-url.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
@@ -61,7 +62,7 @@ const createDropDamageSchema = z.object({
 const dropDamageInclude = {
   photos: {
     where: { type: BookingPhotoType.DAMAGE },
-    orderBy: { createdAt: "asc" as const },
+    orderBy: bookingPhotoOrderBy(),
     select: { file: { select: { publicId: true, key: true, url: true } } },
   },
   vehicle: { select: { publicId: true, make: true, model: true, regNo: true } },
@@ -177,10 +178,16 @@ export const CreateDropDamage = async (req: Request, res: Response) => {
     }
 
     const uniqueImageIds = [...new Set(damageImageIds)];
-    const files = await prisma.fileObject.findMany({
-      where: { publicId: { in: uniqueImageIds } },
-      select: { id: true, publicId: true, url: true },
-    });
+    // In the order sent = the order the photos were taken
+    const files = orderByCapture(
+      (
+        await prisma.fileObject.findMany({
+          where: { publicId: { in: uniqueImageIds } },
+          select: { id: true, publicId: true, url: true },
+        })
+      ).map((f) => ({ ...f, fileId: f.publicId })),
+      uniqueImageIds,
+    );
     if (files.length !== uniqueImageIds.length) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "One or more damage photos are invalid" });
     }
@@ -232,12 +239,13 @@ export const CreateDropDamage = async (req: Request, res: Response) => {
       });
 
       await tx.bookingPhoto.createMany({
-        data: files.map((f) => ({
+        data: files.map((f, i) => ({
           publicId: createID(),
           bookingId: booking.id,
           fileId: f.id,
           type: BookingPhotoType.DAMAGE,
           damageReportId: newReport.id,
+          captureOrder: i,
         })),
       });
 

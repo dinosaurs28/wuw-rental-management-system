@@ -7,6 +7,7 @@ import {
 import { ExtensionResolutionType } from "@repo/database/client";
 import { SWAP_WINDOW_BOOKING_SELECT } from "../vehicle-swap/swap-replacements.js";
 import { partialExtensionEnd } from "./partial-extension.js";
+import { EXTENSION_BUFFER_HOURS, EXTENSION_BUFFER_MS } from "@repo/schemas";
 
 export interface ResolutionOption {
   type: ExtensionResolutionType;
@@ -42,7 +43,9 @@ class ExtensionConflictResolverService {
   ): Promise<ConflictResolutionOptions> {
     const options: ResolutionOption[] = [];
 
-    // 1. Check if the same vehicle is available for extended period
+    // 1. Check if the same vehicle is available for extended period — free
+    // until EXTENSION_BUFFER_HOURS after the new end (its next pickup at least
+    // 2 hours later), the rule the commit re-checks
     const availability = await extensionAvailabilityService.checkVehicleAvailability(
       currentVehicleId,
       currentEndAt,
@@ -53,7 +56,7 @@ class ExtensionConflictResolverService {
     if (availability.available) {
       options.push({
         type: ExtensionResolutionType.SAME_VEHICLE,
-        description: "Current vehicle is available for the extended duration.",
+        description: `Current vehicle is available for the extended duration (with ${EXTENSION_BUFFER_HOURS} hours before its next booking).`,
       });
       return {
         options,
@@ -67,7 +70,8 @@ class ExtensionConflictResolverService {
 
     // 2. Can we swap the current booking to another vehicle? The swap happens
     // now, so the replacement must be free from now (or the start) through the
-    // extended end — the swap rule, as the commit re-checks it
+    // extended end, with its next pickup at least EXTENSION_BUFFER_HOURS later
+    // — the swap rule with the extension buffer, as the commit re-checks it
     const [booking, currentVehicle] = await Promise.all([
       prisma.booking.findUniqueOrThrow({ where: { id: bookingId }, select: SWAP_WINDOW_BOOKING_SELECT }),
       prisma.vehicle.findUniqueOrThrow({
@@ -83,6 +87,7 @@ class ExtensionConflictResolverService {
         categoryRank: currentCategoryRank,
       },
       availabilityEndAt: newEndAt,
+      turnaroundMs: EXTENSION_BUFFER_MS,
     });
 
     if (alternativesForCurrent.length > 0) {
@@ -109,14 +114,15 @@ class ExtensionConflictResolverService {
       });
     }
 
-    // 4. Partial extension — up to the first conflict of the same list the
-    // commit re-checks (bookings, rentals, checkouts incl. Redis holds), so an
+    // 4. Partial extension — up to EXTENSION_BUFFER_HOURS before the first
+    // conflict of the same list the commit re-checks (bookings, rentals,
+    // checkouts incl. Redis holds), rounded down to the picker grid, so an
     // offered partial never fails as "availability changed"
     const partialEnd = partialExtensionEnd(currentEndAt, newEndAt, conflictingBookings);
     if (partialEnd) {
       options.push({
         type: ExtensionResolutionType.PARTIAL_EXTENSION,
-        description: `Extend partially until ${partialEnd.toISOString()} (latest available window).`,
+        description: `Extend partially until ${partialEnd.toISOString()} (${EXTENSION_BUFFER_HOURS} hours before the vehicle's next booking).`,
         partialNewEndAt: partialEnd,
         conflictingBookings,
       });

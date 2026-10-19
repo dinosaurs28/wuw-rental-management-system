@@ -168,6 +168,12 @@ export interface DrawerTransaction {
   method: string;
   status: string;
   isRefund: boolean;
+  /** "Refund to customer" row (Oct 2026); absent on older servers. */
+  isCustomerRefund?: boolean;
+  /** A cash refund paid out with no cash shift open (Oct 2026); absent on older servers. */
+  cashOutsideShift?: boolean;
+  /** Part of a "Refund to customer" beyond what was owed back (goodwill); absent on older servers. */
+  goodwillAmount?: string;
   totalAmount: string;
   cashAmount: string;
   onlineAmount: string;
@@ -268,6 +274,8 @@ export interface BookingDrawerData {
       setOff: boolean;
     };
     totalOwed: string;
+    /** "Refund to customer" beyond what was owed back, taken off totalOwed (Oct 2026); absent on older servers. */
+    refundsGoodwill?: string;
   };
   payments: {
     lifecycleState: string;

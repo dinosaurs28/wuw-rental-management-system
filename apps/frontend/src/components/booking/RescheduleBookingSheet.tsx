@@ -33,6 +33,7 @@ import { formatPackageReturn } from "@/components/booking/PackagePicker";
 import { formatScheduleTime } from "@/utils/branchScheduleValidator";
 import { istCalendarParts } from "@/utils/bookingPickers";
 import { istWallClock, rescheduleDays, type RescheduleSlot } from "@/utils/rescheduleSlots";
+import { BOOKING_TURNAROUND_HOURS } from "@repo/schemas";
 
 const REASON_MAX = 500;
 
@@ -394,7 +395,7 @@ function BusyList({ options }: { options: RescheduleOptions }) {
       text:
         b.kind === "HOLD" && !b.bookingPublicId
           ? `${vehicleLabel(b.vehiclePublicId)} is being booked online`
-          : `${vehicleLabel(b.vehiclePublicId)} is booked${b.bookingPublicId ? ` (#${b.bookingPublicId.slice(-6).toUpperCase()})` : ""}`,
+          : `${vehicleLabel(b.vehiclePublicId)} is booked${b.bookingPublicId ? ` (#${b.bookingPublicId.slice(-6).toUpperCase()})` : ""}, plus the ${BOOKING_TURNAROUND_HOURS} h turnaround`,
       startAt: b.startAt,
       endAt: b.endAt,
     })),

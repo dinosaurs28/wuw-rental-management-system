@@ -104,6 +104,23 @@ interface SummaryBase {
   pendingAdjustment?: AdjustmentRecord | null;
   // Edits whose difference was settled
   adjustments?: AdjustmentRecord[];
+  // Money paid back with "Refund to customer" (Oct 2026; absent on older servers)
+  customerRefunds?: CustomerRefundRow[];
+}
+
+// A "Refund to customer" recorded on the booking by the branch manager / admin.
+export interface CustomerRefundRow {
+  publicId: string;
+  amount: string;
+  goodwillAmount: string;
+  method: string;
+  onlineGateway: string | null;
+  reference: string | null;
+  // Cash paid out with no cash shift open
+  cashOutsideShift: boolean;
+  notes: string | null;
+  by: string | null;
+  at: string;
 }
 
 export interface PickupSummary extends SummaryBase {

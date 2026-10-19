@@ -39,6 +39,9 @@ export function SwapPhotoStrip({ swap, className }: { swap: VehicleSwap; classNa
           title={photo.captureLabel ?? undefined}
         >
           <img src={photo.url} alt={photo.captureLabel ?? "Swap photo"} className="h-full w-full object-cover" loading="lazy" />
+          <span className="absolute top-0.5 left-0.5 min-w-4 h-4 px-0.5 rounded-full bg-black/65 text-white text-[10px] font-semibold flex items-center justify-center tabular-nums pointer-events-none">
+            {i + 1}
+          </span>
           <ZoomBadge />
         </button>
       ))}
@@ -48,7 +51,7 @@ export function SwapPhotoStrip({ swap, className }: { swap: VehicleSwap; classNa
         items={photos.map((p, i) => ({
           url: p.url,
           mime: p.mime,
-          label: `${regNo ? `${regNo} at swap` : "At swap"}: ${p.captureLabel ?? `photo ${i + 1}`}`,
+          label: `${regNo ? `${regNo} at swap` : "At swap"} #${i + 1}${p.captureLabel ? ` · ${p.captureLabel}` : ""}`,
         }))}
         startIndex={viewerIndex ?? 0}
         title={regNo ? `Photos of ${regNo} at the swap` : "Photos at the swap"}

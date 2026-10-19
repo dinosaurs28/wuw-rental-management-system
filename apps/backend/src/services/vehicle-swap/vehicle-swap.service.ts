@@ -46,6 +46,7 @@ import {
 import Decimal from "decimal.js";
 import { DateTime } from "luxon";
 import { createID } from "../../utils/nanoID.js";
+import { bookingPhotoOrderBy } from "../../utils/photo-order.js";
 import { auditService } from "../audit/audit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
@@ -302,6 +303,11 @@ export interface SwapVehicleInput {
   source?: SwapSource;
   /** Check the replacement up to this end instead of booking.endAt (extension: the extended end) */
   availabilityEndAt?: Date;
+  /**
+   * Turnaround the replacement must keep either side of the window (default
+   * BOOKING_TURNAROUND_MS, 3 h; an extension swap passes its own buffer).
+   */
+  turnaroundMs?: number;
 }
 
 const vehicleSummarySelect = {
@@ -325,7 +331,8 @@ const swapRelations = {
       createdAt: true,
       file: { select: { key: true, url: true, mime: true } },
     },
-    orderBy: { id: "asc" },
+    // The order the photos were taken (older rows: as saved)
+    orderBy: bookingPhotoOrderBy(),
   },
 } satisfies Prisma.VehicleSwapInclude;
 
@@ -1074,7 +1081,7 @@ export class VehicleSwapService {
     // The rest of the rental (to the extension end on the extension path),
     // checked by the customer booking rule now the rows are locked: a
     // concurrent swap, booking or checkout for the car has committed or waits
-    const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx);
+    const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx, { turnaroundMs: input.turnaroundMs });
     await this.assertReplacementValid(tx, locked, lockedOriginal, newVehicle, window, now);
 
     // The returning car can't come back below the reading it started this segment at
@@ -1203,7 +1210,8 @@ export class VehicleSwapService {
     });
     if (replacementPhotos.length > 0) {
       await tx.bookingPhoto.createMany({
-        data: replacementPhotos.map((photo) => ({
+        // As sent (normalized) = the order the photos were taken
+        data: replacementPhotos.map((photo, i) => ({
           publicId: createID(),
           bookingId: locked.id,
           fileId: photoFileIds.get(photo.fileId)!,
@@ -1211,6 +1219,7 @@ export class VehicleSwapService {
           captureLabel: photo.label ?? null,
           swapId: createdRow.id,
           vehicleId: newVehicle.id,
+          captureOrder: i,
         })),
       });
     }

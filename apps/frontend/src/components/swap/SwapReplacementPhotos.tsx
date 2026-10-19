@@ -8,12 +8,15 @@ import {
   vehicleSwapService,
 } from "@/services/vehicleSwap.service";
 import type { SwapPhotoRequirement } from "@/types/vehicleSwap";
+import { insertInCaptureOrder, nextCaptureAt } from "@/lib/photoOrder";
 
 /** A photo of the replacement uploaded for the swap (label = capture-config shot). */
 export interface SwapUploadedPhoto {
   fileId: string;
   url: string;
   label?: string;
+  /** When it was picked (ms): the list (and the swap's photos) stay in the order taken */
+  capturedAt?: number;
 }
 
 /** Required shots still missing and whether the minimum count is met. */
@@ -97,6 +100,7 @@ export function SwapReplacementPhotos({
   };
 
   const uploadOne = async (file: File, label?: string) => {
+    const capturedAt = nextCaptureAt();
     setUploading(1);
     if (label) setUploadingSlots((s) => [...s, label]);
     else setGenericUploads((n) => n + 1);
@@ -106,10 +110,11 @@ export function SwapReplacementPhotos({
       formData.append("file", compressed);
       const { fileId, url } = await service.uploadSwapPhoto(formData);
       const current = valueRef.current;
+      // Where it was taken in the sequence, not where its upload finished
       commit(
         label
-          ? [...current.filter((p) => p.label !== label), { fileId, url, label }]
-          : [...current, { fileId, url }],
+          ? insertInCaptureOrder(current.filter((p) => p.label !== label), { fileId, url, label, capturedAt })
+          : insertInCaptureOrder(current, { fileId, url, capturedAt }),
       );
       setUploadError(null);
     } catch (error: any) {
@@ -184,6 +189,9 @@ export function SwapReplacementPhotos({
                       className="relative block w-full cursor-zoom-in"
                     >
                       <img src={shot.url} alt={field.name} className="w-full h-24 object-cover" />
+                      <span className="absolute top-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center">
+                        {value.findIndex((p) => p.fileId === shot.fileId) + 1}
+                      </span>
                       <ZoomBadge />
                     </button>
                     {!disabled && (
@@ -246,6 +254,9 @@ export function SwapReplacementPhotos({
               className="relative block w-full cursor-zoom-in"
             >
               <img src={p.url} alt="Replacement vehicle" className="w-full h-20 object-cover" />
+              <span className="absolute top-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center">
+                {value.findIndex((x) => x.fileId === p.fileId) + 1}
+              </span>
               <ZoomBadge />
             </button>
             {!disabled && (

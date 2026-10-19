@@ -148,7 +148,8 @@ class SettlementEngineService {
 
     // Rental money paid = what was paid less the deposit still held / credited back
     const rentalPaid = totalCollectedConfirmed.sub(owed.safetyDepositCharged.sub(owed.safetyDepositCredited));
-    const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(rentalPaid));
+    // A goodwill "Refund to customer" came off what was paid and what is owed alike
+    const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(owed.refundsGoodwill).sub(rentalPaid));
     // An edit's difference still open is settled at the counter on its own session
     const netPayable = totalOwed.sub(totalCollectedConfirmed).sub(owed.adjustmentPending);
     // Money on credit stays inside netPayable (the booking isn't settled until it is

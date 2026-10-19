@@ -9,6 +9,7 @@ import {
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { createID } from "../../utils/nanoID.js";
+import { captureOrderStart, orderByCapture } from "../../utils/photo-order.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 import { fastagBalanceField } from "../../services/charges/fastag-usage.js";
@@ -199,6 +200,9 @@ export const PickupController = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.PICKED_UP,
+            // A handover done here supersedes an earlier send-to-manager: PICKED_UP
+            // with the flag left on would read as a recorded drop (isDropRecorded)
+            requiresManagerConfirmation: false,
             ...licenseCollected,
           },
         });
@@ -218,30 +222,28 @@ export const PickupController = async (req: Request, res: Response) => {
       // a draft save racing this waits on the booking row lock.
       await discardOperationDraft(booking.id, "PICKUP", tx);
 
-      // Unlabeled photos (legacy / fallback)
+      // Unlabeled photos (legacy / fallback) and labeled capture images (from
+      // capture config): one set, saved in the order the photos were taken
+      // (photoOrder; older builds: as sent — the plain photos, then the labelled ones)
+      const pickupPhotos: Array<{ fileId: string; label?: string }> = [];
+      const fileMap = new Map<string, number>();
       if (
         parsedVehicleDetails.pickupImageIds &&
         parsedVehicleDetails.pickupImageIds.length > 0
       ) {
         const files = await tx.fileObject.findMany({
           where: { publicId: { in: parsedVehicleDetails.pickupImageIds } },
+          select: { id: true, publicId: true },
         });
 
         if (files.length !== parsedVehicleDetails.pickupImageIds.length) {
           throw new Error("Invalid pickup image IDs provided");
         }
 
-        await tx.bookingPhoto.createMany({
-          data: files.map((f) => ({
-            publicId: createID(),
-            bookingId: booking.id,
-            fileId: f.id,
-            type: BookingPhotoType.PRE_DELIVERY,
-          })),
-        });
+        for (const f of files) fileMap.set(f.publicId, f.id);
+        pickupPhotos.push(...parsedVehicleDetails.pickupImageIds.map((fileId) => ({ fileId })));
       }
 
-      // Labeled capture images (from capture config)
       if (
         parsedVehicleDetails.captureImages &&
         parsedVehicleDetails.captureImages.length > 0
@@ -249,21 +251,27 @@ export const PickupController = async (req: Request, res: Response) => {
         const fileIds = parsedVehicleDetails.captureImages.map((c) => c.fileId);
         const files = await tx.fileObject.findMany({
           where: { publicId: { in: fileIds } },
+          select: { id: true, publicId: true },
         });
 
         if (files.length !== fileIds.length) {
           throw new Error("Invalid capture image IDs provided");
         }
 
-        const fileMap = new Map(files.map((f) => [f.publicId, f]));
+        for (const f of files) fileMap.set(f.publicId, f.id);
+        pickupPhotos.push(...parsedVehicleDetails.captureImages);
+      }
 
+      if (pickupPhotos.length > 0) {
+        const start = await captureOrderStart(tx, { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY });
         await tx.bookingPhoto.createMany({
-          data: parsedVehicleDetails.captureImages.map((c) => ({
+          data: orderByCapture(pickupPhotos, parsedVehicleDetails.photoOrder).map((p, i) => ({
             publicId: createID(),
             bookingId: booking.id,
-            fileId: fileMap.get(c.fileId)!.id,
+            fileId: fileMap.get(p.fileId)!,
             type: BookingPhotoType.PRE_DELIVERY,
-            captureLabel: c.label,
+            ...(p.label !== undefined && { captureLabel: p.label }),
+            captureOrder: start + i,
           })),
         });
       }

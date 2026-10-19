@@ -34,6 +34,7 @@ import {
 import type { FrozenChargeConfig } from "../../types/charge-engine.types.js";
 import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js";
 import { createID } from "../../utils/nanoID.js";
+import { captureOrderStart, orderByCapture } from "../../utils/photo-order.js";
 import {
   quoteCounterCoupon,
   writeCounterCouponEntry,
@@ -84,6 +85,9 @@ const initiatePickupSessionSchema = z.object({
   pickupFastagBalance: fastagBalanceField,
   pickupImageIds: z.array(z.string()).optional(),
   captureImages: z.array(z.object({ fileId: z.string(), label: z.string() })).optional(),
+  // Every photo's fileId (pickupImageIds + captureImages) in the order the
+  // photos were taken (Oct 22 2026) — optional: older builds don't send it
+  photoOrder: z.array(z.string()).max(200).optional(),
   // Original licence custody (#3), OPTIONAL (X1): COLLECTED / NOT_COLLECTED /
   // DEPOSIT (+ note); omitted or null ⇒ left unset. licenseCollected is the old
   // builds' tick: true ⇒ COLLECTED, false ⇒ NOT_COLLECTED.
@@ -120,6 +124,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       pickupFastagBalance,
       pickupImageIds,
       captureImages,
+      photoOrder,
       dlStatus,
       dlDepositNote,
       licenseCollected,
@@ -468,35 +473,38 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         });
       }
 
+      // One set, saved in the order the photos were taken (photoOrder; older
+      // builds: as sent — the plain photos, then the labelled shots)
+      const pickupPhotos: Array<{ fileId: string; label?: string }> = [];
+      const fileMap = new Map<string, number>();
       if (pickupImageIds && pickupImageIds.length > 0) {
         const files = await tx.fileObject.findMany({
           where: { publicId: { in: pickupImageIds } },
+          select: { id: true, publicId: true },
         });
         if (files.length !== pickupImageIds.length) {
           throw new Error("Invalid pickupImageIds provided");
         }
-        await tx.bookingPhoto.createMany({
-          data: files.map((f: any) => ({
-            publicId: createID(),
-            bookingId: booking.id,
-            fileId: f.id,
-            type: BookingPhotoType.PRE_DELIVERY,
-          })),
-        });
+        for (const f of files) fileMap.set(f.publicId, f.id);
+        pickupPhotos.push(...pickupImageIds.map((fileId) => ({ fileId })));
       }
-
       if (captureImages && captureImages.length > 0) {
         const fileIds = captureImages.map((c) => c.fileId);
-        const files = await tx.fileObject.findMany({ where: { publicId: { in: fileIds } } });
+        const files = await tx.fileObject.findMany({ where: { publicId: { in: fileIds } }, select: { id: true, publicId: true } });
         if (files.length !== fileIds.length) throw new Error("Invalid captureImages fileIds");
-        const fileMap = new Map((files as any[]).map((f) => [f.publicId, f]));
+        for (const f of files) fileMap.set(f.publicId, f.id);
+        pickupPhotos.push(...captureImages);
+      }
+      if (pickupPhotos.length > 0) {
+        const start = await captureOrderStart(tx, { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY });
         await tx.bookingPhoto.createMany({
-          data: captureImages.map((c) => ({
+          data: orderByCapture(pickupPhotos, photoOrder).map((p, i) => ({
             publicId: createID(),
             bookingId: booking.id,
-            fileId: fileMap.get(c.fileId)!.id,
+            fileId: fileMap.get(p.fileId)!,
             type: BookingPhotoType.PRE_DELIVERY,
-            captureLabel: c.label,
+            ...(p.label !== undefined && { captureLabel: p.label }),
+            captureOrder: start + i,
           })),
         });
       }

@@ -107,13 +107,16 @@ function SwapRow({ swap }: { swap: VehicleSwapRecord }) {
               accessibilityLabel={`View ${p.captureLabel ?? 'swap'} photo`}
             >
               <Image source={{ uri: p.url }} style={styles.photo} resizeMethod="resize" />
+              <View style={styles.photoNum} pointerEvents="none">
+                <Text style={styles.photoNumText}>{i + 1}</Text>
+              </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
       ) : null}
       <ImageViewer
         visible={viewerIndex !== null}
-        images={photos.map((p, i) => ({ url: p.url, label: `${to.regNo} at swap: ${p.captureLabel ?? `photo ${i + 1}`}` }))}
+        images={photos.map((p, i) => ({ url: p.url, label: `${to.regNo} at swap #${i + 1}${p.captureLabel ? ` · ${p.captureLabel}` : ''}` }))}
         startIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
       />
@@ -213,6 +216,11 @@ const styles = StyleSheet.create({
   by: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginTop: 2 },
   photoStrip: { gap: 6, paddingTop: 6 },
   photo: { width: 56, height: 44, borderRadius: 6, backgroundColor: Colors.bg },
+  photoNum: {
+    position: 'absolute', left: 3, top: 3, minWidth: 15, height: 15, paddingHorizontal: 3, borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',
+  },
+  photoNumText: { fontFamily: Fonts.bodySemiBold, fontSize: 9, color: Colors.white },
   missing: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
   missingText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: '#b45309', lineHeight: 17 },
   link: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.orange },

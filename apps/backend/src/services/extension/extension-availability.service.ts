@@ -5,6 +5,7 @@ import {
   swapWindowFor,
   type SwapWindowBooking,
 } from "../vehicle-swap/swap-replacements.js";
+import { blocksExtension, extensionCheckEnd } from "./partial-extension.js";
 
 export interface ConflictingBooking {
   bookingId: number;
@@ -37,11 +38,12 @@ export interface AlternativeVehicle {
 
 class ExtensionAvailabilityService {
   /**
-   * Check if a specific vehicle is available for the given window,
-   * excluding the booking that is being extended. Checkouts in progress count:
-   * the car is listed for dates right after a rental, so a customer may be
-   * paying for that window (unexpired HOLD booking / Redis hold) while the
-   * renter extends over it.
+   * Is the car free to extend a booking from `fromAt` (its current return) to
+   * `toAt` (the new return)? Blocked by any booking, rental or checkout that
+   * overlaps [fromAt, toAt + EXTENSION_BUFFER_HOURS) — the new return must be
+   * at least 2 hours before the next pickup (blocksExtension). The conflict
+   * resolver (evaluate), the commit's re-checks and the customer pre-payment
+   * checks all call this, so what is offered is what commits.
    */
   async checkVehicleAvailability(
     vehicleId: number,
@@ -51,6 +53,47 @@ class ExtensionAvailabilityService {
     // Read through this transaction (it holds the vehicle row lock) — the commit's re-check
     db: Prisma.TransactionClient = prisma,
   ): Promise<AvailabilityResult> {
+    const found = await this.findConflicts(vehicleId, fromAt, extensionCheckEnd(toAt), excludeBookingId, db);
+    const conflictingBookings = found.filter((c) => blocksExtension(c, fromAt, toAt));
+    return {
+      available: conflictingBookings.length === 0,
+      conflictingBookings,
+    };
+  }
+
+  /**
+   * The car's first booking, rental or checkout from `fromAt` on (within
+   * `horizonEnd`), other than the extended booking: the "next booking" staff
+   * see on the extension screens. Same rows as checkVehicleAvailability.
+   */
+  async nextConflict(
+    vehicleId: number,
+    fromAt: Date,
+    horizonEnd: Date,
+    excludeBookingId: number,
+  ): Promise<ConflictingBooking | null> {
+    const found = await this.findConflicts(vehicleId, fromAt, horizonEnd, excludeBookingId, prisma);
+    let first: ConflictingBooking | null = null;
+    for (const c of found) {
+      if (!first || c.startAt.getTime() < first.startAt.getTime()) first = c;
+    }
+    return first;
+  }
+
+  /**
+   * Bookings, rentals and checkouts on the car overlapping [fromAt, toAt),
+   * excluding the extended booking. Checkouts in progress count: the car is
+   * listed for dates right after a rental, so a customer may be paying for
+   * that window (unexpired HOLD booking / Redis hold) while the renter
+   * extends over it.
+   */
+  private async findConflicts(
+    vehicleId: number,
+    fromAt: Date,
+    toAt: Date,
+    excludeBookingId: number,
+    db: Prisma.TransactionClient,
+  ): Promise<ConflictingBooking[]> {
     const now = new Date();
     const conflicts = await db.bookingItem.findMany({
       where: {
@@ -125,10 +168,7 @@ class ExtensionAvailabilityService {
       }
     }
 
-    return {
-      available: conflictingBookings.length === 0,
-      conflictingBookings,
-    };
+    return conflictingBookings;
   }
 
   /**
@@ -137,15 +177,21 @@ class ExtensionAvailabilityService {
    * category, insurance through the end, free by the customer booking rule
    * from max(now, booking start) to its end, or `availabilityEndAt` when later
    * — the extended end). The swap itself re-checks the pick under its locks.
+   * `turnaroundMs` replaces the new-booking turnaround around that window
+   * (an extension swap passes EXTENSION_BUFFER_MS: the replacement's next
+   * pickup must be at least 2 hours after the extended end).
    */
   async findAlternativeVehicles(params: {
     booking: SwapWindowBooking;
     currentVehicle: { id: number; typeClass: VehicleTypeClass; categoryRank: number };
     availabilityEndAt?: Date;
+    turnaroundMs?: number;
     excludeVehicleIds?: number[];
   }): Promise<AlternativeVehicle[]> {
     const now = new Date();
-    const window = await swapWindowFor(params.booking, now, params.availabilityEndAt);
+    const window = await swapWindowFor(params.booking, now, params.availabilityEndAt, prisma, {
+      turnaroundMs: params.turnaroundMs,
+    });
     const fleet = await prisma.vehicle.findMany({
       where: {
         branchId: params.booking.branchId,

@@ -50,6 +50,10 @@ export interface BranchTransaction {
   onlineGateway?: string | null;
   cashAmount?: string;
   onlineAmount?: string;
+  // Additive (Oct 2026): "Refund to customer" rows and cash refunds paid out with no shift open
+  isCustomerRefund?: boolean;
+  cashOutsideShift?: boolean;
+  notes?: string | null;
 }
 
 export type ShiftStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED";

@@ -115,6 +115,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Saved photos in the order they were taken (the server's order), numbered #1, #2… */
 function PhotoStrip({ photos, empty }: { photos: { url: string; label?: string | null }[]; empty: string }) {
   const [open, setOpen] = useState<number | null>(null);
   if (photos.length === 0) return <p className="text-sm text-muted-foreground py-1">{empty}</p>;
@@ -130,6 +131,9 @@ function PhotoStrip({ photos, empty }: { photos: { url: string; label?: string |
             aria-label={p.label ? `View ${p.label} photo` : "View photo"}
           >
             <img src={p.url} alt={p.label ?? "Photo"} className="w-full h-full object-cover" loading="lazy" />
+            <span className="absolute top-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center tabular-nums pointer-events-none">
+              {i + 1}
+            </span>
             <ZoomBadge />
             {p.label && (
               <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[10px] px-1 py-0.5 truncate">
@@ -140,7 +144,7 @@ function PhotoStrip({ photos, empty }: { photos: { url: string; label?: string |
         ))}
       </div>
       <PhotoLightbox
-        items={photos.map((p) => ({ url: p.url, label: p.label ?? null }))}
+        items={photos.map((p, i) => ({ url: p.url, label: `#${i + 1}${p.label ? ` · ${p.label}` : ""}` }))}
         startIndex={open ?? 0}
         open={open !== null}
         onOpenChange={(o) => !o && setOpen(null)}
@@ -342,6 +346,21 @@ function SummaryContent({ summary }: { summary: Summary }) {
 
       <Section title="Payments">
         <Payments bookingId={summary.booking.publicId} />
+        {(summary.customerRefunds ?? []).map((r) => (
+          <div key={r.publicId} className="border-t border-gray-100 py-1.5 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-700">Refund to customer · {r.method === "CASH" ? "Cash" : r.onlineGateway === "BANK_TRANSFER" ? "Bank transfer" : "UPI"}</span>
+              <span className="font-medium text-gray-900">− {inr(num(r.amount))}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {new Date(r.at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}
+              {r.by ? ` · by ${r.by}` : ""}
+              {r.reference ? ` · Ref ${r.reference}` : ""}
+            </p>
+            {r.cashOutsideShift && <p className="text-xs font-medium text-amber-700">Cash paid out with no cash shift open</p>}
+            {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+          </div>
+        ))}
       </Section>
     </div>
   );

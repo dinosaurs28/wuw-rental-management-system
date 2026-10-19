@@ -8,6 +8,7 @@ import { isPrivateFile, resolveFileUrl } from "../../utils/file-url.js";
 import { photoUrls } from "../../utils/photo-variant.js";
 import { ensureDisplayVariants } from "../photo-variant.service.js";
 import { pickedUpAtMarker } from "../charges/km-allowance.service.js";
+import { bookingPhotoOrderBy } from "../../utils/photo-order.js";
 import { selectReturnConditionPhotos, type ConditionPhotoSet, type VehicleRef } from "./swap-photos.js";
 
 export interface ConditionPhoto {
@@ -53,7 +54,8 @@ export async function getReturnConditionPhotos(bookingId: number): Promise<Retur
     prisma.bookingPhoto.findMany({
       where: { bookingId, type: BookingPhotoType.PRE_DELIVERY },
       select: photoSelect,
-      orderBy: { createdAt: "asc" },
+      // The order the photos were taken (older rows: as saved)
+      orderBy: bookingPhotoOrderBy(),
     }),
     prisma.vehicleSwap.findMany({
       where: { bookingId },
@@ -63,7 +65,7 @@ export async function getReturnConditionPhotos(bookingId: number): Promise<Retur
         bookingStatusAtSwap: true,
         originalVehicle: { select: vehicleRefSelect },
         newVehicle: { select: vehicleRefSelect },
-        photos: { select: photoSelect, orderBy: { id: "asc" } },
+        photos: { select: photoSelect, orderBy: bookingPhotoOrderBy() },
       },
       orderBy: { swappedAt: "asc" },
     }),

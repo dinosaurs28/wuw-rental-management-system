@@ -37,8 +37,15 @@ import { describeExtensionFreeKm } from "../../services/charges/extension-km.js"
 import {
   buildExtensionLimits,
   maxPeriodReachedMessage,
+  safeExtensionAvailability,
 } from "../../services/extension/extension-limits.service.js";
 import { findDlConflict, DlInUseError } from "../../services/booking/dl-in-use.service.js";
+import {
+  ExtensionDropRecordedError,
+  DROP_RECORDED_EXTENSION_MESSAGE,
+  MANAGER_CONFIRMATION_PENDING,
+} from "../../services/extension/extension-drop-guard.js";
+import { isDropRecorded } from "../../utils/availability/vehicleEligibility.js";
 
 /**
  * Customers buy extension packages only (+12 h or + N × 24 h). The longest one
@@ -240,6 +247,8 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
         bookingPublicId: evaluation.bookingPublicId,
         oldEndAt: evaluation.oldEndAt,
         requestedEndAt,
+        // Latest return their car is free for — never the other booking's details
+        availableUntil: evaluation.availableUntil,
         pricing: {
           originalDays: evaluation.pricing.originalDays,
           newDays: pricing.newDays,
@@ -269,6 +278,11 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
   } catch (error: any) {
     if (error instanceof ExtensionPendingError) {
       res.status(StatusCode.CONFLICT).json(error.toJSON());
+      return;
+    }
+    // Drop recorded, awaiting the manager (MANAGER_CONFIRMATION_PENDING)
+    if (error instanceof ExtensionDropRecordedError) {
+      res.status(error.status).json(error.toJSON());
       return;
     }
     if (isGstRuleMissing(error)) {
@@ -411,12 +425,15 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
         customerId: user.customerProfile.id,
       },
       select: {
+        id: true,
         status: true,
         startAt: true,
         endAt: true,
         branchId: true,
         activeExtensionId: true,
         rentalPeriodType: true,
+        requiresManagerConfirmation: true,
+        returnedAt: true,
       },
     });
 
@@ -442,6 +459,14 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
       return;
     }
 
+    // Drop recorded, awaiting the manager: the car is already released
+    if (isDropRecorded(booking)) {
+      res.status(StatusCode.OK).json({
+        data: { eligible: false, code: MANAGER_CONFIRMATION_PENDING, reason: DROP_RECORDED_EXTENSION_MESSAGE },
+      });
+      return;
+    }
+
     const config = await prisma.branchChargeConfig.findUnique({
       where: { branchId: booking.branchId },
       select: {
@@ -462,14 +487,21 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     // 15-day cap (#15) and branch office hours (#2) for the extension pickers
     const limits = await buildExtensionLimits(booking, now);
 
+    // How far their car can be extended: 2 h before its next booking, or the
+    // cap. Customers get the time only, never the other booking.
+    const availability = await safeExtensionAvailability(booking, new Date(limits.maxEndAt));
+    const availableUntil = availability ? new Date(availability.availableUntil) : null;
+
     // Customers extend by packages (+12 hours, +1 day …) up to the cap; each
-    // says whether its return falls inside the branch's return hours.
+    // says whether its return falls inside the branch's return hours and
+    // whether the car is free for it (available: false = past availableUntil).
     const schedule = await loadBranchScheduleConfig(booking.branchId);
     const packageOptions = extensionPackageOptions(booking.endAt, limits.maxEndAt).map((option) => ({
       hours: option.hours,
       label: option.label,
       newEndAt: option.newEndAt.toISOString(),
       insideHours: !schedule || validateReturnTime(schedule, option.newEndAt).status !== "RETURN_OUTSIDE_HOURS",
+      available: !availableUntil || option.newEndAt.getTime() <= availableUntil.getTime(),
     }));
     const noPackageFits = !limits.atCap && packageOptions.length === 0;
 
@@ -490,6 +522,8 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
               ? `Less than 12 hours are left before the ${limits.maxBookingDays}-day limit, so this booking can't be extended.`
               : null,
         ...limits,
+        // Latest return their car is free for (ISO); absent when it couldn't be read
+        ...(availability ? { availableUntil: availability.availableUntil } : {}),
         packageOptions,
       },
     });
@@ -529,6 +563,8 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
             customerId: true,
             status: true,
             endAt: true,
+            requiresManagerConfirmation: true,
+            returnedAt: true,
             branch: { select: { name: true } },
             items: { select: { vehicleId: true }, take: 1 },
           },
@@ -559,6 +595,12 @@ export const InitiateExtensionPayment = async (req: Request, res: Response): Pro
       res.status(StatusCode.BAD_REQUEST).json({
         message: `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`,
       });
+      return;
+    }
+
+    // Drop recorded, awaiting the manager: the car is already released (409)
+    if (isDropRecorded(booking)) {
+      res.status(StatusCode.CONFLICT).json(new ExtensionDropRecordedError().toJSON());
       return;
     }
 

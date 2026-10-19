@@ -225,9 +225,17 @@ export function PeriodKpiGrid({ report }: { report: PeriodReport }) {
           value={formatInr(s.refunds.amount)}
           countedBy="Completed in this period"
           details={
-            <p>
-              {formatCount(s.refunds.count)} refund{s.refunds.count === 1 ? "" : "s"} completed
-            </p>
+            <>
+              <p>
+                {formatCount(s.refunds.count)} refund{s.refunds.count === 1 ? "" : "s"} completed
+              </p>
+              {(s.refunds.cashOutsideShift?.count ?? 0) > 0 && (
+                <p className="text-amber-700">
+                  {formatInr(s.refunds.cashOutsideShift!.amount)} cash paid out with no cash shift open (
+                  {formatCount(s.refunds.cashOutsideShift!.count)})
+                </p>
+              )}
+            </>
           }
           change={c.refundAmount}
           previousValue={formatInr(p.refunds.amount)}

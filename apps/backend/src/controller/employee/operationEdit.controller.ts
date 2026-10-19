@@ -59,6 +59,8 @@ import {
 import { DL_STATUS_DEPOSIT_REMOVED_MESSAGE, SAFETY_DEPOSIT_HANDLING } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { createID } from "../../utils/nanoID.js";
+import { listCustomerRefunds } from "../../services/booking/customer-refund.service.js";
+import { bookingPhotoOrderBy, captureOrderStart } from "../../utils/photo-order.js";
 import { isPrivateFile, resolveFileUrl } from "../../utils/file-url.js";
 import { bookingListTypeOf } from "../../utils/booking/bookingTypeFilter.js";
 import {
@@ -379,7 +381,8 @@ async function captureFieldsFor(branchId: number, categoryId: number | null | un
 async function photosOf(bookingId: number, type: BookingPhotoType) {
   const photos = await prisma.bookingPhoto.findMany({
     where: { bookingId, type },
-    orderBy: { createdAt: "asc" },
+    // The order the photos were taken (older rows: as saved)
+    orderBy: bookingPhotoOrderBy(),
     select: {
       id: true,
       publicId: true,
@@ -592,7 +595,7 @@ async function buildReturnSummary(booking: SummaryBooking) {
         chargedAtDrop: true,
         photos: {
           where: { type: BookingPhotoType.DAMAGE },
-          orderBy: { createdAt: "asc" },
+          orderBy: bookingPhotoOrderBy(),
           select: { file: { select: { publicId: true, key: true, url: true } } },
         },
       },
@@ -730,7 +733,8 @@ export const GetPickupSummary = async (req: Request, res: Response) => {
     if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     return res.status(StatusCode.OK).json({
       message: "Pickup summary fetched",
-      data: await buildPickupSummary(booking, req.branch_Id),
+      // Additive (Oct 2026): money paid back with "Refund to customer" (shown in the booking's history)
+      data: { ...(await buildPickupSummary(booking, req.branch_Id)), customerRefunds: await listCustomerRefunds(booking.id) },
     });
   } catch (error) {
     return sendError(res, error, "GetPickupSummary");
@@ -743,7 +747,8 @@ export const GetReturnSummary = async (req: Request, res: Response) => {
     if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     return res.status(StatusCode.OK).json({
       message: "Return summary fetched",
-      data: await buildReturnSummary(booking),
+      // Additive (Oct 2026): money paid back with "Refund to customer" (shown in the booking's history)
+      data: { ...(await buildReturnSummary(booking)), customerRefunds: await listCustomerRefunds(booking.id) },
     });
   } catch (error) {
     return sendError(res, error, "GetReturnSummary");
@@ -1536,13 +1541,16 @@ export const EditPickup = async (req: Request, res: Response) => {
           });
         }
         if (toAdd.length > 0) {
+          // After the photos already there, in the order taken (as sent)
+          const start = await captureOrderStart(tx as any, { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY });
           await tx.bookingPhoto.createMany({
-            data: toAdd.map((p) => ({
+            data: toAdd.map((p, i) => ({
               publicId: createID(),
               bookingId: booking.id,
               fileId: newFiles.get(p.fileId)!.id,
               type: BookingPhotoType.PRE_DELIVERY,
               captureLabel: p.label ?? null,
+              captureOrder: start + i,
             })),
           });
         }
@@ -1678,7 +1686,7 @@ export const EditReturn = async (req: Request, res: Response) => {
             finalCost: true,
             photos: {
               where: { type: BookingPhotoType.DAMAGE },
-              orderBy: { createdAt: "asc" },
+              orderBy: bookingPhotoOrderBy(),
               select: { id: true, file: { select: { id: true, publicId: true, url: true } } },
             },
           },
@@ -1823,12 +1831,15 @@ export const EditReturn = async (req: Request, res: Response) => {
           await tx.bookingPhoto.deleteMany({ where: { id: { in: toRemove.map((p) => p.id) }, bookingId: booking.id } });
         }
         if (toAdd.length > 0) {
+          // After the photos already there, in the order taken (as sent)
+          const start = await captureOrderStart(tx as any, { bookingId: booking.id, type: BookingPhotoType.POST_RETURN });
           await tx.bookingPhoto.createMany({
-            data: toAdd.map((fileId) => ({
+            data: toAdd.map((fileId, i) => ({
               publicId: createID(),
               bookingId: booking.id,
               fileId: newFiles.get(fileId)!.id,
               type: BookingPhotoType.POST_RETURN,
+              captureOrder: start + i,
             })),
           });
         }
@@ -1843,13 +1854,15 @@ export const EditReturn = async (req: Request, res: Response) => {
             });
           }
           if (plan.addedIds.length > 0) {
+            const start = await captureOrderStart(tx as any, { damageReportId: plan.report.id });
             await tx.bookingPhoto.createMany({
-              data: plan.addedIds.map((fileId) => ({
+              data: plan.addedIds.map((fileId, i) => ({
                 publicId: createID(),
                 bookingId: booking.id,
                 fileId: newFiles.get(fileId)!.id,
                 type: BookingPhotoType.DAMAGE,
                 damageReportId: plan.report.id,
+                captureOrder: start + i,
               })),
             });
           }

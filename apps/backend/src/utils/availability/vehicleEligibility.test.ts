@@ -1,7 +1,7 @@
 /**
  * Pure checks of the listing rule (vehicleEligibility.ts): statuses, the
  * insurance-day boundary in Asia/Kolkata, hidden reasons, reg-no matching,
- * the blocking rule with turnaround grace — and the pickup readiness rule
+ * the blocking rule with the 3 h turnaround and drop release — and the pickup readiness rule
  * (outForRental.ts). No database.
  *   cd apps/backend && pnpm test
  */
@@ -12,14 +12,17 @@ import {
   automaticGraceMinutes,
   bookingBlocksWindow,
   insuranceValidFrom,
+  isDropRecorded,
   isInsuranceValid,
   isListableStatus,
   isListableVehicle,
   listableVehicleWhere,
   normalizeRegNo,
   regNoMatches,
+  turnaroundMsFor,
   vehicleHiddenReasons,
 } from "./vehicleEligibility.js";
+import { BOOKING_TURNAROUND_HOURS, BOOKING_TURNAROUND_MS, windowsConflictWithTurnaround } from "@repo/schemas";
 import { VEHICLE_NOT_READY, VEHICLE_STILL_OUT, pickupRefusalFor } from "./outForRental.js";
 
 const ist = (iso: string) => new Date(`${iso}+05:30`);
@@ -128,36 +131,116 @@ test("regNoMatches: partial, case-insensitive, spaces / hyphens ignored", () => 
   assert.equal(regNoMatches(null, "KA"), false);
 });
 
-test("bookingBlocksWindow: CONFIRMED blocks an overlap only", () => {
+test("bookingBlocksWindow: CONFIRMED keeps a 3 h turnaround after its return", () => {
   const now = ist("2026-10-15T09:00:00");
   const b = { status: "CONFIRMED", startAt: ist("2026-10-16T10:00:00"), endAt: ist("2026-10-17T10:00:00") };
-  const block = (s: string, e: string) => bookingBlocksWindow(b, ist(s), ist(e), now, 30);
+  const block = (s: string, e: string) => bookingBlocksWindow(b, ist(s), ist(e), now, null);
   assert.equal(block("2026-10-17T09:00:00", "2026-10-18T09:00:00"), true, "overlap");
-  assert.equal(block("2026-10-17T10:00:00", "2026-10-18T10:00:00"), false, "back to back (no grace for a booking not yet out)");
-  assert.equal(block("2026-10-15T10:00:00", "2026-10-16T10:00:00"), false, "ends at its start");
-  assert.equal(bookingBlocksWindow({ ...b, status: "HOLD" }, ist("2026-10-16T12:00:00"), ist("2026-10-16T13:00:00"), now, 0), false);
+  assert.equal(block("2026-10-17T10:00:00", "2026-10-18T10:00:00"), true, "back to back: inside the turnaround");
+  assert.equal(block("2026-10-17T12:59:00", "2026-10-18T12:00:00"), true, "a minute short of 3 h");
+  assert.equal(block("2026-10-17T13:00:00", "2026-10-18T13:00:00"), false, "3 h after the return");
 });
 
-test("bookingBlocksWindow: a car out on a rental is busy until its return + automatic grace", () => {
+test("bookingBlocksWindow: a new booking must end 3 h before an existing pickup", () => {
+  const now = ist("2026-10-15T09:00:00");
+  const b = { status: "CONFIRMED", startAt: ist("2026-10-16T10:00:00"), endAt: ist("2026-10-17T10:00:00") };
+  const block = (s: string, e: string) => bookingBlocksWindow(b, ist(s), ist(e), now, null);
+  assert.equal(block("2026-10-15T10:00:00", "2026-10-16T10:00:00"), true, "ends at its start");
+  assert.equal(block("2026-10-15T10:00:00", "2026-10-16T07:01:00"), true, "2 h 59 min before");
+  assert.equal(block("2026-10-15T10:00:00", "2026-10-16T07:00:00"), false, "exactly 3 h before");
+});
+
+test("bookingBlocksWindow: turnaround is max(3 h, automatic grace) and can be overridden", () => {
+  const now = ist("2026-10-15T09:00:00");
+  const b = { status: "CONFIRMED", startAt: ist("2026-10-16T10:00:00"), endAt: ist("2026-10-17T10:00:00") };
+  const after = (s: string, grace: number | null, t?: number) =>
+    bookingBlocksWindow(b, ist(s), ist("2026-10-18T18:00:00"), now, grace, t);
+  assert.equal(after("2026-10-17T13:00:00", 30), false, "30 min grace sits inside the 3 h");
+  assert.equal(after("2026-10-17T13:00:00", 240), true, "a 4 h grace is longer");
+  assert.equal(after("2026-10-17T14:00:00", 240), false);
+  assert.equal(after("2026-10-17T12:00:00", null, 2 * 60 * 60 * 1000), false, "a 2 h override (extension swap)");
+  assert.equal(after("2026-10-17T10:00:00", null, 0), false, "no turnaround: back to back is fine");
+});
+
+test("bookingBlocksWindow: live HOLD rows keep the turnaround; expired ones and other statuses never block", () => {
+  const now = ist("2026-10-15T09:00:00");
+  const hold = {
+    status: "HOLD",
+    startAt: ist("2026-10-16T10:00:00"),
+    endAt: ist("2026-10-17T10:00:00"),
+    holdExpiresAt: ist("2026-10-15T09:10:00"),
+  };
+  assert.equal(bookingBlocksWindow(hold, ist("2026-10-17T11:00:00"), ist("2026-10-18T11:00:00"), now, null), true, "inside the 3 h after");
+  assert.equal(bookingBlocksWindow(hold, ist("2026-10-15T10:00:00"), ist("2026-10-16T08:00:00"), now, null), true, "inside the 3 h before");
+  assert.equal(bookingBlocksWindow(hold, ist("2026-10-17T13:00:00"), ist("2026-10-18T13:00:00"), now, null), false);
+  const expired = { ...hold, holdExpiresAt: ist("2026-10-15T08:59:00") };
+  assert.equal(bookingBlocksWindow(expired, ist("2026-10-16T12:00:00"), ist("2026-10-16T13:00:00"), now, null), false);
+  assert.equal(bookingBlocksWindow({ ...hold, holdExpiresAt: null }, ist("2026-10-16T12:00:00"), ist("2026-10-16T13:00:00"), now, null), false);
+  for (const status of ["RETURNED", "CANCELLED", "HOLD_EXPIRED"]) {
+    assert.equal(bookingBlocksWindow({ ...hold, status }, ist("2026-10-16T12:00:00"), ist("2026-10-16T13:00:00"), now, null), false, status);
+  }
+});
+
+test("bookingBlocksWindow: a car out on a rental is busy until its return + max(3 h, grace)", () => {
   const now = ist("2026-10-15T09:00:00");
   const out = { status: "PICKED_UP", startAt: ist("2026-10-14T10:00:00"), endAt: ist("2026-10-15T10:00:00") };
   const block = (s: string, grace: number | null) =>
     bookingBlocksWindow(out, ist(s), ist("2026-10-16T18:00:00"), now, grace);
-  assert.equal(block("2026-10-15T10:00:00", null), false, "no grace: a pickup at the return time is fine");
-  assert.equal(block("2026-10-15T10:00:00", 30), true, "a return inside the grace is on time");
-  assert.equal(block("2026-10-15T10:29:00", 30), true);
-  assert.equal(block("2026-10-15T10:30:00", 30), false, "from the end of the grace");
+  assert.equal(block("2026-10-15T10:00:00", null), true, "a pickup at the return time is inside the turnaround");
+  assert.equal(block("2026-10-15T12:59:00", 30), true);
+  assert.equal(block("2026-10-15T13:00:00", null), false, "from 3 h after the return");
+  assert.equal(block("2026-10-15T13:00:00", 30), false, "30 min grace sits inside the 3 h");
+  assert.equal(block("2026-10-15T13:00:00", 240), true, "a longer automatic grace wins");
   assert.equal(block("2026-10-15T08:00:00", 0), true, "overlaps the rental");
   // Picked up early: busy now whatever its scheduled start
   const early = { ...out, startAt: ist("2026-10-16T08:00:00"), endAt: ist("2026-10-17T08:00:00") };
   assert.equal(bookingBlocksWindow(early, ist("2026-10-15T12:00:00"), ist("2026-10-15T20:00:00"), now, 0), true);
 });
 
-test("bookingBlocksWindow: an overdue rental blocks every window", () => {
+test("bookingBlocksWindow: an overdue rental blocks every window until the drop is recorded", () => {
   const now = ist("2026-10-15T12:00:00");
   const overdue = { status: "PICKED_UP", startAt: ist("2026-10-14T10:00:00"), endAt: ist("2026-10-15T10:00:00") };
   assert.equal(bookingBlocksWindow(overdue, ist("2026-10-20T10:00:00"), ist("2026-10-21T10:00:00"), now, 15), true);
   assert.equal(bookingBlocksWindow(overdue, ist("2026-11-01T10:00:00"), ist("2026-11-02T10:00:00"), now, null), true);
+  assert.equal(
+    bookingBlocksWindow({ ...overdue, requiresManagerConfirmation: false }, ist("2026-10-15T12:30:00"), ist("2026-10-15T20:00:00"), now, null),
+    true,
+  );
+});
+
+test("bookingBlocksWindow: once fleet records the drop the car is free at once (even before the manager confirms)", () => {
+  const now = ist("2026-10-15T09:00:00");
+  // Returned early and sent to the manager: no turnaround from the scheduled return
+  const dropped = {
+    status: "PICKED_UP",
+    startAt: ist("2026-10-14T10:00:00"),
+    endAt: ist("2026-10-15T18:00:00"),
+    requiresManagerConfirmation: true,
+    returnedAt: ist("2026-10-15T08:45:00"),
+  };
+  assert.equal(isDropRecorded(dropped), true);
+  assert.equal(bookingBlocksWindow(dropped, ist("2026-10-15T09:30:00"), ist("2026-10-16T09:30:00"), now, 30), false);
+  // Overdue, then dropped: released too
+  const lateNow = ist("2026-10-16T09:00:00");
+  assert.equal(bookingBlocksWindow(dropped, ist("2026-10-16T09:30:00"), ist("2026-10-17T09:30:00"), lateNow, null), false);
+  // RETURNED (drop completed) never blocks
+  assert.equal(bookingBlocksWindow({ ...dropped, status: "RETURNED" }, ist("2026-10-15T09:30:00"), ist("2026-10-16T09:30:00"), now, null), false);
+  // The pickup-side flag on a CONFIRMED booking is not a drop
+  assert.equal(isDropRecorded({ status: "CONFIRMED", requiresManagerConfirmation: true }), false);
+  // A flag left on by a pickup sent to the manager (no drop, no returnedAt): the car is out
+  const staleFlag = { ...dropped, returnedAt: null };
+  assert.equal(isDropRecorded(staleFlag), false);
+  assert.equal(bookingBlocksWindow(staleFlag, ist("2026-10-15T09:30:00"), ist("2026-10-16T09:30:00"), now, null), true);
+});
+
+test("turnaroundMsFor: 3 h, a longer grace, or an override", () => {
+  assert.equal(BOOKING_TURNAROUND_HOURS, 3);
+  assert.equal(turnaroundMsFor(null), BOOKING_TURNAROUND_MS);
+  assert.equal(turnaroundMsFor(120), BOOKING_TURNAROUND_MS);
+  assert.equal(turnaroundMsFor(200), 200 * 60_000);
+  assert.equal(turnaroundMsFor(30, 0), 30 * 60_000);
+  assert.equal(windowsConflictWithTurnaround(0, 10, 10, 20, 0), false, "plain back to back with no turnaround");
+  assert.equal(windowsConflictWithTurnaround(0, 10, 12, 20, 3), true);
 });
 
 test("automaticGraceMinutes: frozen config, else the branch's, else defaults; AUTOMATIC only", () => {

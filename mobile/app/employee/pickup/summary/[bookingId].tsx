@@ -28,6 +28,7 @@ import {
 } from '../../../../components/employee/completed/CompletedParts';
 import type { PickupSummary } from '../../../../types/completedOperation';
 import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
+import CustomerRefundHistory from '../../../../components/employee/CustomerRefundHistory';
 
 // A completed pickup (client item 1): read-only. Changes go through Edit Pickup.
 export default function PickupSummaryScreen() {
@@ -79,8 +80,6 @@ export default function PickupSummaryScreen() {
   if (data.state === 'PENDING') return <Redirect href={`/employee/pickup/${data.booking.publicId}` as Href} />;
 
   const awaitingManager = data.state === 'AWAITING_MANAGER';
-  const labelled = data.photos.filter((p) => p.label);
-  const extra = data.photos.filter((p) => !p.label);
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -155,7 +154,8 @@ export default function PickupSummaryScreen() {
 
         <SectionHeader title={`Photos (${data.photos.length})`} />
         <Card>
-          <PhotoGrid photos={[...labelled, ...extra]} emptyText="No photos were saved with this pickup." />
+          {/* In the order taken (the server's order) — the numbers the drop compares by */}
+          <PhotoGrid photos={data.photos} emptyText="No photos were saved with this pickup." />
         </Card>
 
         {data.bill && (
@@ -184,6 +184,7 @@ export default function PickupSummaryScreen() {
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
+          <CustomerRefundHistory refunds={data.customerRefunds} />
         </Card>
       </ScrollView>
 

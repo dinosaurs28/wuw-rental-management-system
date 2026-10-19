@@ -15,6 +15,7 @@ import { Colors, Fonts } from '../../../constants/colors';
 import type { ViewerImage } from '../../ui/ImageViewer';
 import RemotePhoto from '../../ui/RemotePhoto';
 import { SWAP_PHOTOS_MISSING_NOTE } from '../VehicleSwapHistory';
+import PhotoCompareViewer, { type ComparePhoto } from './PhotoCompareViewer';
 
 // GET /api/employee/return/:bookingId/pickup-captures. `photos` = the pickup
 // photos; the rest (item 2) is absent on older servers.
@@ -67,12 +68,14 @@ function setTitle(set: ConditionPhotoSet): string {
   return set.replaced ? `Original pickup — ${reg ?? 'first vehicle'} (replaced)` : `Pickup${reg ? ` — ${reg}` : ''}`;
 }
 
+// Photos come in the order they were taken (oldest builds' photos: as saved):
+// #1, #2, #3… — the same numbers as the drop photos, to compare one by one.
 function viewerImages(set: ConditionPhotoSet): ViewerImage[] {
   const prefix = set.source === 'SWAP' ? `${set.vehicle?.regNo ?? 'Swap'} at swap` : 'Pickup';
   return set.photos.map((p, i) => ({
     url: p.url,
     previewUrl: p.displayUrl && p.displayUrl !== p.url ? p.displayUrl : undefined,
-    label: p.captureLabel ? `${prefix}: ${p.captureLabel}` : `${prefix} photo ${i + 1}`,
+    label: `${prefix} #${i + 1}${p.captureLabel ? ` · ${p.captureLabel}` : ''}`,
   }));
 }
 
@@ -144,9 +147,16 @@ function PhotoStrip({ set, onOpen }: { set: ConditionPhotoSet; onOpen: (images: 
               accessibilityLabel={`View handover photo ${i + 1} of ${total}${p.captureLabel ? `, ${p.captureLabel}` : ''}`}
               onPress={() => onOpen(viewerImages(set), i)}
             >
-              <RemotePhoto uri={src(p)} style={[styles.photo, { width: itemWidth, height: Math.round((itemWidth * 3) / 4) }]} />
+              <View>
+                <RemotePhoto uri={src(p)} style={[styles.photo, { width: itemWidth, height: Math.round((itemWidth * 3) / 4) }]} />
+                <View style={styles.numBadge} pointerEvents="none">
+                  <Text style={styles.numBadgeText}>{i + 1}</Text>
+                </View>
+              </View>
               <View style={styles.photoMeta}>
-                <Text style={styles.photoLabel} numberOfLines={1}>{p.captureLabel ?? `Photo ${i + 1}`}</Text>
+                <Text style={styles.photoLabel} numberOfLines={1}>
+                  {p.captureLabel ? `#${i + 1} · ${p.captureLabel}` : `Photo #${i + 1}`}
+                </Text>
                 {p.takenAt ? <Text style={styles.photoTime}>{formatDate(p.takenAt)}</Text> : null}
               </View>
             </TouchableOpacity>
@@ -192,13 +202,17 @@ export default function HandoverConditionPhotos({
   onOpen,
   failed,
   onRetry,
+  dropPhotos,
 }: {
   data: ReturnConditionCaptures | undefined;
   onOpen: (images: ViewerImage[], index: number) => void;
   // The photo list itself could not be fetched.
   failed?: boolean;
   onRetry?: () => void;
+  // The drop photos taken so far, in the order taken: offers "Compare" (#n beside #n).
+  dropPhotos?: ComparePhoto[];
 }) {
+  const [comparing, setComparing] = useState(false);
   if (!data && failed) {
     return (
       <>
@@ -248,10 +262,30 @@ export default function HandoverConditionPhotos({
           </View>
         )}
         {current.photos.length > 0 && <PhotoStrip set={current} onOpen={onOpen} />}
+        {current.photos.length > 0 && (dropPhotos?.length ?? 0) > 0 && (
+          <TouchableOpacity
+            style={styles.compareBtn}
+            onPress={() => setComparing(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Compare handover and drop photos side by side"
+          >
+            <Ionicons name="git-compare-outline" size={16} color={Colors.ink} />
+            <Text style={styles.compareBtnText}>Compare with drop photos</Text>
+          </TouchableOpacity>
+        )}
         {earlier.map((set) => (
           <EarlierSet key={set.swapPublicId ?? 'pickup'} set={set} onOpen={onOpen} />
         ))}
       </View>
+      <PhotoCompareViewer
+        visible={comparing}
+        before={current.photos.map((p) => ({ url: p.url, displayUrl: p.displayUrl, label: p.captureLabel }))}
+        after={dropPhotos ?? []}
+        beforeTitle={atSwap ? 'At swap' : 'Pickup'}
+        afterTitle="Drop"
+        onClose={() => setComparing(false)}
+      />
     </>
   );
 }
@@ -263,6 +297,16 @@ const styles = StyleSheet.create({
   stripWrap: { marginHorizontal: -CARD_PAD, paddingTop: 12 },
   strip: { paddingHorizontal: CARD_PAD },
   photo: { borderRadius: 12 },
+  numBadge: {
+    position: 'absolute', left: 8, top: 8, minWidth: 26, height: 26, paddingHorizontal: 7, borderRadius: 13,
+    backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center',
+  },
+  numBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
+  compareBtn: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: 12, height: 34,
+    paddingHorizontal: 14, borderRadius: 17, borderWidth: 1, borderColor: Colors.hairline, backgroundColor: Colors.surface,
+  },
+  compareBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.ink },
   photoMeta: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 6 },
   photoLabel: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
   photoTime: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3 },

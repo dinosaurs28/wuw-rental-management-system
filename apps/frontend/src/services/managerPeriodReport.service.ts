@@ -37,7 +37,12 @@ export interface PeriodKpis {
     sgstAmount: number;
     taxAmount: number;
   };
-  refunds: { count: number; amount: number };
+  refunds: {
+    count: number;
+    amount: number;
+    /** Cash refunds paid out with no cash shift open (inside count / amount; Oct 2026, absent on older servers) */
+    cashOutsideShift?: { count: number; amount: number };
+  };
 }
 
 /** % change vs the previous window (1 dp); null = previous was 0 and current isn't. */

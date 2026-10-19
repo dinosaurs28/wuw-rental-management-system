@@ -8,6 +8,7 @@ import {
   ExtensionStatus,
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { captureOrderStart } from "../../utils/photo-order.js";
 import { deleteUploadedPhoto } from "../../services/booking-photo-file.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
@@ -15,7 +16,7 @@ import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import { redis } from "../../lib/redisconfig.js";
-import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
 import { IMMUTABLE_CACHE_CONTROL } from "../../utils/photo-variant.js";
@@ -658,6 +659,16 @@ export const CompleteReturn = async (req: Request, res: Response) => {
             requiresManagerConfirmation: true,
           },
         });
+        // The drop is recorded, so the car is open to other customers now
+        // (isDropRecorded) — except one whose drop damage holds it for the
+        // manager's review: that status is set now, not at the confirmation.
+        for (const vehicleId of vehicleIds) {
+          const status = await vehicleStatusAfterDrop(booking.id, vehicleId, tx as any);
+          if (status && status !== VehicleStatus.AVAILABLE) {
+            returnedStatuses.add(status);
+            await tx.vehicle.update({ where: { id: vehicleId }, data: { status } });
+          }
+        }
       } else {
         await tx.booking.update({
           where: { id: booking.id },
@@ -691,12 +702,16 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           throw new CompleteRejection(StatusCode.BAD_REQUEST, { message: "One or more return photos are invalid — retake them." });
         }
 
+        // In the order sent = the order the photos were taken (not the files' upload order)
+        const fileIds = new Map(files.map((f) => [f.publicId, f.id]));
+        const start = await captureOrderStart(tx, { bookingId: booking.id, type: BookingPhotoType.POST_RETURN });
         await tx.bookingPhoto.createMany({
-          data: files.map((f) => ({
+          data: returnImageIds.map((publicId: string, i: number) => ({
             publicId: createID(),
             bookingId: booking.id,
-            fileId: f.id,
+            fileId: fileIds.get(publicId)!,
             type: BookingPhotoType.POST_RETURN,
+            captureOrder: start + i,
           })),
         });
       }
@@ -808,10 +823,12 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       });
     }
 
-    // Targeted availability cache invalidation only if actual return occurred (TASK-019)
-    if (!requireManagerConfirmation) {
+    // Targeted availability cache invalidation (TASK-019) — also when the return
+    // waits for the manager: a recorded drop releases the car (isDropRecorded)
+    {
       try {
         await invalidateVehicleAvailability(redis, vehicleIds);
+        await invalidateGroupListingCache(redis as any);
       } catch (redisErr) {
         console.warn("[return] Cache invalidation failed (non-fatal):", redisErr);
       }

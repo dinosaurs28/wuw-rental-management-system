@@ -3,6 +3,7 @@ import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn, compressImage } from "@/lib/utils";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
+import { insertInCaptureOrder, nextCaptureAt } from "@/lib/photoOrder";
 
 export interface EditablePhoto {
   /** FileObject publicId */
@@ -10,6 +11,8 @@ export interface EditablePhoto {
   url: string;
   /** Capture slot; null / undefined = extra photo. */
   label?: string | null;
+  /** When it was picked here (ms): new photos land in the order taken, after the saved ones. */
+  capturedAt?: number;
 }
 
 interface PhotoEditorProps {
@@ -42,16 +45,18 @@ export function PhotoEditor({ fields = [], value, onChange, upload, onBusyChange
 
   const addFile = async (file: File, label: string | null) => {
     const key = `${label ?? "extra"}:${file.name}:${Date.now()}`;
+    const capturedAt = nextCaptureAt();
     setUploading((list) => [...list, key]);
     try {
       const form = new FormData();
       form.append("file", await compressImage(file));
       const { fileId, url } = await upload(form);
       const current = valueRef.current;
-      // A capture slot holds one photo: the new one replaces it
+      // A capture slot holds one photo: the new one replaces it. Either way it
+      // goes where it was taken in the sequence, not where its upload finished.
       const next = label
-        ? [...current.filter((p) => p.label !== label), { fileId, url, label }]
-        : [...current, { fileId, url, label: null }];
+        ? insertInCaptureOrder(current.filter((p) => p.label !== label), { fileId, url, label, capturedAt })
+        : insertInCaptureOrder(current, { fileId, url, label: null, capturedAt });
       valueRef.current = next;
       onChange(next);
     } catch (error: any) {
@@ -74,6 +79,9 @@ export function PhotoEditor({ fields = [], value, onChange, upload, onBusyChange
         aria-label={`View ${caption ?? "photo"}`}
       >
         <img src={photo.url} alt={caption ?? "Photo"} className="w-full h-full object-cover" loading="lazy" />
+        <span className="absolute top-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center">
+          {value.findIndex((p) => p.fileId === photo.fileId) + 1}
+        </span>
         <ZoomBadge />
       </button>
       {caption && (
@@ -139,7 +147,7 @@ export function PhotoEditor({ fields = [], value, onChange, upload, onBusyChange
         {picker(null, addLabel, uploading.some((k) => k.startsWith("extra:")))}
       </div>
       <PhotoLightbox
-        items={value.map((p) => ({ url: p.url, label: p.label ?? null }))}
+        items={value.map((p, i) => ({ url: p.url, label: `#${i + 1}${p.label ? ` · ${p.label}` : ""}` }))}
         startIndex={lightbox ?? 0}
         open={lightbox !== null}
         onOpenChange={(open) => !open && setLightbox(null)}

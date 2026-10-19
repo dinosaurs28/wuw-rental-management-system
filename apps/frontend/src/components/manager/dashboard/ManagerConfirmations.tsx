@@ -58,6 +58,22 @@ const confirmationPhotoLabel = (photo: {
     .filter(Boolean)
     .join(" · ");
 
+/**
+ * A photo's number in its set (1, 2, 3… in the order taken). The server sends
+ * each set (pickup, one swap, the return, …) together, newest set first.
+ */
+const photoSetNumber = (
+  photos: Array<{ type?: string | null; vehicle?: { regNo: string } | null; photoSet?: string }>,
+  index: number,
+): number => {
+  // `photoSet` from the server (absent on older servers: type + swap car)
+  const key = (p: (typeof photos)[number]) =>
+    p.photoSet ?? `${p.type ?? ""}:${p.type === "SWAP_DELIVERY" ? p.vehicle?.regNo ?? "" : ""}`;
+  let n = 1;
+  for (let i = index; i > 0 && key(photos[i - 1]) === key(photos[index]); i--) n++;
+  return n;
+};
+
 export const ManagerConfirmations = ({
   focusBookingId,
   onChanged,
@@ -341,6 +357,10 @@ export const ManagerConfirmations = ({
                         aria-label="View photo"
                       >
                         <img src={p.file.url} alt={confirmationPhotoLabel(p) || "Proof"} className="w-24 h-24 object-cover rounded border cursor-zoom-in" />
+                        {/* Its number in its set (pickup / swap / return …), in the order taken */}
+                        <span className="pointer-events-none absolute bottom-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center tabular-nums">
+                          {photoSetNumber(details.photos, pIdx)}
+                        </span>
                         <ZoomBadge />
                         {confirmationPhotoLabel(p) && (
                           <span className="pointer-events-none absolute top-0 inset-x-0 truncate rounded-t bg-black/55 px-1 py-0.5 text-[10px] text-white">
@@ -357,7 +377,10 @@ export const ManagerConfirmations = ({
                       url: p.file.url,
                       mime: p.file.mime,
                       // Swap photos name their own car (the replacement)
-                      label: [p.type === "SWAP_DELIVERY" ? null : details.items[0]?.vehicle?.regNo, confirmationPhotoLabel(p)].filter(Boolean).join(" · ") || `Photo ${i + 1}`,
+                      label: [
+                        p.type === "SWAP_DELIVERY" ? null : details.items[0]?.vehicle?.regNo,
+                        `${confirmationPhotoLabel(p) || "Photo"} #${photoSetNumber(details.photos, i)}`,
+                      ].filter(Boolean).join(" · "),
                     }))}
                     startIndex={mediaViewer?.index ?? 0}
                     title="Staff Uploaded Media"

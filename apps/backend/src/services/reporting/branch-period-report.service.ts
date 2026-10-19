@@ -5,6 +5,8 @@ import {
   BookingStatus,
   ExtensionStatus,
   PaymentStatus,
+  PaymentPurpose,
+  PaymentTransactionStatus,
   RefundStatus,
   Role,
   type RentalPeriodType,
@@ -163,12 +165,14 @@ interface PeriodFacts {
     sgstAmount: Prisma.Decimal;
   }[];
   refunds: { completedAt: Date | null; amount: Prisma.Decimal }[];
+  /** Cash refunds paid out with no cash shift linked (e.g. "Refund to customer" with no shift open) */
+  cashRefundsOutsideShift: { cashAmount: Prisma.Decimal }[];
 }
 
 const loadFacts = async (branch: BranchRef, w: Window): Promise<PeriodFacts> => {
   const range = { gte: w.start, lte: w.end };
 
-  const [bookings, collections, cancellations, returns, extensions, refunds] =
+  const [bookings, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift] =
     await Promise.all([
       prisma.booking.findMany({
         where: { ...buildBookingWhere({ from: w.start, to: w.end }), branchId: branch.id },
@@ -239,11 +243,24 @@ const loadFacts = async (branch: BranchRef, w: Window): Promise<PeriodFacts> => 
         },
         select: { completedAt: true, amount: true },
       }),
+      // Cash paid back out of no drawer: not in any shift's reconciliation, so shown on its own
+      prisma.paymentTransaction.findMany({
+        where: {
+          branchId: branch.id,
+          purpose: { in: [PaymentPurpose.OVERPAYMENT_REFUND, PaymentPurpose.CANCELLATION_REFUND] },
+          status: PaymentTransactionStatus.CONFIRMED,
+          cashShiftId: null,
+          cashAmount: { gt: 0 },
+          confirmedAt: range,
+          booking: { deletedAt: null },
+        },
+        select: { cashAmount: true },
+      }),
     ]);
 
   const paid = await getPaidByBooking(bookings.map((b) => b.id));
 
-  return { bookings, paid, collections, cancellations, returns, extensions, refunds };
+  return { bookings, paid, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift };
 };
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
@@ -277,7 +294,12 @@ export interface PeriodKpis {
     sgstAmount: number;
     taxAmount: number;
   };
-  refunds: { count: number; amount: number };
+  refunds: {
+    count: number;
+    amount: number;
+    /** Additive (Oct 2026): cash refunds paid out with no cash shift open (inside count / amount) */
+    cashOutsideShift: { count: number; amount: number };
+  };
 }
 
 const summarize = (facts: PeriodFacts): PeriodKpis => {
@@ -363,6 +385,10 @@ const summarize = (facts: PeriodFacts): PeriodKpis => {
     refunds: {
       count: facts.refunds.length,
       amount: round2(facts.refunds.reduce((s, r) => s + Number(r.amount), 0)),
+      cashOutsideShift: {
+        count: facts.cashRefundsOutsideShift.length,
+        amount: round2(facts.cashRefundsOutsideShift.reduce((s, r) => s + Number(r.cashAmount), 0)),
+      },
     },
   };
 };

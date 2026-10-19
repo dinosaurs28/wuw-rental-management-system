@@ -35,7 +35,9 @@ import { claimCounterUpi, proofPhotosCreate, type CounterUpi } from "../payment/
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
-import { assertExtensionWindow } from "../../utils/booking/bookingWindow.js";
+import { assertExtensionWindow, extensionMaxEndAt } from "../../utils/booking/bookingWindow.js";
+import { safeExtensionAvailability, type ExtensionAvailabilityInfo } from "./extension-limits.service.js";
+import { assertExtendableDrop } from "./extension-drop-guard.js";
 import {
   loadBranchScheduleConfig,
   validateReturnTime,
@@ -105,6 +107,16 @@ export interface ExtensionEvaluation {
   resolutionOptions: EvaluationResolutionOption[];
   recommendedResolution: string;
 }
+
+/**
+ * The evaluate response: the quote plus how far the booking's current car can
+ * be extended (next booking, availableUntil = 2 h before its pickup or the
+ * rental-length cap, limitReason) — staff only; the customer endpoint passes
+ * on availableUntil alone. The availability fields are null when they
+ * couldn't be read (the quote still stands).
+ */
+export type ExtensionEvaluationResponse = ExtensionEvaluation & NullableAvailability;
+type NullableAvailability = { [K in keyof ExtensionAvailabilityInfo]: ExtensionAvailabilityInfo[K] | null };
 
 export interface CommitExtensionInput {
   extensionPublicId: string;
@@ -200,7 +212,7 @@ class ExtensionService {
     trigger: ExtensionTrigger,
     actor: ActorContext,
     notes?: string,
-  ): Promise<ExtensionEvaluation> {
+  ): Promise<ExtensionEvaluationResponse> {
     const newEndAt = new Date(newEndAtStr);
 
     // Load booking with first vehicle item
@@ -220,6 +232,9 @@ class ExtensionService {
         `Cannot extend a booking in status ${booking.status}. Extension is only allowed for CONFIRMED or PICKED_UP bookings.`,
       );
     }
+
+    // Drop recorded, awaiting the manager: the car is already released (409)
+    assertExtendableDrop(booking);
 
     if (newEndAt <= booking.endAt) {
       throw new Error("New end date must be after the current end date");
@@ -401,7 +416,21 @@ class ExtensionService {
     const freeKmUntil = (end: Date) =>
       freeKmRates ? extensionFreeKm(extensionMinutes(booking.endAt, end), freeKmRates) : null;
 
+    // Next booking on this car and how far it can be extended (2 h buffer, cap)
+    const availability = await safeExtensionAvailability(
+      booking,
+      extensionMaxEndAt(booking.startAt, { monthly: booking.rentalPeriodType === RentalPeriodType.MONTHLY }),
+    );
+
     return {
+      vehicleRegNo: availability?.vehicleRegNo ?? currentVehicle.regNo,
+      nextBookingStartAt: availability?.nextBookingStartAt ?? null,
+      nextBookingRef: availability?.nextBookingRef ?? null,
+      nextBookingKind: availability?.nextBookingKind ?? null,
+      availableUntil: availability?.availableUntil ?? null,
+      limitReason: availability?.limitReason ?? null,
+      canExtend: availability?.canExtend ?? null,
+      extensionBufferHours: availability?.extensionBufferHours ?? null,
       extensionPublicId: extension.publicId,
       bookingPublicId: booking.publicId,
       oldEndAt: booking.endAt.toISOString(),
@@ -480,6 +509,8 @@ class ExtensionService {
         `Booking is ${booking.status} — the extension cannot be committed`,
       );
     }
+    // Drop recorded, awaiting the manager: the car is already released (409)
+    assertExtendableDrop(booking);
 
     // Already committed (double submit): the hold and price are in place.
     // Re-running would re-price against the moved endAt and zero the charge.
@@ -623,6 +654,15 @@ class ExtensionService {
             tx,
           );
           await tx.$queryRaw`SELECT id FROM "Booking" WHERE id = ${booking.id} FOR UPDATE`;
+          // Re-read under the lock: a drop recorded since releases the car
+          const lockedBooking = await tx.booking.findUniqueOrThrow({
+            where: { id: booking.id },
+            select: { status: true, requiresManagerConfirmation: true, returnedAt: true },
+          });
+          if (!EXTENDABLE_STATUSES.includes(lockedBooking.status)) {
+            throw new Error(`Booking is ${lockedBooking.status} — the extension cannot be committed`);
+          }
+          assertExtendableDrop(lockedBooking);
 
           if (preparedSwap) {
             // Locks both vehicle rows and re-checks the replacement over

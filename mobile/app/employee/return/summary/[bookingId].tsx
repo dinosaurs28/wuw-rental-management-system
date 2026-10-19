@@ -29,6 +29,7 @@ import {
 import type { ReturnSummary } from '../../../../types/completedOperation';
 import DropSwapSection from '../../../../components/employee/DropSwapSection';
 import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
+import CustomerRefundHistory from '../../../../components/employee/CustomerRefundHistory';
 
 // A completed return (client item 1): read-only. Changes go through Edit Return.
 export default function ReturnSummaryScreen() {
@@ -241,6 +242,7 @@ export default function ReturnSummaryScreen() {
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
+          <CustomerRefundHistory refunds={data.customerRefunds} />
         </Card>
       </ScrollView>
 

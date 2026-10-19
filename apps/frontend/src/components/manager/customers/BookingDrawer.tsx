@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
 import {
   Sheet,
   SheetContent,
@@ -56,6 +58,8 @@ export function BookingDrawer({
   customerId,
   bookingId,
   onClose,
+  canRefundToCustomer = false,
+  onRefunded,
 }: {
   /** The portal's customers client (branch manager or Fleet). */
   service: CustomersService;
@@ -64,7 +68,12 @@ export function BookingDrawer({
   customerId: string;
   bookingId: string | null;
   onClose: () => void;
+  /** Branch manager: "Refund to customer" on a booking of their branch (any status). */
+  canRefundToCustomer?: boolean;
+  /** After a refund is recorded (the drawer re-reads its booking itself). */
+  onRefunded?: () => void;
 }) {
+  const [refundOpen, setRefundOpen] = useState(false);
   const [proof, setProof] = useState<{ url: string; mime: string; label: string }[] | null>(null);
 
   const query = useQuery({
@@ -205,8 +214,23 @@ export function BookingDrawer({
                 )}
 
                 <Section title="Total owed">
+                  {isPositive(b.refundsGoodwill) && (
+                    <Row label="Refunded beyond what was owed (goodwill)" value={`− ${inr(b.refundsGoodwill!)}`} negative />
+                  )}
                   <Row label="Total owed" value={inr(b.totalOwed)} bold />
                 </Section>
+
+                {canRefundToCustomer && d.booking.isOwnBranch && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-1.5 border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                    onClick={() => setRefundOpen(true)}
+                  >
+                    <Undo2 className="h-4 w-4" />
+                    Refund to customer
+                  </Button>
+                )}
 
                 <Section title="Payments">
                   <Row label="Status" value={d.payments.lifecycleState.replace(/_/g, " ")} />
@@ -225,7 +249,8 @@ export function BookingDrawer({
                         <div key={t.publicId} className="rounded-lg border p-2.5 text-sm">
                           <div className="flex justify-between gap-2">
                             <span className="font-medium">
-                              {t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · {methodLabel(t.method)}
+                              {t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} ·{" "}
+                              {methodLabel(t.method)}
                             </span>
                             <span className="tabular-nums font-semibold">
                               {t.isRefund ? "− " : ""}
@@ -243,6 +268,14 @@ export function BookingDrawer({
                           )}
                           {t.rejectionReason && (
                             <p className="text-xs text-red-600">Rejected: {t.rejectionReason}</p>
+                          )}
+                          {t.cashOutsideShift && (
+                            <p className="text-xs font-medium text-amber-700">Cash paid out with no cash shift open</p>
+                          )}
+                          {isPositive(t.goodwillAmount) && (
+                            <p className="text-xs text-zinc-500">
+                              {inr(t.goodwillAmount!)} beyond what was owed back (goodwill)
+                            </p>
                           )}
                           {t.onlineTransactionRef && (
                             <p className="text-xs text-zinc-500 font-mono">Ref {t.onlineTransactionRef}</p>
@@ -302,6 +335,18 @@ export function BookingDrawer({
           </div>
         </SheetContent>
       </Sheet>
+
+      {canRefundToCustomer && bookingId && (
+        <RefundToCustomerDialog
+          open={refundOpen}
+          onOpenChange={setRefundOpen}
+          bookingPublicId={bookingId}
+          onRefunded={() => {
+            void query.refetch();
+            onRefunded?.();
+          }}
+        />
+      )}
 
       <PhotoLightbox
         open={!!proof}

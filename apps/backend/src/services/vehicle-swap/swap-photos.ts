@@ -85,8 +85,8 @@ export function normalizeReplacementPhotos(
 ): { photos: ReplacementPhotoInput[]; duplicates: string[] } {
   const byName = new Map(fields.map((f) => [f.name.toLowerCase(), f.name]));
   const seenFiles = new Set<string>();
-  const labelled = new Map<string, ReplacementPhotoInput>();
-  const extra: ReplacementPhotoInput[] = [];
+  // Kept in the order sent = the order the photos were taken (Oct 22 2026)
+  const kept: ReplacementPhotoInput[] = [];
   const duplicates: string[] = [];
   for (const photo of photos) {
     const fileId = photo.fileId.trim();
@@ -94,16 +94,18 @@ export function normalizeReplacementPhotos(
     seenFiles.add(fileId);
     const typed = photo.label?.trim();
     if (!typed) {
-      extra.push({ fileId });
+      kept.push({ fileId });
       continue;
     }
     const label = byName.get(typed.toLowerCase()) ?? typed;
-    const earlier = labelled.get(label.toLowerCase());
-    if (earlier) duplicates.push(earlier.fileId);
-    labelled.delete(label.toLowerCase());
-    labelled.set(label.toLowerCase(), { fileId, label });
+    const earlier = kept.findIndex((p) => p.label?.toLowerCase() === label.toLowerCase());
+    if (earlier >= 0) {
+      duplicates.push(kept[earlier]!.fileId);
+      kept.splice(earlier, 1);
+    }
+    kept.push({ fileId, label });
   }
-  return { photos: [...labelled.values(), ...extra], duplicates };
+  return { photos: kept, duplicates };
 }
 
 export interface SwapPhotoShortfall {

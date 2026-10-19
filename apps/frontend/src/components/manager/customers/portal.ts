@@ -25,6 +25,8 @@ export interface CustomersPortal {
   ledgerPath?: (customerPublicId: string) => string;
   /** Other cached views of the customer to refresh after a blacklist change. */
   relatedKeys?: (userPublicId: string) => readonly unknown[][];
+  /** "Refund to customer" on a booking of the own branch (branch manager only — not Fleet). */
+  canRefundToCustomer?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export const MANAGER_CUSTOMERS_PORTAL: CustomersPortal = {
   queryKey: "manager",
   Layout: ManagerLayout,
   ledgerPath: (id) => `/manager/ledger/${id}`,
+  canRefundToCustomer: true,
 };
 
 export const EMPLOYEE_CUSTOMERS_PORTAL: CustomersPortal = {

@@ -152,7 +152,12 @@ export function TransactionsTab() {
                       <td className="px-5 py-3.5 text-xs text-neutral-500 whitespace-nowrap">{formatDateTime(txn.createdAt)}</td>
                       <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{txn.bookingPublicId}</td>
                       <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm whitespace-nowrap">{txn.customerName}</td>
-                      <td className="px-5 py-3.5 text-sm text-neutral-600">{purposeLabels[txn.purpose] ?? txn.purpose}</td>
+                      <td className="px-5 py-3.5 text-sm text-neutral-600">
+                        {txn.isCustomerRefund ? "Refund to customer" : purposeLabels[txn.purpose] ?? txn.purpose}
+                        {txn.cashOutsideShift && (
+                          <span className="block text-[11px] font-medium text-amber-700">No cash shift open</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600">{methodLabels[txn.method] ?? txn.method}</td>
                       <td className="px-5 py-3.5 font-mono text-xs text-neutral-400">
                         {/* Counter UPI is backed by a photo of the customer's payment screen (#3) */}

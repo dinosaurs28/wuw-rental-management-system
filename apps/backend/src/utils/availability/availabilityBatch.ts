@@ -12,21 +12,40 @@
 import { prisma, BookingStatus, Prisma } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getManualOutForRentalIds } from "./outForRental.js";
-import { automaticGraceMinutes, bookingBlocksWindow, isListableStatus } from "./vehicleEligibility.js";
+import { BOOKING_TURNAROUND_MS, windowsConflictWithTurnaround } from "@repo/schemas";
+import {
+  DROP_NOT_RECORDED_WHERE,
+  automaticGraceMinutes,
+  bookingBlocksWindow,
+  isListableStatus,
+  turnaroundMsFor,
+} from "./vehicleEligibility.js";
 
 /*
- * Bookings that block a vehicle: CONFIRMED and PICKED_UP (bookingBlocksWindow).
- * HOLD is left out of the listing checks intentionally — HOLD bookings may
- * expire and should not stop listings from showing the vehicle (checkouts in
- * progress show as Redis holds); booking creation re-checks live HOLD rows
- * under a lock (lockAndFindBlockedVehicleIds).
+ * Bookings that block a vehicle: CONFIRMED and PICKED_UP (bookingBlocksWindow),
+ * each with the 3 h turnaround (BOOKING_TURNAROUND_HOURS) either side; a
+ * PICKED_UP one stops blocking once fleet records the drop (isDropRecorded).
+ * HOLD rows are left out of the listing checks intentionally — HOLD bookings
+ * may expire and should not stop listings from showing the vehicle (checkouts
+ * in progress show as Redis holds, with the same turnaround); booking creation
+ * re-checks live HOLD rows under a lock (lockAndFindBlockedVehicleIds).
  */
+
+/**
+ * How far around [start, end) to look for bookings whose turnaround may reach
+ * it — the turnaround or the longest automatic grace, whichever is larger. A
+ * superset only: bookingBlocksWindow decides.
+ */
+const CANDIDATE_REACH_MS = 24 * 60 * 60 * 1000;
 
 /** What bookingBlocksWindow reads off a booking (the grace keys included). */
 const BLOCKING_BOOKING_SELECT = {
   status: true,
   startAt: true,
   endAt: true,
+  holdExpiresAt: true,
+  requiresManagerConfirmation: true,
+  returnedAt: true,
   frozenChargeConfig: true,
   branch: {
     select: { chargeConfig: { select: { gracePolicyEnabled: true, graceType: true, graceMinutes: true } } },
@@ -35,23 +54,41 @@ const BLOCKING_BOOKING_SELECT = {
 
 /**
  * Booking items that MAY keep a vehicle from [start, end): CONFIRMED bookings
- * overlapping it, and every PICKED_UP one (the car is out now — until its
- * return plus grace, or for good once overdue). A superset only: the rows are
- * decided by bookingBlocksWindow (findBlockingItems).
+ * (and with `includeHoldRows` unexpired HOLDs) within reach of it once the
+ * turnaround is counted, and every PICKED_UP one whose drop isn't recorded
+ * (the car is out now — until its return plus the turnaround, or for good once
+ * overdue). A superset only: the rows are decided by bookingBlocksWindow
+ * (findBlockingItems).
  */
-function blockingCandidateItemWhere(start: Date, end: Date): Prisma.BookingItemWhereInput {
+function blockingCandidateItemWhere(
+  start: Date,
+  end: Date,
+  now: Date,
+  reachMs: number,
+  includeHoldRows: boolean,
+): Prisma.BookingItemWhereInput {
+  const near = {
+    startAt: { lt: new Date(end.getTime() + reachMs) }, // starts before the requested end plus turnaround
+    endAt: { gt: new Date(start.getTime() - reachMs) }, // ends after the requested start less turnaround
+  };
   return {
     booking: {
       OR: [
-        {
-          status: BookingStatus.CONFIRMED,
-          startAt: { lt: end }, // booking starts before requested end
-          endAt: { gt: start }, // booking ends after requested start
-        },
-        { status: BookingStatus.PICKED_UP },
+        { status: BookingStatus.CONFIRMED, ...near },
+        // Out on the road: the drop isn't recorded yet (isDropRecorded)
+        { status: BookingStatus.PICKED_UP, ...DROP_NOT_RECORDED_WHERE },
+        ...(includeHoldRows ? [{ status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, ...near }] : []),
       ],
     },
   };
+}
+
+interface FindBlockingOptions {
+  excludeBookingId?: number;
+  /** Also count unexpired HOLD bookings (booking creation's locked re-check). */
+  includeHoldRows?: boolean;
+  /** Turnaround either side (default BOOKING_TURNAROUND_MS; grace may lengthen it). */
+  turnaroundMs?: number;
 }
 
 type BookingItemDb = Pick<Prisma.TransactionClient, "bookingItem">;
@@ -67,13 +104,15 @@ async function findBlockingItems(
   start: Date,
   end: Date,
   now: Date,
-  excludeBookingId?: number,
+  options: FindBlockingOptions = {},
 ) {
   if (vehicleIds.length === 0) return [];
+  const { excludeBookingId, includeHoldRows = false } = options;
+  const turnaroundMs = options.turnaroundMs ?? BOOKING_TURNAROUND_MS;
   const rows = await db.bookingItem.findMany({
     where: {
       vehicleId: { in: vehicleIds },
-      ...blockingCandidateItemWhere(start, end),
+      ...blockingCandidateItemWhere(start, end, now, Math.max(CANDIDATE_REACH_MS, turnaroundMs), includeHoldRows),
       ...(excludeBookingId != null && { NOT: { bookingId: excludeBookingId } }),
     },
     select: { vehicleId: true, booking: { select: { publicId: true, ...BLOCKING_BOOKING_SELECT } } },
@@ -86,8 +125,22 @@ async function findBlockingItems(
       end,
       now,
       automaticGraceMinutes(booking.frozenChargeConfig, booking.branch.chargeConfig),
+      turnaroundMs,
     ),
   );
+}
+
+/**
+ * When the car is free again after a blocking booking: its return plus the
+ * turnaround (grace counted). Not used for an overdue rental — that car is
+ * free only once the drop is recorded.
+ */
+function availableFromOf(
+  booking: { endAt: Date; frozenChargeConfig: Prisma.JsonValue | null; branch: { chargeConfig: Parameters<typeof automaticGraceMinutes>[1] } },
+  turnaroundMs: number,
+): Date {
+  const grace = automaticGraceMinutes(booking.frozenChargeConfig, booking.branch.chargeConfig);
+  return new Date(booking.endAt.getTime() + turnaroundMsFor(grace, turnaroundMs));
 }
 
 /**
@@ -123,6 +176,7 @@ async function checkHoldsForVehicles(
   start: Date,
   end: Date,
   excludeHoldIds: ReadonlySet<string> = new Set(),
+  bufferMs: number = BOOKING_TURNAROUND_MS,
 ): Promise<Set<number>> {
   const unavailable = new Set<number>();
   if (vehicleIdToPublicId.size === 0) return unavailable;
@@ -178,8 +232,8 @@ async function checkHoldsForVehicles(
         if (!hold) continue;
         const holdStart = new Date(hold.startDate);
         const holdEnd = new Date(hold.endDate);
-        // Overlap: holdStart < end AND holdEnd > start
-        if (holdStart < end && holdEnd > start) {
+        // Overlap with the turnaround either side: holdStart < end + buffer AND holdEnd + buffer > start
+        if (windowsConflictWithTurnaround(holdStart.getTime(), holdEnd.getTime(), start.getTime(), end.getTime(), bufferMs)) {
           unavailable.add(vehicleId);
           break;
         }
@@ -197,14 +251,18 @@ async function checkHoldsForVehicles(
  * [start, end), with their windows — skipping `excludeHoldIds` (a booking's own
  * hold id is its publicId). Used where a booking is moved (reschedule) and the
  * caller needs to say what is in the way. Redis failures are logged and read
- * as "no holds", like checkHoldsForVehicles.
+ * as "no holds", like checkHoldsForVehicles. `opts.bufferMs` widens the overlap
+ * by a turnaround either side (default 0: a plain overlap; reschedule passes
+ * BOOKING_TURNAROUND_MS).
  */
 export async function listOverlappingHolds(
   vehicleIdToPublicId: Map<number, string>,
   start: Date,
   end: Date,
   excludeHoldIds: ReadonlySet<string> = new Set(),
+  opts: { bufferMs?: number } = {},
 ): Promise<Array<{ vehicleId: number; holdId: string; startAt: Date; endAt: Date }>> {
+  const bufferMs = Math.max(0, opts.bufferMs ?? 0);
   const found: Array<{ vehicleId: number; holdId: string; startAt: Date; endAt: Date }> = [];
   if (vehicleIdToPublicId.size === 0) return found;
   try {
@@ -242,7 +300,7 @@ export async function listOverlappingHolds(
         if (!hold) continue;
         const holdStart = new Date(hold.startDate);
         const holdEnd = new Date(hold.endDate);
-        if (holdStart < end && holdEnd > start) {
+        if (windowsConflictWithTurnaround(holdStart.getTime(), holdEnd.getTime(), start.getTime(), end.getTime(), bufferMs)) {
           found.push({ vehicleId, holdId, startAt: holdStart, endAt: holdEnd });
         }
       }
@@ -255,7 +313,8 @@ export async function listOverlappingHolds(
 
 /**
  * TASK-003: Get all vehicleIds unavailable for [start, end).
- * Checks CONFIRMED/PICKED_UP bookings (DB), active holds (Redis), and vehicles
+ * Checks CONFIRMED/PICKED_UP bookings (DB) and active holds (Redis), each with
+ * the 3 h turnaround either side (bookingBlocksWindow), and vehicles
  * set OUT_FOR_RENTAL by hand (no booking behind it, so no window is free).
  *
  * @param vehicleIds          Internal vehicle IDs to check
@@ -316,7 +375,11 @@ export async function getBlockedForAnyWindowIds(vehicleIds: number[], now: Date 
   const [manual, overdue] = await Promise.all([
     getManualOutForRentalIds(vehicleIds),
     prisma.bookingItem.findMany({
-      where: { vehicleId: { in: vehicleIds }, booking: { status: BookingStatus.PICKED_UP, endAt: { lte: now } } },
+      where: {
+        vehicleId: { in: vehicleIds },
+        // Overdue and the drop not recorded yet (isDropRecorded)
+        booking: { status: BookingStatus.PICKED_UP, endAt: { lte: now }, ...DROP_NOT_RECORDED_WHERE },
+      },
       select: { vehicleId: true },
     }),
   ]);
@@ -330,10 +393,10 @@ export type UnavailableReason =
   | { code: "MANUAL_OUT_FOR_RENTAL" }
   /** Picked up and past its return time (blocks every window). */
   | { code: "OVERDUE_RENTAL"; endAt: Date }
-  /** Out on a rental that overlaps the window. */
-  | { code: "ON_RENT"; endAt: Date }
-  /** A confirmed booking overlaps the window. */
-  | { code: "BOOKED"; startAt: Date; endAt: Date }
+  /** Out on a rental that, with the turnaround, overlaps the window. */
+  | { code: "ON_RENT"; endAt: Date; availableFrom: Date }
+  /** A confirmed booking, with the turnaround, overlaps the window. */
+  | { code: "BOOKED"; startAt: Date; endAt: Date; availableFrom: Date }
   /**
    * A customer checkout is holding it for part of the window (a Redis hold, or
    * with includeHoldRows an unexpired HOLD booking).
@@ -352,6 +415,12 @@ export interface ExplainUnavailableOptions {
   excludeBookingId?: number;
   /** Ignore these Redis holds (a booking's own hold id is its publicId). */
   excludeHoldIds?: ReadonlySet<string>;
+  /**
+   * Turnaround either side of every booking and hold (default
+   * BOOKING_TURNAROUND_MS; a booking's longer automatic grace still counts).
+   * An extension swap passes its own buffer.
+   */
+  turnaroundMs?: number;
   now?: Date;
 }
 
@@ -375,25 +444,15 @@ export async function explainUnavailableVehicles(
 
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
-  const [items, holdConflicts, manualOutForRental, holdRows] = await Promise.all([
-    findBlockingItems(db, vehicleIds, start, end, now, options.excludeBookingId),
-    checkHoldsForVehicles(vehicleIdToPublicId, start, end, options.excludeHoldIds),
+  const turnaroundMs = options.turnaroundMs ?? BOOKING_TURNAROUND_MS;
+  const [items, holdConflicts, manualOutForRental] = await Promise.all([
+    findBlockingItems(db, vehicleIds, start, end, now, {
+      excludeBookingId: options.excludeBookingId,
+      includeHoldRows: options.includeHoldRows,
+      turnaroundMs,
+    }),
+    checkHoldsForVehicles(vehicleIdToPublicId, start, end, options.excludeHoldIds, turnaroundMs),
     getManualOutForRentalIds(vehicleIds, db),
-    options.includeHoldRows
-      ? db.bookingItem.findMany({
-          where: {
-            vehicleId: { in: vehicleIds },
-            booking: {
-              status: BookingStatus.HOLD,
-              holdExpiresAt: { gt: now },
-              startAt: { lt: end },
-              endAt: { gt: start },
-              ...(options.excludeBookingId != null && { id: { not: options.excludeBookingId } }),
-            },
-          },
-          select: { vehicleId: true },
-        })
-      : Promise.resolve([] as Array<{ vehicleId: number }>),
   ]);
 
   const rank = (r: UnavailableReason): number =>
@@ -408,14 +467,22 @@ export async function explainUnavailableVehicles(
     if (booking.status === BookingStatus.PICKED_UP) {
       offer(
         vehicleId,
-        booking.endAt <= now ? { code: "OVERDUE_RENTAL", endAt: booking.endAt } : { code: "ON_RENT", endAt: booking.endAt },
+        booking.endAt <= now
+          ? { code: "OVERDUE_RENTAL", endAt: booking.endAt }
+          : { code: "ON_RENT", endAt: booking.endAt, availableFrom: availableFromOf(booking, turnaroundMs) },
       );
+    } else if (booking.status === BookingStatus.HOLD) {
+      offer(vehicleId, { code: "ON_HOLD" });
     } else {
-      offer(vehicleId, { code: "BOOKED", startAt: booking.startAt, endAt: booking.endAt });
+      offer(vehicleId, {
+        code: "BOOKED",
+        startAt: booking.startAt,
+        endAt: booking.endAt,
+        availableFrom: availableFromOf(booking, turnaroundMs),
+      });
     }
   }
   for (const id of holdConflicts) offer(id, { code: "ON_HOLD" });
-  for (const { vehicleId } of holdRows) offer(vehicleId, { code: "ON_HOLD" });
 
   return reasons;
 }
@@ -423,9 +490,9 @@ export async function explainUnavailableVehicles(
 /**
  * Inside a booking-create transaction: locks the vehicle rows (FOR UPDATE, in
  * id order) and returns the ones that can't take [start, end) — removed or no
- * longer listable, set Out for Rental by hand, a blocking booking
- * (findBlockingItems, turnaround grace included), or an unexpired HOLD of
- * another checkout overlapping it. Two creates for the same car serialise on
+ * longer listable, set Out for Rental by hand, a blocking booking or an
+ * unexpired HOLD of another checkout (findBlockingItems, the 3 h turnaround
+ * either side, a drop already recorded not counting). Two creates for the same car serialise on
  * the lock, so the later one sees the earlier one's HOLD row and is refused.
  * Redis holds are checked before the transaction (getUnavailableVehicleIds).
  */
@@ -444,14 +511,7 @@ export async function lockAndFindBlockedVehicleIds(
     WHERE "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`;
 
   const now = new Date();
-  const items = await findBlockingItems(tx, ids, start, end, now);
-  const holds = await tx.bookingItem.findMany({
-    where: {
-      vehicleId: { in: ids },
-      booking: { status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, startAt: { lt: end }, endAt: { gt: start } },
-    },
-    select: { vehicleId: true },
-  });
+  const items = await findBlockingItems(tx, ids, start, end, now, { includeHoldRows: true });
   const onRental = new Set(
     (
       await tx.bookingItem.findMany({
@@ -466,6 +526,5 @@ export async function lockAndFindBlockedVehicleIds(
     if (v.deletedAt || !isListableStatus(v.status) || manualOutForRental) blocked.add(v.id);
   }
   for (const i of items) blocked.add(i.vehicleId);
-  for (const i of holds) blocked.add(i.vehicleId);
   return blocked;
 }

@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { CustomerRefundRow } from "@/services/customerRefund.service";
 import type { DlStatus } from "@/services/dlStatus.service";
 import type { PaymentSession } from "@/services/paymentSession.service";
 import type { BookingListType } from "@/types/overdueReturns";
@@ -125,6 +126,8 @@ interface SummaryBase {
   pendingAdjustment?: AdjustmentRecord | null;
   /** Edits whose difference was settled */
   adjustments?: AdjustmentRecord[];
+  /** Money paid back with "Refund to customer" (Oct 2026); absent on older servers */
+  customerRefunds?: CustomerRefundRow[];
 }
 
 export interface PickupSummary extends SummaryBase {

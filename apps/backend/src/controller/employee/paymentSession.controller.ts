@@ -34,7 +34,7 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { redis } from "../../lib/redisconfig.js";
-import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
@@ -904,10 +904,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }, { timeout: 15000 });
     }
 
-    // Invalidate vehicle availability cache for returned vehicles (every completion path)
+    // Invalidate vehicle availability cache for returned vehicles (every completion path);
+    // the dropped car is bookable again at once, so the cached listings go too
     if (returnedVehicleIds.length > 0) {
       try {
         await invalidateVehicleAvailability(redis, returnedVehicleIds);
+        await invalidateGroupListingCache(redis as any);
       } catch (redisErr) {
         console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
       }
@@ -1222,6 +1224,9 @@ async function runPostCompletionHooks(
       where: { id: bookingId },
       data: {
         status: BookingStatus.PICKED_UP,
+        // Supersedes an earlier legacy send-to-manager: PICKED_UP with the flag
+        // left on would read as a recorded drop (isDropRecorded) and free the car
+        requiresManagerConfirmation: false,
         ...(booking.remainingPaidAt == null && {
           remainingPaidAt: new Date(),
           remainingPaidDuring: "PICKUP",

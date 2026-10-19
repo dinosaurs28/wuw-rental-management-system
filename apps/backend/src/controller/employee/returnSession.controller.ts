@@ -108,6 +108,7 @@ import {
   serializeFastagUsage,
 } from "../../services/charges/fastag-usage.js";
 import { odometerBillStale } from "../../services/booking/operation-edit-guard.js";
+import { captureOrderStart, orderByCapture } from "../../utils/photo-order.js";
 import { dropReadingsSignature, DROP_READINGS_CHANGED } from "../../services/charges/drop-readings.js";
 import {
   SAFETY_DEPOSIT_CREDIT_REF,
@@ -307,11 +308,17 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
 
     // Validate return photos before touching the ledger so a bad id can't leave a half-saved drop
     const uniqueReturnImageIds = [...new Set(returnImageIds ?? [])];
+    // In the order sent = the order the photos were taken (not the files' upload order)
     const returnFiles = uniqueReturnImageIds.length > 0
-      ? await prisma.fileObject.findMany({
-          where: { publicId: { in: uniqueReturnImageIds } },
-          select: { id: true },
-        })
+      ? orderByCapture(
+          (
+            await prisma.fileObject.findMany({
+              where: { publicId: { in: uniqueReturnImageIds } },
+              select: { id: true, publicId: true },
+            })
+          ).map((f) => ({ id: f.id, fileId: f.publicId })),
+          uniqueReturnImageIds,
+        )
       : [];
     if (returnFiles.length !== uniqueReturnImageIds.length) {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "One or more returnImageIds are invalid" });
@@ -892,12 +899,15 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       const attachedFileIds = new Set(alreadyAttached.map((p) => p.fileId));
       const newFiles = returnFiles.filter((f) => !attachedFileIds.has(f.id));
       if (newFiles.length > 0) {
+        // After the photos a recompute already saved, in the order taken
+        const start = await captureOrderStart(prisma, { bookingId: booking.id, type: BookingPhotoType.POST_RETURN });
         await prisma.bookingPhoto.createMany({
-          data: newFiles.map((f) => ({
+          data: newFiles.map((f, i) => ({
             publicId: createID(),
             bookingId: booking.id,
             fileId: f.id,
             type: BookingPhotoType.POST_RETURN,
+            captureOrder: start + i,
           })),
           skipDuplicates: true,
         });

@@ -52,7 +52,11 @@ interface ExtensionChoice {
   newEndAt: string;
   /** Outside the branch's return hours (or past the limit) — shown greyed with this. */
   disabledReason: string | null;
+  /** Past the latest return the car is free for (the server's availableUntil). */
+  unavailable?: boolean;
 }
+
+const CAR_NOT_FREE = "Your car isn't free for this return";
 
 /** "5 hours", "1 day", "2 days 3 hours". */
 function formatExtraTime(fromIso: string, toIso: string) {
@@ -135,10 +139,13 @@ export function CustomerExtensionModal({
         hours: o.hours,
         label: o.label,
         newEndAt: o.newEndAt,
-        disabledReason: o.insideHours
-          ? null
-          : packageReturnProblem(officeHours, new Date(o.newEndAt), null) ??
-            "The branch doesn't take returns at that time",
+        unavailable: o.available === false,
+        disabledReason: !o.insideHours
+          ? packageReturnProblem(officeHours, new Date(o.newEndAt), null) ??
+            "The branch doesn't take returns at that time"
+          : o.available === false
+            ? CAR_NOT_FREE
+            : null,
       }));
     }
     if (!maxEndAt || eligibility?.eligible === false) return [];
@@ -453,7 +460,11 @@ export function CustomerExtensionModal({
                       >
                         <span className="block text-sm font-semibold">+{opt.label}</span>
                         <span className={cn("block text-[11px] leading-tight", active ? "text-orange-50" : "text-gray-500")}>
-                          {opt.disabledReason ? "Branch closed then" : formatPackageReturn(new Date(opt.newEndAt))}
+                          {opt.disabledReason
+                            ? opt.unavailable && opt.disabledReason === CAR_NOT_FREE
+                              ? "Not available"
+                              : "Branch closed then"
+                            : formatPackageReturn(new Date(opt.newEndAt))}
                         </span>
                       </button>
                     );
@@ -471,7 +482,7 @@ export function CustomerExtensionModal({
               )}
               {/* Why a length is greyed out (outside the branch's return hours) */}
               {choices
-                .filter((c) => c.disabledReason)
+                .filter((c) => c.disabledReason && c.disabledReason !== CAR_NOT_FREE)
                 .slice(0, 3)
                 .map((c) => (
                   <p key={c.hours} className="text-[11px] text-gray-500">
@@ -480,7 +491,11 @@ export function CustomerExtensionModal({
                 ))}
               {!eligibilityLoading && !capReached && choices.length > 0 && enabledChoices.length === 0 && (
                 <p className="text-xs text-red-600">
-                  The branch doesn't take returns at any of these times. Please contact the branch.
+                  {choices.every((c) => c.disabledReason === CAR_NOT_FREE)
+                    ? "Your car isn't free for 12 hours or more after your current return, so it can't be extended."
+                    : choices.some((c) => c.disabledReason === CAR_NOT_FREE)
+                      ? "None of these returns is available: some are outside branch hours and your car isn't free for the rest."
+                      : "The branch doesn't take returns at any of these times. Please contact the branch."}
                 </p>
               )}
 
@@ -499,11 +514,25 @@ export function CustomerExtensionModal({
                   {hoursVerdict.gracePeriodEnd}.
                 </p>
               )}
-              {maxEndAt && !windowMessage && (
-                <p className="text-xs text-gray-500">
-                  Can be extended up to {format(new Date(maxEndAt), "dd MMM yyyy, h:mm a")}
-                  {eligibility?.maxBookingDays ? ` (${eligibility.maxBookingDays}-day limit)` : ""}.
-                </p>
+              {/* How far their car is free (never another customer's booking) */}
+              {eligibility?.availableUntil && !windowMessage ? (
+                new Date(eligibility.availableUntil).getTime() > new Date(currentEndAt).getTime() ? (
+                  <p className="text-xs text-gray-700">
+                    You can extend until{" "}
+                    <span className="font-semibold">
+                      {format(new Date(eligibility.availableUntil), "dd MMM yyyy, h:mm a")}
+                    </span>
+                    .
+                  </p>
+                ) : null
+              ) : (
+                maxEndAt &&
+                !windowMessage && (
+                  <p className="text-xs text-gray-500">
+                    Can be extended up to {format(new Date(maxEndAt), "dd MMM yyyy, h:mm a")}
+                    {eligibility?.maxBookingDays ? ` (${eligibility.maxBookingDays}-day limit)` : ""}.
+                  </p>
+                )
               )}
             </div>
 

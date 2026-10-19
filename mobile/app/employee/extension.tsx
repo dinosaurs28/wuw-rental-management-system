@@ -51,11 +51,13 @@ import {
 import { useBranchSchedule } from '../../hooks/useBranchSchedule';
 import { useAuthStore } from '../../store/auth';
 import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHours';
-import type { ExtensionEligibility } from '../../types/api';
+import type { ExtensionCarAvailability, ExtensionEligibility } from '../../types/api';
 import type { ExtensionFreeKm } from '../../types/api';
 import CounterPaymentPicker, { useCounterPayment } from '../../components/employee/CounterPaymentPicker';
 import SwapVehiclePicker from '../../components/employee/SwapVehiclePicker';
 import TimeFieldPicker from '../../components/ui/TimeFieldPicker';
+import ExtensionAvailabilityCard from '../../components/employee/ExtensionAvailabilityCard';
+import { EXTENSION_BUFFER_HOURS } from '../../lib/extensionBuffer';
 
 // Opened from the pickup screen (CONFIRMED booking) and the drop screen
 // (PICKED_UP — car already out). Same steps as the web Extend Booking modal:
@@ -83,7 +85,8 @@ interface ResolutionOption {
 }
 
 // POST /api/employee/extensions/evaluate → data. Money is decimal strings.
-interface Evaluation {
+// Also the car's next booking and how far it can go (availableUntil …).
+interface Evaluation extends ExtensionCarAvailability {
   extensionPublicId: string;
   oldEndAt: string;
   requestedEndAt: string;
@@ -132,6 +135,10 @@ function fmt(iso: string) {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
   });
 }
+
+// "+1 day 11 hr 30 min" between two ISO instants (null when not after).
+const addedLength = (fromIso: string, toIso: string) =>
+  formatExtensionHours((new Date(toIso).getTime() - new Date(fromIso).getTime()) / HOUR_MS);
 
 function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -213,6 +220,13 @@ export default function ExtensionScreen() {
   const { data: branchHours } = useBranchSchedule(eligibilityFailed ? staffBranch : null);
   const schedule = eligibilityHours ?? branchHours ?? null;
   const maxDays = eligibility?.maxBookingDays ?? MAX_RENTAL_DAYS;
+  // Latest return this car is free for (2 h before its next pickup, or the
+  // cap). Later times stay pickable — a swap may cover them — but are flagged.
+  const availableUntil = useMemo(() => {
+    const d = eligibility?.availableUntil ? new Date(eligibility.availableUntil) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  }, [eligibility?.availableUntil]);
+  const pastAvailable = (at: Date) => !!availableUntil && at.getTime() > availableUntil.getTime();
   // Not extendable (at the limit, or not CONFIRMED / PICKED_UP): the server says why.
   const notExtendable = eligibility && !eligibility.eligible ? eligibility.reason ?? 'This booking cannot be extended.' : null;
 
@@ -264,6 +278,9 @@ export default function ExtensionScreen() {
   const [heldUntil, setHeldUntil] = useState<string | null>(null);
   // Free km the committed extension adds (#7) — null from an older server.
   const [heldFreeKm, setHeldFreeKm] = useState<ExtensionFreeKm | null>(null);
+  // The return before the commit, and the car's next booking after it (commit response)
+  const [heldFrom, setHeldFrom] = useState<string | null>(null);
+  const [heldAvailability, setHeldAvailability] = useState<ExtensionCarAvailability | null>(null);
   // Cash / UPI (payment-screen photo) / Split / Credit (#11 / #12)
   const pay = useCounterPayment('CASH');
   const method = pay.method;
@@ -496,7 +513,12 @@ export default function ExtensionScreen() {
         extensionGstSplit(d) ??
           (resolution === 'PARTIAL_EXTENSION' ? null : extensionGstSplit(evaluation.pricing)),
       );
-      setHeldUntil(resolution === 'PARTIAL_EXTENSION' && opt?.partialNewEndAt ? opt.partialNewEndAt : evaluation.requestedEndAt);
+      setHeldUntil(
+        d?.newEndAt ??
+          (resolution === 'PARTIAL_EXTENSION' && opt?.partialNewEndAt ? opt.partialNewEndAt : evaluation.requestedEndAt),
+      );
+      setHeldFrom(d?.oldEndAt ?? evaluation.oldEndAt);
+      setHeldAvailability(d?.availableUntil ? (d as ExtensionCarAvailability) : null);
       setHeldFreeKm(d?.extensionFreeKm ?? opt?.extensionFreeKm ?? null);
       setPhase('collect');
     } catch (err: any) {
@@ -590,7 +612,12 @@ export default function ExtensionScreen() {
     !!resolution && resolution !== 'NO_RESOLUTION' && (resolution !== 'SWAP_CURRENT_TO_OTHER' || !!swapVehicleId);
   const pickLength = baseEnd && newEnd ? rangeLengthLabel(baseEnd, newEnd) : null;
   // Accepted return times on the chosen day: branch hours + the 15-day limit.
-  const slots = newEnd ? daySlots(newEnd) : [];
+  // Times after the car's available time are flagged, not hidden.
+  const slots = newEnd
+    ? daySlots(newEnd).map((s) =>
+        pastAvailable(withTime(newEnd, s.value)) ? { ...s, label: `${s.label} · after available time` } : s,
+      )
+    : [];
   // Return inside the grace after closing: accepted, but say so (#2).
   const returnVerdict = newEnd && hasOfficeHours(schedule) ? validateReturnTime(schedule, newEnd) : null;
   const graceNotice =
@@ -622,11 +649,21 @@ export default function ExtensionScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {(make || model) && <Text style={styles.vehicle}>{make} {model}</Text>}
 
-        {currentEnd && (
+        {currentEnd && phase !== 'collect' && (
           <View style={styles.card}>
             <Row label="Current return" value={fmt(currentEnd)} />
+            {formatExtensionHours(evaluation?.pricing.originalHours) ? (
+              <Text style={styles.extendNote}>
+                {formatExtensionHours(evaluation?.pricing.originalHours)!.slice(1)} rental
+              </Text>
+            ) : null}
           </View>
         )}
+
+        {/* The car's next booking and how far it can go (server figures) */}
+        {phase === 'select' && !notExtendable ? (
+          <ExtensionAvailabilityCard availability={eligibility} maxBookingDays={eligibility?.maxBookingDays} />
+        ) : null}
 
         {/* #15 — nothing left to extend (or not extendable now): the server says why */}
         {phase === 'select' && notExtendable && (
@@ -648,10 +685,12 @@ export default function ExtensionScreen() {
                   const active = newEnd.getTime() === target.getTime();
                   // Past the limit or outside branch hours: not offered.
                   const blocked = !returnOk(target);
+                  // After the car's available time: offered, flagged amber
+                  const past = !blocked && !active && pastAvailable(target);
                   return (
                     <TouchableOpacity
                       key={p.label}
-                      style={[styles.preset, active && styles.presetActive, blocked && styles.presetBlocked]}
+                      style={[styles.preset, past && styles.presetPast, active && styles.presetActive, blocked && styles.presetBlocked]}
                       onPress={() => { setNewEnd(target); setError(null); }}
                       disabled={blocked}
                       activeOpacity={0.85}
@@ -708,6 +747,20 @@ export default function ExtensionScreen() {
                 </Text>
               ) : null}
             </View>
+            <TimesNotice
+              notice={
+                pastAvailable(newEnd) && availableUntil
+                  ? {
+                      tone: 'warn',
+                      text: `${eligibility?.vehicleRegNo ?? 'This car'} is only free until ${fmt(availableUntil.toISOString())}${
+                        eligibility?.limitReason === 'NEXT_BOOKING'
+                          ? ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
+                          : ''
+                      }. Checking this time will offer a swap to another car or a shorter extension, if possible.`,
+                    }
+                  : null
+              }
+            />
 
             <Text style={styles.sectionLabel}>Notes (optional)</Text>
             <TextInput
@@ -736,6 +789,12 @@ export default function ExtensionScreen() {
                 <Text style={styles.amount}>{inr(evaluation.pricing.additionalAmount)}</Text>
               </View>
             </View>
+
+            {/* The car's next booking and how far it can go — fresh from evaluate */}
+            <ExtensionAvailabilityCard
+              availability={evaluation.availableUntil ? evaluation : eligibility}
+              maxBookingDays={eligibility?.maxBookingDays}
+            />
 
             {noOption ? (
               <View style={styles.errorBox}>
@@ -820,7 +879,16 @@ export default function ExtensionScreen() {
         {phase === 'collect' && (
           <>
             <View style={styles.card}>
+              {heldFrom ? <Row label="Current return" value={fmt(heldFrom)} /> : null}
+              {heldFrom && formatExtensionHours(evaluation?.pricing.originalHours) ? (
+                <Text style={styles.extendNote}>
+                  {formatExtensionHours(evaluation?.pricing.originalHours)!.slice(1)} rental
+                </Text>
+              ) : null}
               {heldUntil ? <Row label="New return" value={fmt(heldUntil)} accent /> : null}
+              {heldUntil && heldFrom && addedLength(heldFrom, heldUntil) ? (
+                <Text style={[styles.extendNote, styles.extendNoteAccent]}>{addedLength(heldFrom, heldUntil)}</Text>
+              ) : null}
               {heldFreeKm ? <FreeKmRows freeKm={heldFreeKm} /> : null}
               <View style={styles.divider} />
               {dueGst ? <GstSplitRows split={dueGst} /> : null}
@@ -830,6 +898,13 @@ export default function ExtensionScreen() {
               </View>
               <Text style={styles.holdNote}>The vehicle is on hold until this is collected or the extension is cancelled.</Text>
             </View>
+
+            {/* The car's next booking after the new return */}
+            <ExtensionAvailabilityCard
+              availability={heldAvailability}
+              maxBookingDays={eligibility?.maxBookingDays}
+              afterExtension
+            />
 
             {amountDue > 0 && (
               <>
@@ -928,6 +1003,7 @@ const styles = StyleSheet.create({
   value: { flexShrink: 1, textAlign: 'right', fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink },
   valueAccent: { fontSize: 15, color: Colors.orange },
   extendNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right' },
+  extendNoteAccent: { color: Colors.orange, marginTop: -4 },
   holdNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
   gstNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', marginTop: -4 },
   amount: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
@@ -943,6 +1019,7 @@ const styles = StyleSheet.create({
   presetText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink2 },
   presetTextActive: { color: Colors.white },
   presetBlocked: { opacity: 0.4 },
+  presetPast: { backgroundColor: Colors.availLowSoft, borderColor: '#d9770660' },
 
   dayScroll: { marginHorizontal: -20 },
   dayRow: { paddingHorizontal: 20, gap: 8 },

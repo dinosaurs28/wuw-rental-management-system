@@ -182,6 +182,9 @@ export const pickUpVehicleSchema = z.object({
   captureImages: z
     .array(z.object({ fileId: z.string().min(1), label: z.string().min(1) }))
     .optional(),
+  // Every photo's fileId (pickupImageIds + captureImages) in the order the photos
+  // were taken (Oct 22 2026) — optional: older builds don't send it
+  photoOrder: z.array(z.string()).max(200).optional(),
   requireManagerConfirmation: z.boolean().optional(),
   payRemainingAtPickup: z.boolean().optional(),
   // Licence custody (#3) is OPTIONAL (X1): dlStatus (+ dlDepositNote for DEPOSIT)

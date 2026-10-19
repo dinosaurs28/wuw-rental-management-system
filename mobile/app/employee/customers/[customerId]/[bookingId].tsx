@@ -262,7 +262,7 @@ export default function CustomerBookingScreen() {
             <View key={t.publicId} style={styles.txn}>
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, styles.rowBold]}>
-                  {t.isRefund ? 'Refund' : humanize(t.purpose)} · {methodLabel(t.method)}
+                  {t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · {methodLabel(t.method)}
                 </Text>
                 <Text style={[styles.rowValue, styles.rowBold]}>
                   {t.isRefund ? '− ' : ''}
@@ -279,6 +279,9 @@ export default function CustomerBookingScreen() {
                 </Text>
               ) : null}
               {t.rejectionReason ? <Text style={[styles.note, styles.noteBad]}>Rejected: {t.rejectionReason}</Text> : null}
+              {t.cashOutsideShift ? (
+                <Text style={[styles.note, styles.noteBad]}>Cash paid out with no cash shift open</Text>
+              ) : null}
               {t.onlineTransactionRef ? <Text style={styles.note}>Ref {t.onlineTransactionRef}</Text> : null}
               {t.notes ? <Text style={styles.note}>{t.notes}</Text> : null}
               {t.proofPhoto ? (

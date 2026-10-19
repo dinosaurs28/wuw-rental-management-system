@@ -3,6 +3,7 @@ import Decimal from "decimal.js";
 import type { PaymentTransaction } from "@repo/database/client";
 import { computeBookingOwed, summarizeBookingMoney } from "./booking-owed.service.js";
 import { getBookingCreditSummary, serializeCreditSummary } from "./customer-credit.service.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
 
 export type PaymentLifecycleState =
   | "UNPAID"
@@ -20,6 +21,13 @@ export interface PaymentTransactionSummary {
   totalAmount: Decimal;
   collectedAt: Date | null;
   confirmedAt: Date | null;
+  /** Additive (Oct 2026): a "Refund to customer" row (any booking, recorded by the BM / admin) */
+  isCustomerRefund: boolean;
+  /** Additive (Oct 2026): a cash refund paid out with no cash shift linked */
+  cashOutsideShift: boolean;
+  /** Additive (Oct 2026): UPI / bank reference of the payment or refund */
+  onlineTransactionRef: string | null;
+  notes: string | null;
 }
 
 export interface FinancialState {
@@ -105,6 +113,10 @@ class FinancialStateService {
       totalAmount: new Decimal(t.totalAmount.toString()),
       collectedAt: t.collectedAt,
       confirmedAt: t.confirmedAt,
+      isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+      cashOutsideShift: isCashRefundOutsideShift(t),
+      onlineTransactionRef: t.onlineTransactionRef ?? null,
+      notes: t.notes ?? null,
     }));
 
     return {

@@ -69,6 +69,7 @@ import {
   invalidateCustomerSearchCache,
   maskDrivingLicence,
 } from "../../services/customer/customer-blacklist.service.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey } from "../../services/booking/customer-refund-rules.js";
 
 const ZERO = new Decimal(0);
 /** Presigned payment-proof photo links live this long (seconds). */
@@ -861,6 +862,9 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           rejectionReason: true,
           notes: true,
           createdAt: true,
+          idempotencyKey: true,
+          cashShiftId: true,
+          goodwillAmount: true,
           collectedBy: { select: { name: true } },
           confirmedBy: { select: { name: true } },
           proofFile: { select: { key: true, url: true, mime: true } },
@@ -972,6 +976,10 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           method: t.method,
           status: t.status,
           isRefund: (REFUND_PAYMENT_PURPOSES as string[]).includes(t.purpose),
+          // Additive (Oct 2026): "Refund to customer" rows, and cash refunds paid out with no shift open
+          isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+          cashOutsideShift: isCashRefundOutsideShift(t),
+          goodwillAmount: money(t.goodwillAmount),
           totalAmount: money(t.totalAmount),
           cashAmount: money(t.cashAmount),
           onlineAmount: money(t.onlineAmount),
@@ -1059,8 +1067,10 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
             refunded: booking.safetyDepositRefunded,
             setOff: booking.safetyDepositSetOff,
           },
-          /** totalFinal + return charges + safety deposit taken − deposit credited back */
+          /** totalFinal + return charges + safety deposit taken − deposit credited back − goodwill refunds */
           totalOwed: money(owed.totalOwed),
+          /** Additive (Oct 2026): "Refund to customer" paid beyond what was owed back — taken off what is owed */
+          refundsGoodwill: money(owed.refundsGoodwill),
         },
         payments: {
           lifecycleState: state.lifecycleState,

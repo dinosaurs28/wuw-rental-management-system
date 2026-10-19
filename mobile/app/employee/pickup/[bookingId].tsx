@@ -546,6 +546,8 @@ export default function PickupScreen() {
       ...(fastag != null ? { pickupFastagBalance: fastag } : {}),
       ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
       ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
+      // The two lists above, interleaved in the order the photos were taken
+      ...(photos.length ? { photoOrder: photos.map((p) => p.fileId) } : {}),
     };
   };
 

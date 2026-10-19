@@ -185,7 +185,28 @@ export interface PricingDetails extends RentInclGstFields {
 // and Fleet GET /api/employee/extensions/eligibility/:id. Everything after
 // `reason` is optional: the customer endpoint's early returns (booking not
 // active, extension pending) and older servers omit it.
-export interface ExtensionEligibility {
+// How far a booking's current car can be extended (staff extension
+// endpoints: eligibility, evaluate, commit). Server-computed: availableUntil =
+// extensionBufferHours (2) before the car's next pickup, rounded down, or the
+// rental-length cap — limitReason says which. Absent on older servers, null
+// when the server couldn't read it. Customers only ever get availableUntil.
+export interface ExtensionCarAvailability {
+  vehicleRegNo?: string | null;
+  /** Pickup of the car's next booking / checkout in progress (ISO); null = none. */
+  nextBookingStartAt?: string | null;
+  /** Its booking id (publicId). */
+  nextBookingRef?: string | null;
+  /** HOLD = a customer checkout in progress. */
+  nextBookingKind?: 'BOOKING' | 'HOLD' | null;
+  /** Latest return this car can be extended to (ISO). */
+  availableUntil?: string | null;
+  limitReason?: 'NEXT_BOOKING' | 'MAX_RENTAL_PERIOD' | null;
+  /** False = no time left on this car (a swap may still be offered). */
+  canExtend?: boolean | null;
+  extensionBufferHours?: number | null;
+}
+
+export interface ExtensionEligibility extends ExtensionCarAvailability {
   eligible: boolean;
   reason: string | null;
   hoursUntilEnd?: number;
@@ -207,7 +228,8 @@ export interface ExtensionEligibility {
    * outside the branch's return hours (offer it disabled). Absent on early
    * returns and older servers.
    */
-  packageOptions?: Array<{ hours: number; label: string; newEndAt: string; insideHours: boolean }>;
+  // available:false = past the latest return the car is free for (availableUntil).
+  packageOptions?: Array<{ hours: number; label: string; newEndAt: string; insideHours: boolean; available?: boolean }>;
 }
 
 // Free km an extension adds to the drop allowance (#7), server-computed: each

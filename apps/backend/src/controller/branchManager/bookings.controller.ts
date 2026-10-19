@@ -33,6 +33,7 @@ import { notifyEvents } from "../../services/notification/notification.events.js
 import { displayEmail } from "../../utils/customer/identity.js";
 import { publicFileUrl } from "../../utils/file-url.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
+import { bookingPhotoSetKey, sortPhotoSetsNewestFirst } from "../../utils/photo-order.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -1062,6 +1063,10 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
             id: true,
             type: true,
             captureLabel: true,
+            captureOrder: true,
+            createdAt: true,
+            swapId: true,
+            damageReportId: true,
             // SWAP_DELIVERY photos show the replacement taken at a mid-rental swap
             vehicle: { select: { regNo: true } },
             file: {
@@ -1090,12 +1095,16 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     // only; a return confirmation keeps every photo (pickup, return, damage),
     // each carrying its type / captureLabel so the dialog can label it.
     const { pricingSnapshot, ...bookingFields } = booking;
-    const photos = (
+    // Newest set first (as before), each set in the order its photos were taken
+    const photos = sortPhotoSetsNewestFirst(
       booking.status === BookingStatus.CONFIRMED
         ? booking.photos.filter((photo) => photo.type === "PRE_DELIVERY")
-        : booking.photos
-    ).map(({ file, ...photo }) => ({
+        : booking.photos,
+      bookingPhotoSetKey,
+    ).map(({ file, captureOrder: _order, createdAt: _at, swapId, damageReportId, ...photo }) => ({
       ...photo,
+      // Additive (Oct 22 2026): the set it belongs to (pickup / one swap / return / one damage report)
+      photoSet: bookingPhotoSetKey({ type: photo.type, swapId, damageReportId }),
       file: { url: publicFileUrl(file), mime: file.mime },
     }));
 

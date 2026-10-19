@@ -19,15 +19,18 @@ import type { UnavailableReason } from "../../utils/availability/availabilityBat
 const at = (iso: string) => new Date(iso);
 const NOW = at("2026-10-16T06:00:00.000Z"); // 16 Oct 11:30 IST
 
-test("window: a booking not yet started runs from its start to its end, no grace", () => {
+const H3 = 3 * 60 * 60 * 1000;
+
+test("window: a booking not yet started runs from its start to its end, with the 3 h turnaround", () => {
   const w = swapAvailabilityWindow(
     { status: "CONFIRMED", startAt: at("2026-10-18T04:30:00Z"), endAt: at("2026-10-20T04:30:00Z") },
     NOW,
-    { graceMinutes: 60 },
+    { graceMinutes: 240 },
   );
   assert.equal(w.start.toISOString(), "2026-10-18T04:30:00.000Z");
   assert.equal(w.end.toISOString(), "2026-10-20T04:30:00.000Z");
   assert.equal(w.coverUntil.toISOString(), "2026-10-20T04:30:00.000Z");
+  assert.equal(w.turnaroundMs, H3, "grace only counts for a rental already out");
 });
 
 test("window: a pickup-time swap after the start time runs from now", () => {
@@ -39,25 +42,35 @@ test("window: a pickup-time swap after the start time runs from now", () => {
   assert.equal(w.end.toISOString(), "2026-10-17T04:30:00.000Z");
 });
 
-test("window: an active rental runs from now to its end plus the turnaround grace", () => {
+test("window: an active rental runs from now to its end; turnaround = max(3 h, grace)", () => {
   const w = swapAvailabilityWindow(
     { status: "PICKED_UP", startAt: at("2026-10-15T04:30:00Z"), endAt: at("2026-10-17T04:30:00Z") },
     NOW,
     { graceMinutes: 30 },
   );
   assert.equal(w.start.toISOString(), NOW.toISOString());
-  assert.equal(w.end.toISOString(), "2026-10-17T05:00:00.000Z");
+  assert.equal(w.end.toISOString(), "2026-10-17T04:30:00.000Z");
   assert.equal(w.coverUntil.toISOString(), "2026-10-17T04:30:00.000Z");
-  // no automatic grace → the end itself
-  const noGrace = swapAvailabilityWindow(
+  assert.equal(w.turnaroundMs, H3, "30 min grace is inside the 3 h turnaround");
+  const longGrace = swapAvailabilityWindow(
     { status: "PICKED_UP", startAt: at("2026-10-15T04:30:00Z"), endAt: at("2026-10-17T04:30:00Z") },
     NOW,
-    { graceMinutes: null },
+    { graceMinutes: 240 },
   );
-  assert.equal(noGrace.end.toISOString(), "2026-10-17T04:30:00.000Z");
+  assert.equal(longGrace.turnaroundMs, 240 * 60_000, "a longer automatic grace wins");
 });
 
-test("window: an extension swap of a rental out is checked from now to the extended end plus grace", () => {
+test("window: an extension swap can pass its own turnaround", () => {
+  const w = swapAvailabilityWindow(
+    { status: "PICKED_UP", startAt: at("2026-10-15T04:30:00Z"), endAt: at("2026-10-17T04:30:00Z") },
+    NOW,
+    { availabilityEndAt: at("2026-10-19T04:30:00Z"), graceMinutes: 30, turnaroundMs: 2 * 60 * 60 * 1000 },
+  );
+  assert.equal(w.end.toISOString(), "2026-10-19T04:30:00.000Z");
+  assert.equal(w.turnaroundMs, 2 * 60 * 60 * 1000);
+});
+
+test("window: an extension swap of a rental out is checked from now to the extended end", () => {
   // The extension commit applies the swap and the extended end in one
   // transaction; the replacement is re-checked over this window under its row lock
   const w = swapAvailabilityWindow(
@@ -67,7 +80,8 @@ test("window: an extension swap of a rental out is checked from now to the exten
   );
   assert.equal(w.start.toISOString(), NOW.toISOString());
   assert.equal(w.coverUntil.toISOString(), "2026-10-19T04:30:00.000Z");
-  assert.equal(w.end.toISOString(), "2026-10-19T05:00:00.000Z");
+  assert.equal(w.end.toISOString(), "2026-10-19T04:30:00.000Z");
+  assert.equal(w.turnaroundMs, H3);
 });
 
 test("window: a rental picked up before its booked start still runs from now", () => {
@@ -143,10 +157,16 @@ test("blocker reasons read like the staff screens", () => {
     code: "BOOKED",
     startAt: at("2026-10-18T04:30:00Z"),
     endAt: at("2026-10-19T04:30:00Z"),
+    availableFrom: at("2026-10-19T07:30:00Z"),
   });
-  assert.deepEqual(booked, { code: "BOOKED", reason: "Booked 18 Oct 2026, 10:00 AM – 19 Oct 2026, 10:00 AM" });
-  assert.equal(blockerExclusion({ code: "ON_RENT", endAt: at("2026-10-17T04:30:00Z") }).reason,
-    "Out on another rental until 17 Oct 2026, 10:00 AM");
+  assert.deepEqual(booked, {
+    code: "BOOKED",
+    reason: "Booked 18 Oct 2026, 10:00 AM – 19 Oct 2026, 10:00 AM (free again from 19 Oct 2026, 1:00 PM)",
+  });
+  assert.equal(
+    blockerExclusion({ code: "ON_RENT", endAt: at("2026-10-17T04:30:00Z"), availableFrom: at("2026-10-17T07:30:00Z") }).reason,
+    "Out on another rental until 17 Oct 2026, 10:00 AM (available from 17 Oct 2026, 1:00 PM)",
+  );
   assert.equal(blockerExclusion({ code: "OVERDUE_RENTAL", endAt: at("2026-10-15T04:30:00Z") }).code, "STILL_OUT");
   assert.match(blockerExclusion({ code: "ON_HOLD" }).reason, /^Checkout in progress/);
   assert.equal(blockerExclusion({ code: "MANUAL_OUT_FOR_RENTAL" }).code, "MANUAL_OUT_FOR_RENTAL");
@@ -164,9 +184,9 @@ test("classify: overlapping cars are excluded with the reason, the rest stay off
     category: { name: "Hatchback", rank: over.rank ?? 2 },
   });
   const blockers = new Map<number, UnavailableReason>([
-    [2, { code: "BOOKED", startAt: at("2026-10-18T04:30:00Z"), endAt: at("2026-10-19T04:30:00Z") }],
+    [2, { code: "BOOKED", startAt: at("2026-10-18T04:30:00Z"), endAt: at("2026-10-19T04:30:00Z"), availableFrom: at("2026-10-19T07:30:00Z") }],
     [3, { code: "ON_HOLD" }],
-    [5, { code: "BOOKED", startAt: at("2026-10-18T04:30:00Z"), endAt: at("2026-10-19T04:30:00Z") }],
+    [5, { code: "BOOKED", startAt: at("2026-10-18T04:30:00Z"), endAt: at("2026-10-19T04:30:00Z"), availableFrom: at("2026-10-19T07:30:00Z") }],
   ]);
   const window = swapAvailabilityWindow(
     { status: "CONFIRMED", startAt: at("2026-10-17T04:30:00Z"), endAt: at("2026-10-20T04:30:00Z") },

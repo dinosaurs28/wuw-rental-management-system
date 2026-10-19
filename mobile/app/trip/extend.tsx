@@ -65,6 +65,9 @@ const DEFAULT_EXTENSION_HOURS = 24;
 // Same cadence as the other Checkout polls (2s settle, then back off).
 const POLL_DELAYS = [2000, 3000, 3000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
 
+// Why a package is greyed out when the car is booked again before its return.
+const CAR_NOT_FREE = "your car isn't free for that return";
+
 // Paise shown when present: the extension's GST is rounded to the paisa.
 const inr = (v: string | number) => inrExact(v);
 
@@ -125,13 +128,22 @@ export default function ExtendTrip() {
   // The extensions on offer: +12 hours, +1 day … up to the limit, each greyed
   // out (with the reason) when the branch doesn't take returns at that time.
   // The server's packageOptions when it sends them; else the same rule here.
-  const choices = useMemo(
-    () =>
-      currentEnd && eligibility
-        ? extensionChoices(currentEnd, { serverOptions: eligibility.packageOptions, maxEnd, config: schedule })
-        : [],
-    [currentEnd, eligibility, maxEnd, schedule],
-  );
+  // A package past the latest return their car is free for (the server's
+  // available:false, from availableUntil) is greyed out too.
+  const choices = useMemo(() => {
+    if (!currentEnd || !eligibility) return [];
+    const notFree = new Set(
+      (eligibility.packageOptions ?? []).filter((o) => o.available === false).map((o) => Number(o.hours)),
+    );
+    return extensionChoices(currentEnd, { serverOptions: eligibility.packageOptions, maxEnd, config: schedule }).map(
+      (c) => (!c.issue && notFree.has(c.hours) ? { ...c, issue: CAR_NOT_FREE } : c),
+    );
+  }, [currentEnd, eligibility, maxEnd, schedule]);
+  // Latest return their car is free for — the time only, never the other booking.
+  const availableUntil = useMemo(() => {
+    const d = eligibility?.availableUntil ? new Date(eligibility.availableUntil) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  }, [eligibility?.availableUntil]);
   // Nothing left to add (under 12 hours to the limit): the server says why.
   const noPackageLeft = !!eligibility && !atCap && choices.length === 0;
 
@@ -576,6 +588,8 @@ export default function ExtendTrip() {
   const quoteFreeKm = quote?.pricing.extensionFreeKm ?? null;
   // No extension on offer ends inside branch hours — say so above the chips.
   const allBlocked = choices.length > 0 && choices.every((c) => !!c.issue);
+  const allNotFree = allBlocked && choices.every((c) => c.issue === CAR_NOT_FREE);
+  const someNotFree = allBlocked && choices.some((c) => c.issue === CAR_NOT_FREE);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -620,7 +634,11 @@ export default function ExtendTrip() {
               <TimesNotice
                 notice={{
                   tone: 'error',
-                  text: "None of these returns falls inside branch hours, so the trip can't be extended here. Please contact the branch.",
+                  text: allNotFree
+                    ? "Your car isn't free for 12 hours or more after your current return, so the trip can't be extended."
+                    : someNotFree
+                      ? "None of these returns is available: some are outside branch hours and your car isn't free for the rest."
+                      : "None of these returns falls inside branch hours, so the trip can't be extended here. Please contact the branch.",
                 }}
               />
             ) : null}
@@ -632,7 +650,9 @@ export default function ExtendTrip() {
                 <View style={[styles.card, styles.summaryCard]}>
                   <Line label="New return" value={fmtWhen(newEnd)} strong />
                   <Text style={styles.summaryNote}>Extending by {packageLabel(chosen!.hours)}</Text>
-                  {maxEnd ? (
+                  {availableUntil && currentEnd && availableUntil.getTime() > currentEnd.getTime() ? (
+                    <Text style={styles.summaryNote}>You can extend until {fmtWhen(availableUntil)}</Text>
+                  ) : maxEnd ? (
                     <Text style={styles.summaryNote}>
                       Latest possible return {fmtWhen(maxEnd)} ({maxDays}-day limit)
                     </Text>

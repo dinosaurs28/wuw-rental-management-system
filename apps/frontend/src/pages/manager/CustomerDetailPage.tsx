@@ -462,6 +462,8 @@ export const CustomerDetailPage = ({ portal = MANAGER_CUSTOMERS_PORTAL }: { port
         customerId={customerId ?? ""}
         bookingId={openBooking}
         onClose={() => setOpenBooking(null)}
+        canRefundToCustomer={!!portal.canRefundToCustomer}
+        onRefunded={() => queryClient.invalidateQueries({ queryKey: customersTabKey(portal) })}
       />
 
       <Dialog open={blacklistOpen} onOpenChange={(o) => !blacklistMutation.isPending && setBlacklistOpen(o)}>

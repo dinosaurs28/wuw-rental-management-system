@@ -10,6 +10,7 @@ import {
   DamageChargeType,
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { captureOrderStart } from "../../utils/photo-order.js";
 import { createDamageReportSchema } from "@repo/schemas";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -206,13 +207,16 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
           throw new Error("Some image IDs were invalid");
         }
 
+        // In the order sent = the order the photos were taken
+        const fileIds = new Map(files.map((f) => [f.publicId, f.id]));
         await tx.bookingPhoto.createMany({
-          data: files.map((f) => ({
+          data: damageImageIds.map((publicId: string, i: number) => ({
             publicId: createID(),
             bookingId: booking.id,
-            fileId: f.id,
+            fileId: fileIds.get(publicId)!,
             type: BookingPhotoType.DAMAGE,
             damageReportId: report.id,
+            captureOrder: i,
           })),
         });
       }
@@ -231,12 +235,15 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
           throw new Error("Invalid return image IDs provided");
         }
 
+        const fileIds = new Map(files.map((f) => [f.publicId, f.id]));
+        const start = await captureOrderStart(tx, { bookingId: booking.id, type: BookingPhotoType.POST_RETURN });
         await tx.bookingPhoto.createMany({
-          data: files.map((f) => ({
+          data: returnImageIds.map((publicId: string, i: number) => ({
             publicId: createID(),
             bookingId: booking.id,
-            fileId: f.id,
+            fileId: fileIds.get(publicId)!,
             type: BookingPhotoType.POST_RETURN,
+            captureOrder: start + i,
           })),
         });
       }

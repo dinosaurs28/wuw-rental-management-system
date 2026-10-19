@@ -46,7 +46,13 @@ import {
 import type { Prisma } from "@repo/database/client";
 import { DateTime } from "luxon";
 import Decimal from "decimal.js";
-import { ADVANCE_BOOKING_DAYS, bookingWindowEnd, HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
+import {
+  ADVANCE_BOOKING_DAYS,
+  BOOKING_TURNAROUND_HOURS,
+  BOOKING_TURNAROUND_MS,
+  bookingWindowEnd,
+  HALF_DAY_PACKAGE_HOURS,
+} from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
 import { TimezoneService } from "../timezone/timezone.service.js";
 import { redis } from "../../lib/redisconfig.js";
@@ -75,6 +81,12 @@ import {
 } from "../../utils/booking/halfDayPackage.js";
 import { checkCustomerTypeClassLimits } from "../../utils/booking/customerTypeClassLimits.js";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
+import {
+  DROP_NOT_RECORDED_WHERE,
+  automaticGraceMinutes,
+  bookingBlocksWindow,
+  turnaroundMsFor,
+} from "../../utils/availability/vehicleEligibility.js";
 import { invalidateGroupListingCache, invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { extensionLockService } from "../extension/extension-lock.service.js";
 import { assertDlFree, cleanDl, lockAndAssertDlFree } from "./dl-in-use.service.js";
@@ -92,6 +104,9 @@ import {
 import { getBranchSpecialRules } from "../pricing/branch-special-rules.service.js";
 
 type Db = Prisma.TransactionClient | typeof prisma;
+
+/** How far around a window to look for bookings whose turnaround may reach it (superset; bookingBlocksWindow decides). */
+const RESCHEDULE_CANDIDATE_REACH_MS = 24 * 60 * 60 * 1000;
 export type RescheduleActorRole = "STAFF" | "MANAGER";
 
 const MINUTE_MS = 60 * 1000;
@@ -404,12 +419,20 @@ interface VehicleConflict {
   bookingStatus: BookingStatus | null;
   startAt: Date;
   endAt: Date;
+  /**
+   * What the conflict keeps from a new booking: [startAt − turnaround,
+   * endAt + turnaround); an overdue rental (not dropped yet) has no end —
+   * null.
+   */
+  blockedFrom: Date;
+  blockedUntil: Date | null;
 }
 
 /**
- * Other bookings on these vehicles overlapping [start, end): CONFIRMED, unexpired
- * HOLD, and PICKED_UP (an overdue one is still out now, so it blocks a start
- * that has already come).
+ * Other bookings on these vehicles that keep them from [start, end) by the
+ * booking rule (bookingBlocksWindow): CONFIRMED and unexpired HOLD with the
+ * 3 h turnaround either side, PICKED_UP until its return plus the turnaround —
+ * for every window once overdue, until fleet records the drop.
  */
 async function findBookingConflicts(
   db: Db,
@@ -419,7 +442,10 @@ async function findBookingConflicts(
   now: Date,
 ): Promise<VehicleConflict[]> {
   const vehicleIds = booking.items.map((i) => i.vehicle.id);
-  const overlaps = { startAt: { lt: end }, endAt: { gt: start } };
+  const near = {
+    startAt: { lt: new Date(end.getTime() + RESCHEDULE_CANDIDATE_REACH_MS) },
+    endAt: { gt: new Date(start.getTime() - RESCHEDULE_CANDIDATE_REACH_MS) },
+  };
   const rows = await db.bookingItem.findMany({
     where: {
       vehicleId: { in: vehicleIds },
@@ -427,34 +453,58 @@ async function findBookingConflicts(
         id: { not: booking.id },
         deletedAt: null,
         OR: [
-          { status: BookingStatus.CONFIRMED, ...overlaps },
-          { status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, ...overlaps },
-          now > start
-            ? { status: BookingStatus.PICKED_UP, startAt: { lt: end } }
-            : { status: BookingStatus.PICKED_UP, ...overlaps },
+          { status: BookingStatus.CONFIRMED, ...near },
+          { status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, ...near },
+          { status: BookingStatus.PICKED_UP, ...DROP_NOT_RECORDED_WHERE },
         ],
       },
     },
     orderBy: { booking: { startAt: "asc" } },
     select: {
       vehicle: { select: { publicId: true } },
-      booking: { select: { publicId: true, status: true, startAt: true, endAt: true } },
+      booking: {
+        select: {
+          publicId: true,
+          status: true,
+          startAt: true,
+          endAt: true,
+          holdExpiresAt: true,
+          requiresManagerConfirmation: true,
+          returnedAt: true,
+          frozenChargeConfig: true,
+          branch: {
+            select: { chargeConfig: { select: { gracePolicyEnabled: true, graceType: true, graceMinutes: true } } },
+          },
+        },
+      },
     },
   });
-  return rows.map((r) => ({
-    vehiclePublicId: r.vehicle.publicId,
-    kind: r.booking.status === BookingStatus.HOLD ? "HOLD" : "BOOKING",
-    bookingPublicId: r.booking.publicId,
-    bookingStatus: r.booking.status,
-    startAt: r.booking.startAt,
-    endAt: r.booking.endAt,
-  }));
+  return rows.flatMap((r) => {
+    const grace = automaticGraceMinutes(r.booking.frozenChargeConfig, r.booking.branch.chargeConfig);
+    if (!bookingBlocksWindow(r.booking, start, end, now, grace)) return [];
+    const t = turnaroundMsFor(grace);
+    const overdue = r.booking.status === BookingStatus.PICKED_UP && r.booking.endAt.getTime() <= now.getTime();
+    return [
+      {
+        vehiclePublicId: r.vehicle.publicId,
+        kind: r.booking.status === BookingStatus.HOLD ? ("HOLD" as const) : ("BOOKING" as const),
+        bookingPublicId: r.booking.publicId,
+        bookingStatus: r.booking.status,
+        startAt: r.booking.startAt,
+        endAt: r.booking.endAt,
+        blockedFrom: new Date(r.booking.startAt.getTime() - t),
+        blockedUntil: overdue ? null : new Date(r.booking.endAt.getTime() + t),
+      },
+    ];
+  });
 }
 
 /** Customer checkouts in progress (Redis holds) on these vehicles — never this booking's own. */
 async function findHoldConflicts(booking: RescheduleBooking, start: Date, end: Date): Promise<VehicleConflict[]> {
   const idMap = new Map(booking.items.map((i) => [i.vehicle.id, i.vehicle.publicId]));
-  const holds = await listOverlappingHolds(idMap, start, end, new Set([booking.publicId]));
+  const holds = await listOverlappingHolds(idMap, start, end, new Set([booking.publicId]), {
+    bufferMs: BOOKING_TURNAROUND_MS,
+  });
   return holds.map((h) => ({
     vehiclePublicId: idMap.get(h.vehicleId)!,
     kind: "HOLD",
@@ -462,6 +512,8 @@ async function findHoldConflicts(booking: RescheduleBooking, start: Date, end: D
     bookingStatus: null,
     startAt: h.startAt,
     endAt: h.endAt,
+    blockedFrom: new Date(h.startAt.getTime() - BOOKING_TURNAROUND_MS),
+    blockedUntil: new Date(h.endAt.getTime() + BOOKING_TURNAROUND_MS),
   }));
 }
 
@@ -472,8 +524,10 @@ function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConfli
   const when = `${formatIst(first.startAt)} – ${formatIst(first.endAt)}`;
   const message =
     first.kind === "HOLD"
-      ? `${name} is being booked by another customer for ${when}, which overlaps the new dates. Choose another time, or try again in a few minutes.`
-      : `${name} is booked for ${when} (booking ${first.bookingPublicId}), which overlaps the new dates. Choose another time, or swap the vehicle first.`;
+      ? `${name} is being booked by another customer for ${when}, which is too close to the new dates (bookings of the same car need ${BOOKING_TURNAROUND_HOURS} hours between them). Choose another time, or try again in a few minutes.`
+      : first.bookingStatus === BookingStatus.PICKED_UP && first.blockedUntil === null
+        ? `${name} is not back from booking ${first.bookingPublicId} (due ${formatIst(first.endAt)}), so it can't be promised for any dates until its drop is recorded. Swap the vehicle first, or try again after the drop.`
+        : `${name} is booked for ${when} (booking ${first.bookingPublicId}), which is too close to the new dates (bookings of the same car need ${BOOKING_TURNAROUND_HOURS} hours between them). Choose another time, or swap the vehicle first.`;
   return new RescheduleError(StatusCode.CONFLICT, "VEHICLE_UNAVAILABLE", message, {
     conflicts: conflicts.map((c) => ({
       vehiclePublicId: c.vehiclePublicId,
@@ -710,9 +764,10 @@ export async function getRescheduleOptions(req: Request, bookingPublicId: string
         kind: c.kind,
         bookingPublicId: c.kind === "HOLD" && c.bookingStatus === null ? null : c.bookingPublicId,
         bookingStatus: c.bookingStatus,
-        startAt: c.startAt.toISOString(),
-        // An out vehicle is busy at least until now (overdue)
-        endAt: (c.bookingStatus === BookingStatus.PICKED_UP && c.endAt < now ? now : c.endAt).toISOString(),
+        // The span a new pickup / return can't fall in: the booking plus the
+        // turnaround either side; an overdue rental is busy for the whole range
+        startAt: c.blockedFrom.toISOString(),
+        endAt: (c.blockedUntil ?? new Date(Math.max(rangeEnd.getTime(), now.getTime()))).toISOString(),
       })),
     dlBusy: dlBookings.map((b) => ({
       bookingPublicId: b.publicId,

@@ -427,6 +427,8 @@ export const employeeApi = {
     pickupFastagBalance?: number;
     pickupImageIds?: string[];
     captureImages?: { fileId: string; label: string }[];
+    // Every photo's fileId (both lists above) in the order taken (Oct 22 2026)
+    photoOrder?: string[];
     requireManagerConfirmation?: boolean;
     payRemainingAtPickup?: boolean;
     // gated by booking.frozenChargeConfig.safetyDepositEnabled
@@ -895,6 +897,8 @@ export const employeeApi = {
       pickupFastagBalance?: number;
       pickupImageIds?: string[];
       captureImages?: { fileId: string; label: string }[];
+      // Every photo's fileId (both lists above) in the order taken (Oct 22 2026)
+      photoOrder?: string[];
       // Original driving licence status (#3), optional (X1); re-initiating applies a changed choice.
       dlStatus?: DlCollectionStatus | null;
       dlDepositNote?: string | null;

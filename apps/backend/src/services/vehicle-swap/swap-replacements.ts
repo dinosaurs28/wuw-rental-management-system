@@ -41,12 +41,15 @@ export const SWAP_WINDOW_BOOKING_SELECT = {
 /**
  * swapAvailabilityWindow for a booking, with its automatic grace (frozen
  * charge config, else the branch's live one) for a rental already out.
+ * `opts.turnaroundMs` replaces the default 3 h turnaround (an extension swap
+ * passes its own buffer).
  */
 export async function swapWindowFor(
   booking: SwapWindowBooking,
   now: Date,
   availabilityEndAt?: Date | null,
   db: Db = prisma,
+  opts: { turnaroundMs?: number | null } = {},
 ): Promise<SwapWindow> {
   let graceMinutes: number | null = null;
   if (booking.status === BookingStatus.PICKED_UP) {
@@ -56,7 +59,7 @@ export async function swapWindowFor(
     });
     graceMinutes = automaticGraceMinutes(booking.frozenChargeConfig, live);
   }
-  return swapAvailabilityWindow(booking, now, { availabilityEndAt, graceMinutes });
+  return swapAvailabilityWindow(booking, now, { availabilityEndAt, graceMinutes, turnaroundMs: opts.turnaroundMs });
 }
 
 export function swapStageOf(status: BookingStatus): SwapAvailabilityStage {
@@ -105,6 +108,7 @@ export async function classifyReplacements<
         includeHoldRows: true,
         excludeBookingId: ctx.booking.id,
         excludeHoldIds: new Set([ctx.booking.publicId]),
+        turnaroundMs: ctx.window.turnaroundMs,
         now: ctx.now,
       },
     ),

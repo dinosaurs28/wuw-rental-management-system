@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { getVehicleDetailsSchema } from "@repo/schemas";
+import { BOOKING_TURNAROUND_HOURS, getVehicleDetailsSchema } from "@repo/schemas";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import {
   explainUnavailableVehicles,
@@ -767,9 +767,9 @@ function unavailableReasonMessage(r: UnavailableReason): string {
     case "OVERDUE_RENTAL":
       return `Not back from a rental (was due ${displayIst(r.endAt)})`;
     case "ON_RENT":
-      return `On rent until ${displayIst(r.endAt)}`;
+      return `On rent until ${displayIst(r.endAt)} · Available from ${displayIst(r.availableFrom)}`;
     case "BOOKED":
-      return `Booked ${displayIst(r.startAt)} – ${displayIst(r.endAt)}`;
+      return `Booked ${displayIst(r.startAt)} – ${displayIst(r.endAt)} (${BOOKING_TURNAROUND_HOURS} h turnaround either side)`;
     case "ON_HOLD":
       return "A customer is booking it right now";
   }

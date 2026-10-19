@@ -33,10 +33,12 @@ import { DlStatusPanel } from "@/components/booking/DlStatus";
 import { SwapVehicleAction } from "@/components/employee/swap/SwapVehicleAction";
 import {
   HandoverConditionPhotos,
+  PhotoNumber,
   handoverReferenceHeading,
   hasHandoverReference,
   type ReturnConditionCaptures,
 } from "@/components/employee/drop/HandoverConditionPhotos";
+import { insertInCaptureOrder, nextCaptureAt } from "@/lib/photoOrder";
 import { BookingSwapHistory } from "@/components/employee/swap/BookingSwapHistory";
 import { Button } from "@/components/ui/button";
 import {
@@ -552,7 +554,8 @@ export default function ReturnProcessPage() {
   const editRequested = searchParams.get("edit") === "1";
 
   // ── Photos ─────────────────────────────────────────────────────────────────
-  const [returnPhotos, setReturnPhotos] = useState<{ publicId: string; url: string }[]>([]);
+  // In the order the photos were picked (capturedAt), whatever order the uploads finish in
+  const [returnPhotos, setReturnPhotos] = useState<{ publicId: string; url: string; capturedAt?: number }[]>([]);
   const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
   const openLightbox = (items: LightboxItem[], index: number) => setLightbox({ items, index });
 
@@ -864,9 +867,9 @@ export default function ReturnProcessPage() {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const uploadReturnMutation = useMutation({
-    mutationFn: bookingService.uploadReturnImage,
-    onSuccess: (data) => {
-      setReturnPhotos((prev) => [...prev, { publicId: data.fileId, url: data.url }]);
+    mutationFn: ({ form }: { form: FormData; capturedAt: number }) => bookingService.uploadReturnImage(form),
+    onSuccess: (data, { capturedAt }) => {
+      setReturnPhotos((prev) => insertInCaptureOrder(prev, { publicId: data.fileId, url: data.url, capturedAt }));
       toast.success("Return photo uploaded");
     },
     onError: () => toast.error("Failed to upload photo"),
@@ -1008,16 +1011,18 @@ export default function ReturnProcessPage() {
     }).format(Number(amount));
 
   const onDropReturn = async (acceptedFiles: File[]) => {
-    for (const file of acceptedFiles) {
+    // Stamped in the order picked, before any upload starts: the photos keep it
+    const stamped = acceptedFiles.map((file) => ({ file, capturedAt: nextCaptureAt() }));
+    for (const { file, capturedAt } of stamped) {
       try {
         const processedFile = await compressImage(file);
         const formData = new FormData();
         formData.append("file", processedFile);
-        uploadReturnMutation.mutate(formData);
+        uploadReturnMutation.mutate({ form: formData, capturedAt });
       } catch {
         const formData = new FormData();
         formData.append("file", file);
-        uploadReturnMutation.mutate(formData);
+        uploadReturnMutation.mutate({ form: formData, capturedAt });
       }
     }
   };
@@ -1284,7 +1289,7 @@ export default function ReturnProcessPage() {
             isLocked={false}
           >
             <CardContent className="pt-4">
-              <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} />
+              <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} dropPhotos={returnPhotos.map((p) => ({ url: p.url }))} />
             </CardContent>
           </StepCard>
         )}
@@ -1315,9 +1320,10 @@ export default function ReturnProcessPage() {
                   <div
                     key={img.publicId}
                     className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer"
-                    onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Return photo ${i + 1}` })), idx)}
+                    onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Drop #${i + 1}` })), idx)}
                   >
                     <img src={img.url} alt={`Return ${idx}`} className="w-full h-full object-cover" />
+                    <PhotoNumber n={idx + 1} />
                     <ZoomBadge />
                     {!isCompleted && (
                       <Button
@@ -1826,7 +1832,7 @@ export default function ReturnProcessPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} />
+            <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} dropPhotos={returnPhotos.map((p) => ({ url: p.url }))} />
           </CardContent>
         </Card>
       )}
@@ -1846,8 +1852,9 @@ export default function ReturnProcessPage() {
           {returnPhotos.length > 0 && (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 mt-6">
               {returnPhotos.map((img, idx) => (
-                <div key={img.publicId} className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer" onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Return photo ${i + 1}` })), idx)}>
+                <div key={img.publicId} className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer" onClick={() => openLightbox(returnPhotos.map((r, i) => ({ url: r.url, label: `Drop #${i + 1}` })), idx)}>
                   <img src={img.url} alt={`Return ${idx}`} className="w-full h-full object-cover" />
+                  <PhotoNumber n={idx + 1} />
                   <ZoomBadge />
                   <Button size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
                     onClick={(e) => { e.stopPropagation(); deleteReturnImageMutation.mutate(img.publicId); }} disabled={isCompleted}>
@@ -2366,7 +2373,11 @@ function ReturnEditForm({
       {showHandoverReference && pickupCaptures && (
         <StepCard stepNum={1} title={handoverHeading.title} subtitle={handoverHeading.subtitle} isCompleted isLocked={false}>
           <CardContent className="pt-4">
-            <HandoverConditionPhotos data={pickupCaptures} onOpen={(items, index) => setLightbox({ items, index })} />
+            <HandoverConditionPhotos
+              data={pickupCaptures}
+              onOpen={(items, index) => setLightbox({ items, index })}
+              dropPhotos={photos.map((p) => ({ url: p.url, label: p.label }))}
+            />
           </CardContent>
         </StepCard>
       )}

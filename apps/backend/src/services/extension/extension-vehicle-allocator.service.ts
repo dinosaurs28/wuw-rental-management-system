@@ -5,6 +5,7 @@ import { auditService } from "../audit/audit.service.js";
 import { AuditCategory, AuditSeverity, BookingStatus } from "@repo/database/client";
 import { classifyReplacements, swapWindowFor } from "../vehicle-swap/swap-replacements.js";
 import { swapUnavailableMessage } from "../vehicle-swap/swap-availability.js";
+import { EXTENSION_BUFFER_MS } from "@repo/schemas";
 
 const vehicleSwapService = new VehicleSwapService();
 
@@ -24,7 +25,9 @@ class ExtensionVehicleAllocatorService {
    * transaction (VehicleSwapService.prepareSwap, source EXTENSION: readings
    * optional, the difference never billed — the company moved the customer to
    * free the original car). The replacement must be free until the extended
-   * end (`availabilityEndAt`), not just the current end.
+   * end (`availabilityEndAt`), not just the current end, and its next pickup
+   * must be at least EXTENSION_BUFFER_HOURS after it (the extension buffer
+   * replaces the new-booking turnaround) — as the evaluate options offered it.
    */
   async prepareCurrentBookingSwap(
     bookingPublicId: string,
@@ -41,6 +44,7 @@ class ExtensionVehicleAllocatorService {
       markOriginalForMaintenance: false,
       branchId: actor.actorBranchId,
       availabilityEndAt,
+      turnaroundMs: EXTENSION_BUFFER_MS,
       source: "EXTENSION",
     });
   }
@@ -48,7 +52,8 @@ class ExtensionVehicleAllocatorService {
   /**
    * Runs the prepared swap inside the extension commit's transaction: booking
    * row lock, FOR UPDATE on both vehicle rows and the swap availability rule
-   * over [now, extended end (+ grace)] re-checked under them, then the move.
+   * over [now, extended end] (with the extension buffer, or the grace when
+   * longer, after it) re-checked under them, then the move.
    * The caller extends the booking in the same transaction and calls
    * afterCurrentBookingSwap once it has committed.
    */

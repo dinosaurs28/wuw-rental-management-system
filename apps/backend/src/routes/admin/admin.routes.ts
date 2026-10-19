@@ -70,6 +70,10 @@ import {
   updateBranchGrace,
   getAdminBranchSchedule,
 } from "../../controller/admin/branchSchedule.controller.js";
+import {
+  AdminGetCustomerRefundOptions,
+  AdminRecordCustomerRefund,
+} from "../../controller/branchManager/customer-refund.controller.js";
 
 const router: Router = Router();
 
@@ -159,6 +163,10 @@ router.post("/pricing/special-rules/preview", AdminCheck, AdminPreviewSpecialRul
 router.post("/pricing/special-rules", AdminCheck, AdminCreateSpecialRule);
 router.patch("/pricing/special-rules/:publicId", AdminCheck, AdminUpdateSpecialRule);
 router.delete("/pricing/special-rules/:publicId", AdminCheck, AdminDeleteSpecialRule);
+
+// Refund to the customer on any booking of any branch (same rules as the branch manager's)
+router.get("/bookings/:publicId/refund-to-customer", AdminCheck, AdminGetCustomerRefundOptions);
+router.post("/bookings/:publicId/refund-to-customer", AdminCheck, AdminRecordCustomerRefund);
 
 // Feature Flags
 router.use("/feature-flags", featureFlagRouter);

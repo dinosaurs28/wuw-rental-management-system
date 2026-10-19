@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2, Ban, Search, X } from "lucide-react";
+import { Car, Clock, User, AlertTriangle, Calendar, CalendarClock, Filter, Phone, CheckCircle2, Ban, Search, X, Undo2 } from "lucide-react";
 import { RescheduleBookingSheet } from "@/components/booking/RescheduleBookingSheet";
 import { CancelRentDialog } from "@/components/manager/CancelRentDialog";
+import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,7 @@ function BookingRow({
   mode,
   onReschedule,
   onCancel,
+  onRefund,
 }: {
   booking: FleetBooking;
   mode: "picked_up" | "upcoming";
@@ -86,6 +88,8 @@ function BookingRow({
   onReschedule?: (booking: FleetBooking) => void;
   /** Open the Cancel rent dialog (active and upcoming rents). */
   onCancel?: (booking: FleetBooking) => void;
+  /** Open the Refund to customer dialog (any booking). */
+  onRefund?: (booking: FleetBooking) => void;
 }) {
   const vehicle = booking.items[0]?.vehicle;
   const thumbUrl = vehicle?.images?.[0]?.file?.url;
@@ -170,6 +174,20 @@ function BookingRow({
         >
           <CalendarClock className="w-3.5 h-3.5" />
           Reschedule
+        </Button>
+      )}
+
+      {/* Pay money back to the customer — the rent itself is not changed */}
+      {onRefund && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onRefund(booking)}
+          className="h-7 px-2 gap-1 text-xs flex-shrink-0 border-[#e8e6e1] text-[#6b6860] hover:text-[#1a1917]"
+        >
+          <Undo2 className="w-3.5 h-3.5" />
+          Refund
         </Button>
       )}
 
@@ -345,6 +363,7 @@ export const FleetStatusPage = () => {
   const [rescheduleFor, setRescheduleFor] = useState<FleetBooking | null>(null);
   // Active / upcoming rent being cancelled by hand
   const [cancelFor, setCancelFor] = useState<FleetBooking | null>(null);
+  const [refundFor, setRefundFor] = useState<FleetBooking | null>(null);
   // Search by vehicle make / model or registration number — filtered on the server,
   // so every list, page and tab count reflects it
   const [search, setSearch] = useState("");
@@ -692,6 +711,7 @@ export const FleetStatusPage = () => {
                     mode={tab === "picked_up" ? "picked_up" : "upcoming"}
                     onReschedule={setRescheduleFor}
                     onCancel={setCancelFor}
+                    onRefund={setRefundFor}
                   />
                 ))
               )}
@@ -711,6 +731,16 @@ export const FleetStatusPage = () => {
           onRescheduled={() => {
             queryClient.invalidateQueries({ queryKey: ["manager-fleet-status"] });
           }}
+        />
+      )}
+
+      {refundFor && (
+        <RefundToCustomerDialog
+          open={!!refundFor}
+          onOpenChange={(open) => {
+            if (!open) setRefundFor(null);
+          }}
+          bookingPublicId={refundFor.publicId}
         />
       )}
 

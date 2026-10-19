@@ -91,6 +91,7 @@ import {
   type UploadedImage,
 } from "@/components/employee/PickupImageCard";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
+import { insertInCaptureOrder, nextCaptureAt, sortByCaptureOrder } from "@/lib/photoOrder";
 import { CompletedOperationPage } from "@/components/employee/completed/CompletedOperation";
 import {
   errorMessage,
@@ -426,11 +427,13 @@ export default function StaffPickupsPage() {
   const [safetyDepositReason, setSafetyDepositReason] = useState<string>("");
 
   // --- STEP 5: Photos ---
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  // In the order picked (capturedAt), whatever order the uploads finish in
+  const [uploadedImages, setUploadedImages] = useState<(UploadedImage & { capturedAt?: number })[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
-  const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
+  // capturedAt: when the slot's photo was picked — the photos are saved and shown in that order
+  const [captureSlots, setCaptureSlots] = useState<Record<string, (UploadedImage & { capturedAt?: number }) | null>>({});
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
   // --- ORIGINAL LICENCE (#3): optional choice (X1), nothing pre-selected ---
@@ -474,10 +477,13 @@ export default function StaffPickupsPage() {
   });
   const captureConfig = captureConfigData?.config ?? null;
   // Captured angle photos in config order, for the multi-photo viewer
-  const filledCaptureSlots = (captureConfig?.fields ?? []).flatMap((f) => {
-    const slot = captureSlots[f.name];
-    return slot ? [{ url: slot.url, label: f.name }] : [];
-  });
+  // In the order the photos were taken (#1, #2… — the numbers the drop compares by)
+  const filledCaptureSlots = sortByCaptureOrder(
+    (captureConfig?.fields ?? []).flatMap((f) => {
+      const slot = captureSlots[f.name];
+      return slot ? [{ url: slot.url, label: f.name, fileId: slot.fileId, capturedAt: slot.capturedAt }] : [];
+    }),
+  );
 
   // Available vehicles for swap (only when vehicleAvailable === false), plus
   // the same-type cars that can't take the booking, with the reason
@@ -594,13 +600,13 @@ export default function StaffPickupsPage() {
   });
 
   const uploadImageMutation = useMutation({
-    mutationFn: (file: File) => {
+    mutationFn: ({ file }: { file: File; capturedAt: number }) => {
       const formData = new FormData();
       formData.append("file", file);
       return bookingService.uploadPickupImage(formData);
     },
-    onSuccess: (data) => {
-      setUploadedImages((prev) => [...prev, data]);
+    onSuccess: (data, { capturedAt }) => {
+      setUploadedImages((prev) => insertInCaptureOrder(prev, { ...data, capturedAt }));
       setUploadError(null);
       toast.success("Image uploaded successfully");
     },
@@ -898,11 +904,13 @@ export default function StaffPickupsPage() {
 
   // --- HANDLERS ---
   const handleFileSelect = async (file: File) => {
+    // Stamped when picked, before the upload starts: the photo keeps that place
+    const capturedAt = nextCaptureAt();
     setUploadError(null);
     setIsUploading(true);
     try {
       const processedFile = await compressImage(file);
-      await uploadImageMutation.mutateAsync(processedFile);
+      await uploadImageMutation.mutateAsync({ file: processedFile, capturedAt });
     } finally {
       setIsUploading(false);
     }
@@ -933,12 +941,13 @@ export default function StaffPickupsPage() {
 
   const handleCaptureSlotUpload = async (fieldName: string, file: File) => {
     setUploadingSlot(fieldName);
+    const capturedAt = nextCaptureAt();
     try {
       const compressed = await compressImage(file);
       const formData = new FormData();
       formData.append("file", compressed);
       const data = await bookingService.uploadPickupImage(formData);
-      setCaptureSlots((prev) => ({ ...prev, [fieldName]: data }));
+      setCaptureSlots((prev) => ({ ...prev, [fieldName]: { ...data, capturedAt } }));
     } catch {
       toast.error(`Failed to upload photo for ${fieldName}`);
     } finally {
@@ -989,13 +998,21 @@ export default function StaffPickupsPage() {
     };
 
     if (captureConfig) {
-      const captureImages = Object.entries(captureSlots)
-        .filter(([, img]) => img !== null)
-        .map(([label, img]) => ({ fileId: img!.fileId, label }));
-      return { ...base, captureImages: captureImages.length > 0 ? captureImages : undefined };
+      // In the order the photos were taken (the server saves them as sent)
+      const captureImages = filledCaptureSlots.map((slot) => ({ fileId: slot.fileId, label: slot.label }));
+      return {
+        ...base,
+        captureImages: captureImages.length > 0 ? captureImages : undefined,
+        photoOrder: captureImages.length > 0 ? captureImages.map((c) => c.fileId) : undefined,
+      };
     } else {
+      // In the order the photos were picked (the server saves them as sent)
       const imageIds = uploadedImages.map((img) => img.fileId);
-      return { ...base, pickupImageIds: imageIds.length > 0 ? imageIds : undefined };
+      return {
+        ...base,
+        pickupImageIds: imageIds.length > 0 ? imageIds : undefined,
+        photoOrder: imageIds.length > 0 ? imageIds : undefined,
+      };
     }
   };
 
@@ -1029,6 +1046,7 @@ export default function StaffPickupsPage() {
         pickupFastagBalance: payload.pickupFastagBalance,
         pickupImageIds: (payload as any).pickupImageIds,
         captureImages: (payload as any).captureImages,
+        photoOrder: (payload as any).photoOrder,
         safetyDepositAmount: requestSafetyDeposit && safetyDepositAmount
           ? parseFloat(safetyDepositAmount)
           : undefined,
@@ -1702,6 +1720,9 @@ export default function StaffPickupsPage() {
                               alt={field.name}
                               className="w-full h-28 object-cover"
                             />
+                            <span className="absolute top-1 left-1 min-w-5 h-5 px-1 rounded-full bg-black/65 text-white text-[11px] font-semibold flex items-center justify-center">
+                              {filledCaptureSlots.findIndex((s) => s.label === field.name) + 1}
+                            </span>
                             <ZoomBadge />
                           </button>
                           {!isPickedUp && (

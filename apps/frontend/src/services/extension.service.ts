@@ -92,10 +92,36 @@ export interface ExtensionPricing extends ExtensionGstSplit {
   extensionFreeKm?: ExtensionFreeKm | null;
 }
 
-export interface ExtensionEvaluation {
+/**
+ * How far the booking's current car can be extended (staff endpoints:
+ * eligibility, evaluate, commit). Server-computed: availableUntil = 2 h
+ * (extensionBufferHours) before the car's next pickup, rounded down, or the
+ * rental-length cap — limitReason says which. Absent on older servers, null
+ * when the server couldn't read it. Never sent to customers except
+ * availableUntil.
+ */
+export interface ExtensionCarAvailability {
+  vehicleRegNo?: string | null;
+  /** Pickup of the car's next booking / checkout in progress (ISO); null = none. */
+  nextBookingStartAt?: string | null;
+  /** Its booking id (publicId). */
+  nextBookingRef?: string | null;
+  /** HOLD = a customer checkout in progress. */
+  nextBookingKind?: "BOOKING" | "HOLD" | null;
+  /** Latest return this car can be extended to (ISO). */
+  availableUntil?: string | null;
+  limitReason?: "NEXT_BOOKING" | "MAX_RENTAL_PERIOD" | null;
+  /** False = no time left on this car (a swap may still be offered). */
+  canExtend?: boolean | null;
+  extensionBufferHours?: number | null;
+}
+
+export interface ExtensionEvaluation extends ExtensionCarAvailability {
   extensionPublicId: string;
   bookingPublicId: string;
   currentEndAt: string;
+  /** The return before this quote (the server sends this; currentEndAt is a legacy name). */
+  oldEndAt?: string;
   requestedEndAt: string;
   pricing: ExtensionPricing;
   resolutionOptions: ResolutionOption[];
@@ -142,7 +168,7 @@ export interface CommitExtensionPayload {
   collectNow?: boolean;
 }
 
-export interface CommitExtensionResult extends ExtensionGstSplit {
+export interface CommitExtensionResult extends ExtensionGstSplit, ExtensionCarAvailability {
   publicId: string;
   extensionStatus: ExtensionStatus;
   resolutionType: ExtensionResolutionType;
@@ -154,6 +180,9 @@ export interface CommitExtensionResult extends ExtensionGstSplit {
   usePaymentSession?: boolean;
   /** Free km the committed extension adds to the drop allowance. */
   extensionFreeKm?: ExtensionFreeKm | null;
+  /** The return before the extension and the one now held (a partial's end). ISO. */
+  oldEndAt?: string;
+  newEndAt?: string;
 }
 
 export interface CollectExtensionResult {
@@ -176,7 +205,7 @@ export interface CollectExtensionResult {
  * absent on the customer endpoint's early answers (booking not active, an
  * extension already pending), so treat them as optional.
  */
-export interface ExtensionEligibility {
+export interface ExtensionEligibility extends ExtensionCarAvailability {
   eligible: boolean;
   reason: string | null;
   /** Customer endpoint only. */
@@ -210,6 +239,8 @@ export interface ExtensionPackageOption {
   /** ISO. */
   newEndAt: string;
   insideHours: boolean;
+  /** false = past the latest return the car is free for (availableUntil). Absent on older servers. */
+  available?: boolean;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────

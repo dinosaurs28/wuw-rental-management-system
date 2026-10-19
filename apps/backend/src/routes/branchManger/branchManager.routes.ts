@@ -147,6 +147,10 @@ import {
   ManualCancelBooking,
 } from "../../controller/branchManager/manual-cancel.controller.js";
 import {
+  GetCustomerRefundOptions,
+  RecordCustomerRefund,
+} from "../../controller/branchManager/customer-refund.controller.js";
+import {
   ListSpecialRules,
   GetSpecialRuleOptions,
   PreviewSpecialRule,
@@ -385,6 +389,9 @@ router.post("/bookings/:publicId/reschedule", ManagerCheck, RescheduleBookingByM
 // Cancel an upcoming or active rent by hand (Fleet tab): status CANCELLED, record kept, optional refund
 router.get("/bookings/:publicId/cancel", ManagerCheck, GetManualCancelOptions);
 router.post("/bookings/:publicId/cancel", ManagerCheck, ManualCancelBooking);
+// Refund to the customer on any booking, any status, any amount (cash / UPI / bank, paid out now)
+router.get("/bookings/:publicId/refund-to-customer", ManagerCheck, GetCustomerRefundOptions);
+router.post("/bookings/:publicId/refund-to-customer", ManagerCheck, RecordCustomerRefund);
 
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);

@@ -27,6 +27,7 @@ import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -593,6 +594,10 @@ class PaymentTransactionService {
       onlineGateway: t.onlineGateway ?? null,
       cashAmount: Number(t.cashAmount).toFixed(2),
       onlineAmount: Number(t.onlineAmount).toFixed(2),
+      // Additive (Oct 2026): "Refund to customer" rows and cash refunds paid out with no shift open
+      isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+      cashOutsideShift: isCashRefundOutsideShift(t),
+      notes: t.notes ?? null,
     })));
 
     return { transactions: mapped as any, total, page, pageSize };

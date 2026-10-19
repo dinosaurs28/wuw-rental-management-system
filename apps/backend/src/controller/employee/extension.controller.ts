@@ -32,9 +32,17 @@ import { VehicleSwapError } from "../../services/vehicle-swap/vehicle-swap.servi
 import { UpiQrError } from "../../services/payment/upi-qr.service.js";
 import {
   buildExtensionLimits,
+  safeExtensionAvailability,
+  currentExtensionAvailability,
   maxPeriodReachedMessage,
   EXTENDABLE_BOOKING_STATUSES,
 } from "../../services/extension/extension-limits.service.js";
+import {
+  ExtensionDropRecordedError,
+  DROP_RECORDED_EXTENSION_MESSAGE,
+  MANAGER_CONFIRMATION_PENDING,
+} from "../../services/extension/extension-drop-guard.js";
+import { isDropRecorded } from "../../utils/availability/vehicleEligibility.js";
 
 // ONLINE / UPI = UPI at the counter (merchant QR), backed by a photo of the
 // customer's payment screen (proof_file_id) or, from older builds, the 12-digit
@@ -109,6 +117,11 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       data: evaluation,
     });
   } catch (error: any) {
+    // Drop recorded, awaiting the manager (MANAGER_CONFIRMATION_PENDING)
+    if (error instanceof ExtensionDropRecordedError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     // A committed or paid extension blocks new quotes — the app offers to cancel it
     if (error instanceof ExtensionPendingError) {
       res.status(StatusCode.CONFLICT).json(error.toJSON());
@@ -206,9 +219,20 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         usePaymentSession,
         // Free km the committed extension adds to the drop allowance (#7)
         extensionFreeKm: await describeExtensionFreeKm(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
+        // The return before and after (the end actually held — a partial's end)
+        oldEndAt: extension.oldEndAt.toISOString(),
+        newEndAt: extension.requestedEndAt.toISOString(),
+        // The car's next booking and how much further it could go from the
+        // new return (nextBookingStartAt, availableUntil, limitReason …)
+        ...((await currentExtensionAvailability(extension.bookingId)) ?? {}),
       },
     });
   } catch (error: any) {
+    // Drop recorded, awaiting the manager (MANAGER_CONFIRMATION_PENDING)
+    if (error instanceof ExtensionDropRecordedError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     if (error instanceof CounterGuardError) {
       res.status(error.status).json(error.toJSON());
       return;
@@ -456,7 +480,16 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     const { bookingPublicId } = req.params;
     const booking = await prisma.booking.findFirst({
       where: { publicId: bookingPublicId, branchId: req.branch_Id },
-      select: { status: true, startAt: true, endAt: true, rentalPeriodType: true, branchId: true },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        rentalPeriodType: true,
+        branchId: true,
+        requiresManagerConfirmation: true,
+        returnedAt: true,
+      },
     });
     if (!booking) {
       res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found or access denied" });
@@ -464,8 +497,14 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
     }
 
     const limits = await buildExtensionLimits(booking);
+    // The car's next booking and how far it can be extended (2 h before that
+    // pickup, or the cap): nextBookingStartAt, nextBookingRef, availableUntil,
+    // limitReason … — left out when they couldn't be read
+    const availability = await safeExtensionAvailability(booking, new Date(limits.maxEndAt));
     const extendable = EXTENDABLE_BOOKING_STATUSES.includes(booking.status);
-    const eligible = extendable && !limits.atCap;
+    // Drop recorded, awaiting the manager: the car is already released
+    const dropRecorded = isDropRecorded(booking);
+    const eligible = extendable && !dropRecorded && !limits.atCap;
 
     res.status(StatusCode.OK).json({
       message: "Extension eligibility fetched",
@@ -473,10 +512,14 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
         eligible,
         reason: !extendable
           ? `Extensions are only allowed for CONFIRMED or PICKED_UP bookings. Current status: ${booking.status}`
-          : limits.atCap
-            ? maxPeriodReachedMessage(limits)
-            : null,
+          : dropRecorded
+            ? DROP_RECORDED_EXTENSION_MESSAGE
+            : limits.atCap
+              ? maxPeriodReachedMessage(limits)
+              : null,
+        ...(dropRecorded ? { code: MANAGER_CONFIRMATION_PENDING } : {}),
         ...limits,
+        ...(availability ?? {}),
       },
     });
   } catch (error: any) {
