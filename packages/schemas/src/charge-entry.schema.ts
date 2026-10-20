@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { FUEL_BARS_MESSAGE, FUEL_BARS_PATTERN } from "./fuel.js";
 
-const fuelLevelEnum = z.string().regex(/^([1-9]|10)$/);
+// Fuel bars "0".."10" ("0" = empty tank)
+const fuelLevelEnum = z.string().regex(FUEL_BARS_PATTERN, FUEL_BARS_MESSAGE);
 
 // ── Fastag configuration (on Vehicle) ────────────────────────────────────────
 

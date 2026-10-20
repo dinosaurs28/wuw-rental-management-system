@@ -33,7 +33,15 @@ export default function ExtensionAvailabilityCard({
   const reg = availability.vehicleRegNo ?? 'This car';
   const buffer = availability.extensionBufferHours ?? EXTENSION_BUFFER_HOURS;
   const byNext = availability.limitReason === 'NEXT_BOOKING';
-  const limitText = byNext
+  // A booking lock: the car can be out right up to its start (no buffer)
+  const isLock = availability.nextBookingKind === 'LOCK';
+  const byLock = byNext && isLock;
+  const lockText = `Locked: ${availability.nextLockReason ?? 'booking lock'}${
+    availability.nextLockEndAt ? ` until ${fmt(availability.nextLockEndAt)}` : ''
+  }`;
+  const limitText = byLock
+    ? 'When the booking lock starts'
+    : byNext
     ? `${buffer} h before the next pickup`
     : maxBookingDays
       ? `${maxBookingDays}-day rental limit`
@@ -46,9 +54,13 @@ export default function ExtensionAvailabilityCard({
         <View style={styles.body}>
           <Text style={styles.label}>Next booking on {availability.vehicleRegNo ?? 'this car'}</Text>
           <Text style={styles.value}>
-            {availability.nextBookingStartAt ? `${fmt(availability.nextBookingStartAt)} pickup` : 'No upcoming booking'}
+            {availability.nextBookingStartAt
+              ? `${fmt(availability.nextBookingStartAt)} ${isLock ? 'lock starts' : 'pickup'}`
+              : 'No upcoming booking'}
           </Text>
-          {availability.nextBookingStartAt && availability.nextBookingRef ? (
+          {availability.nextBookingStartAt && isLock ? (
+            <Text style={styles.sub}>{lockText}</Text>
+          ) : availability.nextBookingStartAt && availability.nextBookingRef ? (
             <Text style={styles.sub}>
               {availability.nextBookingKind === 'HOLD' ? 'Customer checkout in progress' : 'Booking'}{' '}
               {shortRef(availability.nextBookingRef)}
@@ -63,7 +75,11 @@ export default function ExtensionAvailabilityCard({
         <View style={styles.warn}>
           <Ionicons name="alert-circle-outline" size={16} color="#92400e" />
           <Text style={styles.warnText}>
-            {byNext
+            {byLock
+              ? afterExtension
+                ? `${reg} can't go any further: it is locked for bookings from the new return (${lockText}).`
+                : `${reg} can't be extended: it is locked for bookings from the current return (${lockText}). A swap to another car may still be offered.`
+              : byNext
               ? afterExtension
                 ? `${reg} can't go any further: its next booking picks up within ${buffer} h of the new return.`
                 : `${reg} can't be extended: its next booking picks up within ${buffer} h of the current return. A swap to another car may still be offered.`

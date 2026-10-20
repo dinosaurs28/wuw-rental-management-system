@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { fuelBarsNumber, fuelBarsShort } from "@repo/schemas";
 import type {
   ChargeContext,
   ChargeModuleInterface,
@@ -21,7 +22,8 @@ export class FuelDeficitModule implements ChargeModuleInterface {
   async compute(context: ChargeContext): Promise<ChargeResult> {
     const { pickupFuelLevel, returnFuelLevel, fuelDeficitCharge, fuelSkipReason } = context;
 
-    if (!pickupFuelLevel || !returnFuelLevel) {
+    // Bars "0".."10": "0" (empty) is a reading, so test for missing, not falsy
+    if (fuelBarsNumber(pickupFuelLevel) == null || fuelBarsNumber(returnFuelLevel) == null) {
       return {
         chargeType: "FUEL_DEFICIT",
         moduleKey: "fuel",
@@ -33,9 +35,7 @@ export class FuelDeficitModule implements ChargeModuleInterface {
       };
     }
 
-    const pickupOrdinal = parseInt(pickupFuelLevel, 10);
-    const returnOrdinal = parseInt(returnFuelLevel, 10);
-    const hasDeficit = !isNaN(pickupOrdinal) && !isNaN(returnOrdinal) && returnOrdinal < pickupOrdinal;
+    const hasDeficit = fuelBarsShort(pickupFuelLevel, returnFuelLevel) > 0;
 
     if (!hasDeficit) {
       return {

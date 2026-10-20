@@ -56,7 +56,8 @@ type Summary = PickupSummary | ReturnSummary;
 const inr = (n: number) => `₹${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 const num = (x: unknown) => Number(x ?? 0) || 0;
 const km = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocaleString("en-IN")} km`);
-const fuel = (level: string | null | undefined) => (level ? `${level}/10` : "—");
+// "0" is an empty tank (a real reading), shown as 0/10 — only a missing reading is "—".
+const fuel = (level: string | null | undefined) => (level != null && level !== "" ? `${level}/10` : "—");
 const when = (iso: string | null | undefined) => (iso ? format(new Date(iso), "dd MMM yyyy, h:mm a") : "—");
 const balance = (v: string | null | undefined) => (v == null ? "Not read" : inr(num(v)));
 const phaseWord = (phase: Phase) => (phase === "PICKUP" ? "pickup" : "return");

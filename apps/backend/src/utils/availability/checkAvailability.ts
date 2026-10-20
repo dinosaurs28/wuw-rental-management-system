@@ -12,7 +12,9 @@ export async function checkVehicleAvailability(
   vehicleId: number,
   start: Date,
   end: Date,
+  // A staff action (walk-in): customers-only booking locks don't count
+  options: { forStaff?: boolean } = {},
 ): Promise<boolean> {
-  const unavailable = await getUnavailableVehicleIds([vehicleId], start, end);
+  const unavailable = await getUnavailableVehicleIds([vehicleId], start, end, undefined, options);
   return !unavailable.has(vehicleId);
 }

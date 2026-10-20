@@ -58,6 +58,7 @@ import type { EditPickupBody, EditPreview, PickupSummary } from '../../../types/
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
 import type { KmAllowance } from '../../../types/return';
 import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
+import { FUEL_BAR_LEVELS } from '../../../lib/fuel';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -88,7 +89,7 @@ interface BookingDetail extends DlStatusFields {
   remainingBalance: number | null;
   remainingPaidAt: string | null;
   startOdometer: number | null;
-  // "1".."10", recorded when the branch fuel module is enabled
+  // "0".."10" ("0" = empty), recorded when the branch fuel module is enabled
   pickupFuelLevel?: string | null;
   // FASTag balance saved with the handover (null = not read; absent on older servers)
   pickupFastagBalance?: string | null;
@@ -166,9 +167,9 @@ const LEDGER_LABELS: Record<string, string> = {
   REFUND: 'Refund',
 };
 
-// Fuel is recorded on a 1–10 scale (same as the return screen) so the charge
-// engine can compare pickup vs return fuel directly. pickupFuelLevel = "1".."10".
-const FUEL_STEPS = Array.from({ length: 10 }, (_, i) => i + 1);
+// Fuel is recorded on a 0–10 scale (same as the return screen; 0 = empty tank) so
+// the charge engine can compare pickup vs return fuel directly. pickupFuelLevel = "0".."10".
+const FUEL_STEPS = FUEL_BAR_LEVELS.map(Number);
 
 const num = (x: unknown) => Number(x ?? 0) || 0;
 const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -284,7 +285,7 @@ export default function PickupScreen() {
   const qc = useQueryClient();
 
   const [odo, setOdo] = useState('');
-  // No default — staff must read the gauge and pick a level (1..10).
+  // No default — staff must read the gauge and pick a level (0..10; 0 = empty).
   const [fuelLevel, setFuelLevel] = useState<number | null>(null);
   // ₹ balance on the car's FASTag — required when the car has one (the drop bills the usage).
   const [fastagBalance, setFastagBalance] = useState('');
@@ -538,10 +539,11 @@ export default function PickupScreen() {
     const fastag = parseFastagBalance(fastagBalance);
     return {
       odo: Number(odo),
-      // fuelLevel is stored on the vehicle as a percent; derive it from the 1..10 scale.
+      // fuelLevel is stored on the vehicle as a percent; derive it from the 0..10 scale.
       fuelLevel: level * 10,
-      // 1..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
-      pickupFuelLevel: String(level),
+      // 0..10 string for the charge-engine fuel module (required when enabled, ignored otherwise).
+      // Only a level staff picked — 0 is a real reading (empty), never a stand-in for "none".
+      ...(fuelLevel != null ? { pickupFuelLevel: String(fuelLevel) } : {}),
       // FASTag balance at the handover — when entered (required for a car with a FASTag)
       ...(fastag != null ? { pickupFastagBalance: fastag } : {}),
       ...(labeled.length ? { captureImages: labeled.map((p) => ({ fileId: p.fileId, label: p.label! })) } : {}),
@@ -1989,7 +1991,7 @@ export default function PickupScreen() {
 
               <View style={styles.divider} />
 
-              {/* Fuel Level (1–10) */}
+              {/* Fuel Level (0–10, 0 = empty) */}
               <View style={[styles.fieldGroup, { marginBottom: 0 }]}>
                 <View style={styles.fieldLabel}>
                   <Ionicons name="water-outline" size={16} color={Colors.ink3} />

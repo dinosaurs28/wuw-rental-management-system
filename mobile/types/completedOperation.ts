@@ -126,7 +126,7 @@ export interface CustomerRefundRow {
 export interface PickupSummary extends SummaryBase {
   phase: 'PICKUP';
   odometer: number | null;
-  fuelLevel: string | null; // "1".."10"
+  fuelLevel: string | null; // "0".."10"
   // ₹ on the FASTag at the handover — editable for any car, required when the car
   // is marked as having a FASTag (vehicleHasFastag; absent on older servers).
   // hasFastag: it counts as a FASTag car for the booking (marked, or a balance read).

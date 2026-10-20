@@ -79,6 +79,7 @@ import {
 } from "../charges/km-allowance.service.js";
 import { swapKmSnapshot, type SwapKmSnapshot } from "../charges/segment-km.js";
 import { getFastagLegs } from "../charges/fastag-usage.service.js";
+import { fuelBarsToPercent, fuelPercentToBars } from "../charges/fuel-bars.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import {
   fastagBalancesToStore,
@@ -182,7 +183,7 @@ export interface SwapCandidate extends AvailableVehicle {
   photoRequirement: SwapPhotoRequirement;
   /** Last recorded fuel, as a percent (Vehicle.fuelLevel) */
   fuelLevel: number;
-  /** The same reading as fuel bars "1".."10" — prefill for newVehicleFuelLevel; null = unknown */
+  /** The same reading as fuel bars "1".."10" — prefill for newVehicleFuelLevel; null = unknown (0% included: see fuelPercentToBars) */
   fuelBars: string | null;
   insuranceExpiry: Date;
   /** Same category as the current vehicle (listed first) */
@@ -421,21 +422,6 @@ function remainingFraction(startAt: Date, endAt: Date, now: Date): Decimal {
   const from = Math.max(now.getTime(), startAt.getTime());
   const remaining = Math.max(0, endAt.getTime() - from);
   return Decimal.min(new Decimal(1), new Decimal(remaining).div(total));
-}
-
-/**
- * Vehicle.fuelLevel holds a percent (both pickup screens send bars × 10), while
- * swap readings are bars "1".."10". Store a reading on the vehicle as a percent.
- */
-function fuelBarsToPercent(bars: string): number {
-  return Number(bars) * 10;
-}
-
-/** Vehicle.fuelLevel (percent) as fuel bars "1".."10"; null when it isn't a whole bar (unknown / legacy). */
-function fuelPercentToBars(percent: number | null | undefined): string | null {
-  if (percent == null || !Number.isInteger(percent)) return null;
-  if (percent < 10 || percent > 100 || percent % 10 !== 0) return null;
-  return String(percent / 10);
 }
 
 /** max(0, new − original) × fraction, rounded half-up to 2 dp. */

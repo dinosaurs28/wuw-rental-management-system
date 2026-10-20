@@ -179,6 +179,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
         startPrisma,
         endPrisma,
         vehicleIdToPublicId,
+        // Walk-in: customers-only booking locks don't apply to staff
+        { forStaff: true },
       );
       availableVehicles = vehicles.filter((v) => !unavailableIds.has(v.id));
     } else {
@@ -438,6 +440,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       priceMatchedVehicles,
       startDate && endDate ? TimezoneService.toPrisma(startDate) : null,
       startDate && endDate ? TimezoneService.toPrisma(endDate) : null,
+      { forStaff: true },
     );
     const availableCount = available.length;
     const representativeVehicle =
@@ -603,6 +606,7 @@ export const getEmployeeVehicleDetails = async (
           vehicleData.id,
           TimezoneService.toPrisma(startDate),
           TimezoneService.toPrisma(endDate),
+          { forStaff: true },
         );
       }
 
@@ -772,6 +776,8 @@ function unavailableReasonMessage(r: UnavailableReason): string {
       return `Booked ${displayIst(r.startAt)} – ${displayIst(r.endAt)} (${BOOKING_TURNAROUND_HOURS} h turnaround either side)`;
     case "ON_HOLD":
       return "A customer is booking it right now";
+    case "BOOKING_LOCKED":
+      return `Locked: ${r.reason} until ${displayIst(r.endAt)}`;
   }
 }
 
@@ -865,6 +871,7 @@ export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
         startPrisma,
         endPrisma,
         new Map(vehicles.map((v) => [v.id, v.publicId])),
+        { forStaff: true },
       ),
     ]);
 

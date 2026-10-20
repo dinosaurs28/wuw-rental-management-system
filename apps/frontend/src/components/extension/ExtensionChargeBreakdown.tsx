@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatInrExact, gstNumber, gstSplitText } from "@/lib/gst";
-import type { ExtensionGstSplit } from "@/services/extension.service";
+import type { ExtensionGstSplit, ExtensionSpecialShare } from "@/services/extension.service";
 
 interface ExtensionChargeBreakdownProps {
   /** The stored split from the server (evaluate pricing, commit result or extension row). */
@@ -8,21 +8,27 @@ interface ExtensionChargeBreakdownProps {
   /** GST-inclusive amount to collect (`additionalAmount`). */
   total: string | number;
   totalLabel?: string;
+  /** Festival / weekend parts of the total (staff responses only), e.g. "Dussehra pricing" ₹300. */
+  specialShare?: ExtensionSpecialShare[];
   className?: string;
   totalClassName?: string;
 }
 
 /**
  * Extension charge as the server priced it. Rent is GST-inclusive (item 17):
- * the total is the extension rent incl. GST, shown with the rent without GST
- * and the GST (CGST/SGST) inside it — GST is not added on top. Any discount
+ * the total is the extension rent incl. GST, shown with the GST (CGST/SGST)
+ * inside it — GST is not added on top, and no "rent without GST" line is shown
+ * so it can't read as rent + GST. Any discount
  * was taken before the split (stored in taxable terms).
  * Nothing is computed here — a response without the split shows only the total.
+ * Staff also see the festival / weekend parts already inside the total
+ * ("Includes Dussehra pricing +₹300"); customers are never sent them.
  */
 export function ExtensionChargeBreakdown({
   split,
   total,
   totalLabel = "Total payable",
+  specialShare,
   className,
   totalClassName,
 }: ExtensionChargeBreakdownProps) {
@@ -33,22 +39,27 @@ export function ExtensionChargeBreakdown({
   const rate = gstNumber(split.taxRate);
   const hasSplit = taxable !== null && tax !== null;
   const hasDiscount = base !== null && discount !== null && discount > 0;
+  const shares = (specialShare ?? [])
+    .map((s) => ({ label: s.label, amount: gstNumber(s.amount) }))
+    .filter((s): s is { label: string; amount: number } => s.amount !== null && s.amount !== 0);
+  const shareLines = shares.map((s) => (
+    <p key={s.label} className="text-amber-700">
+      Includes {s.label} {s.amount > 0 ? "+" : "−"}
+      {formatInrExact(Math.abs(s.amount))}
+    </p>
+  ));
 
   return (
     <div className={cn("space-y-1.5 text-sm", className)}>
       {hasSplit && (
         <>
           <div className="flex justify-between text-neutral-600">
-            <span>Extension rent (incl. GST)</span>
+            <span>Extension rent (GST included)</span>
             <span>{formatInrExact(total)}</span>
           </div>
           <div className="space-y-0.5 rounded-md bg-neutral-50 px-2.5 py-2 text-xs text-neutral-500">
             <div className="flex justify-between">
-              <span>Rent without GST</span>
-              <span>{formatInrExact(taxable)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>GST{rate !== null ? ` (${Number(rate.toFixed(2))}%)` : ""} included</span>
+              <span>Includes GST{rate !== null ? ` (${Number(rate.toFixed(2))}%)` : ""} — not added on top</span>
               <span>{formatInrExact(tax)}</span>
             </div>
             {(gstNumber(split.cgstAmount) !== null || gstNumber(split.sgstAmount) !== null) && (
@@ -56,6 +67,7 @@ export function ExtensionChargeBreakdown({
                 {gstSplitText(split.cgstAmount, split.sgstAmount)}
               </p>
             )}
+            {shareLines}
             {hasDiscount && (
               <p className="text-green-600">
                 Discount of {formatInrExact(discount)} (before GST) already taken off
@@ -74,6 +86,7 @@ export function ExtensionChargeBreakdown({
         <span>{totalLabel}</span>
         <span className={cn("text-orange-600", totalClassName)}>{formatInrExact(total)}</span>
       </div>
+      {!hasSplit && shareLines.length > 0 && <div className="text-xs">{shareLines}</div>}
     </div>
   );
 }

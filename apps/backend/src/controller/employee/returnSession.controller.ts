@@ -36,6 +36,7 @@
  */
 import { Request, Response } from "express";
 import { z } from "zod";
+import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 import Decimal from "decimal.js";
 import {
   prisma,
@@ -120,7 +121,7 @@ import {
 // client-sent `extraKmCharge` is stripped by zod and ignored.
 const computeReturnSessionSchema = z.object({
   endOdometer: z.coerce.number().int().min(0),
-  returnFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
+  returnFuelLevel: fuelBarsField.optional(),
   fuelCharge: z.coerce.number().min(0).optional(),
   fastagAmount: z.coerce.number().min(0).optional(),
   fastagNotes: z.string().optional(),

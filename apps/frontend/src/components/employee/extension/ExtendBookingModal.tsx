@@ -592,7 +592,9 @@ export function ExtendBookingModal({
                     <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       {eligibility?.vehicleRegNo ?? "This car"} is only free until {fmt(availableUntil.toISOString())}
                       {eligibility?.limitReason === "NEXT_BOOKING"
-                        ? ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
+                        ? eligibility.nextBookingKind === "LOCK"
+                          ? " (when its booking lock starts)"
+                          : ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
                         : ""}
                       . Checking this time will offer a swap to another car or a shorter extension, if possible.
                     </p>
@@ -698,17 +700,32 @@ export function ExtendBookingModal({
                   </span>
                 </div>
                 <ExtensionFreeKmLine freeKm={evaluation.pricing.extensionFreeKm} />
-                <ExtensionChargeBreakdown
-                  split={evaluation.pricing}
-                  total={evaluation.pricing.additionalAmount}
-                  totalLabel="Additional due"
-                  className="pt-2 border-t border-neutral-200"
-                />
-                {selectedResolution === "PARTIAL_EXTENSION" && (
-                  <p className="text-xs text-neutral-500">
-                    A partial extension is re-priced for the shorter period when you confirm.
-                  </p>
-                )}
+                {(() => {
+                  // A partial option comes priced for its own end (what confirming charges);
+                  // older servers sent the full request's price — then it is re-priced on confirm
+                  const partialOpt =
+                    selectedResolution === "PARTIAL_EXTENSION"
+                      ? evaluation.resolutionOptions.find((o) => o.type === "PARTIAL_EXTENSION")
+                      : undefined;
+                  const partialPriced = !!partialOpt?.taxableAmount;
+                  const priced = partialPriced ? partialOpt! : evaluation.pricing;
+                  return (
+                    <>
+                      <ExtensionChargeBreakdown
+                        split={priced}
+                        total={priced.additionalAmount}
+                        totalLabel="Additional due"
+                        specialShare={priced.specialShare}
+                        className="pt-2 border-t border-neutral-200"
+                      />
+                      {selectedResolution === "PARTIAL_EXTENSION" && !partialPriced && (
+                        <p className="text-xs text-neutral-500">
+                          A partial extension is re-priced for the shorter period when you confirm.
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* The car's next booking and how far it can go — fresh from evaluate */}
@@ -756,7 +773,7 @@ export function ExtendBookingModal({
                                 <span className="font-semibold">
                                   ₹{parseFloat(opt.additionalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </span>{" "}
-                                (incl. GST)
+                                (GST included)
                               </p>
                             )}
                             {opt.type === "PARTIAL_EXTENSION" && opt.partialNewEndAt && (
@@ -869,7 +886,7 @@ export function ExtendBookingModal({
               {/* Amount due */}
               <div className="bg-neutral-50 rounded-lg px-4 py-4 space-y-1 text-sm">
                 <div className="flex justify-between text-neutral-600">
-                  <span>Amount due</span>
+                  <span>Amount due (GST included)</span>
                   <span className="font-bold text-lg text-orange-600">
                     ₹{parseFloat(committedExtension.remainAmount.extension).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
@@ -877,11 +894,11 @@ export function ExtendBookingModal({
                 {committedExtension.taxableAmount != null && committedExtension.taxAmount != null && (
                   <p className="text-xs text-neutral-500">
                     {/* Extension rent is GST-inclusive (item 17): GST is inside the amount */}
-                    Rent without GST {formatInrExact(committedExtension.taxableAmount)} + GST{" "}
+                    Includes GST
+                    {committedExtension.taxRate ? ` (${Number(committedExtension.taxRate)}%)` : ""}{" "}
                     {formatInrExact(committedExtension.taxAmount)}
-                    {committedExtension.taxRate ? ` (${Number(committedExtension.taxRate)}%)` : ""} included
                     {" · "}
-                    {gstSplitText(committedExtension.cgstAmount, committedExtension.sgstAmount)}
+                    {gstSplitText(committedExtension.cgstAmount, committedExtension.sgstAmount)} — not added on top
                   </p>
                 )}
                 <ExtensionFreeKmLine freeKm={committedExtension.extensionFreeKm} className="pt-1" />

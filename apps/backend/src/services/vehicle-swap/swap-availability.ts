@@ -37,7 +37,9 @@ export type SwapExclusionCode =
   | "LOWER_CATEGORY"
   | "STILL_OUT"
   | "BOOKED"
-  | "ON_HOLD";
+  | "ON_HOLD"
+  /** A branch manager's booking lock covers the car for part of the window. */
+  | "BOOKING_LOCKED";
 
 export interface SwapExclusion {
   code: SwapExclusionCode;
@@ -55,6 +57,7 @@ export const DATE_CONFLICT_CODES: ReadonlySet<SwapExclusionCode> = new Set<SwapE
   "STILL_OUT",
   "BOOKED",
   "ON_HOLD",
+  "BOOKING_LOCKED",
 ]);
 
 /** 409 code of a swap refused because the replacement is taken for part of the window. */
@@ -174,6 +177,8 @@ export function blockerExclusion(r: UnavailableReason): SwapExclusion {
       };
     case "ON_HOLD":
       return { code: "ON_HOLD", reason: "Checkout in progress — a customer is booking it for part of this rental" };
+    case "BOOKING_LOCKED":
+      return { code: "BOOKING_LOCKED", reason: `Locked: ${r.reason} until ${formatSwapIst(r.endAt)}` };
   }
 }
 

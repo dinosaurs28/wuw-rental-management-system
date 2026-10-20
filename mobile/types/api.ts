@@ -196,8 +196,12 @@ export interface ExtensionCarAvailability {
   nextBookingStartAt?: string | null;
   /** Its booking id (publicId). */
   nextBookingRef?: string | null;
-  /** HOLD = a customer checkout in progress. */
-  nextBookingKind?: 'BOOKING' | 'HOLD' | null;
+  /** HOLD = a customer checkout in progress; LOCK = a branch manager's booking lock (no buffer before it). */
+  nextBookingKind?: 'BOOKING' | 'HOLD' | 'LOCK' | null;
+  /** The lock's reason, for kind LOCK. */
+  nextLockReason?: string | null;
+  /** When the lock ends (ISO), for kind LOCK. */
+  nextLockEndAt?: string | null;
   /** Latest return this car can be extended to (ISO). */
   availableUntil?: string | null;
   limitReason?: 'NEXT_BOOKING' | 'MAX_RENTAL_PERIOD' | null;
@@ -562,7 +566,9 @@ export interface RescheduleOptions {
   officeHours: BranchScheduleConfig;
   vehicles: Array<{ publicId: string; make: string; model: string; regNo: string }>;
   /** Other bookings / holds on the vehicle(s); bookingPublicId null = a customer checkout in progress. */
-  vehicleBusy: Array<RescheduleBusyRange & { vehiclePublicId: string; kind: 'BOOKING' | 'HOLD' }>;
+  vehicleBusy: Array<
+    RescheduleBusyRange & { vehiclePublicId: string; kind: 'BOOKING' | 'HOLD' | 'LOCK'; lockReason?: string }
+  >;
   /** Other bookings on the customer's driving licence. */
   dlBusy: RescheduleBusyRange[];
 }

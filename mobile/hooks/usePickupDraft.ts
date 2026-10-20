@@ -4,6 +4,7 @@ import type { CounterPaymentController, CounterRefundController } from '../compo
 import { COUNTER_PAYMENT_METHODS, COUNTER_REFUND_METHODS } from '../lib/counterPayment';
 import { DL_SELECTABLE_STATUSES, type DlCollectionStatus } from '../lib/dlStatus';
 import { draftBool, draftNumber, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
+import { fuelBarsNumber } from '../lib/fuel';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
 // Paused pickup (client item 2): which pickup-screen fields are kept and how
@@ -113,7 +114,7 @@ export function usePickupDraft({
         const odo = draftString(d, 'odo');
         if (odo) s.setOdo(odo);
         const fuel = draftNumber(d, 'fuelLevel');
-        s.setFuelLevel(fuel != null && fuel >= 1 && fuel <= 10 ? fuel : null);
+        s.setFuelLevel(fuelBarsNumber(fuel));
         s.setFastagBalance(draftString(d, 'fastagBalance'));
         setPhotos(savedPhotos);
       } else {

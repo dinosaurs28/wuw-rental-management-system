@@ -22,3 +22,5 @@ export * from "./fastag.js";
 export * from "./dl-photos.js";
 export * from "./booking-turnaround.js";
 export * from "./extension-buffer.js";
+export * from "./booking-lock.schema.js";
+export * from "./fuel.js";

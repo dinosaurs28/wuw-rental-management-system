@@ -118,15 +118,13 @@ import {
   type EditReturnBody,
   type ReturnSummary,
 } from "@/services/completedOperation.service";
+import { FUEL_BAR_OPTIONS, fuelBarOptionLabel, fuelBarsShort, fuelDeficitAmount } from "@repo/schemas";
 
-const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
-  value: String(i + 1),
-  label: String(i + 1),
+// Fuel bars "0".."10" — "0" is an empty tank (a real reading).
+const FUEL_LEVEL_OPTIONS = FUEL_BAR_OPTIONS.map((value) => ({
+  value,
+  label: fuelBarOptionLabel(value),
 }));
-
-const FUEL_LEVEL_ORDER: Record<string, number> = Object.fromEntries(
-  Array.from({ length: 10 }, (_, i) => [String(i + 1), i + 1])
-);
 
 // ── Stable page shell (must be defined OUTSIDE the page component so React
 //    never remounts the subtree — an inline component would get a new function
@@ -268,7 +266,7 @@ interface OtherChargeItem {
   amount: string;
 }
 
-/** Fuel level at return (1–10), against the level the vehicle started with. */
+/** Fuel level at return (0–10, 0 = empty), against the level the vehicle started with. */
 function ReturnFuelLevelField({
   value,
   onChange,
@@ -746,9 +744,7 @@ export default function ReturnProcessPage() {
   const swapCharges = booking?.swapCharges ?? [];
   // Fuel deficit detection
   const pickupFuelLevel = booking?.pickupFuelLevel ?? null;
-  const hasFuelDeficit = returnFuelLevel && pickupFuelLevel
-    ? FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER[pickupFuelLevel]
-    : false;
+  const hasFuelDeficit = fuelBarsShort(pickupFuelLevel, returnFuelLevel) > 0;
 
   // Real money taken in this session (the deposit credit is a DEPOSIT entry, not a payment;
   // a "Refund in full" bill's SAFETY_DEPOSIT_REFUND line is part of the bill, not money paid out).
@@ -805,10 +801,10 @@ export default function ReturnProcessPage() {
   // ── Auto-calculate fuel deficit charge from vehicle's fuelBar rate ──────────
   useEffect(() => {
     const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
-    if (!fuelBarRate || !hasFuelDeficit || !returnFuelLevel || !pickupFuelLevel) return;
-    const deficitBars = FUEL_LEVEL_ORDER[pickupFuelLevel] - FUEL_LEVEL_ORDER[returnFuelLevel];
-    if (deficitBars > 0) {
-      setFuelCharge(String(Math.ceil(deficitBars * fuelBarRate)));
+    // 0 bars is a real reading (empty): compare parsed levels, never truthiness
+    const amount = fuelDeficitAmount(pickupFuelLevel, returnFuelLevel, fuelBarRate);
+    if (amount > 0) {
+      setFuelCharge(String(amount));
       setFuelDeficit(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2184,8 +2180,7 @@ function ReturnEditForm({
     !!timeline && timeline.gracePolicyEnabled && timeline.graceType === "MANUAL" && timeline.graceMinutes > 0;
   const depositHeld = num(booking.safetyDeposit);
   const pickupFuelLevel = booking.pickupFuelLevel ?? summary.fuel.pickup;
-  const hasFuelDeficit =
-    !!returnFuelLevel && !!pickupFuelLevel && FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER[pickupFuelLevel];
+  const hasFuelDeficit = fuelBarsShort(pickupFuelLevel, returnFuelLevel) > 0;
   const typedOther = useMemo(
     () => (hasOtherCharges ? otherChargeItems.filter((c) => c.label.trim() || c.amount.trim()) : []),
     [hasOtherCharges, otherChargeItems],
@@ -2292,10 +2287,10 @@ function ReturnEditForm({
   const changeFuelLevel = (level: string) => {
     setReturnFuelLevel(level);
     const fuelBarRate = vehicle?.fuelBar ? Number(vehicle.fuelBar) : 0;
-    const deficitBars = pickupFuelLevel ? FUEL_LEVEL_ORDER[pickupFuelLevel] - FUEL_LEVEL_ORDER[level] : 0;
-    if (dropBill && fuelBarRate && deficitBars > 0) {
+    const amount = fuelDeficitAmount(pickupFuelLevel, level, fuelBarRate);
+    if (dropBill && amount > 0) {
       setFuelDeficit(true);
-      setFuelCharge(String(Math.ceil(deficitBars * fuelBarRate)));
+      setFuelCharge(String(amount));
     } else {
       setFuelDeficit(false);
       setFuelCharge("");

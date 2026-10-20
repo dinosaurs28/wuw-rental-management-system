@@ -31,7 +31,7 @@ import {
   type SerializedLateReturn,
 } from "./late-return.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
-import { extensionFreeKm, loadBookingFreeKmRates, type FreeKmRates } from "./extension-km.js";
+import { extensionFreeKm, extensionKmMinutes, loadBookingFreeKmRates, type FreeKmRates } from "./extension-km.js";
 
 export interface TimelineExtensionInput {
   id: number;
@@ -115,7 +115,15 @@ export async function activeExtensionState(
  * to the drop allowance (#7 rule, extension-km.ts); null when they're unknown.
  */
 export function buildRentalPeriod(
-  booking: { startAt: Date; endAt: Date; originalEndAt: Date | null; activeExtensionId: number | null },
+  booking: {
+    startAt: Date;
+    endAt: Date;
+    originalEndAt: Date | null;
+    activeExtensionId: number | null;
+    /** For the km window of a held-to-closing 12 h package (extensionKmMinutes); absent = none */
+    pricingSnapshot?: unknown;
+    rentalPeriodType?: string | null;
+  },
   extensions: TimelineExtensionInput[],
   freeKmRates: FreeKmRates | null = null,
 ) {
@@ -135,7 +143,7 @@ export function buildRentalPeriod(
   // Free km each extension adds (#7) — the same figures the drop's km allowance sums
   const extensionKm = live.map((e) =>
     freeKmRates
-      ? extensionFreeKm(Math.max(0, minutesBetween(e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt)), freeKmRates)
+      ? extensionFreeKm(extensionKmMinutes(booking, e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt), freeKmRates)
       : null,
   );
 
@@ -229,6 +237,8 @@ export async function getRentalTimeline(
       status: true,
       returnedAt: true,
       branchId: true,
+      pricingSnapshot: true,
+      rentalPeriodType: true,
       extensions: {
         where: {
           extensionStatus: {

@@ -73,6 +73,7 @@ import DropDamageEditor, {
 } from '../../../components/employee/edit/DropDamageEditor';
 import type { EditPreview, EditReturnBody, ReturnSummary } from '../../../types/completedOperation';
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
+import { FUEL_BAR_LEVELS, fuelBarsNumber } from '../../../lib/fuel';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -106,10 +107,9 @@ function formatDate(iso: string) {
 // Odometer readings are whole km (the server rejects decimals).
 const isWholeKm = (s: string) => /^\d+$/.test(s.trim());
 
-// Fuel is recorded in bars, "1".."10" (pickup and return).
-const FUEL_LEVELS = Array.from({ length: 10 }, (_, i) => String(i + 1));
-const fuelBars = (level: string | null | undefined): number | null =>
-  level && /^([1-9]|10)$/.test(level) ? Number(level) : null;
+// Fuel is recorded in bars, "0".."10" (pickup and return; "0" = empty tank).
+const FUEL_LEVELS = FUEL_BAR_LEVELS;
+const fuelBars = fuelBarsNumber;
 const fuelLabel = (level: string) => (fuelBars(level) != null ? `${level}/10` : level);
 
 // Settlement methods (#3 / #11): Cash · UPI (photo of the customer's payment
@@ -185,7 +185,7 @@ export default function ReturnScreen() {
 
   // charge inputs
   const [endOdo, setEndOdo] = useState('');
-  const [fuelLevel, setFuelLevel] = useState<string>(''); // '1'..'10'
+  const [fuelLevel, setFuelLevel] = useState<string>(''); // '0'..'10'
   const [chargeFuel, setChargeFuel] = useState(false);
   const [fuelAmt, setFuelAmt] = useState('');
   const [chargeFastag, setChargeFastag] = useState(false);

@@ -133,7 +133,7 @@ interface SummaryBase {
 export interface PickupSummary extends SummaryBase {
   phase: "PICKUP";
   odometer: number | null;
-  /** "1".."10" */
+  /** "0".."10" ("0" = empty) */
   fuelLevel: string | null;
   /**
    * ₹ on the FASTag at the handover — editable for any car, required when the car

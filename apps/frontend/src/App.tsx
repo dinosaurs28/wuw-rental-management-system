@@ -46,6 +46,7 @@ import EmployeeShiftHistoryPage from "@/pages/employee/EmployeeShiftHistoryPage"
 import ManagerCaptureConfigPage from "@/pages/manager/ManagerCaptureConfigPage";
 import BranchSchedulePage from "@/pages/manager/BranchSchedulePage";
 import FestivalPricingPage from "@/pages/manager/FestivalPricingPage";
+import BookingLocksPage from "@/pages/manager/BookingLocksPage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
 import { DashboardPage } from "./pages/manager/DashboardPage";
 import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
@@ -85,6 +86,7 @@ import { FleetExecutivePage } from "./pages/admin/reports/FleetExecutivePage";
 import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
 import { AdminDiscountRulesPage } from "./pages/admin/AdminDiscountRulesPage";
 import { AdminFestivalPricingPage } from "./pages/admin/AdminFestivalPricingPage";
+import { AdminBookingLocksPage } from "./pages/admin/AdminBookingLocksPage";
 import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminDeliveryPage } from "./pages/admin/AdminDeliveryPage";
@@ -224,6 +226,7 @@ function App() {
           <Route path="/manager/capture-configs" element={<ManagerCaptureConfigPage />} />
           <Route path="/manager/branch-schedule" element={<BranchSchedulePage />} />
           <Route path="/manager/festival-pricing" element={<FestivalPricingPage />} />
+          <Route path="/manager/booking-locks" element={<BookingLocksPage />} />
           <Route
             path="/manager/payment/fine-status/:transactionId"
             element={<FinePaymentStatusPage />}
@@ -362,6 +365,7 @@ function App() {
               element={<AdminDiscountRulesPage />}
             />
             <Route path="/admin/festival-pricing" element={<AdminFestivalPricingPage />} />
+            <Route path="/admin/booking-locks" element={<AdminBookingLocksPage />} />
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
             <Route path="/admin/delivery" element={<AdminDeliveryPage />} />
             <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />

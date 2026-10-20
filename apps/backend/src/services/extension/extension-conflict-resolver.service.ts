@@ -6,7 +6,7 @@ import {
 } from "./extension-availability.service.js";
 import { ExtensionResolutionType } from "@repo/database/client";
 import { SWAP_WINDOW_BOOKING_SELECT } from "../vehicle-swap/swap-replacements.js";
-import { partialExtensionEnd } from "./partial-extension.js";
+import { bufferBefore, latestReturnFor, partialExtensionEnd } from "./partial-extension.js";
 import { EXTENSION_BUFFER_HOURS, EXTENSION_BUFFER_MS } from "@repo/schemas";
 
 export interface ResolutionOption {
@@ -120,9 +120,20 @@ class ExtensionConflictResolverService {
     // offered partial never fails as "availability changed"
     const partialEnd = partialExtensionEnd(currentEndAt, newEndAt, conflictingBookings);
     if (partialEnd) {
+      // What sets the partial end: a booking lock (the return may be right up to
+      // its start) or a booking / checkout (EXTENSION_BUFFER_HOURS before it)
+      const limitedByLockOnly = conflictingBookings
+        .filter(
+          (c) =>
+            c.startAt.getTime() < newEndAt.getTime() + bufferBefore(c) &&
+            latestReturnFor(c).getTime() === partialEnd.getTime(),
+        )
+        .every((c) => c.kind === "LOCK");
       options.push({
         type: ExtensionResolutionType.PARTIAL_EXTENSION,
-        description: `Extend partially until ${partialEnd.toISOString()} (${EXTENSION_BUFFER_HOURS} hours before the vehicle's next booking).`,
+        description: limitedByLockOnly
+          ? `Extend partially until ${partialEnd.toISOString()} (the latest return before the booking lock on the vehicle starts — no buffer before a lock).`
+          : `Extend partially until ${partialEnd.toISOString()} (${EXTENSION_BUFFER_HOURS} hours before the vehicle's next booking).`,
         partialNewEndAt: partialEnd,
         conflictingBookings,
       });
@@ -155,8 +166,9 @@ class ExtensionConflictResolverService {
     const result = [];
 
     for (const conflict of conflictingBookings) {
-      // A checkout in progress isn't a booking to reassign — only waited out
-      if (conflict.kind === "HOLD") return null;
+      // A checkout in progress isn't a booking to reassign — only waited out;
+      // nor is a booking lock (it stays where the branch manager put it)
+      if (conflict.kind === "HOLD" || conflict.kind === "LOCK") return null;
 
       // The conflicting booking's car (type and category it must keep)
       const [vehicle, conflictBooking] = await Promise.all([

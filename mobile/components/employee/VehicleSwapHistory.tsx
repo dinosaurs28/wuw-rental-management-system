@@ -18,7 +18,7 @@ export const SWAP_PHOTOS_MISSING_NOTE =
   'No photos were taken of the replacement vehicle at the swap — check its condition carefully.';
 
 const km = (n: number) => `${n.toLocaleString('en-IN')} km`;
-const fuel = (level: string | null) => (level == null ? null : fuelBarsValue(level) ? `${level}/10` : level);
+const fuel = (level: string | null) => (level == null ? null : fuelBarsValue(level) != null ? `${level}/10` : level);
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {

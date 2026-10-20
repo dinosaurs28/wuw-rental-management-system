@@ -7,6 +7,7 @@ import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js
 import type { ChargeReturnDataInput } from "../../types/charge-return.types.js";
 import { createID } from "../../utils/nanoID.js";
 import { getOdometerSegments, resolveKmAllowance } from "./km-allowance.service.js";
+import { fuelBarsShort } from "@repo/schemas";
 
 /**
  * Orchestrates all charge computation at vehicle return:
@@ -156,8 +157,8 @@ export class ReturnChargeService {
             returnFuelLevel: returnInput.returnFuelLevel as any,
             returnAt: actualReturnAt,
             capturedByReturnId: actorId,
-            fuelDeficit: (context.pickupFuelLevel !== context.returnFuelLevel)
-              && (context.returnFuelLevel !== undefined),
+            // Returned with fewer bars than at pickup ("0" = empty is a real reading)
+            fuelDeficit: fuelBarsShort(context.pickupFuelLevel, context.returnFuelLevel) > 0,
             fuelDeficitCharge: context.fuelDeficitCharge
               ? context.fuelDeficitCharge.toFixed(2)
               : null,

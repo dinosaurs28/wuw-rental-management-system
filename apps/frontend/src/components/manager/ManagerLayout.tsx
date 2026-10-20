@@ -25,6 +25,7 @@ import {
   Contact,
   Megaphone,
   PartyPopper,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
@@ -73,6 +74,7 @@ const operationsItems = [
   { label: "Photo Capture", path: "/manager/capture-configs", icon: Camera },
   { label: "Branch Hours", path: "/manager/branch-schedule", icon: Clock },
   { label: "Festival Pricing", path: "/manager/festival-pricing", icon: PartyPopper },
+  { label: "Booking Locks", path: "/manager/booking-locks", icon: Lock },
   { label: "Offers & Banners", path: "/manager/offers", icon: Megaphone },
   { label: "Cancellations", path: "/manager/no-show", icon: UserX },
   { label: "Staff Activity", path: "/manager/staff-activity", icon: Activity },

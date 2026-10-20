@@ -43,6 +43,7 @@
  */
 import { Request, Response } from "express";
 import { z } from "zod";
+import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 import Decimal from "decimal.js";
 import {
   prisma,
@@ -164,7 +165,7 @@ import {
 
 // ── Request bodies ────────────────────────────────────────────────────────────
 
-const FUEL_LEVEL = z.string().regex(/^([1-9]|10)$/, "Fuel level must be 1 to 10");
+const FUEL_LEVEL = fuelBarsField;
 const fileIdList = (max: number) => z.array(z.string().trim().min(1)).max(max);
 
 const editPickupSchema = z.object({

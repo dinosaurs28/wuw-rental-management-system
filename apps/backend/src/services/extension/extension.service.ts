@@ -22,6 +22,7 @@ import {
   extensionSplitView,
   type ExtensionPricingResult,
 } from "./extension-pricing.service.js";
+import { extensionSpecialShareView } from "./extension-charge.js";
 import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
@@ -49,7 +50,7 @@ import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.
 import { assertExtensionQrsClosedForCancel } from "../payment/upi-qr.service.js";
 import {
   extensionFreeKm,
-  extensionMinutes,
+  extensionKmMinutes,
   loadFreeKmRates,
   type ExtensionFreeKm,
 } from "../charges/extension-km.js";
@@ -70,8 +71,18 @@ export interface EvaluationResolutionOption {
   availableVehicles?: Array<{ publicId: string; make: string; model: string; regNo: string }>;
   affectedBookings?: Array<{ bookingPublicId: string; newVehicle: { publicId: string; make: string; model: string; regNo: string } }>;
   partialNewEndAt?: string;
+  /** The option's charge — a partial option priced for its own end (what its commit charges) */
   additionalAmount: string;
   newTotalFinal: string;
+  /** Partial option: its GST split and festival / weekend parts (staff only) */
+  baseAmount?: string;
+  discountAmount?: string;
+  taxableAmount?: string;
+  taxAmount?: string;
+  cgstAmount?: string;
+  sgstAmount?: string;
+  taxRate?: string;
+  specialShare?: Array<{ label: string; amount: string }>;
   /** Free km this option's extension adds (#7) — for a partial option, up to partialNewEndAt. */
   extensionFreeKm?: ExtensionFreeKm | null;
 }
@@ -98,11 +109,17 @@ export interface ExtensionEvaluation {
     originalHours: number;
     extensionHours: number;
     /**
-     * Free km the extension adds to the drop allowance (#7): whole 24 h →
-     * freeKm24Hour, a remaining ≥ 12 h → freeKm12Hour, other hours → 0.
-     * null when the vehicle's free km can't be read.
+     * Free km the extension adds to the drop allowance (#7), following the
+     * blocks the added time is billed in (extension-km.ts). null when the
+     * vehicle's free km can't be read.
      */
     extensionFreeKm: ExtensionFreeKm | null;
+    /**
+     * Festival / weekend parts of additionalAmount, GST-inclusive, before any
+     * coupon — e.g. [{ label: "Dussehra pricing", amount: "400.00" }]. Staff
+     * responses only (customers never get it; festivalPrivacy strips it too).
+     */
+    specialShare: Array<{ label: string; amount: string }>;
   };
   resolutionOptions: EvaluationResolutionOption[];
   recommendedResolution: string;
@@ -404,6 +421,15 @@ class ExtensionService {
     const additionalAmountStr = pricing.additionalAmount.toFixed(2);
     const newTotalFinalStr = pricing.newTotalFinal.toFixed(2);
 
+    // The partial option is priced for its own end — the same price the commit
+    // re-prices it at (extensionPricingService.recalculate to partialNewEndAt)
+    const partialEnd = resolutionOptions.options.find(
+      (opt) => opt.type === "PARTIAL_EXTENSION" && opt.partialNewEndAt,
+    )?.partialNewEndAt;
+    const partialPricing = partialEnd
+      ? await extensionPricingService.recalculate(booking.id, partialEnd)
+      : null;
+
     // Free km the extension adds (#7), at the current vehicle's slab free km.
     // Shown on the quote only — the price above is unaffected.
     const freeKmRates = await loadFreeKmRates(
@@ -414,7 +440,7 @@ class ExtensionService {
       return null;
     });
     const freeKmUntil = (end: Date) =>
-      freeKmRates ? extensionFreeKm(extensionMinutes(booking.endAt, end), freeKmRates) : null;
+      freeKmRates ? extensionFreeKm(extensionKmMinutes(booking, booking.endAt, end), freeKmRates) : null;
 
     // Next booking on this car and how far it can be extended (2 h buffer, cap)
     const availability = await safeExtensionAvailability(
@@ -445,6 +471,8 @@ class ExtensionService {
         originalHours: pricing.originalHours,
         extensionHours: pricing.extensionHours,
         extensionFreeKm: freeKmUntil(newEndAt),
+        // Festival / weekend parts of additionalAmount (staff responses only)
+        specialShare: extensionSpecialShareView(pricing.specialShare),
       },
       resolutionOptions: resolutionOptions.options.map(opt => ({
         type: opt.type,
@@ -466,8 +494,14 @@ class ExtensionService {
           },
         })),
         partialNewEndAt: opt.partialNewEndAt?.toISOString(),
-        additionalAmount: additionalAmountStr,
-        newTotalFinal: newTotalFinalStr,
+        ...(opt.type === "PARTIAL_EXTENSION" && partialPricing
+          ? {
+              additionalAmount: partialPricing.additionalAmount.toFixed(2),
+              newTotalFinal: partialPricing.newTotalFinal.toFixed(2),
+              ...extensionSplitView(partialPricing),
+              specialShare: extensionSpecialShareView(partialPricing.specialShare),
+            }
+          : { additionalAmount: additionalAmountStr, newTotalFinal: newTotalFinalStr }),
         extensionFreeKm: opt.type === "NO_RESOLUTION" ? null : freeKmUntil(opt.partialNewEndAt ?? newEndAt),
       })),
       recommendedResolution: resolutionOptions.recommendedOption,

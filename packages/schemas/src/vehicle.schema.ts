@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dlCollectionStatusSchema, dlDepositNoteSchema } from "./dl-status.js";
 import { fastagBalanceSchema } from "./fastag.js";
+import { FUEL_BARS_MESSAGE, FUEL_BARS_PATTERN } from "./fuel.js";
 
 export const getVehicleDetailsSchema = z.object({
   id: z.string().min(16, "Vehicle ID length is invalid."),
@@ -264,7 +265,7 @@ const swapFuelBarsSchema = z.preprocess(
   (v) => (v === null || v === "" ? undefined : typeof v === "number" ? String(v) : v),
   z
     .string()
-    .regex(/^([1-9]|10)$/, "Fuel must be between 1 and 10 bars")
+    .regex(FUEL_BARS_PATTERN, FUEL_BARS_MESSAGE)
     .optional(),
 );
 export const vehicleSwapSchema = z

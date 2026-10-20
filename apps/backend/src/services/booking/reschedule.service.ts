@@ -81,6 +81,7 @@ import {
 } from "../../utils/booking/halfDayPackage.js";
 import { checkCustomerTypeClassLimits } from "../../utils/booking/customerTypeClassLimits.js";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
+import { findLocksCovering } from "../../utils/availability/bookingLocks.js";
 import {
   DROP_NOT_RECORDED_WHERE,
   automaticGraceMinutes,
@@ -414,7 +415,10 @@ function hoursError(
 
 interface VehicleConflict {
   vehiclePublicId: string;
-  kind: "BOOKING" | "HOLD";
+  /** LOCK = a branch manager's booking lock (a plain overlap, no turnaround). */
+  kind: "BOOKING" | "HOLD" | "LOCK";
+  /** The lock's reason (staff only), for kind LOCK. */
+  lockReason?: string;
   bookingPublicId: string | null;
   bookingStatus: BookingStatus | null;
   startAt: Date;
@@ -517,13 +521,37 @@ async function findHoldConflicts(booking: RescheduleBooking, start: Date, end: D
   }));
 }
 
+/**
+ * Booking locks on these vehicles overlapping [start, end) — a plain overlap.
+ * A reschedule is a staff action, so customers-only locks don't count.
+ */
+async function findLockConflicts(db: Db, booking: RescheduleBooking, start: Date, end: Date): Promise<VehicleConflict[]> {
+  const publicIdOf = new Map(booking.items.map((i) => [i.vehicle.id, i.vehicle.publicId]));
+  const covering = await findLocksCovering([...publicIdOf.keys()], start, end, { forStaff: true, db });
+  return [...covering].flatMap(([vehicleId, locks]) =>
+    locks.map((l) => ({
+      vehiclePublicId: publicIdOf.get(vehicleId)!,
+      kind: "LOCK" as const,
+      lockReason: l.reason,
+      bookingPublicId: null,
+      bookingStatus: null,
+      startAt: l.startAt,
+      endAt: l.endAt,
+      blockedFrom: l.startAt,
+      blockedUntil: l.endAt,
+    })),
+  );
+}
+
 function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConflict[]): RescheduleError {
   const first = conflicts[0]!;
   const vehicle = booking.items.find((i) => i.vehicle.publicId === first.vehiclePublicId)?.vehicle;
   const name = vehicle ? vehicleLabel(vehicle) : "The vehicle";
   const when = `${formatIst(first.startAt)} – ${formatIst(first.endAt)}`;
   const message =
-    first.kind === "HOLD"
+    first.kind === "LOCK"
+      ? `${name} is locked for bookings ${when} (${first.lockReason ?? "booking lock"}). Choose another time, or swap the vehicle first.`
+      : first.kind === "HOLD"
       ? `${name} is being booked by another customer for ${when}, which is too close to the new dates (bookings of the same car need ${BOOKING_TURNAROUND_HOURS} hours between them). Choose another time, or try again in a few minutes.`
       : first.bookingStatus === BookingStatus.PICKED_UP && first.blockedUntil === null
         ? `${name} is not back from booking ${first.bookingPublicId} (due ${formatIst(first.endAt)}), so it can't be promised for any dates until its drop is recorded. Swap the vehicle first, or try again after the drop.`
@@ -534,6 +562,7 @@ function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConfli
       kind: c.kind,
       bookingPublicId: c.bookingPublicId,
       bookingStatus: c.bookingStatus,
+      ...(c.lockReason != null && { lockReason: c.lockReason }),
       startAt: c.startAt.toISOString(),
       endAt: c.endAt.toISOString(),
     })),
@@ -706,9 +735,10 @@ export async function getRescheduleOptions(req: Request, bookingPublicId: string
 
   // What is in the way between now and the latest return: other bookings and
   // holds on the vehicle(s), and other bookings on the customer's licence
-  const [bookingBusy, holdBusy] = await Promise.all([
+  const [bookingBusy, holdBusy, lockBusy] = await Promise.all([
     findBookingConflicts(prisma, booking, rangeStart, rangeEnd, now),
     findHoldConflicts(booking, rangeStart, rangeEnd),
+    findLockConflicts(prisma, booking, rangeStart, rangeEnd),
   ]);
   const dl = cleanDl(booking.customer.drivingLicenceNumber);
   const dlBookings = dl
@@ -757,13 +787,14 @@ export async function getRescheduleOptions(req: Request, bookingPublicId: string
       model: i.vehicle.model,
       regNo: i.vehicle.regNo,
     })),
-    vehicleBusy: [...bookingBusy, ...holdBusy]
+    vehicleBusy: [...bookingBusy, ...holdBusy, ...lockBusy]
       .sort((a, b) => a.startAt.getTime() - b.startAt.getTime())
       .map((c) => ({
         vehiclePublicId: c.vehiclePublicId,
         kind: c.kind,
         bookingPublicId: c.kind === "HOLD" && c.bookingStatus === null ? null : c.bookingPublicId,
         bookingStatus: c.bookingStatus,
+        ...(c.lockReason != null && { lockReason: c.lockReason }),
         // The span a new pickup / return can't fall in: the booking plus the
         // turnaround either side; an overdue rental is busy for the whole range
         startAt: c.blockedFrom.toISOString(),
@@ -957,6 +988,8 @@ export async function rescheduleBooking(
 
         const conflicts = await findBookingConflicts(tx, booking, newStart, newEnd, now);
         if (conflicts.length > 0) throw vehicleUnavailable(booking, conflicts);
+        const lockConflicts = await findLockConflicts(tx, booking, newStart, newEnd);
+        if (lockConflicts.length > 0) throw vehicleUnavailable(booking, lockConflicts);
 
         // Re-read what could have changed since the checks above
         const { blocker: lateBlocker, releasableQuoteId } = await findBlocker(booking, tx, now);

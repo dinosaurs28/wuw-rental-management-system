@@ -1,23 +1,32 @@
 /**
  * Free km an extension adds (#7 — client: "if only hours are added by
- * extending, do not add km; km only when the extension is by 12 or 24 hours").
+ * extending, do not add km; km only when the extension is by 12 or 24
+ * hours"), following the blocks the extension is PRICED in (extension-charge.ts:
+ * the added time billed as a booking of that length, base-price-rule.ts):
  *
- *   each whole 24 h block      → freeKm24Hour
- *   a remaining block ≥ 12 h   → freeKm12Hour (once)
- *   any other hours            → 0 km (an extension under 12 h adds none,
- *                                and hours beyond the 12 h block add none)
+ *   each whole 24 h block                    → freeKm24Hour
+ *   the remainder, billed as the 12 h slab   → freeKm12Hour (≤ 12 h)
+ *   the remainder, billed as the 24 h slab   → freeKm24Hour (> 12 h, or no 12 h slab)
+ *   the remainder, billed by the hour        → 0 km (hours only)
  *
- * Examples (freeKm24Hour 150, freeKm12Hour 80): 2 h → 0 · 12 h → 80 ·
- * 14 h → 80 · 24 h → 150 · 26 h → 150 · 36 h → 230 · 44 h → 230 · 48 h → 300.
+ * The remainder is billed by the hour when that is cheaper than its slab
+ * (hourly rate × started hours < slab), at the vehicle's weekday rates.
+ * Examples (₹1,600 / ₹1,100 / ₹300 an hour, freeKm24Hour 250, freeKm12Hour
+ * 80): 2 h (₹600) → 0 · 5 h (₹1,100, 12 h slab) → 80 · 14 h (₹1,600) → 250 ·
+ * 1 day + 11 h 30 min (₹1,600 + ₹1,100) → 330 · 1 day + 12 h 30 min → 500.
+ * Without prices (rates loaded before this rule) the older minutes-only rule
+ * applies: a remainder of 12 h or more → freeKm12Hour, else 0.
  *
- * Only the free km follow this rule — the extension's PRICE is the pricing
- * engine's delta (hourly parts at the vehicle's hourly rate). The drop's km
- * allowance is the original period's free km plus this for every extension
- * (km-allowance.service). extensionFreeKm is pure; loadFreeKmRates reads the
- * vehicle's rates the way the pricing engine does.
+ * The drop's km allowance is the original period's free km plus this for
+ * every extension (km-allowance.service). extensionFreeKm is pure;
+ * loadFreeKmRates reads the vehicle's rates the way the pricing engine does.
+ * (Monthly bookings' extensions are priced as a delta from pickup; their free
+ * km follow the same added-time blocks.)
  */
 import { prisma } from "@repo/database/client";
 import type { TxClient } from "../payment/paymentSession.service.js";
+import { extensionPaidUntil } from "../extension/extension-charge.js";
+import { heldToClosingOf } from "../../utils/booking/halfDayPackage.js";
 
 const DAY_MINUTES = 24 * 60;
 const HALF_DAY_MINUTES = 12 * 60;
@@ -26,6 +35,14 @@ const HALF_DAY_MINUTES = 12 * 60;
 export interface FreeKmRates {
   freeKm12Hour: number;
   freeKm24Hour: number;
+  /**
+   * The weekday rents (GST-inclusive) that decide how the remainder is billed:
+   * the hourly rate (null / 0 = none), the 12 h slab (null / 0 = none) and the
+   * 24 h slab. Absent = the older minutes-only rule.
+   */
+  hourlyRate?: number | null;
+  price12Hour?: number | null;
+  price24Hour?: number | null;
 }
 
 /** Free km one extension adds, with how it was worked out. */
@@ -34,11 +51,11 @@ export interface ExtensionFreeKm {
   km: number;
   /** Length of the extension the km were worked out for, in whole minutes. */
   minutes: number;
-  /** Whole 24 h blocks — freeKm24Hour each. */
+  /** Days billed at the 24 h slab — freeKm24Hour each (whole 24 h blocks, plus a remainder billed as a day). */
   fullDays: number;
-  /** A remaining block of 12 h or more earned freeKm12Hour. */
+  /** The remainder was billed as the 12 h slab and earned freeKm12Hour. */
   halfDay: boolean;
-  /** Minutes that earn no km (under 12 h left after the full days, or beyond the 12 h block). */
+  /** Minutes that earn no km (a remainder billed by the hour; minutes-only rule: beyond the 12 h block). */
   minutesWithoutKm: number;
   freeKm24Hour: number;
   freeKm12Hour: number;
@@ -61,21 +78,79 @@ export function extensionMinutes(from: Date, to: Date): number {
   return Math.max(0, Math.round((to.getTime() - from.getTime()) / 60_000));
 }
 
+/** The booking fields an extension's free-km window depends on. */
+export interface ExtensionKmBooking {
+  startAt: Date;
+  pricingSnapshot?: unknown;
+  rentalPeriodType?: string | null;
+}
+
+/**
+ * Minutes an extension from `from` to `to` earns free km for — the window it
+ * is charged for (extension-charge.ts extensionPaidUntil): a booking made as
+ * the 12-hour package held to closing already got the 12 h km up to pickup +
+ * 12 h, so only the time after that counts.
+ */
+export function extensionKmMinutes(booking: ExtensionKmBooking, from: Date, to: Date): number {
+  const paidUntil = extensionPaidUntil(
+    {
+      startAt: booking.startAt,
+      monthly: booking.rentalPeriodType === "MONTHLY",
+      heldToClosing: heldToClosingOf(booking.pricingSnapshot),
+    },
+    from,
+  );
+  return extensionMinutes(paidUntil, to);
+}
+
+const positiveOrNull = (n: number | null | undefined) => (n != null && Number.isFinite(n) && n > 0 ? n : null);
+
+/**
+ * How the remainder of an extension (after its whole days) is billed — the
+ * slab / hourly choice of base-price-rule.ts at weekday rents; null without
+ * prices (the minutes-only rule).
+ */
+function remainderBilling(remainder: number, rates: FreeKmRates): "HOURS" | "HALF_DAY" | "FULL_DAY" | null {
+  const price24 = positiveOrNull(rates.price24Hour);
+  if (price24 == null) return null;
+  const price12 = positiveOrNull(rates.price12Hour);
+  const slab = remainder <= HALF_DAY_MINUTES && price12 != null
+    ? { kind: "HALF_DAY" as const, price: price12 }
+    : { kind: "FULL_DAY" as const, price: price24 };
+  const hourly = positiveOrNull(rates.hourlyRate);
+  if (hourly != null && hourly * Math.max(1, Math.ceil(remainder / 60)) < slab.price) return "HOURS";
+  return slab.kind;
+}
+
 /** Free km for an extension of `minutes` (whole minutes) at the vehicle's slab rates. */
 export function extensionFreeKm(minutes: number, rates: FreeKmRates): ExtensionFreeKm {
   const total = nonNegativeInt(Math.round(minutes));
   const freeKm24Hour = nonNegativeInt(rates.freeKm24Hour);
   const freeKm12Hour = nonNegativeInt(rates.freeKm12Hour);
 
-  const fullDays = Math.floor(total / DAY_MINUTES);
-  const remainder = total - fullDays * DAY_MINUTES;
-  const halfDay = remainder >= HALF_DAY_MINUTES;
-  const minutesWithoutKm = halfDay ? remainder - HALF_DAY_MINUTES : remainder;
+  const wholeDays = Math.floor(total / DAY_MINUTES);
+  const remainder = total - wholeDays * DAY_MINUTES;
+  const billing = remainder > 0 ? remainderBilling(remainder, rates) : null;
+
+  let fullDays = wholeDays;
+  let halfDay: boolean;
+  let minutesWithoutKm: number;
+  if (billing === null) {
+    // Minutes-only rule (no prices): a remainder of 12 h or more earns the 12 h km
+    halfDay = remainder >= HALF_DAY_MINUTES;
+    minutesWithoutKm = halfDay ? remainder - HALF_DAY_MINUTES : remainder;
+  } else {
+    if (billing === "FULL_DAY") fullDays += 1;
+    halfDay = billing === "HALF_DAY";
+    minutesWithoutKm = billing === "HOURS" ? remainder : 0;
+  }
   const km = fullDays * freeKm24Hour + (halfDay ? freeKm12Hour : 0);
 
   let label: string;
   if (fullDays === 0 && !halfDay) {
-    label = "Extensions under 12 hours add no free km";
+    label = billing === "HOURS"
+      ? "Extensions billed by the hour add no free km"
+      : "Extensions under 12 hours add no free km";
   } else {
     const parts: string[] = [];
     if (fullDays > 0) parts.push(`${fullDays * freeKm24Hour} km for ${fullDays} ${fullDays === 1 ? "day" : "days"}`);
@@ -86,6 +161,28 @@ export function extensionFreeKm(minutes: number, rates: FreeKmRates): ExtensionF
 
   return { km, minutes: total, fullDays, halfDay, minutesWithoutKm, freeKm24Hour, freeKm12Hour, label };
 }
+
+/** A pricing row's rents as FreeKmRates prices — read the way the pricing engine reads them. */
+type RentRow = {
+  extraHourRate: unknown;
+  totalRent12Hour: unknown;
+  price12Hour: unknown;
+  totalRent24Hour: unknown;
+  price24Hour: unknown;
+};
+const num = (v: unknown) => (v == null ? null : Number(v.toString()));
+const rentPrices = (row: RentRow) => ({
+  hourlyRate: positiveOrNull(num(row.extraHourRate)),
+  price12Hour: positiveOrNull(num(row.totalRent12Hour)) ?? positiveOrNull(num(row.price12Hour)),
+  price24Hour: positiveOrNull(num(row.totalRent24Hour)) ?? positiveOrNull(num(row.price24Hour)),
+});
+const RENT_SELECT = {
+  extraHourRate: true,
+  totalRent12Hour: true,
+  price12Hour: true,
+  totalRent24Hour: true,
+  price24Hour: true,
+} as const;
 
 /**
  * The vehicle's slab free km, from the same source the pricing engine bills
@@ -100,15 +197,19 @@ export async function loadFreeKmRates(
   const db = tx ?? prisma;
   const custom = await db.vehicleCustomPricing.findUnique({
     where: { vehicleId: vehicle.vehicleId },
-    select: { enabled: true, freeKm12Hour: true, freeKm24Hour: true },
+    select: { enabled: true, freeKm12Hour: true, freeKm24Hour: true, ...RENT_SELECT },
   });
-  if (custom?.enabled) return { freeKm12Hour: custom.freeKm12Hour, freeKm24Hour: custom.freeKm24Hour };
+  if (custom?.enabled) {
+    return { freeKm12Hour: custom.freeKm12Hour, freeKm24Hour: custom.freeKm24Hour, ...rentPrices(custom) };
+  }
 
   const defaults = await db.branchPricingDefaults.findUnique({
     where: { branchId_categoryId: { branchId, categoryId: vehicle.categoryId } },
-    select: { freeKm12Hour: true, freeKm24Hour: true },
+    select: { freeKm12Hour: true, freeKm24Hour: true, ...RENT_SELECT },
   });
-  return defaults ? { freeKm12Hour: defaults.freeKm12Hour, freeKm24Hour: defaults.freeKm24Hour } : null;
+  return defaults
+    ? { freeKm12Hour: defaults.freeKm12Hour, freeKm24Hour: defaults.freeKm24Hour, ...rentPrices(defaults) }
+    : null;
 }
 
 /** Slab free km of a booking's (first) vehicle — the vehicle the km allowance is worked out for. */
@@ -141,8 +242,15 @@ export async function describeExtensionFreeKm(
   toEndAt: Date,
 ): Promise<ExtensionFreeKm | null> {
   try {
-    const rates = await loadBookingFreeKmRates(bookingId);
-    return rates ? extensionFreeKm(extensionMinutes(fromEndAt, toEndAt), rates) : null;
+    const [rates, booking] = await Promise.all([
+      loadBookingFreeKmRates(bookingId),
+      prisma.booking.findUnique({
+        where: { id: bookingId },
+        select: { startAt: true, pricingSnapshot: true, rentalPeriodType: true },
+      }),
+    ]);
+    if (!rates || !booking) return null;
+    return extensionFreeKm(extensionKmMinutes(booking, fromEndAt, toEndAt), rates);
   } catch (err) {
     console.warn(`[extension-km] Free km unavailable for booking ${bookingId}:`, err);
     return null;

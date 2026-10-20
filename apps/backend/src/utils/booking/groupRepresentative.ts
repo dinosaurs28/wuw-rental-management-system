@@ -49,6 +49,8 @@ export async function pickGroupRepresentative<
   groupVehicles: T[],
   start: Date | null,
   end: Date | null,
+  // A staff action (walk-in): customers-only booking locks don't count
+  options: { forStaff?: boolean } = {},
 ): Promise<{ representative: T | null; available: T[] }> {
   const bookable = groupVehicles.filter((v) => isListableStatus(v.status));
   if (bookable.length === 0) return { representative: null, available: [] };
@@ -65,6 +67,7 @@ export async function pickGroupRepresentative<
     start,
     end,
     new Map(bookable.map((v) => [v.id, v.publicId])),
+    options,
   );
   const available = bookable.filter((v) => !unavailable.has(v.id));
   const representative = available.find((v) => v.status === "AVAILABLE") ?? available[0] ?? null;

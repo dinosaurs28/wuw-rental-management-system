@@ -48,15 +48,29 @@ export interface ExtensionFreeKm {
   label: string;
 }
 
-export interface ResolutionOption {
+/**
+ * A festival / weekend part of an extension charge (staff responses only):
+ * GST-inclusive, before any coupon, already inside additionalAmount.
+ */
+export interface ExtensionSpecialShare {
+  /** e.g. "Dussehra pricing", "Weekend pricing" */
+  label: string;
+  /** 2-dp string, e.g. "300.00" (negative = a festival discount) */
+  amount: string;
+}
+
+export interface ResolutionOption extends ExtensionGstSplit {
   type: ExtensionResolutionType;
   label: string;
   description: string;
   availableVehicles?: AlternativeVehicle[];
   affectedBookings?: AffectedBookingSwap[];
   partialNewEndAt?: string;
+  /** The option's charge — a partial option priced for its own end (what its commit charges). */
   additionalAmount: string;
   newTotalFinal: string;
+  /** A partial option's festival / weekend parts. */
+  specialShare?: ExtensionSpecialShare[];
   /** Free km this option adds (a partial option: up to partialNewEndAt). */
   extensionFreeKm?: ExtensionFreeKm | null;
 }
@@ -90,6 +104,8 @@ export interface ExtensionPricing extends ExtensionGstSplit {
   extensionHours?: number;
   /** Free km this quote adds to the drop allowance. */
   extensionFreeKm?: ExtensionFreeKm | null;
+  /** Festival / weekend parts of additionalAmount (staff only; absent on older servers). */
+  specialShare?: ExtensionSpecialShare[];
 }
 
 /**
@@ -106,8 +122,12 @@ export interface ExtensionCarAvailability {
   nextBookingStartAt?: string | null;
   /** Its booking id (publicId). */
   nextBookingRef?: string | null;
-  /** HOLD = a customer checkout in progress. */
-  nextBookingKind?: "BOOKING" | "HOLD" | null;
+  /** HOLD = a customer checkout in progress; LOCK = a branch manager's booking lock (no buffer before it). */
+  nextBookingKind?: "BOOKING" | "HOLD" | "LOCK" | null;
+  /** The lock's reason, for kind LOCK. */
+  nextLockReason?: string | null;
+  /** When the lock ends (ISO), for kind LOCK. */
+  nextLockEndAt?: string | null;
   /** Latest return this car can be extended to (ISO). */
   availableUntil?: string | null;
   limitReason?: "NEXT_BOOKING" | "MAX_RENTAL_PERIOD" | null;
@@ -176,6 +196,8 @@ export interface CommitExtensionResult extends ExtensionGstSplit, ExtensionCarAv
   remainAmount: {
     extension: string;
   };
+  /** Festival / weekend parts of additionalAmount (staff only). */
+  specialShare?: ExtensionSpecialShare[];
   /** True when the charge was deferred to the booking's pickup payment session. */
   usePaymentSession?: boolean;
   /** Free km the committed extension adds to the drop allowance. */

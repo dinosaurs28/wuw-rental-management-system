@@ -2,8 +2,9 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { z } from "zod";
+import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 const chargeReturnDataSchema = z.object({
-  returnFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
+  returnFuelLevel: fuelBarsField.optional(),
   fuelDeficitCharge: z.coerce.number().min(0).optional(),
   fuelSkipReason: z.string().min(1).optional(),
   fastagAmount: z.coerce.number().min(0).optional(),

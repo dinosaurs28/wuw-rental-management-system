@@ -257,7 +257,7 @@ export function SwapFuelBars({
           onPress={() => onChange(lvl)}
           disabled={disabled}
           activeOpacity={0.8}
-          accessibilityLabel={`${lvl} of 10 bars`}
+          accessibilityLabel={lvl === '0' ? 'Empty, 0 of 10 bars' : `${lvl} of 10 bars`}
         >
           <Text style={[styles.fuelPillText, value === lvl && styles.fuelPillTextActive]}>{lvl}</Text>
         </TouchableOpacity>

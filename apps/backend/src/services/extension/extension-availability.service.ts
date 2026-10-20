@@ -1,11 +1,12 @@
 import { prisma, BookingStatus, Prisma, VehicleTypeClass } from "@repo/database/client";
 import { listOverlappingHolds } from "../../utils/availability/availabilityBatch.js";
+import { findLocksCovering } from "../../utils/availability/bookingLocks.js";
 import {
   classifyReplacements,
   swapWindowFor,
   type SwapWindowBooking,
 } from "../vehicle-swap/swap-replacements.js";
-import { blocksExtension, extensionCheckEnd } from "./partial-extension.js";
+import { blocksExtension, extensionCheckEnd, latestReturnFor } from "./partial-extension.js";
 
 export interface ConflictingBooking {
   bookingId: number;
@@ -16,8 +17,13 @@ export interface ConflictingBooking {
   /**
    * HOLD = a checkout in progress (an unexpired HOLD booking or a customer's
    * Redis hold) — it can't be moved to another car, only waited out.
+   * LOCK = a branch manager's booking lock on the car (bookingId 0,
+   * bookingPublicId = the lock's publicId): the return must be at or before
+   * its start — a plain overlap, no buffer (partial-extension.ts).
    */
-  kind?: "BOOKING" | "HOLD";
+  kind?: "BOOKING" | "HOLD" | "LOCK";
+  /** The lock's reason (staff only — never sent to customers), for kind LOCK. */
+  lockReason?: string;
 }
 
 export interface AvailabilityResult {
@@ -65,6 +71,9 @@ class ExtensionAvailabilityService {
    * The car's first booking, rental or checkout from `fromAt` on (within
    * `horizonEnd`), other than the extended booking: the "next booking" staff
    * see on the extension screens. Same rows as checkVehicleAvailability.
+   * The one that limits the return most is chosen (a booking lock needs no
+   * buffer before it, so a lock starting a little earlier than a booking may
+   * still allow a later return); ties go to the earlier start.
    */
   async nextConflict(
     vehicleId: number,
@@ -75,7 +84,12 @@ class ExtensionAvailabilityService {
     const found = await this.findConflicts(vehicleId, fromAt, horizonEnd, excludeBookingId, prisma);
     let first: ConflictingBooking | null = null;
     for (const c of found) {
-      if (!first || c.startAt.getTime() < first.startAt.getTime()) first = c;
+      if (!first) {
+        first = c;
+        continue;
+      }
+      const diff = latestReturnFor(c).getTime() - latestReturnFor(first).getTime();
+      if (diff < 0 || (diff === 0 && c.startAt.getTime() < first.startAt.getTime())) first = c;
     }
     return first;
   }
@@ -166,6 +180,21 @@ class ExtensionAvailabilityService {
           });
         }
       }
+    }
+
+    // Booking locks on the car (every lock, customers-only ones too: an
+    // extension is checked the same way whoever asks, so the offer commits)
+    const locks = (await findLocksCovering([vehicleId], fromAt, toAt, { db })).get(vehicleId) ?? [];
+    for (const l of locks) {
+      conflictingBookings.push({
+        bookingId: 0,
+        bookingPublicId: l.publicId,
+        startAt: l.startAt,
+        endAt: l.endAt,
+        vehicleId,
+        kind: "LOCK",
+        lockReason: l.reason,
+      });
     }
 
     return conflictingBookings;

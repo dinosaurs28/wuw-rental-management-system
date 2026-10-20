@@ -4,7 +4,7 @@
  * rule's dates) and how base-price-rule.ts bills festival blocks — days
  * across midnight, overlapping rules, festival discounts, rounding, the hourly
  * cap, the 12-hour package held to closing, monthly overflow days, weekend
- * rents underneath, and an extension's delta. No database.
+ * rents underneath, and an extension's added time / monthly delta. No database.
  *   cd apps/backend && pnpm test
  */
 import { test } from "node:test";
@@ -293,7 +293,15 @@ test("monthly: full months are never festival blocks, overflow days are", () => 
   assert.equal(monthOnly.festival, undefined);
 });
 
-test("extension delta: both terms at today's rules — the booked days cancel, new days pick up the festival", () => {
+test("extension, added time (extension-charge.ts): the added window alone picks up the festival", () => {
+  // Booked to 20 Oct 10:00, extended to 22 Oct 10:00: two added days, both starting on the festival
+  assert.equal(price(card(), "2026-10-20T10:00:00", "2026-10-22T10:00:00").basePrice.toNumber(), 2 * 1430);
+  // Booked to 20 Oct 16:00, extended to 21 Oct 10:00: 18 h starting on the festival → its 24 h slab
+  // (the old delta method charged only 1430 − 990 for the remainder grown into a day)
+  assert.equal(price(card(), "2026-10-20T16:00:00", "2026-10-21T10:00:00").basePrice.toNumber(), 1430);
+});
+
+test("extension delta (monthly bookings only): both terms at today's rules — the booked days cancel, new days pick up the festival", () => {
   // Booked 17 → 20 Oct 10:00 (day 3 starts the 19th: plain); extended to 22 Oct 10:00
   const booked = price(card(), "2026-10-17T10:00:00", "2026-10-20T10:00:00");
   const extended = price(card(), "2026-10-17T10:00:00", "2026-10-22T10:00:00");

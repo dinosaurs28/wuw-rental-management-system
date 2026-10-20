@@ -12,6 +12,7 @@
 import { prisma, BookingStatus, Prisma } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getManualOutForRentalIds } from "./outForRental.js";
+import { findBlockingLocks } from "./bookingLocks.js";
 import { BOOKING_TURNAROUND_MS, windowsConflictWithTurnaround } from "@repo/schemas";
 import {
   DROP_NOT_RECORDED_WHERE,
@@ -315,19 +316,22 @@ export async function listOverlappingHolds(
  * TASK-003: Get all vehicleIds unavailable for [start, end).
  * Checks CONFIRMED/PICKED_UP bookings (DB) and active holds (Redis), each with
  * the 3 h turnaround either side (bookingBlocksWindow), and vehicles
- * set OUT_FOR_RENTAL by hand (no booking behind it, so no window is free).
+ * set OUT_FOR_RENTAL by hand (no booking behind it, so no window is free),
+ * and booking locks overlapping the window (bookingLocks.ts — a plain overlap).
  *
  * @param vehicleIds          Internal vehicle IDs to check
  * @param start               Booking start time (output of TimezoneService.toPrisma)
  * @param end                 Booking end time (output of TimezoneService.toPrisma)
  * @param vehicleIdToPublicId Optional pre-built map to avoid an extra DB lookup.
  *                            Pass this from controllers that already have vehicle objects.
+ * @param options.forStaff    A staff action (walk-in): customers-only booking locks don't count.
  */
 export async function getUnavailableVehicleIds(
   vehicleIds: number[],
   start: Date,
   end: Date,
   vehicleIdToPublicId?: Map<number, string>,
+  options: { forStaff?: boolean } = {},
 ): Promise<Set<number>> {
   if (vehicleIds.length === 0) return new Set();
 
@@ -342,10 +346,11 @@ export async function getUnavailableVehicleIds(
   }
 
   // Run DB and Redis checks in parallel
-  const [dbConflicts, holdConflicts, manualOutForRental] = await Promise.all([
+  const [dbConflicts, holdConflicts, manualOutForRental, locked] = await Promise.all([
     fetchConflictingVehicleIds(vehicleIds, start, end),
     checkHoldsForVehicles(idMap, start, end),
     getManualOutForRentalIds(vehicleIds),
+    findBlockingLocks(vehicleIds, start, end, { forStaff: options.forStaff }),
   ]);
 
   const unavailable = new Set<number>(dbConflicts);
@@ -355,11 +360,14 @@ export async function getUnavailableVehicleIds(
   for (const id of manualOutForRental) {
     unavailable.add(id);
   }
+  for (const id of locked.keys()) {
+    unavailable.add(id);
+  }
 
   console.log(
     `[availability] checked ${vehicleIds.length} vehicles: ${unavailable.size} unavailable` +
     ` (${dbConflicts.size} DB conflicts, ${holdConflicts.size} hold conflicts,` +
-    ` ${manualOutForRental.size} manually out for rental)`,
+    ` ${manualOutForRental.size} manually out for rental, ${locked.size} booking-locked)`,
   );
 
   return unavailable;
@@ -398,6 +406,11 @@ export type UnavailableReason =
   /** A confirmed booking, with the turnaround, overlaps the window. */
   | { code: "BOOKED"; startAt: Date; endAt: Date; availableFrom: Date }
   /**
+   * A branch manager's booking lock overlaps the window (plain overlap): staff
+   * see the reason and when it ends; customers never do.
+   */
+  | { code: "BOOKING_LOCKED"; lockPublicId: string; reason: string; startAt: Date; endAt: Date }
+  /**
    * A customer checkout is holding it for part of the window (a Redis hold, or
    * with includeHoldRows an unexpired HOLD booking).
    */
@@ -415,6 +428,8 @@ export interface ExplainUnavailableOptions {
   excludeBookingId?: number;
   /** Ignore these Redis holds (a booking's own hold id is its publicId). */
   excludeHoldIds?: ReadonlySet<string>;
+  /** A staff action (walk-in, swap): customers-only booking locks don't count. */
+  forStaff?: boolean;
   /**
    * Turnaround either side of every booking and hold (default
    * BOOKING_TURNAROUND_MS; a booking's longer automatic grace still counts).
@@ -425,10 +440,11 @@ export interface ExplainUnavailableOptions {
 }
 
 /**
- * getUnavailableVehicleIds with the reason per vehicle — the same three checks
- * (blocking bookings, Redis holds, hand-set OUT_FOR_RENTAL), so a vehicle is in
- * this map exactly when it is in that set. One reason per vehicle, most
- * lasting first: hand-set OUT_FOR_RENTAL, overdue, on rent, booked, hold.
+ * getUnavailableVehicleIds with the reason per vehicle — the same four checks
+ * (blocking bookings, Redis holds, hand-set OUT_FOR_RENTAL, booking locks), so
+ * a vehicle is in this map exactly when it is in that set. One reason per
+ * vehicle, most lasting first: hand-set OUT_FOR_RENTAL, overdue, booking lock,
+ * on rent, booked, hold.
  * `options` adds booking creation's live-HOLD-row check, a transaction client
  * and the moved booking's own rows to ignore (vehicle swaps).
  */
@@ -445,7 +461,7 @@ export async function explainUnavailableVehicles(
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
   const turnaroundMs = options.turnaroundMs ?? BOOKING_TURNAROUND_MS;
-  const [items, holdConflicts, manualOutForRental] = await Promise.all([
+  const [items, holdConflicts, manualOutForRental, locked] = await Promise.all([
     findBlockingItems(db, vehicleIds, start, end, now, {
       excludeBookingId: options.excludeBookingId,
       includeHoldRows: options.includeHoldRows,
@@ -453,16 +469,20 @@ export async function explainUnavailableVehicles(
     }),
     checkHoldsForVehicles(vehicleIdToPublicId, start, end, options.excludeHoldIds, turnaroundMs),
     getManualOutForRentalIds(vehicleIds, db),
+    findBlockingLocks(vehicleIds, start, end, { forStaff: options.forStaff, db }),
   ]);
 
   const rank = (r: UnavailableReason): number =>
-    ({ MANUAL_OUT_FOR_RENTAL: 0, OVERDUE_RENTAL: 1, ON_RENT: 2, BOOKED: 3, ON_HOLD: 4 })[r.code];
+    ({ MANUAL_OUT_FOR_RENTAL: 0, OVERDUE_RENTAL: 1, BOOKING_LOCKED: 2, ON_RENT: 3, BOOKED: 4, ON_HOLD: 5 })[r.code];
   const offer = (vehicleId: number, reason: UnavailableReason) => {
     const current = reasons.get(vehicleId);
     if (!current || rank(reason) < rank(current)) reasons.set(vehicleId, reason);
   };
 
   for (const id of manualOutForRental) offer(id, { code: "MANUAL_OUT_FOR_RENTAL" });
+  for (const [id, lock] of locked) {
+    offer(id, { code: "BOOKING_LOCKED", lockPublicId: lock.publicId, reason: lock.reason, startAt: lock.startAt, endAt: lock.endAt });
+  }
   for (const { vehicleId, booking } of items) {
     if (booking.status === BookingStatus.PICKED_UP) {
       offer(
@@ -492,8 +512,10 @@ export async function explainUnavailableVehicles(
  * id order) and returns the ones that can't take [start, end) — removed or no
  * longer listable, set Out for Rental by hand, a blocking booking or an
  * unexpired HOLD of another checkout (findBlockingItems, the 3 h turnaround
- * either side, a drop already recorded not counting). Two creates for the same car serialise on
- * the lock, so the later one sees the earlier one's HOLD row and is refused.
+ * either side, a drop already recorded not counting) or a booking lock overlapping the window
+ * (customers-only locks not counting with `options.forStaff`). Two creates for the same car serialise on
+ * the lock, so the later one sees the earlier one's HOLD row and is refused; a booking lock
+ * being created takes the same row locks (booking-lock.service), so it is seen too.
  * Redis holds are checked before the transaction (getUnavailableVehicleIds).
  */
 export async function lockAndFindBlockedVehicleIds(
@@ -501,6 +523,7 @@ export async function lockAndFindBlockedVehicleIds(
   vehicleIds: number[],
   start: Date,
   end: Date,
+  options: { forStaff?: boolean } = {},
 ): Promise<Set<number>> {
   const blocked = new Set<number>();
   if (vehicleIds.length === 0) return blocked;
@@ -526,5 +549,7 @@ export async function lockAndFindBlockedVehicleIds(
     if (v.deletedAt || !isListableStatus(v.status) || manualOutForRental) blocked.add(v.id);
   }
   for (const i of items) blocked.add(i.vehicleId);
+  const lockBlocked = await findBlockingLocks(ids, start, end, { forStaff: options.forStaff, db: tx });
+  for (const id of lockBlocked.keys()) blocked.add(id);
   return blocked;
 }

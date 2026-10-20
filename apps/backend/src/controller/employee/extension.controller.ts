@@ -17,7 +17,8 @@ import {
 import { resolveCounterUpi, type CounterUpi } from "../../services/payment/payment-proof.service.js";
 import { PAYMENT_PROOF_MAX_PHOTOS } from "../../services/payment/payment-proof-list.js";
 import { parseCollateral } from "../../services/payment/customer-credit.service.js";
-import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { extensionPricingService, extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { extensionSpecialShareView } from "../../services/extension/extension-charge.js";
 import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
 import { EXTENSION_IN_SESSION } from "../../services/extension/extension.service.js";
 import {
@@ -215,6 +216,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
         // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
         ...extensionSplitView(extension),
+        // Festival / weekend parts of additionalAmount (staff only)
+        specialShare: extensionSpecialShareView(
+          await extensionPricingService.specialShareFor(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
+        ),
         remainAmount,
         usePaymentSession,
         // Free km the committed extension adds to the drop allowance (#7)

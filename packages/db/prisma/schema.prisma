@@ -287,6 +287,8 @@ model User {
   operationDraftsSaved  OperationDraft[]       @relation("OperationDraftUpdater")
   specialPricingRulesCreated SpecialPricingRule[] @relation("SpecialPricingRuleCreator")
   specialPricingRulesUpdated SpecialPricingRule[] @relation("SpecialPricingRuleUpdater")
+  bookingLocksCreated   BookingLock[]          @relation("BookingLockCreator")
+  bookingLocksCancelled BookingLock[]          @relation("BookingLockCanceller")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -474,6 +476,7 @@ model Branch {
   notifications           Notification[]
   promoBanners            PromoBanner[]
   specialPricingRules     SpecialPricingRule[]
+  bookingLocks            BookingLock[]
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
@@ -1501,7 +1504,7 @@ model VehicleSwap {
 
   // CONFIRMED = swapped before pickup, PICKED_UP = swapped mid-rental
   bookingStatusAtSwap        BookingStatus?
-  // Readings taken at a mid-rental swap (fuel in bars "1".."10")
+  // Readings taken at a mid-rental swap (fuel in bars "0".."10", "0" = empty)
   originalVehicleEndOdometer Int?
   originalVehicleFuelLevel   String?
   newVehicleStartOdometer    Int?
@@ -2694,4 +2697,40 @@ model SpecialPricingRuleItem {
   value      Decimal              @db.Decimal(10, 2)
 
   @@unique([ruleId, groupKey])
+}
+
+// Booking lock (client, Oct 2026: "create a booking lock for a Window"): the
+// branch manager (or admin) keeps cars from being booked for [startAt, endAt) —
+// a festival, a branch closure, servicing a batch of cars. Scope: the whole
+// branch, some vehicles (vehicleIds) or some vehicle groups (groupKeys,
+// MAKE__MODEL__categoryId as vehicleGroupKey). customersOnly = hidden from
+// customers only (staff walk-ins, reschedules and swaps still allowed). A plain
+// overlap — no turnaround around it. Existing bookings are never changed.
+// Soft-cancelled (cancelledAt).
+enum BookingLockScope {
+  BRANCH
+  VEHICLES
+  GROUPS
+}
+
+model BookingLock {
+  id            Int              @id @default(autoincrement())
+  publicId      String           @unique
+  branchId      Int
+  branch        Branch           @relation(fields: [branchId], references: [id])
+  startAt       DateTime
+  endAt         DateTime
+  reason        String
+  scope         BookingLockScope @default(BRANCH)
+  vehicleIds    Int[]            @default([])
+  groupKeys     String[]         @default([])
+  customersOnly Boolean          @default(false)
+  createdById   Int?
+  createdBy     User?            @relation("BookingLockCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+  cancelledAt   DateTime?
+  cancelledById Int?
+  cancelledBy   User?            @relation("BookingLockCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  @@index([branchId, cancelledAt, endAt])
 }

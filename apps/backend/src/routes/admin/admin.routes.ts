@@ -66,6 +66,13 @@ import {
   AdminDeleteSpecialRule,
 } from "../../controller/admin/special-pricing.controller.js";
 import {
+  AdminListBookingLocks,
+  AdminGetBookingLockOptions,
+  AdminPreviewBookingLock,
+  AdminCreateBookingLock,
+  AdminCancelBookingLock,
+} from "../../controller/admin/booking-lock.controller.js";
+import {
   upsertBranchSchedule,
   updateBranchGrace,
   getAdminBranchSchedule,
@@ -163,6 +170,12 @@ router.post("/pricing/special-rules/preview", AdminCheck, AdminPreviewSpecialRul
 router.post("/pricing/special-rules", AdminCheck, AdminCreateSpecialRule);
 router.patch("/pricing/special-rules/:publicId", AdminCheck, AdminUpdateSpecialRule);
 router.delete("/pricing/special-rules/:publicId", AdminCheck, AdminDeleteSpecialRule);
+// Booking locks for any branch
+router.get("/booking-locks", AdminCheck, AdminListBookingLocks);
+router.get("/booking-locks/options", AdminCheck, AdminGetBookingLockOptions);
+router.post("/booking-locks/preview", AdminCheck, AdminPreviewBookingLock);
+router.post("/booking-locks", AdminCheck, AdminCreateBookingLock);
+router.post("/booking-locks/:publicId/cancel", AdminCheck, AdminCancelBookingLock);
 
 // Refund to the customer on any booking of any branch (same rules as the branch manager's)
 router.get("/bookings/:publicId/refund-to-customer", AdminCheck, AdminGetCustomerRefundOptions);

@@ -80,8 +80,20 @@ interface ResolutionOption {
   availableVehicles?: AltVehicle[];
   affectedBookings?: { bookingPublicId: string; newVehicle: AltVehicle }[];
   partialNewEndAt?: string;
+  // The option's charge (GST included) — a partial option comes priced for its
+  // own end, what confirming it charges (older servers: the full request's)
+  additionalAmount?: string;
+  taxableAmount?: string;
+  specialShare?: SpecialShare[];
   // Free km this option adds (#7) — a partial option: up to partialNewEndAt
   extensionFreeKm?: ExtensionFreeKm | null;
+}
+
+// A festival / weekend part already inside the charge (staff only), e.g.
+// { label: 'Dussehra pricing', amount: '300.00' } — absent from an older server.
+interface SpecialShare {
+  label: string;
+  amount: string;
 }
 
 // POST /api/employee/extensions/evaluate → data. Money is decimal strings.
@@ -94,7 +106,7 @@ interface Evaluation extends ExtensionCarAvailability {
   // numbers: current rental length and the time this quote adds.
   // extensionFreeKm: free km the quote adds (#7) — absent from an older server.
   pricing: { additionalAmount: string; newTotalFinal: string; originalHours?: number; extensionHours?: number } &
-    ExtensionGstFields & { extensionFreeKm?: ExtensionFreeKm | null };
+    ExtensionGstFields & { extensionFreeKm?: ExtensionFreeKm | null; specialShare?: SpecialShare[] };
   resolutionOptions: ResolutionOption[];
   recommendedResolution: Resolution;
 }
@@ -160,23 +172,31 @@ function FreeKmRows({ freeKm }: { freeKm: ExtensionFreeKm }) {
   );
 }
 
-// The extension charge's GST split, as the server stored it (never computed
-// here). Item 17: the rent is GST-inclusive — rent without GST + the GST split
-// out of it = the amount due; base / discount are in without-GST terms.
-function GstSplitRows({ split }: { split: ExtensionGstSplit }) {
+// The extension charge's GST, as the server stored it (never computed here).
+// Item 17: rents are GST-inclusive — the amount due already contains the GST,
+// so it is shown under the amount as what's included, never as a line added
+// on top.
+function GstIncludedNote({ split }: { split: ExtensionGstSplit }) {
+  if (!(split.tax > 0) && !(split.discount > 0)) return null;
   return (
-    <>
-      {split.discount > 0 ? (
-        <>
-          <Row label="Rent without GST, before discount" value={inr(split.base)} />
-          <Row label="Discount (without GST)" value={`−${inr(split.discount)}`} />
-        </>
-      ) : null}
-      <Row label="Rent without GST" value={inr(split.taxable)} />
-      <Row label={gstLabel('GST', split.rate)} value={inr(split.tax)} />
-      {split.tax > 0 ? <Text style={styles.gstNote}>{gstSplitText(split.cgst, split.sgst)}</Text> : null}
-    </>
+    <Text style={styles.gstIncluded}>
+      {split.tax > 0
+        ? `Includes ${gstLabel('GST', split.rate)} ${inr(split.tax)} · ${gstSplitText(split.cgst, split.sgst)} — not added on top`
+        : ''}
+      {split.discount > 0 ? `${split.tax > 0 ? '\n' : ''}After a ${inr(split.discount)} discount (without GST)` : ''}
+    </Text>
   );
+}
+
+// The festival / weekend parts of the charge, as the server worked them out:
+// "Includes Dussehra pricing +₹300" under the amount.
+function SpecialShareNote({ shares }: { shares?: SpecialShare[] | null }) {
+  const lines = (shares ?? [])
+    .map((s) => ({ label: s.label, amount: Number(s.amount) }))
+    .filter((s) => Number.isFinite(s.amount) && s.amount !== 0)
+    .map((s) => `Includes ${s.label} ${s.amount > 0 ? '+' : '−'}${inr(Math.abs(s.amount))}`);
+  if (lines.length === 0) return null;
+  return <Text style={[styles.gstIncluded, styles.specialShare]}>{lines.join('\n')}</Text>;
 }
 
 export default function ExtensionScreen() {
@@ -278,6 +298,8 @@ export default function ExtensionScreen() {
   const [heldUntil, setHeldUntil] = useState<string | null>(null);
   // Free km the committed extension adds (#7) — null from an older server.
   const [heldFreeKm, setHeldFreeKm] = useState<ExtensionFreeKm | null>(null);
+  // Festival / weekend parts of the committed charge
+  const [heldShare, setHeldShare] = useState<SpecialShare[] | null>(null);
   // The return before the commit, and the car's next booking after it (commit response)
   const [heldFrom, setHeldFrom] = useState<string | null>(null);
   const [heldAvailability, setHeldAvailability] = useState<ExtensionCarAvailability | null>(null);
@@ -520,6 +542,10 @@ export default function ExtensionScreen() {
       setHeldFrom(d?.oldEndAt ?? evaluation.oldEndAt);
       setHeldAvailability(d?.availableUntil ? (d as ExtensionCarAvailability) : null);
       setHeldFreeKm(d?.extensionFreeKm ?? opt?.extensionFreeKm ?? null);
+      setHeldShare(
+        d?.specialShare ??
+          (resolution === 'PARTIAL_EXTENSION' ? opt?.specialShare ?? null : evaluation.pricing.specialShare ?? null),
+      );
       setPhase('collect');
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
@@ -754,7 +780,9 @@ export default function ExtensionScreen() {
                       tone: 'warn',
                       text: `${eligibility?.vehicleRegNo ?? 'This car'} is only free until ${fmt(availableUntil.toISOString())}${
                         eligibility?.limitReason === 'NEXT_BOOKING'
-                          ? ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
+                          ? eligibility.nextBookingKind === 'LOCK'
+                            ? ' (when its booking lock starts)'
+                            : ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
                           : ''
                       }. Checking this time will offer a swap to another car or a shorter extension, if possible.`,
                     }
@@ -783,11 +811,12 @@ export default function ExtensionScreen() {
               {quotedLength ? <Row label="Extra time" value={quotedLength} /> : null}
               {evaluation.pricing.extensionFreeKm ? <FreeKmRows freeKm={evaluation.pricing.extensionFreeKm} /> : null}
               <View style={styles.divider} />
-              {quotedGst ? <GstSplitRows split={quotedGst} /> : null}
               <View style={styles.row}>
-                <Text style={styles.label}>{quotedGst ? 'Additional due (incl. GST)' : 'Additional due'}</Text>
+                <Text style={styles.label}>{quotedGst ? 'Additional due (GST included)' : 'Additional due'}</Text>
                 <Text style={styles.amount}>{inr(evaluation.pricing.additionalAmount)}</Text>
               </View>
+              {quotedGst ? <GstIncludedNote split={quotedGst} /> : null}
+              <SpecialShareNote shares={evaluation.pricing.specialShare} />
             </View>
 
             {/* The car's next booking and how far it can go — fresh from evaluate */}
@@ -833,7 +862,9 @@ export default function ExtensionScreen() {
                           </Text>
                           {opt.type === 'PARTIAL_EXTENSION' && opt.partialNewEndAt ? (
                             <Text style={styles.optionSub}>
-                              Until {fmt(opt.partialNewEndAt)} — the charge is recalculated for this time.
+                              {opt.taxableAmount && opt.additionalAmount
+                                ? `Until ${fmt(opt.partialNewEndAt)} — ${inr(opt.additionalAmount)} (GST included) for this time.`
+                                : `Until ${fmt(opt.partialNewEndAt)} — the charge is recalculated for this time.`}
                             </Text>
                           ) : null}
                           {opt.type === 'PARTIAL_EXTENSION' && opt.extensionFreeKm ? (
@@ -891,11 +922,12 @@ export default function ExtensionScreen() {
               ) : null}
               {heldFreeKm ? <FreeKmRows freeKm={heldFreeKm} /> : null}
               <View style={styles.divider} />
-              {dueGst ? <GstSplitRows split={dueGst} /> : null}
               <View style={styles.row}>
-                <Text style={styles.label}>{dueGst ? 'Amount due (incl. GST)' : 'Amount due'}</Text>
+                <Text style={styles.label}>{dueGst ? 'Amount due (GST included)' : 'Amount due'}</Text>
                 <Text style={styles.amount}>{inr(amountDue)}</Text>
               </View>
+              {dueGst ? <GstIncludedNote split={dueGst} /> : null}
+              <SpecialShareNote shares={heldShare} />
               <Text style={styles.holdNote}>The vehicle is on hold until this is collected or the extension is cancelled.</Text>
             </View>
 
@@ -1005,7 +1037,8 @@ const styles = StyleSheet.create({
   extendNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right' },
   extendNoteAccent: { color: Colors.orange, marginTop: -4 },
   holdNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
-  gstNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'right', marginTop: -4 },
+  gstIncluded: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17, marginTop: -4 },
+  specialShare: { color: Colors.orange },
   amount: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.ink, letterSpacing: -0.4 },
   changeLink: { alignSelf: 'center', paddingVertical: 6 },
   changeLinkText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },

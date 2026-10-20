@@ -3,7 +3,8 @@ import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, ExtensionTrigger as ET } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
-import { extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { extensionPricingService, extensionSplitView } from "../../services/extension/extension-pricing.service.js";
+import { extensionSpecialShareView } from "../../services/extension/extension-charge.js";
 import { describeExtensionFreeKm } from "../../services/charges/extension-km.js";
 import {
   isGstRuleMissing,
@@ -155,6 +156,10 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
         // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
         ...extensionSplitView(extension),
+        // Festival / weekend parts of additionalAmount (staff only)
+        specialShare: extensionSpecialShareView(
+          await extensionPricingService.specialShareFor(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
+        ),
         remainAmount,
         // Free km the committed extension adds to the drop allowance (#7)
         extensionFreeKm: await describeExtensionFreeKm(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),

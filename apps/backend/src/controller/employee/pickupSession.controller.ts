@@ -10,6 +10,7 @@
  */
 import { Request, Response } from "express";
 import { z } from "zod";
+import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import Decimal from "decimal.js";
 import {
@@ -80,7 +81,7 @@ const initiatePickupSessionSchema = z.object({
   // Handover metadata — saved now; vehicle status set when payment is recorded
   odo: z.coerce.number().min(0).optional(),
   fuelLevel: z.coerce.number().min(0).max(100).optional(),
-  pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
+  pickupFuelLevel: fuelBarsField.optional(),
   // FASTag balance at the handover (cars with a FASTag) — optional: older builds don't send it
   pickupFastagBalance: fastagBalanceField,
   pickupImageIds: z.array(z.string()).optional(),

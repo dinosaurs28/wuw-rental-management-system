@@ -34,6 +34,7 @@ import {
   Activity,
   ArrowRightLeft,
   PartyPopper,
+  Lock,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -78,6 +79,11 @@ const items = [
     title: "Festival Pricing",
     url: "/admin/festival-pricing",
     icon: PartyPopper,
+  },
+  {
+    title: "Booking Locks",
+    url: "/admin/booking-locks",
+    icon: Lock,
   },
   {
     title: "WhatsApp Support",

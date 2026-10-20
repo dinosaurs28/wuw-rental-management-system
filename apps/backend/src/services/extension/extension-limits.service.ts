@@ -95,8 +95,16 @@ export interface ExtensionAvailabilityInfo {
   nextBookingStartAt: string | null;
   /** Its booking id (publicId), or null. */
   nextBookingRef: string | null;
-  /** BOOKING = a confirmed booking; HOLD = a customer checkout in progress. */
-  nextBookingKind: "BOOKING" | "HOLD" | null;
+  /**
+   * BOOKING = a confirmed booking; HOLD = a customer checkout in progress;
+   * LOCK = a branch manager's booking lock (nextBookingRef is the lock's id;
+   * the return may be right up to its start — no buffer).
+   */
+  nextBookingKind: "BOOKING" | "HOLD" | "LOCK" | null;
+  /** The lock's reason, for kind LOCK (staff only — customerSafeAvailability drops it). */
+  nextLockReason?: string | null;
+  /** When the lock ends (ISO), for kind LOCK. */
+  nextLockEndAt?: string | null;
   /** Latest return this car can be extended to (ISO); the current return when none is left. */
   availableUntil: string;
   /** NEXT_BOOKING = 2 h before the next pickup; MAX_RENTAL_PERIOD = the rental-length cap. */
@@ -131,17 +139,30 @@ export async function buildExtensionAvailability(
     currentEndAt: booking.endAt,
     maxEndAt,
     nextPickupAt: next?.startAt ?? null,
+    nextKind: next?.kind ?? null,
   });
   return {
     vehicleRegNo: item.vehicle.regNo,
     nextBookingStartAt: next ? next.startAt.toISOString() : null,
     nextBookingRef: next ? next.bookingPublicId : null,
     nextBookingKind: next ? (next.kind ?? "BOOKING") : null,
+    ...(next?.kind === "LOCK" && { nextLockReason: next.lockReason ?? null, nextLockEndAt: next.endAt.toISOString() }),
     availableUntil: until.availableUntil.toISOString(),
     limitReason: until.limitReason,
     canExtend: until.canExtend,
     extensionBufferHours: EXTENSION_BUFFER_HOURS,
   };
+}
+
+/**
+ * The availability info as a customer may see it: a booking lock reads as the
+ * car's next booking (no reason, no lock id) — customers never learn why a car
+ * is unavailable.
+ */
+export function customerSafeAvailability(info: ExtensionAvailabilityInfo | null): ExtensionAvailabilityInfo | null {
+  if (!info || info.nextBookingKind !== "LOCK") return info;
+  const { nextLockReason: _reason, nextLockEndAt: _end, ...rest } = info;
+  return { ...rest, nextBookingKind: "BOOKING", nextBookingRef: null };
 }
 
 /** buildExtensionAvailability that never fails the request it decorates (null on error). */

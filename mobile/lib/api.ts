@@ -420,7 +420,7 @@ export const employeeApi = {
   completePickup: (bookingId: string, body: {
     odo: number;
     fuelLevel: number;
-    // "1".."10"; required by backend only when the branch fuel module is enabled,
+    // "0".."10"; required by backend only when the branch fuel module is enabled,
     // optional otherwise — mobile always sends it to be safe.
     pickupFuelLevel?: string;
     // ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage
@@ -716,7 +716,7 @@ export const employeeApi = {
       markOriginalForMaintenance?: boolean;
       originalVehicleNotes?: string; // required when markOriginalForMaintenance
       // Mid-rental swap (#13): all four readings are required when the booking
-      // is PICKED_UP (400 READINGS_REQUIRED); fuel is bars "1".."10".
+      // is PICKED_UP (400 READINGS_REQUIRED); fuel is bars "0".."10".
       originalVehicleEndOdometer?: number;
       originalVehicleFuelLevel?: string;
       newVehicleStartOdometer?: number;
@@ -891,7 +891,7 @@ export const employeeApi = {
       odo?: number;
       // percent, 0..100
       fuelLevel?: number;
-      // "1".."10" bars; used when the branch fuel module is enabled
+      // "0".."10" bars; used when the branch fuel module is enabled
       pickupFuelLevel?: string;
       // ₹ balance on the car's FASTag (cars with a FASTag) — the drop bills the usage
       pickupFastagBalance?: number;

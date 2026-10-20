@@ -158,6 +158,13 @@ import {
   UpdateSpecialRule,
   DeleteSpecialRule,
 } from "../../controller/branchManager/special-pricing.controller.js";
+import {
+  ListBookingLocks,
+  GetBookingLockOptions,
+  PreviewBookingLock,
+  CreateBookingLock,
+  CancelBookingLock,
+} from "../../controller/branchManager/booking-lock.controller.js";
 
 const router: Router = Router();
 
@@ -187,6 +194,12 @@ router.post("/pricing/special-rules/preview", ManagerCheck, PreviewSpecialRule);
 router.post("/pricing/special-rules", ManagerCheck, CreateSpecialRule);
 router.patch("/pricing/special-rules/:publicId", ManagerCheck, UpdateSpecialRule);
 router.delete("/pricing/special-rules/:publicId", ManagerCheck, DeleteSpecialRule);
+// Booking locks: stop new bookings for a date-time window (own branch)
+router.get("/booking-locks", ManagerCheck, ListBookingLocks);
+router.get("/booking-locks/options", ManagerCheck, GetBookingLockOptions);
+router.post("/booking-locks/preview", ManagerCheck, PreviewBookingLock);
+router.post("/booking-locks", ManagerCheck, CreateBookingLock);
+router.post("/booking-locks/:publicId/cancel", ManagerCheck, CancelBookingLock);
 router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 // Period tab (#14): own-branch report for an IST date range.

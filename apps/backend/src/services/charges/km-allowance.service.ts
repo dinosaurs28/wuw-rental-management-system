@@ -23,7 +23,7 @@ import { DateTime } from "luxon";
 import { PricingEngineService, heldToClosingOf, specialRulesOf, weekendDaysOf } from "../pricing/pricing-engine.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
-import { extensionFreeKm, extensionMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
+import { extensionFreeKm, extensionKmMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
 import { segmentKmShares, swapKmRecorded, swapKmSnapshot, type SwapKmRecorded } from "./segment-km.js";
 
 const pricingEngine = new PricingEngineService();
@@ -137,6 +137,7 @@ function loadAllowanceBooking(bookingId: number) {
       branchId: true,
       activeExtensionId: true,
       pricingSnapshot: true,
+      rentalPeriodType: true,
       items: {
         orderBy: { id: "asc" },
         take: 1,
@@ -184,7 +185,8 @@ function splitBookedPeriod(booking: AllowanceBooking): { originalEndAt: Date; ex
   const earliestOldEnd = Math.min(...live.map((e) => e.oldEndAt.getTime()));
   return {
     originalEndAt: new Date(Math.min(earliestOldEnd, booking.endAt.getTime())),
-    extensionMinutes: live.map((e) => extensionMinutes(e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt)),
+    // Each extension's charged window (a held-to-closing 12 h package already had pickup + 12 h)
+    extensionMinutes: live.map((e) => extensionKmMinutes(booking, e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt)),
   };
 }
 

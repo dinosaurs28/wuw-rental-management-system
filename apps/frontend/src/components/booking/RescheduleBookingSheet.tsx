@@ -393,7 +393,9 @@ function BusyList({ options }: { options: RescheduleOptions }) {
     ...options.vehicleBusy.map((b) => ({
       key: `v-${b.vehiclePublicId}-${b.startAt}-${b.bookingPublicId ?? "hold"}`,
       text:
-        b.kind === "HOLD" && !b.bookingPublicId
+        b.kind === "LOCK"
+          ? `${vehicleLabel(b.vehiclePublicId)} is locked for bookings: ${b.lockReason ?? "booking lock"}`
+          : b.kind === "HOLD" && !b.bookingPublicId
           ? `${vehicleLabel(b.vehiclePublicId)} is being booked online`
           : `${vehicleLabel(b.vehiclePublicId)} is booked${b.bookingPublicId ? ` (#${b.bookingPublicId.slice(-6).toUpperCase()})` : ""}, plus the ${BOOKING_TURNAROUND_HOURS} h turnaround`,
       startAt: b.startAt,

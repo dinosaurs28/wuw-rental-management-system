@@ -8,6 +8,7 @@ import {
   type SafetyDepositHandling,
 } from '../lib/counterPayment';
 import { draftBool, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
+import { FUEL_BARS_PATTERN } from '../lib/fuel';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
 // Paused drop (client item 2): which drop-screen fields are kept and how they
@@ -146,7 +147,7 @@ export function useReturnDraft({
       if (sameVehicle) {
         s.setEndOdo(draftString(d, 'endOdo'));
         const fuel = draftString(d, 'fuelLevel');
-        if (/^([1-9]|10)$/.test(fuel)) s.setFuelLevel(fuel);
+        if (FUEL_BARS_PATTERN.test(fuel)) s.setFuelLevel(fuel);
         s.setChargeFuel(draftBool(d, 'chargeFuel'));
         s.setFuelAmt(draftString(d, 'fuelAmt'));
         s.setManualKm(draftString(d, 'manualKm'));

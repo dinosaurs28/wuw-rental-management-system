@@ -7,10 +7,21 @@
  * eligibility "available until" and the commit's re-checks (before and under
  * the vehicle row lock, through extensionAvailabilityService.checkVehicleAvailability)
  * all use these helpers, so an option that is offered also commits.
+ *
+ * A booking lock (kind "LOCK") is an exact window: the return must be at or
+ * before the lock's start — no buffer (bufferBefore).
  */
 import { EXTENSION_BUFFER_MS, EXTENSION_SLOT_MINUTES, type ExtensionLimitReason } from "@repo/schemas";
 
 const SLOT_MS = EXTENSION_SLOT_MINUTES * 60 * 1000;
+
+/** What a conflict may say about itself: LOCK = a booking lock. */
+type ConflictKind = { kind?: string | null };
+
+/** The gap a return must leave before this conflict starts: none for a booking lock, else the buffer. */
+export function bufferBefore(conflict: ConflictKind): number {
+  return conflict.kind === "LOCK" ? 0 : EXTENSION_BUFFER_MS;
+}
 
 /** End of the window an extension to `newEndAt` is checked over: newEndAt + the buffer. */
 export function extensionCheckEnd(newEndAt: Date): Date {
@@ -19,23 +30,29 @@ export function extensionCheckEnd(newEndAt: Date): Date {
 
 /** Does `conflict` keep the car from being extended from currentEndAt to newEndAt? */
 export function blocksExtension(
-  conflict: { startAt: Date; endAt: Date },
+  conflict: { startAt: Date; endAt: Date } & ConflictKind,
   currentEndAt: Date,
   newEndAt: Date,
 ): boolean {
   return (
-    conflict.startAt.getTime() < extensionCheckEnd(newEndAt).getTime() &&
+    conflict.startAt.getTime() < newEndAt.getTime() + bufferBefore(conflict) &&
     conflict.endAt.getTime() > currentEndAt.getTime()
   );
 }
 
 /**
- * Latest return before a pickup at `pickupAt`: the buffer earlier, rounded
- * down to the EXTENSION_SLOT_MINUTES grid the pickers offer.
+ * Latest return before a pickup at `pickupAt`: the buffer earlier (`bufferMs`,
+ * 0 for a booking lock), rounded down to the EXTENSION_SLOT_MINUTES grid the
+ * pickers offer.
  */
-export function latestReturnBefore(pickupAt: Date): Date {
-  const t = pickupAt.getTime() - EXTENSION_BUFFER_MS;
+export function latestReturnBefore(pickupAt: Date, bufferMs: number = EXTENSION_BUFFER_MS): Date {
+  const t = pickupAt.getTime() - bufferMs;
   return new Date(Math.floor(t / SLOT_MS) * SLOT_MS);
+}
+
+/** Latest return this conflict allows (latestReturnBefore its start, with its own buffer). */
+export function latestReturnFor(conflict: { startAt: Date } & ConflictKind): Date {
+  return latestReturnBefore(conflict.startAt, bufferBefore(conflict));
 }
 
 /**
@@ -49,14 +66,14 @@ export function latestReturnBefore(pickupAt: Date): Date {
 export function partialExtensionEnd(
   currentEndAt: Date,
   requestedEndAt: Date,
-  conflicts: ReadonlyArray<{ startAt: Date }>,
+  conflicts: ReadonlyArray<{ startAt: Date } & ConflictKind>,
 ): Date | null {
-  if (conflicts.length === 0) return null;
-  const first = Math.min(...conflicts.map((c) => c.startAt.getTime()));
-  if (first >= extensionCheckEnd(requestedEndAt).getTime()) return null;
-  const end = latestReturnBefore(new Date(first));
+  // Only conflicts that reach the requested return (start < requested + their buffer)
+  const inWay = conflicts.filter((c) => c.startAt.getTime() < requestedEndAt.getTime() + bufferBefore(c));
+  if (inWay.length === 0) return null;
+  const end = new Date(Math.min(...inWay.map((c) => latestReturnFor(c).getTime())));
   if (end.getTime() <= currentEndAt.getTime()) return null;
-  // first < requested + buffer, so end < requested: always a shorter extension
+  // each start < requested + its buffer, so end < requested: always a shorter extension
   return end.getTime() < requestedEndAt.getTime() ? end : null;
 }
 
@@ -77,9 +94,11 @@ export function extensionAvailableUntil(input: {
   currentEndAt: Date;
   maxEndAt: Date;
   nextPickupAt: Date | null;
+  /** The next conflict's kind: "LOCK" (a booking lock) needs no buffer before it. */
+  nextKind?: string | null;
 }): ExtensionAvailableUntil {
   const { currentEndAt, maxEndAt, nextPickupAt } = input;
-  const beforeNext = nextPickupAt ? latestReturnBefore(nextPickupAt) : null;
+  const beforeNext = nextPickupAt ? latestReturnBefore(nextPickupAt, bufferBefore({ kind: input.nextKind })) : null;
   const byNext = !!beforeNext && beforeNext.getTime() < maxEndAt.getTime();
   const limit = byNext ? beforeNext! : maxEndAt;
   const canExtend = limit.getTime() > currentEndAt.getTime();

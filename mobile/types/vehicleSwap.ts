@@ -10,6 +10,8 @@
 // pro-rated to the rest of the rental; when charged it is billed at drop at
 // face value, no GST (item 8).
 
+import { FUEL_BAR_LEVELS, fuelBarsNumber } from '../lib/fuel';
+
 export type SwapReason = 'CUSTOMER_REQUEST' | 'MAINTENANCE' | 'UPGRADE' | 'DOWNGRADE' | 'DAMAGE' | 'OTHER';
 
 export const SWAP_REASONS: SwapReason[] = ['CUSTOMER_REQUEST', 'MAINTENANCE', 'UPGRADE', 'DOWNGRADE', 'DAMAGE', 'OTHER'];
@@ -48,7 +50,7 @@ export interface SwapCandidate {
   odo?: number | null;
   // Last recorded fuel, as a percent (Vehicle.fuelLevel) — not bars.
   fuelLevel?: number | null;
-  // The same reading as bars "1".."10" (null = unknown) — prefills the start fuel.
+  // The same reading as bars "0".."10" (null = unknown) — prefills the start fuel.
   fuelBars?: string | null;
   insuranceExpiry?: string;
   sameCategory?: boolean;
@@ -104,7 +106,7 @@ export interface SwapContext {
     categoryName: string;
     categoryRank: number;
     odo: number | null;
-    // Percent; fuelBars is the same reading as bars "1".."10" (null = unknown).
+    // Percent; fuelBars is the same reading as bars "0".."10" (null = unknown).
     fuelLevel: number | null;
     fuelBars?: string | null;
     // Has a FASTag: its closing balance is entered at a mid-rental swap.
@@ -221,9 +223,9 @@ export interface SwapVehicleBody {
   markOriginalForMaintenance?: boolean;
   originalVehicleNotes?: string; // required when markOriginalForMaintenance
   originalVehicleEndOdometer?: number;
-  originalVehicleFuelLevel?: string; // fuel bars "1".."10"
+  originalVehicleFuelLevel?: string; // fuel bars "0".."10"
   newVehicleStartOdometer?: number;
-  newVehicleFuelLevel?: string; // fuel bars "1".."10"
+  newVehicleFuelLevel?: string; // fuel bars "0".."10"
   // Bill the price difference at drop; omitted ⇒ not billed (old builds).
   chargeDifference?: boolean;
   // Photos of the replacement (pickup photo uploads). Sent (even empty) ⇒ the
@@ -261,14 +263,13 @@ export type SwapErrorCode =
   | 'SWAP_PHOTOS_INVALID'
   | 'FASTAG_BALANCE_REQUIRED';
 
-// Fuel is recorded in bars, "1".."10".
-export const SWAP_FUEL_BARS = Array.from({ length: 10 }, (_, i) => String(i + 1));
+// Fuel is recorded in bars, "0".."10" ("0" = empty tank).
+export const SWAP_FUEL_BARS = FUEL_BAR_LEVELS;
 
-/** "1".."10" for a bars value (string or number), else null. */
+/** "0".."10" for a bars value (string or number), else null. */
 export function fuelBarsValue(level: string | number | null | undefined): string | null {
-  if (level == null) return null;
-  const s = String(level).trim();
-  return /^([1-9]|10)$/.test(s) ? s : null;
+  const bars = fuelBarsNumber(level);
+  return bars == null ? null : String(bars);
 }
 
 /** The price difference as a number; null when the cars couldn't be priced. */

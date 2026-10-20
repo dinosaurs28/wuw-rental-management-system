@@ -9,8 +9,12 @@ export type RescheduleRole = "employee" | "manager";
 
 export interface RescheduleBusyRange {
   vehiclePublicId: string;
-  /** BOOKING = another booking; HOLD = a checkout in progress (bookingPublicId null for a Redis hold). */
-  kind: "BOOKING" | "HOLD";
+  /**
+   * BOOKING = another booking; HOLD = a checkout in progress (bookingPublicId
+   * null for a Redis hold); LOCK = a branch manager's booking lock (lockReason).
+   */
+  kind: "BOOKING" | "HOLD" | "LOCK";
+  lockReason?: string;
   bookingPublicId: string | null;
   bookingStatus: "CONFIRMED" | "PICKED_UP" | "HOLD" | null;
   startAt: string;

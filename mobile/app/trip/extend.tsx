@@ -715,25 +715,21 @@ export default function ExtendTrip() {
                 ) : null}
                 <View style={styles.divider} />
                 <Line label="Current total" value={inrExact(quote.pricing.originalTotalFinal)} />
-                {/* Item 17: the extension's rent is GST-inclusive — rent without
-                    GST + GST (split out of it, not added on top) = the charge */}
-                {quoteGst ? (
-                  <>
-                    <Line label="Rent without GST" value={inrExact(quoteGst.taxable)} />
-                    {quoteGst.discount > 0 ? (
-                      <Text style={styles.splitNote}>After a {inrExact(quoteGst.discount)} discount (without GST)</Text>
-                    ) : null}
-                    <Line label={gstLabel('GST', quoteGst.rate)} value={inrExact(quoteGst.tax)} />
-                    {quoteGst.tax > 0 ? (
-                      <Text style={styles.splitNote}>{gstSplitText(quoteGst.cgst, quoteGst.sgst)}</Text>
-                    ) : null}
-                  </>
-                ) : null}
+                {/* Item 17: the extension's rent is GST-inclusive — the GST is
+                    part of the charge, shown as included, never added on top */}
                 <Line
-                  label={quoteGst ? 'Extension rent (incl. GST)' : 'Extra charge'}
+                  label={quoteGst ? 'Extension rent (GST included)' : 'Extra charge'}
                   value={inrExact(quote.pricing.additionalAmount)}
                   strong
                 />
+                {quoteGst && quoteGst.tax > 0 ? (
+                  <Text style={styles.splitNote}>
+                    Includes {gstLabel('GST', quoteGst.rate)} {inrExact(quoteGst.tax)} · {gstSplitText(quoteGst.cgst, quoteGst.sgst)}
+                  </Text>
+                ) : null}
+                {quoteGst && quoteGst.discount > 0 ? (
+                  <Text style={styles.splitNote}>After a {inrExact(quoteGst.discount)} discount (without GST)</Text>
+                ) : null}
                 <Line label="New total" value={inrExact(quote.pricing.newTotalFinal)} />
               </View>
             )}

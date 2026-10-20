@@ -39,7 +39,14 @@ export function ExtensionAvailabilityPanel({
   const reg = availability.vehicleRegNo ?? "This car";
   const buffer = availability.extensionBufferHours ?? EXTENSION_BUFFER_HOURS;
   const byNext = availability.limitReason === "NEXT_BOOKING";
-  const limitText = byNext
+  // A booking lock: the car can be out right up to its start (no buffer)
+  const byLock = byNext && availability.nextBookingKind === "LOCK";
+  const lockText = `Locked: ${availability.nextLockReason ?? "booking lock"}${
+    availability.nextLockEndAt ? ` until ${fmt(availability.nextLockEndAt)}` : ""
+  }`;
+  const limitText = byLock
+    ? "when the booking lock starts"
+    : byNext
     ? `${buffer} h before the next pickup`
     : maxBookingDays
       ? `${maxBookingDays}-day rental limit`
@@ -50,10 +57,14 @@ export function ExtensionAvailabilityPanel({
       <div className="flex justify-between gap-3">
         <span className="text-neutral-500">Next booking on {availability.vehicleRegNo ?? "this car"}</span>
         <span className="text-right font-medium text-neutral-900">
-          {availability.nextBookingStartAt ? `${fmt(availability.nextBookingStartAt)} pickup` : "No upcoming booking"}
+          {availability.nextBookingStartAt
+            ? `${fmt(availability.nextBookingStartAt)} ${availability.nextBookingKind === "LOCK" ? "lock starts" : "pickup"}`
+            : "No upcoming booking"}
         </span>
       </div>
-      {availability.nextBookingStartAt && availability.nextBookingRef && (
+      {availability.nextBookingStartAt && availability.nextBookingKind === "LOCK" ? (
+        <p className="text-xs text-neutral-500 text-right -mt-1">{lockText}</p>
+      ) : availability.nextBookingStartAt && availability.nextBookingRef && (
         <p className="text-xs text-neutral-500 text-right -mt-1">
           {availability.nextBookingKind === "HOLD" ? "Customer checkout in progress" : "Booking"}{" "}
           {shortRef(availability.nextBookingRef)}
@@ -61,7 +72,11 @@ export function ExtensionAvailabilityPanel({
       )}
       {availability.canExtend === false ? (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
-          {byNext
+          {byLock
+            ? afterExtension
+              ? `${reg} can't go any further: it is locked for bookings from the new return (${lockText}).`
+              : `${reg} can't be extended: it is locked for bookings from the current return (${lockText}). A swap to another car may still be offered.`
+            : byNext
             ? afterExtension
               ? `${reg} can't go any further: its next booking picks up within ${buffer} h of the new return.`
               : `${reg} can't be extended: its next booking picks up within ${buffer} h of the current return. A swap to another car may still be offered.`

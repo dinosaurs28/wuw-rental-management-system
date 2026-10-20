@@ -110,6 +110,8 @@ export async function classifyReplacements<
         excludeHoldIds: new Set([ctx.booking.publicId]),
         turnaroundMs: ctx.window.turnaroundMs,
         now: ctx.now,
+        // A swap is a staff action: customers-only booking locks don't apply
+        forStaff: true,
       },
     ),
   ]);

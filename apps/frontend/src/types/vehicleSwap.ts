@@ -24,7 +24,7 @@ export interface AvailableVehicle {
   odo?: number;
   /** Last recorded Vehicle.fuelLevel, as a percent */
   fuelLevel?: number;
-  /** The same reading as fuel bars "1".."10" (null = unknown) — prefill for the start fuel */
+  /** The same reading as fuel bars "0".."10" (null = unknown) — prefill for the start fuel */
   fuelBars?: string | null;
   insuranceExpiry?: string;
   /** Same category as the current car (listed first) */
@@ -96,7 +96,7 @@ export interface SwapContext {
     odo: number;
     /** Percent */
     fuelLevel: number;
-    /** fuelLevel as bars "1".."10"; null = unknown */
+    /** fuelLevel as bars "0".."10"; null = unknown */
     fuelBars?: string | null;
     /** Has a FASTag: its closing balance is entered at a mid-rental swap */
     hasFastag?: boolean;

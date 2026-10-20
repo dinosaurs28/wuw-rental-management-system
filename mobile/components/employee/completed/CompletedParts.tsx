@@ -18,7 +18,8 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export const num = (x: unknown) => Number(x ?? 0) || 0;
 export const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-export const fuelText = (level: string | null | undefined) => (level ? `${level}/10` : '—');
+// "0" is an empty tank (a real reading), shown as 0/10 — only a missing reading is "—".
+export const fuelText = (level: string | null | undefined) => (level != null && level !== '' ? `${level}/10` : '—');
 export const kmText = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('en-IN')} km`);
 export const balanceText = (v: string | null | undefined) => (v == null ? 'Not read' : inr(num(v)));
 

@@ -307,7 +307,7 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <SelectContent>
                     {SWAP_FUEL_BAR_OPTIONS.map((bars) => (
                       <SelectItem key={bars} value={bars}>
-                        {bars} / 10
+                        {bars === "0" ? "0 / 10 (Empty)" : `${bars} / 10`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -375,7 +375,7 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
                   <SelectContent>
                     {SWAP_FUEL_BAR_OPTIONS.map((bars) => (
                       <SelectItem key={bars} value={bars}>
-                        {bars} / 10
+                        {bars === "0" ? "0 / 10 (Empty)" : `${bars} / 10`}
                       </SelectItem>
                     ))}
                   </SelectContent>

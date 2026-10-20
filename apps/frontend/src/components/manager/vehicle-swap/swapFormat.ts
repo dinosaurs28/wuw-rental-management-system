@@ -2,7 +2,7 @@
  * Display helpers shared by the vehicle-swap screens (Fleet + BM).
  * Amounts arrive as Decimal strings — always Number() them.
  */
-import { FASTAG_BALANCE_MAX } from "@repo/schemas";
+import { FASTAG_BALANCE_MAX, FUEL_BAR_OPTIONS } from "@repo/schemas";
 
 /** `?swap=1` on the Fleet return page opens the swap dialog (dashboard row "Swap" link). */
 export const SWAP_QUERY_PARAM = "swap";
@@ -25,8 +25,8 @@ export function canSwapVehicle(booking: { status: string; endAt: string }): bool
   return booking.status === "PICKED_UP" && new Date(booking.endAt).getTime() > Date.now();
 }
 
-/** Fuel is recorded in bars, 1–10 (same scale as pickup / drop). */
-export const SWAP_FUEL_BAR_OPTIONS = Array.from({ length: 10 }, (_, i) => String(i + 1));
+/** Fuel is recorded in bars, 0–10 (same scale as pickup / drop; 0 = empty). */
+export const SWAP_FUEL_BAR_OPTIONS = FUEL_BAR_OPTIONS;
 
 /** Largest odometer the form accepts (the column is a 32-bit int). */
 export const SWAP_MAX_ODOMETER = 9_999_999;

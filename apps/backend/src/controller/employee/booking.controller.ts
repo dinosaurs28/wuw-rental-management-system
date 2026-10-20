@@ -511,6 +511,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         startDate,
         endDate,
         vehicleIdToPublicId,
+        // Walk-in: customers-only booking locks don't apply to staff
+        { forStaff: true },
       );
 
       const available = candidates.filter((v) => !unavailableIds.has(v.id));
@@ -571,6 +573,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       startDate,
       endDate,
       vehicleIdToPublicId,
+      { forStaff: true },
     );
     for (const v of vehiclesData) {
       if (initialUnavailable.has(v.id)) {
@@ -787,6 +790,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       startDate,
       endDate,
       vehicleIdToPublicId,
+      { forStaff: true },
     );
     for (const v of vehiclesData) {
       if (finalUnavailable.has(v.id)) {
@@ -881,7 +885,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       // The car(s) locked and re-checked: two counters (or a counter and a
       // customer checkout) racing for one car can't both hold it — the later
       // one sees the first's HOLD row
-      const blocked = await lockAndFindBlockedVehicleIds(tx, vehiclesData.map((v) => v.id), startDate, endDate);
+      const blocked = await lockAndFindBlockedVehicleIds(tx, vehiclesData.map((v) => v.id), startDate, endDate, {
+        forStaff: true,
+      });
       const taken = vehiclesData.find((v) => blocked.has(v.id));
       if (taken) {
         throw Object.assign(

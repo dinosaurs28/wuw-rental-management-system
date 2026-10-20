@@ -7,6 +7,8 @@
  *     it sits (listing pricingDetails, details / summary pricingBreakdown, …)
  *   - `specialRules` — the festival rules a window was priced with (a booking's
  *     pricingSnapshot.specialRules, the engine's pricingBreakdown.specialRules)
+ *   - `specialShare` — an extension charge's festival / weekend parts (staff
+ *     extension responses; never built for customers, stripped here as well)
  * Totals and every other field stay as they are. Staff endpoints (Fleet walk-in,
  * pickup / drop, BM / admin) keep the data — this runs only on the customer
  * mounts (middlewares/hideFestivalPricing.middleware.ts).
@@ -36,7 +38,7 @@ export function withoutFestivalPricing<T>(body: T): T {
     const hasFestival = isFestivalBreakdown(value.festival);
     const out: Record<string, unknown> = {};
     for (const [key, entry] of Object.entries(value)) {
-      if (key === "specialRules") continue;
+      if (key === "specialRules" || key === "specialShare") continue;
       if (key === "festival" && isFestivalBreakdown(entry)) continue;
       if (key === "weekend" && hasFestival) continue;
       out[key] = strip(entry);

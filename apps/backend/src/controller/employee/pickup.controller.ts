@@ -24,8 +24,9 @@ import { discardOperationDraft } from "../../services/booking/operation-draft.se
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { z } from "zod";
+import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 const chargePickupDataSchema = z.object({
-  pickupFuelLevel: z.string().regex(/^([1-9]|10)$/).optional(),
+  pickupFuelLevel: fuelBarsField.optional(),
   safetyDepositRequest: z.object({
     requestedAmount: z.coerce.number().positive(),
     reason: z.string().min(1),

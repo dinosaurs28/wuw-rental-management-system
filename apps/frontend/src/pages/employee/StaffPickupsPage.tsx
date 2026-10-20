@@ -75,7 +75,7 @@ import apiClient from "@/lib/axios";
 import { bookingService, type EmployeeBooking } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
 import { UploadKycDialog } from "@/components/booking/UploadKycDialog";
-import { describeDlPhotoSides } from "@repo/schemas";
+import { describeDlPhotoSides, FUEL_BAR_OPTIONS, fuelBarOptionLabel } from "@repo/schemas";
 // import { extensionService } from "@/services/extension.service";
 import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
@@ -143,13 +143,15 @@ const getDocumentTypeName = (type: string): string => {
 const isImageFile = (mime: string): boolean => mime.startsWith("image/");
 
 // --- FUEL LEVEL CONSTANTS ---
-const FUEL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
-  value: String(i + 1),
-  label: String(i + 1),
+// Bars "0".."10" — "0" is an empty tank (a real reading).
+const FUEL_LEVEL_OPTIONS = FUEL_BAR_OPTIONS.map((value) => ({
+  value,
+  label: fuelBarOptionLabel(value),
 }));
 
+// Bars → the vehicle's fuel percent
 const FUEL_LEVEL_TO_NUM: Record<string, number> = Object.fromEntries(
-  Array.from({ length: 10 }, (_, i) => [String(i + 1), (i + 1) * 10])
+  FUEL_BAR_OPTIONS.map((value) => [value, Number(value) * 10])
 );
 
 // --- VALIDATION SCHEMA ---
