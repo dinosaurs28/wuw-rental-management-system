@@ -43,6 +43,18 @@ export interface PeriodKpis {
     /** Cash refunds paid out with no cash shift open (inside count / amount; Oct 2026, absent on older servers) */
     cashOutsideShift?: { count: number; amount: number };
   };
+  /**
+   * Payments / refunds voided in this period (wrong entries reversed — already
+   * out of collected, refunds and outstanding). shiftClosed: cash voided after
+   * its shift had closed (that shift's counted cash didn't change). Oct 2026,
+   * absent on older servers.
+   */
+  voids?: {
+    count: number;
+    payments: { count: number; amount: number };
+    refunds: { count: number; amount: number };
+    shiftClosed: { count: number; cashAmount: number };
+  };
 }
 
 /** % change vs the previous window (1 dp); null = previous was 0 and current isn't. */

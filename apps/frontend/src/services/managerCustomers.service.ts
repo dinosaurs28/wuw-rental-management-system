@@ -1,4 +1,6 @@
 import apiClient from "@/lib/axios";
+import type { OperationNotesView } from "@/components/employee/OperationNotes";
+import type { PaymentVoidState } from "@/services/payment.service";
 
 // Customers tab (G9) — branch manager and Fleet Executive portals. Money = 2-dp strings, dates = ISO UTC.
 
@@ -162,7 +164,7 @@ export interface ProofPhoto {
   expiresIn: number | null;
 }
 
-export interface DrawerTransaction {
+export interface DrawerTransaction extends PaymentVoidState {
   publicId: string;
   purpose: string;
   method: string;
@@ -302,6 +304,8 @@ export interface BookingDrawerData {
       clearedBy: string | null;
     }[];
   } | null;
+  /** Fleet notes written at the pickup / drop and mid-rental swap notes (Oct 20 2026); absent on older servers. */
+  operationNotes?: OperationNotesView;
 }
 
 export interface BlacklistResult {

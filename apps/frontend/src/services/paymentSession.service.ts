@@ -223,6 +223,8 @@ export const paymentSessionService = {
       dlStatus?: "COLLECTED" | "NOT_COLLECTED" | "DEPOSIT" | null;
       /** Required for DEPOSIT (≤ 200 chars); omitted otherwise. */
       dlDepositNote?: string | null;
+      /** Optional Fleet note (≤ 1000 chars); null / blank = none. */
+      pickupNote?: string | null;
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(
@@ -368,6 +370,8 @@ export const paymentSessionService = {
       manualExtraKm?: number | null;
       /** Safety deposit (#6): SET_OFF (default) or REFUND_IN_FULL — resend it on every compute. */
       safetyDepositHandling?: SafetyDepositHandling;
+      /** Optional Fleet note (≤ 1000 chars); null / blank = none. */
+      dropNote?: string | null;
     },
   ): Promise<ReturnSessionResponse> {
     const { data } = await apiClient.post(

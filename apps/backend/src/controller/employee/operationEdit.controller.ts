@@ -8,9 +8,10 @@
  *   GET   /employee/return/:bookingId/summary        (+ editState: what the drop recorded)
  *   POST  /employee/pickup/:bookingId/edit/preview   the money difference — nothing saved
  *   POST  /employee/return/:bookingId/edit/preview   the edited drop bill and its difference
- *   PATCH /employee/pickup/:bookingId   odometer, fuel, FASTag balance, safety deposit, DL status, DL number, photos
+ *   PATCH /employee/pickup/:bookingId   odometer, fuel, FASTag balance, safety deposit, DL status, DL number, photos,
+ *                                       pickup note
  *   PATCH /employee/return/:bookingId   readings, fuel / FASTag / other charges, drop discount, late grace /
- *                                       waiver, damage amounts / notes / photos, deposit handling, photos
+ *                                       waiver, damage amounts / notes / photos, deposit handling, photos, drop note
  *
  * A pickup / return counts as completed once it is done or sent to the branch
  * manager (utils/booking/completedQueue.ts). Edits run with the booking row
@@ -157,6 +158,12 @@ import {
   type PickupDiscountSplit,
 } from "../../services/discount/pickup-discount-rules.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
+import { OperationNoteError, operationNoteChanges, parseOperationNote } from "../../utils/booking/operationNote.js";
+import {
+  getOperationNotes,
+  readOperationNote,
+  saveOperationNote,
+} from "../../services/booking/operation-notes.service.js";
 import {
   staffActivityService,
   StaffActionType,
@@ -201,6 +208,9 @@ const editPickupSchema = z.object({
     .optional(),
   // The money difference the screen showed (preview) — 409 EDIT_DELTA_CHANGED when it moved
   expectedDelta: z.coerce.number().optional(),
+  // Fleet note written at the pickup (absent = as saved; blank / null clears it) —
+  // checked by parseOperationNote
+  pickupNote: z.unknown().optional(),
 });
 
 const editReturnSchema = z.object({
@@ -261,6 +271,9 @@ const editReturnSchema = z.object({
   safetyDepositHandling: z.enum(SAFETY_DEPOSIT_HANDLING).optional(),
   // The money difference the screen showed (preview) — 409 EDIT_DELTA_CHANGED when it moved
   expectedDelta: z.coerce.number().optional(),
+  // Fleet note written at the drop (absent = as saved; blank / null clears it) —
+  // checked by parseOperationNote
+  dropNote: z.unknown().optional(),
 });
 
 /** A refusal raised while editing (mapped to its HTTP response). */
@@ -301,6 +314,7 @@ function sendError(res: Response, error: unknown, where: string) {
   if (error instanceof EditRejection) return res.status(error.status).json(error.body);
   if (error instanceof DlStatusError) return res.status(error.status).json(error.toJSON());
   if (error instanceof PickupDiscountError) return res.status(error.status).json(error.toJSON());
+  if (error instanceof OperationNoteError) return res.status(error.status).json(error.toJSON());
   console.error(`${where} Error:`, error);
   return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Something went wrong. Please try again." });
 }
@@ -504,12 +518,13 @@ async function adjustmentsOf(bookingId: number) {
 async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
   const state = pickupQueueState(booking);
   const completion = isDone(state) ? (await loadCompletionInfo("PICKUP", [booking])).get(booking.id) : undefined;
-  const [photos, captureFields, bill, fastagLegs, adjustments] = await Promise.all([
+  const [photos, captureFields, bill, fastagLegs, adjustments, operationNotes] = await Promise.all([
     photosOf(booking.id, BookingPhotoType.PRE_DELIVERY).then(serializePhotos),
     captureFieldsFor(branchId, booking.items[0]?.vehicle.categoryId),
     sessionBill(booking.id, PaymentSessionType.PICKUP),
     getFastagLegs(booking.id, money(booking.returnFastagBalance)),
     adjustmentsOf(booking.id),
+    getOperationNotes(booking.id),
   ]);
   const dlStatusEditable = STAFF_DL_EDITABLE_STATUSES.includes(booking.status);
   const returnDone = isDone(returnQueueState(booking));
@@ -549,6 +564,8 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
     safetyDeposit: new Decimal(booking.safetyDeposit.toString()).toFixed(2),
     // Manual pickup discount given (incl. GST; null = none) — additive
     pickupDiscount: serializePickupDiscount(pickupDiscount),
+    // Fleet notes (Oct 20 2026): { pickup, drop, swaps } — additive; the pickup note is editable here
+    operationNotes,
     photos,
     captureFields,
     bill,
@@ -581,7 +598,7 @@ async function buildPickupSummary(booking: SummaryBooking, branchId: number) {
 async function buildReturnSummary(booking: SummaryBooking) {
   const state = returnQueueState(booking);
   const completion = isDone(state) ? (await loadCompletionInfo("RETURN", [booking])).get(booking.id) : undefined;
-  const [segments, photos, damageRows, sessionLines, fastagLegs, adjustments, editState] = await Promise.all([
+  const [segments, photos, damageRows, sessionLines, fastagLegs, adjustments, editState, operationNotes] = await Promise.all([
     getOdometerSegments(booking.id),
     photosOf(booking.id, BookingPhotoType.POST_RETURN).then(serializePhotos),
     prisma.damageReport.findMany({
@@ -605,6 +622,7 @@ async function buildReturnSummary(booking: SummaryBooking) {
     getFastagLegs(booking.id, money(booking.returnFastagBalance)),
     adjustmentsOf(booking.id),
     isDone(state) ? loadDropEditState(booking.id) : Promise.resolve(null),
+    getOperationNotes(booking.id),
   ]);
   const returnedLeg = fastagLegs[fastagLegs.length - 1];
   const fastagUsage = calculateFastagUsage(fastagLegs);
@@ -693,6 +711,8 @@ async function buildReturnSummary(booking: SummaryBooking) {
       // worked out from the readings (null when a reading is missing: the charge was typed)
       usage: fastagUsage.status === "COMPUTED" ? fastagUsage.amount.toFixed(2) : null,
     },
+    // Fleet notes (Oct 20 2026): { pickup, drop, swaps } — additive; the drop note is editable here
+    operationNotes,
     photos,
     damages,
     bill,
@@ -860,6 +880,31 @@ async function logEdit(
     description: `${what} details edited for booking ${bookingPublicId} (${diff.fields.join(", ")})`,
     metadata: { before: diff.before, after: diff.after, changedFields: diff.fields, ...(moneyDetails && { money: moneyDetails }) },
   });
+}
+
+/**
+ * An edit that only changes the Fleet note: saved under the booking lock (like
+ * every edit) and audit-logged with its before / after — no money step.
+ */
+async function saveNoteOnlyEdit(
+  req: Request,
+  actor: { id: number; name: string; role: any; branchId: number | null },
+  phase: "PICKUP" | "RETURN",
+  booking: { id: number; publicId: string },
+  note: string | null,
+) {
+  const kind = phase === "PICKUP" ? "PICKUP" : "DROP";
+  const field = phase === "PICKUP" ? "pickupNote" : "dropNote";
+  const saved = await prisma.$transaction(async (tx) => {
+    await lockBookingForDrop(tx as any, booking.id);
+    const locked = await loadBookingTx(tx as any, booking.id);
+    const done = phase === "PICKUP" ? isDone(pickupQueueState(locked)) : isDone(returnQueueState(locked));
+    if (!done) throw new EditRejection(StatusCode.CONFLICT, NOT_COMPLETED[phase]);
+    return saveOperationNote(tx, { bookingId: booking.id, kind, note, actorId: actor.id, mode: "EDIT" });
+  });
+  const diff = changedFields({ [field]: saved.before } as Record<string, unknown>, { [field]: saved.after });
+  if (diff.fields.length > 0) await logEdit(req, actor, phase, booking.publicId, diff);
+  return diff;
 }
 
 const photoList = (photos: Array<{ fileId: string; label?: string | null }>) =>
@@ -1354,6 +1399,7 @@ export const EditPickup = async (req: Request, res: Response) => {
     const parsed = editPickupSchema.safeParse(req.body ?? {});
     if (!parsed.success) return res.status(StatusCode.BAD_REQUEST).json(validationBody(parsed.error));
     const input = parsed.data;
+    const pickupNote = parseOperationNote(input.pickupNote, "pickupNote");
     if (input.dlStatus !== undefined && input.dlStatus !== "COLLECTED" && input.dlStatus !== "NOT_COLLECTED") {
       throw new DlStatusError(StatusCode.BAD_REQUEST, "DL_STATUS_INVALID", DL_STATUS_DEPOSIT_REMOVED_MESSAGE);
     }
@@ -1426,15 +1472,28 @@ export const EditPickup = async (req: Request, res: Response) => {
       });
     }
     const photosChange = toRemove.length > 0 || toAdd.length > 0;
+    const currentPickupNote = await readOperationNote(booking.id, "PICKUP");
+    const noteChange = operationNoteChanges(currentPickupNote, pickupNote);
 
-    if (
-      odoChange == null && !fuelChange && fastagChange == null && !depositChange &&
-      !dlStatusChange && !photosChange && !discountCheck.changed
-    ) {
+    const otherChange =
+      odoChange != null || !!fuelChange || fastagChange != null || !!depositChange ||
+      !!dlStatusChange || photosChange || discountCheck.changed;
+    if (!otherChange && !noteChange) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
         changed: [],
         data: await buildPickupSummary(booking, branchId),
+        adjustment: null,
+      });
+    }
+    // Only the pickup note: no money step
+    if (!otherChange) {
+      const diff = await saveNoteOnlyEdit(req, actor, "PICKUP", booking, pickupNote ?? null);
+      const fresh = await loadBooking(booking.publicId, branchId);
+      return res.status(StatusCode.OK).json({
+        message: "Pickup updated",
+        changed: diff.fields,
+        data: await buildPickupSummary(fresh!, branchId),
         adjustment: null,
       });
     }
@@ -1558,6 +1617,9 @@ export const EditPickup = async (req: Request, res: Response) => {
         if (Object.keys(update).length > 0) {
           await tx.booking.update({ where: { id: booking.id }, data: update });
         }
+        if (noteChange) {
+          await saveOperationNote(tx, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actor.id, mode: "EDIT" });
+        }
         // The km recorded at mid-rental swaps follow the corrected pickup reading
         if (odoChange != null) await refreshSwapKmSnapshots(booking.id, tx as any);
 
@@ -1594,6 +1656,7 @@ export const EditPickup = async (req: Request, res: Response) => {
         pickupDiscountReason: outcome.discountEdit.current?.reason ?? null,
         dlStatus: booking.dlStatus,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel }))),
+        pickupNote: currentPickupNote,
       } as Record<string, unknown>,
       {
         odometer: odoChange ?? undefined,
@@ -1603,6 +1666,7 @@ export const EditPickup = async (req: Request, res: Response) => {
         pickupDiscount: outcome.discountEdit.moneyChanged ? discountAmount(outcome.discountEdit.record) : undefined,
         pickupDiscountReason: outcome.discountEdit.changed ? outcome.discountEdit.record?.reason ?? null : undefined,
         dlStatus: dlStatusChange ?? undefined,
+        pickupNote: noteChange ? pickupNote ?? null : undefined,
         photos: photosChange
           ? photoList([
               ...kept.map((p) => ({ fileId: p.file.publicId, label: p.captureLabel })),
@@ -1636,6 +1700,7 @@ export const EditReturn = async (req: Request, res: Response) => {
     const parsed = editReturnSchema.safeParse(req.body ?? {});
     if (!parsed.success) return res.status(StatusCode.BAD_REQUEST).json(validationBody(parsed.error));
     const input = parsed.data;
+    const dropNote = parseOperationNote(input.dropNote, "dropNote");
 
     const actor = await resolveActor(req);
     if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
@@ -1760,11 +1825,25 @@ export const EditReturn = async (req: Request, res: Response) => {
     const inputsChange =
       JSON.stringify(serializeDropInputs(merged)) !== JSON.stringify(serializeDropInputs(before.inputs));
 
-    if (!inputsChange && !fuelChange && !photosChange && changedDamages.length === 0) {
+    const currentDropNote = await readOperationNote(booking.id, "DROP");
+    const noteChange = operationNoteChanges(currentDropNote, dropNote);
+    const otherChange = inputsChange || !!fuelChange || photosChange || changedDamages.length > 0;
+    if (!otherChange && !noteChange) {
       return res.status(StatusCode.OK).json({
         message: "Nothing to change",
         changed: [],
         data: await buildReturnSummary(booking),
+        adjustment: null,
+      });
+    }
+    // Only the drop note: no money step
+    if (!otherChange) {
+      const diff = await saveNoteOnlyEdit(req, actor, "RETURN", booking, dropNote ?? null);
+      const fresh = await loadBooking(booking.publicId, branchId);
+      return res.status(StatusCode.OK).json({
+        message: "Return updated",
+        changed: diff.fields,
+        data: await buildReturnSummary(fresh!),
         adjustment: null,
       });
     }
@@ -1795,6 +1874,9 @@ export const EditReturn = async (req: Request, res: Response) => {
         }
         if (Object.keys(update).length > 0) {
           await tx.booking.update({ where: { id: booking.id }, data: update });
+        }
+        if (noteChange) {
+          await saveOperationNote(tx, { bookingId: booking.id, kind: "DROP", note: dropNote, actorId: actor.id, mode: "EDIT" });
         }
 
         if (fuelChange) {
@@ -1932,6 +2014,7 @@ export const EditReturn = async (req: Request, res: Response) => {
         returnFuelLevel: currentFuel,
         photos: photoList(existing.map((p) => ({ fileId: p.file.publicId }))),
         damages: changedDamages.map((p) => damageState(p, false)),
+        dropNote: currentDropNote,
       } as Record<string, unknown>,
       {
         ...afterInputs,
@@ -1940,6 +2023,7 @@ export const EditReturn = async (req: Request, res: Response) => {
           ? photoList([...kept.map((p) => ({ fileId: p.file.publicId })), ...toAdd.map((fileId) => ({ fileId }))])
           : undefined,
         damages: changedDamages.length ? changedDamages.map((p) => damageState(p, true)) : undefined,
+        dropNote: noteChange ? dropNote ?? null : undefined,
       },
     );
     await logEdit(req, actor, "RETURN", booking.publicId, diff, outcome.plan, outcome.session);

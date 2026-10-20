@@ -22,14 +22,15 @@ function sendCustomerRefundError(res: Response, error: unknown, label: string) {
 
 /**
  * "Refund to customer" (Oct 2026) — any booking, any status, any amount, paid out
- * now by cash / UPI / bank transfer. The branch manager (own branch, ManagerCheck)
- * and the admin (any branch, AdminCheck) share these handlers.
+ * now by cash / UPI / bank transfer. The branch manager (own branch, ManagerCheck),
+ * the Fleet Executive (own branch, EmployeeCheck) and the admin (any branch,
+ * AdminCheck) share these handlers.
  *
  *   GET  …/bookings/:publicId/refund-to-customer   what the dialog needs
  *   POST …/bookings/:publicId/refund-to-customer
  *        { amount, method, reason, reference?, proofFileId?, confirmOverReceived?, requestId? }
  */
-const makeHandlers = (role: "MANAGER" | "ADMIN") => ({
+const makeHandlers = (role: "MANAGER" | "ADMIN" | "STAFF") => ({
   get: async (req: Request, res: Response) => {
     try {
       const data = await getCustomerRefundOptions(req, scopeFromRequest(req, role), req.params.publicId!);
@@ -58,3 +59,7 @@ export const GetCustomerRefundOptions = manager.get;
 export const RecordCustomerRefund = manager.post;
 export const AdminGetCustomerRefundOptions = admin.get;
 export const AdminRecordCustomerRefund = admin.post;
+// Oct 2026: the Fleet Executive (EmployeeCheck), own branch
+const staff = makeHandlers("STAFF");
+export const EmployeeGetCustomerRefundOptions = staff.get;
+export const EmployeeRecordCustomerRefund = staff.post;

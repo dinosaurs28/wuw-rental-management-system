@@ -19,11 +19,14 @@ export interface ConflictingBooking {
    * Redis hold) — it can't be moved to another car, only waited out.
    * LOCK = a branch manager's booking lock on the car (bookingId 0,
    * bookingPublicId = the lock's publicId): the return must be at or before
-   * its start — a plain overlap, no buffer (partial-extension.ts).
+   * its effective start (startAt = 00:00 IST the day before the lock starts,
+   * effectiveLockStart) — a plain overlap, no buffer (partial-extension.ts).
    */
   kind?: "BOOKING" | "HOLD" | "LOCK";
   /** The lock's reason (staff only — never sent to customers), for kind LOCK. */
   lockReason?: string;
+  /** The lock's own start (startAt is its effective start, the lead day included), for kind LOCK. */
+  lockStartAt?: Date;
 }
 
 export interface AvailabilityResult {
@@ -183,13 +186,16 @@ class ExtensionAvailabilityService {
     }
 
     // Booking locks on the car (every lock, customers-only ones too: an
-    // extension is checked the same way whoever asks, so the offer commits)
+    // extension is checked the same way whoever asks, so the offer commits),
+    // starting at their effective start — 00:00 IST the day before the lock —
+    // so "available until", the partial end and the commit all stop there
     const locks = (await findLocksCovering([vehicleId], fromAt, toAt, { db })).get(vehicleId) ?? [];
     for (const l of locks) {
       conflictingBookings.push({
         bookingId: 0,
         bookingPublicId: l.publicId,
-        startAt: l.startAt,
+        startAt: l.effectiveStartAt,
+        lockStartAt: l.startAt,
         endAt: l.endAt,
         vehicleId,
         kind: "LOCK",

@@ -19,6 +19,10 @@ export interface BookingLock {
   /** Hidden from customers only — staff walk-ins still allowed. */
   customersOnly: boolean;
   status: BookingLockStatus;
+  /** Hidden and unbookable from (ISO): 00:00 IST the day before startAt. Absent from an older server. */
+  hiddenFrom?: string;
+  /** The lead day or the lock is running now (cars hidden). */
+  hiddenNow?: boolean;
   vehicles: { id: number; regNo: string; make: string; model: string }[];
   groups: { key: string; make: string; model: string; categoryId: number; categoryName: string | null }[];
   createdBy: { name: string } | null;
@@ -33,7 +37,7 @@ export interface BookingLockOptions {
   groups: { key: string; make: string; model: string; categoryId: number; categoryName: string; vehicleCount: number }[];
 }
 
-/** An existing CONFIRMED / PICKED_UP booking inside the window (kept as it is). */
+/** An existing CONFIRMED / PICKED_UP booking or HOLD checkout inside the effective window (kept as it is). */
 export interface BookingLockOverlap {
   bookingPublicId: string;
   status: string;
@@ -46,6 +50,8 @@ export interface BookingLockOverlap {
 export interface BookingLockPreview {
   /** Vehicles the lock would cover now. */
   vehicleCount: number;
+  /** Hidden and unbookable from (ISO) — the lead day's 00:00 IST. */
+  hiddenFrom?: string;
   overlapping: BookingLockOverlap[];
 }
 

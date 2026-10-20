@@ -190,7 +190,8 @@ export interface ResolvedProof {
  * as its first photo (proofFileId) or as any of its photos.
  */
 async function assertProofUnused(fileId: number, db: Db, position?: number): Promise<void> {
-  const live = { status: { notIn: ["FAILED", "REJECTED"] } } satisfies Prisma.PaymentTransactionWhereInput;
+  // A voided entry (Oct 2026) no longer backs its photo: the payment can be recorded again
+  const live = { status: { notIn: ["FAILED", "REJECTED", "VOIDED"] } } satisfies Prisma.PaymentTransactionWhereInput;
   const used = await db.paymentTransaction.findFirst({
     where: { ...live, OR: [{ proofFileId: fileId }, { proofPhotos: { some: { fileId } } }] },
     select: { publicId: true },

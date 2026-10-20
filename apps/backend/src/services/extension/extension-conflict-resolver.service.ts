@@ -132,7 +132,7 @@ class ExtensionConflictResolverService {
       options.push({
         type: ExtensionResolutionType.PARTIAL_EXTENSION,
         description: limitedByLockOnly
-          ? `Extend partially until ${partialEnd.toISOString()} (the latest return before the booking lock on the vehicle starts — no buffer before a lock).`
+          ? `Extend partially until ${partialEnd.toISOString()} (the latest return before the booking lock on the vehicle starts to act, 00:00 IST the day before it — no buffer before a lock).`
           : `Extend partially until ${partialEnd.toISOString()} (${EXTENSION_BUFFER_HOURS} hours before the vehicle's next booking).`,
         partialNewEndAt: partialEnd,
         conflictingBookings,

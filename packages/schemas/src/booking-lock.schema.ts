@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { vehicleGroupKey } from "./special-pricing.schema.js";
+import { istDayNumber } from "./booking-window.js";
 
 // ─── Booking locks ────────────────────────────────────────────────────────────
 //
@@ -9,6 +10,12 @@ import { vehicleGroupKey } from "./special-pricing.schema.js";
 // category, vehicleGroupKey). A plain overlap — no turnaround around a lock.
 // customersOnly: hidden from customers only (staff walk-ins, reschedules and
 // swaps still allowed). Existing bookings are never changed.
+//
+// Lead day (client, Oct 2026: "one day before the date it's getting blocked,
+// it won't be visible and no one can book it"): a lock acts from 00:00 IST on
+// the calendar day before its start (effectiveLockStart) to its end — the
+// effective window [effectiveLockStart(startAt), endAt). Computed, never
+// stored, so locks created before the rule get the lead too.
 
 export const BOOKING_LOCK_SCOPES = ["BRANCH", "VEHICLES", "GROUPS"] as const;
 export type BookingLockScopeValue = (typeof BOOKING_LOCK_SCOPES)[number];
@@ -37,9 +44,33 @@ export interface BookingLockRule {
   cancelledAt?: Date | null;
 }
 
-/** [lockStart, lockEnd) and [start, end) overlap — a plain overlap, no turnaround. */
+/** Calendar days (IST) before a lock's start that it already hides the car and refuses bookings. */
+export const LOCK_LEAD_DAYS = 1;
+
+const IST_OFFSET_MS = 330 * 60_000;
+const DAY_MS = 24 * 60 * 60_000;
+
+/**
+ * When a lock starting at `startAt` begins to act: 00:00 IST on the calendar
+ * day LOCK_LEAD_DAYS before its start day (a lock from 25 Aug 10:00 IST acts
+ * from 24 Aug 00:00 IST).
+ */
+export function effectiveLockStart(startAt: Date | string): Date {
+  return new Date((istDayNumber(startAt) - LOCK_LEAD_DAYS) * DAY_MS - IST_OFFSET_MS);
+}
+
+/**
+ * [effectiveLockStart, lockEnd) and [start, end) overlap — a plain overlap
+ * with the effective window (the lead day included), no turnaround.
+ */
 export function lockOverlapsWindow(lock: { startAt: Date; endAt: Date }, start: Date, end: Date): boolean {
-  return lock.startAt.getTime() < end.getTime() && start.getTime() < lock.endAt.getTime();
+  return effectiveLockStart(lock.startAt).getTime() < end.getTime() && start.getTime() < lock.endAt.getTime();
+}
+
+/** The lock hides the car and refuses bookings right now: now ∈ [effectiveLockStart, endAt). */
+export function lockActsAt(lock: { startAt: Date; endAt: Date; cancelledAt?: Date | null }, now: Date = new Date()): boolean {
+  if (lock.cancelledAt) return false;
+  return effectiveLockStart(lock.startAt).getTime() <= now.getTime() && now.getTime() < lock.endAt.getTime();
 }
 
 /** The lock names this vehicle (its branch, the vehicle itself, or its make + model + category group). */
@@ -56,7 +87,7 @@ export function lockCoversVehicle(
 
 /**
  * Does the lock keep this vehicle from [start, end)? Not cancelled, covering
- * the vehicle, overlapping the window — and, for a staff action (`forStaff`),
+ * the vehicle, overlapping its effective window (the lead day included) — and, for a staff action (`forStaff`),
  * not a customers-only lock.
  */
 export function lockBlocksVehicle(
@@ -71,6 +102,25 @@ export function lockBlocksVehicle(
   return lockOverlapsWindow(lock, start, end) && lockCoversVehicle(lock, vehicle);
 }
 
+/**
+ * A whole-day lock: From 00:00 IST through the end of To (the next day's
+ * 00:00 IST), both "YYYY-MM-DD" IST calendar dates, as ISO instants. Null when
+ * a date is malformed.
+ */
+export function wholeDayLockWindow(fromDate: string, toDate: string): { startAt: string; endAt: string } | null {
+  const parse = (d: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : NaN;
+  };
+  const from = parse(fromDate);
+  const to = parse(toDate);
+  if (Number.isNaN(from) || Number.isNaN(to)) return null;
+  return {
+    startAt: new Date(from - IST_OFFSET_MS).toISOString(),
+    endAt: new Date(to + DAY_MS - IST_OFFSET_MS).toISOString(),
+  };
+}
+
 /** Where a lock stands at `now`. */
 export function bookingLockStatus(
   lock: { startAt: Date; endAt: Date; cancelledAt?: Date | null },
@@ -83,7 +133,6 @@ export function bookingLockStatus(
 }
 
 const STEP_MS = BOOKING_LOCK_STEP_MINUTES * 60_000;
-const DAY_MS = 24 * 60 * 60_000;
 
 /** Problems with a lock's window (both ISO instants), as { path, message }. */
 export function bookingLockWindowIssues(

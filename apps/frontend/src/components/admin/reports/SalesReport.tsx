@@ -40,6 +40,8 @@ import type {
 } from "@/types/reports";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
 
 // ============================================================================
 // Sales Report Component
@@ -68,6 +70,8 @@ export const SalesReport = () => {
     Array<{ value: string; label: string }>
   >([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Oct 2026: a booking's payments — Refund to customer, Void a wrong entry (any branch)
+  const [paymentsFor, setPaymentsFor] = useState<string | null>(null);
 
   // Fetch branches on mount
   useEffect(() => {
@@ -251,6 +255,15 @@ export const SalesReport = () => {
       accessorKey: "branch",
       header: "Branch",
       cell: ({ row }) => <div className="text-sm">{row.original.branch}</div>,
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setPaymentsFor(row.original.bookingId)}>
+          Payments
+        </Button>
+      ),
     },
   ];
 
@@ -489,6 +502,12 @@ export const SalesReport = () => {
           />
         </CardContent>
       </Card>
+      <BookingPaymentsDialog
+        bookingPublicId={paymentsFor}
+        onOpenChange={(o) => !o && setPaymentsFor(null)}
+        portal="admin"
+        onChanged={() => void fetchReportData()}
+      />
     </div>
   );
 };

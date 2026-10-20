@@ -28,6 +28,7 @@ import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
+import { voidView } from "./payment-void-rules.js";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -565,6 +566,7 @@ class PaymentTransactionService {
           },
           collectedBy: { select: { publicId: true, name: true } },
           confirmedBy: { select: { publicId: true, name: true } },
+          voidedBy: { select: { name: true } },
           proofFile: PROOF_FILE_RELATION_SELECT,
           proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
         },
@@ -598,6 +600,8 @@ class PaymentTransactionService {
       isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
       cashOutsideShift: isCashRefundOutsideShift(t),
       notes: t.notes ?? null,
+      // Additive (Oct 2026): void state (voided rows struck through; voidable → Void action)
+      ...voidView(t),
     })));
 
     return { transactions: mapped as any, total, page, pageSize };

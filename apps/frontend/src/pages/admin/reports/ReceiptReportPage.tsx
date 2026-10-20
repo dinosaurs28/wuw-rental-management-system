@@ -19,6 +19,7 @@ import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelp
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
+import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
 
 interface ReceiptRow {
   receiptNo: string;
@@ -45,6 +46,8 @@ export const ReceiptReportPage = () => {
   const [reportData, setReportData] = useState<any>(null);
   const [branches, setBranches] = useState<Array<{ value: string; label: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Oct 2026: the receipt's booking payments — Refund to customer, Void a wrong entry (any branch)
+  const [paymentsFor, setPaymentsFor] = useState<string | null>(null);
 
   useEffect(() => {
     adminService.getBranches().then((data) =>
@@ -172,6 +175,15 @@ export const ReceiptReportPage = () => {
       header: "Branch",
       cell: ({ row }) => <div className="text-sm">{row.original.branch}</div>,
     },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setPaymentsFor(row.original.bookingId)}>
+          Refund / Void
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -273,6 +285,12 @@ export const ReceiptReportPage = () => {
               emptyMessage="No receipts found for the selected filters"
             />
           </CardContent>
+          <BookingPaymentsDialog
+            bookingPublicId={paymentsFor}
+            onOpenChange={(o) => !o && setPaymentsFor(null)}
+            portal="admin"
+            onChanged={() => void fetchReport()}
+          />
         </Card>
       </div>
     </div>

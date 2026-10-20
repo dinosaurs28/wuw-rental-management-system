@@ -81,6 +81,10 @@ const txnMeta: Record<
     label: "Refunded",
     classes: "bg-neutral-100 text-neutral-600 border border-neutral-200",
   },
+  VOIDED: {
+    label: "Voided",
+    classes: "bg-zinc-200 text-zinc-700 border border-zinc-300",
+  },
 };
 
 export function TransactionBadge({ status }: { status: TransactionStatus }) {
@@ -127,7 +131,7 @@ export function ShiftStatusBadge({ status }: { status: ShiftStatus }) {
 
 // ── Refund Status Badge ───────────────────────────────────────────────────────
 
-type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED";
+type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED" | "VOIDED";
 
 const refundMeta: Record<RefundStatus, { label: string; classes: string }> = {
   PENDING_APPROVAL: {
@@ -145,6 +149,10 @@ const refundMeta: Record<RefundStatus, { label: string; classes: string }> = {
   COMPLETED: {
     label: "Disbursed",
     classes: "bg-neutral-100 text-neutral-600 border border-neutral-200",
+  },
+  VOIDED: {
+    label: "Voided",
+    classes: "bg-zinc-200 text-zinc-700 border border-zinc-300",
   },
 };
 

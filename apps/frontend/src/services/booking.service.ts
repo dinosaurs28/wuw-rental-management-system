@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { OperationNotesView } from "@/components/employee/OperationNotes";
 import { isAxiosError } from "axios";
 import { format } from "date-fns";
 import type { RazorpayOrder } from "@/lib/razorpay";
@@ -16,6 +17,7 @@ import type {
 import type { ReturnKmSummary } from "@/services/paymentSession.service";
 import type { PaymentFlowReason, PaymentOptions } from "@/lib/paymentPlan";
 import type { WeekendPricing } from "@/services/vehicle.service";
+import type { QueueFilterOptions, QueueFilterParams } from "@/types/queueFilters";
 
 // Existing Customer Interfaces...
 // Types for booking summary request
@@ -303,6 +305,8 @@ export interface EmployeeBooking {
   dlDepositNote?: string | null;
   /** Last time the DL status was set (details only). */
   dlStatusUpdatedAt?: string | null;
+  /** Pickup / return details only: Fleet notes written at the pickup / drop and mid-rental swap notes. */
+  operationNotes?: OperationNotesView;
   /** Plan-based free km for the booked period (same helper the server bills extra km with). */
   kmAllowance?: {
     includedKm: number;
@@ -382,6 +386,8 @@ const fetchEmployeeQueue = async (
   type: BookingListType,
   /** Registration number search (also make / model words); blank = everything */
   q?: string,
+  /** Search-bar filters (Oct 20 2026); a time filter replaces the `date` scope */
+  filters?: QueueFilterParams,
 ): Promise<EmployeeBookingQueue> => {
   try {
     // includeCompleted: done pickups / returns stay on their day (client item 1);
@@ -391,7 +397,7 @@ const fetchEmployeeQueue = async (
       counts?: BookingListCounts;
       completed?: EmployeeBooking[];
     }>(path, {
-      params: { date: format(date, "yyyy-MM-dd"), type, includeCompleted: 1, ...(q ? { q } : {}) },
+      params: { date: format(date, "yyyy-MM-dd"), type, includeCompleted: 1, ...(q ? { q } : {}), ...filters },
     });
     return {
       data: response.data.data ?? [],
@@ -525,15 +531,23 @@ export const bookingService = {
    * Daily is scoped to `date` (IST day); Monthly ignores it and lists every
    * CONFIRMED monthly booking. `counts` covers both tabs.
    */
-  getEmployeePickupQueue: (date: Date, type: BookingListType, q?: string) =>
-    fetchEmployeeQueue("/employee/booking", date, type, q),
+  getEmployeePickupQueue: (date: Date, type: BookingListType, q?: string, filters?: QueueFilterParams) =>
+    fetchEmployeeQueue("/employee/booking", date, type, q, filters),
 
   /**
    * Return queue for one Daily / Monthly tab (GET /employee/return?type=).
    * Daily is the IST day's returns; Monthly lists every PICKED_UP monthly booking.
    */
-  getEmployeeReturnQueue: (date: Date, type: BookingListType, q?: string) =>
-    fetchEmployeeQueue("/employee/return", date, type, q),
+  getEmployeeReturnQueue: (date: Date, type: BookingListType, q?: string, filters?: QueueFilterParams) =>
+    fetchEmployeeQueue("/employee/return", date, type, q, filters),
+
+  /** The branch's queue filter choices (GET /employee/queue-filters?phase=). */
+  getQueueFilterOptions: async (phase: "PICKUP" | "RETURN"): Promise<QueueFilterOptions> => {
+    const response = await apiClient.get<{ data: QueueFilterOptions }>("/employee/queue-filters", {
+      params: { phase },
+    });
+    return response.data.data;
+  },
 
   // Upload Pickup Image
   uploadPickupImage: async (formData: FormData) => {
@@ -626,6 +640,8 @@ export const bookingService = {
       /** Typed FASTag charge — used only when a reading is missing. */
       fastagAmount?: number;
       fastagNotes?: string;
+      /** Optional Fleet note (≤ 1000 chars); null / blank = none. */
+      dropNote?: string | null;
     },
   ) => {
     const response = await apiClient.post<{

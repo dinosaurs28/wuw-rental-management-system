@@ -105,6 +105,11 @@ export interface ExtensionAvailabilityInfo {
   nextLockReason?: string | null;
   /** When the lock ends (ISO), for kind LOCK. */
   nextLockEndAt?: string | null;
+  /**
+   * The lock's own start (ISO), for kind LOCK — nextBookingStartAt is when it
+   * starts to act: 00:00 IST the day before (LOCK_LEAD_DAYS).
+   */
+  nextLockStartAt?: string | null;
   /** Latest return this car can be extended to (ISO); the current return when none is left. */
   availableUntil: string;
   /** NEXT_BOOKING = 2 h before the next pickup; MAX_RENTAL_PERIOD = the rental-length cap. */
@@ -146,7 +151,11 @@ export async function buildExtensionAvailability(
     nextBookingStartAt: next ? next.startAt.toISOString() : null,
     nextBookingRef: next ? next.bookingPublicId : null,
     nextBookingKind: next ? (next.kind ?? "BOOKING") : null,
-    ...(next?.kind === "LOCK" && { nextLockReason: next.lockReason ?? null, nextLockEndAt: next.endAt.toISOString() }),
+    ...(next?.kind === "LOCK" && {
+      nextLockReason: next.lockReason ?? null,
+      nextLockEndAt: next.endAt.toISOString(),
+      nextLockStartAt: (next.lockStartAt ?? next.startAt).toISOString(),
+    }),
     availableUntil: until.availableUntil.toISOString(),
     limitReason: until.limitReason,
     canExtend: until.canExtend,
@@ -161,7 +170,7 @@ export async function buildExtensionAvailability(
  */
 export function customerSafeAvailability(info: ExtensionAvailabilityInfo | null): ExtensionAvailabilityInfo | null {
   if (!info || info.nextBookingKind !== "LOCK") return info;
-  const { nextLockReason: _reason, nextLockEndAt: _end, ...rest } = info;
+  const { nextLockReason: _reason, nextLockEndAt: _end, nextLockStartAt: _start, ...rest } = info;
   return { ...rest, nextBookingKind: "BOOKING", nextBookingRef: null };
 }
 

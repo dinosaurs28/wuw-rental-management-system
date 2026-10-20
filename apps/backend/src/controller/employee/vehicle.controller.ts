@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { BOOKING_TURNAROUND_HOURS, getVehicleDetailsSchema } from "@repo/schemas";
+import { BOOKING_TURNAROUND_HOURS, getVehicleDetailsSchema, istDayNumber } from "@repo/schemas";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import {
   explainUnavailableVehicles,
@@ -128,7 +128,9 @@ export const searchVehicles = async (req: Request, res: Response) => {
       }
     }
 
-    const cacheKey = `employee:vehicles:grouped:${branchId}:${search || "all"}:${model || "all"}:${make || "all"}:${category || "all"}:${sort || "none"}:${start || "none"}:${end || "none"}:${limit}:${offset}`;
+    const cacheKey = `employee:vehicles:grouped:${branchId}:${search || "all"}:${model || "all"}:${make || "all"}:${category || "all"}:${sort || "none"}:${start || "none"}:${end || "none"}:${limit}:${offset}:d${istDayNumber(new Date())}`;
+    // d = today's IST day: a booking lock's lead starts at 00:00 IST, so a list
+    // cached the day before is never served once the car must be hidden
     const cached = await redis.get(cacheKey);
     if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
 
@@ -185,7 +187,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
       availableVehicles = vehicles.filter((v) => !unavailableIds.has(v.id));
     } else {
       // No dates: leave out cars free at no time (set Out for Rental by hand, overdue)
-      const blocked = await getBlockedForAnyWindowIds(vehicles.map((v) => v.id));
+      // and cars under a booking lock acting now, its lead day included (customers-only ones stay)
+      const blocked = await getBlockedForAnyWindowIds(vehicles.map((v) => v.id), new Date(), { forStaff: true });
       availableVehicles = vehicles.filter((v) => !blocked.has(v.id));
     }
 
@@ -365,7 +368,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       }
     }
 
-    const cacheKey = `employee:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}`;
+    // d = today's IST day (a booking lock's lead starts at 00:00 IST)
+    const cacheKey = `employee:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}:d${istDayNumber(new Date())}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));

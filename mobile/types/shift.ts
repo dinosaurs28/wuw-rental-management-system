@@ -57,7 +57,8 @@ export type ShiftTransactionPurpose =
   | 'OVERPAYMENT_REFUND'
   | 'CANCELLATION_REFUND';
 
-export type ShiftTransactionStatus = 'INITIATED' | 'COLLECTED' | 'CONFIRMED' | 'REJECTED' | 'FAILED' | 'REFUNDED';
+// VOIDED (Oct 2026): a wrong entry reversed — counted in no total
+export type ShiftTransactionStatus = 'INITIATED' | 'COLLECTED' | 'CONFIRMED' | 'REJECTED' | 'FAILED' | 'REFUNDED' | 'VOIDED';
 
 export interface ShiftTransaction {
   publicId: string;

@@ -522,8 +522,10 @@ async function findHoldConflicts(booking: RescheduleBooking, start: Date, end: D
 }
 
 /**
- * Booking locks on these vehicles overlapping [start, end) — a plain overlap.
- * A reschedule is a staff action, so customers-only locks don't count.
+ * Booking locks on these vehicles overlapping [start, end) — a plain overlap
+ * with the lock's effective window: blocked from 00:00 IST the day before it
+ * starts (effectiveLockStart) to its end. A reschedule is a staff action, so
+ * customers-only locks don't count.
  */
 async function findLockConflicts(db: Db, booking: RescheduleBooking, start: Date, end: Date): Promise<VehicleConflict[]> {
   const publicIdOf = new Map(booking.items.map((i) => [i.vehicle.id, i.vehicle.publicId]));
@@ -537,7 +539,7 @@ async function findLockConflicts(db: Db, booking: RescheduleBooking, start: Date
       bookingStatus: null,
       startAt: l.startAt,
       endAt: l.endAt,
-      blockedFrom: l.startAt,
+      blockedFrom: l.effectiveStartAt,
       blockedUntil: l.endAt,
     })),
   );
@@ -550,7 +552,7 @@ function vehicleUnavailable(booking: RescheduleBooking, conflicts: VehicleConfli
   const when = `${formatIst(first.startAt)} – ${formatIst(first.endAt)}`;
   const message =
     first.kind === "LOCK"
-      ? `${name} is locked for bookings ${when} (${first.lockReason ?? "booking lock"}). Choose another time, or swap the vehicle first.`
+      ? `${name} is locked for bookings ${formatIst(first.blockedFrom)} – ${formatIst(first.endAt)} (${first.lockReason ?? "booking lock"}; from 1 day before the lock starts). Choose another time, or swap the vehicle first.`
       : first.kind === "HOLD"
       ? `${name} is being booked by another customer for ${when}, which is too close to the new dates (bookings of the same car need ${BOOKING_TURNAROUND_HOURS} hours between them). Choose another time, or try again in a few minutes.`
       : first.bookingStatus === BookingStatus.PICKED_UP && first.blockedUntil === null

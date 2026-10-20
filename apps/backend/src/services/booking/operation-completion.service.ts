@@ -186,8 +186,10 @@ export async function listCompletedQueue(
     branchId: number;
     type: BookingListType | undefined;
     day: DayRange;
-    /** Fleet search (`q`): only bookings with one of these vehicles */
+    /** Fleet search (`q`) / vehicle filters: only bookings with one of these vehicles */
     vehicleIds?: number[];
+    /** Further queue filters (payment, Oct 20 2026), ANDed */
+    extraWhere?: Prisma.BookingWhereInput | null;
   },
 ) {
   const range = { gte: opts.day.gte, lte: opts.day.lte };
@@ -213,7 +215,16 @@ export async function listCompletedQueue(
       ? completedPickupWhere(opts.branchId, opts.type, opts.day, [...new Set(activityRefs)])
       : completedReturnWhere(opts.branchId, opts.type, opts.day);
   const rows = await prisma.booking.findMany({
-    where: opts.vehicleIds ? { AND: [phaseWhere, fleetSearchBookingWhere(opts.vehicleIds)] } : phaseWhere,
+    where:
+      opts.vehicleIds || opts.extraWhere
+        ? {
+            AND: [
+              phaseWhere,
+              ...(opts.vehicleIds ? [fleetSearchBookingWhere(opts.vehicleIds)] : []),
+              ...(opts.extraWhere ? [opts.extraWhere] : []),
+            ],
+          }
+        : phaseWhere,
     select: completedRowSelect,
   });
   const info = await loadCompletionInfo(phase, rows);

@@ -1,3 +1,5 @@
+import type { PaymentVoidState } from './paymentVoid';
+import type { OperationNotesView } from '../components/employee/OperationNotes';
 // Customers tab (Fleet) — GET/POST /api/employee/customers/*, the same
 // handlers and shapes as the branch manager's Customers tab
 // (apps/frontend/src/services/managerCustomers.service.ts). Money = 2-dp
@@ -157,7 +159,7 @@ export interface RentsPage {
   totalPages: number;
 }
 
-export interface CustomerBookingTransaction {
+export interface CustomerBookingTransaction extends PaymentVoidState {
   publicId: string;
   purpose: string;
   method: string;
@@ -294,6 +296,8 @@ export interface CustomerBookingDetail {
       clearedBy: string | null;
     }[];
   } | null;
+  // Fleet notes written at the pickup / drop and mid-rental swap notes (Oct 20 2026; absent on older servers)
+  operationNotes?: OperationNotesView;
 }
 
 export interface BlacklistResult {

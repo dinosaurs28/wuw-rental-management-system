@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { getOperationNotes } from "../../services/booking/operation-notes.service.js";
 import { readPickupDiscount, serializePickupDiscount } from "../../services/discount/pickup-discount-rules.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
@@ -28,12 +29,17 @@ import { bookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { MAX_RENTAL_DAYS } from "@repo/schemas";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
-import {
-  fleetSearchBookingWhere,
-  fleetSearchVehicleIds,
-  parseFleetQuery,
-} from "../../utils/booking/fleetSearch.js";
+import { parseFleetQuery } from "../../utils/booking/fleetSearch.js";
 import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
+import {
+  buildQueueFilterWhere,
+  completedDayFor,
+  hasTimeFilter,
+  INVALID_QUEUE_FILTER,
+  parseQueueFilters,
+  paymentWhere,
+  queueVehicleIds,
+} from "../../utils/booking/queueFilters.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
@@ -109,6 +115,10 @@ function dailyPriceToPaise(price: number): number {
 // `?q=` (new clients only) keeps the bookings whose vehicle matches the search
 // (registration number, spaces / hyphens ignored, or make / model words) in the
 // list, the counts and `completed`.
+// Search-bar filters (Oct 20 2026, new clients only; utils/booking/queueFilters.ts):
+// `typeClass`, `category`, `groupKey`, `tripType`, `when=today|tomorrow|overdue`,
+// `from` / `to`, `payment=balance_due|paid` narrow the list, the counts and
+// `completed` too. A time filter replaces the day (`date`) scope.
 export const BookingController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -120,9 +130,21 @@ export const BookingController = async (req: Request, res: Response) => {
     }
     const type = parsedType.type;
     const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
+    const parsedFilters = parseQueueFilters(req.query as Record<string, unknown>);
+    if (!parsedFilters.ok) {
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ success: false, code: INVALID_QUEUE_FILTER, message: parsedFilters.message });
+    }
+    const filters = parsedFilters.filters;
+    const timeFiltered = hasTimeFilter(filters);
     const search = parseFleetQuery(req.query.q);
-    const searchVehicleIds = search ? await fleetSearchVehicleIds(branchId, search) : undefined;
-    const searchWhere = searchVehicleIds ? fleetSearchBookingWhere(searchVehicleIds) : {};
+    const searchVehicleIds = await queueVehicleIds(branchId, search, filters);
+    const nowDt = TimezoneService.getCurrentTime();
+    const filterWhere = buildQueueFilterWhere("PICKUP", filters, { now: nowDt, vehicleIds: searchVehicleIds });
+    // No search / filters: the exact old query
+    const withFilters = <W extends object>(where: W) =>
+      Object.keys(filterWhere).length ? { AND: [where, filterWhere] } : where;
 
     let dateFilter: any = {};
 
@@ -140,7 +162,6 @@ export const BookingController = async (req: Request, res: Response) => {
     }
 
     // The day completed pickups are listed for: the requested day, else today
-    const nowDt = TimezoneService.getCurrentTime();
     const completedDay = dateFilter.lte
       ? { gte: dateFilter.gte as Date, lte: dateFilter.lte as Date }
       : {
@@ -154,27 +175,27 @@ export const BookingController = async (req: Request, res: Response) => {
     }
 
     const pendingOnly = pendingOnlyWhere(includeCompleted);
-    const dailyWhere = {
+    // A time filter replaces the day scope
+    const dayScope = timeFiltered ? {} : { startAt: dateFilter };
+    const dailyWhere = withFilters({
       branchId,
-      startAt: dateFilter,
+      ...dayScope,
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("DAILY"),
       ...pendingOnly,
-      ...searchWhere,
-    };
-    const monthlyWhere = {
+    });
+    const monthlyWhere = withFilters({
       branchId,
       status: BookingStatus.CONFIRMED,
       ...bookingTypeWhere("MONTHLY"),
       ...pendingOnly,
-      ...searchWhere,
-    };
+    });
     const listWhere =
       type === "MONTHLY"
         ? monthlyWhere
         : type === "DAILY"
           ? dailyWhere
-          : { branchId, startAt: dateFilter, status: BookingStatus.CONFIRMED, ...pendingOnly, ...searchWhere };
+          : withFilters({ branchId, ...dayScope, status: BookingStatus.CONFIRMED, ...pendingOnly });
 
     const [dailyCount, monthlyCount] = await Promise.all([
       prisma.booking.count({ where: dailyWhere }),
@@ -235,8 +256,18 @@ export const BookingController = async (req: Request, res: Response) => {
     }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
     // Done (or sent to a manager) for the day — additive, new clients only
+    // A time filter sets the days covered ("overdue" alone: none — nothing done is overdue)
+    const completedRange = completedDayFor(filters, nowDt, completedDay);
     const completed = includeCompleted
-      ? await listCompletedQueue("PICKUP", { branchId, type, day: completedDay, vehicleIds: searchVehicleIds })
+      ? completedRange
+        ? await listCompletedQueue("PICKUP", {
+            branchId,
+            type,
+            day: completedRange,
+            vehicleIds: searchVehicleIds,
+            extraWhere: paymentWhere(filters),
+          })
+        : []
       : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
@@ -1291,6 +1322,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
 
     // Customer QR code photo (#4): booking snapshot, else the customer's current one.
     const qrPhotoFields = await getBookingQrPhotoFields({ id: booking.id });
+    // Pickup / drop notes and mid-rental swap notes (shown at the drop) — staff only
+    const operationNotes = await getOperationNotes(booking.id);
 
     const { id: _id, branch, fuelRecord, branchId, items, pricingSnapshot, ...bookingData } = booking;
     return res.status(StatusCode.OK).json({
@@ -1337,6 +1370,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
         // Manual pickup discount given (legacy: already off remainingBalance) — additive
         pickupDiscount: serializePickupDiscount(readPickupDiscount(pricingSnapshot)),
+        // Fleet notes (Oct 20 2026): { pickup, drop, swaps } — additive
+        operationNotes,
       },
     });
   } catch (error) {

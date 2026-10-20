@@ -263,6 +263,7 @@ model User {
   collectedPayments     PaymentTransaction[]   @relation("PaymentCollector")
   confirmedPayments     PaymentTransaction[]   @relation("PaymentConfirmer")
   rejectedPayments      PaymentTransaction[]   @relation("PaymentRejector")
+  voidedPayments        PaymentTransaction[]   @relation("PaymentVoider")
   openShifts            CashShift[]            @relation("ShiftEmployee")
   reconciledShifts      CashShift[]            @relation("ShiftReconciler")
   refundRequestsMade    RefundRequest[]        @relation("RefundRequester")
@@ -593,6 +594,9 @@ enum PaymentTransactionStatus {
   FAILED
   REJECTED
   REFUNDED
+  // A CONFIRMED staff-recorded entry reversed as wrong (Oct 2026, "void"):
+  // counted nowhere; voidedAt / voidedById / voidReason say who, when and why
+  VOIDED
 }
 
 enum PaymentPurpose {
@@ -611,6 +615,8 @@ enum RefundStatus {
   APPROVED
   COMPLETED
   REJECTED
+  // Its refund PaymentTransaction was voided (Oct 2026): not paid out after all
+  VOIDED
 }
 
 enum CashShiftStatus {
@@ -1056,6 +1062,8 @@ model Booking {
   upiQrPayments          UpiQrPayment[]
   // Paused Fleet pickup / drop forms (one per type)
   operationDrafts        OperationDraft[]
+  // Fleet Executive's optional note at the pickup / the drop (one per type) — staff only
+  operationNotes         BookingOperationNote[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1875,6 +1883,14 @@ model PaymentTransaction {
   // comes off what the booking owes, so the balance due doesn't rise. 0 otherwise.
   goodwillAmount  Decimal                  @default(0) @db.Decimal(10, 2)
 
+  // Void (Oct 2026): a CONFIRMED staff-recorded entry reversed as wrong
+  // (status VOIDED). voidShiftClosed: its cash shift was already closed when
+  // it was voided, so that shift's counted / expected cash didn't change.
+  voidedAt        DateTime?
+  voidedById      Int?
+  voidReason      String?
+  voidShiftClosed Boolean                  @default(false)
+
   notes           String?
 
   booking         Booking             @relation(fields: [bookingId], references: [id])
@@ -1882,6 +1898,7 @@ model PaymentTransaction {
   collectedBy     User?               @relation("PaymentCollector", fields: [collectedById], references: [id])
   confirmedBy     User?               @relation("PaymentConfirmer", fields: [confirmedById], references: [id])
   rejectedBy      User?               @relation("PaymentRejector", fields: [rejectedById], references: [id])
+  voidedBy        User?               @relation("PaymentVoider", fields: [voidedById], references: [id])
   cashShift       CashShift?          @relation(fields: [cashShiftId], references: [id])
   extension       BookingExtension?
 
@@ -1895,6 +1912,7 @@ model PaymentTransaction {
   @@index([status, createdAt])
   @@index([onlineTransactionRef])
   @@index([proofFileId])
+  @@index([branchId, voidedAt])
 }
 
 // Photos of the customer's UPI payment-success screens backing one counter UPI
@@ -2626,6 +2644,31 @@ model OperationDraft {
 
   @@unique([bookingId, type])
   @@index([updatedById])
+}
+
+// Optional note the Fleet Executive writes at the pickup / the drop (Oct 20 2026).
+// Shown at the drop and to the branch manager; never returned to customers.
+enum OperationNoteType {
+  PICKUP
+  DROP
+}
+
+model BookingOperationNote {
+  id          Int               @id @default(autoincrement())
+  bookingId   Int
+  booking     Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type        OperationNoteType
+  note        String
+  // Who wrote it at the pickup / drop and when (User id, no relation)
+  writtenById Int?
+  writtenAt   DateTime          @default(now())
+  // Last change in Edit Pickup / Edit Drop (User id, no relation; null = never edited)
+  editedById  Int?
+  editedAt    DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+
+  @@unique([bookingId, type])
 }
 
 // ── Festival (special-date) pricing ──────────────────────────────────────────

@@ -32,6 +32,13 @@ import HandoverConditionPhotos, {
   type ReturnConditionCaptures,
 } from '../../../components/employee/drop/HandoverConditionPhotos';
 import { DlStatusCard } from '../../../components/employee/DlStatus';
+import {
+  OPERATION_NOTE_MAX,
+  OperationNoteInput,
+  OperationNotesCard,
+  noteForRequest,
+  noteTooLong,
+} from '../../../components/employee/OperationNotes';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -230,6 +237,10 @@ export default function ReturnScreen() {
   // Set when damages changed but the bill could not be recomputed yet.
   const [billStale, setBillStale] = useState(false);
   const [recomputeTick, setRecomputeTick] = useState(0);
+  // Optional Fleet drop note (Oct 20 2026), kept in the draft; sent with the bill /
+  // the legacy return, and saved before settling when changed after the last compute
+  const [dropNote, setDropNote] = useState('');
+  const dropNoteSentRef = useRef<string | null | undefined>(undefined);
   const [deletingDamageId, setDeletingDamageId] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
   // How the drop bill is settled: Cash / UPI (photo) / Split / Credit for a
@@ -441,11 +452,12 @@ export default function ReturnScreen() {
     fields: {
       endOdo, fuelLevel, chargeFuel, fuelAmt, chargeFastag, fastagAmt, fastagNote, fastagNow, chargeOther, otherLines,
       damageDecision, discount, depositHandling, applyGrace, waiveLate, waiveReason, manualKm, requireManager,
+      dropNote,
     },
     setters: {
       setEndOdo, setFuelLevel, setChargeFuel, setFuelAmt, setChargeFastag, setFastagAmt, setFastagNote,
       setFastagNow, setChargeOther, setOtherLines, setDamageDecision, setDiscount, setDepositHandling, setApplyGrace,
-      setWaiveLate, setWaiveReason, setManualKm, setRequireManager,
+      setWaiveLate, setWaiveReason, setManualKm, setRequireManager, setDropNote,
     },
     photos: returnPhotos,
     setPhotos: setReturnPhotos,
@@ -489,7 +501,16 @@ export default function ReturnScreen() {
     setReturnPhotos(editSummary.photos.map((p) => ({ fileId: p.fileId, url: p.url })));
     setDamageDrafts(Object.fromEntries(editSummary.damages.map((d) => [d.publicId, damageDraftOf(d)])));
     setDamageDecision(editSummary.damages.length > 0 ? 'DAMAGE_FOUND' : 'NO_DAMAGE');
+    setDropNote(editSummary.operationNotes?.drop?.note ?? '');
   }, [editMode, editSummary]);
+
+  // A drop bill computed earlier: the note it saved (Edit Return prefills from its summary)
+  const savedDropNote = booking?.operationNotes?.drop?.note;
+  useEffect(() => {
+    if (editMode || !savedDropNote) return;
+    if (dropNoteSentRef.current === undefined) dropNoteSentRef.current = savedDropNote;
+    setDropNote((cur) => cur || savedDropNote);
+  }, [editMode, savedDropNote]);
   useEffect(
     () => () => {
       for (const fileId of editUploadsRef.current) {
@@ -718,6 +739,10 @@ export default function ReturnScreen() {
       setErrorMsg(extras.error);
       return false;
     }
+    if (noteTooLong(dropNote)) {
+      setErrorMsg(`Keep the drop note under ${OPERATION_NOTE_MAX} characters.`);
+      return false;
+    }
     setErrorMsg(null);
     if (source !== 'auto') setDiscountError(null);
     computeBusyRef.current = true;
@@ -745,9 +770,13 @@ export default function ReturnScreen() {
       // Safety deposit at drop (#6) — resent on every compute
       const handling = nextHandling ?? depositHandling;
       body.safetyDepositHandling = handling;
+      // Optional Fleet note (blank = none)
+      const noteSent = noteForRequest(dropNote);
+      body.dropNote = noteSent;
       Object.assign(body, extras);
       const res = await employeeApi.computeReturnSession(bookingId as string, body);
       const data = res.data?.data;
+      dropNoteSentRef.current = noteSent;
       computedHereRef.current = true;
       if (mountedRef.current) {
         setReturnStarted(true);
@@ -937,6 +966,10 @@ export default function ReturnScreen() {
     // Cash / UPI for money going back: the bill's refund, or the deposit in full
     const refundChoice = net < 0 || depositRefundAmt > 0 ? refundPay.resolve() : null;
     if ((net < 0 || depositRefundAmt > 0) && !refundChoice) return;
+    if (noteTooLong(dropNote)) {
+      setErrorMsg(`Keep the drop note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     const depositRefund = depositRefundAmt > 0 && refundChoice
       ? {
         depositRefund: {
@@ -949,6 +982,12 @@ export default function ReturnScreen() {
     setSettling(true);
     setErrorMsg(null);
     try {
+      // A note changed after the bill was computed: saved first (no recompute)
+      const noteNow = noteForRequest(dropNote);
+      if (noteNow !== (dropNoteSentRef.current ?? null)) {
+        await employeeApi.saveDropNote(bookingId as string, noteNow);
+        dropNoteSentRef.current = noteNow;
+      }
       // No draft save may land while (or after) the drop completes.
       await draft.beginCompletion();
       if (net < 0 && refundChoice) {
@@ -1073,6 +1112,10 @@ export default function ReturnScreen() {
       setErrorMsg('error' in extras ? extras.error : 'Enter the end odometer reading in whole km.');
       return;
     }
+    if (noteTooLong(dropNote)) {
+      setErrorMsg(`Keep the drop note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
@@ -1091,6 +1134,8 @@ export default function ReturnScreen() {
           : {}),
         // #6 — recorded for the branch manager's settlement when a deposit is held
         ...(depositHeldBefore > 0 ? { safetyDepositHandling: depositHandling } : {}),
+        // Optional Fleet note (blank = none)
+        dropNote: noteForRequest(dropNote),
       });
       if (mountedRef.current) setLegacyResult((res.data ?? null) as CompleteReturnResponse | null);
       onSettled();
@@ -1134,9 +1179,13 @@ export default function ReturnScreen() {
     }
     const before = new Set(original.photos.map((p) => p.fileId));
     const now = new Set(returnPhotos.map((p) => p.fileId));
+    if (noteTooLong(dropNote)) return { error: `Keep the drop note under ${OPERATION_NOTE_MAX} characters.` };
     const body: EditReturnBody = {
       endOdometer: Number(endOdo.trim()),
       safetyDepositHandling: depositHandling,
+      ...((noteForRequest(dropNote) ?? '') !== (original.operationNotes?.drop?.note ?? '')
+        ? { dropNote: noteForRequest(dropNote) }
+        : {}),
       addPhotos: returnPhotos.filter((p) => !before.has(p.fileId)).map((p) => ({ fileId: p.fileId })),
       removeFileIds: original.photos.filter((p) => !now.has(p.fileId)).map((p) => p.fileId),
     };
@@ -1411,6 +1460,9 @@ export default function ReturnScreen() {
               }}
             />
           )}
+
+          {/* Fleet notes (Oct 20 2026): the pickup note and mid-rental swap notes, near the top */}
+          <OperationNotesCard notes={booking.operationNotes} show={['pickup', 'swaps']} style={{ marginTop: 12 }} />
 
           {/* Customer */}
           <SectionHeader title="Customer" />
@@ -2115,6 +2167,16 @@ export default function ReturnScreen() {
                     )}
                   </>
                 )}
+              </View>
+            </>
+          )}
+
+          {/* Optional Fleet note (Oct 20 2026) — shown to the branch manager with the rent history */}
+          {!hasRemainingBalance && !awaitingManager && (
+            <>
+              <SectionHeader title="Note" />
+              <View style={styles.card}>
+                <OperationNoteInput label="Drop note" value={dropNote} onChange={setDropNote} editable={!settling} />
               </View>
             </>
           )}

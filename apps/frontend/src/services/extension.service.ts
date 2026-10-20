@@ -128,6 +128,8 @@ export interface ExtensionCarAvailability {
   nextLockReason?: string | null;
   /** When the lock ends (ISO), for kind LOCK. */
   nextLockEndAt?: string | null;
+  /** The lock's own start (ISO); nextBookingStartAt is 00:00 IST the day before it. */
+  nextLockStartAt?: string | null;
   /** Latest return this car can be extended to (ISO). */
   availableUntil?: string | null;
   limitReason?: "NEXT_BOOKING" | "MAX_RENTAL_PERIOD" | null;

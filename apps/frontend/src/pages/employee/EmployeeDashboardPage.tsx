@@ -30,6 +30,19 @@ import {
   useActiveShift,
 } from "@/components/employee/counter/useActiveShift";
 import { usePaymentStore } from "@/store/payment.store";
+import {
+  activeFilterCount,
+  hasTimeFilter,
+  queueFilterKey,
+  queueFilterParams,
+  useQueueFiltersStore,
+} from "@/store/queueFilters.store";
+import {
+  QueueFilterChips,
+  QueueFilterPopover,
+  filterSummary,
+  timeFilterLabel,
+} from "@/components/employee/QueueFilters";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +92,21 @@ export default function EmployeeDashboardPage() {
   // Registration number search on the Pickup / Return queues (any tab and date)
   const [searchInput, setSearchInput] = useState("");
   const search = useDebounce(searchInput.trim(), 300);
+  // Search-bar filters (Oct 20 2026): one set per queue, kept for the session
+  const filterQueue = filter === "RETURN" ? "RETURN" : "PICKUP";
+  const queueFilters = useQueueFiltersStore((s) => s.filters[filterQueue]);
+  const setQueueFilters = useQueueFiltersStore((s) => s.setFilters);
+  const filterKey = queueFilterKey(queueFilters);
+  const filterCount = activeFilterCount(queueFilters);
+  const filterOptionsQuery = useQuery({
+    queryKey: ["employee-queue-filter-options", filterQueue],
+    queryFn: () => bookingService.getQueueFilterOptions(filterQueue),
+    enabled: isAuthenticated && filter !== "OVERDUE",
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const filterOptions = filterOptionsQuery.data ?? null;
+  const timeLabel = timeFilterLabel(queueFilters, filterOptions);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [showShiftNotice, setShowShiftNotice] = useState(false);
@@ -142,15 +170,16 @@ export default function EmployeeDashboardPage() {
   const fetchData = async () => {
     if (filter === "OVERDUE") return;
     const seq = ++requestSeq.current;
-    const key = `${filter}|${format(date, "yyyy-MM-dd")}|${search}`;
+    const key = `${filter}|${format(date, "yyyy-MM-dd")}|${search}|${filterKey}`;
     // Counts from another queue or date would mislabel the tabs while loading.
     if (countsKey.current !== key) setCounts(null);
     setIsLoading(true);
     try {
+      const params = queueFilterParams(queueFilters);
       const result =
         filter === "PICKUP"
-          ? await bookingService.getEmployeePickupQueue(date, bookingType, search)
-          : await bookingService.getEmployeeReturnQueue(date, bookingType, search);
+          ? await bookingService.getEmployeePickupQueue(date, bookingType, search, params)
+          : await bookingService.getEmployeeReturnQueue(date, bookingType, search, params);
       if (seq !== requestSeq.current) return;
       setBookings(result.data);
       setCompletedRows(result.completed);
@@ -176,7 +205,7 @@ export default function EmployeeDashboardPage() {
     if (isAuthenticated) {
       fetchData();
     }
-  }, [date, filter, bookingType, search, isAuthenticated]);
+  }, [date, filter, bookingType, search, filterKey, isAuthenticated]);
 
   const handleRefresh = () => {
     fetchData();
@@ -480,25 +509,47 @@ export default function EmployeeDashboardPage() {
                   placeholder="Search by registration number"
                   aria-label="Search by registration number"
                   autoComplete="off"
-                  className="h-9 bg-background pl-9 pr-9"
+                  className="h-9 bg-background pl-9 pr-16"
                 />
-                {searchInput && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchInput("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+                <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchInput("")}
+                      className="rounded p-1 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  <span className="h-4 w-px bg-border" aria-hidden />
+                  {/* Filters: vehicle type, model, time, payment, trip type */}
+                  <QueueFilterPopover
+                    phase={filterQueue}
+                    filters={queueFilters}
+                    options={filterOptions}
+                    optionsLoading={filterOptionsQuery.isLoading}
+                    optionsError={filterOptionsQuery.isError}
+                    onApply={(f) => setQueueFilters(filterQueue, f)}
+                  />
+                </div>
               </div>
+            )}
+
+            {filter !== "OVERDUE" && (
+              <QueueFilterChips
+                filters={queueFilters}
+                options={filterOptions}
+                onChange={(f) => setQueueFilters(filterQueue, f)}
+              />
             )}
 
             <p className="text-xs text-muted-foreground">
               {filter === "OVERDUE"
                 ? "Recovery — customers not back after the rental period, most overdue first. Updates every minute."
-                : bookingType === "MONTHLY"
+                : hasTimeFilter(queueFilters)
+                  ? `${bookingType === "MONTHLY" ? "Monthly" : "Daily"} rentals by ${filter === "PICKUP" ? "pickup" : "return"} time: ${timeLabel} (the date above is not used).`
+                  : bookingType === "MONTHLY"
                   ? filter === "PICKUP"
                     ? "Every monthly rental waiting for pickup, whatever the date."
                     : "Every monthly rental out on the road, whatever the date."
@@ -538,6 +589,8 @@ export default function EmployeeDashboardPage() {
                 isLoading={isLoading}
                 bookingType={bookingType}
                 search={search}
+                filterSummary={filterCount > 0 ? filterSummary(queueFilters, filterOptions) : ""}
+                onClearFilters={() => useQueueFiltersStore.getState().clearFilters(filterQueue)}
               />
             )}
           </div>

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { getVehicleDetailsSchema, normalizeUseCases, parseUseCasesFilter, useCaseStoredValues } from "@repo/schemas";
+import { getVehicleDetailsSchema, istDayNumber, normalizeUseCases, parseUseCasesFilter, useCaseStoredValues } from "@repo/schemas";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { PricingEngineService, rentInclGstFields } from "../../services/pricing/pricing-engine.service.js";
@@ -10,6 +10,7 @@ import { DurationCalculatorService } from "../../services/pricing/duration-calcu
 import { DateTime } from "luxon";
 import { getBlockedForAnyWindowIds, getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { findActingLocks } from "../../utils/availability/bookingLocks.js";
 import {
   insuranceValidFrom,
   isInsuranceValid,
@@ -122,7 +123,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     const cacheKey = `public:vehicles:grouped:${category || "all"}:${branch || "all"}:${
       search || "all"
-    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}:uc=${useCaseFilter.join(",") || "all"}`;
+    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}:uc=${useCaseFilter.join(",") || "all"}:d${istDayNumber(new Date())}`;
+    // d = today's IST day: a booking lock's lead starts at 00:00 IST, so a listing
+    // cached the day before is never served once the car must be hidden
 
     try {
       const cachedData = await redis.get(cacheKey);
@@ -236,7 +239,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     } else {
       // No dates: a car set Out for Rental by hand, or overdue on its rental, is
       // free at no time; one out on a rental stays (booking needs dates, and the
-      // dated check blocks the out period)
+      // dated check blocks the out period). A car under a booking lock acting now
+      // (from 00:00 IST the day before it starts to its end) is hidden too — a
+      // group whose every car is hidden disappears.
       const blocked = await getBlockedForAnyWindowIds(filteredVehicles.map((v) => v.id));
       availableVehicles = filteredVehicles.filter((v) => !blocked.has(v.id));
     }
@@ -451,7 +456,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       }
     }
 
-    const cacheKey = `public:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}`;
+    // d = today's IST day (a booking lock's lead starts at 00:00 IST)
+    const cacheKey = `public:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}:d${istDayNumber(new Date())}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
@@ -492,6 +498,16 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
 
     if (groupVehicles.length === 0) {
       return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
+    }
+
+    // Without dates, a group whose every listable car is under a booking lock
+    // acting now (its lead day included) is gone, as from the listing
+    if (!startDate) {
+      const listable = groupVehicles.filter((v) => isListableStatus(v.status));
+      const acting = await findActingLocks(listable.map((v) => v.id));
+      if (listable.length > 0 && listable.every((v) => acting.has(v.id))) {
+        return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
+      }
     }
 
     // Listable units (AVAILABLE / OUT_FOR_RENTAL) free for the dates — the same
@@ -690,6 +706,12 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     // Bookable at all (vehicleEligibility): listable status and insurance valid
     // through its expiry day; the dated check below adds bookings and holds
     const isBookable = isListableStatus(vehicleData.status) && isInsuranceValid(vehicleData.insuranceExpiry);
+
+    if (!startDate && isBookable && (await findActingLocks([vehicleData.id])).has(vehicleData.id)) {
+      // No dates: a car under a booking lock acting now (its lead day included)
+      // can't be booked at the moment — never the reason (customers don't see it)
+      availability = false;
+    }
 
     if (startDate && endDate) {
       if (!isBookable) {

@@ -28,7 +28,8 @@ import {
 } from '../../../../components/employee/completed/CompletedParts';
 import type { PickupSummary } from '../../../../types/completedOperation';
 import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
-import CustomerRefundHistory from '../../../../components/employee/CustomerRefundHistory';
+import SummaryMoneyActions from '../../../../components/employee/payments/SummaryMoneyActions';
+import { OperationNotesCard } from '../../../../components/employee/OperationNotes';
 
 // A completed pickup (client item 1): read-only. Changes go through Edit Pickup.
 export default function PickupSummaryScreen() {
@@ -152,6 +153,9 @@ export default function PickupSummaryScreen() {
           )}
         </Card>
 
+        {/* Fleet note written at the pickup (Oct 20 2026) */}
+        <OperationNotesCard notes={data.operationNotes} show={['pickup']} title="Pickup note" style={{ marginTop: 12 }} />
+
         <SectionHeader title={`Photos (${data.photos.length})`} />
         <Card>
           {/* In the order taken (the server's order) — the numbers the drop compares by */}
@@ -184,7 +188,7 @@ export default function PickupSummaryScreen() {
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
-          <CustomerRefundHistory refunds={data.customerRefunds} />
+          <SummaryMoneyActions bookingPublicId={data.booking.publicId} refunds={data.customerRefunds} onChanged={() => void refetch()} />
         </Card>
       </ScrollView>
 

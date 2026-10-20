@@ -27,9 +27,25 @@ export type TransactionStatus =
   | "CONFIRMED"
   | "REJECTED"
   | "FAILED"
-  | "REFUNDED";
+  | "REFUNDED"
+  // Oct 2026: a wrong entry reversed — counted in no total
+  | "VOIDED";
 
-export interface BranchTransaction {
+/** Additive (Oct 2026): a payment row's void state. Absent on older servers. */
+export interface PaymentVoidState {
+  voided?: boolean;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  /** Its cash shift was already closed when voided: counted cash didn't change */
+  voidShiftClosed?: boolean;
+  /** CONFIRMED staff-recorded entry: the Void action shows */
+  voidable?: boolean;
+  /** Why it can't be voided (e.g. online gateway payment) */
+  voidBlockedReason?: string | null;
+}
+
+export interface BranchTransaction extends PaymentVoidState {
   transactionPublicId: string;
   bookingPublicId: string;
   customerName: string;
@@ -57,7 +73,7 @@ export interface BranchTransaction {
 }
 
 export type ShiftStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED";
-export type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED";
+export type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED" | "VOIDED";
 export type RefundMethod = "CASH" | "ONLINE";
 
 /** GET .../bookings/:id/financial-state (money as strings) */

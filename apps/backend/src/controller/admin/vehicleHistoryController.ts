@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { exportVehicleHistoryToExcel } from "../../utils/exportToExcel.js";
 import { exportVehicleHistoryToCSV } from "../../utils/exportToCSV.js";
+import { loadOperationNotes } from "../../services/booking/operation-notes.service.js";
 
 /**
  * Vehicle History Report Controller
@@ -254,6 +255,8 @@ export const GetVehicleHistory = async (req: Request, res: Response) => {
     // Format booking history
     // ========================================================================
 
+    // Fleet notes written at the pickup / drop (Oct 20 2026)
+    const operationNotes = await loadOperationNotes(bookingHistory.map((item) => item.booking.id));
     const formattedBookingHistory = bookingHistory.map((item) => ({
       bookingId: item.booking.publicId,
       customerName: item.booking.customer.user.name,
@@ -266,6 +269,9 @@ export const GetVehicleHistory = async (req: Request, res: Response) => {
       status: item.booking.status,
       damageReported: item.booking.damages.length > 0,
       returnCondition: item.booking.damages.length > 0 ? "Damaged" : "Good",
+      // Additive: { note, writtenBy, writtenAt, editedBy, editedAt } | null
+      pickupNote: operationNotes.get(item.booking.id)?.pickup ?? null,
+      dropNote: operationNotes.get(item.booking.id)?.drop ?? null,
     }));
 
     // Format maintenance history

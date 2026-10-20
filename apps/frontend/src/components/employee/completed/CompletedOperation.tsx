@@ -16,6 +16,7 @@ import type {
   SummaryBillLine,
 } from "@/services/completedOperation.service";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
+import { OperationNotesCard } from "@/components/employee/OperationNotes";
 import { PhotoLightbox, ZoomBadge } from "@/components/ui/PhotoLightbox";
 import { adjustmentOutcome, damageBilling, summaryKey, useSummary } from "@/components/employee/completed/completedEdit";
 import { AdjustmentLinesTable, AdjustmentSettle } from "@/components/employee/completed/AdjustmentSettle";
@@ -237,6 +238,12 @@ function SummaryContent({ summary }: { summary: Summary }) {
         </Section>
       </div>
 
+      {/* Fleet notes (Oct 20 2026): the pickup's own note, or every note at the drop */}
+      <OperationNotesCard
+        notes={summary.operationNotes}
+        show={summary.phase === "PICKUP" ? ["pickup"] : ["pickup", "swaps", "drop"]}
+      />
+
       {summary.phase === "PICKUP" ? (
         <>
           <Section title="Handover">
@@ -350,8 +357,8 @@ function SummaryContent({ summary }: { summary: Summary }) {
         {(summary.customerRefunds ?? []).map((r) => (
           <div key={r.publicId} className="border-t border-gray-100 py-1.5 text-sm">
             <div className="flex justify-between gap-4">
-              <span className="text-gray-700">Refund to customer · {r.method === "CASH" ? "Cash" : r.onlineGateway === "BANK_TRANSFER" ? "Bank transfer" : "UPI"}</span>
-              <span className="font-medium text-gray-900">− {inr(num(r.amount))}</span>
+              <span className={r.voided ? "text-gray-400 line-through" : "text-gray-700"}>Refund to customer · {r.method === "CASH" ? "Cash" : r.onlineGateway === "BANK_TRANSFER" ? "Bank transfer" : "UPI"}</span>
+              <span className={r.voided ? "font-medium text-gray-400 line-through" : "font-medium text-gray-900"}>− {inr(num(r.amount))}</span>
             </div>
             <p className="text-xs text-muted-foreground">
               {new Date(r.at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}
@@ -360,6 +367,12 @@ function SummaryContent({ summary }: { summary: Summary }) {
             </p>
             {r.cashOutsideShift && <p className="text-xs font-medium text-amber-700">Cash paid out with no cash shift open</p>}
             {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+            {r.voided && (
+              <p className="text-xs text-gray-500">
+                Voided{r.voidReason ? `: ${r.voidReason}` : ""}
+                {r.voidedBy ? ` · by ${r.voidedBy}` : ""}
+              </p>
+            )}
           </div>
         ))}
       </Section>

@@ -30,6 +30,7 @@ import { FastagReturnField, FastagUsageNotes } from "@/components/employee/drop/
 import { readFastagBalance } from "@/components/employee/drop/fastag";
 import { ExtendBookingModal } from "@/components/employee/extension/ExtendBookingModal";
 import { DlStatusPanel } from "@/components/booking/DlStatus";
+import { OperationNoteField, OperationNotesCard, OPERATION_NOTE_MAX, noteForRequest } from "@/components/employee/OperationNotes";
 import { SwapVehicleAction } from "@/components/employee/swap/SwapVehicleAction";
 import {
   HandoverConditionPhotos,
@@ -140,6 +141,8 @@ interface ReturnPageShellProps {
   headerActions?: React.ReactNode;
   /** DL status reminder under the header (#3). */
   dlStatusBlock?: React.ReactNode;
+  /** Fleet notes from the pickup / mid-rental swaps (and the drop once recorded). */
+  notesBlock?: React.ReactNode;
   /** Original / extended / late rental time (#7). */
   rentalTimelineBlock?: React.ReactNode;
   /** "Swap vehicle" only while no drop bill (RETURN session) has been started (#13). */
@@ -160,6 +163,7 @@ function ReturnPageShell({
   onBack,
   headerActions,
   dlStatusBlock,
+  notesBlock,
   rentalTimelineBlock,
   canSwap,
   awaitingManager,
@@ -222,6 +226,8 @@ function ReturnPageShell({
             </Button>
           </div>
         </div>
+
+        {notesBlock}
 
         {rentalTimelineBlock}
 
@@ -580,6 +586,9 @@ export default function ReturnProcessPage() {
   const [lateError, setLateError] = useState<string | null>(null);
   // Extra km typed by staff — only after a mid-rental swap recorded without odometer readings
   const [manualExtraKm, setManualExtraKm] = useState("");
+  // Optional Fleet drop note (Oct 20 2026), sent with the drop bill / the legacy return
+  const [dropNote, setDropNote] = useState("");
+  const dropNoteTooLong = dropNote.trim().length > OPERATION_NOTE_MAX;
 
   // ── Session ────────────────────────────────────────────────────────────────
   const [returnSession, setReturnSession] = useState<ReturnSessionResponse | null>(null);
@@ -776,6 +785,12 @@ export default function ReturnProcessPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.pickupFuelLevel]);
 
+  // ── A drop bill computed earlier: the drop note it saved ─────────────────────
+  useEffect(() => {
+    const saved = booking?.operationNotes?.drop?.note;
+    if (saved) setDropNote((cur) => cur || saved);
+  }, [booking?.operationNotes?.drop?.note]);
+
   // ── A mid-rental swap (#13) changes the vehicle being handed back: readings typed
   //    for the previous car no longer apply and the fuel default is the new car's ──
   const vehicleSig = booking
@@ -905,6 +920,8 @@ export default function ReturnProcessPage() {
     if (discountToSend) payload.discount = discountToSend;
     // Safety deposit choice (#6) — resent with every compute, like the discount
     payload.safetyDepositHandling = depositHandlingRef.current;
+    // Optional Fleet note (blank = none)
+    payload.dropNote = noteForRequest(dropNote);
     return payload;
   };
 
@@ -1203,6 +1220,13 @@ export default function ReturnProcessPage() {
         dropReminder={!isCompleted}
       />
     ),
+    // Fleet notes (Oct 20 2026): the pickup note (and swap notes) near the top; the drop note once recorded
+    notesBlock: (
+      <OperationNotesCard
+        notes={booking.operationNotes}
+        show={isCompleted || awaitingManager ? ["pickup", "swaps", "drop"] : ["pickup", "swaps"]}
+      />
+    ),
     // Original / extended / late rental time (#7) — server minutes, never rounded
     rentalTimelineBlock: rentalTimeline ? (
       <RentalTimelineCard
@@ -1446,11 +1470,22 @@ export default function ReturnProcessPage() {
               />
             )}
 
+            {/* ── Drop note (optional) — saved with the bill; recompute to change it ── */}
+            {!billLocked && (
+              <OperationNoteField
+                id="drop-note-session"
+                label="Drop note"
+                value={dropNote}
+                onChange={setDropNote}
+                disabled={step3Complete || computeChargesMutation.isPending}
+              />
+            )}
+
             {/* ── Compute Button ── */}
             {!step3Complete && (
               <Button
                 className="bg-[#FF5F00] hover:bg-[#e65600] text-white gap-2"
-                disabled={!readingsReady || computeChargesMutation.isPending}
+                disabled={!readingsReady || dropNoteTooLong || computeChargesMutation.isPending}
                 onClick={() => void runCompute(appliedDiscount, "inputs")}
               >
                 {computeChargesMutation.isPending ? (
@@ -1966,6 +2001,13 @@ export default function ReturnProcessPage() {
       {/* Sidebar with action buttons — legacy */}
       {returnPhotos.length > 0 && !isCompleted && (
         <div className="flex flex-col gap-3">
+          <OperationNoteField
+            id="drop-note-legacy"
+            label="Drop note"
+            value={dropNote}
+            onChange={setDropNote}
+            disabled={completeReturnMutation.isPending}
+          />
           <Dialog open={legacyShowCompleteDialog} onOpenChange={setLegacyShowCompleteDialog}>
             <Button className="w-full bg-[#28A745] hover:bg-green-700 text-white"
               onClick={() => {
@@ -1998,7 +2040,7 @@ export default function ReturnProcessPage() {
               <DialogFooter>
                 <Button variant="outline" onClick={() => setLegacyShowCompleteDialog(false)}>Cancel</Button>
                 <Button className="bg-[#28A745] hover:bg-green-700 text-white"
-                  disabled={!readingsReady || completeReturnMutation.isPending}
+                  disabled={!readingsReady || dropNoteTooLong || completeReturnMutation.isPending}
                   onClick={() => completeReturnMutation.mutate({
                     returnImageIds: returnPhotos.map((p) => p.publicId),
                     endOdometer: parseInt(endOdometer.trim(), 10),
@@ -2011,6 +2053,8 @@ export default function ReturnProcessPage() {
                       : {}),
                     // Recorded only when a deposit is held; the branch manager settles it (#6)
                     ...(depositHeld > 0 ? { safetyDepositHandling: depositHandling } : {}),
+                    // Optional Fleet note (blank = none)
+                    dropNote: noteForRequest(dropNote),
                   })}>
                   {completeReturnMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Confirm Complete
@@ -2133,6 +2177,9 @@ function ReturnEditForm({
     inputs.discount ? { amount: num(inputs.discount.amount), reason: inputs.discount.reason } : null,
   );
   const [discountError, setDiscountError] = useState<string | null>(null);
+  // Fleet note written at the drop (blank clears it)
+  const savedDropNote = summary.operationNotes?.drop?.note ?? "";
+  const [dropNote, setDropNote] = useState(savedDropNote);
   const [lateOptions, setLateOptions] = useState<LateReturnOptions>({
     applyGrace: inputs.applyGrace,
     waiver: inputs.waiveReason != null ? { reason: inputs.waiveReason } : null,
@@ -2233,11 +2280,13 @@ function ReturnEditForm({
       if (typed !== inputs.manualExtraKm) out.manualExtraKm = typed;
     }
     if (depositHeld > 0 && depositHandling !== inputs.depositHandling) out.safetyDepositHandling = depositHandling;
+    if ((noteForRequest(dropNote) ?? "") !== savedDropNote) out.dropNote = noteForRequest(dropNote);
     return out;
   }, [
     endValue, recordedEnd, summary, returnFuelLevel, recordedFuel, fastagNowShown, fastagNowRead.value, inputs, photos,
     damages, editState, dropBill, fuelDeficit, fuelCharge, fastagTypedShown, fastagChecked, fastagAmount, fastagNotes,
     typedOther, discount, lateShown, lateOptions, manualGrace, manualKmAllowed, manualExtraKm, depositHeld, depositHandling,
+    dropNote, savedDropNote,
   ]);
 
   // ── The drop's own validations ──
@@ -2277,6 +2326,7 @@ function ReturnEditForm({
       : null) ??
     chargesProblem ??
     damageProblem ??
+    (dropNote.trim().length > OPERATION_NOTE_MAX ? `Keep the drop note under ${OPERATION_NOTE_MAX} characters.` : null) ??
     (Object.values(uploading).some(Boolean) ? "Wait for the photos to upload." : null);
   const changed = Object.keys(body).length > 0;
 
@@ -2362,6 +2412,11 @@ function ReturnEditForm({
         {dropBill
           ? "Correct what this drop recorded. Before saving you'll see what changes in the bill — then collect the difference or refund it."
           : "Correct what this drop recorded. Its charges are settled by the branch manager — a change in them goes to Settlements."}
+      </div>
+
+      {/* ── Drop note (optional) ── */}
+      <div className="rounded-xl border bg-white p-4">
+        <OperationNoteField id="edit-drop-note" label="Drop note" value={dropNote} onChange={setDropNote} />
       </div>
 
       {/* ── Handover reference photos (pickup, or the swap) ── */}

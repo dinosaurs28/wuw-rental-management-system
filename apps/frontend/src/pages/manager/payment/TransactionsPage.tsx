@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ChevronLeft, ChevronRight, ReceiptText } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, ReceiptText, Ban, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/select";
 import { paymentService, type BranchTransaction, type TransactionStatus } from "@/services/payment.service";
 import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
+import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
+import { VoidPaymentDialog, VoidedNote, type VoidTarget } from "@/components/manager/payments/VoidPaymentDialog";
 
 const purposeLabels: Record<string, string> = {
   FULL_PAYMENT: "Full Payment",
@@ -36,6 +38,7 @@ const statusConfig: Record<TransactionStatus, { label: string; className: string
   REJECTED: { label: "Rejected", className: "bg-red-50 text-red-700 border-red-100" },
   FAILED: { label: "Failed", className: "bg-red-50 text-red-700 border-red-100" },
   REFUNDED: { label: "Refunded", className: "bg-purple-50 text-purple-700 border-purple-100" },
+  VOIDED: { label: "Voided", className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
 };
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -46,6 +49,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "REJECTED", label: "Rejected" },
   { value: "FAILED", label: "Failed" },
   { value: "REFUNDED", label: "Refunded" },
+  { value: "VOIDED", label: "Voided" },
 ];
 
 function formatDateTime(iso: string) {
@@ -61,6 +65,9 @@ export function TransactionsTab() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  // Oct 2026: Refund to customer (per booking) and Void (per CONFIRMED staff-recorded entry)
+  const [refundFor, setRefundFor] = useState<string | null>(null);
+  const [voidTarget, setVoidTarget] = useState<VoidTarget | null>(null);
 
   const pageSize = 20;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -139,8 +146,8 @@ export function TransactionsTab() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                  {["Date", "Booking", "Customer", "Purpose", "Method", "Ref #", "Amount", "Status", "By"].map((h) => (
-                    <th key={h} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
+                  {["Date", "Booking", "Customer", "Purpose", "Method", "Ref #", "Amount", "Status", "By", ""].map((h, i) => (
+                    <th key={h || `col-${i}`} className={`px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -148,14 +155,25 @@ export function TransactionsTab() {
                 {transactions.map((txn) => {
                   const sc = statusConfig[txn.status] ?? { label: txn.status, className: "bg-neutral-100 text-neutral-600 border-neutral-200" };
                   return (
-                    <tr key={txn.transactionPublicId} className="hover:bg-neutral-50/60 transition-colors">
+                    <tr key={txn.transactionPublicId} className={`hover:bg-neutral-50/60 transition-colors ${txn.voided ? "bg-zinc-50/70" : ""}`}>
                       <td className="px-5 py-3.5 text-xs text-neutral-500 whitespace-nowrap">{formatDateTime(txn.createdAt)}</td>
                       <td className="px-5 py-3.5 font-mono text-xs text-neutral-500">{txn.bookingPublicId}</td>
                       <td className="px-5 py-3.5 font-medium text-neutral-900 text-sm whitespace-nowrap">{txn.customerName}</td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600">
-                        {txn.isCustomerRefund ? "Refund to customer" : purposeLabels[txn.purpose] ?? txn.purpose}
+                        <span className={txn.voided ? "line-through text-neutral-400" : ""}>
+                          {txn.isCustomerRefund ? "Refund to customer" : purposeLabels[txn.purpose] ?? txn.purpose}
+                        </span>
                         {txn.cashOutsideShift && (
                           <span className="block text-[11px] font-medium text-amber-700">No cash shift open</span>
+                        )}
+                        {txn.voided && (
+                          <VoidedNote
+                            voidReason={txn.voidReason}
+                            voidedBy={txn.voidedBy}
+                            voidedAt={txn.voidedAt}
+                            voidShiftClosed={txn.voidShiftClosed}
+                            formatAt={formatDateTime}
+                          />
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-neutral-600">{methodLabels[txn.method] ?? txn.method}</td>
@@ -174,7 +192,7 @@ export function TransactionsTab() {
                           txn.onlineTransactionRef ?? <span className="text-neutral-200">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-neutral-900 text-sm whitespace-nowrap">
+                      <td className={`px-5 py-3.5 text-right font-semibold text-sm whitespace-nowrap ${txn.voided ? "text-neutral-400 line-through" : "text-neutral-900"}`}>
                         ₹ {parseFloat(txn.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-5 py-3.5">
@@ -183,6 +201,36 @@ export function TransactionsTab() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-neutral-500">{txn.employeeName ?? "—"}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex justify-end gap-1.5">
+                          {txn.voidable && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1 border-red-200 px-2 text-xs text-red-700 hover:bg-red-50"
+                              onClick={() =>
+                                setVoidTarget({
+                                  transactionPublicId: txn.transactionPublicId,
+                                  bookingPublicId: txn.bookingPublicId,
+                                  amount: txn.amount,
+                                  label: `${txn.isCustomerRefund ? "Refund to customer" : purposeLabels[txn.purpose] ?? txn.purpose} · ${methodLabels[txn.method] ?? txn.method}`,
+                                  isRefund: txn.purpose === ("OVERPAYMENT_REFUND" as string) || txn.purpose === ("CANCELLATION_REFUND" as string),
+                                })
+                              }
+                            >
+                              <Ban className="h-3 w-3" /> Void
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => setRefundFor(txn.bookingPublicId)}
+                          >
+                            <Undo2 className="h-3 w-3" /> Refund
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -191,6 +239,16 @@ export function TransactionsTab() {
           </div>
         )}
       </div>
+
+      {refundFor && (
+        <RefundToCustomerDialog
+          open={!!refundFor}
+          onOpenChange={(o) => !o && setRefundFor(null)}
+          bookingPublicId={refundFor}
+          onRefunded={() => void load()}
+        />
+      )}
+      <VoidPaymentDialog target={voidTarget} onOpenChange={(o) => !o && setVoidTarget(null)} onVoided={() => void load()} />
 
       {/* Pagination */}
       {totalPages > 1 && (

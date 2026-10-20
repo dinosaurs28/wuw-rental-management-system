@@ -11,6 +11,7 @@ import type {
 } from '../types/completedOperation';
 import type { AppNotification, NotificationAudience, NotificationPage } from '../types/notifications';
 import type { MyShiftsParams } from '../types/shift';
+import type { QueueFilterOptions, QueueFilterParams } from '../types/queue';
 import type { DlCollectionStatus, UpdateDlStatusBody } from './dlStatus';
 import type { ExtensionGstFields, RentInclGstFields } from './gst';
 import type { ExtensionFreeKm } from '../types/api';
@@ -19,6 +20,7 @@ import type { RescheduleOptions, RescheduleResult } from '../types/api';
 import type { PublicOffersResponse } from '../types/offers';
 import type { UpiQrTarget, UpiQrView } from '../types/upiQr';
 import type { CounterRefundMethod, PaymentProof, SafetyDepositHandling } from './counterPayment';
+import type { PaymentVoidResult, StaffRefundBody, StaffRefundOptions, StaffRefundResult } from '../types/paymentVoid';
 import type {
   OperationDraft,
   OperationDraftKind,
@@ -372,10 +374,15 @@ export const employeeApi = {
   // both add { type, counts: { daily, monthly } }.
   // includeCompleted=1 (client item 1) adds the day's done pickups / returns in
   // `completed` (QueueListResponse); the list and counts then hold waiting ones only.
-  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string }) =>
+  // Search-bar filters (QueueFilterParams, Oct 20 2026) narrow the list, counts
+  // and `completed`; a time filter replaces the `date` scope. 400 INVALID_QUEUE_FILTER.
+  listPickups: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string } & QueueFilterParams) =>
     api.get('/api/employee/booking', { params }),
-  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string }) =>
+  listReturns: (params?: { date?: string; type?: 'DAILY' | 'MONTHLY'; includeCompleted?: 1; q?: string } & QueueFilterParams) =>
     api.get('/api/employee/return', { params }),
+  // The branch's filter choices: { data: QueueFilterOptions }.
+  getQueueFilterOptions: (phase: 'PICKUP' | 'RETURN') =>
+    api.get<{ data: QueueFilterOptions }>('/api/employee/queue-filters', { params: { phase } }),
   // ── completed pickup / return (client item 1) — types/completedOperation.ts ──
   // Read-only summary: { data: PickupSummary | ReturnSummary }.
   getPickupSummary: (bookingId: string) =>
@@ -439,6 +446,8 @@ export const employeeApi = {
     dlDepositNote?: string | null;
     // Deprecated alias kept for old builds (dlStatus wins). Never send false.
     licenseCollected?: boolean;
+    // Optional Fleet note (≤ 1000 chars, Oct 20 2026); null / blank = none
+    pickupNote?: string | null;
   }) => api.post(`/api/employee/pickup/${bookingId}`, body),
   getReturnDetails: (bookingId: string) =>
     api.get(`/api/employee/return/${bookingId}`),
@@ -470,6 +479,8 @@ export const employeeApi = {
     // Typed FASTag charge — used only when a reading is missing.
     fastagAmount?: number;
     fastagNotes?: string;
+    // Optional Fleet note (≤ 1000 chars, Oct 20 2026); null / blank = none
+    dropNote?: string | null;
   }) => api.post(`/api/employee/return/${bookingId}/complete`, body ?? {}),
 
   // ── paused pickup / drop (client item 2) — lib/operationDraft.ts ─────────
@@ -482,6 +493,12 @@ export const employeeApi = {
     api.put<{ data: OperationDraftMeta }>(`/api/employee/${kind}/${bookingId}/draft`, body),
   discardOperationDraft: (kind: OperationDraftKind, bookingId: string) =>
     api.delete(`/api/employee/${kind}/${bookingId}/draft`),
+  // Fleet note of a pickup / drop still in progress (Oct 20 2026) — a note changed
+  // after the session was opened / the bill computed. 409 once that step is done.
+  savePickupNote: (bookingId: string, pickupNote: string | null) =>
+    api.put(`/api/employee/pickup/${bookingId}/note`, { pickupNote }),
+  saveDropNote: (bookingId: string, dropNote: string | null) =>
+    api.put(`/api/employee/return/${bookingId}/note`, { dropNote }),
   // The branch's paused operations, newest first.
   listOperationDrafts: (params?: { type?: OperationDraftType }) =>
     api.get<{ data: PausedOperation[] }>('/api/employee/operation-drafts', { params }),
@@ -534,6 +551,8 @@ export const employeeApi = {
       // #6 — safety deposit at drop; resend on every compute while it should stay.
       // Omitted = SET_OFF. data.deposit: DropDeposit (lib/counterPayment).
       safetyDepositHandling?: SafetyDepositHandling;
+      // Optional Fleet note (≤ 1000 chars, Oct 20 2026); null / blank = none
+      dropNote?: string | null;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/return/session/compute`, body),
   getReturnSession: (bookingId: string) =>
@@ -904,6 +923,8 @@ export const employeeApi = {
       dlDepositNote?: string | null;
       // Deprecated alias kept for old builds (dlStatus wins). Never send false.
       licenseCollected?: boolean;
+      // Optional Fleet note (≤ 1000 chars, Oct 20 2026); null / blank = none
+      pickupNote?: string | null;
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
   // Fleet changes the original-licence status (#3) — CONFIRMED / PICKED_UP only
@@ -956,6 +977,28 @@ export const employeeApi = {
   // A fresh 15-minute URL for a proof of this branch; 404 PAYMENT_PROOF_NOT_FOUND.
   getPaymentProof: (proofFileId: string) =>
     api.get<{ success: boolean; data: PaymentProof }>(`/api/employee/payment/proof/${encodeURIComponent(proofFileId)}`),
+
+  // ── Refund to customer / void a payment (Oct 2026, own branch) ─────────────
+  // Same rules as the branch manager's: 404 BOOKING_NOT_FOUND (other branch),
+  // 409 CONFIRM_OVER_RECEIVED (tick needed) / DUPLICATE_REFUND, 403 SHIFT_REQUIRED
+  // (cash with no open shift). proofFileId = uploadPaymentProof's data.proofFileId.
+  refundToCustomerOptions: (bookingPublicId: string) =>
+    api.get<{ success: boolean; data: StaffRefundOptions }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`,
+    ),
+  refundToCustomer: (bookingPublicId: string, body: StaffRefundBody) =>
+    api.post<{ success: boolean; message: string; data: StaffRefundResult }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`,
+      body,
+      { timeout: 20000 },
+    ),
+  // reason 3–500 chars. 409 ALREADY_VOIDED / ONLINE_PAYMENT / NOT_VOIDABLE, 404 PAYMENT_NOT_FOUND.
+  voidPayment: (transactionPublicId: string, reason: string) =>
+    api.post<{ success: boolean; message: string; data: PaymentVoidResult }>(
+      `/api/employee/payments/${encodeURIComponent(transactionPublicId)}/void`,
+      { reason },
+      { timeout: 20000 },
+    ),
 };
 
 // ─── Customers tab (Fleet) ─────────────────────────────────────────────────

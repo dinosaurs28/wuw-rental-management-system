@@ -32,6 +32,9 @@ interface BookingTableProps {
   bookingType?: "DAILY" | "MONTHLY";
   /** Registration number search the list is filtered by ("" when none). */
   search?: string;
+  /** Active search-bar filters in words ("" when none) and their reset. */
+  filterSummary?: string;
+  onClearFilters?: () => void;
 }
 
 export function BookingTable({
@@ -41,6 +44,8 @@ export function BookingTable({
   isLoading,
   bookingType,
   search,
+  filterSummary,
+  onClearFilters,
 }: BookingTableProps) {
   const getActionLabel = () =>
     filterType === "PICKUP" ? "Approve Pickup" : "Approve Handover";
@@ -80,7 +85,25 @@ export function BookingTable({
     return (
       <div className="text-center py-16 bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2">
         <Car className="h-10 w-10 text-muted-foreground/50" />
-        {search ? (
+        {filterSummary ? (
+          <>
+            <p className="text-muted-foreground text-lg font-medium">
+              {search
+                ? `No vehicles match “${search}” with these filters.`
+                : `No ${filterType === "PICKUP" ? "pickups" : "returns"} match these filters.`}
+            </p>
+            <p className="text-sm text-muted-foreground px-4">{filterSummary}</p>
+            {onClearFilters && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="text-sm font-medium text-orange-600 hover:text-orange-700 underline underline-offset-2"
+              >
+                Clear all filters
+              </button>
+            )}
+          </>
+        ) : search ? (
           <>
             <p className="text-muted-foreground text-lg font-medium">
               No vehicles match “{search}”.

@@ -33,6 +33,8 @@ export interface PickupDraftFields {
   discountOpen: boolean;
   discountAmount: string;
   discountReason: string;
+  // Optional Fleet pickup note (Oct 20 2026) — absent in drafts saved by older builds
+  pickupNote: string;
 }
 
 interface Options {
@@ -80,6 +82,7 @@ export function usePickupDraft({
     !f.discountOpen &&
     !f.discountAmount &&
     !f.discountReason &&
+    !f.pickupNote.trim() &&
     (f.odo === '' || f.odo === odoPrefill);
 
   return useOperationDraft({
@@ -135,6 +138,7 @@ export function usePickupDraft({
       s.setDiscountOpen(draftBool(d, 'discountOpen'));
       s.setDiscountAmount(draftString(d, 'discountAmount'));
       s.setDiscountReason(draftString(d, 'discountReason'));
+      s.setPickupNote(draftString(d, 'pickupNote'));
       // How the bill was going to be settled (the amounts come from the server
       // again; a proof photo is re-checked when the payment is recorded).
       const method = draftOneOf(d, 'payMethod', COUNTER_PAYMENT_METHODS);

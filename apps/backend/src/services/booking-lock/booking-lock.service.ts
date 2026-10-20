@@ -4,10 +4,13 @@
  * by the branch manager (own branch) and admin (any branch) controllers.
  *
  * A lock keeps the cars it names (the whole branch, some vehicles, some vehicle
- * groups) from new bookings and changes whose window overlaps [startAt, endAt)
- * — the availability rule reads locks through utils/availability/bookingLocks.ts.
- * Existing bookings are never changed: create lists the CONFIRMED / PICKED_UP
- * bookings inside the window and needs the manager's acknowledgement when
+ * groups) from new bookings and changes whose window overlaps its effective
+ * window [effectiveLockStart(startAt), endAt) — from 00:00 IST the day before it
+ * starts (LOCK_LEAD_DAYS), computed, never stored — and hides them while that
+ * window runs; the availability rule reads locks through
+ * utils/availability/bookingLocks.ts. Existing bookings are never changed:
+ * create lists the CONFIRMED / PICKED_UP bookings (and checkouts in progress)
+ * inside the effective window and needs the manager's acknowledgement when
  * there are any. Every create / cancel drops the listing caches (as a drop
  * does), writes an audit log and a staff activity entry.
  */
@@ -23,6 +26,8 @@ import {
 import {
   BOOKING_LOCK_LIST_FILTERS,
   bookingLockStatus,
+  effectiveLockStart,
+  lockActsAt,
   lockCoversVehicle,
   vehicleGroupKey,
   type BookingLockListFilter,
@@ -160,6 +165,10 @@ async function viewLocks(rows: LockRow[], now = new Date()) {
       groupKeys: r.groupKeys,
       customersOnly: r.customersOnly,
       status: bookingLockStatus(r, now),
+      /** Hidden and unbookable from (ISO): 00:00 IST the day before startAt (effectiveLockStart). */
+      hiddenFrom: effectiveLockStart(r.startAt).toISOString(),
+      /** The lead day or the lock is running now: the cars are hidden. */
+      hiddenNow: lockActsAt(r, now),
       vehicles: r.vehicleIds.flatMap((id) => vehicleById.get(id) ?? []),
       groups: r.groupKeys.map((key) => {
         const g = groups.get(key);
@@ -254,9 +263,10 @@ async function coveredVehicles(branchId: number, input: LockScopeInput) {
 }
 
 /**
- * CONFIRMED bookings, and rentals out now (PICKED_UP, drop not recorded — an
- * overdue one counts as out until now), on these vehicles overlapping
- * [start, end): what the lock leaves in place.
+ * CONFIRMED bookings, rentals out now (PICKED_UP, drop not recorded — an
+ * overdue one counts as out until now) and checkouts in progress (unexpired
+ * HOLD rows) on these vehicles overlapping [start, end) — the lock's effective
+ * window: what the lock leaves in place.
  */
 async function overlappingBookings(vehicleIds: number[], start: Date, end: Date, now = new Date()) {
   if (vehicleIds.length === 0) return [];
@@ -268,6 +278,7 @@ async function overlappingBookings(vehicleIds: number[], start: Date, end: Date,
       OR: [
         { status: BookingStatus.CONFIRMED, endAt: { gt: start } },
         { status: BookingStatus.PICKED_UP, ...DROP_NOT_RECORDED_WHERE },
+        { status: BookingStatus.HOLD, holdExpiresAt: { gt: now }, endAt: { gt: start } },
       ],
     },
     orderBy: { startAt: "asc" },
@@ -296,16 +307,13 @@ async function overlappingBookings(vehicleIds: number[], start: Date, end: Date,
     }));
 }
 
-/** How many vehicles a draft covers and the existing bookings inside its window. */
+/** How many vehicles a draft covers and the existing bookings inside its effective window (the lead day included). */
 export async function previewBookingLock(branchId: number, input: CreateBookingLockInput) {
   await branchName(branchId);
   const { vehicles } = await coveredVehicles(branchId, input);
-  const overlapping = await overlappingBookings(
-    vehicles.map((v) => v.id),
-    new Date(input.startAt),
-    new Date(input.endAt),
-  );
-  return { vehicleCount: vehicles.length, overlapping };
+  const hiddenFrom = effectiveLockStart(input.startAt);
+  const overlapping = await overlappingBookings(vehicles.map((v) => v.id), hiddenFrom, new Date(input.endAt));
+  return { vehicleCount: vehicles.length, hiddenFrom: hiddenFrom.toISOString(), overlapping };
 }
 
 /** "Branch closed 20 Oct 2026, 10:00 AM – 21 Oct 2026, 6:00 PM, whole branch (customers only)" */
@@ -316,7 +324,7 @@ function describeLock(lock: { reason: string; startAt: Date; endAt: Date; scope:
       : lock.scope === "GROUPS"
         ? `${lock.groupKeys.length} vehicle group${lock.groupKeys.length === 1 ? "" : "s"}`
         : "whole branch";
-  return `"${lock.reason}", ${istLabel(lock.startAt)} – ${istLabel(lock.endAt)}, ${scope}${lock.customersOnly ? " (customers only)" : ""}`;
+  return `"${lock.reason}", ${istLabel(lock.startAt)} – ${istLabel(lock.endAt)} (hidden from ${istLabel(effectiveLockStart(lock.startAt))}), ${scope}${lock.customersOnly ? " (customers only)" : ""}`;
 }
 
 async function logChange(
@@ -411,12 +419,12 @@ export async function createBookingLock(
       const ids = [...vehicleIds].sort((a, b) => a - b);
       await tx.$queryRaw`SELECT "id" FROM "Vehicle" WHERE "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`;
     }
-    const overlapping = await overlappingBookings(vehicleIds, startAt, endAt);
+    const overlapping = await overlappingBookings(vehicleIds, effectiveLockStart(startAt), endAt);
     if (overlapping.length > 0 && input.acknowledgeOverlaps !== true) {
       throw new BookingLockError(
         409,
         "BOOKING_LOCK_OVERLAPS",
-        `${overlapping.length} existing booking${overlapping.length === 1 ? " is" : "s are"} inside this window. They stay as they are — confirm to lock anyway.`,
+        `${overlapping.length} existing booking${overlapping.length === 1 ? " is" : "s are"} inside this window (from 1 day before it starts). They stay as they are — confirm to lock anyway.`,
         { overlapping },
       );
     }

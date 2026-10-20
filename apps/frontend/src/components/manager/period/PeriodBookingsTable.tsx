@@ -24,6 +24,7 @@ import {
   type PeriodGroupBy,
 } from "@/services/managerPeriodReport.service";
 import { formatCount, formatInr, formatIstDateTime } from "./periodRange";
+import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
 
 const PAGE_SIZE = 25;
 
@@ -73,6 +74,8 @@ export function PeriodBookingsTable({
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search.trim(), 400);
   const [downloading, setDownloading] = useState(false);
+  // Oct 2026: a booking's payments — Refund to customer, Void a wrong entry (completed ones too)
+  const [paymentsFor, setPaymentsFor] = useState<string | null>(null);
 
   // Page resets whenever the range or a filter changes (derived, no effect needed).
   const pageKey = [from, to, status, rentalPeriod, source, debouncedSearch].join("|");
@@ -315,6 +318,13 @@ export function PeriodBookingsTable({
                           Extended ×{b.extensionCount}
                         </p>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentsFor(b.publicId)}
+                        className="mt-0.5 text-[11px] font-medium text-orange-600 hover:underline"
+                      >
+                        Payments · Refund · Void
+                      </button>
                     </td>
                     <td className="px-3 py-3 min-w-[140px]">
                       <p className="font-medium text-neutral-800">{b.customerName}</p>
@@ -431,6 +441,11 @@ export function PeriodBookingsTable({
         Paid = rental payments received so far (safety deposits excluded). Balance is 0 for
         cancelled bookings.
       </p>
+      <BookingPaymentsDialog
+        bookingPublicId={paymentsFor}
+        onOpenChange={(o) => !o && setPaymentsFor(null)}
+        onChanged={() => void listQuery.refetch()}
+      />
     </div>
   );
 }

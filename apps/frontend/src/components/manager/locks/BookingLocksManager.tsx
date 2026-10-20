@@ -4,8 +4,12 @@ import { toast } from "sonner";
 import { AlertTriangle, Info, Loader2, Lock, Plus, XCircle } from "lucide-react";
 import {
   BOOKING_LOCK_REASON_MAX,
+  LOCK_LEAD_DAYS,
   bookingLockWindowIssues,
+  effectiveLockStart,
+  istMinuteOfDay,
   istToday,
+  wholeDayLockWindow,
   type BookingLockListFilter,
   type BookingLockScopeValue,
   type BookingLockStatus,
@@ -79,6 +83,32 @@ const istToIso = (date: string, time: string): string => {
   return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 };
 
+const IST_DATE = new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+/** "Mon, 24 Aug 2026" (IST). */
+const istDateLabel = (iso: string) => IST_DATE.format(new Date(iso));
+
+/** Both ends on 00:00 IST: a whole-day lock (its last day is the day before endAt). */
+const isWholeDays = (startAt: string, endAt: string) => istMinuteOfDay(startAt) === 0 && istMinuteOfDay(endAt) === 0;
+
+/** The last calendar day a whole-day lock covers (endAt is the next day's 00:00 IST). */
+const lastDayLabel = (endAt: string) => istDateLabel(new Date(new Date(endAt).getTime() - 1).toISOString());
+
+/** "Wed, 24 Sep 2026" for a lock acting from 00:00 IST on its lead day. */
+const hiddenFromLabel = (startAt: string, hiddenFrom?: string) => istDateLabel(hiddenFrom ?? effectiveLockStart(startAt).toISOString());
+
+/** "Fri, 28 Aug 2026 (end of day)" for a whole-day lock, else the date and time. */
+const lockEndLabel = (startAt: string, endAt: string) =>
+  isWholeDays(startAt, endAt) ? `${lastDayLabel(endAt)} (end of day)` : formatIstDateTime(endAt);
+
+const LEAD_TEXT = `${LOCK_LEAD_DAYS} day${LOCK_LEAD_DAYS === 1 ? "" : "s"} before`;
+
 /** The lock's "Applies to" cell. */
 function appliesTo(lock: BookingLock): { text: string; title?: string } {
   if (lock.scope === "VEHICLES") {
@@ -98,7 +128,11 @@ function appliesTo(lock: BookingLock): { text: string; title?: string } {
 
 // ── Dialog ────────────────────────────────────────────────────────────────────
 
+/** "days": whole calendar days (From 00:00 → end of To, IST); "times": a date + time window. */
+type LockMode = "days" | "times";
+
 interface FormState {
+  mode: LockMode;
   startDate: string;
   startTime: string;
   endDate: string;
@@ -111,6 +145,7 @@ interface FormState {
 }
 
 const emptyForm = (): FormState => ({
+  mode: "days",
   startDate: istToday(),
   startTime: "10:00",
   endDate: istToday(),
@@ -155,18 +190,18 @@ function LockDialog({
     staleTime: 60_000,
   });
 
-  const draft: BookingLockDraft = useMemo(
-    () => ({
-      startAt: istToIso(form.startDate, form.startTime),
-      endAt: istToIso(form.endDate, form.endTime),
+  const draft: BookingLockDraft = useMemo(() => {
+    const whole = form.mode === "days" ? wholeDayLockWindow(form.startDate, form.endDate) : null;
+    return {
+      startAt: form.mode === "days" ? (whole?.startAt ?? "") : istToIso(form.startDate, form.startTime),
+      endAt: form.mode === "days" ? (whole?.endAt ?? "") : istToIso(form.endDate, form.endTime),
       reason: form.reason.trim(),
       scope: form.scope,
       vehicleIds: form.scope === "VEHICLES" ? form.vehicleIds : [],
       groupKeys: form.scope === "GROUPS" ? form.groupKeys : [],
       customersOnly: form.customersOnly,
-    }),
-    [form],
-  );
+    };
+  }, [form]);
 
   const windowIssues = draft.startAt && draft.endAt ? bookingLockWindowIssues(draft) : [{ path: "startAt", message: "Pick the window" }];
   const scopeIssue =
@@ -235,11 +270,60 @@ function LockDialog({
             Lock bookings
           </DialogTitle>
           <DialogDescription>
-            Cars in the lock can't be booked for any time inside the window. Bookings already made are not changed.
+            Cars in the lock are hidden and can't be booked from 00:00 the day before the window starts until it
+            ends. Bookings already made are not changed.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { value: "days", label: "Whole days" },
+                { value: "times", label: "Date and time" },
+              ] as const
+            ).map((m) => (
+              <Button
+                key={m.value}
+                type="button"
+                size="sm"
+                variant="outline"
+                className={cn(form.mode === m.value && "border-orange-500 bg-orange-50 text-orange-700")}
+                onClick={() => set("mode", m.value)}
+              >
+                {m.label}
+              </Button>
+            ))}
+          </div>
+
+          {form.mode === "days" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="lock-from-day">From (IST)</Label>
+                <input
+                  id="lock-from-day"
+                  type="date"
+                  value={form.startDate}
+                  min={istToday()}
+                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value, endDate: f.endDate < e.target.value ? e.target.value : f.endDate }))}
+                  className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none"
+                />
+                <p className="text-xs text-zinc-500">From 00:00 on this day</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lock-to-day">To (IST)</Label>
+                <input
+                  id="lock-to-day"
+                  type="date"
+                  value={form.endDate}
+                  min={form.startDate || istToday()}
+                  onChange={(e) => set("endDate", e.target.value)}
+                  className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none"
+                />
+                <p className="text-xs text-zinc-500">Through the end of this day</p>
+              </div>
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="lock-start-date">From (IST)</Label>
@@ -270,7 +354,16 @@ function LockDialog({
               </div>
             </div>
           </div>
-          {windowIssues.length > 0 && <p className="-mt-3 text-xs text-red-600">{windowIssues[0]!.message}</p>}
+          )}
+          {windowIssues.length > 0 ? (
+            <p className="-mt-3 text-xs text-red-600">{windowIssues[0]!.message}</p>
+          ) : (
+            <p className="-mt-3 rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
+              Hidden and unbookable from{" "}
+              <span className="font-semibold">{hiddenFromLabel(draft.startAt, preview?.hiddenFrom)}, 12:00 AM</span> ({LEAD_TEXT}) to{" "}
+              <span className="font-semibold">{lockEndLabel(draft.startAt, draft.endAt)}</span>.
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="lock-reason">Reason</Label>
@@ -379,20 +472,20 @@ function LockDialog({
             <div className="space-y-2">
               {previewLoading && !preview ? (
                 <p className="flex items-center gap-2 text-sm text-zinc-500">
-                  <Loader2 className="size-4 animate-spin" /> Checking bookings in this window…
+                  <Loader2 className="size-4 animate-spin" /> Checking bookings from the day before the window…
                 </p>
               ) : previewError ? (
                 <p className="text-sm text-red-600">{errorMessage(previewError, "Couldn't check the bookings in this window")}</p>
               ) : preview ? (
                 <>
                   <p className="text-sm text-zinc-600">
-                    Locks {plural(preview.vehicleCount, "vehicle")} for this window.
+                    Locks {plural(preview.vehicleCount, "vehicle")}.
                   </p>
                   {overlapping.length > 0 && (
                     <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
                       <p className="flex items-center gap-2 text-sm font-medium text-amber-900">
                         <AlertTriangle className="size-4" />
-                        {plural(overlapping.length, "existing booking")} inside this window
+                        {plural(overlapping.length, "existing booking")} inside this window or its lead day
                       </p>
                       <p className="text-xs text-amber-800">
                         They are kept as they are — the lock only stops new bookings and changes. Contact these
@@ -402,7 +495,7 @@ function LockDialog({
                         {overlapping.map((b) => (
                           <li key={b.bookingPublicId}>
                             <span className="font-semibold">{bookingRef(b.bookingPublicId)}</span>{" "}
-                            {b.status === "PICKED_UP" ? "(on rent)" : "(confirmed)"} ·{" "}
+                            {b.status === "PICKED_UP" ? "(on rent)" : b.status === "HOLD" ? "(checkout in progress)" : "(confirmed)"} ·{" "}
                             {b.vehicles.map((v) => v.regNo).join(", ")} · {formatIstDateTime(b.startAt)} –{" "}
                             {formatIstDateTime(b.endAt)}
                             {b.customerName ? ` · ${b.customerName}` : ""}
@@ -474,9 +567,10 @@ export function BookingLocksManager({ portal }: { portal: BookingLockPortal }) {
       <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3.5 text-sm text-orange-900">
         <Info className="mt-0.5 size-4 shrink-0 text-orange-600" />
         <p>
-          While a lock is on, the cars it covers can't be booked, rescheduled, swapped onto or extended into any time
-          inside its window — online, and at the counter unless it is set to hide from customers only. Bookings already
-          made are not changed. Customers just see the cars as unavailable; staff see the reason.
+          A lock acts from 00:00 on the day before its window starts ({LEAD_TEXT}) until it ends. From then the cars it
+          covers are hidden and can't be booked, rescheduled, swapped onto or extended into it — online, and at the
+          counter unless it is set to hide from customers only — and before then no booking can run into that time.
+          Bookings already made are not changed. Customers just see the cars as unavailable; staff see the reason.
         </p>
       </div>
 
@@ -535,8 +629,11 @@ export function BookingLocksManager({ portal }: { portal: BookingLockPortal }) {
                 return (
                   <TableRow key={lock.publicId}>
                     <TableCell className="whitespace-nowrap text-zinc-800">
-                      {formatIstDateTime(lock.startAt)}
-                      <span className="block text-xs text-zinc-500">until {formatIstDateTime(lock.endAt)}</span>
+                      {isWholeDays(lock.startAt, lock.endAt) ? istDateLabel(lock.startAt) : formatIstDateTime(lock.startAt)}
+                      <span className="block text-xs text-zinc-500">until {lockEndLabel(lock.startAt, lock.endAt)}</span>
+                      <span className="block text-xs font-medium text-orange-700">
+                        Hidden from {hiddenFromLabel(lock.startAt, lock.hiddenFrom)}
+                      </span>
                     </TableCell>
                     <TableCell className="max-w-[240px] font-medium text-zinc-900">{lock.reason}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-zinc-700" title={scope.title}>
@@ -549,6 +646,9 @@ export function BookingLocksManager({ portal }: { portal: BookingLockPortal }) {
                       <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", status.className)}>
                         {status.label}
                       </span>
+                      {lock.status === "UPCOMING" && lock.hiddenNow && (
+                        <span className="mt-1 block text-xs font-medium text-orange-700">Hidden now (lead day)</span>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-zinc-600">
                       {lock.createdBy?.name ?? "—"}

@@ -26,6 +26,7 @@ import {
   type IstPeriod,
   type PeriodGroupBy,
 } from "../../utils/reporting/istPeriod.js";
+import { summarizeVoids, type VoidSummary, type VoidedRow } from "../payment/payment-void-rules.js";
 import { DurationCalculatorService } from "../pricing/duration-calculator.service.js";
 import { SYSTEM_TIMEZONE } from "../timezone/timezone.service.js";
 
@@ -167,12 +168,14 @@ interface PeriodFacts {
   refunds: { completedAt: Date | null; amount: Prisma.Decimal }[];
   /** Cash refunds paid out with no cash shift linked (e.g. "Refund to customer" with no shift open) */
   cashRefundsOutsideShift: { cashAmount: Prisma.Decimal }[];
+  /** Payments / refunds voided in the period (by voidedAt) — counted nowhere else */
+  voided: VoidedRow[];
 }
 
 const loadFacts = async (branch: BranchRef, w: Window): Promise<PeriodFacts> => {
   const range = { gte: w.start, lte: w.end };
 
-  const [bookings, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift] =
+  const [bookings, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift, voided] =
     await Promise.all([
       prisma.booking.findMany({
         where: { ...buildBookingWhere({ from: w.start, to: w.end }), branchId: branch.id },
@@ -256,11 +259,21 @@ const loadFacts = async (branch: BranchRef, w: Window): Promise<PeriodFacts> => 
         },
         select: { cashAmount: true },
       }),
+      // Voided entries (Oct 2026): out of every total above; listed on their own by void time
+      prisma.paymentTransaction.findMany({
+        where: {
+          branchId: branch.id,
+          status: PaymentTransactionStatus.VOIDED,
+          voidedAt: range,
+          booking: { deletedAt: null },
+        },
+        select: { purpose: true, totalAmount: true, cashAmount: true, voidShiftClosed: true },
+      }),
     ]);
 
   const paid = await getPaidByBooking(bookings.map((b) => b.id));
 
-  return { bookings, paid, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift };
+  return { bookings, paid, collections, cancellations, returns, extensions, refunds, cashRefundsOutsideShift, voided };
 };
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
@@ -300,6 +313,13 @@ export interface PeriodKpis {
     /** Additive (Oct 2026): cash refunds paid out with no cash shift open (inside count / amount) */
     cashOutsideShift: { count: number; amount: number };
   };
+  /**
+   * Additive (Oct 2026): payments and refunds voided in the period (wrong
+   * entries reversed — excluded from collected / refunds / outstanding).
+   * shiftClosed: cash voided after its shift had closed (that shift's counted
+   * cash didn't change).
+   */
+  voids: VoidSummary;
 }
 
 const summarize = (facts: PeriodFacts): PeriodKpis => {
@@ -390,6 +410,7 @@ const summarize = (facts: PeriodFacts): PeriodKpis => {
         amount: round2(facts.cashRefundsOutsideShift.reduce((s, r) => s + Number(r.cashAmount), 0)),
       },
     },
+    voids: summarizeVoids(facts.voided),
   };
 };
 

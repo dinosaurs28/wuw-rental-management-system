@@ -81,6 +81,7 @@ import {
   AdminGetCustomerRefundOptions,
   AdminRecordCustomerRefund,
 } from "../../controller/branchManager/customer-refund.controller.js";
+import { AdminListBookingPayments, AdminVoidPayment } from "../../controller/branchManager/payment-void.controller.js";
 
 const router: Router = Router();
 
@@ -180,6 +181,9 @@ router.post("/booking-locks/:publicId/cancel", AdminCheck, AdminCancelBookingLoc
 // Refund to the customer on any booking of any branch (same rules as the branch manager's)
 router.get("/bookings/:publicId/refund-to-customer", AdminCheck, AdminGetCustomerRefundOptions);
 router.post("/bookings/:publicId/refund-to-customer", AdminCheck, AdminRecordCustomerRefund);
+// Void a payment (reverse a wrong entry) on any branch's booking
+router.get("/bookings/:publicId/payments", AdminCheck, AdminListBookingPayments);
+router.post("/payments/:transactionPublicId/void", AdminCheck, AdminVoidPayment);
 
 // Feature Flags
 router.use("/feature-flags", featureFlagRouter);

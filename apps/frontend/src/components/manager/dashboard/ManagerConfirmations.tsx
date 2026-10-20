@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
 import { managerDashboardService } from "@/services/managerDashboard.service";
 import { DlStatusBadge, DlStatusPanel } from "@/components/booking/DlStatus";
+import { OperationNotesCard } from "@/components/employee/OperationNotes";
 import { CustomerQrPhotoCard } from "@/components/booking/CustomerQrPhotoCard";
 import { dlInUseToastOptions } from "@/lib/dlInUse";
 import { fastagInr } from "@/components/employee/drop/fastag";
@@ -337,6 +338,13 @@ export const ManagerConfirmations = ({
                   }}
                 />
               )}
+
+              {/* Notes the Fleet Executive wrote at the pickup / drop (Oct 20 2026) */}
+              <OperationNotesCard
+                notes={details.operationNotes}
+                show={details.status === "CONFIRMED" ? ["pickup"] : ["pickup", "swaps", "drop"]}
+                title="Fleet notes"
+              />
 
               {selectedBookingId && (
                 <CustomerQrPhotoCard

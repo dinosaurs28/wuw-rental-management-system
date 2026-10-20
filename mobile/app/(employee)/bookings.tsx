@@ -26,6 +26,20 @@ import { DlStatusLine } from '../../components/employee/DlStatus';
 import { PausedChip } from '../../components/employee/OperationDraftParts';
 import PausedOperations from '../../components/employee/PausedOperations';
 import { useDebouncedValue } from '../../components/employee/customers/useCustomers';
+import {
+  QueueFilterButton,
+  QueueFilterChips,
+  QueueFilterSheet,
+  filterSummary,
+  timeFilterLabel,
+} from '../../components/employee/QueueFilters';
+import {
+  activeFilterCount,
+  hasTimeFilter,
+  queueFilterKey,
+  queueFilterParams,
+  useQueueFiltersStore,
+} from '../../store/queueFilters';
 import type {
   BookingListType,
   QueueBooking,
@@ -247,6 +261,21 @@ export default function BookingsQueue() {
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput.trim(), 300);
   const typing = searchInput.trim() !== search;
+  // Search-bar filters (Oct 20 2026), one set per queue, kept for the app session
+  const allFilters = useQueueFiltersStore((st) => st.filters);
+  const setFilters = useQueueFiltersStore((st) => st.setFilters);
+  const filters = allFilters[activeTab];
+  const filterCount = activeFilterCount(filters);
+  const timeFiltered = hasTimeFilter(filters);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const phase = activeTab === 'pickups' ? 'PICKUP' : 'RETURN';
+  const filterOptionsQuery = useQuery({
+    queryKey: ['employee', 'queue-filters', phase],
+    queryFn: async () => (await employeeApi.getQueueFilterOptions(phase)).data.data,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const filterOptions = filterOptionsQuery.data ?? null;
 
   // Date strip: 3 days back → 13 days ahead (Daily tab). Rentals still out
   // from any earlier day are on the Recovery tab.
@@ -265,7 +294,13 @@ export default function BookingsQueue() {
   // counts.daily (the Daily chip) matches the selected day.
   // includeCompleted: the day's done pickups / returns stay listed (client item 1).
   const fetchQueue = async (kind: ListTab): Promise<QueueResult> => {
-    const params = { date: dateParam, type: listType, includeCompleted: 1 as const, ...(search ? { q: search } : {}) };
+    const params = {
+      date: dateParam,
+      type: listType,
+      includeCompleted: 1 as const,
+      ...(search ? { q: search } : {}),
+      ...queueFilterParams(allFilters[kind]),
+    };
     try {
       const res = kind === 'pickups' ? await employeeApi.listPickups(params) : await employeeApi.listReturns(params);
       const body = res.data as QueueListResponse;
@@ -277,8 +312,8 @@ export default function BookingsQueue() {
     }
   };
 
-  // A new search keeps the current list on screen until the results arrive;
-  // a new tab or day still shows the loader.
+  // A new search or filter keeps the current list on screen until the results
+  // arrive; a new tab or day still shows the loader.
   const keepWhileSearching = (prev: QueueResult | undefined, prevQuery?: Query<QueueResult, Error, QueueResult, readonly unknown[]>) =>
     prevQuery?.queryKey[2] === listType && prevQuery?.queryKey[3] === dateParam ? prev : undefined;
 
@@ -288,7 +323,7 @@ export default function BookingsQueue() {
     refetch: refetchPickups,
     isError: pickupsError,
   } = useQuery<QueueResult>({
-    queryKey: ['employee', 'pickups', listType, dateParam, search],
+    queryKey: ['employee', 'pickups', listType, dateParam, search, queueFilterKey(allFilters.pickups)],
     queryFn: () => fetchQueue('pickups'),
     placeholderData: keepWhileSearching,
     staleTime: 30_000,
@@ -301,7 +336,7 @@ export default function BookingsQueue() {
     refetch: refetchReturns,
     isError: returnsError,
   } = useQuery<QueueResult>({
-    queryKey: ['employee', 'returns', listType, dateParam, search],
+    queryKey: ['employee', 'returns', listType, dateParam, search, queueFilterKey(allFilters.returns)],
     queryFn: () => fetchQueue('returns'),
     placeholderData: keepWhileSearching,
     staleTime: 30_000,
@@ -338,10 +373,13 @@ export default function BookingsQueue() {
   };
 
   const emptyTitle = search
-    ? `No vehicles match “${search}”`
-    : activeTab === 'pickups'
-      ? monthly ? 'No monthly rentals waiting for pickup' : 'No pickups on this day'
-      : monthly ? 'No monthly rentals on the road' : 'No returns due on this day';
+    ? `No vehicles match “${search}”${filterCount > 0 ? ' with these filters' : ''}`
+    : filterCount > 0
+      ? activeTab === 'pickups' ? 'No pickups match these filters' : 'No returns match these filters'
+      : activeTab === 'pickups'
+        ? monthly ? 'No monthly rentals waiting for pickup' : 'No pickups on this day'
+        : monthly ? 'No monthly rentals on the road' : 'No returns due on this day';
+  const timeLabel = timeFilterLabel(filters, filterOptions);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -403,7 +441,25 @@ export default function BookingsQueue() {
             <Ionicons name="close-circle" size={17} color={Colors.ink4} />
           </TouchableOpacity>
         ) : null}
+        {/* Filters (vehicle type, model, time, payment, trip type) */}
+        <View style={styles.searchDivider} />
+        <QueueFilterButton count={filterCount} onPress={() => setFilterSheetOpen(true)} />
       </View>
+      <QueueFilterChips filters={filters} options={filterOptions} onChange={(f) => setFilters(activeTab, f)} />
+      <QueueFilterSheet
+        visible={filterSheetOpen}
+        phaseLabel={activeTab === 'pickups' ? 'pickup' : 'return'}
+        filters={filters}
+        options={filterOptions}
+        optionsLoading={filterOptionsQuery.isLoading}
+        optionsError={filterOptionsQuery.isError}
+        onRetryOptions={() => filterOptionsQuery.refetch()}
+        onApply={(f) => {
+          setFilters(activeTab, f);
+          setFilterSheetOpen(false);
+        }}
+        onClose={() => setFilterSheetOpen(false)}
+      />
 
       {(
         <>
@@ -430,7 +486,16 @@ export default function BookingsQueue() {
             })}
           </View>
 
-          {monthly ? (
+          {timeFiltered ? (
+            /* A time filter replaces the day strip */
+            <View style={styles.scopeRow}>
+              <Ionicons name="funnel-outline" size={14} color={Colors.orange} />
+              <Text style={styles.scopeText}>
+                {activeTab === 'pickups' ? 'Pickup time' : 'Return time'}: {timeLabel}
+                {monthly ? ' · monthly rentals' : ''}
+              </Text>
+            </View>
+          ) : monthly ? (
             /* Monthly lists every booking of that status, whatever the date */
             <View style={styles.scopeRow}>
               <Ionicons name="calendar-outline" size={14} color={Colors.ink3} />
@@ -493,7 +558,7 @@ export default function BookingsQueue() {
           ListHeaderComponent={
             <>
             {/* Paused pickups / drops of any day (client item 2) — not part of a search */}
-            {search ? null : <PausedOperations type={activeTab === 'pickups' ? 'PICKUP' : 'RETURN'} />}
+            {search || filterCount > 0 ? null : <PausedOperations type={activeTab === 'pickups' ? 'PICKUP' : 'RETURN'} />}
             {/* The Daily return list covers one day; rentals still out from
                 earlier days live on the Recovery tab. */}
             {activeTab === 'returns' && overdueCount > 0 ? (
@@ -525,9 +590,18 @@ export default function BookingsQueue() {
                   color={Colors.ink4}
                 />
                 <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-                <Text style={styles.emptySub}>
-                  {search ? 'Try a different registration number.' : 'Check back after a refresh.'}
-                </Text>
+                {filterCount > 0 ? (
+                  <>
+                    <Text style={[styles.emptySub, { textAlign: 'center' }]}>{filterSummary(filters, filterOptions)}</Text>
+                    <TouchableOpacity onPress={() => useQueueFiltersStore.getState().clearFilters(activeTab)} hitSlop={8}>
+                      <Text style={styles.retryText}>Clear all filters</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <Text style={styles.emptySub}>
+                    {search ? 'Try a different registration number.' : 'Check back after a refresh.'}
+                  </Text>
+                )}
               </View>
             )
           }
@@ -614,6 +688,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchInput: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.ink, padding: 0 },
+  searchDivider: { width: 1, height: 20, backgroundColor: Colors.hairline },
 
   segment: {
     flexDirection: 'row',

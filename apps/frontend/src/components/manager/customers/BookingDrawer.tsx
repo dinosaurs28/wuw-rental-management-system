@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { OperationNotesCard } from "@/components/employee/OperationNotes";
 import { useQuery } from "@tanstack/react-query";
-import { ImageIcon, Undo2 } from "lucide-react";
+import { Ban, ImageIcon, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
+import { VoidPaymentDialog, VoidedNote, type VoidTarget } from "@/components/manager/payments/VoidPaymentDialog";
 import {
   Sheet,
   SheetContent,
@@ -74,6 +76,8 @@ export function BookingDrawer({
   onRefunded?: () => void;
 }) {
   const [refundOpen, setRefundOpen] = useState(false);
+  // Oct 2026: void a CONFIRMED staff-recorded entry (same people as the refund: the branch manager, own branch)
+  const [voidTarget, setVoidTarget] = useState<VoidTarget | null>(null);
   const [proof, setProof] = useState<{ url: string; mime: string; label: string }[] | null>(null);
 
   const query = useQuery({
@@ -142,6 +146,9 @@ export function BookingDrawer({
                   )}
                   {d.booking.couponCode && <Row label="Coupon" value={d.booking.couponCode} />}
                 </Section>
+
+                {/* Notes the Fleet Executive wrote at the pickup / drop (Oct 20 2026) */}
+                <OperationNotesCard notes={d.operationNotes} title="Pickup & drop notes" />
 
                 <Section title="Original rental">
                   <Row label="Rent without GST" value={inr(b.rental.rentWithoutGst)} />
@@ -246,13 +253,13 @@ export function BookingDrawer({
                   {d.payments.transactions.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {d.payments.transactions.map((t) => (
-                        <div key={t.publicId} className="rounded-lg border p-2.5 text-sm">
+                        <div key={t.publicId} className={`rounded-lg border p-2.5 text-sm ${t.voided ? "bg-zinc-50" : ""}`}>
                           <div className="flex justify-between gap-2">
-                            <span className="font-medium">
+                            <span className={`font-medium ${t.voided ? "text-zinc-400 line-through" : ""}`}>
                               {t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} ·{" "}
                               {methodLabel(t.method)}
                             </span>
-                            <span className="tabular-nums font-semibold">
+                            <span className={`tabular-nums font-semibold ${t.voided ? "text-zinc-400 line-through" : ""}`}>
                               {t.isRefund ? "− " : ""}
                               {inr(t.totalAmount)}
                             </span>
@@ -268,6 +275,15 @@ export function BookingDrawer({
                           )}
                           {t.rejectionReason && (
                             <p className="text-xs text-red-600">Rejected: {t.rejectionReason}</p>
+                          )}
+                          {t.voided && (
+                            <VoidedNote
+                              voidReason={t.voidReason}
+                              voidedBy={t.voidedBy}
+                              voidedAt={t.voidedAt}
+                              voidShiftClosed={t.voidShiftClosed}
+                              formatAt={(iso) => istDateTime(iso)}
+                            />
                           )}
                           {t.cashOutsideShift && (
                             <p className="text-xs font-medium text-amber-700">Cash paid out with no cash shift open</p>
@@ -302,6 +318,27 @@ export function BookingDrawer({
                               {(t.proofs?.length ?? 0) > 1 ? `s (${t.proofs!.length})` : ""}
                             </button>
                           )}
+                          {canRefundToCustomer && d.booking.isOwnBranch && t.voidable && (
+                            <div className="mt-1.5 flex justify-end">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 gap-1 border-red-200 px-2 text-xs text-red-700 hover:bg-red-50"
+                                onClick={() =>
+                                  setVoidTarget({
+                                    transactionPublicId: t.publicId,
+                                    bookingPublicId: bookingId!,
+                                    amount: t.totalAmount,
+                                    label: `${t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · ${methodLabel(t.method)}`,
+                                    isRefund: t.isRefund,
+                                  })
+                                }
+                              >
+                                <Ban className="h-3 w-3" /> Void
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -335,6 +372,17 @@ export function BookingDrawer({
           </div>
         </SheetContent>
       </Sheet>
+
+      {canRefundToCustomer && (
+        <VoidPaymentDialog
+          target={voidTarget}
+          onOpenChange={(o) => !o && setVoidTarget(null)}
+          onVoided={() => {
+            void query.refetch();
+            onRefunded?.();
+          }}
+        />
+      )}
 
       {canRefundToCustomer && bookingId && (
         <RefundToCustomerDialog

@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { OperationNotesView } from "@/components/employee/OperationNotes";
 import type { CustomerRefundRow } from "@/services/customerRefund.service";
 import type { DlStatus } from "@/services/dlStatus.service";
 import type { PaymentSession } from "@/services/paymentSession.service";
@@ -128,6 +129,8 @@ interface SummaryBase {
   adjustments?: AdjustmentRecord[];
   /** Money paid back with "Refund to customer" (Oct 2026); absent on older servers */
   customerRefunds?: CustomerRefundRow[];
+  /** Fleet notes written at the pickup / drop and mid-rental swap notes (Oct 20 2026); absent on older servers */
+  operationNotes?: OperationNotesView;
 }
 
 export interface PickupSummary extends SummaryBase {
@@ -234,6 +237,8 @@ export interface EditPickupBody {
   dlStatus?: "COLLECTED" | "NOT_COLLECTED";
   addPhotos?: { fileId: string; label?: string | null }[];
   removeFileIds?: string[];
+  /** Fleet note written at the pickup; null clears it */
+  pickupNote?: string | null;
 }
 
 export interface EditReturnBody {
@@ -261,6 +266,8 @@ export interface EditReturnBody {
   waiveLateCharge?: { reason: string } | null;
   safetyDepositHandling?: "SET_OFF" | "REFUND_IN_FULL";
   expectedDelta?: number;
+  /** Fleet note written at the drop; null clears it */
+  dropNote?: string | null;
 }
 
 export interface EditOperationResponse<T> {

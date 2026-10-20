@@ -27,7 +27,7 @@ import { getEmployeeVehicleCategories } from "../../controller/employee/vehicle.
 import { cancelEmployeeHold } from "../../controller/employee/cancelHold.controller.js";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares.js";
 import { BookingController } from "../../controller/employee/booking.controller.js";
-import { returnController } from "../../controller/employee/return.controller.js";
+import { queueFilterOptionsController, returnController } from "../../controller/employee/return.controller.js";
 import {
   GetBookingKyc,
   VerifyKyc,
@@ -91,6 +91,11 @@ import {
   ConfirmSettlement,
 } from "../../controller/employee/settlement.controller.js";
 import {
+  EmployeeGetCustomerRefundOptions,
+  EmployeeRecordCustomerRefund,
+} from "../../controller/branchManager/customer-refund.controller.js";
+import { EmployeeListBookingPayments, EmployeeVoidPayment } from "../../controller/branchManager/payment-void.controller.js";
+import {
   GetAvailableVehiclesForEmployee,
   SwapVehicleByEmployee,
   GetBookingSwapHistoryForEmployee,
@@ -118,6 +123,7 @@ import {
   PreviewPickupEdit,
   PreviewReturnEdit,
 } from "../../controller/employee/operationEdit.controller.js";
+import { makeSaveOperationNote } from "../../controller/employee/operationNote.controller.js";
 
 const router: Router = Router();
 
@@ -134,6 +140,8 @@ router.post("/auth/sms/reset-password", makeResetPasswordSmsController([Role.STA
 router.get("/booking", EmployeeCheck, BookingController);
 router.get("/booking/:bookingId/scan", EmployeeCheck, ScanBooking);
 router.get("/return", EmployeeCheck, returnController);
+// Search-bar filter options of the Pickup / Return queues (Oct 20 2026)
+router.get("/queue-filters", EmployeeCheck, queueFilterOptionsController);
 router.get("/kyc/:bookingId", EmployeeCheck, GetBookingKyc);
 router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc);
 router.get("/pickup/:bookingId", EmployeeCheck, GetBookingDetails);
@@ -173,6 +181,9 @@ router.delete("/pickup/:bookingId/draft", EmployeeCheck, makeDiscardOperationDra
 router.get("/return/:bookingId/draft", EmployeeCheck, makeGetOperationDraft("RETURN"));
 router.put("/return/:bookingId/draft", EmployeeCheck, makeSaveOperationDraft("RETURN"));
 router.delete("/return/:bookingId/draft", EmployeeCheck, makeDiscardOperationDraft("RETURN"));
+// Fleet note of a pickup / drop still in progress (Oct 20 2026); a completed one: PATCH below
+router.put("/pickup/:bookingId/note", EmployeeCheck, makeSaveOperationNote("PICKUP"));
+router.put("/return/:bookingId/note", EmployeeCheck, makeSaveOperationNote("DROP"));
 // Completed pickup / drop (client item 1): read-only summary, and Edit Pickup / Edit Return
 router.get("/pickup/:bookingId/summary", EmployeeCheck, GetPickupSummary);
 router.patch("/pickup/:bookingId", EmployeeCheck, EditPickup);
@@ -269,5 +280,10 @@ router.post(
 // Settlement
 router.get("/bookings/:bookingId/settlement", EmployeeCheck, InitiateSettlement);
 router.post("/bookings/:bookingId/settlement/confirm", EmployeeCheck, ConfirmSettlement);
+// Oct 2026: refund to the customer and void a payment (own branch, same rules as the branch manager's)
+router.get("/bookings/:publicId/refund-to-customer", EmployeeCheck, EmployeeGetCustomerRefundOptions);
+router.post("/bookings/:publicId/refund-to-customer", EmployeeCheck, EmployeeRecordCustomerRefund);
+router.get("/bookings/:publicId/payments", EmployeeCheck, EmployeeListBookingPayments);
+router.post("/payments/:transactionPublicId/void", EmployeeCheck, EmployeeVoidPayment);
 
 export default router;

@@ -139,6 +139,28 @@ export const VehicleHistoryReport = ({
         </span>
       ),
     },
+    {
+      id: "notes",
+      header: "Pickup / drop notes",
+      cell: ({ row }) => {
+        const { pickupNote, dropNote } = row.original;
+        if (!pickupNote && !dropNote) return <span className="text-sm text-muted-foreground">—</span>;
+        return (
+          <div className="max-w-xs space-y-1 text-xs">
+            {pickupNote && (
+              <p className="whitespace-pre-wrap break-words">
+                <span className="font-medium">Pickup ({pickupNote.writtenBy ?? "staff"}):</span> {pickupNote.note}
+              </p>
+            )}
+            {dropNote && (
+              <p className="whitespace-pre-wrap break-words">
+                <span className="font-medium">Drop ({dropNote.writtenBy ?? "staff"}):</span> {dropNote.note}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   // Prepare revenue trend data (last 10 bookings)

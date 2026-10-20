@@ -49,12 +49,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PricingSlabList } from "@/components/manager/pricing/PricingSlabList";
+import { VehicleRentHistorySheet } from "@/components/manager/vehicles/VehicleRentHistorySheet";
 import { toast } from "sonner";
 
 export const ManagerVehiclesPage = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<ManagerVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Rent history with the Fleet pickup / drop notes (Oct 20 2026)
+  const [historyVehicle, setHistoryVehicle] = useState<ManagerVehicle | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   // "hidden" = only cars customers can't see or book (item 7)
@@ -329,6 +332,9 @@ export const ManagerVehiclesPage = () => {
                             >
                               Edit Vehicle
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setHistoryVehicle(vehicle)}>
+                              Rent history
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600 focus:text-red-600"
                               onClick={async () => {
@@ -407,17 +413,28 @@ export const ManagerVehiclesPage = () => {
                         >
                           {vehicle.category?.name || "Uncategorized"}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-neutral-500 hover:text-neutral-900 -mr-1 gap-1"
-                          onClick={() =>
-                            navigate(`/manager/vehicles/edit/${vehicle.publicId}`)
-                          }
-                        >
-                          <Settings2 className="w-3 h-3" />
-                          Edit
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-neutral-500 hover:text-neutral-900 gap-1"
+                            onClick={() => setHistoryVehicle(vehicle)}
+                          >
+                            <Receipt className="w-3 h-3" />
+                            Rent history
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-neutral-500 hover:text-neutral-900 -mr-1 gap-1"
+                            onClick={() =>
+                              navigate(`/manager/vehicles/edit/${vehicle.publicId}`)
+                            }
+                          >
+                            <Settings2 className="w-3 h-3" />
+                            Edit
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -426,6 +443,15 @@ export const ManagerVehiclesPage = () => {
             )}
           </>
         )}
+
+        <VehicleRentHistorySheet
+          vehicle={
+            historyVehicle
+              ? { publicId: historyVehicle.publicId, make: historyVehicle.make, model: historyVehicle.model, regNo: historyVehicle.regNo ?? "" }
+              : null
+          }
+          onClose={() => setHistoryVehicle(null)}
+        />
 
         {/* Pricing View */}
         {activeTab === "pricing" && (

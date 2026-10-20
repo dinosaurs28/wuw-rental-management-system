@@ -29,7 +29,8 @@ import {
 import type { ReturnSummary } from '../../../../types/completedOperation';
 import DropSwapSection from '../../../../components/employee/DropSwapSection';
 import { AdjustmentHistory, PendingAdjustmentCard } from '../../../../components/employee/edit/AdjustmentRecords';
-import CustomerRefundHistory from '../../../../components/employee/CustomerRefundHistory';
+import SummaryMoneyActions from '../../../../components/employee/payments/SummaryMoneyActions';
+import { OperationNotesCard } from '../../../../components/employee/OperationNotes';
 
 // A completed return (client item 1): read-only. Changes go through Edit Return.
 export default function ReturnSummaryScreen() {
@@ -186,6 +187,9 @@ export default function ReturnSummaryScreen() {
           )}
         </Card>
 
+        {/* Fleet notes (Oct 20 2026): pickup, mid-rental swaps and the drop */}
+        <OperationNotesCard notes={data.operationNotes} style={{ marginTop: 12 }} />
+
         <SectionHeader title={`Return photos (${data.photos.length})`} />
         <Card>
           <PhotoGrid photos={data.photos} emptyText="No photos were saved with this return." />
@@ -242,7 +246,7 @@ export default function ReturnSummaryScreen() {
         <SectionHeader title="Payments" />
         <Card>
           <PaymentsCard bookingId={data.booking.publicId} />
-          <CustomerRefundHistory refunds={data.customerRefunds} />
+          <SummaryMoneyActions bookingPublicId={data.booking.publicId} refunds={data.customerRefunds} onChanged={() => void refetch()} />
         </Card>
       </ScrollView>
 

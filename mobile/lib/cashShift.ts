@@ -163,4 +163,5 @@ export const TXN_STATUS_BADGE: Record<ShiftTransactionStatus, { label: string; t
   REJECTED: { label: 'Rejected', tone: 'bad' },
   FAILED: { label: 'Failed', tone: 'bad' },
   REFUNDED: { label: 'Refunded', tone: 'neutral' },
+  VOIDED: { label: 'Voided', tone: 'neutral' },
 };

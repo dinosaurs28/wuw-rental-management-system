@@ -445,6 +445,8 @@ export interface CompleteReturnResponse {
 // GET /api/employee/return/:bookingId
 export interface ReturnBooking {
   publicId: string;
+  // Fleet notes written at the pickup / drop and mid-rental swap notes (Oct 20 2026; absent on older servers)
+  operationNotes?: import('../components/employee/OperationNotes').OperationNotesView;
   startAt: string;
   endAt: string;
   status: string;

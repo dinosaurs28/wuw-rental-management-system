@@ -113,3 +113,37 @@ export interface OverdueReturnsResponse {
   serverNow: string;
   pagination: { total: number; page: number; limit: number; totalPages: number };
 }
+
+// ── Search-bar filters of the Pickup / Return queues (Oct 20 2026) ──────────
+// Different filters combine with AND, values of one filter with OR. Servers
+// older than this ignore the params.
+export type QueueWhen = 'today' | 'tomorrow' | 'overdue';
+export type QueuePayment = 'balance_due' | 'paid';
+
+// Query params sent with listPickups / listReturns (all optional).
+export interface QueueFilterParams {
+  typeClass?: string[];
+  category?: string[]; // VehicleCategory publicIds
+  groupKey?: string[]; // "MAKE__MODEL"
+  tripType?: string[];
+  when?: QueueWhen[];
+  from?: string; // YYYY-MM-DD, IST day, inclusive
+  to?: string;
+  payment?: QueuePayment[];
+}
+
+export interface QueueFilterOption {
+  value: string;
+  label: string;
+  count?: number; // vehicles of the branch with it
+}
+
+// GET /api/employee/queue-filters?phase=PICKUP|RETURN → { data }
+export interface QueueFilterOptions {
+  typeClasses: QueueFilterOption[];
+  categories: Array<QueueFilterOption & { typeClass: string }>;
+  groups: Array<QueueFilterOption & { make: string; model: string }>;
+  tripTypes: QueueFilterOption[];
+  when: Array<{ value: QueueWhen; label: string }>;
+  payment: Array<{ value: QueuePayment; label: string }>;
+}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OperationNoteView } from "@/components/employee/OperationNotes";
 import { emailAuthSchemaSignin } from "@repo/schemas";
 import apiClient from "@/lib/axios";
 
@@ -214,6 +215,9 @@ export type VehicleHistoryBooking = {
     status: string;
     damageReported: boolean;
     returnCondition: string;
+    /** Fleet notes written at the pickup / drop (Oct 20 2026); absent on older servers */
+    pickupNote?: OperationNoteView | null;
+    dropNote?: OperationNoteView | null;
 };
 
 export type VehicleHistoryMaintenance = {

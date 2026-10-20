@@ -242,6 +242,27 @@ export function PeriodKpiGrid({ report }: { report: PeriodReport }) {
           riseIsBad
         />
       </div>
+      {(s.voids?.count ?? 0) > 0 && (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
+          <p className="font-semibold text-zinc-700">
+            Voided in this period: {formatCount(s.voids!.count)} entr{s.voids!.count === 1 ? "y" : "ies"}
+          </p>
+          <p className="mt-0.5">
+            {s.voids!.payments.count > 0 &&
+              `${formatCount(s.voids!.payments.count)} payment${s.voids!.payments.count === 1 ? "" : "s"} (${formatInr(s.voids!.payments.amount)})`}
+            {s.voids!.payments.count > 0 && s.voids!.refunds.count > 0 && " · "}
+            {s.voids!.refunds.count > 0 &&
+              `${formatCount(s.voids!.refunds.count)} refund${s.voids!.refunds.count === 1 ? "" : "s"} (${formatInr(s.voids!.refunds.amount)})`}
+            {" "}— wrong entries reversed, left out of the figures above.
+          </p>
+          {s.voids!.shiftClosed.count > 0 && (
+            <p className="mt-0.5 text-amber-700">
+              {formatInr(s.voids!.shiftClosed.cashAmount)} cash voided after its shift had closed (
+              {formatCount(s.voids!.shiftClosed.count)}) — those shifts' counted cash didn't change.
+            </p>
+          )}
+        </div>
+      )}
       <p className="text-xs text-neutral-400">
         Changes compare with {formatYmdRange(range.previous.from, range.previous.to)}, the{" "}
         {range.days} day{range.days === 1 ? "" : "s"} just before this period. “New” means there

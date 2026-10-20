@@ -2,19 +2,25 @@
  * Pure checks of the booking-lock rule (lockOverlapsWindow / lockCoversVehicle /
  * lockBlocksVehicle in @repo/schemas, read by bookingLocks.ts for the listing,
  * booking create, reschedule and swaps) and of how the extension rule treats a
- * lock (partial-extension.ts): a lock is an exact window — no turnaround, no
- * extension buffer — and what is offered also commits.
+ * lock (partial-extension.ts): a lock acts on its effective window — from
+ * 00:00 IST the day before it starts (effectiveLockStart, the lead day) to its
+ * end — with no turnaround and no extension buffer, and what is offered also
+ * commits.
  *   cd apps/backend && pnpm test
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  LOCK_LEAD_DAYS,
   bookingLockStatus,
   bookingLockWindowIssues,
+  effectiveLockStart,
+  lockActsAt,
   lockBlocksVehicle,
   lockCoversVehicle,
   lockOverlapsWindow,
   vehicleGroupKey,
+  wholeDayLockWindow,
   type BookingLockRule,
 } from "@repo/schemas";
 import {
@@ -28,6 +34,8 @@ const at = (iso: string) => new Date(iso);
 // Lock: Tue 20 Oct 10:00 IST → Wed 21 Oct 18:00 IST
 const LOCK_START = at("2026-10-20T04:30:00Z");
 const LOCK_END = at("2026-10-21T12:30:00Z");
+// Its effective start: Mon 19 Oct 00:00 IST (the lead day)
+const EFF_START = at("2026-10-18T18:30:00Z");
 
 const swift = { id: 7, branchId: 1, make: "Maruti", model: "Swift", categoryId: 3 };
 const swift2 = { id: 8, branchId: 1, make: " maruti ", model: "SWIFT", categoryId: 3 };
@@ -46,9 +54,64 @@ const lock = (over: Partial<BookingLockRule> = {}): BookingLockRule => ({
   ...over,
 });
 
-// ── overlap: a plain overlap, no turnaround ──────────────────────────────────
+// ── the lead day ─────────────────────────────────────────────────────────────
 
-test("a window overlapping the lock is blocked; touching its edges is not", () => {
+test("effective start = 00:00 IST on the calendar day before the lock starts (IST, not UTC)", () => {
+  assert.equal(LOCK_LEAD_DAYS, 1);
+  assert.equal(effectiveLockStart(LOCK_START).toISOString(), EFF_START.toISOString());
+  // 25 Aug 10:00 IST → 24 Aug 00:00 IST
+  assert.equal(effectiveLockStart(at("2026-08-25T04:30:00Z")).toISOString(), "2026-08-23T18:30:00.000Z");
+  // 25 Aug 00:00 IST and 25 Aug 05:00 IST (still 24 Aug in UTC) → 24 Aug 00:00 IST
+  assert.equal(effectiveLockStart(at("2026-08-24T18:30:00Z")).toISOString(), "2026-08-23T18:30:00.000Z");
+  assert.equal(effectiveLockStart(at("2026-08-24T23:30:00Z")).toISOString(), "2026-08-23T18:30:00.000Z");
+  // 24 Aug 23:30 IST (the same UTC date as above) → 23 Aug 00:00 IST
+  assert.equal(effectiveLockStart(at("2026-08-24T18:00:00Z")).toISOString(), "2026-08-22T18:30:00.000Z");
+  // A month boundary: 1 Sep 08:00 IST → 31 Aug 00:00 IST
+  assert.equal(effectiveLockStart(at("2026-09-01T02:30:00Z")).toISOString(), "2026-08-30T18:30:00.000Z");
+});
+
+test("lead day: a booking ending 23:59 on the lead day is refused; one ending the day before is allowed", () => {
+  // Lock 25 Aug 10:00 IST → 28 Aug 10:00 IST; lead day 24 Aug
+  const aug = lock({ startAt: at("2026-08-25T04:30:00Z"), endAt: at("2026-08-28T04:30:00Z") });
+  const pickup = at("2026-08-23T04:30:00Z"); // 23 Aug 10:00 IST
+  // Returns 24 Aug 23:59 IST (the lead day): refused, for staff too
+  assert.equal(lockBlocksVehicle(aug, swift, pickup, at("2026-08-24T18:29:00Z")), true);
+  assert.equal(lockBlocksVehicle(aug, swift, pickup, at("2026-08-24T18:29:00Z"), true), true);
+  // Returns 24 Aug 00:30 IST: refused (inside the lead day)
+  assert.equal(lockBlocksVehicle(aug, swift, pickup, at("2026-08-23T19:00:00Z")), true);
+  // Returns 23 Aug 23:59 IST (the day before the lead day): allowed
+  assert.equal(lockBlocksVehicle(aug, swift, pickup, at("2026-08-23T18:29:00Z")), false);
+  // Returns exactly 24 Aug 00:00 IST: allowed (touching the effective start)
+  assert.equal(lockBlocksVehicle(aug, swift, pickup, at("2026-08-23T18:30:00Z")), false);
+});
+
+test("the lock acts (hides the car) from its effective start to its end", () => {
+  const l = lock();
+  assert.equal(lockActsAt(l, at("2026-10-18T18:29:00Z")), false); // 18 Oct 23:59 IST
+  assert.equal(lockActsAt(l, EFF_START), true); // 19 Oct 00:00 IST
+  assert.equal(lockActsAt(l, at("2026-10-20T00:00:00Z")), true); // lead day, before the lock
+  assert.equal(lockActsAt(l, at("2026-10-21T12:00:00Z")), true); // inside the lock
+  assert.equal(lockActsAt(l, LOCK_END), false);
+  assert.equal(lockActsAt(lock({ cancelledAt: at("2026-10-18T00:00:00Z") }), at("2026-10-20T00:00:00Z")), false);
+});
+
+test("a whole-day lock: From 00:00 IST through the end of To", () => {
+  const w = wholeDayLockWindow("2026-08-25", "2026-08-28");
+  assert.deepEqual(w, { startAt: "2026-08-24T18:30:00.000Z", endAt: "2026-08-28T18:30:00.000Z" });
+  assert.deepEqual(bookingLockWindowIssues(w!, at("2026-08-01T00:00:00Z")), []);
+  // One day: 25 Aug 00:00 → 26 Aug 00:00 IST
+  assert.deepEqual(wholeDayLockWindow("2026-08-25", "2026-08-25"), {
+    startAt: "2026-08-24T18:30:00.000Z",
+    endAt: "2026-08-25T18:30:00.000Z",
+  });
+  // Hidden from 24 Aug 00:00 IST
+  assert.equal(effectiveLockStart(w!.startAt).toISOString(), "2026-08-23T18:30:00.000Z");
+  assert.equal(wholeDayLockWindow("25-08-2026", "2026-08-28"), null);
+});
+
+// ── overlap: a plain overlap with the effective window, no turnaround ────────
+
+test("a window overlapping the effective window is blocked; touching its edges is not", () => {
   const l = lock();
   // Inside
   assert.equal(lockOverlapsWindow(l, at("2026-10-20T06:30:00Z"), at("2026-10-20T10:30:00Z")), true);
@@ -56,8 +119,10 @@ test("a window overlapping the lock is blocked; touching its edges is not", () =
   assert.equal(lockOverlapsWindow(l, at("2026-10-19T04:30:00Z"), at("2026-10-20T05:00:00Z")), true);
   // Covers the whole lock
   assert.equal(lockOverlapsWindow(l, at("2026-10-19T04:30:00Z"), at("2026-10-22T04:30:00Z")), true);
-  // Return exactly at the lock start: free (no 3 h turnaround around a lock)
-  assert.equal(lockOverlapsWindow(l, at("2026-10-19T04:30:00Z"), LOCK_START), false);
+  // Return exactly at the lock start: refused now (the lead day is in the way)
+  assert.equal(lockOverlapsWindow(l, at("2026-10-17T04:30:00Z"), LOCK_START), true);
+  // Return exactly at the effective start: free (no 3 h turnaround around a lock)
+  assert.equal(lockOverlapsWindow(l, at("2026-10-17T04:30:00Z"), EFF_START), false);
   // Pickup exactly at the lock end: free
   assert.equal(lockOverlapsWindow(l, LOCK_END, at("2026-10-22T12:30:00Z")), false);
   // 30 minutes after the lock ends: free (a booking would need 3 h)
@@ -134,22 +199,25 @@ test("window checks: 30-minute steps, end after start, not over, at most 60 days
   assert.deepEqual(paths("2026-10-18T04:30:00Z", "2026-10-20T04:30:00Z"), []);
 });
 
-// ── extensions: a lock is like a next booking, with no buffer ────────────────
+// ── extensions: a lock is like a next booking at its effective start, no buffer ─
 
-const END = at("2026-10-19T04:30:00Z"); // current return Mon 19 Oct 10:00 IST
+const END = at("2026-10-17T04:30:00Z"); // current return Sat 17 Oct 10:00 IST
 const MAX = at("2026-11-10T04:30:00Z");
-const lockConflict = { startAt: LOCK_START, endAt: LOCK_END, kind: "LOCK" as const };
+// As extension-availability.service passes it: startAt = the effective start
+const lockConflict = { startAt: effectiveLockStart(LOCK_START), endAt: LOCK_END, kind: "LOCK" as const };
 
-test("an extension may run right up to the lock start, not past it", () => {
-  assert.equal(blocksExtension(lockConflict, END, LOCK_START), false);
-  assert.equal(blocksExtension(lockConflict, END, at("2026-10-20T05:00:00Z")), true);
+test("an extension may run right up to the lead day (00:00 IST the day before the lock), not past it", () => {
+  assert.equal(blocksExtension(lockConflict, END, EFF_START), false);
+  // 30 minutes into the lead day, or right up to the lock start: refused
+  assert.equal(blocksExtension(lockConflict, END, at("2026-10-18T19:00:00Z")), true);
+  assert.equal(blocksExtension(lockConflict, END, LOCK_START), true);
   // A booking at the same time would need the 2 h buffer
-  assert.equal(blocksExtension({ startAt: LOCK_START, endAt: LOCK_END }, END, LOCK_START), true);
+  assert.equal(blocksExtension({ startAt: EFF_START, endAt: LOCK_END }, END, EFF_START), true);
 });
 
-test("available until = the lock start (rounded down to the grid), limit NEXT_BOOKING", () => {
-  const u = extensionAvailableUntil({ currentEndAt: END, maxEndAt: MAX, nextPickupAt: LOCK_START, nextKind: "LOCK" });
-  assert.equal(u.availableUntil.toISOString(), LOCK_START.toISOString());
+test("available until = the effective start (rounded down to the grid), limit NEXT_BOOKING", () => {
+  const u = extensionAvailableUntil({ currentEndAt: END, maxEndAt: MAX, nextPickupAt: EFF_START, nextKind: "LOCK" });
+  assert.equal(u.availableUntil.toISOString(), EFF_START.toISOString());
   assert.equal(u.limitReason, "NEXT_BOOKING");
   assert.equal(u.canExtend, true);
 });
@@ -157,22 +225,22 @@ test("available until = the lock start (rounded down to the grid), limit NEXT_BO
 test("offer vs commit: the partial end / available until offered for a lock passes the commit's check", () => {
   const requested = at("2026-10-21T04:30:00Z"); // into the lock
   const partial = partialExtensionEnd(END, requested, [lockConflict]);
-  assert.equal(partial?.toISOString(), LOCK_START.toISOString());
+  assert.equal(partial?.toISOString(), EFF_START.toISOString());
   assert.equal(blocksExtension(lockConflict, END, partial!), false);
-  const u = extensionAvailableUntil({ currentEndAt: END, maxEndAt: MAX, nextPickupAt: LOCK_START, nextKind: "LOCK" });
+  const u = extensionAvailableUntil({ currentEndAt: END, maxEndAt: MAX, nextPickupAt: EFF_START, nextKind: "LOCK" });
   assert.equal(blocksExtension(lockConflict, END, u.availableUntil), false);
   // One slot later is refused
   assert.equal(blocksExtension(lockConflict, END, new Date(u.availableUntil.getTime() + 30 * 60_000)), true);
 });
 
-test("a lock and a booking together: the tighter limit wins (booking buffer vs lock start)", () => {
-  // Booking at 11:00 IST (limit 09:00) and lock at 10:00 IST (limit 10:00): the booking limits more
-  const booking = { startAt: at("2026-10-20T05:30:00Z"), endAt: at("2026-10-21T05:30:00Z") };
+test("a lock and a booking together: the tighter limit wins (booking buffer vs the lock's lead day)", () => {
+  // Booking at 18 Oct 20:00 IST (limit 18:00) and the lock acting from 19 Oct 00:00 IST: the booking limits more
+  const booking = { startAt: at("2026-10-18T14:30:00Z"), endAt: at("2026-10-21T05:30:00Z") };
   const requested = at("2026-10-21T04:30:00Z");
   const partial = partialExtensionEnd(END, requested, [lockConflict, booking]);
-  assert.equal(partial?.toISOString(), "2026-10-20T03:30:00.000Z");
-  assert.equal(latestReturnFor(booking).toISOString(), "2026-10-20T03:30:00.000Z");
-  assert.equal(latestReturnFor(lockConflict).toISOString(), LOCK_START.toISOString());
+  assert.equal(partial?.toISOString(), "2026-10-18T12:30:00.000Z");
+  assert.equal(latestReturnFor(booking).toISOString(), "2026-10-18T12:30:00.000Z");
+  assert.equal(latestReturnFor(lockConflict).toISOString(), EFF_START.toISOString());
   assert.equal([lockConflict, booking].some((c) => blocksExtension(c, END, partial!)), false);
 });
 

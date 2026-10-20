@@ -87,14 +87,15 @@ export function normalizeUtr(raw: string | null | undefined): string {
 }
 
 /**
- * Throws DUPLICATE_UTR if the UTR already backs a live payment. Failed and
- * rejected transactions don't count — the customer may legitimately retry.
+ * Throws DUPLICATE_UTR if the UTR already backs a live payment. Failed,
+ * rejected and voided transactions don't count — the customer may legitimately
+ * retry, and a wrong entry voided (Oct 2026) can be recorded again correctly.
  */
 export async function assertUtrUnused(utr: string, db: Db = prisma): Promise<void> {
   const exact = await db.paymentTransaction.findFirst({
     where: {
       onlineTransactionRef: utr,
-      status: { notIn: ["FAILED", "REJECTED"] },
+      status: { notIn: ["FAILED", "REJECTED", "VOIDED"] },
     },
     select: { publicId: true },
   });
@@ -106,7 +107,7 @@ export async function assertUtrUnused(utr: string, db: Db = prisma): Promise<voi
       await db.$queryRaw<{ publicId: string }[]>`
         SELECT "publicId" FROM "PaymentTransaction"
         WHERE regexp_replace("onlineTransactionRef", '[[:space:]-]', '', 'g') = ${utr}
-          AND status NOT IN ('FAILED', 'REJECTED')
+          AND status NOT IN ('FAILED', 'REJECTED', 'VOIDED')
         LIMIT 1`
     )[0];
   if (existing) {

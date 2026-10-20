@@ -64,6 +64,8 @@ import {
   DlStatusError,
 } from "../../services/booking/dl-status.service.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
+import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
+import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -130,6 +132,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       dlDepositNote,
       licenseCollected,
     } = validation.data;
+    // Optional pickup note (Oct 20 2026): absent = left as saved (older builds), blank = none
+    const pickupNote = parseOperationNote(req.body?.pickupNote, "pickupNote");
 
     // Resolve actor
     const actor = await prisma.user.findUnique({
@@ -235,6 +239,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
           data: licenseCollectedData,
         });
       }
+      await saveOperationNote(prisma, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actor.id, mode: "OPERATION" });
       // Already awaiting payment (staff pressed initiate again): no transition —
       // AWAITING_PAYMENT → AWAITING_PAYMENT is not an allowed move and used to 500.
       if (session.status !== PaymentSessionStatus.AWAITING_PAYMENT) {
@@ -432,6 +437,9 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         });
       }
 
+      // The Fleet Executive's optional pickup note (who wrote it and when)
+      await saveOperationNote(tx, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actor.id, mode: "OPERATION" });
+
       if (odo !== undefined) {
         await tx.booking.update({
           where: { id: booking.id },
@@ -536,6 +544,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         pickupFastagBalance: pickupFastagBalance ?? null,
         dlStatus: dlChoice?.dlStatus ?? null,
         dlDepositNote: dlChoice?.dlDepositNote ?? null,
+        ...(pickupNote !== undefined && { pickupNote }),
       },
     });
 
@@ -553,6 +562,9 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       data: serializePickupSession(updatedSession!),
     });
   } catch (err: any) {
+    if (err instanceof OperationNoteError) {
+      return res.status(err.status).json(err.toJSON());
+    }
     if (err instanceof DlStatusError) {
       return res.status(err.status).json(err.toJSON());
     }

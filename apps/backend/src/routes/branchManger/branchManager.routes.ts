@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { GetVehicleRentHistory } from "../../controller/branchManager/vehicle-rent-history.controller.js";
 import { Login } from "../../controller/branchManager/login.controller.js";
 import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
 import {
@@ -150,6 +151,7 @@ import {
   GetCustomerRefundOptions,
   RecordCustomerRefund,
 } from "../../controller/branchManager/customer-refund.controller.js";
+import { ListBookingPayments, VoidPayment } from "../../controller/branchManager/payment-void.controller.js";
 import {
   ListSpecialRules,
   GetSpecialRuleOptions,
@@ -333,6 +335,8 @@ router.put(
   EditVehicle,
 );
 router.get("/dashboard/vehicle/:vehicleId", ManagerCheck, GetVehicleById);
+// The vehicle's rent history with the Fleet pickup / drop notes (Oct 20 2026)
+router.get("/dashboard/vehicle/:vehicleId/rent-history", ManagerCheck, GetVehicleRentHistory);
 router.delete("/dashboard/vehicle/:vehicleId", ManagerCheck, DeleteVehicle);
 router.get("/dashboard/categories", ManagerCheck, GetVehicleCategories);
 // Staff activity routes
@@ -405,6 +409,9 @@ router.post("/bookings/:publicId/cancel", ManagerCheck, ManualCancelBooking);
 // Refund to the customer on any booking, any status, any amount (cash / UPI / bank, paid out now)
 router.get("/bookings/:publicId/refund-to-customer", ManagerCheck, GetCustomerRefundOptions);
 router.post("/bookings/:publicId/refund-to-customer", ManagerCheck, RecordCustomerRefund);
+// Void a payment (reverse a wrong entry): the booking's payment history + void one CONFIRMED manual entry
+router.get("/bookings/:publicId/payments", ManagerCheck, ListBookingPayments);
+router.post("/payments/:transactionPublicId/void", ManagerCheck, VoidPayment);
 
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);

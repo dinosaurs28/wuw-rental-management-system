@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
+import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
 import { StatusCode } from "../../types/statusCode.js";
 import {
   prisma,
@@ -259,6 +261,8 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     } = validation.data;
     // Old builds omit it — the deposit is then set off against the charges (default)
     const depositHandling = validation.data.safetyDepositHandling ?? "SET_OFF";
+    // Optional drop note (Oct 20 2026): absent = left as saved (older builds), blank = none
+    const dropNote = parseOperationNote(req.body?.dropNote, "dropNote");
     // The vehicle is back now — the late charge is measured to this moment
     const returnedAt = new Date();
 
@@ -555,6 +559,9 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         },
       });
 
+      // The Fleet Executive's optional drop note (who wrote it and when)
+      await saveOperationNote(tx as any, { bookingId: booking.id, kind: "DROP", note: dropNote, actorId: actingUser.id, mode: "OPERATION" });
+
       if (km) {
         if (kmLine) {
           await upsertLegacyReturnCharge(tx as any, {
@@ -763,6 +770,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         entityId: booking.publicId,
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
+        ...(dropNote !== undefined && { metadata: { dropNote } }),
       });
     }
 
@@ -884,6 +892,9 @@ export const CompleteReturn = async (req: Request, res: Response) => {
   } catch (error) {
     if (error instanceof CompleteRejection) {
       return res.status(error.status).json(error.body);
+    }
+    if (error instanceof OperationNoteError) {
+      return res.status(error.status).json(error.toJSON());
     }
     console.error("Return Action Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

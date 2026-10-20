@@ -25,6 +25,8 @@ import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { z } from "zod";
 import { fuelBarsField } from "../../services/charges/fuel-bars.js";
+import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
+import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
 const chargePickupDataSchema = z.object({
   pickupFuelLevel: fuelBarsField.optional(),
   safetyDepositRequest: z.object({
@@ -63,6 +65,14 @@ export const PickupController = async (req: Request, res: Response) => {
     });
   }
   const pickupFastagBalance = parsedFastag.data;
+  // Optional pickup note (Oct 20 2026): absent = left as saved (older builds), blank = none
+  let pickupNote: string | null | undefined;
+  try {
+    pickupNote = parseOperationNote(req.body?.pickupNote, "pickupNote");
+  } catch (err) {
+    if (err instanceof OperationNoteError) return res.status(err.status).json(err.toJSON());
+    throw err;
+  }
   try {
     // The DL number is no longer asked at pickup (client, Oct 17 2026): a
     // `drivingLicenceNumber` older app builds still send is ignored.
@@ -222,6 +232,9 @@ export const PickupController = async (req: Request, res: Response) => {
       // paused form saved for it (client item 2). After the booking update, so
       // a draft save racing this waits on the booking row lock.
       await discardOperationDraft(booking.id, "PICKUP", tx);
+
+      // The Fleet Executive's optional pickup note (who wrote it and when)
+      await saveOperationNote(tx, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actingUser.id, mode: "OPERATION" });
 
       // Unlabeled photos (legacy / fallback) and labeled capture images (from
       // capture config): one set, saved in the order the photos were taken
@@ -417,6 +430,7 @@ export const PickupController = async (req: Request, res: Response) => {
           pickupFastagBalance: pickupFastagBalance ?? null,
           dlStatus: dlChoice?.dlStatus ?? null,
           dlDepositNote: dlChoice?.dlDepositNote ?? null,
+          ...(pickupNote !== undefined && { pickupNote }),
         },
       });
     }

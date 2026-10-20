@@ -1045,7 +1045,8 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
 
         // Confirm the PaymentTransaction in financials
         await tx.paymentTransaction.updateMany({
-          where: { onlineTransactionRef: transactionId },
+          // A voided entry (Oct 2026) stays voided
+          where: { onlineTransactionRef: transactionId, status: { notIn: ["VOIDED"] } },
           data: {
             status: "CONFIRMED",
             confirmedAt: new Date(),

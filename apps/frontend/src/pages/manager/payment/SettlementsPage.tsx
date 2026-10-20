@@ -38,6 +38,7 @@ import { PaymentProofField } from "@/components/payment/counter/PaymentProofFiel
 import { RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
 import apiClient from "@/lib/axios";
 import { CreditNoteDialog, type CreditNote } from "@/components/manager/CreditNoteDialog";
+import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
 
 const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
 
@@ -475,6 +476,8 @@ export function SettlementsTab() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  // Oct 2026: the booking's payments — Refund to customer, Void a wrong entry
+  const [paymentsFor, setPaymentsFor] = useState<string | null>(null);
   const pageSize = 20;
 
   const load = useCallback(async () => {
@@ -562,7 +565,10 @@ export function SettlementsTab() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <Button size="sm" variant="outline" className="mr-1.5 h-8 text-xs" onClick={() => setPaymentsFor(item.bookingPublicId)}>
+                            Payments
+                          </Button>
                           {isRefundDue ? (
                             <Button size="sm" variant="outline" className="h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => setSelected(item.bookingPublicId)}>
                               Refund Due
@@ -598,6 +604,7 @@ export function SettlementsTab() {
       </div>
 
       {selected && <SettleModal bookingPublicId={selected} onClose={() => setSelected(null)} onDone={() => { setSelected(null); load(); }} />}
+      <BookingPaymentsDialog bookingPublicId={paymentsFor} onOpenChange={(o) => !o && setPaymentsFor(null)} onChanged={() => void load()} />
     </>
   );
 }

@@ -40,6 +40,8 @@ export interface ReturnDraftFields {
   waiveReason: string;
   manualKm: string;
   requireManager: boolean;
+  // Optional Fleet drop note (Oct 20 2026) — absent in drafts saved by older builds
+  dropNote: string;
 }
 
 interface Options {
@@ -114,7 +116,8 @@ export function useReturnDraft({
     !f.applyGrace &&
     !f.waiveLate &&
     !f.waiveReason &&
-    !f.requireManager;
+    !f.requireManager &&
+    !f.dropNote.trim();
 
   return useOperationDraft({
     type: 'RETURN',
@@ -172,6 +175,7 @@ export function useReturnDraft({
       s.setWaiveLate(draftBool(d, 'waiveLate'));
       s.setWaiveReason(draftString(d, 'waiveReason'));
       s.setRequireManager(draftBool(d, 'requireManager'));
+      s.setDropNote(draftString(d, 'dropNote'));
       // How the bill was going to be settled (the amounts come from the server
       // again; a proof photo is re-checked when the payment is recorded).
       const method = draftOneOf(d, 'payMethod', COUNTER_PAYMENT_METHODS);

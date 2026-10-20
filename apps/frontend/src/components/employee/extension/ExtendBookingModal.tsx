@@ -593,7 +593,7 @@ export function ExtendBookingModal({
                       {eligibility?.vehicleRegNo ?? "This car"} is only free until {fmt(availableUntil.toISOString())}
                       {eligibility?.limitReason === "NEXT_BOOKING"
                         ? eligibility.nextBookingKind === "LOCK"
-                          ? " (when its booking lock starts)"
+                          ? " (1 day before its booking lock starts)"
                           : ` (${eligibility.extensionBufferHours ?? EXTENSION_BUFFER_HOURS} h before its next pickup)`
                         : ""}
                       . Checking this time will offer a swap to another car or a shorter extension, if possible.

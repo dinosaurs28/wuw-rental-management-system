@@ -1,3 +1,4 @@
+import type { PaymentVoidState } from './paymentVoid';
 // Completed pickups / returns (client item 1): the read-only summary of
 // GET /api/employee/{pickup|return}/:bookingId/summary and the Edit Pickup /
 // Edit Return bodies (PATCH /api/employee/{pickup|return}/:bookingId).
@@ -6,6 +7,7 @@ import type { SafetyDepositHandling } from '../lib/counterPayment';
 import type { ReturnSession } from './api';
 import type { DropBill, KmSegment, ReturnLateSummary } from './return';
 import type { BookingListType } from './queue';
+import type { OperationNotesView } from '../components/employee/OperationNotes';
 
 // PENDING = not done yet (open the workflow); null = not on that queue (cancelled …).
 export type CompletedState = 'PENDING' | 'COMPLETED' | 'AWAITING_MANAGER';
@@ -106,10 +108,13 @@ interface SummaryBase {
   adjustments?: AdjustmentRecord[];
   // Money paid back with "Refund to customer" (Oct 2026; absent on older servers)
   customerRefunds?: CustomerRefundRow[];
+  // Fleet notes written at the pickup / drop and mid-rental swap notes (Oct 20 2026; absent on older servers)
+  operationNotes?: OperationNotesView;
 }
 
-// A "Refund to customer" recorded on the booking by the branch manager / admin.
-export interface CustomerRefundRow {
+// A "Refund to customer" recorded on the booking by the branch manager / admin / Fleet.
+// Void state (Oct 2026): a voided refund isn't paid out (shown struck through).
+export interface CustomerRefundRow extends PaymentVoidState {
   publicId: string;
   amount: string;
   goodwillAmount: string;
@@ -237,6 +242,8 @@ export interface EditPickupBody {
   dlStatus?: DlCollectionStatus;
   addPhotos?: Array<{ fileId: string; label?: string | null }>;
   removeFileIds?: string[];
+  // Fleet note written at the pickup; null clears it
+  pickupNote?: string | null;
 }
 
 export interface EditReturnBody {
@@ -265,6 +272,8 @@ export interface EditReturnBody {
   waiveLateCharge?: { reason: string } | null;
   safetyDepositHandling?: SafetyDepositHandling;
   expectedDelta?: number;
+  // Fleet note written at the drop; null clears it
+  dropNote?: string | null;
 }
 
 export interface EditOperationResponse<T> {

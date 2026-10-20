@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { OperationNotesCard } from '../../../../components/employee/OperationNotes';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -19,6 +20,8 @@ import StatusBadge from '../../../../components/ui/StatusBadge';
 import Toast from '../../../../components/ui/Toast';
 import { humanize, inr, isPositive, methodLabel, shortRef } from '../../../../components/employee/customers/format';
 import { useCustomerBooking } from '../../../../components/employee/customers/useCustomers';
+import { RefundToCustomerSheet } from '../../../../components/employee/payments/RefundToCustomerSheet';
+import { VoidPaymentSheet, type VoidTarget } from '../../../../components/employee/payments/VoidPaymentSheet';
 import type { CustomerBookingTransaction } from '../../../../types/customers';
 
 /** Presigned proof links live 15 minutes; reload before opening an older one. */
@@ -57,7 +60,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 // Booking summary from the Customers tab — the same amount breakdown and
-// payments the branch manager's booking drawer shows. Read-only.
+// payments the branch manager's booking drawer shows. Own-branch bookings
+// (Oct 2026): Refund to customer, and Void on a confirmed staff-recorded entry.
 export default function CustomerBookingScreen() {
   const { customerId, bookingId } = useLocalSearchParams<{ customerId: string; bookingId: string }>();
   const router = useRouter();
@@ -66,6 +70,9 @@ export default function CustomerBookingScreen() {
   const [pulling, setPulling] = useState(false);
   const [proof, setProof] = useState<{ url: string; label: string }[] | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [voidTarget, setVoidTarget] = useState<VoidTarget | null>(null);
+  const [done, setDone] = useState<{ message: string; warn: boolean } | null>(null);
 
   // A failed refresh keeps the loaded booking on screen and says so.
   const onPull = async () => {
@@ -183,6 +190,9 @@ export default function CustomerBookingScreen() {
           {bk.couponCode ? <Row label="Coupon" value={bk.couponCode} /> : null}
         </Section>
 
+        {/* Notes the Fleet Executive wrote at the pickup / drop (Oct 20 2026) */}
+        <OperationNotesCard notes={d.operationNotes} title="Pickup & drop notes" style={{ marginBottom: 12 }} />
+
         <Section title="Original rental">
           <Row label="Rent without GST" value={inr(b.rental.rentWithoutGst)} />
           {isPositive(b.rental.discount) ? <Row label="Discount" value={`− ${inr(b.rental.discount)}`} discount /> : null}
@@ -249,6 +259,13 @@ export default function CustomerBookingScreen() {
           <Row label="Total owed" value={inr(b.totalOwed)} bold />
         </Section>
 
+        {d.booking.isOwnBranch ? (
+          <TouchableOpacity style={styles.refundBtn} onPress={() => setRefundOpen(true)} activeOpacity={0.85}>
+            <Ionicons name="arrow-undo-outline" size={16} color={Colors.orange} />
+            <Text style={styles.refundText}>Refund to customer</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <Section title="Payments">
           <Row label="Status" value={humanize(d.payments.lifecycleState)} />
           <Row label="Confirmed" value={inr(d.payments.totalCollectedConfirmed)} />
@@ -259,12 +276,12 @@ export default function CustomerBookingScreen() {
           <Row label="Amount due" value={inr(d.payments.amountDue)} bold />
 
           {d.payments.transactions.map((t) => (
-            <View key={t.publicId} style={styles.txn}>
+            <View key={t.publicId} style={[styles.txn, t.voided && styles.txnVoided]}>
               <View style={styles.row}>
-                <Text style={[styles.rowLabel, styles.rowBold]}>
+                <Text style={[styles.rowLabel, styles.rowBold, t.voided && styles.struck]}>
                   {t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · {methodLabel(t.method)}
                 </Text>
-                <Text style={[styles.rowValue, styles.rowBold]}>
+                <Text style={[styles.rowValue, styles.rowBold, t.voided && styles.struck]}>
                   {t.isRefund ? '− ' : ''}
                   {inr(t.totalAmount)}
                 </Text>
@@ -279,6 +296,16 @@ export default function CustomerBookingScreen() {
                 </Text>
               ) : null}
               {t.rejectionReason ? <Text style={[styles.note, styles.noteBad]}>Rejected: {t.rejectionReason}</Text> : null}
+              {t.voided ? (
+                <Text style={styles.note}>
+                  <Text style={styles.voidBadge}>VOIDED</Text> {t.voidReason ?? ''}
+                  {t.voidedBy ? ` · by ${t.voidedBy}` : ''}
+                  {t.voidedAt ? ` · ${fmtIstDateTime(t.voidedAt)}` : ''}
+                </Text>
+              ) : null}
+              {t.voided && t.voidShiftClosed ? (
+                <Text style={[styles.note, styles.noteWarn]}>Shift already closed — counted cash didn't change</Text>
+              ) : null}
               {t.cashOutsideShift ? (
                 <Text style={[styles.note, styles.noteBad]}>Cash paid out with no cash shift open</Text>
               ) : null}
@@ -290,6 +317,24 @@ export default function CustomerBookingScreen() {
                   <Text style={styles.proofText}>
                     {(t.proofs?.length ?? 0) > 1 ? `View payment proofs (${t.proofs!.length})` : 'View payment proof'}
                   </Text>
+                </TouchableOpacity>
+              ) : null}
+              {d.booking.isOwnBranch && t.voidable ? (
+                <TouchableOpacity
+                  style={styles.voidBtn}
+                  onPress={() =>
+                    setVoidTarget({
+                      transactionPublicId: t.publicId,
+                      amount: t.totalAmount,
+                      label: `${t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · ${methodLabel(t.method)}`,
+                      isRefund: t.isRefund,
+                    })
+                  }
+                  hitSlop={6}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="ban-outline" size={14} color={Colors.availNone} />
+                  <Text style={styles.voidText}>Void</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -323,6 +368,32 @@ export default function CustomerBookingScreen() {
         visible={!!proof}
         images={proof ?? []}
         onClose={() => setProof(null)}
+      />
+      <RefundToCustomerSheet
+        visible={refundOpen}
+        bookingPublicId={d?.booking.publicId ?? bookingId}
+        onClose={() => setRefundOpen(false)}
+        onDone={(message) => {
+          setRefundOpen(false);
+          setDone({ message, warn: false });
+          void refetch();
+        }}
+      />
+      <VoidPaymentSheet
+        target={voidTarget}
+        onClose={() => setVoidTarget(null)}
+        onDone={(message, result) => {
+          setVoidTarget(null);
+          setDone({ message, warn: result.shiftClosed });
+          void refetch();
+        }}
+      />
+      <Toast
+        visible={!!done}
+        title={done?.warn ? 'Voided — shift already closed' : 'Done'}
+        message={done?.message}
+        type="success"
+        onDismiss={() => setDone(null)}
       />
       <Toast
         visible={!!refreshError}
@@ -392,5 +463,16 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   proofLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  txnVoided: { backgroundColor: Colors.bg },
+  struck: { textDecorationLine: 'line-through', color: Colors.ink3 },
+  noteWarn: { color: Colors.availLow },
+  voidBadge: { fontFamily: Fonts.bodySemiBold, fontSize: 10.5, color: Colors.ink2, letterSpacing: 0.5 },
+  voidBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, marginTop: 6 },
+  voidText: { fontFamily: Fonts.bodySemiBold, fontSize: 12.5, color: Colors.availNone },
+  refundBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: Colors.orange, backgroundColor: Colors.orangeSoft,
+  },
+  refundText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.orange },
   proofText: { fontFamily: Fonts.bodySemiBold, fontSize: 12.5, color: Colors.orange },
 });

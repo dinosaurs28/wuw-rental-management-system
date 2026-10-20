@@ -38,6 +38,8 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 import Decimal from "decimal.js";
+import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
+import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
 import {
   prisma,
   BookingStatus,
@@ -240,6 +242,8 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       manualExtraKm,
     } = validation.data;
     const depositHandling = validation.data.safetyDepositHandling ?? "SET_OFF";
+    // Optional drop note (Oct 20 2026): absent = left as saved (older builds), blank = none
+    const dropNote = parseOperationNote(req.body?.dropNote, "dropNote");
     // The moment the vehicle came back, unless an earlier compute of this bill already fixed it
     const requestTime = new Date();
 
@@ -825,6 +829,9 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         },
       });
 
+      // The Fleet Executive's optional drop note (who wrote it and when)
+      await saveOperationNote(tx as any, { bookingId: booking.id, kind: "DROP", note: dropNote, actorId: actor.id, mode: "OPERATION" });
+
       return {
         session,
         previousDiscount,
@@ -939,6 +946,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
         vehicleSwapLines: chargedSwaps.map((s) => s.publicId),
         dropDamages: dropDamages.map((d) => d.publicId),
         ...(releasedQuoteId != null && { releasedExtensionQuoteId: releasedQuoteId }),
+        ...(dropNote !== undefined && { dropNote }),
       },
     });
 
@@ -1051,6 +1059,9 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
   } catch (err: any) {
     if (err instanceof ComputeRejection) {
       return res.status(err.status).json(err.body);
+    }
+    if (err instanceof OperationNoteError) {
+      return res.status(err.status).json(err.toJSON());
     }
     console.error("ComputeReturnSession Error:", err);
     const isValidationError =

@@ -36,6 +36,7 @@ import {
 import type { Prisma } from "@repo/database/client";
 import { maskAadhaar } from "@repo/schemas";
 import { StatusCode } from "../../types/statusCode.js";
+import { getOperationNotes } from "../../services/booking/operation-notes.service.js";
 import {
   displayEmail,
   effectiveCustomerAge,
@@ -70,6 +71,7 @@ import {
   maskDrivingLicence,
 } from "../../services/customer/customer-blacklist.service.js";
 import { isCashRefundOutsideShift, isCustomerRefundKey } from "../../services/booking/customer-refund-rules.js";
+import { VOID_FIELDS_SELECT, voidView } from "../../services/payment/payment-void-rules.js";
 
 const ZERO = new Decimal(0);
 /** Presigned payment-proof photo links live this long (seconds). */
@@ -865,6 +867,7 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           idempotencyKey: true,
           cashShiftId: true,
           goodwillAmount: true,
+          ...VOID_FIELDS_SELECT,
           collectedBy: { select: { name: true } },
           confirmedBy: { select: { name: true } },
           proofFile: { select: { key: true, url: true, mime: true } },
@@ -995,11 +998,15 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           createdAt: t.createdAt.toISOString(),
           proofPhoto,
           proofs,
+          // Additive (Oct 2026): void state (voided rows are struck through; voidable → Void action)
+          ...voidView(t),
         };
       }),
     );
 
     const credit = booking.creditEntry;
+    // Fleet notes written at the pickup / drop and mid-rental swap notes (staff only)
+    const operationNotes = await getOperationNotes(booking.id);
     return res.status(StatusCode.OK).json({
       success: true,
       data: {
@@ -1099,6 +1106,8 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
               })),
             }
           : null,
+        // Additive (Oct 20 2026): { pickup, drop, swaps } — the Fleet notes
+        operationNotes,
       },
     });
   } catch (error) {

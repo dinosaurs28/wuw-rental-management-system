@@ -81,6 +81,7 @@ import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
 import type { DlStatus } from "@/services/dlStatus.service";
 import { DlStatusPanel, DlStatusSelector } from "@/components/booking/DlStatus";
+import { OperationNoteField, OperationNotesCard, OPERATION_NOTE_MAX, noteForRequest } from "@/components/employee/OperationNotes";
 import { dlChoicePayload, dlStatusLabel, pickupDlChoiceError } from "@/lib/dlStatus";
 import { formatRupees } from "@/lib/counterPayment";
 import { fastagInr, readFastagBalance } from "@/components/employee/drop/fastag";
@@ -445,6 +446,10 @@ export default function StaffPickupsPage() {
   // --- CONFIRM DIALOG ---
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
+  // --- PICKUP NOTE (optional, Oct 20 2026) ---
+  const [pickupNote, setPickupNote] = useState("");
+  const pickupNoteTooLong = pickupNote.trim().length > OPERATION_NOTE_MAX;
+
   // --- DATA FETCHING ---
   const {
     data: booking,
@@ -564,6 +569,12 @@ export default function StaffPickupsPage() {
     const saved = booking?.pickupFastagBalance;
     if (saved != null) setFastagBalance((cur) => cur || String(Number(saved)));
   }, [booking?.pickupFastagBalance]);
+
+  // A pickup session reopened later: the note it saved
+  useEffect(() => {
+    const saved = booking?.operationNotes?.pickup?.note;
+    if (saved) setPickupNote((cur) => cur || saved);
+  }, [booking?.operationNotes?.pickup?.note]);
 
   // --- MUTATIONS ---
   const verifyKycMutation = useMutation({
@@ -997,6 +1008,8 @@ export default function StaffPickupsPage() {
       // dlStatus only when chosen (optional, X1);
       // the deprecated licenseCollected is no longer sent.
       ...(dlStatus ? dlChoicePayload(dlStatus) : {}),
+      // Optional Fleet note (blank = none)
+      pickupNote: noteForRequest(pickupNote),
     };
 
     if (captureConfig) {
@@ -1022,6 +1035,10 @@ export default function StaffPickupsPage() {
     // const chargeConfig = booking?.frozenChargeConfig;
 
     if (!checkDlChoice()) return;
+    if (pickupNoteTooLong) {
+      toast.error(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     if (!fastagReady) {
       toast.error(fastag.error ?? "Enter the FASTag balance.");
       return;
@@ -1059,6 +1076,7 @@ export default function StaffPickupsPage() {
         discountCode: pendingDiscountCode ?? undefined,
         pickupDiscount: pendingManualDiscount ?? undefined,
         dlStatus: payload.dlStatus,
+        pickupNote: payload.pickupNote,
       });
     } else {
       setIsConfirmOpen(true);
@@ -1067,6 +1085,10 @@ export default function StaffPickupsPage() {
 
   const onConfirmHandoverLegacy = (data: HandoverFormValues) => {
     if (!checkDlChoice()) return;
+    if (pickupNoteTooLong) {
+      toast.error(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     if (!fastagReady) {
       toast.error(fastag.error ?? "Enter the FASTag balance.");
       return;
@@ -1218,6 +1240,7 @@ export default function StaffPickupsPage() {
             dlStatusUpdatedAt={booking.dlStatusUpdatedAt}
           />
         )}
+        {isPickedUp && <OperationNotesCard notes={booking.operationNotes} show={["pickup", "swaps"]} />}
 
         {/* ─────────────────────────────────────────────────────────── */}
         {/* STEP 0: VEHICLE AVAILABLE?                                  */}
@@ -2138,6 +2161,14 @@ export default function StaffPickupsPage() {
                       />
                     </div>
 
+                    <OperationNoteField
+                      id="pickup-note-session"
+                      label="Pickup note"
+                      value={pickupNote}
+                      onChange={setPickupNote}
+                      disabled={initiatePickupSessionMutation.isPending}
+                    />
+
                     <Button
                       type="button"
                       className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-12 text-sm font-semibold rounded-xl"
@@ -2231,6 +2262,15 @@ export default function StaffPickupsPage() {
                   onClear={handleDlStatusClear}
                 />
               </div>
+            )}
+            {isHandoverReady && (
+              <OperationNoteField
+                id="pickup-note-legacy"
+                label="Pickup note"
+                value={pickupNote}
+                onChange={setPickupNote}
+                disabled={handoverMutation.isPending}
+              />
             )}
             <Button
               type="button"
@@ -2564,6 +2604,9 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
   // Manual pickup discount (₹, blank / 0 = none) and its reason
   const [discount, setDiscount] = useState(summary.pickupDiscount ? String(Number(summary.pickupDiscount.amount)) : "");
   const [discountReason, setDiscountReason] = useState(summary.pickupDiscount?.reason ?? "");
+  // Fleet note written at the pickup (blank clears it)
+  const savedPickupNote = summary.operationNotes?.pickup?.note ?? "";
+  const [pickupNote, setPickupNote] = useState(savedPickupNote);
   const [uploading, setUploading] = useState(false);
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -2606,8 +2649,9 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
         out.pickupDiscount = null;
       }
     }
+    if ((noteForRequest(pickupNote) ?? "") !== savedPickupNote) out.pickupNote = noteForRequest(pickupNote);
     return out;
-  }, [odoValue, fuelLevel, fastag.value, dlStatus, photos, deposit, discount, discountReason, summary]);
+  }, [odoValue, fuelLevel, fastag.value, dlStatus, photos, deposit, discount, discountReason, pickupNote, savedPickupNote, summary]);
 
   // ── The handover's own validations ──
   // Old pickups saved without a reading may stay without one
@@ -2640,7 +2684,9 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
       ? `Take the required photo${emptied.length > 1 ? "s" : ""}: ${emptied.map((f) => f.name).join(", ")}.`
       : null) ??
     (uploading ? "Wait for the photos to upload." : null);
-  const blocker = odoProblem ?? fastagProblem ?? photosProblem ?? discountProblem ?? depositProblem;
+  const noteProblem =
+    pickupNote.trim().length > OPERATION_NOTE_MAX ? `Keep the pickup note under ${OPERATION_NOTE_MAX} characters.` : null;
+  const blocker = odoProblem ?? fastagProblem ?? photosProblem ?? discountProblem ?? depositProblem ?? noteProblem;
   const changed = Object.keys(body).length > 0;
 
   /** A refusal of the preview / save that belongs to a field. */
@@ -2765,6 +2811,12 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
                     </div>
                   )}
                 </div>
+                <OperationNoteField
+                  id="edit-pickup-note"
+                  label="Pickup note"
+                  value={pickupNote}
+                  onChange={setPickupNote}
+                />
               </CardContent>
             </StepCard>
 

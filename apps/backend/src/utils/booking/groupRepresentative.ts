@@ -56,7 +56,8 @@ export async function pickGroupRepresentative<
   if (bookable.length === 0) return { representative: null, available: [] };
 
   if (!start || !end) {
-    const blocked = await getBlockedForAnyWindowIds(bookable.map((v) => v.id));
+    // Not blocked for every window, nor under a booking lock acting now (its lead day included)
+    const blocked = await getBlockedForAnyWindowIds(bookable.map((v) => v.id), new Date(), options);
     const available = bookable.filter((v) => !blocked.has(v.id));
     const representative = available.find((v) => v.status === "AVAILABLE") ?? available[0] ?? null;
     return { representative, available };

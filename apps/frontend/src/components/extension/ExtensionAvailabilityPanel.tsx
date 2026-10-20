@@ -39,13 +39,14 @@ export function ExtensionAvailabilityPanel({
   const reg = availability.vehicleRegNo ?? "This car";
   const buffer = availability.extensionBufferHours ?? EXTENSION_BUFFER_HOURS;
   const byNext = availability.limitReason === "NEXT_BOOKING";
-  // A booking lock: the car can be out right up to its start (no buffer)
+  // A booking lock: the car can be out right up to when it starts to act —
+  // 00:00 the day before the lock (nextBookingStartAt), no buffer
   const byLock = byNext && availability.nextBookingKind === "LOCK";
   const lockText = `Locked: ${availability.nextLockReason ?? "booking lock"}${
     availability.nextLockEndAt ? ` until ${fmt(availability.nextLockEndAt)}` : ""
   }`;
   const limitText = byLock
-    ? "when the booking lock starts"
+    ? "1 day before the booking lock starts"
     : byNext
     ? `${buffer} h before the next pickup`
     : maxBookingDays
@@ -58,7 +59,7 @@ export function ExtensionAvailabilityPanel({
         <span className="text-neutral-500">Next booking on {availability.vehicleRegNo ?? "this car"}</span>
         <span className="text-right font-medium text-neutral-900">
           {availability.nextBookingStartAt
-            ? `${fmt(availability.nextBookingStartAt)} ${availability.nextBookingKind === "LOCK" ? "lock starts" : "pickup"}`
+            ? `${fmt(availability.nextBookingStartAt)} ${availability.nextBookingKind === "LOCK" ? "locked from" : "pickup"}`
             : "No upcoming booking"}
         </span>
       </div>

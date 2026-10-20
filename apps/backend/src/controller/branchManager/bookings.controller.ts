@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
+import { getOperationNotes, loadOperationNotes, EMPTY_OPERATION_NOTES } from "../../services/booking/operation-notes.service.js";
 import { prisma, BookingStatus, VehicleStatus, PaymentStatus } from "@repo/database/client";
 import { managerConfirmPickupSchema } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
@@ -938,9 +939,15 @@ export const GetManagerConfirmations = async (req: Request, res: Response) => {
       orderBy: { updatedAt: "desc" },
     });
 
+    // Fleet notes written at the pickup / drop (additive)
+    const notes = await loadOperationNotes(bookings.map((b) => b.id));
     return res.status(StatusCode.OK).json({
       success: true,
-      data: bookings.map((b) => ({ ...b, customer: withCustomerDisplayEmail(b.customer) })),
+      data: bookings.map((b) => ({
+        ...b,
+        customer: withCustomerDisplayEmail(b.customer),
+        operationNotes: notes.get(b.id) ?? EMPTY_OPERATION_NOTES,
+      })),
     });
   } catch (error: any) {
     console.error("Manager Confirmations fetch error:", error);
@@ -1015,6 +1022,8 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         branchId: branchId,
       },
       select: {
+        // Read for the Fleet notes only (not sent)
+        id: true,
         status: true,
         totalFinal: true,
         isAdvancePayment: true,
@@ -1094,7 +1103,9 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     // A pickup confirmation (booking still CONFIRMED) shows the handover photos
     // only; a return confirmation keeps every photo (pickup, return, damage),
     // each carrying its type / captureLabel so the dialog can label it.
-    const { pricingSnapshot, ...bookingFields } = booking;
+    const { pricingSnapshot, id: bookingDbId, ...bookingFields } = booking;
+    // Fleet notes written at the pickup / drop and mid-rental swap notes — additive
+    const operationNotes = await getOperationNotes(bookingDbId);
     // Newest set first (as before), each set in the order its photos were taken
     const photos = sortPhotoSetsNewestFirst(
       booking.status === BookingStatus.CONFIRMED
@@ -1120,6 +1131,7 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
         ...qrPhotoFields,
         safetyDepositHandling: depositHandling?.mode ?? null,
         safetyDepositHandlingFlow: depositHandling?.flow ?? null,
+        operationNotes,
       },
     });
   } catch (error: any) {

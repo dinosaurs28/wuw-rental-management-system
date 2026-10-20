@@ -17,6 +17,12 @@ export interface CustomerRefundRow {
   notes: string | null;
   by: string | null;
   at: string;
+  /** Additive (Oct 2026): void state — a voided refund isn't paid out (shown struck through) */
+  status?: string;
+  voided?: boolean;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
 }
 
 /** GET …/bookings/:publicId/refund-to-customer — what the Refund to customer dialog needs. */

@@ -401,12 +401,28 @@ function RefundForm({
             <ul className="space-y-1 text-xs text-zinc-600">
               {options.refunds.map((r) => (
                 <li key={r.publicId} className="flex justify-between gap-2">
-                  <span>
-                    {formatIstDateTime(r.at)}
-                    {r.by ? ` · ${r.by}` : ""}
-                    {r.cashOutsideShift ? " · outside a shift" : ""}
+                  <span className={cn(r.voided && "text-zinc-400")}>
+                    <span className={cn(r.voided && "line-through")}>
+                      {formatIstDateTime(r.at)}
+                      {r.by ? ` · ${r.by}` : ""}
+                      {r.cashOutsideShift ? " · outside a shift" : ""}
+                    </span>
+                    {r.voided && (
+                      <span className="ml-1 rounded bg-zinc-200 px-1 py-px text-[10px] font-semibold uppercase text-zinc-600">
+                        Voided
+                      </span>
+                    )}
+                    {r.voided && r.voidReason && (
+                      <span className="block">
+                        {r.voidReason}
+                        {r.voidedBy ? ` · ${r.voidedBy}` : ""}
+                        {r.voidedAt ? ` · ${formatIstDateTime(r.voidedAt)}` : ""}
+                      </span>
+                    )}
                   </span>
-                  <span className="tabular-nums">{formatRupees(toNumber(r.amount))}</span>
+                  <span className={cn("tabular-nums", r.voided && "text-zinc-400 line-through")}>
+                    {formatRupees(toNumber(r.amount))}
+                  </span>
                 </li>
               ))}
             </ul>

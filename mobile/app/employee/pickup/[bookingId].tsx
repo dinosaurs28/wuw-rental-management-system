@@ -29,6 +29,14 @@ import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, counterChoiceLabel } from '../../../lib
 import ImageViewer from '../../../components/ui/ImageViewer';
 import { DlStatusCard, DlStatusSelector } from '../../../components/employee/DlStatus';
 import {
+  OPERATION_NOTE_MAX,
+  OperationNoteInput,
+  OperationNotesCard,
+  noteForRequest,
+  noteTooLong,
+  type OperationNotesView,
+} from '../../../components/employee/OperationNotes';
+import {
   dlChoiceBody,
   dlStatusLabel,
   isDlErrorCode,
@@ -99,6 +107,8 @@ interface BookingDetail extends DlStatusFields {
   usePaymentSessions?: boolean;
   // Manual pickup discount given (absent on older servers)
   pickupDiscount?: PickupDiscountInfo | null;
+  // Fleet notes written at the pickup / drop (Oct 20 2026; absent on older servers)
+  operationNotes?: OperationNotesView;
   kmAllowance?: KmAllowance | null;
   frozenChargeConfig?: {
     safetyDepositEnabled?: boolean;
@@ -346,6 +356,10 @@ export default function PickupScreen() {
   const [discountOpen, setDiscountOpen] = useState(false);
   const [discountAmount, setDiscountAmount] = useState('');
   const [discountReason, setDiscountReason] = useState('');
+  // Optional Fleet pickup note (Oct 20 2026), kept in the draft; sent with the
+  // handover, and saved before settling when changed after the session opened
+  const [pickupNote, setPickupNote] = useState('');
+  const pickupNoteSentRef = useRef<string | null | undefined>(undefined);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [legacyDiscountBusy, setLegacyDiscountBusy] = useState<'apply' | 'remove' | null>(null);
   const [settling, setSettling] = useState(false);
@@ -488,12 +502,13 @@ export default function PickupScreen() {
     fields: {
       odo, fuelLevel, fastagBalance, dlStatus, requireManager, requestDeposit,
       depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
-      discountOpen, discountAmount, discountReason,
+      discountOpen, discountAmount, discountReason, pickupNote,
     },
     setters: {
       setOdo, setFuelLevel, setFastagBalance, setDlStatus, setRequireManager,
       setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
       setSDepositAmt, setSDepositReason, setDiscountOpen, setDiscountAmount, setDiscountReason,
+      setPickupNote,
     },
     photos,
     setPhotos,
@@ -502,6 +517,12 @@ export default function PickupScreen() {
     refundPay,
     onGone: () => { refetch(); },
   });
+
+  // A pickup session reopened later: the note it saved (Edit Pickup prefills from its summary)
+  const savedPickupNote = booking?.operationNotes?.pickup?.note;
+  useEffect(() => {
+    if (!editMode && savedPickupNote) setPickupNote((cur) => cur || savedPickupNote);
+  }, [editMode, savedPickupNote]);
 
   // Edit Pickup: what the completed pickup recorded
   const { data: editSummary, isLoading: editSummaryLoading } = useQuery<PickupSummary>({
@@ -521,6 +542,7 @@ export default function PickupScreen() {
     setEditDeposit(String(Number(editSummary.safetyDeposit) || 0));
     setEditDiscount(editSummary.pickupDiscount ? String(Number(editSummary.pickupDiscount.amount)) : '');
     setEditDiscountReason(editSummary.pickupDiscount?.reason ?? '');
+    setPickupNote(editSummary.operationNotes?.pickup?.note ?? '');
   }, [editMode, editSummary]);
   useEffect(
     () => () => {
@@ -550,6 +572,8 @@ export default function PickupScreen() {
       ...(generic.length ? { pickupImageIds: generic.map((p) => p.fileId) } : {}),
       // The two lists above, interleaved in the order the photos were taken
       ...(photos.length ? { photoOrder: photos.map((p) => p.fileId) } : {}),
+      // Optional Fleet note (blank = none)
+      pickupNote: noteForRequest(pickupNote),
     };
   };
 
@@ -615,15 +639,18 @@ export default function PickupScreen() {
   // Session flow step 1: save the handover details and open the bill.
   const startSession = async () => {
     if (initiateBusyRef.current) return;
+    if (noteTooLong(pickupNote)) {
+      setErrorMsg(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     initiateBusyRef.current = true;
     setInitiating(true);
     setErrorMsg(null);
     setDlRejected(false);
     try {
-      const res = await employeeApi.initiatePickupSession(bookingId as string, {
-        ...handoverBody(),
-        ...dlBody(),
-      });
+      const body = { ...handoverBody(), ...dlBody() };
+      const res = await employeeApi.initiatePickupSession(bookingId as string, body);
+      pickupNoteSentRef.current = body.pickupNote;
       const s = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
       if (s) setSession(s);
@@ -817,10 +844,21 @@ export default function PickupScreen() {
     }
     const refundChoice = net < 0 ? refundPay.resolve() : null;
     if (net < 0 && !refundChoice) return;
+    if (noteTooLong(pickupNote)) {
+      setErrorMsg(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
     settleBusyRef.current = true;
     setSettling(true);
     setErrorMsg(null);
     try {
+      // A note changed after the session was opened: saved first
+      const noteNow = noteForRequest(pickupNote);
+      const noteSaved = pickupNoteSentRef.current !== undefined ? pickupNoteSentRef.current : savedPickupNote ?? null;
+      if (noteNow !== noteSaved) {
+        await employeeApi.savePickupNote(bookingId as string, noteNow);
+        pickupNoteSentRef.current = noteNow;
+      }
       // No draft save may land while (or after) the pickup completes.
       await draft.beginCompletion();
       let res;
@@ -1070,6 +1108,10 @@ export default function PickupScreen() {
         body.pickupDiscount = null;
       }
     }
+    if (noteTooLong(pickupNote)) return { error: `Keep the pickup note under ${OPERATION_NOTE_MAX} characters.` };
+    if ((noteForRequest(pickupNote) ?? '') !== (original.operationNotes?.pickup?.note ?? '')) {
+      body.pickupNote = noteForRequest(pickupNote);
+    }
     return body;
   };
 
@@ -1265,6 +1307,9 @@ export default function PickupScreen() {
           {(awaitingManager || pickedUp || !!booking.dlStatus) && (
             <DlStatusCard booking={booking} onUpdated={() => refetch()} style={styles.dlCardWide} />
           )}
+          {(awaitingManager || pickedUp) && (
+            <OperationNotesCard notes={booking.operationNotes} show={['pickup', 'swaps']} style={styles.dlCardWide} />
+          )}
           {awaitingManager && (
             <TouchableOpacity style={styles.refreshBtn} onPress={() => refetch()} activeOpacity={0.85}>
               <Ionicons name="refresh-outline" size={16} color={Colors.ink2} />
@@ -1303,6 +1348,10 @@ export default function PickupScreen() {
   const handleConfirm = () => {
     if (handoverBlocker) {
       Alert.alert('Not ready yet', handoverBlocker);
+      return;
+    }
+    if (noteTooLong(pickupNote)) {
+      Alert.alert('Note too long', `Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
       return;
     }
     setErrorMsg(null);
@@ -2234,6 +2283,12 @@ export default function PickupScreen() {
               {editMode && editSummary?.edit.dlStatusLockedReason && (
                 <Text style={[styles.toggleSub, { marginTop: 8 }]}>{editSummary.edit.dlStatusLockedReason}</Text>
               )}
+            </View>
+
+            {/* Optional Fleet note (Oct 20 2026) — shown at the drop and to the branch manager */}
+            <SectionHeader title="Note" />
+            <View style={styles.card}>
+              <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
             </View>
 
             {/* Manager confirmation escalation (#50) — legacy flow only */}

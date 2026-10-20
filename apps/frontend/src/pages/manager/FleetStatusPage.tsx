@@ -741,6 +741,7 @@ export const FleetStatusPage = () => {
             if (!open) setRefundFor(null);
           }}
           bookingPublicId={refundFor.publicId}
+          onRefunded={() => queryClient.invalidateQueries({ queryKey: ["manager-fleet-status"] })}
         />
       )}
 

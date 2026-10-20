@@ -262,12 +262,14 @@ export function isCustomerRefundKey(idempotencyKey: string | null | undefined): 
 
 const REFUND_PURPOSES = ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"];
 
-/** A cash refund paid out with no cash shift linked — it isn't in any drawer's reconciliation. */
+/** A cash refund paid out with no cash shift linked — it isn't in any drawer's reconciliation (a voided one isn't paid out). */
 export function isCashRefundOutsideShift(t: {
   purpose: string;
   cashAmount: { toString(): string } | number | string;
   cashShiftId: number | null;
+  status?: string;
 }): boolean {
+  if (t.status === "VOIDED") return false;
   return REFUND_PURPOSES.includes(t.purpose) && t.cashShiftId === null && new Decimal(t.cashAmount.toString()).gt(0);
 }
 

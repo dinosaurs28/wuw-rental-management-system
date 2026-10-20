@@ -11,12 +11,18 @@ import {
 import { displayEmail } from "../../utils/customer/identity.js";
 import { draftSummaryLookup } from "../../services/booking/operation-draft.service.js";
 import { listCompletedQueue } from "../../services/booking/operation-completion.service.js";
-import {
-  fleetSearchBookingWhere,
-  fleetSearchVehicleIds,
-  parseFleetQuery,
-} from "../../utils/booking/fleetSearch.js";
+import { parseFleetQuery } from "../../utils/booking/fleetSearch.js";
 import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/completedQueue.js";
+import {
+  buildQueueFilterWhere,
+  completedDayFor,
+  hasTimeFilter,
+  INVALID_QUEUE_FILTER,
+  parseQueueFilters,
+  paymentWhere,
+  queueFilterOptions,
+  queueVehicleIds,
+} from "../../utils/booking/queueFilters.js";
 
 // Return queue. The day is the IST business day (a return due 00:00–05:29 IST
 // belongs to that day, not the previous UTC one). `?type=DAILY|MONTHLY` splits
@@ -29,6 +35,11 @@ import { parseIncludeCompleted, pendingOnlyWhere } from "../../utils/booking/com
 // `?q=` (new clients only) keeps the bookings whose vehicle matches the search
 // (registration number, spaces / hyphens ignored, or make / model words) in the
 // list, the counts and `completed`.
+// Search-bar filters (Oct 20 2026, new clients only; utils/booking/queueFilters.ts):
+// `typeClass`, `category`, `groupKey`, `tripType`, `when=today|tomorrow|overdue`,
+// `from` / `to`, `payment=balance_due|paid` narrow the list, the counts and
+// `completed` too. A time filter replaces the day (`date`) scope — `overdue`
+// lists every rental still out past its return time.
 export const returnController = async (req: Request, res: Response) => {
   try {
     const branchId = req.branch_Id;
@@ -41,11 +52,23 @@ export const returnController = async (req: Request, res: Response) => {
     const type = parsedType.type;
     const includeCompleted = parseIncludeCompleted(req.query.includeCompleted);
     const pendingOnly = pendingOnlyWhere(includeCompleted);
+    const parsedFilters = parseQueueFilters(req.query as Record<string, unknown>);
+    if (!parsedFilters.ok) {
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ success: false, code: INVALID_QUEUE_FILTER, message: parsedFilters.message });
+    }
+    const filters = parsedFilters.filters;
+    const timeFiltered = hasTimeFilter(filters);
     const search = parseFleetQuery(req.query.q);
-    const searchVehicleIds = search ? await fleetSearchVehicleIds(branchId, search) : undefined;
-    const searchWhere = searchVehicleIds ? fleetSearchBookingWhere(searchVehicleIds) : {};
+    const searchVehicleIds = await queueVehicleIds(branchId, search, filters);
+    const nowDt = TimezoneService.getCurrentTime();
+    const filterWhere = buildQueueFilterWhere("RETURN", filters, { now: nowDt, vehicleIds: searchVehicleIds });
+    // No search / filters: the exact old query
+    const withFilters = <W extends object>(where: W) =>
+      Object.keys(filterWhere).length ? { AND: [where, filterWhere] } : where;
 
-    let dayDt = TimezoneService.getCurrentTime();
+    let dayDt = nowDt;
     if (date) {
       const parsedDateDt = TimezoneService.parseISO(String(date));
       if (parsedDateDt.isValid) {
@@ -57,25 +80,26 @@ export const returnController = async (req: Request, res: Response) => {
 
     const dayWhere = {
       branchId: branchId,
-      endAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
+      // A time filter replaces the day scope
+      ...(!timeFiltered && {
+        endAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      }),
       status: {
         in: [BookingStatus.PICKED_UP],
       },
       ...pendingOnly,
-      ...searchWhere,
     };
-    const dailyWhere = { ...dayWhere, ...bookingTypeWhere("DAILY") };
-    const monthlyWhere = {
+    const dailyWhere = withFilters({ ...dayWhere, ...bookingTypeWhere("DAILY") });
+    const monthlyWhere = withFilters({
       branchId: branchId,
       status: BookingStatus.PICKED_UP,
       ...bookingTypeWhere("MONTHLY"),
       ...pendingOnly,
-      ...searchWhere,
-    };
-    const listWhere = type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : dayWhere;
+    });
+    const listWhere = type === "MONTHLY" ? monthlyWhere : type === "DAILY" ? dailyWhere : withFilters(dayWhere);
 
     const [dailyCount, monthlyCount] = await Promise.all([
       prisma.booking.count({ where: dailyWhere }),
@@ -151,13 +175,18 @@ export const returnController = async (req: Request, res: Response) => {
     }));
     const counts = { daily: dailyCount, monthly: monthlyCount };
     // Done (or sent to a manager) for the day — additive, new clients only
+    // A time filter sets the days covered ("overdue" alone: none — nothing done is overdue)
+    const completedRange = completedDayFor(filters, nowDt, { gte: startOfDay, lte: endOfDay });
     const completed = includeCompleted
-      ? await listCompletedQueue("RETURN", {
-          branchId,
-          type,
-          day: { gte: startOfDay, lte: endOfDay },
-          vehicleIds: searchVehicleIds,
-        })
+      ? completedRange
+        ? await listCompletedQueue("RETURN", {
+            branchId,
+            type,
+            day: completedRange,
+            vehicleIds: searchVehicleIds,
+            extraWhere: paymentWhere(filters),
+          })
+        : []
       : null;
 
     // Old app builds (no ?type) treat 404 as an empty queue; tabbed clients get 200 + [].
@@ -179,6 +208,30 @@ export const returnController = async (req: Request, res: Response) => {
     console.error("Error fetching return bookings:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Server Error While Fetching Returns",
+    });
+  }
+};
+
+// Search-bar filter options of the Fleet queues (Oct 20 2026): the type
+// classes, categories, models (make + model) and trip types of the branch's
+// fleet with vehicle counts, plus the time and payment choices labelled for the
+// queue (`?phase=PICKUP|RETURN`, default PICKUP).
+export const queueFilterOptionsController = async (req: Request, res: Response) => {
+  try {
+    const rawPhase = typeof req.query.phase === "string" ? req.query.phase.trim().toUpperCase() : "";
+    if (rawPhase && rawPhase !== "PICKUP" && rawPhase !== "RETURN") {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: INVALID_QUEUE_FILTER,
+        message: "phase must be PICKUP or RETURN.",
+      });
+    }
+    const data = await queueFilterOptions(req.branch_Id, rawPhase === "RETURN" ? "RETURN" : "PICKUP");
+    return res.status(StatusCode.OK).json({ success: true, data });
+  } catch (error) {
+    console.error("Error fetching queue filter options:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error While Fetching Filter Options",
     });
   }
 };

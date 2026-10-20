@@ -7,7 +7,9 @@
  *   POST /api/branchManager/bookings/:publicId/refund-to-customer
  *        { amount, method: CASH | UPI | BANK_TRANSFER, reason, reference?, proofFileId?,
  *          confirmOverReceived?, requestId? }
- *   (the same two under /api/admin/bookings/:publicId/refund-to-customer, any branch)
+ *   (the same two under /api/admin/bookings/:publicId/refund-to-customer, any branch,
+ *   and /api/employee/bookings/:publicId/refund-to-customer — the Fleet Executive,
+ *   own branch; a cash refund needs their open cash shift, SHIFT_REQUIRED otherwise)
  *
  * In one transaction under the per-booking refund lock the settlement refunds and
  * the manual cancel take: reads what the booking owes
@@ -35,6 +37,8 @@ import { getBookingCreditSummary } from "../payment/customer-credit.service.js";
 import { depositToRefund } from "../payment/settlement-engine.service.js";
 import { claimPaymentProof, proofPhotosCreate, resolvePaymentProof } from "../payment/payment-proof.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
+import { assertOpenShift } from "../payment/counter-guard.service.js";
+import { voidView } from "../payment/payment-void-rules.js";
 import {
   CUSTOMER_REFUND_KEY_PREFIX,
   CUSTOMER_REFUND_METHODS,
@@ -59,11 +63,14 @@ import {
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
-/** Who is refunding: a branch manager (their branch only) or an admin (any branch). */
-export type CustomerRefundScope = { role: "MANAGER"; branchId: number } | { role: "ADMIN" };
+/**
+ * Who is refunding: a branch manager or (Oct 2026) a Fleet Executive — their
+ * branch only — or an admin (any branch).
+ */
+export type CustomerRefundScope = { role: "MANAGER"; branchId: number } | { role: "STAFF"; branchId: number } | { role: "ADMIN" };
 
-export function scopeFromRequest(req: Request, role: "MANAGER" | "ADMIN"): CustomerRefundScope {
-  return role === "MANAGER" ? { role, branchId: req.branch_Id } : { role };
+export function scopeFromRequest(req: Request, role: CustomerRefundScope["role"]): CustomerRefundScope {
+  return role === "ADMIN" ? { role } : { role, branchId: req.branch_Id };
 }
 
 async function loadBooking(bookingPublicId: string, scope: CustomerRefundScope, db: Db = prisma) {
@@ -71,7 +78,7 @@ async function loadBooking(bookingPublicId: string, scope: CustomerRefundScope, 
     where: {
       publicId: bookingPublicId,
       deletedAt: null,
-      ...(scope.role === "MANAGER" ? { branchId: scope.branchId } : {}),
+      ...(scope.role !== "ADMIN" ? { branchId: scope.branchId } : {}),
     },
     select: {
       id: true,
@@ -93,7 +100,7 @@ async function requireBooking(bookingPublicId: string, scope: CustomerRefundScop
     throw new CustomerRefundError(
       StatusCode.NOT_FOUND,
       "BOOKING_NOT_FOUND",
-      scope.role === "MANAGER" ? "Booking not found at your branch." : "Booking not found.",
+      scope.role !== "ADMIN" ? "Booking not found at your branch." : "Booking not found.",
     );
   }
   return booking;
@@ -147,6 +154,13 @@ export async function listCustomerRefunds(bookingId: number, db: Db = prisma) {
     orderBy: { createdAt: "desc" },
     select: {
       publicId: true,
+      status: true,
+      idempotencyKey: true,
+      onlineAmount: true,
+      voidedAt: true,
+      voidReason: true,
+      voidShiftClosed: true,
+      voidedBy: { select: { name: true } },
       purpose: true,
       method: true,
       totalAmount: true,
@@ -171,6 +185,9 @@ export async function listCustomerRefunds(bookingId: number, db: Db = prisma) {
     notes: t.notes,
     by: t.collectedBy?.name ?? null,
     at: t.createdAt.toISOString(),
+    // Additive (Oct 2026): void state — a voided refund is shown struck through
+    status: t.status,
+    ...voidView(t),
   }));
 }
 
@@ -213,8 +230,10 @@ export async function getCustomerRefundOptions(req: Request, scope: CustomerRefu
     /** A cash refund is recorded against this shift; without one it is recorded outside a shift */
     cashShiftOpen: shift !== null,
     methods: CUSTOMER_REFUND_METHODS.map((value) => ({ value, label: CUSTOMER_REFUND_METHOD_LABELS[value] })),
-    /** Payment-proof photos are uploaded through the branch manager's portal */
-    proofPhotoSupported: scope.role === "MANAGER",
+    /** Payment-proof photos are uploaded through the branch manager's portal or the staff app */
+    proofPhotoSupported: scope.role !== "ADMIN",
+    /** Additive (Oct 2026): the actor's role — a Fleet Executive needs an open cash shift for a cash refund */
+    actorRole: scope.role,
     limits: {
       reasonMin: CUSTOMER_REFUND_REASON_MIN,
       reasonMax: CUSTOMER_REFUND_REASON_MAX,
@@ -259,6 +278,8 @@ export async function recordCustomerRefund(
   const actor = await requireActor(req);
   const booking = await requireBooking(bookingPublicId, scope);
   const input = parseCustomerRefundBody(req.body);
+  // A Fleet Executive's cash comes out of their drawer: an open shift is needed, as for every counter cash movement
+  if (scope.role === "STAFF" && input.method === "CASH") await assertOpenShift(actor);
   // The photo must be one uploaded in the booking's branch and not backing another payment
   const proof = input.proofFileId ? await resolvePaymentProof(input.proofFileId, booking.branchId) : null;
   const requestId = input.requestId ?? createID();
@@ -282,7 +303,10 @@ export async function recordCustomerRefund(
         const overBy = overReceivedBy(input.amount, m.received);
 
         if (proof) await claimPaymentProof(proof, tx);
-        const link = cashShiftLink(input.method, record.method === "CASH" ? await openCashShift(actor.id, tx) : null);
+        const cashShift = record.method === "CASH" ? await openCashShift(actor.id, tx) : null;
+        // A Fleet Executive's shift closed since the check above: still SHIFT_REQUIRED, never a refund outside a shift
+        if (scope.role === "STAFF" && record.method === "CASH" && !cashShift) await assertOpenShift(actor, tx);
+        const link = cashShiftLink(input.method, cashShift);
         const cashOutsideShift = link.cashOutsideShift;
         const now = new Date();
         const amount = input.amount.toFixed(2);
@@ -427,7 +451,7 @@ export async function recordCustomerRefund(
       cashOutsideShift: result.cashOutsideShift,
     },
   };
-  if (scope.role === "MANAGER") {
+  if (scope.role !== "ADMIN") {
     await staffActivityService.logFromRequest(req, activity);
   } else {
     await staffActivityService

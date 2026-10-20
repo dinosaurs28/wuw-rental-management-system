@@ -12,7 +12,7 @@
 import { prisma, BookingStatus, Prisma } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { getManualOutForRentalIds } from "./outForRental.js";
-import { findBlockingLocks } from "./bookingLocks.js";
+import { findActingLocks, findBlockingLocks } from "./bookingLocks.js";
 import { BOOKING_TURNAROUND_MS, windowsConflictWithTurnaround } from "@repo/schemas";
 import {
   DROP_NOT_RECORDED_WHERE,
@@ -317,7 +317,8 @@ export async function listOverlappingHolds(
  * Checks CONFIRMED/PICKED_UP bookings (DB) and active holds (Redis), each with
  * the 3 h turnaround either side (bookingBlocksWindow), and vehicles
  * set OUT_FOR_RENTAL by hand (no booking behind it, so no window is free),
- * and booking locks overlapping the window (bookingLocks.ts — a plain overlap).
+ * and booking locks overlapping the window (bookingLocks.ts — a plain overlap
+ * with the lock's effective window, its lead day included).
  *
  * @param vehicleIds          Internal vehicle IDs to check
  * @param start               Booking start time (output of TimezoneService.toPrisma)
@@ -374,13 +375,19 @@ export async function getUnavailableVehicleIds(
 }
 
 /**
- * Of `vehicleIds`, the ones no window is free for: set OUT_FOR_RENTAL by hand,
- * or out on an overdue rental. A listing without dates leaves these out (the
- * dated check above blocks them too).
+ * Of `vehicleIds`, the ones a listing without dates leaves out: set
+ * OUT_FOR_RENTAL by hand or out on an overdue rental (no window is free for
+ * them), or under a booking lock acting now — its lead day or the lock itself
+ * (findActingLocks; customers-only locks don't count with `options.forStaff`).
+ * The dated check above blocks them too.
  */
-export async function getBlockedForAnyWindowIds(vehicleIds: number[], now: Date = new Date()): Promise<Set<number>> {
+export async function getBlockedForAnyWindowIds(
+  vehicleIds: number[],
+  now: Date = new Date(),
+  options: { forStaff?: boolean } = {},
+): Promise<Set<number>> {
   if (vehicleIds.length === 0) return new Set();
-  const [manual, overdue] = await Promise.all([
+  const [manual, overdue, locked] = await Promise.all([
     getManualOutForRentalIds(vehicleIds),
     prisma.bookingItem.findMany({
       where: {
@@ -390,9 +397,11 @@ export async function getBlockedForAnyWindowIds(vehicleIds: number[], now: Date 
       },
       select: { vehicleId: true },
     }),
+    findActingLocks(vehicleIds, now, { forStaff: options.forStaff }),
   ]);
   const blocked = new Set<number>(manual);
   for (const item of overdue) blocked.add(item.vehicleId);
+  for (const id of locked.keys()) blocked.add(id);
   return blocked;
 }
 
@@ -406,10 +415,11 @@ export type UnavailableReason =
   /** A confirmed booking, with the turnaround, overlaps the window. */
   | { code: "BOOKED"; startAt: Date; endAt: Date; availableFrom: Date }
   /**
-   * A branch manager's booking lock overlaps the window (plain overlap): staff
-   * see the reason and when it ends; customers never do.
+   * A branch manager's booking lock overlaps the window (plain overlap with its
+   * effective window — from effectiveStartAt, 00:00 IST the day before startAt):
+   * staff see the reason and when it ends; customers never do.
    */
-  | { code: "BOOKING_LOCKED"; lockPublicId: string; reason: string; startAt: Date; endAt: Date }
+  | { code: "BOOKING_LOCKED"; lockPublicId: string; reason: string; startAt: Date; endAt: Date; effectiveStartAt: Date }
   /**
    * A customer checkout is holding it for part of the window (a Redis hold, or
    * with includeHoldRows an unexpired HOLD booking).
@@ -481,7 +491,14 @@ export async function explainUnavailableVehicles(
 
   for (const id of manualOutForRental) offer(id, { code: "MANUAL_OUT_FOR_RENTAL" });
   for (const [id, lock] of locked) {
-    offer(id, { code: "BOOKING_LOCKED", lockPublicId: lock.publicId, reason: lock.reason, startAt: lock.startAt, endAt: lock.endAt });
+    offer(id, {
+      code: "BOOKING_LOCKED",
+      lockPublicId: lock.publicId,
+      reason: lock.reason,
+      startAt: lock.startAt,
+      endAt: lock.endAt,
+      effectiveStartAt: lock.effectiveStartAt,
+    });
   }
   for (const { vehicleId, booking } of items) {
     if (booking.status === BookingStatus.PICKED_UP) {
