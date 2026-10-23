@@ -26,6 +26,8 @@ export function normalizeGroup(g: any): Vehicle {
     },
     priceInfo: g.pricingDetails ?? null,
     availability: true,
+    // Monthly results only (plan=MONTHLY)
+    ...(g.monthly ? { monthly: g.monthly } : {}),
   };
 }
 

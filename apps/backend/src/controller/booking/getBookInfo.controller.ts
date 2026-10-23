@@ -43,6 +43,20 @@ import {
 } from "../../services/tax/gst.service.js";
 import { assertBookingWindow, BookingWindowError } from "../../utils/booking/bookingWindow.js";
 import { standardRentalPeriodType } from "../../utils/booking/rentalPeriod.js";
+import { RentalPeriodType as StoredRentalPeriodType } from "@repo/database/client";
+import {
+  CUSTOMER_MONTHLY_LENGTH,
+  CUSTOMER_MONTHLY_LENGTH_MESSAGE,
+  MONTHLY_COUPON_NOT_ALLOWED,
+  MONTHLY_COUPON_NOT_ALLOWED_MESSAGE,
+  MONTHLY_PRICE_NOT_SET,
+  MONTHLY_PRICE_NOT_SET_MESSAGE,
+} from "@repo/schemas";
+import {
+  hasVehicleMonthlyPrice,
+  isCustomerMonthlyLength,
+  MONTHLY_PRICING_SELECT,
+} from "../../utils/pricing/monthlyPlan.js";
 import {
   MAX_RENTAL_DAYS,
   isCustomerPackageDuration,
@@ -153,6 +167,8 @@ async function resolveVehicleFromGroup(
   endDateDt: any,
   tx: typeof prisma,
   preferredVehicleId?: number,
+  /** Customer monthly booking: only units with their own monthly price */
+  monthlyOnly = false,
 ): Promise<NonNullable<Awaited<ReturnType<typeof prisma.vehicle.findFirst>>>> {
   const parsed = parseGroupKey(groupKey);
   if (!parsed) throw Object.assign(new Error("Invalid groupKey format"), { code: "INVALID_GROUP_KEY", status: 400 });
@@ -173,15 +189,20 @@ async function resolveVehicleFromGroup(
   const targetMake = normalizeStr(make);
   const targetModel = normalizeStr(model);
   let candidates = branchVehicles.filter(
-    (v) => normalizeStr(v.make) === targetMake && normalizeStr(v.model) === targetModel,
+    (v) =>
+      normalizeStr(v.make) === targetMake &&
+      normalizeStr(v.model) === targetModel &&
+      (!monthlyOnly || hasVehicleMonthlyPrice(v.customPricing)),
   );
 
   if (dailyPricePaise != null && candidates.length > 0) {
     const durationInfo = DurationCalculatorService.calculate(startDateDt, endDateDt);
-    const listingPriceMap = await getBatchListingPrices(candidates, durationInfo, {
-      startAt: TimezoneService.toPrisma(startDateDt),
-      endAt: TimezoneService.toPrisma(endDateDt),
-    });
+    const listingPriceMap = await getBatchListingPrices(
+      candidates,
+      durationInfo,
+      { startAt: TimezoneService.toPrisma(startDateDt), endAt: TimezoneService.toPrisma(endDateDt) },
+      monthlyOnly ? { monthlyPlan: true } : undefined,
+    );
     candidates = candidates.filter(
       (v) => dailyPriceToPaise(Number(listingPriceMap.get(v.id)?.finalPrice ?? 0)) === dailyPricePaise,
     );
@@ -237,6 +258,19 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     const { vehicles, groupKeys, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
     const customerId = userData.customerProfile.id;
+    // Customer monthly booking (Oct 23 2026): exactly 30 days at each vehicle's
+    // own monthly price, saved as rentalPeriodType MONTHLY like the counter plan.
+    // Absent / STANDARD (old builds) = the daily flow below, unchanged.
+    const monthly = parsed.data.plan === "MONTHLY";
+    if (monthly && couponCode) {
+      // The counter monthly plan takes no coupon; neither does the customer one
+      return res.status(StatusCode.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        code: MONTHLY_COUPON_NOT_ALLOWED,
+        message: MONTHLY_COUPON_NOT_ALLOWED_MESSAGE,
+        couponRejected: true,
+      });
+    }
     // KYC picture: when sent it must be one of the caller's own documents. The
     // booking keeps the customer's DL photo either way (DL photos gate below).
     let kycFile: { id: number } | null = null;
@@ -308,9 +342,18 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    // ── Booking window (#15): pickup ≤ 30 days ahead, ≤ 30 days long — customers can't choose a monthly plan ──
+    // ── Customer monthly booking: exactly 30 × 24 h (the counter plan's 30–180 is staff-only) ──
+    if (monthly && !isCustomerMonthlyLength(startDate, endDate)) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: CUSTOMER_MONTHLY_LENGTH,
+        message: CUSTOMER_MONTHLY_LENGTH_MESSAGE,
+      });
+    }
+
+    // ── Booking window (#15): pickup ≤ 30 days ahead, ≤ 30 days long (monthly: pickup in the window) ──
     try {
-      assertBookingWindow(startDate, endDate);
+      assertBookingWindow(startDate, endDate, monthly ? { monthly: true } : undefined);
     } catch (windowErr) {
       if (windowErr instanceof BookingWindowError) {
         return res.status(StatusCode.BAD_REQUEST).json(windowErr.toJSON());
@@ -387,6 +430,19 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
+    // Monthly: every car needs its own monthly price (never the branch default / daily rate)
+    if (monthly) {
+      const unpriced = vehiclesData.find((v) => !hasVehicleMonthlyPrice(v.customPricing));
+      if (unpriced) {
+        return res.status(StatusCode.UNPROCESSABLE_ENTITY).json({
+          success: false,
+          code: MONTHLY_PRICE_NOT_SET,
+          message: MONTHLY_PRICE_NOT_SET_MESSAGE,
+          vehicle: unpriced.publicId,
+        });
+      }
+    }
+
     const items: any = [];
     // The branch's weekend days the items were priced with (stored in pricingSnapshot)
     let weekendDays: number[] | null = null;
@@ -453,6 +509,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         );
       }
       appliedCouponRule = pr.discountEvaluation.couponRule;
+    };
+    // Monthly: the 30 days must be billed as one month at the monthly price
+    const assertMonthlyPriced = (pr: Awaited<ReturnType<typeof pricingEngine.calculateBookingPrice>>) => {
+      if (monthly && pr.pricingBreakdown.billedAsType !== "MONTHLY") {
+        throw Object.assign(new Error(MONTHLY_PRICE_NOT_SET_MESSAGE), { code: MONTHLY_PRICE_NOT_SET, status: 422 });
+      }
     };
 
     // Calculate total duration info once for the booking overall constraints
@@ -595,10 +657,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         undefined,
         undefined,
         undefined,
-        { deferPaymentPlanCheck: true, heldToClosing },
+        { deferPaymentPlanCheck: true, heldToClosing, monthlyPlan: monthly },
       );
       // A coupon that no longer applies is rejected, never silently dropped
       rejectIfCouponInvalid(pricingResult, itemCoupon);
+      assertMonthlyPriced(pricingResult);
 
       const baseTotal = Number(pricingResult.basePrice.toString());
       const days = bookingDuration.days;
@@ -691,21 +754,28 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             branchId: gkParsed.branchId,
             ...listableVehicleWhere(),
           },
-          select: { id: true, publicId: true, status: true, make: true, model: true, branchId: true, categoryId: true, advancePayAmount: true },
+          select: {
+            id: true, publicId: true, status: true, make: true, model: true, branchId: true, categoryId: true, advancePayAmount: true,
+            customPricing: { select: MONTHLY_PRICING_SELECT },
+          },
           orderBy: [{ odo: "asc" }, { id: "asc" }],
         });
         let groupCandidates = candidates.filter(
           (v) =>
             normalizeStr(v.make) === targetMake &&
             normalizeStr(v.model) === targetModel &&
-            !groupRepVehicleIds.includes(v.id),
+            !groupRepVehicleIds.includes(v.id) &&
+            // Monthly: only units with their own monthly price
+            (!monthly || hasVehicleMonthlyPrice(v.customPricing)),
         );
 
         if (gkParsed.dailyPricePaise != null && groupCandidates.length > 0) {
-          const listingPriceMap = await getBatchListingPrices(groupCandidates, groupDurationInfo, {
-            startAt: TimezoneService.toPrisma(startDateDt),
-            endAt: TimezoneService.toPrisma(endDateDt),
-          });
+          const listingPriceMap = await getBatchListingPrices(
+            groupCandidates,
+            groupDurationInfo,
+            { startAt: TimezoneService.toPrisma(startDateDt), endAt: TimezoneService.toPrisma(endDateDt) },
+            monthly ? { monthlyPlan: true } : undefined,
+          );
           groupCandidates = groupCandidates.filter(
             (v) => dailyPriceToPaise(Number(listingPriceMap.get(v.id)?.finalPrice ?? 0)) === gkParsed.dailyPricePaise,
           );
@@ -728,9 +798,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         if (groupCoupon) groupCouponIndex = gkIndex;
         const pr = await pricingEngine.calculateBookingPrice(
           repVehicle.id, startDateDt, endDateDt, repVehicle.branchId, customerId, groupCoupon,
-          undefined, undefined, undefined, undefined, { deferPaymentPlanCheck: true, heldToClosing },
+          undefined, undefined, undefined, undefined, { deferPaymentPlanCheck: true, heldToClosing, monthlyPlan: monthly },
         );
         rejectIfCouponInvalid(pr, groupCoupon);
+        assertMonthlyPriced(pr);
         console.log(`[booking] pricing for vehicle ${repVehicle.id}: base:${pr.basePrice} discount:${pr.discountAmount} tax:${pr.taxAmount} deposit:${pr.deposit} finalTotal:${pr.finalTotal}`);
         grandBaseTotal     += Number(pr.basePrice.toString());
         grandDiscountTotal += Number(pr.discountAmount.toString());
@@ -874,6 +945,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             endDateDt,
             tx as any,
             groupRepVehicleIds[gkIndex],
+            monthly,
           );
           resolvedGroupVehicles.push(resolved as any);
         } catch (err: any) {
@@ -904,9 +976,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           undefined,
           undefined,
           undefined,
-          { paymentPlan: effectiveFlow.flow, heldToClosing },
+          { paymentPlan: effectiveFlow.flow, heldToClosing, monthlyPlan: monthly },
         );
         rejectIfCouponInvalid(pricingResult, groupCoupon);
+        assertMonthlyPriced(pricingResult);
 
         const baseTotal       = Number(pricingResult.basePrice.toString());
         const discountPercent = Number(pricingResult.discountPercent.toString()) / 100;
@@ -999,8 +1072,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           startAt: startDate,
           endAt: endDate,
           days: bookingDuration.days,
-          // 30-day packages price as MONTHLY but are standard bookings (not the monthly plan)
-          rentalPeriodType: standardRentalPeriodType(bookingDuration.periodType),
+          // 30-day packages price as MONTHLY but are standard bookings (not the monthly plan);
+          // a customer monthly booking is stored like the counter monthly plan
+          rentalPeriodType: monthly
+            ? StoredRentalPeriodType.MONTHLY
+            : standardRentalPeriodType(bookingDuration.periodType),
           actualHours: new Decimal(bookingDuration.actualDuration.toString()),
           billableHours: new Decimal(
             bookingDuration.billableDuration.toString(),
@@ -1188,6 +1264,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: "Summary created successfully",
       holdId,
+      // STANDARD (daily flow) or MONTHLY (customer monthly booking, 30 days)
+      plan: monthly ? "MONTHLY" : "STANDARD",
       payment_type: parsed.data.payment_type,
       // The plan actually charged (may differ from the one requested — see paymentFlowAdjusted)
       payment_flow: effectiveFlow.flow,
@@ -1251,6 +1329,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     if (e?.code === "NO_VEHICLE_AVAILABLE") {
       return res.status(409).json({ code: "NO_VEHICLE_AVAILABLE", message: e.message });
+    }
+    if (e?.code === MONTHLY_PRICE_NOT_SET) {
+      return res.status(StatusCode.UNPROCESSABLE_ENTITY).json({ success: false, code: MONTHLY_PRICE_NOT_SET, message: e.message });
     }
     if (isGstRuleMissing(e)) {
       return res.status(StatusCode.CONFLICT).json({ success: false, code: GST_RULE_MISSING, message: GST_RULE_MISSING_MESSAGE });

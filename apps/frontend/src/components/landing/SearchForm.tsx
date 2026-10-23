@@ -35,6 +35,9 @@ import {
 } from "@/components/booking/PackagePicker";
 import { ADVANCE_BOOKING_DAYS, bookingPickerLimits, MAX_RENTAL_DAYS, snapPickupPastClosedToday } from "@/utils/bookingPickers";
 import { packageRangeState, returnForNewPickup, returnForPackage } from "@/utils/bookingPackages";
+import { PlanToggle } from "@/components/booking/PlanToggle";
+import { CUSTOMER_MONTHLY_DAYS, CUSTOMER_MONTHLY_LABEL, monthlyReturn } from "@/utils/customerMonthly";
+import type { SearchPlan } from "@/store/search.store";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -66,8 +69,11 @@ export const SearchForm = () => {
         returnDate,
         pickupTime,
         returnTime,
+        plan,
         setSearchCriteria,
     } = useSearchStore();
+    // Monthly (client TODO item 1): exactly 30 days from the pickup, return read-only
+    const monthly = plan === "MONTHLY";
 
     // Office hours (#2) and the booking window (#15: pickup ≤ 30 days ahead) for the pickers
     const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
@@ -102,12 +108,36 @@ export const SearchForm = () => {
         ? `${pkg.correction.returnDate.getTime()}|${pkg.correction.returnTime}`
         : "";
     useEffect(() => {
-        if (pkg.correction) setSearchCriteria(pkg.correction);
+        if (pkg.correction && !monthly) setSearchCriteria(pkg.correction);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [correctionKey]);
+    }, [correctionKey, monthly]);
+
+    // Monthly: the return is always pickup + 30 days (same time)
+    useEffect(() => {
+        if (!monthly || !pickupDate) return;
+        const ret = monthlyReturn(pickupDate, pickupTime || "10:00");
+        if (returnDate?.getTime() !== ret.returnDate.getTime() || returnTime !== ret.returnTime) setSearchCriteria(ret);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [monthly, pickupDate, pickupTime]);
+
+    const choosePlan = (next: SearchPlan) => {
+        if (next === "MONTHLY") {
+            setSearchCriteria({ plan: next, ...(pickupDate ? monthlyReturn(pickupDate, pickupTime || "10:00") : {}) });
+            return;
+        }
+        // Back to Daily: start from the 1-day package
+        const ret = returnForPackage({ schedule, pickupDate, pickupTime: pickupTime || "10:00" }, { packageHours: 24, extraHours: 0 });
+        setSearchCriteria({ plan: next, ...(ret ?? {}) });
+    };
 
     /** Moves the pickup and keeps the package: the return moves with it. */
     const setPickup = (next: { pickupDate?: Date | null; pickupTime?: string }) => {
+        if (monthly) {
+            const day = next.pickupDate !== undefined ? next.pickupDate : pickupDate;
+            const time = next.pickupTime ?? (pickupTime || "10:00");
+            setSearchCriteria({ ...next, ...(day ? monthlyReturn(day, time) : {}) });
+            return;
+        }
         const ret = returnForNewPickup(packageInput, {
             pickupDate: next.pickupDate !== undefined ? next.pickupDate : pickupDate,
             pickupTime: next.pickupTime ?? (pickupTime || "10:00"),
@@ -133,7 +163,8 @@ export const SearchForm = () => {
 
     // Trip type is required (client, Oct 2026): no vehicles until it's chosen
     const isFormValid =
-        !!branchPublicId && !!pickupDate && !!returnDate && !limits.windowError && !!pkg.selected && !pkg.correction &&
+        !!branchPublicId && !!pickupDate && !!returnDate && !limits.windowError &&
+        (monthly || (!!pkg.selected && !pkg.correction)) &&
         !!tripType;
 
     const handleSearch = () => {
@@ -199,6 +230,16 @@ export const SearchForm = () => {
                                 </button>
                             );
                         })
+                    )}
+                </div>
+
+                {/* Daily / Monthly (client TODO item 1) */}
+                <div className="mb-4 sm:mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <PlanToggle value={plan} onChange={choosePlan} />
+                    {monthly && (
+                        <span className="text-xs sm:text-[13px] text-zinc-500">
+                            A {CUSTOMER_MONTHLY_DAYS}-day rental at each vehicle's monthly price
+                        </span>
                     )}
                 </div>
 
@@ -285,7 +326,27 @@ export const SearchForm = () => {
                         <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" className="mt-1.5 sm:mt-2" />
                     </div>
 
-                    {/* Rental length — the return is computed (pickup + 12 hours / N days) */}
+                    {/* Rental length — the return is computed (pickup + 12 hours / N days; Monthly: + 30 days) */}
+                    {monthly ? (
+                    <div className="min-w-0">
+                        <div className={labelRow}>
+                            <label className={cn(fieldLabel, "whitespace-nowrap")}>Rental length</label>
+                        </div>
+                        <div
+                            aria-live="polite"
+                            className={cn(fieldBox, "flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 bg-zinc-50 hover:border-zinc-300 text-[15px] sm:text-base font-medium text-zinc-900")}
+                        >
+                            <Timer className="size-[18px] sm:size-5 shrink-0 text-zinc-700" strokeWidth={1.8} />
+                            <span className="truncate">{CUSTOMER_MONTHLY_LABEL}</span>
+                        </div>
+                        <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
+                            Return{" "}
+                            <span className="font-semibold text-zinc-900">
+                                {returnDate ? `${format(returnDate, "EEE, d MMM")}, ${returnTime || "10:00"}` : "—"}
+                            </span>
+                        </p>
+                    </div>
+                    ) : (
                     <div className="min-w-0">
                         <div className={cn(labelRow, "justify-between gap-2")}>
                             <label className={cn(fieldLabel, "whitespace-nowrap")}>Rental length</label>
@@ -305,6 +366,7 @@ export const SearchForm = () => {
                         </p>
                         <PackageHints state={pkg} className="mt-1" />
                     </div>
+                    )}
 
                     {/* Trip type — required, right after the dates and package */}
                     <div className="sm:col-span-2 xl:col-span-1 min-w-0">
@@ -361,7 +423,9 @@ export const SearchForm = () => {
                             )}
                         </motion.button>
                         <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] text-zinc-500">
-                            12 hours or 1–{MAX_RENTAL_DAYS} days · book up to {ADVANCE_BOOKING_DAYS} days ahead
+                            {monthly
+                                ? `${CUSTOMER_MONTHLY_LABEL} · pickup up to ${ADVANCE_BOOKING_DAYS} days ahead`
+                                : `12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`}
                         </p>
                     </div>
                 </div>

@@ -117,6 +117,11 @@ async function openForStaff(type: string, data: NotificationData): Promise<boole
     router.navigate('/(employee)/recovery' as Href);
     return true;
   }
+  // The branch manager closed your shift: its closed report (amount received, any difference)
+  if (type === 'SHIFT_CLOSED') {
+    router.push((data.entityPublicId ? `/employee/shift/${data.entityPublicId}` : '/employee/shift/history') as Href);
+    return true;
+  }
   const bookingPublicId = data.bookingPublicId;
   if (!bookingPublicId) {
     openStaffBookingsTab();
@@ -134,6 +139,9 @@ async function openForStaff(type: string, data: NotificationData): Promise<boole
     status = null;
   }
 
+  // A monthly rental nearing its end (MONTHLY_RENTAL_EXPIRING) has no type
+  // hint: it opens the pickup screen while CONFIRMED and the active-rental
+  // (return) screen while PICKED_UP, where it can be extended / renewed.
   // Route by the live status; when the lookup failed (offline, removed), by
   // the notification type instead.
   const toPickup = status

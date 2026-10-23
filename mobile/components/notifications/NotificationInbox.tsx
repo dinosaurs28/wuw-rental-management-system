@@ -54,6 +54,8 @@ function visualFor(item: AppNotification): { icon: IoniconName; color: string } 
         : { icon: 'checkmark-done-outline', color: GREEN };
     case 'CASH_DELAYED':              return { icon: 'cash-outline', color: AMBER };
     case 'SHIFT_DISCREPANCY':         return { icon: 'alert-circle-outline', color: AMBER };
+    case 'MONTHLY_RENTAL_EXPIRING':   return { icon: 'calendar-outline', color: AMBER };
+    case 'SHIFT_CLOSED':              return { icon: 'wallet-outline', color: GREEN };
     default:                          return { icon: 'notifications-outline', color: Colors.ink3 };
   }
 }

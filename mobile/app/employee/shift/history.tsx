@@ -186,9 +186,9 @@ function ShiftCard({ shift, onPress }: { shift: ShiftView; onPress: () => void }
       <View style={styles.figureRow}>
         <Figure label="Refunded" value={inrOrDash(shift.cashRefunded)} />
         {/* Closing cash and variance don't exist until the shift closes */}
-        <Figure label="Counted" value={inrOrDash(shift.closingCash)} />
+        <Figure label={shift.closedByManager ? 'Received' : 'Counted'} value={inrOrDash(shift.closingCash)} />
         <Figure
-          label="Variance"
+          label={shift.closedByManager ? 'Difference' : 'Variance'}
           value={variance == null ? '—' : signedInr(variance)}
           color={variance == null ? undefined : varianceColor(variance)}
         />
@@ -204,10 +204,18 @@ function ShiftCard({ shift, onPress }: { shift: ShiftView; onPress: () => void }
       {shift.legacyVariance ? (
         <Text style={styles.cardNote}>Closed under the old rule (variance vs manager-confirmed cash).</Text>
       ) : null}
-      {shift.reconciledAt ? (
+      {shift.closedByManager ? (
+        <Text style={styles.cardNote}>
+          Closed by your branch manager{shift.closedByName ? ` (${shift.closedByName})` : ''}
+          {shift.discrepancyExplanation ? ` — ${shift.discrepancyExplanation}` : ''}
+        </Text>
+      ) : shift.reconciledAt ? (
         <Text style={styles.cardNote}>
           Reconciled{shift.reconciledByName ? ` by ${shift.reconciledByName}` : ''} · {istDateTime(shift.reconciledAt)}
         </Text>
+      ) : null}
+      {shift.isOpen ? (
+        <Text style={styles.cardNote}>Your branch manager closes this shift when you hand over the cash.</Text>
       ) : null}
     </TouchableOpacity>
   );

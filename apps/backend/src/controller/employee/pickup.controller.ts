@@ -13,7 +13,7 @@ import { captureOrderStart, orderByCapture } from "../../utils/photo-order.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 import { fastagBalanceField } from "../../services/charges/fastag-usage.js";
-import { assertOpenShift, CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { assertOpenShift, CounterGuardError, lockShiftForPayment } from "../../services/payment/counter-guard.service.js";
 import {
   resolvePickupDlStatus,
   dlStatusUpdateData,
@@ -170,12 +170,13 @@ export const PickupController = async (req: Request, res: Response) => {
     const depositRequest = chargePickupData.success
       ? chargePickupData.data.safetyDepositRequest
       : undefined;
-    if (
+    const takesDepositNow = !!(
       frozenConfig.safetyDepositEnabled &&
       depositRequest &&
       depositRequest.requestedAmount > 0 &&
       !frozenConfig.safetyDepositRequiresApproval
-    ) {
+    );
+    if (takesDepositNow) {
       await assertOpenShift(actingUser);
     }
 
@@ -186,6 +187,9 @@ export const PickupController = async (req: Request, res: Response) => {
       : {};
 
     await prisma.$transaction(async (tx) => {
+      // Deposit taken now: the executive's open shift is locked first (FOR SHARE —
+      // never a shift being closed), so the lock order is shift → booking
+      if (takesDepositNow) await lockShiftForPayment(tx, actingUser);
       // Booking row lock first (shared with the BM's manual cancel), then still
       // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
       await lockBookingForPickup(tx, booking.id);
@@ -370,10 +374,7 @@ export const PickupController = async (req: Request, res: Response) => {
           // SAFETY_DEPOSIT — refundable, not revenue) on the staff member's open
           // shift so the drawer expects it, awaiting the manager's cash
           // confirmation like other counter cash. One per booking (the request is).
-          const depositShift = await tx.cashShift.findFirst({
-            where: { employeeId: actingUser.id, status: "OPEN" },
-            select: { id: true },
-          });
+          const depositShift = await lockShiftForPayment(tx, actingUser);
           await tx.paymentTransaction.create({
             data: {
               publicId: createID(),

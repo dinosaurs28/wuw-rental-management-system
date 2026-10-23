@@ -95,6 +95,9 @@ export const getUserBookings = async (req: Request, res: Response) => {
       startAt: booking.startAt,
       endAt: booking.endAt,
       days: booking.days,
+      // Monthly bookings (customer "Monthly · 30 days" or the counter monthly plan)
+      rentalPeriodType: booking.rentalPeriodType,
+      plan: booking.rentalPeriodType === "MONTHLY" ? "MONTHLY" : "STANDARD",
       total: booking.totalFinal,
       // Partial payment: what was paid and what is still due (at pickup / at drop)
       isAdvancePayment: booking.isAdvancePayment,

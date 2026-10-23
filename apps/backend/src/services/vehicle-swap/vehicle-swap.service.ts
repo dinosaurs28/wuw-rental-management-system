@@ -1766,6 +1766,8 @@ export class VehicleSwapService {
         weekendDays: weekendDaysOf(booking.pricingSnapshot),
         // Festival rules: today's for both cars (no specialRules), like today's rates;
         // the confirmed swap stores them on the booking (recordBookingSpecialRules)
+        // A monthly booking: both cars' months at exactly their monthly price (no slab)
+        monthlyPlan: booking.rentalPeriodType === "MONTHLY",
       },
     );
     // finalTotal = the post-discount rent incl. GST (what the customer pays for it)

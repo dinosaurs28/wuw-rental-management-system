@@ -173,16 +173,16 @@ test("a percentage coupon takes the same percentage off the added time; GST is s
   assert.equal(p.baseAmount.toFixed(2), "2214.00");
 });
 
-test("monthly bookings keep the delta from pickup (a second month at the monthly rate); clamped at ₹0", () => {
+test("monthly bookings no longer use the delta from pickup: the added time is priced as a renewal (monthly-renewal.test.ts)", () => {
+  // Deliberately replaced (client TODO 7–9, Oct 2026): the old rule charged
+  // 2 months less 1 month + 15 days (₹6,000 here) — a renewal of 15 days is
+  // now 15 days at the daily rate, as a daily booking of that length.
   const monthly: RateCard = { ...i10, hourlyRate: null, priceMonthly: new Decimal(30000) };
   const booking = { startAt: ist("2026-10-01T10:00"), endAt: ist("2026-11-15T10:00"), monthly: true };
   const p = priceExtension(booking, ist("2026-11-30T10:00"), { card: monthly });
-  assert.equal(p.mode, "DELTA");
-  // 60 days = 2 months (60,000) less 1 month + 15 days (30,000 + 24,000)
-  assert.equal(p.additionalAmount.toFixed(2), "6000.00");
-  // The added 15 days alone would be 24,000
-  assert.equal(priceExtension({ ...booking, monthly: false }, ist("2026-11-30T10:00"), { card: monthly }).additionalAmount.toFixed(2), "24000.00");
-  // A longer monthly rental that comes out cheaper is never refunded here
+  assert.equal(p.mode, "MONTHLY_RENEWAL");
+  assert.equal(p.additionalAmount.toFixed(2), "24000.00");
+  // A longer rental that comes out cheaper is never refunded here (clamped at ₹0)
   const cheaper = extensionCharge(
     [
       { sign: 1, grossPrice: new Decimal(30000), grossTotal: new Decimal(30000) },
@@ -220,16 +220,13 @@ test("a booking made as the 12-hour package held to closing has paid to pickup +
   assert.equal(extensionKmMinutes({ startAt: held.startAt }, held.endAt, ist("2026-10-24T08:00")), 570);
 });
 
-test("monthly bookings are unchanged by the held-to-closing rule (the delta from pickup)", () => {
+test("monthly bookings are unchanged by the held-to-closing rule (a renewal starts at the current return)", () => {
   const start = ist("2026-10-01T10:00");
   const w = extensionWindows({ startAt: start, monthly: true, heldToClosing: true }, ist("2026-11-15T10:00"), ist("2026-11-30T10:00"));
-  assert.equal(w.mode, "DELTA");
+  assert.equal(w.mode, "MONTHLY_RENEWAL");
   assert.deepEqual(
-    w.terms.map((t) => [t.from.toISOString(), t.to.toISOString(), t.sign]),
-    [
-      [start.toISOString(), ist("2026-11-30T10:00").toISOString(), 1],
-      [start.toISOString(), ist("2026-11-15T10:00").toISOString(), -1],
-    ],
+    w.terms.map((t) => [t.from.toISOString(), t.to.toISOString(), t.sign, t.part]),
+    [[ist("2026-11-15T10:00").toISOString(), ist("2026-11-30T10:00").toISOString(), 1, "DAYS"]],
   );
   assert.equal(
     extensionKmMinutes({ startAt: start, pricingSnapshot: { heldToClosing: true }, rentalPeriodType: "MONTHLY" }, ist("2026-11-15T10:00"), ist("2026-11-15T12:00")),

@@ -1,4 +1,5 @@
 import { prisma, PaymentPurpose, ExtensionStatus } from "@repo/database/client";
+import type { Prisma } from "@repo/database/client";
 import type {
   PaymentTransaction,
   PaymentMethod,
@@ -11,7 +12,7 @@ import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { fraudDetectionService } from "./fraud-detection.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
-import { assertOpenShift, claimUtr } from "./counter-guard.service.js";
+import { assertOpenShift, claimUtr, lockShiftForPayment } from "./counter-guard.service.js";
 import {
   resolveCounterUpi,
   claimCounterUpi,
@@ -47,7 +48,7 @@ export interface RecordPaymentInput {
   proof_file_ids?: string[];
 }
 
-interface ActorContext {
+export interface ActorContext {
   actorId: number;
   actorName: string;
   actorRole: Role;
@@ -84,6 +85,159 @@ function assertSameBranch(
     throw new PaymentTransactionBranchError(
       `This payment belongs to another branch — only that branch's manager can ${action} it.`,
     );
+  }
+}
+
+type ConfirmedExtension = { id: number; publicId: string; bookingId: number; requestedEndAt: Date };
+
+/**
+ * Inside a transaction: COLLECTED → CONFIRMED (conditional, so a racing
+ * confirm / reject wins only once) and, for an extension payment, the
+ * extension finalized (booking end moved, totalFinal raised). Shared by the
+ * manager's single confirm and the shift close (which confirms every
+ * COLLECTED payment of the shift). confirmed=false when it was no longer
+ * COLLECTED.
+ */
+export async function confirmCollectedInTx(
+  tx: Prisma.TransactionClient,
+  txn: { id: number; purpose: PaymentPurpose | string; notes: string | null },
+  actorId: number,
+  notes?: string | null,
+): Promise<{ confirmed: boolean; extension: ConfirmedExtension | null }> {
+  const { count } = await tx.paymentTransaction.updateMany({
+    where: { id: txn.id, status: "COLLECTED" },
+    data: {
+      status: "CONFIRMED",
+      confirmedById: actorId,
+      confirmedAt: new Date(),
+      notes: notes ?? txn.notes,
+    },
+  });
+  if (count === 0) return { confirmed: false, extension: null };
+
+  // Extension finalization hook: if this cash payment was for an extension,
+  // finalize the booking date update now that cash is confirmed.
+  if (txn.purpose !== PaymentPurpose.EXTENSION) return { confirmed: true, extension: null };
+  const ext = await tx.bookingExtension.findFirst({
+    where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+  });
+  if (!ext) return { confirmed: true, extension: null };
+  const flipped = await tx.bookingExtension.updateMany({
+    where: { id: ext.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+    data: {
+      extensionStatus: ExtensionStatus.CONFIRMED,
+      actualNewEndAt: ext.requestedEndAt,
+    },
+  });
+  if (flipped.count === 0) return { confirmed: true, extension: null };
+
+  const current = await tx.booking.findUniqueOrThrow({
+    where: { id: ext.bookingId },
+    select: { extensionCount: true },
+  });
+  await tx.booking.update({
+    where: { id: ext.bookingId },
+    data: {
+      endAt: ext.requestedEndAt,
+      extensionCount: { increment: 1 },
+      lastExtendedAt: new Date(),
+      totalFinal: { increment: ext.additionalAmount },
+      activeExtensionId: null,
+      ...(current.extensionCount === 0 ? { originalEndAt: ext.oldEndAt } : {}),
+    },
+  });
+  // days / rentalPeriodType / hours follow the extended end (#5/#17)
+  await refreshBookingPeriodFields(ext.bookingId, tx);
+  // Festival rules that priced the added time join the booking's stored ones
+  await recordBookingSpecialRules(tx, ext.bookingId, ext.oldEndAt, ext.requestedEndAt);
+  return { confirmed: true, extension: ext };
+}
+
+/**
+ * After a COLLECTED payment was confirmed (committed): extension audit +
+ * invoice refresh + customer notification, legacy invoice sync, audit and
+ * staff activity. notifyCollector: tell the executive their cash was
+ * confirmed (a shift close sends one "shift closed" notification instead).
+ */
+export async function afterCashConfirmed(
+  txn: { id: number; publicId: string; bookingId: number; branchId: number; totalAmount: { toString(): string }; collectedById: number | null },
+  linkedExtension: ConfirmedExtension | null,
+  actor: ActorContext,
+  opts: { notifyCollector: boolean; shiftPublicId?: string },
+): Promise<void> {
+  if (linkedExtension) {
+    const effectiveEndAt = linkedExtension.requestedEndAt;
+    await auditService.log({
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      actorBranchId: txn.branchId,
+      action: "Extension finalized after cash confirmation",
+      category: AuditCategory.BOOKING,
+      description: `Extension ${linkedExtension.publicId} confirmed. Booking extended to ${effectiveEndAt.toISOString()}`,
+      entity: "BookingExtension",
+      entityId: linkedExtension.publicId,
+      before: { extensionStatus: "PAYMENT_COLLECTED" },
+      after: { extensionStatus: "CONFIRMED", actualNewEndAt: effectiveEndAt },
+    });
+
+    // The confirmed extension (taxable + GST) and the new return time belong
+    // on the invoice — a fresh PDF even when the totals did not move
+    refreshInvoiceTotals(linkedExtension.bookingId, { forceRegenerate: true }).catch((err) =>
+      console.error("[confirmCash] Invoice refresh error:", err),
+    );
+
+    void notifyEvents.extensionConfirmed({ extensionId: linkedExtension.id, actorUserId: actor.actorId });
+  } else {
+    // A legacy drop's settlement cash: the invoice turns PAID once the
+    // manager's settlement shows nothing owed (no-op for other bookings)
+    const booking = await prisma.booking.findUnique({ where: { id: txn.bookingId }, select: { status: true } });
+    if (booking?.status === "RETURNED") {
+      syncLegacyReturnInvoice(txn.bookingId).catch((err) =>
+        console.error("[confirmCash] Invoice sync error:", err),
+      );
+    }
+  }
+
+  const viaShift = opts.shiftPublicId ? ` at the close of shift ${opts.shiftPublicId}` : "";
+  await auditService.log({
+    actorId: actor.actorId,
+    actorName: actor.actorName,
+    actorRole: actor.actorRole,
+    actorBranchId: txn.branchId,
+    action: "CONFIRM_CASH_PAYMENT",
+    category: AuditCategory.PAYMENT,
+    description: `Cash payment ₹${txn.totalAmount} confirmed for booking ID ${txn.bookingId}${viaShift}`,
+    entity: "PaymentTransaction",
+    entityId: txn.publicId,
+    before: { status: "COLLECTED" },
+    after: { status: "CONFIRMED", confirmedById: actor.actorId, ...(opts.shiftPublicId ? { shiftPublicId: opts.shiftPublicId } : {}) },
+  });
+
+  await staffActivityService.log({
+    actorPublicId: actor.actorPublicId,
+    actorName: actor.actorName,
+    actorRole: actor.actorRole,
+    branchId: txn.branchId,
+    branchName: actor.branchName,
+    actionType: StaffActionType.CONFIRMED,
+    entityType: StaffEntityType.PAYMENT_TRANSACTION,
+    entityRef: txn.publicId,
+    description: `Cash payment ₹${txn.totalAmount} confirmed${viaShift}`,
+  });
+
+  if (opts.notifyCollector && txn.collectedById) {
+    void notifyEvents.approvalResolved({
+      kind: "CASH_PAYMENT",
+      entity: "PaymentTransaction",
+      entityPublicId: txn.publicId,
+      branchId: txn.branchId,
+      approved: true,
+      recipientUserId: txn.collectedById,
+      bookingId: txn.bookingId,
+      amount: txn.totalAmount,
+      actorUserId: actor.actorId,
+    });
   }
 }
 
@@ -176,18 +330,16 @@ class PaymentTransactionService {
 
     const now = new Date();
 
-    // Link to the active cash shift: cash/split for the drawer, UPI (UTR) for
-    // the shift's UPI-collected figure
-    let cashShiftId: number | null = null;
-    if ((input.method !== "ONLINE" && cashAmount.gt(ZERO)) || onlineGateway === "UPI") {
-      const activeShift = await prisma.cashShift.findFirst({
-        where: { employeeId: actor.actorId, status: "OPEN" },
-        select: { id: true },
-      });
-      cashShiftId = activeShift?.id ?? null;
-    }
+    // Every payment a Fleet Executive records lands in their open shift (cash
+    // for the drawer, UPI / card as the shift's non-cash figure). The shift row
+    // is locked FOR SHARE inside the insert transaction, so a payment never
+    // lands in a shift a manager is closing (SHIFT_REQUIRED instead). Managers
+    // link to their own open shift when they have one (cash / UPI as before).
+    const linksForManager = (input.method !== "ONLINE" && cashAmount.gt(ZERO)) || onlineGateway === "UPI";
 
     const txn = await prisma.$transaction(async (tx) => {
+      const shift = await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole });
+      const cashShiftId = shift && (actor.actorRole === "STAFF" || linksForManager) ? shift.id : null;
       if (upi) await claimCounterUpi(upi, tx);
       else if (onlineRef) await claimUtr(onlineRef, tx);
       return tx.paymentTransaction.create({
@@ -269,55 +421,11 @@ class PaymentTransactionService {
     // request) racing past the COLLECTED check confirm — and finalize the
     // linked extension, raising totalFinal / extensionCount — only once.
     const linkedExtension = await prisma.$transaction(async (tx) => {
-      const { count } = await tx.paymentTransaction.updateMany({
-        where: { id: txn.id, status: "COLLECTED" },
-        data: {
-          status: "CONFIRMED",
-          confirmedById: actor.actorId,
-          confirmedAt: new Date(),
-          notes: notes ?? txn.notes,
-        },
-      });
-      if (count === 0) {
+      const { confirmed, extension } = await confirmCollectedInTx(tx, txn, actor.actorId, notes);
+      if (!confirmed) {
         throw new Error("Cannot confirm: this payment was already confirmed or rejected.");
       }
-
-      // Extension finalization hook: if this cash payment was for an extension,
-      // finalize the booking date update now that cash is confirmed.
-      if (txn.purpose !== PaymentPurpose.EXTENSION) return null;
-      const ext = await tx.bookingExtension.findFirst({
-        where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
-      });
-      if (!ext) return null;
-      const flipped = await tx.bookingExtension.updateMany({
-        where: { id: ext.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
-        data: {
-          extensionStatus: ExtensionStatus.CONFIRMED,
-          actualNewEndAt: ext.requestedEndAt,
-        },
-      });
-      if (flipped.count === 0) return null;
-
-      const current = await tx.booking.findUniqueOrThrow({
-        where: { id: ext.bookingId },
-        select: { extensionCount: true },
-      });
-      await tx.booking.update({
-        where: { id: ext.bookingId },
-        data: {
-          endAt: ext.requestedEndAt,
-          extensionCount: { increment: 1 },
-          lastExtendedAt: new Date(),
-          totalFinal: { increment: ext.additionalAmount },
-          activeExtensionId: null,
-          ...(current.extensionCount === 0 ? { originalEndAt: ext.oldEndAt } : {}),
-        },
-      });
-      // days / rentalPeriodType / hours follow the extended end (#5/#17)
-      await refreshBookingPeriodFields(ext.bookingId, tx);
-      // Festival rules that priced the added time join the booking's stored ones
-      await recordBookingSpecialRules(tx, ext.bookingId, ext.oldEndAt, ext.requestedEndAt);
-      return ext;
+      return extension;
     });
 
     const confirmed = await prisma.paymentTransaction.findUniqueOrThrow({ where: { id: txn.id } });
@@ -325,80 +433,7 @@ class PaymentTransactionService {
     // Confirmation is verification only: the cash already counted in its
     // shift's drawer when it was COLLECTED, and a closed shift's snapshot
     // never changes.
-
-    if (linkedExtension) {
-      const effectiveEndAt = linkedExtension.requestedEndAt;
-      await auditService.log({
-        actorId: actor.actorId,
-        actorName: actor.actorName,
-        actorRole: actor.actorRole,
-        actorBranchId: txn.branchId,
-        action: "Extension finalized after cash confirmation",
-        category: AuditCategory.BOOKING,
-        description: `Extension ${linkedExtension.publicId} confirmed. Booking extended to ${effectiveEndAt.toISOString()}`,
-        entity: "BookingExtension",
-        entityId: linkedExtension.publicId,
-        before: { extensionStatus: "PAYMENT_COLLECTED" },
-        after: { extensionStatus: "CONFIRMED", actualNewEndAt: effectiveEndAt },
-      });
-
-      // The confirmed extension (taxable + GST) and the new return time belong
-      // on the invoice — a fresh PDF even when the totals did not move
-      refreshInvoiceTotals(linkedExtension.bookingId, { forceRegenerate: true }).catch((err) =>
-        console.error("[confirmCash] Invoice refresh error:", err),
-      );
-
-      void notifyEvents.extensionConfirmed({ extensionId: linkedExtension.id, actorUserId: actor.actorId });
-    } else {
-      // A legacy drop's settlement cash: the invoice turns PAID once the
-      // manager's settlement shows nothing owed (no-op for other bookings)
-      const booking = await prisma.booking.findUnique({ where: { id: txn.bookingId }, select: { status: true } });
-      if (booking?.status === "RETURNED") {
-        syncLegacyReturnInvoice(txn.bookingId).catch((err) =>
-          console.error("[confirmCash] Invoice sync error:", err),
-        );
-      }
-    }
-
-    await auditService.log({
-      actorId: actor.actorId,
-      actorName: actor.actorName,
-      actorRole: actor.actorRole,
-      actorBranchId: txn.branchId,
-      action: "CONFIRM_CASH_PAYMENT",
-      category: AuditCategory.PAYMENT,
-      description: `Cash payment ₹${txn.totalAmount} confirmed for booking ID ${txn.bookingId}`,
-      entity: "PaymentTransaction",
-      entityId: txn.publicId,
-      before: { status: "COLLECTED" },
-      after: { status: "CONFIRMED", confirmedById: actor.actorId },
-    });
-
-    await staffActivityService.log({
-      actorPublicId: actor.actorPublicId,
-      actorName: actor.actorName,
-      actorRole: actor.actorRole,
-      branchId: txn.branchId,
-      branchName: actor.branchName,
-      actionType: StaffActionType.CONFIRMED,
-      entityType: StaffEntityType.PAYMENT_TRANSACTION,
-      entityRef: txn.publicId,
-      description: `Cash payment ₹${txn.totalAmount} confirmed`,
-    });
-
-    if (txn.collectedById) {
-      void notifyEvents.approvalResolved({
-        kind: "CASH_PAYMENT",
-        entity: "PaymentTransaction",
-        entityPublicId: txn.publicId,
-        branchId: txn.branchId,
-        approved: true,
-        recipientUserId: txn.collectedById,
-        bookingId: txn.bookingId,
-        amount: txn.totalAmount,
-        actorUserId: actor.actorId,
-      });
-    }
+    await afterCashConfirmed(txn, linkedExtension, actor, { notifyCollector: true });
 
     return confirmed;
   }

@@ -55,6 +55,7 @@ import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useSearchStore } from "@/store/search.store";
+import { CUSTOMER_MONTHLY_LABEL } from "@/utils/customerMonthly";
 import { useKycStore } from "@/store/kyc.store";
 import { DL_PHOTOS_REQUIRED_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
 
@@ -162,7 +163,12 @@ export const ReviewConfirmPage = () => {
     return new Date(y, m - 1, d, h, mi, 0).toISOString();
   }, [endDate, endTime]);
 
-  const { branchPublicId } = useSearchStore();
+  const { branchPublicId, plan } = useSearchStore();
+  // Customer Monthly (client TODO items 1–2): 30 days at the car's monthly price, no coupon
+  const monthly = plan === "MONTHLY";
+  useEffect(() => {
+    if (monthly && couponCode) clearCoupon();
+  }, [monthly, couponCode, clearCoupon]);
   const { restrictedTypeClasses, conflictDetails, blockedAll, anyVehicleConflict } = useCustomerBookingLimits(startISO, endISO, branchPublicId ?? undefined);
   const { schedule } = useBranchSchedule(branchPublicId ?? undefined);
   const { verdict: scheduleVerdict } = useBookingScheduleVerdict(schedule, startISO, endISO);
@@ -200,7 +206,9 @@ export const ReviewConfirmPage = () => {
       ? BOOKING_PACKAGE_REQUIRED_MESSAGE
       : null;
   // Billed as the 12-hour package, whatever its clock length
-  const rentalLengthText = halfDayHeld ? packageLabel(HALF_DAY_PACKAGE_HOURS) : formatRentalLength(startISO, endISO);
+  const rentalLengthText = monthly
+    ? CUSTOMER_MONTHLY_LABEL
+    : halfDayHeld ? packageLabel(HALF_DAY_PACKAGE_HOURS) : formatRentalLength(startISO, endISO);
   const vehiclePagePath = selectedGroupKey
     ? `/vehicle/group/${encodeURIComponent(selectedGroupKey)}`
     : selectedVehicleId
@@ -418,7 +426,13 @@ export const ReviewConfirmPage = () => {
               {/* Right Column (Sticky on desktop) */}
               <div className="space-y-6">
                 <div className="lg:sticky lg:top-24">
-                  {/* Coupon Code */}
+                  {/* Coupon Code — not on a monthly booking (the monthly price applies) */}
+                  {monthly ? (
+                  <div className="p-4 bg-white border border-zinc-200 rounded-xl">
+                    <p className="text-sm font-medium text-zinc-700">{CUSTOMER_MONTHLY_LABEL}</p>
+                    <p className="text-xs text-zinc-500 mt-1">The vehicle's monthly price applies. Coupons can't be used on a monthly booking.</p>
+                  </div>
+                  ) : (
                   <div className="p-4 bg-white border border-zinc-200 rounded-xl space-y-2">
                     <p className="text-sm font-medium text-zinc-700">Have a coupon code?</p>
                     <CouponInput
@@ -435,6 +449,7 @@ export const ReviewConfirmPage = () => {
                       onCheckingChange={setCouponChecking}
                     />
                   </div>
+                  )}
 
                   {/* Price Summary */}
                   <div className="mt-4 p-5 bg-white border border-zinc-200 rounded-xl space-y-4 shadow-sm">

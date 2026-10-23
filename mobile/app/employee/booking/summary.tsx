@@ -254,9 +254,11 @@ export default function WalkinSummaryScreen() {
     setRequoting(true);
     try {
       // A car picked by its registration number is re-priced by itself
+      // Monthly plan: re-quoted as create charges it (no slab on the months)
+      const planParam = plan === 'MONTHLY' ? { plan: 'MONTHLY' as const } : {};
       const res = vehicle.vehiclePublicId
-        ? await employeeApi.vehicleDetail(vehicle.vehiclePublicId, { start, end: newEnd })
-        : await employeeApi.vehicleGroupDetail(vehicle.groupKey, { start, end: newEnd });
+        ? await employeeApi.vehicleDetail(vehicle.vehiclePublicId, { start, end: newEnd, ...planParam })
+        : await employeeApi.vehicleGroupDetail(vehicle.groupKey, { start, end: newEnd, ...planParam });
       const d = res.data?.data;
       setVehicle({
         ...vehicle,

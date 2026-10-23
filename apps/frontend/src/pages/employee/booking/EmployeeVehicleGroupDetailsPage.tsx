@@ -136,12 +136,13 @@ export const EmployeeVehicleGroupDetailsPage = () => {
   }
 
   const { data: groupResponse, isLoading, isRefetching, error } = useQuery({
-    queryKey: ["employee-vehicle-group", groupKey, lastValidStart.current, lastValidEnd.current],
+    queryKey: ["employee-vehicle-group", groupKey, lastValidStart.current, lastValidEnd.current, plan],
     queryFn: () =>
       employeeService.getVehicleGroupDetails(
         groupKey,
         lastValidStart.current ?? undefined,
         lastValidEnd.current ?? undefined,
+        plan,
       ),
     enabled: !!groupKey,
     staleTime: 30 * 1000,

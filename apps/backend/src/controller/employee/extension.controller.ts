@@ -217,9 +217,13 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
         // GST split of additionalAmount (= taxableAmount + taxAmount), as committed
         ...extensionSplitView(extension),
         // Festival / weekend parts of additionalAmount (staff only)
-        specialShare: extensionSpecialShareView(
-          await extensionPricingService.specialShareFor(extension.bookingId, extension.oldEndAt, extension.requestedEndAt),
-        ),
+        ...(await extensionPricingService
+          .staffExtrasFor(extension.bookingId, extension.oldEndAt, extension.requestedEndAt)
+          .then((x) => ({
+            specialShare: extensionSpecialShareView(x.specialShare),
+            // A monthly booking's renewal breakdown, as committed (null otherwise)
+            renewal: x.renewal,
+          }))),
         remainAmount,
         usePaymentSession,
         // Free km the committed extension adds to the drop allowance (#7)

@@ -61,6 +61,10 @@ const STAFF_TYPES = new Set([
 ]);
 
 function staffLink(type: string, booking: string | null): string | null {
+  // A monthly rental ending within 5 days: the Monthly tab of the Return queue.
+  if (type === "MONTHLY_RENTAL_EXPIRING") return "/employee/dashboard?tab=returns&type=monthly";
+  // The branch manager closed the executive's cash shift: their shift history.
+  if (type === "SHIFT_CLOSED") return "/employee/shifts";
   if (booking && (type === "BOOKING_CONFIRMED" || type.startsWith("PICKUP_"))) {
     return `/staff/pickups/${booking}`;
   }
@@ -95,6 +99,9 @@ function managerLink(
       return "/manager/damage-reports";
     case "RETURN_OVERDUE":
       return "/manager/fleet";
+    case "MONTHLY_RENTAL_EXPIRING":
+      // Monthly tab of Out on Road (where a monthly rental nearing its end is listed).
+      return "/manager/fleet?tab=picked_up&type=monthly";
     case "PAYMENT_NEEDS_REFUND":
       return "/manager/payment/refunds";
     case "VEHICLE_SWAPPED":

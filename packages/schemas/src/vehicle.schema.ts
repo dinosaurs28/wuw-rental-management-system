@@ -22,6 +22,12 @@ export const bookingSummarySchema = z
     payment_type: z.enum(["CASH", "ONLINE"]),
     payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
     couponCode: z.string().min(1).max(50).optional(),
+    // Customer monthly booking (Oct 23 2026): MONTHLY = exactly 30 days at the
+    // vehicle's own monthly price. Absent (old builds) = STANDARD (daily flow).
+    plan: z
+      .preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase() : v), z.enum(["STANDARD", "MONTHLY"]))
+      .nullish()
+      .transform((v) => v ?? undefined),
   })
   .refine(
     (data) => (data.vehicles.length + (data.groupKeys?.length ?? 0)) > 0,

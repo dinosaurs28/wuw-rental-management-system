@@ -29,6 +29,7 @@ import {
 import { getBranchesWeekendDays } from "../../services/pricing/branch-weekend-days.service.js";
 import { getBranchesSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { needsVehicleGroup, rulesForVehicle, type SpecialRule } from "./specialDateRule.js";
+import { monthlyPortion } from "./monthlyPlan.js";
 
 interface VehicleRef {
   id: number;
@@ -167,14 +168,18 @@ export interface ListingPrice {
  *                  as the booking engine bills it; it also places the blocks on the
  *                  calendar for the branch's weekend rents and festival rules
  * @param options   specialRules: price with these festival rules instead of each
- *                  branch's live ones (the festival-rule preview; [] = none)
+ *                  branch's live ones (the festival-rule preview; [] = none);
+ *                  monthlyPlan: a monthly booking (customer Monthly / counter monthly
+ *                  plan) — the full months at the monthly price take no duration slab,
+ *                  the slab for the remainder's length applies to the remainder only
+ *                  (as PricingEngineService with monthlyPlan)
  * @returns Map<vehicleId, ListingPrice>
  */
 export async function getBatchListingPrices(
   vehicles: VehicleRef[],
   duration: RentalDuration,
   window?: { startAt: Date; endAt: Date },
-  options: { specialRules?: SpecialRule[] } = {},
+  options: { specialRules?: SpecialRule[]; monthlyPlan?: boolean } = {},
 ): Promise<Map<number, ListingPrice>> {
   if (vehicles.length === 0) return new Map();
 
@@ -288,6 +293,8 @@ export async function getBatchListingPrices(
 
   // Build base price map
   const basePriceMap = new Map<number, number>();
+  // Monthly plan: the undiscounted months part per vehicle (absent = slab on the whole rent)
+  const monthPartMap = new Map<number, ReturnType<typeof monthlyPortion>>();
   const billedAsMap = new Map<
     number,
     { billedAs: string; billedAsType: BilledAsType; weekend?: WeekendBreakdown; festival?: FestivalBreakdown }
@@ -314,6 +321,10 @@ export async function getBatchListingPrices(
       },
     );
     basePriceMap.set(v.id, Number(selection.basePrice.toFixed(2)));
+    if (options.monthlyPlan) {
+      const part = monthlyPortion(pricing.priceMonthly, duration);
+      if (part) monthPartMap.set(v.id, part);
+    }
     billedAsMap.set(v.id, {
       billedAs: selection.billedAs,
       billedAsType: selection.billedAsType,
@@ -337,26 +348,32 @@ export async function getBatchListingPrices(
   const configByBranch = new Map(discountConfigs.map((c) => [c.branchId, c]));
 
   // Query 4: best-matching slab per enabled branch for this duration
-  const branchSlabMap = new Map<number, { discountType: string; value: number; label: string | null }>();
-
-  if (enabledBranchIds.size > 0 && slabDays >= 1) {
+  type Slab = { discountType: string; value: number; label: string | null };
+  const slabsFor = async (days: number): Promise<Map<number, Slab>> => {
+    const map = new Map<number, Slab>();
+    if (enabledBranchIds.size === 0 || days < 1) return map;
     const slabs = await prisma.durationDiscountSlab.findMany({
       where: {
         branchId: { in: [...enabledBranchIds] },
-        minDays: { lte: slabDays },
-        OR: [{ maxDays: null }, { maxDays: { gte: slabDays } }],
+        minDays: { lte: days },
+        OR: [{ maxDays: null }, { maxDays: { gte: days } }],
       },
       orderBy: [{ branchId: "asc" }, { minDays: "desc" }],
       select: { branchId: true, discountType: true, value: true, label: true },
     });
-
     // First result per branch = highest matching minDays slab
     for (const s of slabs) {
-      if (!branchSlabMap.has(s.branchId)) {
-        branchSlabMap.set(s.branchId, { discountType: s.discountType, value: Number(s.value), label: s.label });
+      if (!map.has(s.branchId)) {
+        map.set(s.branchId, { discountType: s.discountType, value: Number(s.value), label: s.label });
       }
     }
-  }
+    return map;
+  };
+  const branchSlabMap = await slabsFor(slabDays);
+  // Monthly plan: the remainder after the full months is matched on its own length
+  // (every vehicle billed by the month has the same remainder — same window)
+  const anyMonthPart = [...monthPartMap.values()][0];
+  const remainderSlabMap = anyMonthPart ? await slabsFor(slabDaysFor(anyMonthPart.remainderHours)) : new Map<number, Slab>();
 
   // Query 5: branch GST rules — the GST inside each inclusive price
   const gstSplit = await branchRentSplitter(uniqueBranchIds);
@@ -365,11 +382,15 @@ export async function getBatchListingPrices(
   const result = new Map<number, ListingPrice>();
   for (const v of vehicles) {
     const basePrice = basePriceMap.get(v.id) ?? 0;
-    const slab = branchSlabMap.get(v.branchId);
+    const monthPart = monthPartMap.get(v.id);
+    const slab = monthPart ? remainderSlabMap.get(v.branchId) : branchSlabMap.get(v.branchId);
+    // Monthly plan: the slab only sees the rent after the full months
+    const monthAmount = monthPart ? monthPart.amount.toNumber() : 0;
+    const discountable = Math.round((basePrice - monthAmount) * 100) / 100;
 
     const billed = billedAsMap.get(v.id);
 
-    if (!slab || basePrice === 0) {
+    if (!slab || basePrice === 0 || discountable <= 0) {
       result.set(v.id, { price: basePrice, finalPrice: basePrice, ...billed, ...gstSplit(v.branchId, basePrice) });
       continue;
     }
@@ -377,7 +398,7 @@ export async function getBatchListingPrices(
     // Rounded exactly as the booking engine rounds the slab (duration-discount
     // service + combined cap): to the paisa, half-up — so the listed price is
     // the booked price, paise included
-    const base = new Decimal(basePrice);
+    const base = new Decimal(discountable);
     let discount = slab.discountType === "PERCENTAGE"
       ? base.mul(slab.value).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
       : Decimal.min(slab.value, base).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
@@ -392,7 +413,7 @@ export async function getBatchListingPrices(
       discount = Decimal.min(discount, maxDiscount);
     }
 
-    const finalPrice = Decimal.max(0, base.sub(discount)).toNumber();
+    const finalPrice = Decimal.max(0, base.sub(discount)).add(monthAmount).toNumber();
     result.set(v.id, {
       price: basePrice,
       finalPrice,

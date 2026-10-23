@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { priceUnitFor, unitLabel, weekendNote } from '../../lib/pricing';
+import { CUSTOMER_MONTHLY_LABEL } from '../../lib/monthlyPlan';
 import { slabChipText } from '../../lib/discounts';
 import { inrExact } from '../../lib/gst';
 import type { Vehicle } from '../../types/api';
@@ -61,6 +62,12 @@ export default function OfferCard({ vehicle, onPress }: Props) {
             <View style={styles.chip}>
               <Ionicons name="location-outline" size={14} color={Colors.onDark} />
               <Text style={styles.chipText}>{vehicle.branch}</Text>
+            </View>
+          ) : null}
+          {vehicle.monthly ? (
+            <View style={styles.chip}>
+              <Ionicons name="calendar-number-outline" size={14} color={Colors.onDark} />
+              <Text style={styles.chipText}>{CUSTOMER_MONTHLY_LABEL}</Text>
             </View>
           ) : null}
         </View>

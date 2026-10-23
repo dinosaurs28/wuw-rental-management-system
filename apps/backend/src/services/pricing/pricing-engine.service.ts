@@ -37,6 +37,7 @@ import { getBranchGstRatesCached, splitRentGross } from "../tax/gst.service.js";
 import { isClampedHalfDayWindow } from "../../utils/booking/branchScheduleValidator.js";
 import { heldBillingEnd } from "../../utils/booking/halfDayPackage.js";
 import { HALF_DAY_PACKAGE_HOURS } from "@repo/schemas";
+import { monthlyPortion } from "../../utils/pricing/monthlyPlan.js";
 
 const PRICING_TTL = 300; // 5 minutes
 
@@ -255,6 +256,16 @@ export interface PricingDiscountOptions {
    * today's pricing for both terms (extension delta, vehicle swap).
    */
   specialRules?: SpecialRule[];
+  /**
+   * A monthly booking (Booking.rentalPeriodType MONTHLY: the customer
+   * "Monthly · 30 days" booking or the counter monthly plan). User decision
+   * Oct 23 2026: the full months billed at the monthly price cost exactly
+   * priceMonthly × months — no duration slab (or other discount) on them; the
+   * discounts are evaluated on the remainder only, by its own length
+   * (utils/pricing/monthlyPlan.ts monthlyPortion). Omitted / false = every
+   * discount on the whole rent, as before.
+   */
+  monthlyPlan?: boolean;
 }
 
 /**
@@ -371,13 +382,16 @@ export class PricingEngineService {
       //    Duration discount runs for ALL requests (no customer context needed).
       //    Coupon and manual discounts only run when a real customerId is supplied.
       const ZERO = new Decimal(0);
+      // Monthly booking: the months at the monthly price are never discounted;
+      // the layers below see only the remainder (by its own length)
+      const monthPart = discountOptions?.monthlyPlan ? monthlyPortion(pricing.priceMonthly, duration) : null;
       const evalInput: DiscountEvaluationInput = {
         branchId,
         customerId: customerId ?? 0, // 0 = anonymous; coupon/manual layers skipped below
         vehicleId,
-        baseAmount: basePrice,
-        rentalDays: duration.days,
-        rentalHours: duration.actualDuration,
+        baseAmount: monthPart ? basePrice.sub(monthPart.amount) : basePrice,
+        rentalDays: monthPart ? Math.ceil(monthPart.remainderHours / 24) : duration.days,
+        rentalHours: monthPart ? monthPart.remainderHours : duration.actualDuration,
         vehicleCategoryId: resolvedCategoryId,
         paymentPlan: discountOptions?.paymentPlan ?? "FULL",
         excludeBookingId: discountOptions?.excludeBookingId,
@@ -388,7 +402,15 @@ export class PricingEngineService {
         manualDiscountAmount: customerId != null ? manualDiscountAmount : undefined,
         manualDiscountId:     customerId != null ? manualDiscountId     : undefined,
       };
-      const discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
+      const evaluated = await discountEvaluationEngine.evaluate(evalInput);
+      // Put the undiscounted months back, so the evaluation covers the whole rent
+      const discountEvaluation: DiscountEvaluationResult = monthPart
+        ? {
+            ...evaluated,
+            originalAmount: evaluated.originalAmount.add(monthPart.amount),
+            finalAmount: evaluated.finalAmount.add(monthPart.amount),
+          }
+        : evaluated;
 
       // basePrice here is the GST-inclusive rent (item 17); every discount layer
       // above was taken off it

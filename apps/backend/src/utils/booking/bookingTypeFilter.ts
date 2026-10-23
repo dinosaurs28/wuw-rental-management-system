@@ -50,7 +50,18 @@ export const bookingTypeWhere = (type: BookingListType | undefined): Prisma.Book
   return {};
 };
 
+/**
+ * The one "is this a monthly booking?" rule, shared by the Fleet queues, the
+ * BM lists and the monthly expiry reminder: booked on the monthly plan
+ * (rentalPeriodType MONTHLY), by the customer or as a walk-in. A 30-day
+ * standard booking is MULTI_DAY, so it is Daily. bookingTypeWhere("MONTHLY")
+ * is the same rule as a Prisma filter.
+ */
+export const isMonthlyBooking = (
+  rentalPeriodType: RentalPeriodType | string | null | undefined,
+): boolean => rentalPeriodType === RentalPeriodType.MONTHLY;
+
 /** Tab a single booking belongs to. */
 export const bookingListTypeOf = (
   rentalPeriodType: RentalPeriodType | string | null | undefined,
-): BookingListType => (rentalPeriodType === RentalPeriodType.MONTHLY ? "MONTHLY" : "DAILY");
+): BookingListType => (isMonthlyBooking(rentalPeriodType) ? "MONTHLY" : "DAILY");

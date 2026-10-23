@@ -21,6 +21,9 @@ export const NOTIFICATION_TYPES = [
   "APPROVAL_RESOLVED",
   "CASH_DELAYED",
   "SHIFT_DISCREPANCY",
+  "MONTHLY_RENTAL_EXPIRING",
+  // The branch manager closed the Fleet Executive's cash shift (Oct 2026)
+  "SHIFT_CLOSED",
 ] as const;
 
 export type NotificationTypeName = (typeof NOTIFICATION_TYPES)[number];

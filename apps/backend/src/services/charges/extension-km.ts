@@ -20,8 +20,12 @@
  * The drop's km allowance is the original period's free km plus this for
  * every extension (km-allowance.service). extensionFreeKm is pure;
  * loadFreeKmRates reads the vehicle's rates the way the pricing engine does.
- * (Monthly bookings' extensions are priced as a delta from pickup; their free
- * km follow the same added-time blocks.)
+ *
+ * A monthly booking's renewal (extension-charge.ts MONTHLY_RENEWAL) follows its
+ * parts: each whole 30-day month earns freeKmMonthly when the vehicle has a
+ * monthly price (else 30 days × freeKm24Hour — its months are billed by the
+ * day), and the remainder earns km by the blocks above. E.g. +45 days at
+ * 1,500 km / month and 250 km / day → 1,500 + 15 × 250 = 5,250 km.
  */
 import { prisma } from "@repo/database/client";
 import type { TxClient } from "../payment/paymentSession.service.js";
@@ -43,6 +47,9 @@ export interface FreeKmRates {
   hourlyRate?: number | null;
   price12Hour?: number | null;
   price24Hour?: number | null;
+  /** Monthly renewals: the vehicle's monthly price (null / 0 = none) and the km a month earns */
+  priceMonthly?: number | null;
+  freeKmMonthly?: number;
 }
 
 /** Free km one extension adds, with how it was worked out. */
@@ -59,6 +66,9 @@ export interface ExtensionFreeKm {
   minutesWithoutKm: number;
   freeKm24Hour: number;
   freeKm12Hour: number;
+  /** Monthly renewal: whole 30-day months that earned freeKmMonthly each (absent otherwise). */
+  months?: number;
+  freeKmMonthly?: number;
   /** e.g. "150 km for 1 day + 80 km for 12 h", "Extensions under 12 hours add no free km". */
   label: string;
 }
@@ -162,6 +172,52 @@ export function extensionFreeKm(minutes: number, rates: FreeKmRates): ExtensionF
   return { km, minutes: total, fullDays, halfDay, minutesWithoutKm, freeKm24Hour, freeKm12Hour, label };
 }
 
+const MONTH_MINUTES = 30 * DAY_MINUTES;
+
+/**
+ * Free km an extension of `minutes` adds, for the booking it extends: a monthly
+ * booking's renewal (`monthly`) earns freeKmMonthly per whole 30-day month
+ * (only when the vehicle has a monthly price — else those days earn the 24 h
+ * km, as they are billed by the day) and the remainder's blocks; any other
+ * booking — and a renewal under 30 days — exactly extensionFreeKm.
+ */
+export function extensionFreeKmFor(minutes: number, rates: FreeKmRates, opts: { monthly?: boolean } = {}): ExtensionFreeKm {
+  const total = nonNegativeInt(Math.round(minutes));
+  const months = opts.monthly ? Math.floor(total / MONTH_MINUTES) : 0;
+  if (months === 0) return extensionFreeKm(total, rates);
+  const rest = extensionFreeKm(total - months * MONTH_MINUTES, rates);
+  const freeKmMonthly = nonNegativeInt(rates.freeKmMonthly ?? 0);
+  if (positiveOrNull(rates.priceMonthly) == null) {
+    // No monthly price: the months are billed by the day — 30 days of 24 h km each
+    const fullDays = rest.fullDays + months * 30;
+    const km = fullDays * rest.freeKm24Hour + (rest.halfDay ? rest.freeKm12Hour : 0);
+    const parts = [`${fullDays * rest.freeKm24Hour} km for ${fullDays} days`];
+    if (rest.halfDay) parts.push(`${rest.freeKm12Hour} km for 12 h`);
+    let label = parts.join(" + ");
+    if (rest.minutesWithoutKm > 0) label += `; no km for the other ${durationText(rest.minutesWithoutKm)}`;
+    return { ...rest, km, minutes: total, fullDays, label };
+  }
+  const monthKm = months * freeKmMonthly;
+  const monthText = `${monthKm} km for ${months} ${months === 1 ? "month" : "months"}`;
+  const label = rest.minutes === 0
+    ? monthText
+    : rest.km > 0
+      ? `${monthText} + ${rest.label}`
+      : `${monthText}; no km for the other ${durationText(rest.minutes)}`;
+  return { ...rest, km: monthKm + rest.km, minutes: total, months, freeKmMonthly, label };
+}
+
+/**
+ * Free km an extension of a booking from `from` to `to` adds, at the vehicle's
+ * rates: its charged minutes (extensionKmMinutes) — by the renewal parts for a
+ * MONTHLY booking (extensionFreeKmFor).
+ */
+export function bookingExtensionFreeKm(booking: ExtensionKmBooking, from: Date, to: Date, rates: FreeKmRates): ExtensionFreeKm {
+  return extensionFreeKmFor(extensionKmMinutes(booking, from, to), rates, {
+    monthly: booking.rentalPeriodType === "MONTHLY",
+  });
+}
+
 /** A pricing row's rents as FreeKmRates prices — read the way the pricing engine reads them. */
 type RentRow = {
   extraHourRate: unknown;
@@ -169,12 +225,16 @@ type RentRow = {
   price12Hour: unknown;
   totalRent24Hour: unknown;
   price24Hour: unknown;
+  priceMonthly: unknown;
+  freeKmMonthly: number;
 };
 const num = (v: unknown) => (v == null ? null : Number(v.toString()));
 const rentPrices = (row: RentRow) => ({
   hourlyRate: positiveOrNull(num(row.extraHourRate)),
   price12Hour: positiveOrNull(num(row.totalRent12Hour)) ?? positiveOrNull(num(row.price12Hour)),
   price24Hour: positiveOrNull(num(row.totalRent24Hour)) ?? positiveOrNull(num(row.price24Hour)),
+  priceMonthly: positiveOrNull(num(row.priceMonthly)),
+  freeKmMonthly: row.freeKmMonthly,
 });
 const RENT_SELECT = {
   extraHourRate: true,
@@ -182,6 +242,8 @@ const RENT_SELECT = {
   price12Hour: true,
   totalRent24Hour: true,
   price24Hour: true,
+  priceMonthly: true,
+  freeKmMonthly: true,
 } as const;
 
 /**
@@ -250,7 +312,7 @@ export async function describeExtensionFreeKm(
       }),
     ]);
     if (!rates || !booking) return null;
-    return extensionFreeKm(extensionKmMinutes(booking, fromEndAt, toEndAt), rates);
+    return bookingExtensionFreeKm(booking, fromEndAt, toEndAt, rates);
   } catch (err) {
     console.warn(`[extension-km] Free km unavailable for booking ${bookingId}:`, err);
     return null;

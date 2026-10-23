@@ -138,16 +138,42 @@ export const openCashShiftSchema = z.object({
     .nullish(),
 });
 
-export const closeCashShiftSchema = z.object({
-  actualTotal: z
-    .number({ required_error: "Enter the cash counted in the drawer", invalid_type_error: "Counted cash must be a number" })
-    .min(0, "Counted cash cannot be negative"),
-  discrepancyExplanation: z
-    .string()
-    .min(10, "Explain the difference in at least 10 characters")
-    .max(1000, "Keep the explanation under 1000 characters")
-    .optional(),
-});
+/**
+ * Branch manager's "Verify & close" (Oct 2026). cashReceived = the cash the
+ * manager took from the executive; note is required when it differs from the
+ * expected cash (the server computes expected — it is never typed). The old
+ * field names (actualTotal / discrepancyExplanation) are still accepted.
+ * expectedCash = the expected figure the manager was shown: when the shift's
+ * expected cash has moved since (a payment landed), the close is refused with
+ * 409 EXPECTED_CASH_CHANGED so the manager sees the new figure first.
+ */
+export const closeCashShiftSchema = z
+  .object({
+    cashReceived: z
+      .number({ invalid_type_error: "Cash received must be a number" })
+      .min(0, "Cash received cannot be negative")
+      .max(100_000_000, "Cash received is too large")
+      .optional(),
+    actualTotal: z
+      .number({ invalid_type_error: "Cash received must be a number" })
+      .min(0, "Cash received cannot be negative")
+      .max(100_000_000, "Cash received is too large")
+      .optional(),
+    note: z.string().max(1000, "Keep the note under 1000 characters").optional(),
+    discrepancyExplanation: z.string().max(1000, "Keep the note under 1000 characters").optional(),
+    expectedCash: z.number().optional(),
+  })
+  .refine((b) => b.cashReceived !== undefined || b.actualTotal !== undefined, {
+    message: "Enter the cash received",
+    path: ["cashReceived"],
+  })
+  .refine(
+    (b) => {
+      const n = (b.cashReceived ?? b.actualTotal) as number;
+      return Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+    },
+    { message: "Cash received can have at most 2 decimal places", path: ["cashReceived"] },
+  );
 
 export const reconcileCashShiftSchema = z.object({
   discrepancyExplanation: z.string().min(10, "Please provide a detailed explanation").max(1000),
@@ -188,6 +214,13 @@ export const listCashShiftsSchema = z.object({
   to: istDateSchema.optional(),
   openNow: queryFlagSchema.optional(),
   employeePublicId: z.string().min(1).max(64).optional(),
+  /** Closed shifts by result (Oct 2026): MATCHED = no difference, MISMATCH = closed with a difference. */
+  result: z.enum(["MATCHED", "MISMATCH"]).optional(),
+  /**
+   * Which date the from/to range applies to (Oct 2026): OPENED (default — the IST day
+   * the shift opened on) or CLOSED (the IST day it was closed, for the Closed list).
+   */
+  dateField: z.enum(["OPENED", "CLOSED"]).optional(),
 });
 
 /** Fleet Executive's own shift history — same filters minus the executive picker. */

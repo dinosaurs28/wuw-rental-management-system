@@ -5,7 +5,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, PaymentPurpose } from "@repo/database/client";
 import { listPendingSettlementsSchema, recordPaymentSchema } from "@repo/schemas";
 import { settlementEngineService, paymentTransactionService } from "../../services/payment/index.js";
-import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { CounterGuardError, lockShiftForPayment } from "../../services/payment/counter-guard.service.js";
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
 import { computeBookingOwed, creditOutstanding, getBookingMoney } from "../../services/payment/booking-owed.service.js";
 import { getBookingCreditSummary } from "../../services/payment/customer-credit.service.js";
@@ -238,8 +238,9 @@ export const RefundSettlementDeposit = async (req: Request, res: Response): Prom
 
       if (proof) await claimPaymentProof(proof, tx);
       const isCash = method === "CASH";
+      // The manager's own open shift, locked FOR SHARE (never one being closed)
       const shift = isCash
-        ? await tx.cashShift.findFirst({ where: { employeeId: actor.actorId, status: "OPEN" }, select: { id: true } })
+        ? await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole })
         : null;
       const now = new Date();
       const reason = notes?.trim() ||
@@ -447,8 +448,9 @@ export const RefundSettlementOverpayment = async (req: Request, res: Response): 
 
       if (proof) await claimPaymentProof(proof, tx);
       const isCash = method === "CASH";
+      // The manager's own open shift, locked FOR SHARE (never one being closed)
       const shift = isCash
-        ? await tx.cashShift.findFirst({ where: { employeeId: actor.actorId, status: "OPEN" }, select: { id: true } })
+        ? await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole })
         : null;
       const now = new Date();
       const reason = notes?.trim() || "Paid more than the booking owes, refunded";

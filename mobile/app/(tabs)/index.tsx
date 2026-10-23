@@ -23,6 +23,7 @@ import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon'
 import { normalizeGroups } from '../../lib/vehicles';
 import CarCard from '../../components/cars/CarCard';
 import SearchCard, { type SearchQuery } from '../../components/cars/SearchCard';
+import { planParam } from '../../lib/monthlyPlan';
 import TripTypePicker, { TRIP_TYPE_HINT } from '../../components/cars/TripTypePicker';
 import { useTripTypeStore } from '../../store/tripType';
 import Avatar from '../../components/ui/Avatar';
@@ -181,7 +182,15 @@ export default function Home() {
   const onSearch = (q: SearchQuery) =>
     router.push({
       pathname: '/search',
-      params: { branch: q.branchId, branchName: q.branchName, start: q.start, end: q.end, tripType: q.tripType },
+      params: {
+        branch: q.branchId,
+        branchName: q.branchName,
+        start: q.start,
+        end: q.end,
+        tripType: q.tripType,
+        // Monthly (client TODO item 1): carried through search → vehicle → checkout
+        ...planParam(q.plan),
+      },
     });
 
   // Brand + profile

@@ -50,6 +50,7 @@ import {
   assertOpenShift,
   assertUtrUnused,
   claimUtr,
+  lockShiftForPayment,
   validateNewUtr,
 } from "../../services/payment/counter-guard.service.js";
 import {
@@ -281,14 +282,15 @@ async function writeDepositRefund(
     amount: Decimal;
     choice: DepositRefundChoice;
     actorId: number;
+    actorRole?: string | null;
     idempotencyKey: string;
   },
 ): Promise<{ publicId: string; amount: string; method: string }> {
+  // Every refund a Fleet Executive pays out lands in their open shift (cash off
+  // the drawer; UPI as the shift's non-cash refunds) — SHIFT_REQUIRED without one
+  const shift = await lockShiftForPayment(tx, { id: p.actorId, role: p.actorRole });
   if (p.choice.proof) await claimPaymentProof(p.choice.proof, tx);
   const isCash = p.choice.method === "CASH";
-  const shift = isCash
-    ? await tx.cashShift.findFirst({ where: { employeeId: p.actorId, status: "OPEN" }, select: { id: true } })
-    : null;
   const now = new Date();
   const amount = p.amount.toFixed(2);
   const note = p.choice.notes ?? "Safety deposit refunded in full at drop";
@@ -310,7 +312,7 @@ async function writeDepositRefund(
       collectedAt: now,
       confirmedById: p.actorId,
       confirmedAt: now,
-      cashShiftId: shift?.id ?? null,
+      cashShiftId: shift && (isCash || p.actorRole === "STAFF") ? shift.id : null,
       notes: note,
     },
   });
@@ -584,7 +586,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }
     }
 
-    // Counter money: cash and UPI need the staff member's open shift. UPI is backed
+    // Counter money: any payment needs the staff member's open shift. UPI is backed
     // by a photo of the payment screen (proof_file_id) or, from older builds, a UTR;
     // either can back only one payment. Zero-balance completions and credit take
     // no money and aren't gated.
@@ -594,9 +596,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
     let gateway: string | null = onlineGateway?.trim() || null;
     let upi: CounterUpi | null = null;
     if (amount > 0 && method !== "CREDIT") {
-      if (method !== "ONLINE" || isUpi) {
-        await assertOpenShift(actor);
-      }
+      // Every payment a Fleet Executive records needs their open shift (any method)
+      await assertOpenShift(actor);
       if (isUpi) {
         upi = await resolveCounterUpi({
           utr: onlineTransactionRef,
@@ -632,6 +633,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
         proof: refundIsUpi ? await resolvePaymentProof(depositRefund.proof_file_id, session.branchId) : null,
         notes: depositRefund.notes?.trim() || null,
       };
+      // Paying the deposit back is money out of the executive's shift
+      await assertOpenShift(actor);
     }
 
     let returnedVehicleIds: number[] = [];
@@ -642,12 +645,14 @@ export const RecordPayment = async (req: Request, res: Response) => {
       // Zero-balance session: complete immediately without creating a PaymentTransaction.
       // A ₹0 record would pollute financial reports with meaningless rows.
       await prisma.$transaction(async (tx) => {
+        // Shift lock first (FOR SHARE), so the lock order is shift → session/booking
+        if (amount > 0 || refundChoice) await lockShiftForPayment(tx, actor);
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
 
         // Nothing to collect, but a deposit refunded in full is still paid back
         if (refundChoice && depositRefundDue) {
           depositRefunded = await writeDepositRefund(tx, {
-            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, actorRole: actor.role, idempotencyKey,
           });
         }
 
@@ -657,6 +662,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }, { timeout: 15000 });
     } else if (method === "CASH") {
       await prisma.$transaction(async (tx) => {
+        // Shift lock first (FOR SHARE), so the lock order is shift → session/booking
+        if (amount > 0 || refundChoice) await lockShiftForPayment(tx, actor);
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
 
         // Add PAYMENT ledger entry (negative = money in)
@@ -673,11 +680,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        // Link to the employee's open cash shift so the manager can track handover
-        const activeShift = await (tx as any).cashShift.findFirst({
-          where: { employeeId: actor.id, status: "OPEN" },
-          select: { id: true },
-        });
+        // The employee's open cash shift (locked FOR SHARE: never a shift being closed)
+        const activeShift = await lockShiftForPayment(tx, actor);
 
         // Create backward-compat PaymentTransaction (COLLECTED — awaits manager cash confirmation);
         // a safety deposit on the bill gets its own SAFETY_DEPOSIT row
@@ -702,7 +706,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         if (refundChoice && depositRefundDue) {
           depositRefunded = await writeDepositRefund(tx, {
-            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, actorRole: actor.role, idempotencyKey,
           });
         }
 
@@ -715,6 +719,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
       }, { timeout: 15000 });
     } else if (method === "ONLINE") {
       await prisma.$transaction(async (tx) => {
+        // Shift lock first (FOR SHARE), so the lock order is shift → session/booking
+        if (amount > 0 || refundChoice) await lockShiftForPayment(tx, actor);
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
         // Race-safe: two staff recording the same UTR / payment photo serialise here
         // and the second gets DUPLICATE_UTR / DUPLICATE_PAYMENT_PROOF
@@ -734,13 +740,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        // A counter UPI (UTR) payment counts toward the shift's UPI-collected figure
-        const upiShift = isUpiGateway(gateway)
-          ? await tx.cashShift.findFirst({
-              where: { employeeId: actor.id, status: "OPEN" },
-              select: { id: true },
-            })
-          : null;
+        // A Fleet Executive's online payment (UPI or card) lands in their open shift
+        // as non-cash; a manager's counter UPI in theirs when they have one
+        const lockedShift = await lockShiftForPayment(tx, actor);
+        const upiShift = lockedShift && (actor.role === "STAFF" || isUpiGateway(gateway)) ? lockedShift : null;
 
         await createSessionPaymentTransactions(tx, {
           sessionId: session.id,
@@ -769,7 +772,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         if (refundChoice && depositRefundDue) {
           depositRefunded = await writeDepositRefund(tx, {
-            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, actorRole: actor.role, idempotencyKey,
           });
         }
 
@@ -783,6 +786,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
       const online = Math.abs(splitOnline ?? 0);
 
       await prisma.$transaction(async (tx) => {
+        // Shift lock first (FOR SHARE), so the lock order is shift → session/booking
+        if (amount > 0 || refundChoice) await lockShiftForPayment(tx, actor);
         await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
         if (upi) await claimCounterUpi(upi, tx);
         else if (hasOnlinePart && onlineRef) await claimUtr(onlineRef, tx);
@@ -800,10 +805,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        const activeShift = await (tx as any).cashShift.findFirst({
-          where: { employeeId: actor.id, status: "OPEN" },
-          select: { id: true },
-        });
+        const activeShift = await lockShiftForPayment(tx, actor);
 
         await createSessionPaymentTransactions(tx, {
           sessionId: session.id,
@@ -830,7 +832,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         if (refundChoice && depositRefundDue) {
           depositRefunded = await writeDepositRefund(tx, {
-            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, actorRole: actor.role, idempotencyKey,
           });
         }
 
@@ -846,6 +848,9 @@ export const RecordPayment = async (req: Request, res: Response) => {
       // manager clears it (which records the payment then).
       const creditCollateral = collateral;
       await prisma.$transaction(async (tx) => {
+        // A deposit refund pays money out of the shift: shift lock first (FOR SHARE),
+        // so the lock order is shift → session/booking as on the other paths
+        if (refundChoice) await lockShiftForPayment(tx, actor);
         const owed = await lockSessionForSettlement(tx, session, amount, ["AWAITING_PAYMENT", "PAYMENT_INITIATED"]);
 
         // Re-checked under the lock: a deposit may have been added since the request was read
@@ -893,7 +898,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
 
         if (refundChoice && depositRefundDue) {
           depositRefunded = await writeDepositRefund(tx, {
-            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, idempotencyKey,
+            session, amount: depositRefundDue, choice: refundChoice, actorId: actor.id, actorRole: actor.role, idempotencyKey,
           });
         }
 
@@ -1028,6 +1033,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: `Session is not awaiting payment` });
     }
 
+    // A Fleet Executive pays a refund out of their open shift (any method)
+    await assertOpenShift(actor);
+
     // Validate: netPayable must be negative (refund situation)
     const validation2 = await ledgerService.validateSessionAmount(session.id, -Math.abs(amount));
     if (!validation2.valid) {
@@ -1048,6 +1056,8 @@ export const RecordRefund = async (req: Request, res: Response) => {
     let returnedVehicleIds: number[] = [];
 
     await prisma.$transaction(async (tx) => {
+      // Shift lock first (FOR SHARE), so the lock order is shift → session/booking
+      await lockShiftForPayment(tx, actor);
       await lockSessionForSettlement(tx, session, -Math.abs(amount), ["AWAITING_PAYMENT"]);
 
       await ledgerService.addEntry(
@@ -1063,13 +1073,10 @@ export const RecordRefund = async (req: Request, res: Response) => {
         tx as any,
       );
 
-      // Cash paid out of the drawer comes off the open shift's expected cash
-      const refundShift = method === "CASH"
-        ? await tx.cashShift.findFirst({
-            where: { employeeId: actor.id, status: "OPEN" },
-            select: { id: true },
-          })
-        : null;
+      // Cash paid out of the drawer comes off the open shift's expected cash; a
+      // Fleet Executive's UPI refund is in their shift too (non-cash). Locked FOR SHARE.
+      const lockedShift = await lockShiftForPayment(tx, actor);
+      const refundShift = lockedShift && (method === "CASH" || actor.role === "STAFF") ? lockedShift : null;
 
       if (refundProof) await claimPaymentProof(refundProof, tx);
 

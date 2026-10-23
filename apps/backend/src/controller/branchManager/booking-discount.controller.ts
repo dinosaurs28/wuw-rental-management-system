@@ -229,6 +229,8 @@ async function repriceBooking(booking: CouponBooking, couponCode: string | undef
           heldToClosing: heldToClosingOf(booking.pricingSnapshot),
           weekendDays: weekendDaysOf(booking.pricingSnapshot),
           specialRules: specialRulesOf(booking.pricingSnapshot) ?? [],
+          // A monthly booking's months stay at exactly the monthly price (no slab / coupon on them)
+          monthlyPlan: booking.rentalPeriodType === "MONTHLY",
         },
       ),
     ),

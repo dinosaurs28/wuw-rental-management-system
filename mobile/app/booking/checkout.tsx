@@ -42,6 +42,7 @@ import {
   HALF_DAY_PACKAGE_HOURS,
 } from '../../lib/bookingWindow';
 import { bookedPackageFor, heldReturnNote } from '../../lib/packages';
+import { CUSTOMER_MONTHLY_LABEL, parsePlan, planParam } from '../../lib/monthlyPlan';
 import { useAuthStore } from '../../store/auth';
 import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
@@ -163,9 +164,13 @@ export default function Checkout() {
   const insets = useSafeAreaInsets();
   // `branch`: the vehicle's branch from the previous screen (office hours
   // fallback); `adjusted`: set when the return was moved to fit branch hours.
-  const { vehicleId, start, end, branch: branchParam, adjusted } = useLocalSearchParams<{
-    vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string;
+  const { vehicleId, start, end, branch: branchParam, adjusted, plan: planRaw } = useLocalSearchParams<{
+    vehicleId: string; start?: string; end?: string; branch?: string; adjusted?: string; plan?: string;
   }>();
+  // Monthly (client TODO items 1–2): 30 days at the car's own monthly price,
+  // sent as plan=MONTHLY; no coupon (the counter monthly plan takes none either)
+  const plan = parsePlan(planRaw);
+  const monthly = plan === 'MONTHLY';
   // Booking is account-based (the API requires a token and a complete profile,
   // name, phone, address and age, and both driving licence photos). Normally
   // requireAuth on the vehicle CTA stops a guest before
@@ -213,11 +218,11 @@ export default function Checkout() {
   const isGroupKey = !!vehicleId && isVehicleGroupKey(vehicleId);
 
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
-    queryKey: ['vehicle', vehicleId, startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['vehicle', vehicleId, startDate.toISOString(), endDate.toISOString(), plan],
     queryFn: () =>
       isGroupKey
-        ? vehiclesApi.groupDetail(vehicleId!, { start: startDate.toISOString(), end: endDate.toISOString() })
-        : vehiclesApi.detail(vehicleId!, { start: startDate.toISOString(), end: endDate.toISOString() }),
+        ? vehiclesApi.groupDetail(vehicleId!, { start: startDate.toISOString(), end: endDate.toISOString(), ...planParam(plan) })
+        : vehiclesApi.detail(vehicleId!, { start: startDate.toISOString(), end: endDate.toISOString(), ...planParam(plan) }),
     select: (res) => {
       const d = res.data.data as any;
       // advancePayAmount is a Decimal STRING on the wire — parse it like the group branch below.
@@ -242,6 +247,7 @@ export default function Checkout() {
         paymentOptions: d.paymentOptions ?? null,
         pricingDetails: d.pricingDetails ?? null,
         branchPublicId: d.branchPublicId ?? null,
+        monthly: d.monthly ?? null,
       } as VehicleDetail;
     },
     enabled: !!vehicleId,
@@ -345,7 +351,7 @@ export default function Checkout() {
   // #15 — fill in the offer code once per visit and check it like a typed one
   // (only once the car is priced: an unpriced checkout can't be paid anyway).
   useEffect(() => {
-    if (offerPrefilledRef.current || isGuest || !offerCoupon || !vehicle) return;
+    if (offerPrefilledRef.current || isGuest || !offerCoupon || !vehicle || monthly) return;
     if (appliedCoupon || couponInput.trim()) return;
     offerPrefilledRef.current = true;
     setCouponInput(offerCoupon.code);
@@ -590,7 +596,8 @@ export default function Checkout() {
         ...(dlNow.front.file?.publicId ? { file_public_id: dlNow.front.file.publicId } : {}),
         payment_type: 'ONLINE',
         payment_flow: sendFlow,
-        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+        // Monthly: plan=MONTHLY, never a coupon
+        ...(monthly ? planParam(plan) : appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
       });
 
       const created = res.data as CustomerBookingCreateResponse;
@@ -617,6 +624,7 @@ export default function Checkout() {
         remaining: String(totals.dueAtPickup ?? totals.remainingBalance ?? 0),
         flow: chargedFlow,
         coupon: totals.appliedCouponCode ?? '',
+        ...planParam(plan),
       };
 
       if (!transactionId || !rzp?.orderId || !rzp?.keyId) {
@@ -696,6 +704,13 @@ export default function Checkout() {
       if (body?.code === 'BRANCH_SCHEDULE_RETURN_ADJUSTED' && body?.verdict?.adjustedReturn) {
         const adjustedReturn = String(body.verdict.adjustedReturn);
         const label: string = body.verdict.nextOpenLabel ?? 'the new time';
+        // Monthly: the return is fixed at pickup + 30 days — only a new pickup helps
+        if (monthly) {
+          Alert.alert('Change your pickup', body.message ?? 'The branch is closed at the monthly return time. Choose another pickup time.', [
+            { text: 'Change times', onPress: changeTimes },
+          ]);
+          return;
+        }
         Alert.alert('Return time adjusted', body.message ?? `The branch is closed at your return time. Return at ${label} instead?`, [
           { text: 'Change times', style: 'cancel', onPress: changeTimes },
           {
@@ -778,8 +793,9 @@ export default function Checkout() {
 
   const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000));
   const pd = vehicle.pricingDetails;
-  const durationText =
-    durationLabel(pd?.pricingBreakdown?.duration) ?? rangeLengthLabel(startDate, endDate) ?? `${days} day${days !== 1 ? 's' : ''}`;
+  const durationText = monthly
+    ? CUSTOMER_MONTHLY_LABEL
+    : durationLabel(pd?.pricingBreakdown?.duration) ?? rangeLengthLabel(startDate, endDate) ?? `${days} day${days !== 1 ? 's' : ''}`;
   const daily = pd?.pricingBreakdown?.applicablePrice ?? vehicle.pricing?.daily ?? 0;
   const subtotal = pd ? pd.basePrice : daily * days;
   const deposit = pd?.deposit ?? 0;
@@ -849,7 +865,7 @@ export default function Checkout() {
             <View style={styles.packageRow}>
               <Ionicons name="pricetag-outline" size={14} color={Colors.ink3} />
               <Text style={styles.packageText}>
-                {bookedPackage.label} package
+                {monthly ? `${CUSTOMER_MONTHLY_LABEL} · monthly price` : `${bookedPackage.label} package`}
                 {bookedPackage.heldToClosing ? ` · ${heldReturnNote(endDate)}` : ''}
               </Text>
             </View>
@@ -893,9 +909,14 @@ export default function Checkout() {
           }
         />
 
-        {/* Coupon */}
+        {/* Coupon — not on a monthly booking (the monthly price applies) */}
         <Text style={styles.sectionTitle}>Coupon</Text>
-        {appliedCoupon ? (
+        {monthly ? (
+          <View style={styles.offerCodeNote}>
+            <Ionicons name="calendar-number-outline" size={14} color={Colors.ink3} />
+            <Text style={styles.offerCodeNoteText}>Coupons can't be used on a monthly booking. The car's monthly price applies.</Text>
+          </View>
+        ) : appliedCoupon ? (
           <View style={styles.couponApplied}>
             <Ionicons name="pricetag" size={16} color="#2d9d61" />
             <Text style={styles.couponAppliedText}>

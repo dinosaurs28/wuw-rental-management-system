@@ -96,6 +96,14 @@ function parseGroupKey(groupKey: string): {
 
 export { parseGroupKey, normalizeStr };
 
+/**
+ * `?plan=MONTHLY` on the walk-in vehicle endpoints: the counter monthly plan's
+ * quote — full months at exactly the monthly price, no duration slab on them
+ * (user decision Oct 23 2026), as walk-in create charges it. Absent = as before.
+ */
+const staffMonthlyPlan = (req: Request): boolean =>
+  String((req.query as any)?.plan ?? "").trim().toUpperCase() === "MONTHLY";
+
 export const searchVehicles = async (req: Request, res: Response) => {
   try {
     const {
@@ -128,7 +136,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
       }
     }
 
-    const cacheKey = `employee:vehicles:grouped:${branchId}:${search || "all"}:${model || "all"}:${make || "all"}:${category || "all"}:${sort || "none"}:${start || "none"}:${end || "none"}:${limit}:${offset}:d${istDayNumber(new Date())}`;
+    const monthlyPlan = staffMonthlyPlan(req);
+    const cacheKey = `employee:vehicles:grouped:${branchId}:${search || "all"}:${model || "all"}:${make || "all"}:${category || "all"}:${sort || "none"}:${start || "none"}:${end || "none"}:${limit}:${offset}:d${istDayNumber(new Date())}${monthlyPlan ? ":monthly" : ""}`;
     // d = today's IST day: a booking lock's lead starts at 00:00 IST, so a list
     // cached the day before is never served once the car must be hidden
     const cached = await redis.get(cacheKey);
@@ -203,10 +212,12 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, {
-        startAt: TimezoneService.toPrisma(startDate),
-        endAt: TimezoneService.toPrisma(endDate),
-      });
+      durationPriceMap = await getBatchListingPrices(
+        availableVehicles,
+        durationInfo,
+        { startAt: TimezoneService.toPrisma(startDate), endAt: TimezoneService.toPrisma(endDate) },
+        monthlyPlan ? { monthlyPlan: true } : undefined,
+      );
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }
@@ -369,7 +380,8 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
     }
 
     // d = today's IST day (a booking lock's lead starts at 00:00 IST)
-    const cacheKey = `employee:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}:d${istDayNumber(new Date())}`;
+    const monthlyPlan = staffMonthlyPlan(req);
+    const cacheKey = `employee:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}:d${istDayNumber(new Date())}${monthlyPlan ? ":monthly" : ""}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
@@ -415,10 +427,12 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
       let listingDailyMap: Map<number, number>;
       if (startDate && endDate) {
         const durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-        const durationPrices = await getBatchListingPrices(groupVehicles, durationInfo, {
-          startAt: TimezoneService.toPrisma(startDate),
-          endAt: TimezoneService.toPrisma(endDate),
-        });
+        const durationPrices = await getBatchListingPrices(
+          groupVehicles,
+          durationInfo,
+          { startAt: TimezoneService.toPrisma(startDate), endAt: TimezoneService.toPrisma(endDate) },
+          monthlyPlan ? { monthlyPlan: true } : undefined,
+        );
         listingDailyMap = new Map(
           groupVehicles.map((v) => [v.id, Number(durationPrices.get(v.id)?.finalPrice ?? 0)]),
         );
@@ -471,6 +485,7 @@ export const getEmployeeVehicleGroupDetails = async (req: Request, res: Response
             undefined,
             representativeVehicle.categoryId,
             representativeVehicle.customPricing,
+            monthlyPlan ? { monthlyPlan: true } : undefined,
           );
           deposit = Number(pr.deposit);
           pricingDetails = {
@@ -622,6 +637,13 @@ export const getEmployeeVehicleDetails = async (
           startDate,
           endDate,
           vehicleData.branchId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          staffMonthlyPlan(req) ? { monthlyPlan: true } : undefined,
         );
       } catch (err) {
         // Branch without a GSTRule: no quote (pricingDetails null → fallback list
@@ -865,10 +887,12 @@ export const searchVehiclesByRegNo = async (req: Request, res: Response) => {
     const [fallbackPrices, prices, dated] = await Promise.all([
       // The 24 h rent the car is billed with (0 = no pricing set)
       getBatchFallbackPrices(vehicles),
-      getBatchListingPrices(vehicles, durationInfo, {
-        startAt: TimezoneService.toPrisma(startDate),
-        endAt: TimezoneService.toPrisma(endDate),
-      }),
+      getBatchListingPrices(
+        vehicles,
+        durationInfo,
+        { startAt: TimezoneService.toPrisma(startDate), endAt: TimezoneService.toPrisma(endDate) },
+        staffMonthlyPlan(req) ? { monthlyPlan: true } : undefined,
+      ),
       // The dated checks for the cars the static rule lets through
       explainUnavailableVehicles(
         vehicles.filter((v) => isListableStatus(v.status)).map((v) => v.id),

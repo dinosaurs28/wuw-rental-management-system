@@ -46,6 +46,9 @@ import {
   returnForNewPickup,
   returnForPackage,
 } from "@/utils/bookingPackages";
+import { PlanToggle } from "@/components/booking/PlanToggle";
+import { CUSTOMER_MONTHLY_LABEL, monthlyReturn } from "@/utils/customerMonthly";
+import type { SearchPlan } from "@/store/search.store";
 
 interface VehicleFiltersProps {
   branches: { publicId: string; name: string }[];
@@ -83,6 +86,13 @@ interface VehicleFiltersProps {
    * hours. The return is computed and shown read-only.
    */
   packageMode?: "customer" | "fleet";
+  /**
+   * Customer Daily / Monthly switch (client TODO item 1), shown when
+   * onCustomerPlanChange is set. MONTHLY: the return is pickup + 30 days,
+   * shown read-only, and the package pickers are hidden.
+   */
+  customerPlan?: SearchPlan;
+  onCustomerPlanChange?: (plan: SearchPlan) => void;
   /** Search box placeholder (default: make or model). */
   searchPlaceholder?: string;
   /** Shown before the search box, e.g. the walk-in "Model | Reg. no" toggle. */
@@ -124,14 +134,17 @@ export const VehicleFilters = ({
   onTripTypeChange,
   monthly = false,
   packageMode,
+  customerPlan = "STANDARD",
+  onCustomerPlanChange,
   searchPlaceholder,
   searchAddon,
 }: VehicleFiltersProps) => {
+  const customerMonthly = customerPlan === "MONTHLY";
   // Local state for immediate input response
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
   // Packages (12 hours / N days, + extra hours for Fleet): the return is computed
-  const usePackages = !!packageMode && !monthly && !!onReturnDateChange && !!onReturnTimeChange;
+  const usePackages = !!packageMode && !monthly && !customerMonthly && !!onReturnDateChange && !!onReturnTimeChange;
   const packageInput = {
     schedule,
     pickupDate,
@@ -163,12 +176,14 @@ export const VehicleFilters = ({
   // The pickup moved: the return moves with it, keeping the package (+ extra hours)
   const handlePickupDate = (date: Date | undefined) => {
     onPickupDateChange(date);
+    if (customerMonthly && date) applyReturn(monthlyReturn(date, pickupTime || "10:00"));
     if (usePackages && date) {
       applyReturn(returnForNewPickup(packageInput, { pickupDate: date, pickupTime: pickupTime || "10:00" }));
     }
   };
   const handlePickupTime = (time: string) => {
     onPickupTimeChange?.(time);
+    if (customerMonthly && pickupDate) applyReturn(monthlyReturn(pickupDate, time));
     if (usePackages) applyReturn(returnForNewPickup(packageInput, { pickupDate, pickupTime: time }));
   };
   const choosePackage = (packageHours: number) =>
@@ -227,6 +242,16 @@ export const VehicleFilters = ({
     <div className="bg-white rounded-[2rem] border border-zinc-200 shadow-2xl p-6 md:p-8 relative overflow-hidden">
       {/* Subtle Inner Glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+
+      {/* Customer Daily / Monthly (client TODO item 1) */}
+      {onCustomerPlanChange && (
+        <div className="mb-6 relative z-10 flex flex-wrap items-center gap-3">
+          <PlanToggle value={customerPlan} onChange={onCustomerPlanChange} />
+          {customerMonthly && (
+            <span className="text-xs font-medium text-zinc-500">A 30-day rental at each vehicle's monthly price</span>
+          )}
+        </div>
+      )}
 
       {/* Main Filter Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6 relative z-10">
@@ -318,7 +343,34 @@ export const VehicleFilters = ({
           <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" />
         </div>
 
-        {usePackages ? (
+        {customerMonthly ? (
+          <>
+            {/* Monthly: exactly 30 days; the return follows the pickup, read-only */}
+            <div className="w-full">
+              <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+                Rental Length
+              </label>
+              <div className="h-14 w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center font-medium text-sm">
+                {CUSTOMER_MONTHLY_LABEL}
+              </div>
+            </div>
+            <div className="w-full">
+              <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
+                Return
+              </label>
+              <div
+                aria-live="polite"
+                className="h-14 w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-full px-5 flex items-center gap-3 font-medium"
+              >
+                <CalendarIcon className="size-4 text-zinc-400 shrink-0" />
+                <span className="truncate text-sm">
+                  {returnDate ? `${format(returnDate, "EEE, d MMM")}, ${returnTime || "10:00"}` : "—"}
+                </span>
+              </div>
+              <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
+            </div>
+          </>
+        ) : usePackages ? (
           <>
             {/* Rental length — 12 hours or whole days; the return follows */}
             <div className="w-full">
@@ -485,7 +537,7 @@ export const VehicleFilters = ({
             <PackageQuickChips state={pkg} onSelect={choosePackage} />
             <PackageHints state={pkg} showExtraHoursNote={packageMode === "fleet"} />
           </div>
-        ) : !monthly && onReturnDateChange && onReturnTimeChange && (
+        ) : !monthly && !customerMonthly && onReturnDateChange && onReturnTimeChange && (
           <DurationPresetChips
             pickupDate={pickupDate}
             pickupTime={pickupTime || "10:00"}
@@ -499,7 +551,9 @@ export const VehicleFilters = ({
           />
         )}
         <p className="text-[11px] font-medium text-zinc-400 sm:pt-2">
-          {monthly
+          {customerMonthly
+            ? `${CUSTOMER_MONTHLY_LABEL} at each vehicle's monthly price · pickup up to ${ADVANCE_BOOKING_DAYS} days ahead`
+            : monthly
             ? `Monthly rental: 30 to 180 days, pickup within the next ${ADVANCE_BOOKING_DAYS} days`
             : usePackages
               ? packageMode === "fleet"

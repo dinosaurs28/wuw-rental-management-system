@@ -132,10 +132,13 @@ export default function EmployeeVehicleListingPage() {
       }
     }
 
+    // Counter monthly plan: listed (and grouped) at the price create charges
+    if (isMonthly) f.plan = "MONTHLY";
     f.limit = ITEMS_PER_PAGE;
     f.offset = (currentPage - 1) * ITEMS_PER_PAGE;
     return f;
   }, [
+    isMonthly,
     category,
     searchQuery,
     sortBy,
@@ -178,9 +181,14 @@ export default function EmployeeVehicleListingPage() {
   // Reg. no search: one row per matching car, priced for the dates
   const regTerm = useDebounce(regSearchTerm(regQuery), 300);
   const regSearch = useQuery({
-    queryKey: ["employee-reg-search", regTerm, startDateTime, endDateTime],
+    queryKey: ["employee-reg-search", regTerm, startDateTime, endDateTime, isMonthly],
     queryFn: () =>
-      employeeService.searchVehiclesByRegNo({ q: regTerm, start: startDateTime!, end: endDateTime! }),
+      employeeService.searchVehiclesByRegNo({
+        q: regTerm,
+        start: startDateTime!,
+        end: endDateTime!,
+        ...(isMonthly ? { plan: "MONTHLY" as const } : {}),
+      }),
     enabled: regMode && regTerm.length >= 2 && !!startDateTime && !!endDateTime && isDateRangeValid,
     staleTime: 15 * 1000,
   });

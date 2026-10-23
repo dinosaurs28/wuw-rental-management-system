@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { monthlyLabel } from '../../lib/monthlyPlan';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
@@ -99,6 +100,8 @@ export default function TripDetail() {
     startAt: string;
     endAt: string;
     days: string;
+    // MONTHLY = a monthly booking (absent = daily / older servers)
+    plan?: string;
     total: string;
     paymentStatus: string;
     vehiclesJson: string;
@@ -370,6 +373,12 @@ export default function TripDetail() {
         {/* Itinerary — reservation # + pickup/return datetimes (no station: bookings carry no branch) */}
         <View style={styles.section}>
           <ItineraryTimeline reservationNumber={bookingId} start={startAt} end={endAt} />
+          {(live?.plan ?? params.plan) === 'MONTHLY' ? (
+            <View style={styles.monthlyRow}>
+              <Ionicons name="calendar-number-outline" size={15} color={Colors.ink3} />
+              <Text style={styles.monthlyText}>{monthlyLabel(live?.days ?? (Number(params.days) || null))}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Extend the trip — CONFIRMED / PICKED_UP, while the server says it's possible */}
@@ -575,6 +584,8 @@ export default function TripDetail() {
 }
 
 const styles = StyleSheet.create({
+  monthlyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  monthlyText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
   root: { flex: 1, backgroundColor: Colors.bg },
 
   header: {

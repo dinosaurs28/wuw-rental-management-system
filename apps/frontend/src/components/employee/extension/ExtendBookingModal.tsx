@@ -59,6 +59,7 @@ import {
 import { ExtensionChargeBreakdown } from "@/components/extension/ExtensionChargeBreakdown";
 import { ExtensionFreeKmLine } from "@/components/extension/ExtensionFreeKmLine";
 import { ExtensionAvailabilityPanel } from "@/components/extension/ExtensionAvailabilityPanel";
+import { RenewalBreakdownPanel } from "@/components/extension/RenewalBreakdownPanel";
 import { BranchHoursBadge } from "@/components/booking/BranchHoursBadge";
 import {
   buildScheduleUserMessage,
@@ -107,6 +108,21 @@ function fmt(iso: string) {
 
 const EXT_MINUTES = ["00", "15", "30", "45"];
 
+const DAY_MS = 86_400_000;
+/**
+ * Monthly renewal chooser (client TODO 7): + N days, + N weeks, + 1 month
+ * (30 days, the monthly block it is priced in) or a custom return.
+ */
+type RenewUnit = "days" | "weeks" | "month" | "custom";
+const RENEW_UNITS: { unit: RenewUnit; label: string }[] = [
+  { unit: "days", label: "+ Days" },
+  { unit: "weeks", label: "+ Weeks" },
+  { unit: "month", label: "+ 1 month (30 days)" },
+  { unit: "custom", label: "Custom date" },
+];
+const renewMs = (unit: RenewUnit, count: number) =>
+  unit === "days" ? count * DAY_MS : unit === "weeks" ? count * 7 * DAY_MS : unit === "month" ? 30 * DAY_MS : 0;
+
 /** "+1 day 11 hr 30 min" between two ISO instants (null when not after). */
 function addedLength(fromIso: string, toIso: string) {
   return formatExtensionHours((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 3_600_000);
@@ -129,6 +145,9 @@ export function ExtendBookingModal({
   const [newMinute, setNewMinute] = useState("00");
   const [notes, setNotes] = useState("");
   const [evaluating, setEvaluating] = useState(false);
+  // Monthly renewal chooser
+  const [renewUnit, setRenewUnit] = useState<RenewUnit>("custom");
+  const [renewCount, setRenewCount] = useState(1);
 
   // Step 2 state
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
@@ -233,9 +252,13 @@ export function ExtendBookingModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newDate?.getTime(), officeHours, eligibility?.maxEndAt]);
 
-  // "+12 hours" / "+1 day" from the current end, when the branch accepts that return
-  const quickOptions = [12, 24].map((hours) => {
-    const target = new Date(new Date(currentEndAt).getTime() + hours * 3_600_000);
+  // A MONTHLY booking's extension is a renewal (client TODO 7–9)
+  const isMonthly = !!eligibility?.isMonthly;
+
+  // A return `addMs` after the current end, on the 15-minute grid, and whether
+  // the branch accepts it (cap, office hours) / the car is free until then
+  const targetAfter = (addMs: number) => {
+    const target = new Date(new Date(currentEndAt).getTime() + addMs);
     const parts = istCalendarParts(target);
     const [h, m] = parts.time.split(":").map(Number);
     // Round up to the 15-minute steps the selects offer
@@ -246,8 +269,21 @@ export function ExtendBookingModal({
     const verdict = officeHours ? validateReturnTime(officeHours, at) : null;
     const blocked = (!!maxEndAt && at > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
     const past = !!availableUntil && at > availableUntil;
-    return { hours, day: parts.day, hour, minute, at, blocked, past };
-  });
+    return { day: parts.day, hour, minute, at, blocked, past };
+  };
+  // "+12 hours" / "+1 day" from the current end, when the branch accepts that return
+  const quickOptions = [12, 24].map((hours) => ({ hours, ...targetAfter(hours * 3_600_000) }));
+  // The renewal chooser's return (null for a custom date)
+  const renewTarget = isMonthly && renewUnit !== "custom" ? targetAfter(renewMs(renewUnit, renewCount)) : null;
+  const applyRenewal = (unit: RenewUnit, count: number) => {
+    setRenewUnit(unit);
+    setRenewCount(count);
+    if (unit === "custom") return;
+    const t = targetAfter(renewMs(unit, count));
+    setNewDate(t.day);
+    setNewHour(t.hour);
+    setNewMinute(t.minute);
+  };
 
   const reset = useCallback(() => {
     setStep(1);
@@ -255,6 +291,8 @@ export function ExtendBookingModal({
     setNewHour("18");
     setNewMinute("00");
     setNotes("");
+    setRenewUnit("custom");
+    setRenewCount(1);
     setEvaluation(null);
     setSelectedResolution(null);
     setSelectedVehiclePublicId("");
@@ -438,7 +476,7 @@ export function ExtendBookingModal({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Extend Booking</DialogTitle>
+            <DialogTitle>{isMonthly ? "Renew Monthly Rental" : "Extend Booking"}</DialogTitle>
             <span className="text-xs text-neutral-400 font-medium">
               Step {step} of {mode === "pickup-session" ? 2 : 3}
             </span>
@@ -473,6 +511,87 @@ export function ExtendBookingModal({
               {/* The car's next booking and how far it can go (server figures) */}
               <ExtensionAvailabilityPanel availability={eligibility} maxBookingDays={eligibility?.maxBookingDays} />
 
+              {/* Monthly renewal: + N days / + N weeks / + 1 month / a custom return */}
+              {isMonthly && (
+                <div className="space-y-2">
+                  <Label>Renew by</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {RENEW_UNITS.map(({ unit, label }) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => applyRenewal(unit, unit === "month" || unit === "custom" ? 1 : renewCount)}
+                        className={cn(
+                          "h-8 px-3 rounded-full border text-xs font-semibold transition-colors",
+                          renewUnit === unit
+                            ? "bg-orange-500 border-orange-500 text-white"
+                            : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {(renewUnit === "days" || renewUnit === "weeks") && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0"
+                        disabled={renewCount <= 1}
+                        onClick={() => applyRenewal(renewUnit, Math.max(1, renewCount - 1))}
+                        aria-label="One less"
+                      >
+                        −
+                      </Button>
+                      <input
+                        type="number"
+                        min={1}
+                        inputMode="numeric"
+                        aria-label={renewUnit === "days" ? "Days" : "Weeks"}
+                        className="h-9 w-16 rounded-md border border-neutral-200 text-center text-sm"
+                        value={renewCount}
+                        onChange={(e) => {
+                          const n = Math.floor(Number(e.target.value));
+                          if (Number.isFinite(n) && n >= 1) applyRenewal(renewUnit, n);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0"
+                        onClick={() => applyRenewal(renewUnit, renewCount + 1)}
+                        aria-label="One more"
+                      >
+                        +
+                      </Button>
+                      <span className="text-sm text-neutral-600">
+                        {renewUnit === "days" ? (renewCount === 1 ? "day" : "days") : renewCount === 1 ? "week" : "weeks"}
+                      </span>
+                    </div>
+                  )}
+                  {renewTarget && (
+                    <p
+                      className={cn(
+                        "text-xs rounded-lg px-3 py-2 border",
+                        renewTarget.blocked
+                          ? "text-red-700 bg-red-50 border-red-200"
+                          : "text-neutral-700 bg-neutral-50 border-neutral-200",
+                      )}
+                    >
+                      New return: <span className="font-semibold">{fmt(renewTarget.at.toISOString())}</span>
+                      {renewTarget.blocked && " — past the renewal limit or outside branch hours; pick a custom date."}
+                    </p>
+                  )}
+                  <p className="text-xs text-neutral-500">
+                    Days and weeks are priced at the car's daily rate with the branch's duration discount; each full 30
+                    days at exactly its monthly price (no discount).
+                  </p>
+                </div>
+              )}
+
               {/* New end date picker */}
               <div className="space-y-2">
                 <Label>New End Date <span className="text-red-500">*</span></Label>
@@ -490,7 +609,10 @@ export function ExtendBookingModal({
                     <Calendar
                       mode="single"
                       selected={newDate}
-                      onSelect={setNewDate}
+                      onSelect={(d) => {
+                        setNewDate(d);
+                        if (isMonthly) setRenewUnit("custom");
+                      }}
                       disabled={(d) =>
                         d < currentEndDay ||
                         (!!maxEndDay && d > maxEndDay) ||
@@ -511,6 +633,7 @@ export function ExtendBookingModal({
                     value={newHour}
                     onValueChange={(h) => {
                       setNewHour(h);
+                      if (isMonthly) setRenewUnit("custom");
                       // Keep the minute when it's allowed in the new hour
                       if (slotDisabled(Number(h), Number(newMinute))) {
                         const m = EXT_MINUTES.find((mm) => !slotDisabled(Number(h), Number(mm)));
@@ -535,7 +658,13 @@ export function ExtendBookingModal({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="newMinute">Minute</Label>
-                  <Select value={newMinute} onValueChange={setNewMinute}>
+                  <Select
+                    value={newMinute}
+                    onValueChange={(m) => {
+                      setNewMinute(m);
+                      if (isMonthly) setRenewUnit("custom");
+                    }}
+                  >
                     <SelectTrigger id="newMinute" className="h-12">
                       <SelectValue />
                     </SelectTrigger>
@@ -553,8 +682,8 @@ export function ExtendBookingModal({
                 </div>
               </div>
 
-              {/* Quick picks from the current end */}
-              <div className="flex flex-wrap gap-2">
+              {/* Quick picks from the current end (a monthly renewal has its own chooser) */}
+              <div className={cn("flex flex-wrap gap-2", isMonthly && "hidden")}>
                 {quickOptions.map((opt) => (
                   <button
                     key={opt.hours}
@@ -709,12 +838,14 @@ export function ExtendBookingModal({
                       : undefined;
                   const partialPriced = !!partialOpt?.taxableAmount;
                   const priced = partialPriced ? partialOpt! : evaluation.pricing;
+                  const renewal = partialPriced ? partialOpt!.renewal : evaluation.pricing.renewal;
                   return (
                     <>
+                      <RenewalBreakdownPanel renewal={renewal} className="pt-2 border-t border-neutral-200" />
                       <ExtensionChargeBreakdown
                         split={priced}
                         total={priced.additionalAmount}
-                        totalLabel="Additional due"
+                        totalLabel={isMonthly ? "Renewal payable" : "Additional due"}
                         specialShare={priced.specialShare}
                         className="pt-2 border-t border-neutral-200"
                       />
@@ -885,6 +1016,7 @@ export function ExtendBookingModal({
 
               {/* Amount due */}
               <div className="bg-neutral-50 rounded-lg px-4 py-4 space-y-1 text-sm">
+                <RenewalBreakdownPanel renewal={committedExtension.renewal} className="pb-2 mb-1 border-b border-neutral-200" />
                 <div className="flex justify-between text-neutral-600">
                   <span>Amount due (GST included)</span>
                   <span className="font-bold text-lg text-orange-600">
@@ -946,7 +1078,7 @@ export function ExtendBookingModal({
                   {collecting
                     ? "Processing…"
                     : collectAmount <= 0
-                      ? "Confirm Extension"
+                      ? isMonthly ? "Confirm Renewal" : "Confirm Extension"
                       : payment.method === "CREDIT"
                         ? "Confirm on Credit"
                         : "Mark as Collected"}

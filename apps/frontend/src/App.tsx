@@ -258,19 +258,19 @@ function App() {
           <Route path="/manager/damage-reports" element={<DamageReportsPage />} />
           <Route
             path="/manager/payment/cash-confirmations"
-            element={<Navigate to="/manager/payment/financials?tab=confirmations" replace />}
+            element={<Navigate to="/manager/payment/financials?tab=shift" replace />}
           />
           <Route
             path="/manager/payment/settlements"
-            element={<Navigate to="/manager/payment/financials?tab=settlements" replace />}
+            element={<Navigate to="/manager/payment/financials?tab=financials&queue=settlements" replace />}
           />
           <Route
             path="/manager/payment/refunds"
-            element={<Navigate to="/manager/payment/financials?tab=refunds" replace />}
+            element={<Navigate to="/manager/payment/financials?tab=financials&queue=refunds" replace />}
           />
           <Route
             path="/manager/payment/cash-shifts"
-            element={<Navigate to="/manager/payment/financials?tab=shifts" replace />}
+            element={<Navigate to="/manager/payment/financials?tab=shift" replace />}
           />
           <Route
             path="/manager/payment/extensions"

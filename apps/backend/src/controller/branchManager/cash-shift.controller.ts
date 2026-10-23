@@ -7,8 +7,10 @@ import {
   listCashShiftsSchema,
   listMyCashShiftsSchema,
   openCashShiftSchema,
+  listPendingCashSchema,
 } from "@repo/schemas";
 import { cashShiftService, CashShiftError } from "../../services/payment/index.js";
+import { FE_CLOSE_MESSAGE } from "../../services/payment/cash-shift-rules.js";
 
 /** Replies with the shift error contract; false when it isn't a CashShiftError. */
 const sendShiftError = (res: Response, error: unknown): boolean => {
@@ -104,9 +106,15 @@ export const GetMyActiveShift = async (req: Request, res: Response): Promise<voi
   }
 };
 
+/**
+ * Branch manager's "Verify & close" (POST /branchManager/payment/shifts/:publicId/close).
+ * body: { cashReceived, note?, expectedCash? } (old names actualTotal /
+ * discrepancyExplanation still accepted). Expected cash is computed by the
+ * server inside the close transaction; see cash-shift-rules.ts.
+ */
 export const CloseShift = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = closeCashShiftSchema.safeParse(req.body);
+    const validation = closeCashShiftSchema.safeParse(req.body ?? {});
     if (!validation.success) {
       res.status(StatusCode.BAD_REQUEST).json({
         success: false,
@@ -116,23 +124,34 @@ export const CloseShift = async (req: Request, res: Response): Promise<void> => 
       });
       return;
     }
+    const body = validation.data;
     const actor = await buildActorContext(req);
     const shift = await cashShiftService.close(
       req.params.publicId!,
-      validation.data.actualTotal,
-      validation.data.discrepancyExplanation,
+      {
+        cashReceived: (body.cashReceived ?? body.actualTotal) as number,
+        note: body.note ?? body.discrepancyExplanation ?? null,
+        expectedSeen: body.expectedCash ?? null,
+      },
       actor,
     );
+    const matched = shift.discrepancy.isZero();
     res.status(StatusCode.OK).json({
-      message: shift.status === "DISCREPANCY_FLAGGED" ? "Shift closed with discrepancy — requires reconciliation" : "Shift closed successfully",
+      message: matched ? "Shift closed — cash matched" : "Shift closed with a difference",
       data: {
         publicId: shift.publicId,
         status: shift.status,
-        discrepancy: shift.discrepancy,
+        result: matched ? "MATCHED" : "MISMATCH",
         closedAt: shift.closedAt,
         openingCash: shift.openingCash.toFixed(2),
         cashCollected: shift.cashCollected.toFixed(2),
         cashRefunded: shift.cashRefunded.toFixed(2),
+        expectedCash: shift.expectedTotal.toFixed(2),
+        cashReceived: shift.actualTotal.toFixed(2),
+        difference: shift.discrepancy.toFixed(2),
+        note: shift.discrepancyExplanation,
+        // Older keys
+        discrepancy: shift.discrepancy,
         expectedTotal: shift.expectedTotal.toFixed(2),
         expectedClosing: shift.expectedTotal.toFixed(2),
         actualTotal: shift.actualTotal.toFixed(2),
@@ -143,18 +162,50 @@ export const CloseShift = async (req: Request, res: Response): Promise<void> => 
   } catch (error: any) {
     if (sendShiftError(res, error)) return;
     console.error("CloseShift Error:", error);
-    if (error.message?.includes("not found")) {
-      res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Fleet Executive close (POST /employee/payment/shifts/:publicId/close) — removed
+ * Oct 2026: the branch manager closes shifts. Old app builds still call it and
+ * get a clear 403.
+ */
+export const EmployeeCloseShiftRemoved = (_req: Request, res: Response): void => {
+  const error = new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_CLOSE_MANAGER_ONLY", FE_CLOSE_MESSAGE);
+  res.status(error.status).json(error.toJSON());
+};
+
+/** BM: the Cash Shift summary cards (?from&to = IST dates for the mismatches card). */
+export const GetShiftCards = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const from = typeof req.query.from === "string" && req.query.from ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" && req.query.to ? req.query.to : undefined;
+    const cards = await cashShiftService.cardsForBranch(req.branch_Id, { from, to });
+    res.status(StatusCode.OK).json({ data: cards });
+  } catch (error) {
+    if (sendShiftError(res, error)) return;
+    console.error("GetShiftCards Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/** BM: COLLECTED payments no open shift will confirm (confirm / reject them one by one). */
+export const ListUnconfirmedOutsideShifts = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const query = listPendingCashSchema.safeParse(req.query);
+    if (!query.success) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        success: false,
+        code: "INVALID_QUERY",
+        message: firstIssue(query.error, "Invalid query", true),
+      });
       return;
     }
-    if (error.message?.includes("discrepancyExplanation") || error.message?.includes("already")) {
-      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-      return;
-    }
-    if (error.message?.includes("own shift")) {
-      res.status(StatusCode.FORBIDDEN).json({ message: error.message });
-      return;
-    }
+    const result = await cashShiftService.listUnconfirmedOutsideOpenShifts(req.branch_Id, query.data.page, query.data.pageSize);
+    res.status(StatusCode.OK).json(result);
+  } catch (error) {
+    console.error("ListUnconfirmedOutsideShifts Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

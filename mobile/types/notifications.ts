@@ -20,7 +20,10 @@ export type NotificationTypeName =
   | 'APPROVAL_REQUESTED'
   | 'APPROVAL_RESOLVED'
   | 'CASH_DELAYED'
-  | 'SHIFT_DISCREPANCY';
+  | 'SHIFT_DISCREPANCY'
+  | 'MONTHLY_RENTAL_EXPIRING'
+  // The branch manager closed your cash shift (Oct 2026)
+  | 'SHIFT_CLOSED';
 
 /** What an APPROVAL_* (or CASH_DELAYED / *_APPROVAL_REQUESTED) notification is about. */
 export type NotificationApprovalKind =

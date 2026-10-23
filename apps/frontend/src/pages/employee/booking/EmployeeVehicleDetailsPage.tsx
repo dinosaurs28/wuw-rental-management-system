@@ -137,8 +137,8 @@ export const EmployeeVehicleDetailsPage = () => {
     error: vehicleError,
   } = useQuery({
     // The staff endpoint: the walk-in quote keeps its festival breakdown
-    queryKey: ["employee-vehicle-details", id, startDateTime, endDateTime],
-    queryFn: () => employeeService.getVehicleDetails(id!, startDateTime || undefined, endDateTime || undefined),
+    queryKey: ["employee-vehicle-details", id, startDateTime, endDateTime, plan],
+    queryFn: () => employeeService.getVehicleDetails(id!, startDateTime || undefined, endDateTime || undefined, plan),
     enabled: !!id,
     staleTime: 60 * 1000,
   });

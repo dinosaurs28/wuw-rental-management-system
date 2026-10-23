@@ -147,8 +147,8 @@ export default function OpenShift() {
 
         <Text style={styles.heading}>Open Cash Shift</Text>
         <Text style={styles.desc}>
-          Starting a shift lets you record all cash payments collected during this session.
-          Close the shift at the end to reconcile your totals.
+          Starting a shift lets you record every payment you collect (cash, UPI, card). Your branch manager
+          closes the shift when you hand over the cash.
         </Text>
 
         <View style={styles.infoCard}>
@@ -160,7 +160,7 @@ export default function OpenShift() {
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={16} color={Colors.ink3} />
-            <Text style={styles.infoText}>All cash collected will be tracked in this shift</Text>
+            <Text style={styles.infoText}>Every payment you collect will be tracked in this shift</Text>
           </View>
         </View>
 
@@ -168,7 +168,7 @@ export default function OpenShift() {
         <View style={styles.fieldBlock}>
           <Text style={styles.fieldLabel}>Opening cash in drawer (₹)</Text>
           <Text style={styles.fieldHelp}>
-            Count the cash in the drawer before you start. At close you will be expected to hold this plus the
+            Count the cash in the drawer before you start. At handover you will be expected to hold this plus the
             cash you collect, minus cash refunds.
           </Text>
           <View style={[styles.amountWrap, amountError ? styles.amountWrapError : null]}>

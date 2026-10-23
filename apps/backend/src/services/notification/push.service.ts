@@ -10,9 +10,15 @@ import { EXPO_PUSH_TOKEN_PATTERN } from "@repo/schemas";
  *   PUSH_ENABLED=false   turns sending off (rows are still written)
  *   EXPO_ACCESS_TOKEN    sent as a Bearer token when the Expo project has
  *                        "enhanced push security" switched on
+ *   EXPO_PUSH_URL        optional override of the Expo push endpoint (local
+ *                        test stubs only; leave unset everywhere else)
  */
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const DEFAULT_EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+function expoPushUrl(): string {
+  return process.env.EXPO_PUSH_URL?.trim() || DEFAULT_EXPO_PUSH_URL;
+}
 // Expo accepts at most 100 messages per request.
 const CHUNK_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -58,7 +64,7 @@ async function postChunk(messages: ExpoMessage[]): Promise<ExpoTicket[] | null> 
     headers.Authorization = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
   }
 
-  const response = await fetch(EXPO_PUSH_URL, {
+  const response = await fetch(expoPushUrl(), {
     method: "POST",
     headers,
     body: JSON.stringify(messages),

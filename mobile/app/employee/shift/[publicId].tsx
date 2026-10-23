@@ -81,7 +81,9 @@ function TransactionRow({ t, onViewProof }: { t: ShiftTransaction; onViewProof?:
     <View style={styles.txn}>
       <View style={styles.txnTop}>
         <View style={styles.txnTitleWrap}>
-          <Text style={styles.txnTitle}>{PURPOSE_LABEL[t.purpose] ?? t.purpose}</Text>
+          <Text style={styles.txnTitle}>
+            {t.direction !== 'OUT' && t.paymentTypes?.length ? t.paymentTypes.join(' + ') : (PURPOSE_LABEL[t.purpose] ?? t.purpose)}
+          </Text>
           <Text style={styles.txnMeta} numberOfLines={1}>
             {t.customerName ? `${t.customerName} · ` : ''}#{t.bookingPublicId.slice(-8).toUpperCase()}
           </Text>
@@ -230,6 +232,8 @@ export default function ShiftDetailScreen() {
   const confirmed = money(shift.confirmedCash) ?? 0;
   const rejected = money(shift.rejectedCash) ?? 0;
   const upi = money(shift.upiCollected) ?? 0;
+  // Oct 2026 servers send every non-cash payment (UPI + card); older ones UPI only
+  const nonCash = money(shift.nonCashCollected) ?? upi;
   const legacy = shift.legacyVariance;
   // Legacy shifts kept their stored expected (vs manager-confirmed cash), so
   // the parts are listed without the + / − / = that would imply they add up.
@@ -257,7 +261,11 @@ export default function ShiftDetailScreen() {
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="stop-circle-outline" size={16} color={Colors.ink3} />
-            <Text style={styles.infoText}>{shift.closedAt ? `Closed ${istDateTime(shift.closedAt)}` : 'Still open'}</Text>
+            <Text style={styles.infoText}>
+              {shift.closedAt
+                ? `Closed ${istDateTime(shift.closedAt)}${shift.closedByManager && shift.closedByName ? ` by ${shift.closedByName}` : ''}`
+                : 'Still open — your branch manager closes it when you hand over the cash'}
+            </Text>
           </View>
           {shift.branchName ? (
             <View style={styles.infoRow}>
@@ -283,9 +291,12 @@ export default function ShiftDetailScreen() {
             value={inrOrDash(shift.expectedClosing)}
           />
           {/* Closing cash and variance don't exist while the shift is open */}
-          <Line label="Counted at close" value={inrOrDash(shift.closingCash)} />
           <Line
-            label="Variance"
+            label={shift.closedByManager ? 'Received by your branch manager' : 'Counted at close'}
+            value={inrOrDash(shift.closingCash)}
+          />
+          <Line
+            label={shift.closedByManager ? 'Difference' : 'Variance'}
             value={variance == null ? '—' : signedInr(variance)}
             color={variance == null ? undefined : varianceColor(variance)}
             sub={
@@ -293,7 +304,10 @@ export default function ShiftDetailScreen() {
             }
           />
           {shift.isOpen ? (
-            <Text style={styles.note}>Live figures — they change as you collect or refund cash.</Text>
+            <Text style={styles.note}>
+              Live figures — they change as you collect or refund cash. Your branch manager closes the shift when you hand
+              over the cash.
+            </Text>
           ) : (
             <Text style={styles.note}>
               Figures were fixed when the shift closed. Manager review shows each payment’s status now.
@@ -304,9 +318,13 @@ export default function ShiftDetailScreen() {
           ) : null}
         </View>
 
-        {upi > 0 ? (
+        {nonCash > 0 ? (
           <View style={[styles.card, styles.upiCard]}>
-            <Line label="UPI collected" value={inr2(upi)} sub="Paid to the account — not part of the drawer" />
+            <Line
+              label={shift.nonCashCollected != null ? 'Non-cash (UPI / card)' : 'UPI collected'}
+              value={inr2(nonCash)}
+              sub="Paid to the account — not part of the drawer"
+            />
           </View>
         ) : null}
 
@@ -317,12 +335,20 @@ export default function ShiftDetailScreen() {
               <>
                 <Text style={styles.noteTitle}>
                   {/* Reconcile replaces the close note with the manager's note */}
-                  {shift.reconciledAt ? 'Reconciliation note' : 'Your note at close'}
+                  {shift.closedByManager ? "Branch manager's note" : shift.reconciledAt ? 'Reconciliation note' : 'Your note at close'}
                 </Text>
                 <Text style={styles.noteBody}>{shift.discrepancyExplanation}</Text>
               </>
             ) : null}
-            {shift.reconciledAt ? (
+            {shift.closedByManager ? (
+              <View style={styles.infoRow}>
+                <Ionicons name="checkmark-done-outline" size={16} color={Colors.availGood} />
+                <Text style={styles.infoText}>
+                  Closed by your branch manager{shift.closedByName ? ` (${shift.closedByName})` : ''}
+                  {shift.closedAt ? ` · ${istDateTime(shift.closedAt)}` : ''}
+                </Text>
+              </View>
+            ) : shift.reconciledAt ? (
               <View style={styles.infoRow}>
                 <Ionicons name="checkmark-done-outline" size={16} color={Colors.availGood} />
                 <Text style={styles.infoText}>

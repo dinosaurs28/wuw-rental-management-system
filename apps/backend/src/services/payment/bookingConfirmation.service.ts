@@ -12,7 +12,7 @@ import {
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
-import { claimUtr, CounterGuardError, normalizeUtr } from "./counter-guard.service.js";
+import { claimUtr, CounterGuardError, lockShiftForPayment, normalizeUtr } from "./counter-guard.service.js";
 import { claimPaymentProofs, proofPhotosCreate } from "./payment-proof.service.js";
 import { addFleetCredit } from "./customer-credit.service.js";
 import Decimal from "decimal.js";
@@ -188,6 +188,13 @@ export async function confirmBookingPayment(
     );
     await prisma.$transaction(
       async (tx) => {
+        // The creator's open shift first, locked FOR SHARE (never a shift being
+        // closed). Counter money (cash / UPI / split) taken by a Fleet Executive
+        // needs one; a gateway payment links when one is open, never refused.
+        const lockedShift = isCredit
+          ? null
+          : await lockShiftForPayment(tx, { id: booking.createdById }, { optional: !(isCash || isUpi || isSplit) });
+
         // Claim inside the transaction: the UTR / payment photo may have been used
         // for another payment while this booking sat on HOLD.
         if (upiUtr) await claimUtr(upiUtr, tx);
@@ -315,16 +322,9 @@ export async function confirmBookingPayment(
         // before it is counted as received — regardless of cashConfirmationEnabled.
         // A split's cash part does too. Online payments (Razorpay and counter UPI)
         // confirm immediately.
-        let activeShiftId: number | null = null;
         const collectedAtCounter = isCash || isUpi || isSplit;
-
-        if (collectedAtCounter) {
-          const activeShift = await (tx as any).cashShift.findFirst({
-            where: { employeeId: booking.createdById, status: "OPEN" },
-            select: { id: true },
-          });
-          activeShiftId = activeShift?.id ?? null;
-        }
+        // Every payment a Fleet Executive takes lands in their shift (gateway ones as non-cash)
+        const activeShiftId: number | null = lockedShift?.id ?? null;
 
         const txnStatus = isCash || isSplit ? "COLLECTED" : "CONFIRMED";
         const now = new Date();

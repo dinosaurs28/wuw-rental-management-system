@@ -37,6 +37,12 @@ export const VehicleGroupDetailsPage = () => {
   const groupKey = decodeURIComponent(encodedGroupKey ?? "");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // Customer Monthly (client TODO item 1): ?plan=MONTHLY from the Monthly results
+  const urlPlan = searchParams.get("plan") === "MONTHLY" ? "MONTHLY" : "STANDARD";
+  useEffect(() => {
+    useSearchStore.getState().setSearchCriteria({ plan: urlPlan });
+  }, [urlPlan]);
+  const monthly = useSearchStore((state) => state.plan) === "MONTHLY";
 
   const searchPickupDate = useSearchStore((state) => state.pickupDate);
   const searchReturnDate = useSearchStore((state) => state.returnDate);
@@ -120,6 +126,7 @@ export const VehicleGroupDetailsPage = () => {
     groupKey,
     lastValidStart.current,
     lastValidEnd.current,
+    { plan: monthly ? "MONTHLY" : undefined },
   );
 
   const group = data?.data;
@@ -140,14 +147,15 @@ export const VehicleGroupDetailsPage = () => {
 
   // Write-back: when return is bumped, update the store so the pricing card reflects the new time
   useEffect(() => {
-    if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
+    // Monthly: the return stays at pickup + 30 days
+    if (monthly || !adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
     const adjusted = new Date(adjustedEndDateTime);
     if (isNaN(adjusted.getTime())) return;
     setEndDate(new Date(adjusted.getFullYear(), adjusted.getMonth(), adjusted.getDate()));
     const hh = String(adjusted.getHours()).padStart(2, "0");
     const mm = String(adjusted.getMinutes()).padStart(2, "0");
     setEndTime(`${hh}:${mm}`);
-  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime]);
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setEndDate, setEndTime, monthly]);
 
   // Sync pricing to store when data changes
   useEffect(() => {

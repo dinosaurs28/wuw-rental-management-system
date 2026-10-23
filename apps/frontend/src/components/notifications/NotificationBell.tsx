@@ -8,6 +8,7 @@ import {
   Bell,
   BellRing,
   CalendarCheck,
+  CalendarClock,
   CalendarPlus,
   CalendarX,
   CheckCheck,
@@ -79,6 +80,8 @@ const TYPE_VISUAL: Record<string, { icon: LucideIcon; tone: Tone }> = {
   APPROVAL_RESOLVED: { icon: ShieldCheck, tone: "green" },
   CASH_DELAYED: { icon: Banknote, tone: "amber" },
   SHIFT_DISCREPANCY: { icon: Scale, tone: "red" },
+  MONTHLY_RENTAL_EXPIRING: { icon: CalendarClock, tone: "amber" },
+  SHIFT_CLOSED: { icon: Banknote, tone: "green" },
 };
 
 const EMPTY_HINT: Record<NotificationRole, string> = {

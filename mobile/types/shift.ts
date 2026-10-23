@@ -45,6 +45,20 @@ export interface ShiftView {
   // Closed under the old rule (variance vs manager-confirmed cash): the stored
   // expected does not equal opening + collected − refunded.
   legacyVariance: boolean;
+  // ── Oct 2026: the branch manager closes shifts (absent on older servers) ──
+  // Expected cash = opening + cash collected − cash refunded (= expectedClosing).
+  expectedCash?: string;
+  // What the manager received at close, and received − expected; null while OPEN.
+  cashReceived?: string | null;
+  difference?: string | null;
+  result?: 'MATCHED' | 'MISMATCH' | null;
+  // UPI / card money in the shift (never in the drawer).
+  nonCashCollected?: string;
+  totalCollected?: string;
+  paymentCount?: number;
+  // The manager who closed it (the executive themselves for shifts closed before Oct 2026).
+  closedByName?: string | null;
+  closedByManager?: boolean;
 }
 
 export type ShiftTransactionPurpose =
@@ -93,6 +107,9 @@ export interface ShiftTransaction {
   notes: string | null;
   // Recorded after the close snapshot, so not in the shift's figures.
   linkedAfterClose: boolean;
+  // Oct 2026: what the payment was for (Rent, Security deposit, Extension fee,
+  // Late fee, Extra charges, Damages). Absent on older servers / for refunds.
+  paymentTypes?: string[];
 }
 
 export interface ShiftDetail extends ShiftView {

@@ -31,6 +31,8 @@ import {
 } from "@/components/booking/PackagePicker";
 import { bookingPickerLimits } from "@/utils/bookingPickers";
 import { packageRangeState, returnForNewPickup, returnForPackage } from "@/utils/bookingPackages";
+import { useSearchStore } from "@/store/search.store";
+import { CUSTOMER_MONTHLY_LABEL, monthlyReturn } from "@/utils/customerMonthly";
 
 interface VehiclePricingCardProps {
   vehicle: VehicleDetails;
@@ -67,6 +69,9 @@ export const VehiclePricingCard = ({
 
   const pickupDate = getStartDate();
   const returnDate = getEndDate();
+  // Customer Monthly (client TODO items 1–2): 30 days from the pickup, return read-only
+  const monthly = useSearchStore((s) => s.plan) === "MONTHLY";
+  const monthlyNotSet = monthly && vehicle.monthly?.bookable === false;
 
   // Advance only (item 18): the server's one plan for these amounts — shown as
   // "Pay ₹X now · ₹Y at pickup". The page stores the options (setPaymentOptions),
@@ -143,18 +148,31 @@ export const VehiclePricingCard = ({
     ? `${pkg.correction.returnDate.getTime()}|${pkg.correction.returnTime}`
     : "";
   useEffect(() => {
-    if (pkg.correction) applyReturn(pkg.correction);
+    if (pkg.correction && !monthly) applyReturn(pkg.correction);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [correctionKey]);
+  }, [correctionKey, monthly]);
 
-  // The pickup moved: the return moves with it, keeping the package
+  // Monthly: the return is always pickup + 30 days (same time)
+  useEffect(() => {
+    if (!monthly || !pickupDate) return;
+    const ret = monthlyReturn(pickupDate, startTime || "10:00");
+    if (returnDate?.getTime() !== ret.returnDate.getTime() || endTime !== ret.returnTime) applyReturn(ret);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthly, pickupDayKey, startTime]);
+
+  // The pickup moved: the return moves with it, keeping the package (Monthly: + 30 days)
   const handlePickupDateChange = (date: Date | undefined) => {
     setStartDate(date || null);
-    if (date) applyReturn(returnForNewPickup(packageInput, { pickupDate: date, pickupTime: startTime || "10:00" }));
+    if (date && monthly) applyReturn(monthlyReturn(date, startTime || "10:00"));
+    else if (date) applyReturn(returnForNewPickup(packageInput, { pickupDate: date, pickupTime: startTime || "10:00" }));
   };
 
   const handlePickupTimeChange = (time: string) => {
     setStartTime(time);
+    if (monthly) {
+      if (pickupDate) applyReturn(monthlyReturn(pickupDate, time));
+      return;
+    }
     applyReturn(returnForNewPickup(packageInput, { pickupDate, pickupTime: time }));
   };
 
@@ -167,8 +185,7 @@ export const VehiclePricingCard = ({
     returnDate &&
     isDateRangeValid &&
     !limits.windowError &&
-    !!pkg.selected &&
-    !pkg.correction &&
+    (monthly ? !monthlyNotSet : !!pkg.selected && !pkg.correction) &&
     !isRefetching;
 
   // What the price covers ("5 hours", "1 day + 2 hours"); the period type is the fallback
@@ -249,16 +266,22 @@ export const VehiclePricingCard = ({
               <BranchHoursBadge schedule={schedule} date={pickupDate} kind="pickup" />
             </div>
 
-            {/* Rental length — 12 hours or whole days; the return follows */}
+            {/* Rental length — 12 hours or whole days; the return follows (Monthly: fixed 30 days) */}
             <div className="space-y-3 sm:col-span-2">
               <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
                 Rental Length
               </label>
-              <PackageSelect
-                state={pkg}
-                onSelect={choosePackage}
-                triggerClassName="!h-12 w-full rounded-full bg-white border-zinc-200 hover:bg-zinc-100 text-zinc-900 px-4 text-sm transition-colors"
-              />
+              {monthly ? (
+                <div className="h-12 w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-full px-4 flex items-center text-sm font-medium">
+                  {CUSTOMER_MONTHLY_LABEL}
+                </div>
+              ) : (
+                <PackageSelect
+                  state={pkg}
+                  onSelect={choosePackage}
+                  triggerClassName="!h-12 w-full rounded-full bg-white border-zinc-200 hover:bg-zinc-100 text-zinc-900 px-4 text-sm transition-colors"
+                />
+              )}
             </div>
 
             {/* Return — computed, read-only */}
@@ -272,7 +295,9 @@ export const VehiclePricingCard = ({
               >
                 <CalendarIcon className="size-4 text-zinc-400 shrink-0" />
                 <span className="truncate text-sm">
-                  {pkg.selected ? formatPackageReturn(pkg.returnAt) : "—"}
+                  {monthly
+                    ? returnDate ? `${format(returnDate, "EEE, d MMM")}, ${endTime || "10:00"}` : "—"
+                    : pkg.selected ? formatPackageReturn(pkg.returnAt) : "—"}
                 </span>
               </div>
               <BranchHoursBadge schedule={schedule} date={returnDate} kind="return" />
@@ -280,10 +305,18 @@ export const VehiclePricingCard = ({
           </div>
 
           {/* Quick lengths (#5) + why 12 hours is off for this pickup */}
-          <div className="space-y-1.5">
-            <PackageQuickChips state={pkg} onSelect={choosePackage} />
-            <PackageHints state={pkg} />
-          </div>
+          {!monthly && (
+            <div className="space-y-1.5">
+              <PackageQuickChips state={pkg} onSelect={choosePackage} />
+              <PackageHints state={pkg} />
+            </div>
+          )}
+
+          {monthlyNotSet && (
+            <p className="text-sm font-semibold text-red-500">
+              Monthly price not set for this vehicle. Choose another vehicle or book it daily.
+            </p>
+          )}
 
           {limits.windowError && (
             <p className="text-sm font-semibold text-red-500">{limits.windowError}</p>

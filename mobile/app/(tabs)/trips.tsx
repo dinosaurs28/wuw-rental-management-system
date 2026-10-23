@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { userApi } from '../../lib/api';
 import { rangeLengthLabel } from '../../lib/dates';
+import { monthlyLabel } from '../../lib/monthlyPlan';
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
@@ -71,6 +72,7 @@ function TripCard({ trip }: { trip: BookingTrip }) {
           startAt:       trip.startAt,
           endAt:         trip.endAt,
           days:          String(trip.days),
+          ...(trip.plan === 'MONTHLY' ? { plan: 'MONTHLY' } : {}),
           total:         String(trip.total),
           paymentStatus: trip.paymentStatus ?? '',
           // full vehicle list so trip detail can render every vehicle (#39)
@@ -100,7 +102,9 @@ function TripCard({ trip }: { trip: BookingTrip }) {
         <Text style={styles.dates}>
           {formatDate(trip.startAt)} → {formatDate(trip.endAt)} ·{' '}
           {/* "12 hours" under a day, else whole days (#5) — Booking.days rounds a 12 h trip up to 1 */}
-          {rangeLengthLabel(new Date(trip.startAt), new Date(trip.endAt)) ?? `${trip.days}d`}
+          {trip.plan === 'MONTHLY'
+            ? monthlyLabel(trip.days)
+            : rangeLengthLabel(new Date(trip.startAt), new Date(trip.endAt)) ?? `${trip.days}d`}
         </Text>
         <View style={styles.cardBottom}>
           <View style={styles.totalWrap}>

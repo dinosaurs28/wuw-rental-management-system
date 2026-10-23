@@ -20,6 +20,11 @@ import {
   ExportPeriodReport,
 } from "../../controller/branchManager/period-report.controller.js";
 import {
+  GetFinancialsPayments,
+  ExportFinancialsPayments,
+  GetFinancialsOptions,
+} from "../../controller/branchManager/financials.controller.js";
+import {
   GetActiveBookings,
   GetPendingApprovals,
   GetOverdueReturns,
@@ -208,6 +213,10 @@ router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/reports/period", ManagerCheck, GetPeriodReport);
 router.get("/reports/period/bookings", ManagerCheck, GetPeriodBookings);
 router.get("/reports/period/export", ManagerCheck, ExportPeriodReport);
+// Financials tab → "Financials" sub-tab (Oct 2026): view-only payments of the own branch
+router.get("/financials/payments", ManagerCheck, GetFinancialsPayments);
+router.get("/financials/payments/export", ManagerCheck, ExportFinancialsPayments);
+router.get("/financials/options", ManagerCheck, GetFinancialsOptions);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
 router.get("/dashboard/bookings/overdue", ManagerCheck, GetOverdueReturns);

@@ -38,6 +38,8 @@ import {
   GetShiftDetails,
   ListBranchShifts,
   ReconcileShift,
+  GetShiftCards,
+  ListUnconfirmedOutsideShifts,
 } from "../../controller/branchManager/cash-shift.controller.js";
 import {
   ListPendingPaymentBookings,
@@ -97,9 +99,11 @@ router.get("/recheck/:bookingId", GetRecheckInfo);
 router.post("/recheck/:bookingId/gateway-check", RecheckPaymentWithGateway);
 router.post("/recheck/:bookingId/manual-confirm", ManualConfirmPayment);
 
-// Cash shifts
+// Cash shifts (Financials → Cash Shift). The manager verifies & closes executives' shifts.
 router.post("/shifts", OpenShift);
 router.get("/shifts/me/active", GetMyActiveShift);
+router.get("/shifts/cards", GetShiftCards);
+router.get("/shifts/unconfirmed", ListUnconfirmedOutsideShifts);
 router.post("/shifts/:publicId/close", CloseShift);
 router.get("/shifts/:publicId", GetShiftDetails);
 router.get("/shifts", ListBranchShifts);

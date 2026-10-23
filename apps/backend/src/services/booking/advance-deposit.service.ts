@@ -1,7 +1,7 @@
 import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus, Role, PaymentPurpose, PaymentMethod } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../audit/audit.service.js";
-import { claimUtr } from "../payment/counter-guard.service.js";
+import { claimUtr, lockShiftForPayment } from "../payment/counter-guard.service.js";
 import { claimPaymentProofs, proofPhotosCreate, type ResolvedProof } from "../payment/payment-proof.service.js";
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import Decimal from "decimal.js";
@@ -152,6 +152,14 @@ export class AdvanceDepositService {
     }
 
     return await prisma.$transaction(async (tx) => {
+      // The collector's open shift first, locked FOR SHARE (never a shift being
+      // closed; lock order shift → booking). Counter money (cash / UPI / split)
+      // needs one for a Fleet Executive; a captured gateway payment is linked
+      // when one is open and never refused.
+      const collectorId = upi?.collectedById ?? cash?.collectedById ?? split?.collectedById ?? online?.collectedById ?? null;
+      const lockedShift = collectorId
+        ? await lockShiftForPayment(tx, { id: collectorId }, { optional: method === DepositMethod.ONLINE_RAZORPAY })
+        : null;
       // The balance being recorded (a split's parts add up to it) must still be the booking's
       await lockRemainingBalance(
         tx,
@@ -219,10 +227,7 @@ export class AdvanceDepositService {
         const upiProofs = upi.proofs?.length ? upi.proofs : upi.proof ? [upi.proof] : [];
         if (upiProofs.length) await claimPaymentProofs(upiProofs, tx);
 
-        const activeShift = await tx.cashShift.findFirst({
-          where: { employeeId: upi.collectedById, status: "OPEN" },
-          select: { id: true },
-        });
+        const activeShift = lockedShift;
         const now = new Date();
 
         await tx.paymentTransaction.create({
@@ -256,10 +261,7 @@ export class AdvanceDepositService {
         if (split.utr) await claimUtr(split.utr, tx);
         const splitProofs = split.proofs?.length ? split.proofs : split.proof ? [split.proof] : [];
         if (splitProofs.length) await claimPaymentProofs(splitProofs, tx);
-        const splitShift = await tx.cashShift.findFirst({
-          where: { employeeId: split.collectedById, status: "OPEN" },
-          select: { id: true },
-        });
+        const splitShift = lockedShift;
         await tx.paymentTransaction.create({
           data: {
             publicId: createID(),
@@ -287,10 +289,7 @@ export class AdvanceDepositService {
       }
 
       if (cash && method === DepositMethod.CASH) {
-        const cashShift = await tx.cashShift.findFirst({
-          where: { employeeId: cash.collectedById, status: "OPEN" },
-          select: { id: true },
-        });
+        const cashShift = lockedShift;
 
         await tx.paymentTransaction.create({
           data: {
@@ -336,6 +335,8 @@ export class AdvanceDepositService {
             collectedAt: now,
             confirmedById: verifierId,
             confirmedAt: now,
+            // Taken at the counter: the verifying executive's open shift (non-cash)
+            cashShiftId: lockedShift?.id ?? null,
             notes:
               `Remaining balance paid online at ${paidDuring.toLowerCase()}` +
               (online?.gatewayPaymentId ? ` (razorpay_payment_id=${online.gatewayPaymentId})` : ""),

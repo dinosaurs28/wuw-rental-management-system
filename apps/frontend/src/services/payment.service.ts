@@ -702,16 +702,7 @@ export const paymentService = {
       )
       .then((r) => r.data.data),
 
-  closeShift: (
-    publicId: string,
-    payload: { actualTotal: number; discrepancyExplanation?: string }
-  ) =>
-    apiClient
-      .post<{ data: CashShift; message: string }>(
-        `/branchManager/payment/shifts/${publicId}/close`,
-        payload
-      )
-      .then((r) => r.data),
+  // Closing a shift (verify & close): cashShiftService.close (services/cashShift.service.ts)
 
   getAllShifts: (page = 1, pageSize = 20, filters?: ShiftListFilters) =>
     apiClient
@@ -880,16 +871,8 @@ export const employeePaymentService = {
       )
       .then((r) => r.data.data),
 
-  closeShift: (
-    publicId: string,
-    payload: { actualTotal: number; discrepancyExplanation?: string }
-  ) =>
-    apiClient
-      .post<{ data: CashShift; message: string }>(
-        `/employee/payment/shifts/${publicId}/close`,
-        payload
-      )
-      .then((r) => r.data),
+  // No closeShift: Fleet members can't close shifts (Oct 2026) — the branch
+  // manager closes them in Financials → Cash Shift.
 
   /** The signed-in Fleet Executive's own shifts, across every branch. */
   getMyShifts: (page = 1, pageSize = 20, filters?: Omit<ShiftListFilters, "employeePublicId">) =>

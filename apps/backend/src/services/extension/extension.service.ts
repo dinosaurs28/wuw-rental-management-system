@@ -22,7 +22,7 @@ import {
   extensionSplitView,
   type ExtensionPricingResult,
 } from "./extension-pricing.service.js";
-import { extensionSpecialShareView } from "./extension-charge.js";
+import { extensionSpecialShareView, type RenewalBreakdown } from "./extension-charge.js";
 import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { displayEmail } from "../../utils/customer/identity.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
@@ -31,7 +31,7 @@ import type { PreparedSwap } from "../vehicle-swap/vehicle-swap.service.js";
 import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
-import { claimUtr } from "../payment/counter-guard.service.js";
+import { claimUtr, lockShiftForPayment } from "../payment/counter-guard.service.js";
 import { claimCounterUpi, proofPhotosCreate, type CounterUpi } from "../payment/payment-proof.service.js";
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
@@ -49,8 +49,7 @@ import { recordBookingSpecialRules } from "../../services/pricing/branch-special
 import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.js";
 import { assertExtensionQrsClosedForCancel } from "../payment/upi-qr.service.js";
 import {
-  extensionFreeKm,
-  extensionKmMinutes,
+  bookingExtensionFreeKm,
   loadFreeKmRates,
   type ExtensionFreeKm,
 } from "../charges/extension-km.js";
@@ -83,6 +82,8 @@ export interface EvaluationResolutionOption {
   sgstAmount?: string;
   taxRate?: string;
   specialShare?: Array<{ label: string; amount: string }>;
+  /** Partial option of a monthly renewal: its renewal breakdown (staff only) */
+  renewal?: RenewalBreakdown | null;
   /** Free km this option's extension adds (#7) — for a partial option, up to partialNewEndAt. */
   extensionFreeKm?: ExtensionFreeKm | null;
 }
@@ -120,6 +121,12 @@ export interface ExtensionEvaluation {
      * responses only (customers never get it; festivalPrivacy strips it too).
      */
     specialShare: Array<{ label: string; amount: string }>;
+    /**
+     * A MONTHLY booking's renewal (client TODO 7–9): its length and each part's
+     * rate (the monthly price / the daily rate with the BM's slab) and
+     * discount. null for every other booking. Staff responses only.
+     */
+    renewal: RenewalBreakdown | null;
   };
   resolutionOptions: EvaluationResolutionOption[];
   recommendedResolution: string;
@@ -173,7 +180,7 @@ export interface CollectExtensionResult {
 }
 
 export interface PaginatedExtensions {
-  extensions: BookingExtension[];
+  extensions: Array<BookingExtension & { bookingPublicId?: string; isRenewal?: boolean }>;
   total: number;
   page: number;
   pageSize: number;
@@ -440,7 +447,7 @@ class ExtensionService {
       return null;
     });
     const freeKmUntil = (end: Date) =>
-      freeKmRates ? extensionFreeKm(extensionKmMinutes(booking, booking.endAt, end), freeKmRates) : null;
+      freeKmRates ? bookingExtensionFreeKm(booking, booking.endAt, end, freeKmRates) : null;
 
     // Next booking on this car and how far it can be extended (2 h buffer, cap)
     const availability = await safeExtensionAvailability(
@@ -473,6 +480,8 @@ class ExtensionService {
         extensionFreeKm: freeKmUntil(newEndAt),
         // Festival / weekend parts of additionalAmount (staff responses only)
         specialShare: extensionSpecialShareView(pricing.specialShare),
+        // A monthly booking's renewal breakdown (staff responses only)
+        renewal: pricing.renewal ?? null,
       },
       resolutionOptions: resolutionOptions.options.map(opt => ({
         type: opt.type,
@@ -500,6 +509,7 @@ class ExtensionService {
               newTotalFinal: partialPricing.newTotalFinal.toFixed(2),
               ...extensionSplitView(partialPricing),
               specialShare: extensionSpecialShareView(partialPricing.specialShare),
+              renewal: partialPricing.renewal ?? null,
             }
           : { additionalAmount: additionalAmountStr, newTotalFinal: newTotalFinalStr }),
         extensionFreeKm: opt.type === "NO_RESOLUTION" ? null : freeKmUntil(opt.partialNewEndAt ?? newEndAt),
@@ -1254,6 +1264,10 @@ class ExtensionService {
     const upiPart = isUpi || (isSplit && onlinePart.gt(0));
 
     await prisma.$transaction(async (tx) => {
+      // The collector's open shift, locked FOR SHARE first (never a shift being
+      // closed; lock order shift → booking). A Fleet Executive must have one.
+      const lockedShift = await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole });
+
       // The UTR / payment photo was validated by the caller; re-checked here so
       // two collections can't claim the same transfer.
       if (options.upi) {
@@ -1262,13 +1276,9 @@ class ExtensionService {
         await claimUtr(onlineTransactionRef, tx);
       }
 
-      // Money taken at the counter (cash or UPI) lands in the collector's open shift
-      const activeShift = !isOnline
-        ? await tx.cashShift.findFirst({
-            where: { employeeId: actor.actorId, status: "OPEN" },
-            select: { id: true },
-          })
-        : null;
+      // Money taken at the counter (cash or UPI) lands in the collector's open
+      // shift; a Fleet Executive's gateway payment too (as non-cash)
+      const activeShift = lockedShift && (!isOnline || actor.actorRole === "STAFF") ? lockedShift : null;
 
       // COLLECTED for counter money (manager confirms later), CONFIRMED for a gateway payment
       const txn = await (tx as any).paymentTransaction.create({
@@ -1411,7 +1421,7 @@ class ExtensionService {
         skip,
         take: pageSize,
         include: {
-          booking: { select: { publicId: true } },
+          booking: { select: { publicId: true, rentalPeriodType: true } },
         },
       }),
       prisma.bookingExtension.count({ where }),
@@ -1420,6 +1430,8 @@ class ExtensionService {
     const extensions = raw.map(({ booking, ...ext }) => ({
       ...ext,
       bookingPublicId: booking.publicId,
+      // A monthly booking's extension is a renewal (client TODO 7) — "Renewal" in history
+      isRenewal: booking.rentalPeriodType === RentalPeriodType.MONTHLY,
     }));
 
     return { extensions, total, page, pageSize };

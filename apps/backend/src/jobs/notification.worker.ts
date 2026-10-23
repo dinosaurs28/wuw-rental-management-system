@@ -3,6 +3,11 @@ import { notifyEvents } from "../services/notification/notification.events.js";
 import { pruneReadNotifications } from "../services/notification/notification.service.js";
 import { isLiveReturnSession } from "../services/booking/overdue-returns.service.js";
 import { DEFAULT_FROZEN_CHARGE_CONFIG, type FrozenChargeConfig } from "../types/charge-engine.types.js";
+import {
+  monthlyExpiryCandidateWhere,
+  scanMonthlyExpiry,
+  type MonthlyExpiryScanResult,
+} from "../utils/booking/monthlyExpiry.js";
 
 /**
  * Time-driven notifications, every 15 minutes:
@@ -13,6 +18,10 @@ import { DEFAULT_FROZEN_CHARGE_CONFIG, type FrozenChargeConfig } from "../types/
  *     extension that moves endAt re-arms it.
  *   - CASH_DELAYED: counter cash still COLLECTED (unconfirmed) past the
  *     branch's delayedCashAlertHours. Once per transaction.
+ *   - MONTHLY_RENTAL_EXPIRING: monthly bookings (CONFIRMED / PICKED_UP) whose
+ *     endAt is at most 5 days away — the branch's Fleet Members and Branch
+ *     Managers. Once per endAt, so a renewal re-arms it
+ *     (utils/booking/monthlyExpiry.ts).
  *   - Retention: read notifications older than 90 days are deleted (daily).
  *
  * Runs in every backend process; the (userId, dedupeKey) unique key keeps
@@ -114,6 +123,30 @@ async function scanDelayedCash(now: Date): Promise<number> {
   return sent;
 }
 
+/**
+ * MONTHLY_RENTAL_EXPIRING pass. Exported for the one-shot script
+ * (scripts/runMonthlyExpiryReminders.ts) used to trigger it on demand.
+ */
+export async function runMonthlyExpiryScan(now: Date = new Date()): Promise<MonthlyExpiryScanResult> {
+  return scanMonthlyExpiry(now, {
+    findCandidates: (at) =>
+      prisma.booking.findMany({
+        where: monthlyExpiryCandidateWhere(at),
+        select: {
+          id: true,
+          publicId: true,
+          endAt: true,
+          status: true,
+          rentalPeriodType: true,
+          requiresManagerConfirmation: true,
+        },
+        orderBy: { endAt: "asc" },
+      }),
+    alreadyNotified,
+    send: (booking) => notifyEvents.monthlyRentalExpiring({ bookingId: booking.id }),
+  });
+}
+
 export async function runNotificationScan(): Promise<void> {
   if (running) return;
   running = true;
@@ -132,6 +165,15 @@ export async function runNotificationScan(): Promise<void> {
       if (delayed > 0) console.log(`[NotificationWorker] CASH_DELAYED sent for ${delayed} transaction(s)`);
     } catch (error) {
       console.error("[NotificationWorker] delayed-cash scan failed:", error);
+    }
+
+    try {
+      const monthly = await runMonthlyExpiryScan(now);
+      if (monthly.notified.length > 0) {
+        console.log(`[NotificationWorker] MONTHLY_RENTAL_EXPIRING sent for ${monthly.notified.length} booking(s)`);
+      }
+    } catch (error) {
+      console.error("[NotificationWorker] monthly expiry scan failed:", error);
     }
 
     if (now.getTime() - lastPruneAt >= PRUNE_EVERY_MS) {

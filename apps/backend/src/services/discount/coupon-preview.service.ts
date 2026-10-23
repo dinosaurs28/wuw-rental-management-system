@@ -17,6 +17,7 @@ import {
   pickGroupRepresentative,
 } from "../../utils/booking/groupRepresentative.js";
 import { listableVehicleWhere } from "../../utils/availability/vehicleEligibility.js";
+import { MONTHLY_COUPON_NOT_ALLOWED, MONTHLY_COUPON_NOT_ALLOWED_MESSAGE } from "@repo/schemas";
 
 /**
  * Coupon preview shared by POST /api/user/discount/validate (signed-in
@@ -39,6 +40,8 @@ export interface CouponPreviewInput {
   customerId: number;
   /** Plan the client shows (item 18: there is no choice); omitted = the fixed plan. */
   paymentFlow?: PaymentFlow;
+  /** Booking plan the client shows; MONTHLY takes no coupon (as booking create). Omitted = daily. */
+  plan?: "STANDARD" | "MONTHLY";
 }
 
 export type CouponPreviewResult =
@@ -52,6 +55,13 @@ export async function previewCoupon(input: CouponPreviewInput): Promise<CouponPr
   const endDt = TimezoneService.parseISO(input.endAt);
   if (!startDt.isValid || !endDt.isValid) return { status: 400, message: "Invalid date format" };
   if (endDt <= startDt) return { status: 400, message: "End date must be after start date" };
+  // Customer monthly booking: no coupon (booking create refuses it with the same code)
+  if (input.plan === "MONTHLY") {
+    return {
+      status: 200,
+      data: { valid: false, code: MONTHLY_COUPON_NOT_ALLOWED, reason: MONTHLY_COUPON_NOT_ALLOWED_MESSAGE },
+    };
+  }
 
   let vehicle: {
     id: number;

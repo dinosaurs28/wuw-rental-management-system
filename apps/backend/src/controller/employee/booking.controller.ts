@@ -523,10 +523,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         const durationInfo = DurationCalculatorService.calculate(startDateDt, endDateDt);
         // Same window as the walk-in listing that built the key, so weekend
         // rents and the 12 h package held to closing price the same way
-        const listingPriceMap = await getBatchListingPrices(candidates, durationInfo, {
-          startAt: startDate,
-          endAt: endDate,
-        });
+        const listingPriceMap = await getBatchListingPrices(
+          candidates,
+          durationInfo,
+          { startAt: startDate, endAt: endDate },
+          // Monthly plan: months at exactly the monthly price (no slab), as the quote
+          isMonthlyPlan ? { monthlyPlan: true } : undefined,
+        );
         candidates = candidates.filter(
           (v) => dailyPriceToPaise(Number(listingPriceMap.get(v.id)?.finalPrice ?? 0)) === dailyPricePaise,
         );
@@ -733,7 +736,9 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         undefined,  // no manualDiscountId
         v.categoryId,  // TASK-001: categoryId already in memory, skip DB lookup
         undefined,
-        { heldToClosing },
+        // Monthly plan: the full months cost exactly priceMonthly × months — no
+        // duration slab on them (user decision Oct 23 2026)
+        { heldToClosing, monthlyPlan: isMonthlyPlan },
       );
 
       const baseTotal      = Number(pricingResult.basePrice);

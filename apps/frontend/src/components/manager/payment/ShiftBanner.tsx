@@ -3,14 +3,11 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { History } from "lucide-react";
-import { employeePaymentService, type CashShift } from "@/services/payment.service";
+import { employeePaymentService } from "@/services/payment.service";
 import { usePaymentStore } from "@/store/payment.store";
 import { refreshActiveShift, useActiveShift } from "@/components/employee/counter/useActiveShift";
 import { apiErrorMessage } from "@/lib/counterErrors";
-import { ShiftMoneyBreakdown, type ShiftFigures } from "@/components/manager/payment/ShiftDetailSheet";
 import {
-  VARIANCE_TONE_CLASSES,
-  describeVariance,
   formatMoney,
   sanitizeRupeeInput,
   toPaise,
@@ -26,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", {
@@ -165,184 +161,8 @@ export function OpenShiftModal({
   );
 }
 
-// ── Close Shift Modal ─────────────────────────────────────────────────────────
-
-type ApiErrorBody = { response?: { data?: Record<string, unknown> } };
-
-const moneyField = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
-
-function CloseShiftModal({
-  open,
-  shift,
-  onClose,
-}: {
-  open: boolean;
-  shift: CashShift;
-  onClose: () => void;
-}) {
-  const { setActiveShift, setActiveShiftLoaded } = usePaymentStore();
-  const [actualTotal, setActualTotal] = useState("");
-  const [explanation, setExplanation] = useState("");
-  const [loading, setLoading] = useState(false);
-  // Set when the server refused the close because money moved after this opened.
-  const [serverFigures, setServerFigures] = useState<ShiftFigures | null>(null);
-  const [serverMessage, setServerMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setActualTotal("");
-      setExplanation("");
-      setServerFigures(null);
-      setServerMessage(null);
-    }
-  }, [open]);
-
-  // Opening + collected − refunded = expected in drawer. Older servers only send expectedTotal.
-  const figures: ShiftFigures = {
-    ...shift,
-    expectedClosing: shift.expectedClosing ?? shift.expectedTotal,
-    ...(serverFigures ?? {}),
-  };
-  const expected = figures.expectedClosing;
-  const actualNum = Number(actualTotal);
-  const counted = actualTotal.trim() !== "" && Number.isFinite(actualNum);
-  const diffPaise = counted && expected !== undefined ? toPaise(actualNum) - toPaise(expected) : 0;
-  const hasDiscrepancy = diffPaise !== 0;
-  const preview = counted && expected !== undefined ? describeVariance(diffPaise / 100) : null;
-
-  const handleClose = async () => {
-    if (!counted || actualNum < 0) {
-      toast.error("Enter the cash you counted in the drawer.");
-      return;
-    }
-    if (hasDiscrepancy && explanation.trim().length < 10) {
-      toast.error("Explain the difference in at least 10 characters.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await employeePaymentService.closeShift(shift.publicId, {
-        actualTotal: toPaise(actualNum) / 100,
-        discrepancyExplanation: hasDiscrepancy ? explanation.trim() : undefined,
-      });
-      if (res.data.status === "DISCREPANCY_FLAGGED") {
-        toast.warning("Shift closed with discrepancy — awaiting manager reconciliation.");
-      } else {
-        toast.success("Shift closed successfully.");
-      }
-      setActiveShift(null);
-      setActiveShiftLoaded(false); // trigger re-fetch to get fresh server state
-      onClose();
-    } catch (err) {
-      const data = (err as ApiErrorBody)?.response?.data;
-      if (data?.code === "DISCREPANCY_EXPLANATION_REQUIRED") {
-        // The server measured the drawer at close: show its numbers and ask for the note.
-        const fromServer: ShiftFigures = {};
-        for (const key of ["openingCash", "cashCollected", "cashRefunded"] as const) {
-          const value = moneyField(data[key]);
-          if (value !== undefined) fromServer[key] = value;
-        }
-        const serverExpected = moneyField(data.expectedClosing) ?? moneyField(data.expectedTotal);
-        if (serverExpected !== undefined) fromServer.expectedClosing = serverExpected;
-        setServerFigures(fromServer);
-        setServerMessage(typeof data.message === "string" ? data.message : null);
-        // Refresh the confirmed / pending split shown under cash collected.
-        void refreshActiveShift();
-      } else if (data?.code === "SHIFT_NOT_OPEN" || data?.code === "SHIFT_NOT_FOUND") {
-        toast.error(apiErrorMessage(err, "This shift is no longer open."));
-        setActiveShift(null);
-        setActiveShiftLoaded(false);
-        onClose();
-      } else {
-        toast.error(apiErrorMessage(err, "Failed to close shift. Please try again."));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Close Cash Shift</DialogTitle>
-          <DialogDescription>
-            Count the physical cash in the drawer and enter it below.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          {serverMessage && (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              {serverMessage}
-            </p>
-          )}
-          <ShiftMoneyBreakdown shift={figures} hideClosing />
-          <div className="space-y-2">
-            <Label htmlFor="actualTotal">
-              Cash counted in drawer <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-              <Input
-                id="actualTotal"
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="0.00"
-                className="pl-8 h-12"
-                value={actualTotal}
-                onChange={(e) => {
-                  const next = sanitizeRupeeInput(e.target.value);
-                  if (next !== null) setActualTotal(next);
-                }}
-              />
-            </div>
-            {preview && (
-              <p className={`text-xs font-medium ${VARIANCE_TONE_CLASSES[preview.tone]}`}>
-                {preview.tone === "even"
-                  ? "Matches the expected cash in the drawer."
-                  : `${preview.tone === "short" ? "Short" : "Over"} by ${formatMoney(Math.abs(diffPaise) / 100)} against ${formatMoney(expected)} expected.`}
-              </p>
-            )}
-          </div>
-          {hasDiscrepancy && (
-            <div className="space-y-2">
-              <Label htmlFor="explanation">
-                Discrepancy explanation <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="explanation"
-                placeholder="Explain the difference (at least 10 characters)…"
-                rows={3}
-                maxLength={1000}
-                value={explanation}
-                onChange={(e) => setExplanation(e.target.value)}
-                className="resize-none"
-              />
-              {explanation.length > 0 && explanation.trim().length < 10 && (
-                <p className="text-xs text-red-500">
-                  Explain the difference in at least 10 characters.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-            onClick={handleClose}
-            disabled={loading}
-          >
-            {loading ? "Closing…" : "Close Shift"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// Fleet members don't close shifts (Oct 2026): the branch manager verifies the
+// cash handed over and closes the shift in Financials → Cash Shift.
 
 // ── Shift Banner ──────────────────────────────────────────────────────────────
 
@@ -365,19 +185,18 @@ export function ShiftBanner() {
   const { activeShift, activeShiftLoaded } = useActiveShift();
   const { setActiveShift } = usePaymentStore();
   const [openShiftModal, setOpenShiftModal] = useState(false);
-  const [closeShiftModal, setCloseShiftModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleOpenCloseModal = async () => {
+  // Running totals come from the server; refresh on demand
+  const handleRefresh = async () => {
     setRefreshing(true);
     try {
       const fresh = await employeePaymentService.getActiveShift();
       setActiveShift(fresh);
     } catch {
-      // non-fatal — open modal with existing data
+      // non-fatal — keep the totals shown
     } finally {
       setRefreshing(false);
-      setCloseShiftModal(true);
     }
   };
 
@@ -452,17 +271,16 @@ export function ShiftBanner() {
               </div>
               <div className="flex items-center gap-2">
                 <MyShiftsLink className="text-green-800 hover:bg-green-100" />
-                {!isDiscrepancy && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs font-semibold border-green-300 text-green-700 hover:bg-green-100"
-                    onClick={handleOpenCloseModal}
-                    disabled={refreshing}
-                  >
-                    {refreshing ? "Refreshing…" : "Close Shift"}
-                  </Button>
-                )}
+                <span className="hidden text-xs text-green-700 md:inline">Your branch manager closes this shift</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs font-semibold border-green-300 text-green-700 hover:bg-green-100"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  {refreshing ? "Refreshing…" : "Refresh totals"}
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -473,13 +291,6 @@ export function ShiftBanner() {
         open={openShiftModal}
         onClose={() => setOpenShiftModal(false)}
       />
-      {activeShift && (
-        <CloseShiftModal
-          open={closeShiftModal}
-          shift={activeShift}
-          onClose={() => setCloseShiftModal(false)}
-        />
-      )}
     </>
   );
 }

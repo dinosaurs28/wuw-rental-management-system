@@ -2,7 +2,8 @@
  * Counter guards — shared rules for money taken at the branch counter.
  *
  *  - Staff must have an OPEN cash shift before they create a booking or
- *    record a cash / UPI (UTR) payment, so every rupee lands in a shift.
+ *    record any payment or refund (cash, UPI, card, split), so every rupee
+ *    lands in a shift (lockShiftForPayment links it, race-safe with a close).
  *  - A UPI payment is recorded by its 12-digit UTR (no screenshot). A UTR can
  *    back only one payment, which stops the same transfer being claimed twice.
  *
@@ -13,6 +14,7 @@
 import { prisma, Role } from "@repo/database/client";
 import type { CashShift, Prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
+import { shiftForPayment } from "./cash-shift-rules.js";
 
 export type CounterGuardCode =
   | "SHIFT_REQUIRED"
@@ -49,6 +51,8 @@ export class CounterGuardError extends Error {
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
+export const SHIFT_REQUIRED_MESSAGE = "Open your cash shift before taking bookings or collecting payments.";
+
 /**
  * Throws SHIFT_REQUIRED unless the user has an OPEN cash shift. Only STAFF
  * are gated — managers and admins don't run counter shifts.
@@ -65,10 +69,48 @@ export async function assertOpenShift(
     throw new CounterGuardError(
       StatusCode.FORBIDDEN,
       "SHIFT_REQUIRED",
-      "Open your cash shift before taking bookings or collecting payments.",
+      SHIFT_REQUIRED_MESSAGE,
     );
   }
   return shift;
+}
+
+/**
+ * The collector's OPEN cash shift for a payment being written — call it INSIDE
+ * the payment's transaction, before the insert (ideally first, so the lock
+ * order is shift → booking everywhere).
+ *
+ * The row is locked FOR SHARE: a manager's close (FOR UPDATE on the same row)
+ * waits until this payment commits and then counts it; a payment that arrives
+ * while a close is running waits, re-reads the row as CLOSED and gets none, so
+ * a payment never lands in a closed shift.
+ *
+ * Fleet Executives (STAFF) must have one for every payment or refund they
+ * record (any method) — SHIFT_REQUIRED otherwise. Managers / admins get their
+ * own open shift if they have one, else null. `role` is looked up when not given.
+ */
+export async function lockShiftForPayment(
+  tx: Prisma.TransactionClient,
+  user: { id: number; role?: Role | string | null },
+  /** optional: money already captured by a gateway — link when open, never refuse. */
+  opts: { optional?: boolean } = {},
+): Promise<{ id: number; publicId: string } | null> {
+  let role = user.role ?? null;
+  if (!role) {
+    const found = await tx.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    role = found?.role ?? null;
+  }
+  const rows = await tx.$queryRaw<{ id: number; publicId: string }[]>`
+    SELECT "id", "publicId" FROM "CashShift"
+    WHERE "employeeId" = ${user.id} AND "status" = 'OPEN'
+    ORDER BY "openedAt" DESC
+    LIMIT 1
+    FOR SHARE`;
+  const { shift, missing } = shiftForPayment(String(role ?? ""), rows[0] ?? null);
+  if (missing && !opts.optional) {
+    throw new CounterGuardError(StatusCode.FORBIDDEN, "SHIFT_REQUIRED", SHIFT_REQUIRED_MESSAGE);
+  }
+  return shift ? { id: Number(shift.id), publicId: shift.publicId } : null;
 }
 
 const UTR_PATTERN = /^\d{12}$/;

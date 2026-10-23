@@ -57,6 +57,9 @@ interface Shift {
   // Absent on older servers.
   expectedClosing?: string | null;
   pendingCash?: string | null;
+  // Oct 2026 (absent on older servers): UPI / card money and live payments in the shift
+  nonCashCollected?: string | null;
+  paymentCount?: number | null;
 }
 
 function QuickAction({
@@ -246,12 +249,13 @@ export default function EmployeeDashboard() {
                   </Text>
                 </View>
               </View>
+              {/* Fleet members don't close shifts: the branch manager does at the cash handover */}
               <TouchableOpacity
                 style={styles.closeShiftBtn}
-                onPress={() => router.push('/employee/shift/close')}
+                onPress={() => router.push(`/employee/shift/${shiftData.publicId}` as never)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.closeShiftText}>Close</Text>
+                <Text style={styles.closeShiftText}>View</Text>
               </TouchableOpacity>
             </View>
 
@@ -266,13 +270,26 @@ export default function EmployeeDashboard() {
                 </Text>
               </View>
               <View style={styles.shiftCashDivider} />
-              <View style={styles.shiftCashItem}>
-                <Text style={styles.shiftCashLabel}>Pending confirmation</Text>
-                <Text style={styles.shiftCashValuePending}>
-                  ₹{Number(shiftData.pendingCash ?? shiftData.pendingTotal ?? 0).toLocaleString('en-IN')}
-                </Text>
-              </View>
+              {shiftData.nonCashCollected != null ? (
+                <View style={styles.shiftCashItem}>
+                  <Text style={styles.shiftCashLabel}>Non-cash (UPI / card)</Text>
+                  <Text style={styles.shiftCashValue}>
+                    ₹{Number(shiftData.nonCashCollected ?? 0).toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.shiftCashItem}>
+                  <Text style={styles.shiftCashLabel}>Pending confirmation</Text>
+                  <Text style={styles.shiftCashValuePending}>
+                    ₹{Number(shiftData.pendingCash ?? shiftData.pendingTotal ?? 0).toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              )}
             </View>
+            <Text style={styles.shiftManagerNote}>
+              {shiftData.paymentCount != null ? `${shiftData.paymentCount} payment${shiftData.paymentCount === 1 ? '' : 's'} · ` : ''}
+              Your branch manager closes this shift when you hand over the cash.
+            </Text>
           </View>
         ) : (
           <View style={styles.shiftInactive}>
@@ -499,6 +516,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.hairline,
   },
+  shiftManagerNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.ink3, marginTop: 8 },
   shiftHistoryText: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink2 },
 
   shiftInactive: {

@@ -77,6 +77,7 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
         startAt: true,
         endAt: true,
         days: true,
+        rentalPeriodType: true,
         totalBase: true,
         totalDiscount: true,
         totalTax: true,
@@ -123,6 +124,9 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
       startAt: booking.startAt,
       endAt: booking.endAt,
       days: booking.days,
+      // Monthly bookings (customer "Monthly · 30 days" or the counter monthly plan)
+      rentalPeriodType: booking.rentalPeriodType,
+      plan: booking.rentalPeriodType === "MONTHLY" ? "MONTHLY" : "STANDARD",
       total: booking.totalFinal,
       isAdvancePayment: booking.isAdvancePayment,
       advanceAmount: Number(booking.advanceAmount),

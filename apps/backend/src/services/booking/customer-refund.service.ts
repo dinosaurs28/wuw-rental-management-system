@@ -37,7 +37,7 @@ import { getBookingCreditSummary } from "../payment/customer-credit.service.js";
 import { depositToRefund } from "../payment/settlement-engine.service.js";
 import { claimPaymentProof, proofPhotosCreate, resolvePaymentProof } from "../payment/payment-proof.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
-import { assertOpenShift } from "../payment/counter-guard.service.js";
+import { assertOpenShift, lockShiftForPayment } from "../payment/counter-guard.service.js";
 import { voidView } from "../payment/payment-void-rules.js";
 import {
   CUSTOMER_REFUND_KEY_PREFIX,
@@ -278,8 +278,9 @@ export async function recordCustomerRefund(
   const actor = await requireActor(req);
   const booking = await requireBooking(bookingPublicId, scope);
   const input = parseCustomerRefundBody(req.body);
-  // A Fleet Executive's cash comes out of their drawer: an open shift is needed, as for every counter cash movement
-  if (scope.role === "STAFF" && input.method === "CASH") await assertOpenShift(actor);
+  // A Fleet Executive records every refund on their open shift (cash comes out of
+  // their drawer; UPI / bank as the shift's non-cash refunds) — SHIFT_REQUIRED otherwise
+  if (scope.role === "STAFF") await assertOpenShift(actor);
   // The photo must be one uploaded in the booking's branch and not backing another payment
   const proof = input.proofFileId ? await resolvePaymentProof(input.proofFileId, booking.branchId) : null;
   const requestId = input.requestId ?? createID();
@@ -294,6 +295,10 @@ export async function recordCustomerRefund(
         // cancel take). The booking row is never written, so its row lock isn't taken —
         // that would invert the lock order of the settlement deposit refund.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"deposit-refund:" + booking.id}))`;
+        // The actor's open shift, locked FOR SHARE (never a shift being closed). A
+        // Fleet Executive must have one (their shift closed since the check above:
+        // SHIFT_REQUIRED, never a refund outside a shift).
+        const lockedShift = await lockShiftForPayment(tx, { id: actor.id, role: scope.role === "STAFF" ? "STAFF" : actor.role });
 
         const locked = await requireBooking(bookingPublicId, scope, tx);
         const m = await readMoney(locked.id, tx);
@@ -303,10 +308,10 @@ export async function recordCustomerRefund(
         const overBy = overReceivedBy(input.amount, m.received);
 
         if (proof) await claimPaymentProof(proof, tx);
-        const cashShift = record.method === "CASH" ? await openCashShift(actor.id, tx) : null;
-        // A Fleet Executive's shift closed since the check above: still SHIFT_REQUIRED, never a refund outside a shift
-        if (scope.role === "STAFF" && record.method === "CASH" && !cashShift) await assertOpenShift(actor, tx);
+        const cashShift = record.method === "CASH" ? lockedShift : null;
         const link = cashShiftLink(input.method, cashShift);
+        // A Fleet Executive's UPI / bank refund is in their shift too (non-cash)
+        const linkedShiftId = link.cashShiftId ?? (scope.role === "STAFF" ? (lockedShift?.id ?? null) : null);
         const cashOutsideShift = link.cashOutsideShift;
         const now = new Date();
         const amount = input.amount.toFixed(2);
@@ -333,7 +338,7 @@ export async function recordCustomerRefund(
             collectedAt: now,
             confirmedById: actor.id,
             confirmedAt: now,
-            cashShiftId: link.cashShiftId,
+            cashShiftId: linkedShiftId,
             notes: note,
           },
           select: { publicId: true },

@@ -29,6 +29,7 @@ import { bookedPackageFor } from '../lib/packages';
 import { VEHICLE_USE_CASE_LABELS, type VehicleUseCase } from '../lib/tripTypes';
 import { parseTripType, useTripTypeStore } from '../store/tripType';
 import TripTypePicker, { TRIP_TYPE_HINT } from '../components/cars/TripTypePicker';
+import { CUSTOMER_MONTHLY_LABEL, parsePlan, planParam, type BookingPlan } from '../lib/monthlyPlan';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -49,7 +50,7 @@ export default function Search() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const params = useLocalSearchParams<{ branch?: string; branchName?: string; start?: string; end?: string; tripType?: string }>();
+  const params = useLocalSearchParams<{ branch?: string; branchName?: string; start?: string; end?: string; tripType?: string; plan?: string }>();
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -58,6 +59,10 @@ export default function Search() {
   const [branchName, setBranchName] = useState<string | null>(params.branchName ?? null);
   const [start, setStart] = useState<string | null>(params.start ?? null);
   const [end, setEnd] = useState<string | null>(params.end ?? null);
+  // Daily / Monthly (client TODO item 1): Monthly lists only cars with their own
+  // monthly price, priced for 30 days from the pickup
+  const [plan, setPlan] = useState<BookingPlan>(() => parsePlan(params.plan));
+  const monthly = plan === 'MONTHLY';
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<string | null>(null);
   // Trip type (client, Oct 2026): required — from the search card, else the
@@ -94,7 +99,7 @@ export default function Search() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', tripType ?? '', start ?? '', end ?? ''],
+    queryKey: ['search', branchId ?? '', categoryId ?? '', sort ?? '', tripType ?? '', start ?? '', end ?? '', plan],
     queryFn: async ({ pageParam }) => {
       const res = await vehiclesApi.list({
         branch: branchId || undefined,
@@ -105,6 +110,7 @@ export default function Search() {
         end: end || undefined,
         limit: PAGE_SIZE,
         offset: pageParam,
+        ...planParam(plan),
       });
       return { rows: (res.data?.data ?? []) as any[], count: Number(res.data?.count ?? 0), offset: pageParam };
     },
@@ -121,6 +127,7 @@ export default function Search() {
     setStart(q.start);
     setEnd(q.end);
     setTripType(q.tripType);
+    setPlan(q.plan);
     setEditOpen(false);
   };
 
@@ -133,7 +140,9 @@ export default function Search() {
   const endD = end ? new Date(end) : null;
   // The package searched (P1), e.g. "1 day" — the search card only sends
   // packages (12 hours may be held to closing — client item 6).
-  const searchedPackage = startD && endD ? bookedPackageFor(startD, endD, schedule)?.label ?? null : null;
+  const searchedPackage = monthly
+    ? CUSTOMER_MONTHLY_LABEL
+    : startD && endD ? bookedPackageFor(startD, endD, schedule)?.label ?? null : null;
   const timesNotice =
     startD && endD && !isNaN(startD.getTime()) && !isNaN(endD.getTime())
       ? bookingTimesNotice(schedule, startD, endD)
@@ -203,7 +212,11 @@ export default function Search() {
           }
           ListEmptyComponent={
             <View style={styles.noResults}>
-              <Text style={styles.noResultsText}>No vehicles match your search.</Text>
+              <Text style={styles.noResultsText}>
+                {monthly
+                  ? 'No vehicles with a monthly price are free for these 30 days.'
+                  : 'No vehicles match your search.'}
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -215,6 +228,7 @@ export default function Search() {
                   params: {
                     ...(start ? { start } : {}),
                     ...(end ? { end } : {}),
+                    ...planParam(plan),
                     // Office hours on the vehicle page until its own payload loads.
                     ...((item.branchPublicId ?? branchId) ? { branch: item.branchPublicId ?? branchId } : {}),
                   },
@@ -257,6 +271,7 @@ export default function Search() {
                 onBranchChange={(b) => { setBranchId(b.publicId); setBranchName(b.name); }}
                 initialStart={start ?? undefined}
                 initialEnd={end ?? undefined}
+                initialPlan={plan}
                 ctaLabel="Update results"
                 onSubmit={applyEdit}
               />

@@ -25,7 +25,7 @@ import {
   proofPhotosCreate,
   type CounterUpi,
 } from "../../services/payment/payment-proof.service.js";
-import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
+import { CounterGuardError, lockShiftForPayment } from "../../services/payment/counter-guard.service.js";
 import {
   computeBookingOwed,
   getBookingMoney,
@@ -696,10 +696,8 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
       // The money arrives with the manager now: CONFIRMED PaymentTransaction(s) —
       // one per purpose, cash allocated first — on the manager's open shift if any,
       // so the financial state, settlement, shifts and reports see it.
-      const shift = await tx.cashShift.findFirst({
-        where: { employeeId: actor.actorId, status: "OPEN" },
-        select: { id: true },
-      });
+      // Locked FOR SHARE: never a shift that is being closed
+      const shift = await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole });
       const now = new Date();
       let cashLeft = cashTotal;
       const payments: Array<{ publicId: string; purpose: string; method: string; totalAmount: string }> = [];

@@ -231,6 +231,9 @@ enum NotificationType {
   APPROVAL_RESOLVED
   CASH_DELAYED
   SHIFT_DISCREPANCY
+  MONTHLY_RENTAL_EXPIRING
+  // The branch manager closed a Fleet Executive's cash shift (Oct 2026)
+  SHIFT_CLOSED
 }
 
 // USER & AUTH
@@ -266,6 +269,7 @@ model User {
   voidedPayments        PaymentTransaction[]   @relation("PaymentVoider")
   openShifts            CashShift[]            @relation("ShiftEmployee")
   reconciledShifts      CashShift[]            @relation("ShiftReconciler")
+  closedShifts          CashShift[]            @relation("ShiftCloser")
   refundRequestsMade    RefundRequest[]        @relation("RefundRequester")
   refundRequestsApproved RefundRequest[]       @relation("RefundApprover")
   refundRequestsCompleted RefundRequest[]      @relation("RefundCompleter")
@@ -1983,19 +1987,25 @@ model CashShift {
   // cash refunds paid out of the drawer, from transactions linked to the shift
   cashCollected         Decimal         @default(0) @db.Decimal(10, 2)
   cashRefunded          Decimal         @default(0) @db.Decimal(10, 2)
-  // Sum of all CONFIRMED cash transactions linked to this shift
+  // Expected cash at close = openingCash + cashCollected − cashRefunded
   expectedTotal         Decimal         @default(0) @db.Decimal(10, 2)
-  // Actual cash counted by employee at shift close
+  // Cash counted at close: by the branch manager (cash received) since Oct 2026
   actualTotal           Decimal         @default(0) @db.Decimal(10, 2)
   // actualTotal - expectedTotal (negative = short, positive = over)
   discrepancy           Decimal         @default(0) @db.Decimal(10, 2)
   discrepancyExplanation String?
   reconciledById        Int?
   reconciledAt          DateTime?
+  // Oct 2026: the branch manager closes the shift (verify & close). actualTotal
+  // is then the cash the manager received, discrepancy received − expected,
+  // discrepancyExplanation the manager's note; reconciledById/At are set to the
+  // same manager and time. Null on shifts the executive closed themselves.
+  closedById            Int?
 
   employee              User            @relation("ShiftEmployee", fields: [employeeId], references: [id])
   branch                Branch          @relation(fields: [branchId], references: [id])
   reconciledBy          User?           @relation("ShiftReconciler", fields: [reconciledById], references: [id])
+  closedBy              User?           @relation("ShiftCloser", fields: [closedById], references: [id], onDelete: SetNull)
   transactions          PaymentTransaction[]
 
   createdAt             DateTime        @default(now())
@@ -2005,6 +2015,9 @@ model CashShift {
   @@index([branchId, status])
   @@index([openedAt])
   @@index([branchId, openedAt])
+  @@index([closedAt])
+  // + partial unique index "CashShift_one_open_per_employee" (employeeId) WHERE
+  //   status = 'OPEN' — raw SQL in migration 20261028100000_cash_shift_manager_close
 }
 
 // ── Rental Extension System ───────────────────────────────────────────────────

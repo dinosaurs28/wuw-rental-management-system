@@ -17,6 +17,9 @@ export interface Booking {
   startAt: string;
   endAt: string;
   days: number;
+  /** MONTHLY = a monthly booking ("Monthly · 30 days"); absent on older servers */
+  plan?: "STANDARD" | "MONTHLY";
+  rentalPeriodType?: string;
   total: number;
   isAdvancePayment: boolean;
   advanceAmount: number;

@@ -2,6 +2,12 @@ import { prisma, Role } from "@repo/database/client";
 import type { NotificationApprovalKind, NotificationData } from "@repo/schemas";
 import { TimezoneService } from "../timezone/timezone.service.js";
 import { notify } from "./notification.service.js";
+import {
+  monthlyExpiryDedupeKey,
+  monthlyExpiryMessage,
+  monthlyExpiryVehicleLabel,
+  needsMonthlyExpiryReminder,
+} from "../../utils/booking/monthlyExpiry.js";
 
 /**
  * One function per business event. Each takes the ids the caller already has,
@@ -889,6 +895,47 @@ export const notifyEvents = {
     });
   },
 
+  /**
+   * The branch manager closed a Fleet Executive's cash shift (Oct 2026: only
+   * managers close). The executive gets push + inbox with the cash received
+   * and any difference. Once per shift.
+   */
+  shiftClosed(args: { shiftId: number; actorUserId?: number | null }): Promise<void> {
+    return safely("shiftClosed", async () => {
+      const shift = await prisma.cashShift.findUnique({
+        where: { id: args.shiftId },
+        select: {
+          publicId: true,
+          branchId: true,
+          status: true,
+          employeeId: true,
+          actualTotal: true,
+          expectedTotal: true,
+          discrepancy: true,
+          discrepancyExplanation: true,
+          closedBy: { select: { name: true } },
+        },
+      });
+      if (!shift || shift.status === "OPEN") return;
+      const diff = Number(shift.discrepancy.toString());
+      const by = shift.closedBy?.name ?? "Your branch manager";
+      const differenceText =
+        Math.abs(diff) < 0.005
+          ? "No difference."
+          : `Difference ${money(Math.abs(diff))} ${diff < 0 ? "short" : "over"}${shift.discrepancyExplanation?.trim() ? ` — ${shift.discrepancyExplanation.trim()}` : ""}.`;
+      await notify({
+        type: "SHIFT_CLOSED",
+        recipients: [shift.employeeId],
+        actorUserId: args.actorUserId,
+        branchId: shift.branchId,
+        data: { entity: "CashShift", entityPublicId: shift.publicId },
+        dedupeKey: `shift-closed:${shift.publicId}`,
+        title: "Your cash shift was closed",
+        body: `${by} closed your shift and received ${money(shift.actualTotal)} (expected ${money(shift.expectedTotal)}). ${differenceText} Open a new shift to collect again.`,
+      });
+    });
+  },
+
   /** A PICKED_UP booking is past its return time (worker). Once per endAt. */
   returnOverdue(args: { bookingId: number }): Promise<void> {
     return safely("returnOverdue", async () => {
@@ -955,5 +1002,53 @@ export const notifyEvents = {
         body: `${money(txn.totalAmount)} collected by ${txn.collectedBy?.name ?? "staff"} for ${ref(txn.booking.publicId)}${txn.collectedAt ? ` on ${when(txn.collectedAt)}` : ""} is still unconfirmed after ${args.thresholdHours}h.`,
       });
     });
+  },
+
+  /**
+   * A monthly rental ends within 5 days (worker, utils/booking/monthlyExpiry.ts).
+   * Fleet Members (push + inbox) and Branch Managers (inbox) of the booking's
+   * branch only. Once per endAt: a renewal that moves endAt re-arms it.
+   * Resolves to the number of rows created; never throws.
+   */
+  async monthlyRentalExpiring(args: { bookingId: number }): Promise<number> {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: args.bookingId },
+        select: {
+          id: true,
+          publicId: true,
+          branchId: true,
+          status: true,
+          endAt: true,
+          rentalPeriodType: true,
+          requiresManagerConfirmation: true,
+          deletedAt: true,
+          customer: { select: { user: { select: { name: true } } } },
+          items: {
+            take: 1,
+            select: { vehicle: { select: { make: true, model: true, regNo: true } } },
+          },
+        },
+      });
+      // Re-checked here: a drop, cancellation or renewal may have landed since the scan.
+      if (!booking || booking.deletedAt || !needsMonthlyExpiryReminder(booking, new Date())) return 0;
+      const message = monthlyExpiryMessage({
+        vehicleLabel: monthlyExpiryVehicleLabel(booking.items[0]?.vehicle),
+        customerName: booking.customer.user.name,
+        endAtLabel: when(booking.endAt),
+      });
+      return await notify({
+        type: "MONTHLY_RENTAL_EXPIRING",
+        recipients: [{ branchId: booking.branchId, roles: STAFF_AND_MANAGER }],
+        branchId: booking.branchId,
+        bookingId: booking.id,
+        data: { bookingPublicId: booking.publicId, entity: "Booking", entityPublicId: booking.publicId },
+        dedupeKey: monthlyExpiryDedupeKey(booking.publicId, booking.endAt),
+        ...message,
+      });
+    } catch (error) {
+      console.error("[notifyEvents.monthlyRentalExpiring] failed:", error);
+      return 0;
+    }
   },
 };

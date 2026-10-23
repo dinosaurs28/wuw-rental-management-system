@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Booking } from "@/services/userBookings.service";
+import { monthlyLabel } from "@/utils/customerMonthly";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingQRModal } from "./BookingQRModal";
 import { InvoiceDownloadButton } from "@/components/InvoiceDownloadButton";
@@ -139,7 +140,11 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 </span>
                 <div className="flex items-center gap-2 text-base font-medium text-zinc-700">
                   <Clock className="h-4 w-4 text-zinc-400" />
-                  <span>{formatRentalLength(booking.startAt, booking.endAt)}</span>
+                  <span>
+                    {booking.plan === "MONTHLY"
+                      ? monthlyLabel(booking.days)
+                      : formatRentalLength(booking.startAt, booking.endAt)}
+                  </span>
                 </div>
               </div>
             </div>

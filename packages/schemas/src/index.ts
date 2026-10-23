@@ -24,3 +24,4 @@ export * from "./booking-turnaround.js";
 export * from "./extension-buffer.js";
 export * from "./booking-lock.schema.js";
 export * from "./fuel.js";
+export * from "./customer-monthly.js";

@@ -96,6 +96,8 @@ export const employeeService = {
     if (filters.end) params.append("end", filters.end);
     if (filters.limit) params.append("limit", filters.limit);
     if (filters.offset) params.append("offset", filters.offset);
+    // Counter monthly plan: months at exactly the monthly price, as create charges
+    if (filters.plan === "MONTHLY") params.append("plan", "MONTHLY");
     // Note: Branch is handled by backend token
 
     const response = await apiClient.get("/employee/vehicles/search", {
@@ -114,6 +116,8 @@ export const employeeService = {
     q: string;
     start: string;
     end: string;
+    /** Counter monthly plan: priced as walk-in create charges it */
+    plan?: "MONTHLY";
   }): Promise<{ data: RegNoVehicle[]; total: number }> => {
     const response = await apiClient.get("/employee/vehicles/search-reg", { params });
     return response.data;
@@ -151,10 +155,12 @@ export const employeeService = {
     groupKey: string,
     startDate?: string,
     endDate?: string,
+    plan?: "STANDARD" | "MONTHLY",
   ) => {
     const response = await apiClient.get(
       `/employee/vehicles/group/${encodeURIComponent(groupKey)}`,
-      { params: { start: startDate, end: endDate } },
+      // Counter monthly plan: the group key and quote are the monthly price
+      { params: { start: startDate, end: endDate, ...(plan === "MONTHLY" ? { plan } : {}) } },
     );
     return response.data;
   },
@@ -168,10 +174,12 @@ export const employeeService = {
     vehicleId: string,
     startDate?: string,
     endDate?: string,
+    plan?: "STANDARD" | "MONTHLY",
   ): Promise<VehicleDetailsResponse> => {
     const response = await apiClient.get<VehicleDetailsResponse>(
       `/employee/vehicles/${encodeURIComponent(vehicleId)}`,
-      { params: { start: startDate, end: endDate } },
+      // Counter monthly plan: quoted as walk-in create charges it
+      { params: { start: startDate, end: endDate, ...(plan === "MONTHLY" ? { plan } : {}) } },
     );
     return response.data;
   },

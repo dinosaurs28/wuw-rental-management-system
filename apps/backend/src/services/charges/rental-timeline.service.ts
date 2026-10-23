@@ -31,7 +31,7 @@ import {
   type SerializedLateReturn,
 } from "./late-return.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
-import { extensionFreeKm, extensionKmMinutes, loadBookingFreeKmRates, type FreeKmRates } from "./extension-km.js";
+import { bookingExtensionFreeKm, loadBookingFreeKmRates, type FreeKmRates } from "./extension-km.js";
 
 export interface TimelineExtensionInput {
   id: number;
@@ -143,7 +143,7 @@ export function buildRentalPeriod(
   // Free km each extension adds (#7) — the same figures the drop's km allowance sums
   const extensionKm = live.map((e) =>
     freeKmRates
-      ? extensionFreeKm(extensionKmMinutes(booking, e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt), freeKmRates)
+      ? bookingExtensionFreeKm(booking, e.oldEndAt, e.actualNewEndAt ?? e.requestedEndAt, freeKmRates)
       : null,
   );
 

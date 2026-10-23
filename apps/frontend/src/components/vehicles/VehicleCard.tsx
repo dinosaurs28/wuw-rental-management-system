@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { CUSTOMER_MONTHLY_LABEL } from "@/utils/customerMonthly";
 import { Car, MapPin, ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,7 +106,11 @@ export const VehicleCard = ({
     return "Incl. GST";
   })();
 
+  // Customer Monthly results (client TODO item 2): the car's monthly price for 30 days
+  const monthlyResult = "monthly" in vehicle && !!vehicle.monthly;
+
   const getDurationLabel = () => {
+    if (monthlyResult) return `${CUSTOMER_MONTHLY_LABEL} · monthly price`;
     if ("pricingDetails" in vehicle && vehicle.pricingDetails) {
       if (vehicle.pricingDetails.billedAs) return `Billed as ${vehicle.pricingDetails.billedAs}`;
       const typeMap: Record<string, string> = {
@@ -125,6 +130,7 @@ export const VehicleCard = ({
     const params = new URLSearchParams();
     if (startDateTime) params.set("start", startDateTime);
     if (endDateTime) params.set("end", endDateTime);
+    if (monthlyResult) params.set("plan", "MONTHLY");
     const query = params.toString();
 
     if ("groupKey" in vehicle) {

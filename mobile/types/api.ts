@@ -109,6 +109,8 @@ export interface Vehicle {
   // present only when the list was queried with start/end
   priceInfo?: ListPricing | null;
   availability: boolean | null;
+  /** Customer Monthly results / details: the car's own monthly price (null = not set, not bookable) */
+  monthly?: MonthlyPlanInfo | null;
   availableCount?: number;
   // Trip-type tags (LOCAL | OUT_OF_UDUPI)
   useCases?: string[];
@@ -263,6 +265,9 @@ export interface BookingTrip {
   startAt: string;
   endAt: string;
   days: number;
+  /** MONTHLY = a monthly booking ("Monthly · 30 days"); absent on older servers */
+  plan?: 'STANDARD' | 'MONTHLY';
+  rentalPeriodType?: string;
   total: number;
   isAdvancePayment: boolean;
   advanceAmount: number;
@@ -592,4 +597,13 @@ export interface RescheduleResult {
   shiftMinutes: number;
   reason: string | null;
   releasedExtensionQuotePublicId: string | null;
+}
+
+/** Customer Monthly (plan=MONTHLY) block on listing groups and vehicle / group details. */
+export interface MonthlyPlanInfo {
+  plan: 'MONTHLY';
+  days: number;
+  priceMonthly: number | null;
+  freeKmMonthly: number | null;
+  bookable: boolean;
 }

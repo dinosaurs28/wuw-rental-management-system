@@ -32,6 +32,7 @@ import { bookingWindowLastDay, rangeLengthLabel, timeLabel, timeOf, withTime } f
 import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS, packageLabel } from '../../lib/bookingWindow';
 import { formatGstRate, inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import {
+  bookingTimesNotice,
   closedDayText,
   isClosedDay,
   noPickupTimesLeft,
@@ -54,6 +55,13 @@ import { BranchHoursLine, TimesNotice } from '../../components/booking/BranchHou
 import { paymentOptionsFor, payNowSplit, payNowText, serverPaymentOptions } from '../../lib/paymentPlan';
 import { quoteDiscountLines } from '../../lib/discounts';
 import type { VehicleDetail } from '../../types/api';
+import {
+  CUSTOMER_MONTHLY_LABEL,
+  MONTHLY_PRICE_NOT_SET_TEXT,
+  monthlyEnd,
+  parsePlan,
+  planParam,
+} from '../../lib/monthlyPlan';
 import { VEHICLE_USE_CASE_LABELS, normalizeUseCases, type VehicleUseCase } from '../../lib/tripTypes';
 
 const { width, height } = Dimensions.get('window');
@@ -74,9 +82,13 @@ function fmtStamp(d: Date) {
 export default function VehicleDetail() {
   // `branch`: the searched branch, used for office hours until the vehicle
   // payload (whose branchPublicId wins) has loaded or when a cached one lacks it.
-  const { id, start: startParam, end: endParam, branch: branchParam } = useLocalSearchParams<{
-    id: string; start?: string; end?: string; branch?: string;
+  const { id, start: startParam, end: endParam, branch: branchParam, plan: planRaw } = useLocalSearchParams<{
+    id: string; start?: string; end?: string; branch?: string; plan?: string;
   }>();
+  // Monthly (client TODO items 1–2): from the Monthly results — 30 days from the
+  // pickup at the car's own monthly price; the return is read-only, no package chips
+  const plan = parsePlan(planRaw);
+  const monthly = plan === 'MONTHLY';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -91,7 +103,7 @@ export default function VehicleDetail() {
   const [hoursBranch, setHoursBranch] = useState<string | null>(branchParam ?? null);
   const { data: schedule } = useBranchSchedule(hoursBranch);
   // 12 hours past closing returns at closing that day (client item 6)
-  const endDate = packageRangeEnd(pkg, 0, schedule);
+  const endDate = monthly ? monthlyEnd(pkg.start) : packageRangeEnd(pkg, 0, schedule);
 
   // Coming back from checkout (or the background) can leave the pickup in the
   // past. While focused — on focus, on return to the foreground and every
@@ -124,11 +136,11 @@ export default function VehicleDetail() {
   const rangeLength = rangeLengthLabel(startDate, endDate) ?? '';
 
   const { data: vehicle, isLoading, isFetching } = useQuery({
-    queryKey: ['vehicle', id, startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['vehicle', id, startDate.toISOString(), endDate.toISOString(), plan],
     queryFn: () =>
       isGroupKey
-        ? vehiclesApi.groupDetail(id!, { start: startDate.toISOString(), end: endDate.toISOString() })
-        : vehiclesApi.detail(id!, { start: startDate.toISOString(), end: endDate.toISOString() }),
+        ? vehiclesApi.groupDetail(id!, { start: startDate.toISOString(), end: endDate.toISOString(), ...planParam(plan) })
+        : vehiclesApi.detail(id!, { start: startDate.toISOString(), end: endDate.toISOString(), ...planParam(plan) }),
     select: (res) => {
       const d = res.data.data as any;
       if (!isGroupKey) return { ...d, advancePayAmount: Number(d.advancePayAmount ?? 0) } as VehicleDetail;
@@ -151,6 +163,7 @@ export default function VehicleDetail() {
         paymentOptions: d.paymentOptions ?? null,
         pricingDetails: d.pricingDetails ?? null,
         branchPublicId: d.branchPublicId ?? null,
+        monthly: d.monthly ?? null,
       } as VehicleDetail;
     },
     enabled: !!id,
@@ -167,7 +180,8 @@ export default function VehicleDetail() {
   useEffect(() => {
     setPkg((r) => fit(r));
   }, [fit, pkg]);
-  const timesNotice = packageTimesNotice(schedule, pkg);
+  // Monthly: the branch hours of pickup → pickup + 30 days (no package to fit)
+  const timesNotice = monthly ? bookingTimesNotice(schedule, startDate, endDate) : packageTimesNotice(schedule, pkg);
   const packageChoices = customerPackageChoices(startDate, schedule);
 
   if (isLoading) {
@@ -190,7 +204,9 @@ export default function VehicleDetail() {
   }
 
   const hasImages = (vehicle.images?.length ?? 0) > 0;
-  const isAvail = vehicle.availability !== false;
+  // Monthly: a car without its own monthly price can't be booked on it
+  const monthlyNotSet = monthly && vehicle.monthly?.bookable === false;
+  const isAvail = vehicle.availability !== false && !monthlyNotSet;
   const saved = savedList.some(v => v.publicId === vehicle.publicId);
   const pd = vehicle.pricingDetails;
   const pb = pd?.pricingBreakdown;
@@ -374,7 +390,7 @@ export default function VehicleDetail() {
           <View style={styles.itinHalf}>
             <Text style={styles.itinLabel}>RETURN</Text>
             <Text style={styles.itinValue}>{fmtStamp(endDate)}</Text>
-            <Text style={styles.itinFixedNote}>{packageLabel(pkg.hours)} package</Text>
+            <Text style={styles.itinFixedNote}>{monthly ? CUSTOMER_MONTHLY_LABEL : `${packageLabel(pkg.hours)} package`}</Text>
           </View>
           <View style={styles.itinEdit}>
             <Ionicons name="pencil" size={16} color={Colors.white} />
@@ -383,12 +399,20 @@ export default function VehicleDetail() {
 
         {/* Package (P1): 12 hours or whole days in the 30-day window + branch hours (#2) */}
         <View style={styles.itinExtras}>
-          <PackagePicker
-            tone="dark"
-            choices={packageChoices}
-            selectedHours={pkg.hours}
-            onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
-          />
+          {monthly ? (
+            <Text style={styles.priceNote}>
+              {monthlyNotSet
+                ? `${MONTHLY_PRICE_NOT_SET_TEXT} for this car. Choose another car or book it daily.`
+                : `${CUSTOMER_MONTHLY_LABEL} at this car's monthly price`}
+            </Text>
+          ) : (
+            <PackagePicker
+              tone="dark"
+              choices={packageChoices}
+              selectedHours={pkg.hours}
+              onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
+            />
+          )}
           <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, startDate, endDate)} />
           <TimesNotice tone="dark" notice={timesNotice} />
         </View>
@@ -490,7 +514,9 @@ export default function VehicleDetail() {
             setPkg(next);
             // Times the server would refuse (30-day limit, pickup outside
             // branch hours) — say so here instead of after checkout.
-            const blocking = packageTimesNotice(schedule, next);
+            const blocking = monthly
+              ? bookingTimesNotice(schedule, next.start, monthlyEnd(next.start))
+              : packageTimesNotice(schedule, next);
             if (blocking?.tone === 'error') {
               Alert.alert('Change your times', blocking.text);
               return;
@@ -500,16 +526,18 @@ export default function VehicleDetail() {
               params: {
                 vehicleId: vehicle.publicId,
                 start: next.start.toISOString(),
-                // Always pickup + the package (12 h or N × 24 h, P2; 12 h held to closing — item 6).
-                end: packageRangeEnd(next, 0, schedule).toISOString(),
+                // Always pickup + the package (12 h or N × 24 h, P2; 12 h held to closing — item 6);
+                // Monthly: pickup + 30 days
+                end: (monthly ? monthlyEnd(next.start) : packageRangeEnd(next, 0, schedule)).toISOString(),
                 ...(branchPublicId ? { branch: branchPublicId } : {}),
+                ...planParam(plan),
               },
             });
           }}
           disabled={!isAvail}
           activeOpacity={0.85}
         >
-          <Text style={styles.ctaBtnText}>{isAvail ? 'Book now' : 'Unavailable'}</Text>
+          <Text style={styles.ctaBtnText}>{isAvail ? 'Book now' : monthlyNotSet ? MONTHLY_PRICE_NOT_SET_TEXT : 'Unavailable'}</Text>
           {isAvail && <Ionicons name="arrow-forward" size={16} color={Colors.white} />}
         </TouchableOpacity>
       </View>
@@ -520,13 +548,17 @@ export default function VehicleDetail() {
         startDate={startDate}
         endDate={endDate}
         pickupOnly
-        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule)}
+        returnFor={(p) => (monthly ? monthlyEnd(p) : packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule))}
         onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setShowPicker(false)}
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`}
+        note={
+          monthly
+            ? `${CUSTOMER_MONTHLY_LABEL} · pickup up to ${ADVANCE_BOOKING_DAYS} days ahead`
+            : `12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`
+        }
       />
 
       {/* Pickup time — today lists only future times; only inside branch

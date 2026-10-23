@@ -21,6 +21,7 @@ import {
 import { generateReturnReceipt, frozenChargeGst } from "../../services/receipt-generator.service.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
+import { assertOpenShift, CounterGuardError, lockShiftForPayment } from "../../services/payment/counter-guard.service.js";
 
 /**
  * Compute and return the settlement outcome for employee review.
@@ -156,7 +157,7 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
     // Look up actor
     const actor = await prisma.user.findUnique({
       where: { publicId: req.public_Id },
-      select: { id: true },
+      select: { id: true, role: true },
     });
     if (!actor) {
       return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
@@ -169,7 +170,12 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
     const totalCharges = breakdown.finalTotal.add(frozenChargeGst(breakdown.results).gst);
     const diff = totalCharges.sub(depositPaid);
 
+    // Money taken on the settlement needs the executive's open shift (any method)
+    if (diff.gt(0.009)) await assertOpenShift(actor);
+
     await prisma.$transaction(async (tx) => {
+      // Shift lock first (FOR SHARE — never a shift being closed); lock order shift → booking
+      const lockedShift = diff.gt(0.009) ? await lockShiftForPayment(tx, actor) : null;
       // Increment version to prevent double-settlement
       await tx.booking.update({
         where: { id: booking.id },
@@ -182,13 +188,8 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
         const cash = cashAmount != null ? new Decimal(cashAmount) : diff;
         const online = onlineAmount != null ? new Decimal(onlineAmount) : new Decimal(0);
 
-        // Counter cash lands in the collector's open shift drawer
-        const settleShift = method !== "ONLINE"
-          ? await tx.cashShift.findFirst({
-              where: { employeeId: actor.id, status: "OPEN" },
-              select: { id: true },
-            })
-          : null;
+        // Lands in the collector's open shift (cash in the drawer, online as non-cash)
+        const settleShift = lockedShift && (method !== "ONLINE" || actor.role === "STAFF") ? lockedShift : null;
 
         await tx.paymentTransaction.create({
           data: {
@@ -269,6 +270,9 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    if (error instanceof CounterGuardError) {
+      return res.status(error.status).json(error.toJSON());
+    }
     console.error("ConfirmSettlement Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }

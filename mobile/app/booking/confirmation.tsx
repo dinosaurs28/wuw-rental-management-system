@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CUSTOMER_MONTHLY_LABEL, parsePlan } from '../../lib/monthlyPlan';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,8 +32,9 @@ function inr(v?: string) {
 export default function Confirmation() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { holdId, make, model, start, end, total, deposit, payNow, remaining, flow, coupon } =
+  const { holdId, make, model, start, end, total, deposit, payNow, remaining, flow, coupon, plan } =
     useLocalSearchParams<{
+      plan?: string;
       holdId?: string;
       make?: string;
       model?: string;
@@ -87,6 +89,9 @@ export default function Confirmation() {
 
             <View style={styles.summaryDivider} />
 
+            {parsePlan(plan) === 'MONTHLY' ? (
+              <SummaryRow label="Rental" value={CUSTOMER_MONTHLY_LABEL} accent />
+            ) : null}
             {coupon ? (
               <SummaryRow label="Coupon applied" value={coupon} accent />
             ) : null}

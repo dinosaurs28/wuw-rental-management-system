@@ -238,7 +238,14 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // ONLINE_RAZORPAY: create a Razorpay order for the customer to pay against
+    // ONLINE_RAZORPAY: create a Razorpay order for the customer to pay against.
+    // Taken at the counter, so the executive needs an open shift first (the
+    // captured payment links to it; it is never refused once captured).
+    const initiator = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, role: true },
+    });
+    if (initiator) await assertOpenShift(initiator);
     const order = await createRazorpayOrder(Number(booking.remainingBalance), {
       receipt: booking.publicId,
       notes: { purpose: "REMAINING_PAYMENT", booking_id: booking.publicId },

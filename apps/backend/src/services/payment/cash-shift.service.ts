@@ -9,27 +9,56 @@ import { notifyEvents } from "../notification/notification.events.js";
 import { StatusCode } from "../../types/statusCode.js";
 import type { CashShift, Role } from "@repo/database/client";
 import { proofPhotoFields, PROOF_FILE_RELATION_SELECT, PROOF_PHOTOS_RELATION_SELECT } from "./payment-proof.service.js";
+import {
+  CashShiftError,
+  assertCanCloseShift,
+  assertNoOpenShift,
+  decideClose,
+  isOneOpenShiftViolation,
+  shiftFigures,
+  REFUND_PURPOSES,
+  type ShiftTxnRow,
+} from "./cash-shift-rules.js";
+import { confirmCollectedInTx, afterCashConfirmed } from "./payment-transaction.service.js";
+import { countsInShift } from "./cash-shift-rules.js";
+import { allocationCteSql, loadPaymentAllocations } from "../financials/financials-query.js";
+import {
+  CLIENT_PAYMENT_TYPES,
+  CLIENT_PAYMENT_TYPE_LABELS,
+  COLLECTED_PURPOSES,
+  type ClientPaymentType,
+  type PaymentAllocation,
+} from "../financials/payment-type.js";
 
 /*
- * Cash shift money model
+ * Cash shift money model (definition + rules: cash-shift-rules.ts)
  * ──────────────────────
- *   expected drawer = openingCash + cash collected − cash refunded
- *   variance        = counted closing cash − expected drawer
+ *   expected cash = openingCash + cash collected − cash refunded
+ *   difference    = cash received (by the manager at close) − expected cash
  *
  * "Cash collected" is the physical cash the executive took in on transactions
  * linked to the shift: COLLECTED (awaiting BM confirmation) + CONFIRMED. A BM
  * rejection before close takes it out. "Cash refunded" is cash paid out of the
- * drawer (CONFIRMED refund-purpose transactions). UPI (UTR) money is linked to
- * the shift for reporting but never enters the drawer.
+ * drawer (CONFIRMED refund-purpose transactions). UPI / card money (the online
+ * part) is linked to the shift as its non-cash figure but never enters the drawer.
  *
- * While a shift is OPEN these figures are computed live. Closing snapshots
- * cashCollected / cashRefunded / expectedTotal / actualTotal / discrepancy and
- * nothing changes them afterwards — a later BM confirm or reject shows up only
- * as the transaction's current status in the shift detail.
+ * Since Oct 2026 the executive opens the shift and collects; only the branch
+ * manager (or an admin) closes it — "Verify & close" in Financials → Cash
+ * Shift. The close locks the shift row FOR UPDATE, recomputes the figures from
+ * the linked rows (locked too), confirms every COLLECTED payment in the shift
+ * (the old per-payment cash confirmation folds into the close), and snapshots
+ * cashCollected / cashRefunded / expectedTotal / actualTotal (cash received) /
+ * discrepancy (difference) / discrepancyExplanation (the manager's note) with
+ * closedById + reconciledById/At = the manager. Nothing changes them afterwards:
+ * a closed shift is read-only (payments can't link to it — see
+ * lockShiftForPayment; a row voided after the close still counts in the
+ * closed shift's figures and report).
  *
- * Shifts closed before this model (Oct 2026) measured variance against BM-
- * confirmed cash only; their stored expectedTotal/discrepancy are kept as-is
- * and flagged with legacyVariance.
+ * While a shift is OPEN these figures are computed live.
+ *
+ * Shifts closed before Oct 2026 measured variance against BM-confirmed cash
+ * only; their stored expectedTotal/discrepancy are kept as-is and flagged with
+ * legacyVariance.
  */
 
 interface ActorContext {
@@ -41,33 +70,8 @@ interface ActorContext {
   branchName: string;
 }
 
-export type CashShiftErrorCode =
-  | "SHIFT_NOT_FOUND"
-  | "SHIFT_ALREADY_OPEN"
-  | "SHIFT_NOT_OPEN"
-  | "SHIFT_NOT_YOURS"
-  | "SHIFT_OTHER_BRANCH"
-  | "DISCREPANCY_EXPLANATION_REQUIRED"
-  | "SHIFT_NOT_FLAGGED"
-  | "RECONCILE_FORBIDDEN"
-  | "INVALID_DATE_RANGE";
-
-/** Controllers reply with `status` and `toJSON()` (the shared 4xx error contract). */
-export class CashShiftError extends Error {
-  constructor(
-    public readonly status: StatusCode,
-    public readonly code: CashShiftErrorCode,
-    message: string,
-    public readonly extra: Record<string, unknown> = {},
-  ) {
-    super(message);
-    this.name = "CashShiftError";
-  }
-
-  toJSON() {
-    return { success: false, code: this.code, message: this.message, ...this.extra };
-  }
-}
+export { CashShiftError } from "./cash-shift-rules.js";
+export type { CashShiftErrorCode } from "./cash-shift-rules.js";
 
 /** Every money figure on a shift, as 2-dp strings (closingCash/variance are null while OPEN). */
 export interface ShiftView {
@@ -96,6 +100,27 @@ export interface ShiftView {
   reconciledByName: string | null;
   reconciledAt: Date | null;
   legacyVariance: boolean;
+  // ── Additive (Oct 2026, manager close) ──
+  /** Same as expectedClosing: opening + cash collected − cash refunded. */
+  expectedCash: string;
+  /** Cash the manager received at close (null while OPEN). */
+  cashReceived: string | null;
+  /** cashReceived − expectedCash (null while OPEN). */
+  difference: string | null;
+  /** MATCHED / MISMATCH once closed, null while OPEN. */
+  result: "MATCHED" | "MISMATCH" | null;
+  /** UPI / card money in the shift (information only — never in the drawer). */
+  nonCashCollected: string;
+  nonCashRefunded: string;
+  /** cashCollected + nonCashCollected. */
+  totalCollected: string;
+  /** Live payments and refunds (COLLECTED / CONFIRMED) in the shift. */
+  paymentCount: number;
+  /** Who closed it: the manager; for shifts closed before Oct 2026, the executive. */
+  closedByName: string | null;
+  closedByPublicId: string | null;
+  /** Closed by a manager (verify & close) rather than by the executive (old builds). */
+  closedByManager: boolean;
 }
 
 export interface ShiftDayTotals {
@@ -127,7 +152,15 @@ export interface PaginatedShifts {
   summary: ShiftDayTotals;
   /** Shifts open right now in this scope, whatever the filters. */
   openNowCount: number;
-  filters: { status: string | null; from: string | null; to: string | null; openNow: boolean; employeePublicId: string | null };
+  filters: {
+    status: string | null;
+    from: string | null;
+    to: string | null;
+    openNow: boolean;
+    employeePublicId: string | null;
+    result?: string | null;
+    dateField?: string;
+  };
 }
 
 export interface ShiftListFilters {
@@ -139,12 +172,15 @@ export interface ShiftListFilters {
   to?: string;
   openNow?: boolean;
   employeePublicId?: string;
+  /** Closed shifts by result: MATCHED (no difference) / MISMATCH (closed with one). */
+  result?: "MATCHED" | "MISMATCH";
+  /** The date the from/to/date range applies to: OPENED (default) or CLOSED. */
+  dateField?: "OPENED" | "CLOSED";
 }
 
 const ZERO = new Decimal(0);
 const MAX_RANGE_DAYS = 366;
 const MAX_DAILY_ROWS = 400;
-const REFUND_PURPOSES = ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"] as const;
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -155,6 +191,9 @@ interface LiveTotals {
   confirmedCash: Decimal;
   rejectedCash: Decimal;
   upiCollected: Decimal;
+  nonCashIn: Decimal;
+  nonCashOut: Decimal;
+  paymentCount: number;
   transactionCount: number;
 }
 
@@ -165,6 +204,9 @@ const EMPTY_TOTALS: LiveTotals = {
   confirmedCash: ZERO,
   rejectedCash: ZERO,
   upiCollected: ZERO,
+  nonCashIn: ZERO,
+  nonCashOut: ZERO,
+  paymentCount: 0,
   transactionCount: 0,
 };
 
@@ -176,11 +218,14 @@ const sqlTs = (d: Date): string => d.toISOString().replace("T", " ").replace("Z"
 
 const MONEY_IN = Prisma.sql`t."purpose" NOT IN ('OVERPAYMENT_REFUND', 'CANCELLATION_REFUND')`;
 const MONEY_OUT = Prisma.sql`t."purpose" IN ('OVERPAYMENT_REFUND', 'CANCELLATION_REFUND')`;
+// Voided after its shift closed: it was live at close, and a closed shift's figures never move
+const FROZEN_VOID = Prisma.sql`(t."status" = 'VOIDED' AND cs."closedAt" IS NOT NULL AND t."voidedAt" > cs."closedAt")`;
 
 /**
- * Per-shift live totals from linked PaymentTransactions — the single
- * definition of "cash collected / refunded / pending / UPI" used by the
- * active shift, the close snapshot, list rows and the daily totals.
+ * Per-shift live totals from linked PaymentTransactions — the definition of
+ * "cash collected / refunded / pending / UPI / non-cash" used by the active
+ * shift, list rows and the daily totals. Mirrors shiftFigures() in
+ * cash-shift-rules.ts, which the close computes from the locked rows.
  */
 const liveTotalsSql = (shiftIdPredicate: Prisma.Sql) => Prisma.sql`
   SELECT t."cashShiftId" AS "shiftId",
@@ -192,8 +237,15 @@ const liveTotalsSql = (shiftIdPredicate: Prisma.Sql) => Prisma.sql`
     COALESCE(SUM(t."onlineAmount") FILTER (
       WHERE ${MONEY_IN} AND t."status" IN ('COLLECTED', 'CONFIRMED') AND UPPER(COALESCE(t."onlineGateway", '')) = 'UPI'
     ), 0) AS "upiCollected",
+    -- Non-cash and the payment count include a row voided after its shift closed:
+    -- it was live at close, and a closed shift's figures never move.
+    COALESCE(SUM(t."onlineAmount") FILTER (WHERE ${MONEY_IN} AND (t."status" IN ('COLLECTED', 'CONFIRMED') OR ${FROZEN_VOID})), 0) AS "nonCashIn",
+    COALESCE(SUM(t."onlineAmount") FILTER (WHERE ${MONEY_OUT} AND (t."status" = 'CONFIRMED' OR ${FROZEN_VOID})), 0) AS "nonCashOut",
+    (COUNT(*) FILTER (WHERE (${MONEY_IN} AND (t."status" IN ('COLLECTED', 'CONFIRMED') OR ${FROZEN_VOID}))
+      OR (${MONEY_OUT} AND (t."status" = 'CONFIRMED' OR ${FROZEN_VOID}))))::int AS "paymentCount",
     COUNT(*)::int AS "transactionCount"
   FROM "PaymentTransaction" t
+  LEFT JOIN "CashShift" cs ON cs."id" = t."cashShiftId"
   WHERE t."cashShiftId" ${shiftIdPredicate}
   GROUP BY t."cashShiftId"`;
 
@@ -207,7 +259,15 @@ type ShiftRecord = CashShift & {
   employee: { publicId: string; name: string };
   branch?: { name: string } | null;
   reconciledBy?: { publicId: string; name: string } | null;
+  closedBy?: { publicId: string; name: string } | null;
 };
+
+const SHIFT_PEOPLE_INCLUDE = {
+  employee: { select: { publicId: true, name: true } },
+  branch: { select: { name: true } },
+  reconciledBy: { select: { publicId: true, name: true } },
+  closedBy: { select: { publicId: true, name: true } },
+} as const;
 
 /**
  * A closed shift whose stored figures don't follow the current money model:
@@ -236,17 +296,13 @@ class CashShiftService {
     const { shift, strayLinked } = await prisma.$transaction(async (tx) => {
       await this.lockEmployee(actor.actorId, tx);
 
+      // One OPEN shift per executive: this check (under the advisory lock) plus
+      // the partial unique index CashShift_one_open_per_employee as the backstop
       const existing = await tx.cashShift.findFirst({
         where: { employeeId: actor.actorId, status: "OPEN" },
         select: { id: true },
       });
-      if (existing) {
-        throw new CashShiftError(
-          StatusCode.CONFLICT,
-          "SHIFT_ALREADY_OPEN",
-          "You already have an open shift. Close it before starting a new one.",
-        );
-      }
+      assertNoOpenShift(existing);
 
       const lastClosed = await tx.cashShift.findFirst({
         where: { employeeId: actor.actorId, closedAt: { not: null } },
@@ -282,6 +338,9 @@ class CashShiftService {
       });
 
       return { shift: created, strayLinked: linked.count };
+    }).catch((error: unknown) => {
+      if (isOneOpenShiftViolation(error)) assertNoOpenShift({ id: 0 });
+      throw error;
     });
 
     await auditService.log({
@@ -313,76 +372,104 @@ class CashShiftService {
     return shift;
   }
 
-  async close(publicId: string, actualTotal: number, discrepancyExplanation: string | undefined, actor: ActorContext): Promise<CashShift> {
-    const actual = new Decimal(actualTotal).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-    const explanation = discrepancyExplanation?.trim() || null;
+  /**
+   * Branch manager's "Verify & close" (admins too). Atomic:
+   *   1. the executive's advisory lock + the shift row FOR UPDATE — a payment
+   *      being written holds the row FOR SHARE (lockShiftForPayment), so the
+   *      close waits for it and counts it; one arriving after waits and is
+   *      refused (the row reads CLOSED);
+   *   2. still OPEN, else 409 SHIFT_NOT_OPEN (closed shifts are locked);
+   *   3. the linked rows locked FOR UPDATE and the figures recomputed from them
+   *      (shiftFigures) — never taken from the client; expectedSeen ≠ now → 409;
+   *   4. a difference needs a note (400 DISCREPANCY_EXPLANATION_REQUIRED);
+   *   5. every COLLECTED payment in the shift becomes CONFIRMED (extensions
+   *      paid in cash are finalized) — the old per-payment cash confirmation;
+   *   6. the snapshot: actualTotal = cash received, discrepancy = difference,
+   *      discrepancyExplanation = note, closedById + reconciledById/At = manager.
+   * Afterwards the executive gets a push + inbox notification.
+   */
+  async close(
+    publicId: string,
+    input: { cashReceived: number; note?: string | null; expectedSeen?: number | null },
+    actor: ActorContext,
+  ): Promise<CashShift> {
+    // Fleet Executives never close (old builds still call it): 403 before any lookup
+    assertCanCloseShift({ role: actor.actorRole, branchId: actor.actorBranchId }, { branchId: actor.actorBranchId });
 
-    const { shift, updated, expected, discrepancy, totals } = await prisma.$transaction(
+    const { shift, updated, figures, decision, confirmedRows } = await prisma.$transaction(
       async (tx) => {
         const found = await tx.cashShift.findUnique({ where: { publicId } });
         if (!found) throw new CashShiftError(StatusCode.NOT_FOUND, "SHIFT_NOT_FOUND", "Cash shift not found.");
-
-        // The executive closes their own shift; a branch manager may close one in
-        // their own branch (e.g. a shift left open); admins any.
-        if (found.employeeId !== actor.actorId) {
-          if (actor.actorRole === "MANAGER") {
-            if (found.branchId !== actor.actorBranchId) {
-              throw new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_OTHER_BRANCH", "This shift belongs to another branch.");
-            }
-          } else if (actor.actorRole !== "ADMIN") {
-            throw new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_NOT_YOURS", "You can only close your own shift.");
-          }
-        }
+        assertCanCloseShift({ role: actor.actorRole, branchId: actor.actorBranchId }, found);
 
         await this.lockEmployee(found.employeeId, tx);
         const [row] = await tx.$queryRaw<{ status: string }[]>`
           SELECT "status"::text AS "status" FROM "CashShift" WHERE "id" = ${found.id} FOR UPDATE`;
-        if (row?.status !== "OPEN") {
-          throw new CashShiftError(StatusCode.BAD_REQUEST, "SHIFT_NOT_OPEN", `Shift is already ${row?.status ?? found.status}.`);
+
+        // The shift's rows, locked: a confirm / reject / void racing the close waits for it
+        const rows = await tx.$queryRaw<Array<ShiftTxnRow & {
+          id: number; publicId: string; bookingId: number; branchId: number;
+          totalAmount: Prisma.Decimal; collectedById: number | null; notes: string | null;
+        }>>`
+          SELECT "id", "publicId", "bookingId", "branchId", "purpose"::text AS "purpose", "status"::text AS "status",
+                 "cashAmount", "onlineAmount", "totalAmount", "collectedById", "notes"
+          FROM "PaymentTransaction" WHERE "cashShiftId" = ${found.id}
+          ORDER BY "id"
+          FOR UPDATE`;
+
+        const figs = shiftFigures(found.openingCash, rows);
+        const dec_ = decideClose({
+          status: row?.status ?? found.status,
+          figures: figs,
+          cashReceived: input.cashReceived,
+          note: input.note,
+          expectedSeen: input.expectedSeen,
+        });
+
+        // Verified at the handover: the shift's COLLECTED money becomes CONFIRMED
+        const confirmed: Array<{ row: (typeof rows)[number]; extension: Awaited<ReturnType<typeof confirmCollectedInTx>>["extension"] }> = [];
+        for (const r of rows) {
+          if (r.status !== "COLLECTED") continue;
+          const out = await confirmCollectedInTx(tx, { id: r.id, purpose: r.purpose, notes: r.notes }, actor.actorId, r.notes);
+          if (out.confirmed) confirmed.push({ row: r, extension: out.extension });
         }
 
-        const live = (await this.liveTotals([found.id], tx)).get(found.id) ?? EMPTY_TOTALS;
-        const exp = dec(found.openingCash).add(live.cashIn).sub(live.cashOut);
-        const diff = actual.sub(exp);
-        const flagged = !diff.isZero();
-
-        if (flagged && !explanation) {
-          throw new CashShiftError(
-            StatusCode.BAD_REQUEST,
-            "DISCREPANCY_EXPLANATION_REQUIRED",
-            `Counted cash ₹${actual.toFixed(2)} is ${diff.isNegative() ? "short" : "over"} by ₹${diff.abs().toFixed(2)} against the ₹${exp.toFixed(2)} expected in the drawer. Add an explanation (at least 10 characters) to close the shift.`,
-            {
-              expectedClosing: money(exp),
-              expectedTotal: money(exp),
-              discrepancy: money(diff),
-              openingCash: money(dec(found.openingCash)),
-              cashCollected: money(live.cashIn),
-              cashRefunded: money(live.cashOut),
-            },
-          );
-        }
-
+        const now = new Date();
         const saved = await tx.cashShift.update({
           where: { id: found.id },
           data: {
-            status: flagged ? "DISCREPANCY_FLAGGED" : "CLOSED",
-            closedAt: new Date(),
-            cashCollected: money(live.cashIn),
-            cashRefunded: money(live.cashOut),
-            expectedTotal: money(exp),
-            actualTotal: actual.toFixed(2),
-            discrepancy: money(diff),
-            discrepancyExplanation: explanation,
+            status: dec_.status,
+            closedAt: now,
+            closedById: actor.actorId,
+            reconciledById: actor.actorId,
+            reconciledAt: now,
+            cashCollected: money(figs.cashCollected),
+            cashRefunded: money(figs.cashRefunded),
+            expectedTotal: money(dec_.expectedCash),
+            actualTotal: money(dec_.cashReceived),
+            discrepancy: money(dec_.difference),
+            discrepancyExplanation: dec_.note,
           },
         });
 
-        return { shift: found, updated: saved, expected: exp, discrepancy: diff, totals: live };
+        return { shift: found, updated: saved, figures: figs, decision: dec_, confirmedRows: confirmed };
       },
-      { timeout: 15000 },
+      { timeout: 30000 },
     );
 
-    const hasDiscrepancy = !discrepancy.isZero();
-    const newStatus = updated.status;
+    for (const c of confirmedRows) {
+      await afterCashConfirmed(
+        { ...c.row, totalAmount: c.row.totalAmount },
+        c.extension,
+        actor,
+        { notifyCollector: false, shiftPublicId: shift.publicId },
+      ).catch((err) => console.error("[cashShift.close] after-confirm error:", err));
+    }
+
+    const diff = decision.difference;
+    const hasDiscrepancy = !decision.matched;
+    const employee = await prisma.user.findUnique({ where: { id: shift.employeeId }, select: { name: true } });
+    const employeeName = employee?.name ?? "the executive";
 
     await auditService.log({
       actorId: actor.actorId,
@@ -392,17 +479,21 @@ class CashShiftService {
       action: "CLOSE_CASH_SHIFT",
       category: AuditCategory.PAYMENT,
       severity: hasDiscrepancy ? "WARNING" : "INFO",
-      description: `Cash shift closed. Opening: ₹${dec(shift.openingCash).toFixed(2)}, Collected: ₹${totals.cashIn.toFixed(2)}, Refunded: ₹${totals.cashOut.toFixed(2)}, Expected: ₹${expected.toFixed(2)}, Actual: ₹${actual.toFixed(2)}, Discrepancy: ₹${discrepancy.toFixed(2)}`,
+      description: `Cash shift of ${employeeName} closed by ${actor.actorName}. Opening: ₹${money(figures.openingCash)}, Collected: ₹${money(figures.cashCollected)}, Refunded: ₹${money(figures.cashRefunded)}, Expected: ₹${money(decision.expectedCash)}, Received: ₹${money(decision.cashReceived)}, Difference: ₹${money(diff)}`,
       entity: "CashShift",
       entityId: shift.publicId,
+      before: { status: "OPEN" },
       after: {
-        status: newStatus,
-        openingCash: dec(shift.openingCash).toFixed(2),
-        cashCollected: totals.cashIn.toFixed(2),
-        cashRefunded: totals.cashOut.toFixed(2),
-        expectedTotal: expected.toFixed(2),
-        actualTotal: actual.toFixed(2),
-        discrepancy: discrepancy.toFixed(2),
+        status: updated.status,
+        openingCash: money(figures.openingCash),
+        cashCollected: money(figures.cashCollected),
+        cashRefunded: money(figures.cashRefunded),
+        expectedTotal: money(decision.expectedCash),
+        actualTotal: money(decision.cashReceived),
+        discrepancy: money(diff),
+        nonCashCollected: money(figures.nonCashCollected),
+        paymentsConfirmed: confirmedRows.length,
+        note: decision.note,
       },
     });
 
@@ -415,11 +506,15 @@ class CashShiftService {
       actionType: StaffActionType.COMPLETED,
       entityType: StaffEntityType.CASH_SHIFT,
       entityRef: shift.publicId,
-      description: `Cash shift closed${hasDiscrepancy ? ` with discrepancy ₹${discrepancy.toFixed(2)}` : ""}`,
-      metadata: { expected: expected.toFixed(2), actual: actual.toFixed(2), discrepancy: discrepancy.toFixed(2) },
+      description: `Closed ${employeeName}'s cash shift: received ₹${money(decision.cashReceived)} of ₹${money(decision.expectedCash)} expected${hasDiscrepancy ? ` (difference ₹${money(diff)})` : ""}`,
+      metadata: {
+        expected: money(decision.expectedCash),
+        received: money(decision.cashReceived),
+        difference: money(diff),
+      },
     });
 
-    if (hasDiscrepancy) void notifyEvents.shiftDiscrepancy({ shiftId: shift.id, actorUserId: actor.actorId });
+    void notifyEvents.shiftClosed({ shiftId: shift.id, actorUserId: actor.actorId });
 
     return updated;
   }
@@ -438,6 +533,14 @@ class CashShiftService {
         StatusCode.BAD_REQUEST,
         "SHIFT_NOT_FLAGGED",
         "Only DISCREPANCY_FLAGGED shifts can be reconciled.",
+      );
+    }
+    // A shift the manager closed carries the manager's note already and is read-only
+    if (shift.closedById) {
+      throw new CashShiftError(
+        StatusCode.CONFLICT,
+        "SHIFT_LOCKED",
+        "This shift was closed by a manager with a note. Closed shifts can't be changed.",
       );
     }
 
@@ -483,6 +586,28 @@ class CashShiftService {
 
   // ── Reads ────────────────────────────────────────────────────────────────
 
+  /**
+   * The six-type split (Financials' allocation SQL) of given rows whatever their
+   * status — for rows voided after their shift closed, which loadPaymentAllocations
+   * leaves out but a closed shift's report still counts.
+   */
+  private async allocationsOf(ids: number[]): Promise<Map<number, PaymentAllocation[]>> {
+    const out = new Map<number, PaymentAllocation[]>();
+    if (ids.length === 0) return out;
+    const where = Prisma.sql`t.id IN (${Prisma.join(ids)}) AND t.purpose::text IN (${Prisma.join(COLLECTED_PURPOSES)})`;
+    const rows = await prisma.$queryRaw<{ id: number; type: ClientPaymentType; cash: unknown; online: unknown }[]>(
+      Prisma.sql`${allocationCteSql(where)} SELECT id, type, cash, online FROM alloc ORDER BY id, type_ord`,
+    );
+    for (const r of rows) {
+      const cash = Number(String(r.cash ?? 0));
+      const online = Number(String(r.online ?? 0));
+      const list = out.get(Number(r.id)) ?? [];
+      list.push({ type: r.type, amount: Math.round((cash + online) * 100) / 100, cash, online });
+      out.set(Number(r.id), list);
+    }
+    return out;
+  }
+
   /** Live totals per shift from its linked transactions (shifts with none are absent). */
   private async liveTotals(shiftIds: number[], db: Db = prisma): Promise<Map<number, LiveTotals>> {
     const out = new Map<number, LiveTotals>();
@@ -498,6 +623,9 @@ class CashShiftService {
         confirmedCash: dec(r.confirmedCash),
         rejectedCash: dec(r.rejectedCash),
         upiCollected: dec(r.upiCollected),
+        nonCashIn: dec(r.nonCashIn),
+        nonCashOut: dec(r.nonCashOut),
+        paymentCount: Number(r.paymentCount ?? 0),
         transactionCount: Number(r.transactionCount ?? 0),
       });
     }
@@ -541,6 +669,17 @@ class CashShiftService {
       // variance doesn't follow from counted − expected (the old confirmCash
       // bumped expectedTotal after close without recomputing the variance).
       legacyVariance: !isOpen && isLegacyClose(s, breakdown),
+      expectedCash: money(expected),
+      cashReceived: isOpen ? null : money(dec(s.actualTotal)),
+      difference: isOpen ? null : money(dec(s.discrepancy)),
+      result: isOpen ? null : dec(s.discrepancy).isZero() ? "MATCHED" : "MISMATCH",
+      nonCashCollected: money(live.nonCashIn),
+      nonCashRefunded: money(live.nonCashOut),
+      totalCollected: money(collected.add(live.nonCashIn)),
+      paymentCount: live.paymentCount,
+      closedByName: isOpen ? null : (s.closedBy?.name ?? s.employee.name),
+      closedByPublicId: isOpen ? null : (s.closedBy?.publicId ?? s.employee.publicId),
+      closedByManager: !!s.closedById,
     };
   }
 
@@ -594,13 +733,17 @@ class CashShiftService {
         employee: { select: { publicId: true, name: true } },
         branch: { select: { name: true } },
         reconciledBy: { select: { publicId: true, name: true } },
+        closedBy: { select: { publicId: true, name: true } },
         transactions: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           select: {
+            id: true,
             publicId: true,
             purpose: true,
             method: true,
             status: true,
+            voidedAt: true,
+            voidShiftClosed: true,
             totalAmount: true,
             cashAmount: true,
             onlineAmount: true,
@@ -631,6 +774,34 @@ class CashShiftService {
     const { transactions: rawTxns, ...record } = shift;
     const view = this.toView(record, live);
 
+    // The six payment types (shared with Financials → payments): per row, and
+    // the shift's cash / non-cash per type. Refunds are paid out, not collected.
+    // Rows voided after the close keep their split (a closed report never moves)
+    const voidedAfterClose = (t: { status: string; voidedAt: Date | null }) =>
+      t.status === "VOIDED" && !!shift.closedAt && !!t.voidedAt && t.voidedAt > shift.closedAt;
+    const allocations = await loadPaymentAllocations(prisma, rawTxns.filter((t) => t.status !== "VOIDED").map((t) => t.id));
+    const frozen = await this.allocationsOf(rawTxns.filter(voidedAfterClose).map((t) => t.id));
+    for (const [id, list] of frozen) allocations.set(id, list);
+    const byType = new Map<ClientPaymentType, { cash: Decimal; online: Decimal }>();
+    let refundCash = ZERO;
+    let refundOnline = ZERO;
+    for (const t of rawTxns) {
+      if (!countsInShift({ ...t, voidedAfterClose: voidedAfterClose(t) })) continue;
+      if ((REFUND_PURPOSES as readonly string[]).includes(t.purpose)) {
+        refundCash = refundCash.add(dec(t.cashAmount));
+        refundOnline = refundOnline.add(dec(t.onlineAmount));
+        continue;
+      }
+      for (const a of allocations.get(t.id) ?? []) {
+        const cur = byType.get(a.type) ?? { cash: ZERO, online: ZERO };
+        byType.set(a.type, { cash: cur.cash.add(a.cash), online: cur.online.add(a.online) });
+      }
+    }
+    const typeBreakdown = CLIENT_PAYMENT_TYPES.map((type) => {
+      const v = byType.get(type) ?? { cash: ZERO, online: ZERO };
+      return { type, label: CLIENT_PAYMENT_TYPE_LABELS[type], cash: money(v.cash), nonCash: money(v.online), total: money(v.cash.add(v.online)) };
+    });
+
     const transactions = await Promise.all(rawTxns.map(async (t) => ({
       publicId: t.publicId,
       bookingPublicId: t.booking.publicId,
@@ -656,13 +827,151 @@ class CashShiftService {
       createdAt: t.createdAt,
       // Recorded after the close snapshot was taken, so not in its figures
       linkedAfterClose: !!shift.closedAt && t.createdAt > shift.closedAt,
+      // Additive (Oct 2026): the six payment types this row paid (none for refunds / voided)
+      allocations: allocations.get(t.id) ?? [],
+      paymentTypes: (allocations.get(t.id) ?? []).map((a) => CLIENT_PAYMENT_TYPE_LABELS[a.type]),
+      voidedAt: t.voidedAt,
+      voidShiftClosed: t.voidShiftClosed,
       // Additive: presigned photo of the customer's UPI payment screen (#3)
       ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
     })));
 
+    const extra = {
+      typeBreakdown,
+      refundsPaidOut: { cash: money(refundCash), nonCash: money(refundOnline) },
+      // How expected cash is made up (shown under the big figure in the close panel)
+      expectedCashComponents: {
+        openingCash: view.openingCash,
+        cashCollected: view.cashCollected,
+        cashRefunded: view.cashRefunded,
+        expectedCash: view.expectedCash,
+      },
+    };
     return opts.legacy
-      ? { ...record, ...this.legacyKeys(view, record), ...view, transactions }
-      : { ...view, transactions };
+      ? { ...record, ...this.legacyKeys(view, record), ...view, ...extra, transactions }
+      : { ...view, ...extra, transactions };
+  }
+
+  /**
+   * Summary cards of Financials → Cash Shift for a branch:
+   *   openShifts     — executives with an open shift now
+   *   cashWithFleet  — expected cash held across those open shifts (opening + collected − refunded)
+   *   closedToday    — shifts closed today (IST) and the cash received on them
+   *   mismatches     — shifts closed with a difference in the range (by close date; default today)
+   */
+  async cardsForBranch(branchId: number, range: { from?: string; to?: string } = {}) {
+    const todayStart = DateTime.now().setZone(SYSTEM_TIMEZONE).startOf("day");
+    const fromDay = range.from ? this.parseIstDay(range.from) : todayStart;
+    const toDay = range.to ? this.parseIstDay(range.to) : todayStart;
+    if (fromDay > toDay) {
+      throw new CashShiftError(StatusCode.BAD_REQUEST, "INVALID_DATE_RANGE", "The from date must be on or before the to date.");
+    }
+    if (Math.round(toDay.diff(fromDay, "days").days) + 1 > MAX_RANGE_DAYS) {
+      throw new CashShiftError(StatusCode.BAD_REQUEST, "INVALID_DATE_RANGE", `Pick a range of at most ${MAX_RANGE_DAYS} days.`);
+    }
+
+    const open = await prisma.cashShift.findMany({
+      where: { branchId, status: "OPEN" },
+      select: { id: true, openingCash: true },
+    });
+    const live = await this.liveTotals(open.map((o) => o.id));
+    let cashWithFleet = ZERO;
+    let nonCashWithFleet = ZERO;
+    for (const o of open) {
+      const t = live.get(o.id) ?? EMPTY_TOTALS;
+      cashWithFleet = cashWithFleet.add(dec(o.openingCash)).add(t.cashIn).sub(t.cashOut);
+      nonCashWithFleet = nonCashWithFleet.add(t.nonCashIn);
+    }
+
+    const [closedToday, mismatches] = await Promise.all([
+      prisma.cashShift.aggregate({
+        where: {
+          branchId,
+          status: { not: "OPEN" },
+          closedAt: { gte: todayStart.toJSDate(), lt: todayStart.plus({ days: 1 }).toJSDate() },
+        },
+        _count: { _all: true },
+        _sum: { actualTotal: true },
+      }),
+      prisma.cashShift.count({
+        where: {
+          branchId,
+          status: { not: "OPEN" },
+          discrepancy: { not: 0 },
+          closedAt: { gte: fromDay.toJSDate(), lt: toDay.plus({ days: 1 }).toJSDate() },
+        },
+      }),
+    ]);
+
+    return {
+      openShifts: open.length,
+      cashWithFleet: money(cashWithFleet),
+      nonCashWithFleet: money(nonCashWithFleet),
+      closedToday: { count: closedToday._count._all, cashReceived: money(dec(closedToday._sum.actualTotal)) },
+      mismatches,
+      range: { from: fromDay.toFormat("yyyy-MM-dd"), to: toDay.toFormat("yyyy-MM-dd") },
+    };
+  }
+
+  /**
+   * COLLECTED payments of the branch that no open shift will confirm at close:
+   * recorded outside any shift (e.g. a manager's counter cash, old builds) or
+   * left COLLECTED in a shift closed before Oct 2026. The manager confirms or
+   * rejects these one by one (the old Cash Confirmations, now in Cash Shift).
+   */
+  async listUnconfirmedOutsideOpenShifts(branchId: number, page = 1, pageSize = 20) {
+    const where: Prisma.PaymentTransactionWhereInput = {
+      branchId,
+      status: "COLLECTED",
+      OR: [{ cashShiftId: null }, { cashShift: { status: { not: "OPEN" } } }],
+    };
+    const [rows, total] = await Promise.all([
+      prisma.paymentTransaction.findMany({
+        where,
+        orderBy: [{ collectedAt: "asc" }, { id: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          publicId: true,
+          purpose: true,
+          method: true,
+          totalAmount: true,
+          cashAmount: true,
+          onlineAmount: true,
+          onlineGateway: true,
+          onlineTransactionRef: true,
+          collectedAt: true,
+          createdAt: true,
+          notes: true,
+          booking: { select: { publicId: true, customer: { select: { user: { select: { name: true } } } } } },
+          collectedBy: { select: { publicId: true, name: true } },
+          cashShift: { select: { publicId: true, status: true } },
+          proofFile: PROOF_FILE_RELATION_SELECT,
+          proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
+        },
+      }),
+      prisma.paymentTransaction.count({ where }),
+    ]);
+    const transactions = await Promise.all(rows.map(async (t) => ({
+      transactionPublicId: t.publicId,
+      bookingPublicId: t.booking.publicId,
+      customerName: t.booking.customer?.user?.name ?? null,
+      purpose: t.purpose,
+      method: t.method,
+      amount: money(dec(t.totalAmount)),
+      cashAmount: money(dec(t.cashAmount)),
+      onlineAmount: money(dec(t.onlineAmount)),
+      onlineGateway: t.onlineGateway,
+      onlineTransactionRef: t.onlineTransactionRef,
+      isUpi: String(t.onlineGateway ?? "").toUpperCase() === "UPI",
+      collectedAt: (t.collectedAt ?? t.createdAt).toISOString(),
+      employeeName: t.collectedBy?.name ?? null,
+      shiftPublicId: t.cashShift?.publicId ?? null,
+      shiftStatus: t.cashShift?.status ?? null,
+      notes: t.notes,
+      ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
+    })));
+    return { transactions, total, page, pageSize };
   }
 
   async listForBranch(branchId: number, filters: ShiftListFilters): Promise<PaginatedShifts> {
@@ -719,6 +1028,17 @@ class CashShiftService {
       where.status = { in: statuses };
       sql.push(Prisma.sql`s."status"::text IN (${Prisma.join(statuses)})`);
     }
+    // Matched / Mismatch: closed shifts by their stored difference
+    if (!openNow && filters.result) {
+      const mismatch = filters.result === "MISMATCH";
+      where.AND = [
+        { status: { not: "OPEN" } },
+        mismatch ? { discrepancy: { not: 0 } } : { discrepancy: 0 },
+      ];
+      sql.push(mismatch
+        ? Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" <> 0`
+        : Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" = 0`);
+    }
 
     // A shift belongs to the IST calendar date it opened on. "Open now"
     // ignores dates so a shift left open since an earlier day still shows.
@@ -734,19 +1054,23 @@ class CashShiftService {
         throw new CashShiftError(StatusCode.BAD_REQUEST, "INVALID_DATE_RANGE", `Pick a range of at most ${MAX_RANGE_DAYS} days.`);
       }
     }
+    // dateField CLOSED (the Closed list): the IST day the shift was closed
+    const byClosed = filters.dateField === "CLOSED";
+    const col = byClosed ? Prisma.sql`s."closedAt"` : Prisma.sql`s."openedAt"`;
     if (start || end) {
-      const openedAt: Prisma.DateTimeFilter = {};
+      const range: Prisma.DateTimeFilter = {};
       if (start) {
         const gte = start.toJSDate();
-        openedAt.gte = gte;
-        sql.push(Prisma.sql`s."openedAt" >= ${sqlTs(gte)}::timestamp`);
+        range.gte = gte;
+        sql.push(Prisma.sql`${col} >= ${sqlTs(gte)}::timestamp`);
       }
       if (end) {
         const lt = end.plus({ days: 1 }).toJSDate();
-        openedAt.lt = lt;
-        sql.push(Prisma.sql`s."openedAt" < ${sqlTs(lt)}::timestamp`);
+        range.lt = lt;
+        sql.push(Prisma.sql`${col} < ${sqlTs(lt)}::timestamp`);
       }
-      where.openedAt = openedAt;
+      if (byClosed) where.closedAt = range;
+      else where.openedAt = range;
     }
 
     return {
@@ -758,6 +1082,8 @@ class CashShiftService {
         to: toDay,
         openNow,
         employeePublicId: filters.employeePublicId ?? null,
+        result: filters.result ?? null,
+        dateField: filters.dateField ?? "OPENED",
       },
     };
   }
@@ -838,12 +1164,12 @@ class CashShiftService {
     const [rows, total, openNowCount, aggregates] = await Promise.all([
       prisma.cashShift.findMany({
         where,
-        include: {
-          employee: { select: { publicId: true, name: true } },
-          branch: { select: { name: true } },
-          reconciledBy: { select: { publicId: true, name: true } },
-        },
-        orderBy: [{ openedAt: "desc" }, { id: "desc" }],
+        include: SHIFT_PEOPLE_INCLUDE,
+        orderBy: filters.dateField === "CLOSED"
+          ? [{ closedAt: "desc" }, { id: "desc" }]
+          : filters.status === "OPEN" || filters.openNow
+            ? [{ openedAt: "asc" }, { id: "asc" }]
+            : [{ openedAt: "desc" }, { id: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

@@ -38,6 +38,7 @@
  *
  * Errors: HTTP 4xx { success:false, code, message, ...extra } (ManualCancelError).
  */
+import { lockShiftForPayment } from "../payment/counter-guard.service.js";
 import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
 import type { Request } from "express";
 import Decimal from "decimal.js";
@@ -473,7 +474,8 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
       }
       // A cash refund comes out of the manager's drawer: their open shift records it
       const refunding = input.refund.amount.gt(0) ? input.refund.method : null;
-      const shift = refunding === "CASH" ? await openCashShift(actor.id, tx) : null;
+      // Locked FOR SHARE: never a shift that is being closed
+      const shift = refunding === "CASH" ? await lockShiftForPayment(tx, { id: actor.id, role: actor.role }) : null;
       const shiftRefusal = cashShiftRefusal(refunding, shift !== null);
       if (shiftRefusal) throw shiftRefusal;
       if (input.odometer !== null) {

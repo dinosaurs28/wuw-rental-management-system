@@ -11,9 +11,10 @@
  *
  * In one transaction: the per-booking refund lock (the one "Refund to customer",
  * the settlement deposit refund and the manual cancel take — always first, so
- * the lock order matches theirs), then the payment row FOR UPDATE (a second void
- * waits, then sees VOIDED → 409), then its cash shift FOR SHARE (a shift close
- * can't snapshot the drawer half-way through the void). The row becomes VOIDED
+ * the lock order matches theirs), then its cash shift FOR SHARE (a shift close
+ * can't snapshot the drawer half-way through the void; taken before the row, as
+ * the close locks shift → rows), then the payment row FOR UPDATE (a second void
+ * waits, then sees VOIDED → 409). The row becomes VOIDED
  * (never deleted); a voided refund's RefundRequest becomes VOIDED; a voided
  * deposit refund clears the booking's "deposit refunded" flag when no other
  * deposit refund is left. The booking status is never written. Audit log
@@ -214,7 +215,7 @@ export async function voidPayment(req: Request, scope: PaymentStaffScope, transa
 
   const found = await prisma.paymentTransaction.findFirst({
     where: { publicId: transactionPublicId, booking: { deletedAt: null, ...branchWhere(scope) } },
-    select: { id: true, bookingId: true, booking: { select: { publicId: true, status: true, branchId: true, branch: { select: { name: true } } } } },
+    select: { id: true, bookingId: true, cashShiftId: true, booking: { select: { publicId: true, status: true, branchId: true, branch: { select: { name: true } } } } },
   });
   if (!found) {
     throw new PaymentVoidError(
@@ -229,17 +230,19 @@ export async function voidPayment(req: Request, scope: PaymentStaffScope, transa
     async (tx) => {
       // Same lock order as the other refund writers: the booking's refund lock first
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"deposit-refund:" + found.bookingId}))`;
+      // The shift FOR SHARE BEFORE the payment row: a shift close takes the shift
+      // FOR UPDATE and then its payment rows FOR UPDATE, so locking the row first
+      // and the shift second could deadlock with it.
+      const lockShift = async (shiftId: number) =>
+        (await tx.$queryRaw<{ status: string }[]>`
+          SELECT "status"::text AS "status" FROM "CashShift" WHERE "id" = ${shiftId} FOR SHARE`)[0] ?? null;
+      let shift: { status: string } | null = found.cashShiftId ? await lockShift(found.cashShiftId) : null;
       await tx.$queryRaw`SELECT "id" FROM "PaymentTransaction" WHERE "id" = ${found.id} FOR UPDATE`;
       const t = await tx.paymentTransaction.findUniqueOrThrow({ where: { id: found.id }, select: TXN_SELECT });
       const refusal = voidRefusal(t);
       if (refusal) throw refusal;
-
-      let shift: { status: string } | null = null;
-      if (t.cashShiftId) {
-        const [row] = await tx.$queryRaw<{ status: string }[]>`
-          SELECT "status"::text AS "status" FROM "CashShift" WHERE "id" = ${t.cashShiftId} FOR SHARE`;
-        shift = row ?? null;
-      }
+      // Linked to a shift since the read above (only a stray COLLECTED row is ever re-linked)
+      if (t.cashShiftId !== found.cashShiftId) shift = t.cashShiftId ? await lockShift(t.cashShiftId) : null;
       const shiftClosed = voidShiftClosed(t, shift);
       const now = new Date();
 

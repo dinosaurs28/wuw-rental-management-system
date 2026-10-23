@@ -85,6 +85,8 @@ interface ResolutionOption {
   additionalAmount?: string;
   taxableAmount?: string;
   specialShare?: SpecialShare[];
+  // A partial option of a monthly renewal: its breakdown (absent from an older server)
+  renewal?: RenewalBreakdown | null;
   // Free km this option adds (#7) — a partial option: up to partialNewEndAt
   extensionFreeKm?: ExtensionFreeKm | null;
 }
@@ -94,6 +96,26 @@ interface ResolutionOption {
 interface SpecialShare {
   label: string;
   amount: string;
+}
+
+// A monthly booking's renewal (client TODO 7–9) as the server priced it:
+// whole 30-day months at the car's monthly price, the rest at the daily rate
+// with the branch's duration slab. GST-inclusive decimal strings; null for a
+// daily booking, absent from an older server.
+interface RenewalPart {
+  part: 'MONTHS' | 'DAYS';
+  rate: 'MONTHLY' | 'DAILY';
+  label: string;
+  price: string;
+  discount: string;
+  discountLabel: string | null;
+  total: string;
+}
+interface RenewalBreakdown {
+  months: number;
+  label: string;
+  monthlyPriceMissing: boolean;
+  parts: RenewalPart[];
 }
 
 // POST /api/employee/extensions/evaluate → data. Money is decimal strings.
@@ -106,7 +128,11 @@ interface Evaluation extends ExtensionCarAvailability {
   // numbers: current rental length and the time this quote adds.
   // extensionFreeKm: free km the quote adds (#7) — absent from an older server.
   pricing: { additionalAmount: string; newTotalFinal: string; originalHours?: number; extensionHours?: number } &
-    ExtensionGstFields & { extensionFreeKm?: ExtensionFreeKm | null; specialShare?: SpecialShare[] };
+    ExtensionGstFields & {
+      extensionFreeKm?: ExtensionFreeKm | null;
+      specialShare?: SpecialShare[];
+      renewal?: RenewalBreakdown | null;
+    };
   resolutionOptions: ResolutionOption[];
   recommendedResolution: Resolution;
 }
@@ -132,11 +158,17 @@ const PRESETS = [
   { label: '+3d', ms: 3 * DAY_MS },
   { label: '+7d', ms: 7 * DAY_MS },
 ];
-// Monthly-plan bookings (#15) can run to 180 days: whole months (30 days, as billed).
-const MONTH_PRESETS = [
-  { label: '+1 mo', ms: 30 * DAY_MS },
-  { label: '+2 mo', ms: 60 * DAY_MS },
+// Monthly-plan bookings (#15, client TODO 7): renewed by + N days, + N weeks,
+// + 1 month (30 days, the monthly block it is priced in) or a custom return
+// (the date strip and time below).
+type RenewUnit = 'days' | 'weeks' | 'month';
+const RENEW_UNITS: { unit: RenewUnit; label: string }[] = [
+  { unit: 'days', label: '+ Days' },
+  { unit: 'weeks', label: '+ Weeks' },
+  { unit: 'month', label: '+1 month' },
 ];
+const renewMs = (unit: RenewUnit, count: number) =>
+  unit === 'days' ? count * DAY_MS : unit === 'weeks' ? count * 7 * DAY_MS : 30 * DAY_MS;
 // Return dates offered in the strip: up to the server's maxEndAt (180 days for
 // a monthly plan), else 30 days when an older server sends no limit.
 const DAY_COUNT = 30;
@@ -151,6 +183,41 @@ function fmt(iso: string) {
 // "+1 day 11 hr 30 min" between two ISO instants (null when not after).
 const addedLength = (fromIso: string, toIso: string) =>
   formatExtensionHours((new Date(toIso).getTime() - new Date(fromIso).getTime()) / HOUR_MS);
+
+// The renewal's parts: the rate each was billed at, its discount (the BM's
+// slab) and total — shown before collection.
+function RenewalRows({ renewal }: { renewal?: RenewalBreakdown | null }) {
+  if (!renewal || renewal.parts.length === 0) return null;
+  return (
+    <>
+      <Row label="Renewal" value={`+${renewal.label}`} accent />
+      {renewal.parts.map((p) => {
+        const discount = Number(p.discount);
+        return (
+          <View key={p.part} style={styles.renewalPart}>
+            <View style={styles.row}>
+              <Text style={[styles.label, styles.renewalLabel]}>
+                {p.label} · {p.rate === 'MONTHLY' ? 'Monthly' : 'Daily'}
+              </Text>
+              <Text style={styles.value}>{inr(p.price)}</Text>
+            </View>
+            {discount > 0 ? (
+              <View style={styles.row}>
+                <Text style={[styles.label, styles.renewalDiscount]}>{p.discountLabel ?? 'Discount'}</Text>
+                <Text style={[styles.value, styles.renewalDiscount]}>−{inr(discount)}</Text>
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+      {renewal.monthlyPriceMissing ? (
+        <Text style={[styles.holdNote, styles.specialShare]}>
+          This car has no monthly price set, so its months are priced at the daily rate.
+        </Text>
+      ) : null}
+    </>
+  );
+}
 
 function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -276,6 +343,15 @@ export default function ExtensionScreen() {
     currentEnd ? slotsWithinHours(day, schedule, 'return', { after: new Date(currentEnd), before: maxEnd }) : [];
   const [timeOpen, setTimeOpen] = useState(false);
   const [notes, setNotes] = useState('');
+  // Monthly renewal chooser: the unit and how many days / weeks
+  const isMonthly = !!eligibility?.isMonthly;
+  const [renewUnit, setRenewUnit] = useState<RenewUnit>('days');
+  const [renewCount, setRenewCount] = useState(1);
+  const renewTo = (unit: RenewUnit, count: number) => {
+    setRenewUnit(unit);
+    setRenewCount(count);
+    if (baseEnd) { setNewEnd(new Date(baseEnd.getTime() + renewMs(unit, count))); setError(null); }
+  };
 
   // Step 2 — evaluation (the extension is PENDING_PAYMENT server-side from here on)
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
@@ -300,6 +376,8 @@ export default function ExtensionScreen() {
   const [heldFreeKm, setHeldFreeKm] = useState<ExtensionFreeKm | null>(null);
   // Festival / weekend parts of the committed charge
   const [heldShare, setHeldShare] = useState<SpecialShare[] | null>(null);
+  // A monthly renewal's committed breakdown
+  const [heldRenewal, setHeldRenewal] = useState<RenewalBreakdown | null>(null);
   // The return before the commit, and the car's next booking after it (commit response)
   const [heldFrom, setHeldFrom] = useState<string | null>(null);
   const [heldAvailability, setHeldAvailability] = useState<ExtensionCarAvailability | null>(null);
@@ -546,6 +624,11 @@ export default function ExtensionScreen() {
         d?.specialShare ??
           (resolution === 'PARTIAL_EXTENSION' ? opt?.specialShare ?? null : evaluation.pricing.specialShare ?? null),
       );
+      setHeldRenewal(
+        d?.renewal !== undefined
+          ? d.renewal
+          : resolution === 'PARTIAL_EXTENSION' ? opt?.renewal ?? null : evaluation.pricing.renewal ?? null,
+      );
       setPhase('collect');
     } catch (err: any) {
       if (handleShiftRequired(err)) return;
@@ -667,7 +750,7 @@ export default function ExtensionScreen() {
           <Ionicons name="arrow-back" size={22} color={busy ? Colors.ink4 : Colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Extend Booking</Text>
+          <Text style={styles.title}>{isMonthly ? 'Renew Monthly Rental' : 'Extend Booking'}</Text>
           <Text style={styles.stepText}>Step {phase === 'select' ? 1 : phase === 'resolve' ? 2 : 3} of 3</Text>
         </View>
       </View>
@@ -702,31 +785,79 @@ export default function ExtensionScreen() {
         {/* ── Step 1: new return date + time ── */}
         {phase === 'select' && !notExtendable && baseEnd && newEnd && (
           <>
-            <Text style={styles.sectionLabel}>Extend by</Text>
-            {/* Monthly plan: a second row of whole-month presets */}
-            {(eligibility?.isMonthly ? [PRESETS, MONTH_PRESETS] : [PRESETS]).map((presets, r) => (
-              <View key={r} style={[styles.presetRow, r > 0 && styles.presetRowNext]}>
-                {presets.map((p) => {
-                  const target = new Date(baseEnd.getTime() + p.ms);
-                  const active = newEnd.getTime() === target.getTime();
-                  // Past the limit or outside branch hours: not offered.
-                  const blocked = !returnOk(target);
-                  // After the car's available time: offered, flagged amber
-                  const past = !blocked && !active && pastAvailable(target);
-                  return (
+            {isMonthly ? (
+              <>
+                <Text style={styles.sectionLabel}>Renew by</Text>
+                <View style={styles.presetRow}>
+                  {RENEW_UNITS.map(({ unit, label }) => {
+                    const count = unit === 'month' ? 1 : renewCount;
+                    const target = new Date(baseEnd.getTime() + renewMs(unit, count));
+                    const active = renewUnit === unit && newEnd.getTime() === target.getTime();
+                    return (
+                      <TouchableOpacity
+                        key={unit}
+                        style={[styles.preset, active && styles.presetActive]}
+                        onPress={() => renewTo(unit, count)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.presetText, active && styles.presetTextActive]}>{label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {renewUnit !== 'month' && (
+                  <View style={styles.stepperRow}>
                     <TouchableOpacity
-                      key={p.label}
-                      style={[styles.preset, past && styles.presetPast, active && styles.presetActive, blocked && styles.presetBlocked]}
-                      onPress={() => { setNewEnd(target); setError(null); }}
-                      disabled={blocked}
-                      activeOpacity={0.85}
+                      style={[styles.stepperBtn, renewCount <= 1 && styles.presetBlocked]}
+                      onPress={() => renewTo(renewUnit, Math.max(1, renewCount - 1))}
+                      disabled={renewCount <= 1}
+                      hitSlop={6}
                     >
-                      <Text style={[styles.presetText, active && styles.presetTextActive]}>{p.label}</Text>
+                      <Ionicons name="remove" size={18} color={Colors.ink} />
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
+                    <Text style={styles.stepperValue}>
+                      {renewCount} {renewUnit === 'days' ? (renewCount === 1 ? 'day' : 'days') : renewCount === 1 ? 'week' : 'weeks'}
+                    </Text>
+                    <TouchableOpacity style={styles.stepperBtn} onPress={() => renewTo(renewUnit, renewCount + 1)} hitSlop={6}>
+                      <Ionicons name="add" size={18} color={Colors.ink} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {!returnOk(newEnd) ? (
+                  <Text style={[styles.holdNote, styles.renewalWarn]}>
+                    This return is past the renewal limit or outside branch hours — pick another date or time below.
+                  </Text>
+                ) : null}
+                <Text style={styles.holdNote}>
+                  Days and weeks are priced at the car's daily rate with the branch's duration discount; each full 30 days at exactly its monthly price (no discount). Or pick any return date below.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.sectionLabel}>Extend by</Text>
+                <View style={styles.presetRow}>
+                  {PRESETS.map((p) => {
+                    const target = new Date(baseEnd.getTime() + p.ms);
+                    const active = newEnd.getTime() === target.getTime();
+                    // Past the limit or outside branch hours: not offered.
+                    const blocked = !returnOk(target);
+                    // After the car's available time: offered, flagged amber
+                    const past = !blocked && !active && pastAvailable(target);
+                    return (
+                      <TouchableOpacity
+                        key={p.label}
+                        style={[styles.preset, past && styles.presetPast, active && styles.presetActive, blocked && styles.presetBlocked]}
+                        onPress={() => { setNewEnd(target); setError(null); }}
+                        disabled={blocked}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.presetText, active && styles.presetTextActive]}>{p.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             <Text style={styles.sectionLabel}>New return date</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll} contentContainerStyle={styles.dayRow}>
@@ -810,9 +941,17 @@ export default function ExtensionScreen() {
               <Row label="Requested return" value={fmt(evaluation.requestedEndAt)} accent />
               {quotedLength ? <Row label="Extra time" value={quotedLength} /> : null}
               {evaluation.pricing.extensionFreeKm ? <FreeKmRows freeKm={evaluation.pricing.extensionFreeKm} /> : null}
+              {evaluation.pricing.renewal ? (
+                <>
+                  <View style={styles.divider} />
+                  <RenewalRows renewal={evaluation.pricing.renewal} />
+                </>
+              ) : null}
               <View style={styles.divider} />
               <View style={styles.row}>
-                <Text style={styles.label}>{quotedGst ? 'Additional due (GST included)' : 'Additional due'}</Text>
+                <Text style={styles.label}>
+                  {isMonthly ? 'Renewal payable' : 'Additional due'}{quotedGst ? ' (GST included)' : ''}
+                </Text>
                 <Text style={styles.amount}>{inr(evaluation.pricing.additionalAmount)}</Text>
               </View>
               {quotedGst ? <GstIncludedNote split={quotedGst} /> : null}
@@ -921,6 +1060,12 @@ export default function ExtensionScreen() {
                 <Text style={[styles.extendNote, styles.extendNoteAccent]}>{addedLength(heldFrom, heldUntil)}</Text>
               ) : null}
               {heldFreeKm ? <FreeKmRows freeKm={heldFreeKm} /> : null}
+              {heldRenewal ? (
+                <>
+                  <View style={styles.divider} />
+                  <RenewalRows renewal={heldRenewal} />
+                </>
+              ) : null}
               <View style={styles.divider} />
               <View style={styles.row}>
                 <Text style={styles.label}>{dueGst ? 'Amount due (GST included)' : 'Amount due'}</Text>
@@ -998,7 +1143,7 @@ export default function ExtensionScreen() {
                   ? method === 'CREDIT'
                     ? `Put ${inr(amountDue)} on credit`
                     : `Collect ${inr(amountDue)}${method === 'UPI' ? ' via UPI' : method === 'SPLIT' ? ' (split)' : ' cash'}`
-                  : 'Confirm extension'}
+                  : isMonthly ? 'Confirm renewal' : 'Confirm extension'}
               </Text>
             )}
           </TouchableOpacity>
@@ -1053,6 +1198,16 @@ const styles = StyleSheet.create({
   presetTextActive: { color: Colors.white },
   presetBlocked: { opacity: 0.4 },
   presetPast: { backgroundColor: Colors.availLowSoft, borderColor: '#d9770660' },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 8 },
+  stepperBtn: {
+    width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.hairline,
+  },
+  stepperValue: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink, minWidth: 80, textAlign: 'center' },
+  renewalPart: { gap: 2 },
+  renewalLabel: { flexShrink: 1 },
+  renewalDiscount: { color: '#15803d', fontSize: 12 },
+  renewalWarn: { color: '#e53e3e' },
 
   dayScroll: { marginHorizontal: -20 },
   dayRow: { paddingHorizontal: 20, gap: 8 },

@@ -99,14 +99,16 @@ export interface VehicleListParams {
   end?: string;
   limit?: number;
   offset?: number;
+  /** Customer Monthly: 30 days at each car's own monthly price (Daily omits it) */
+  plan?: 'MONTHLY';
 }
 
 export const vehiclesApi = {
   list: (params?: VehicleListParams) =>
     api.get('/api/public/vehicles', { params }),
-  detail: (id: string, params?: { start?: string; end?: string }) =>
+  detail: (id: string, params?: { start?: string; end?: string; plan?: 'MONTHLY' }) =>
     api.get(`/api/public/vehicles/${id}`, { params }),
-  groupDetail: (groupKey: string, params?: { start?: string; end?: string }) =>
+  groupDetail: (groupKey: string, params?: { start?: string; end?: string; plan?: 'MONTHLY' }) =>
     api.get(`/api/public/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
   categories: () => api.get('/api/public/categories'),
   branches: () => api.get('/api/public/branches'),
@@ -132,6 +134,8 @@ export const vehiclesApi = {
     payment_type: 'CASH' | 'ONLINE';
     payment_flow: 'FULL' | 'ADVANCE';
     couponCode?: string;
+    // MONTHLY = exactly 30 days at each car's own monthly price (no coupon); omitted = Daily
+    plan?: 'MONTHLY';
   }) => api.post('/api/public/vehicles/booking', body),
 };
 
@@ -361,10 +365,8 @@ export const employeeApi = {
   // 201 { data: { publicId, status, openedAt, openingCash } }; 409 SHIFT_ALREADY_OPEN,
   // 400 INVALID_OPENING_CASH.
   openShift: (body?: { openingCash: number }) => api.post('/api/employee/payment/shifts', body ?? {}),
-  // 400 DISCREPANCY_EXPLANATION_REQUIRED carries the server's expectedClosing,
-  // openingCash, cashCollected and cashRefunded when the count differs.
-  closeShift: (publicId: string, body: { actualTotal: number; discrepancyExplanation?: string }) =>
-    api.post(`/api/employee/payment/shifts/${publicId}/close`, body),
+  // No closeShift (Oct 2026): the branch manager closes shifts at the cash
+  // handover; the old endpoint answers 403 SHIFT_CLOSE_MANAGER_ONLY.
   // Own shift history across every branch (#22): MyShiftsResponse.
   getMyShifts: (params?: MyShiftsParams) => api.get('/api/employee/payment/shifts/me', { params }),
   // One own shift with its transactions: { data: ShiftDetail }; 404 SHIFT_NOT_FOUND.
@@ -669,14 +671,16 @@ export const employeeApi = {
     end?: string;
     limit?: number;
     offset?: number;
+    /** Counter monthly plan: months at exactly the monthly price, as create charges */
+    plan?: 'MONTHLY';
   }) => api.get('/api/employee/vehicles/search', { params }),
-  vehicleGroupDetail: (groupKey: string, params?: { start?: string; end?: string }) =>
+  vehicleGroupDetail: (groupKey: string, params?: { start?: string; end?: string; plan?: 'MONTHLY' }) =>
     api.get(`/api/employee/vehicles/group/${encodeURIComponent(groupKey)}`, { params }),
-  vehicleDetail: (id: string, params?: { start?: string; end?: string }) =>
+  vehicleDetail: (id: string, params?: { start?: string; end?: string; plan?: 'MONTHLY' }) =>
     api.get(`/api/employee/vehicles/${id}`, { params }),
   // Cars whose registration number contains q (spaces / hyphens ignored), one
   // row each, priced for the dates; unbookable ones come with the reason.
-  searchVehiclesByRegNo: (params: { q: string; start: string; end: string }) =>
+  searchVehiclesByRegNo: (params: { q: string; start: string; end: string; plan?: 'MONTHLY' }) =>
     api.get('/api/employee/vehicles/search-reg', { params }),
 
   // ── walk-in booking create / hold / pay ───────────────────────────────────

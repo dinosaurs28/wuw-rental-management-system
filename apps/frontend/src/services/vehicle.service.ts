@@ -20,6 +20,8 @@ export interface VehicleFilters {
   start?: string;
   end?: string;
   useCases?: VehicleUseCase[];
+  /** Customer search: MONTHLY = 30 days at each car's own monthly price (Daily omits it) */
+  plan?: "STANDARD" | "MONTHLY";
 }
 
 export interface VehicleImage {
@@ -40,6 +42,8 @@ export interface PublicVehicle {
   branchPublicId?: string;
   availableCount: number;
   useCases?: VehicleUseCase[];
+  /** Monthly results only: the shown car's monthly price / free km */
+  monthly?: MonthlyPlanInfo;
   imageUrl: VehicleImage[];
   pricing: {
     daily: number;
@@ -131,6 +135,9 @@ export type BilledAsType = "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY" | "M
 
 // Group details response (from /public/vehicles/group/:groupKey)
 export interface VehicleGroupDetails {
+  /** Monthly details only (plan=MONTHLY): bookable false = "Monthly price not set" */
+  plan?: "MONTHLY";
+  monthly?: MonthlyPlanInfo;
   groupKey: string;
   make: string;
   model: string;
@@ -272,6 +279,8 @@ export const fetchPublicVehicles = async (
     if (filters.end) params.append("end", filters.end);
     if (filters.useCases && filters.useCases.length > 0)
       params.append("useCases", filters.useCases.join(","));
+    // Monthly (30 days at each car's monthly price) — Daily sends no plan
+    if (filters.plan === "MONTHLY") params.append("plan", "MONTHLY");
 
     const response = await axios.get<PublicVehiclesResponse>(
       `${API_URL}/public/vehicles`,
@@ -320,6 +329,9 @@ export const fetchVehicles = fetchPublicVehicles;
 
 // Vehicle Details Types
 export interface VehicleDetails {
+  /** Monthly details only (plan=MONTHLY): bookable false = "Monthly price not set" */
+  plan?: "MONTHLY";
+  monthly?: MonthlyPlanInfo;
   publicId: string;
   make: string;
   model: string;
@@ -447,18 +459,30 @@ export interface VehicleDetailsParams {
   vehicleId: string;
   startDate?: string;
   endDate?: string;
+  /** Monthly: 30 days at the car's own monthly price (Daily sends no plan) */
+  plan?: "STANDARD" | "MONTHLY";
+}
+
+/** Monthly results / details: the car's monthly price (null = "Monthly price not set"). */
+export interface MonthlyPlanInfo {
+  plan: "MONTHLY";
+  days: number;
+  priceMonthly: number | null;
+  freeKmMonthly: number | null;
+  bookable: boolean;
 }
 
 export const fetchVehicleGroupDetails = async (
   groupKey: string,
   startDate?: string,
   endDate?: string,
+  plan?: "STANDARD" | "MONTHLY",
 ): Promise<VehicleGroupDetailsResponse> => {
   try {
     const response = await axios.get<VehicleGroupDetailsResponse>(
       `${API_URL}/public/vehicles/group/${encodeURIComponent(groupKey)}`,
       {
-        params: { start: startDate, end: endDate },
+        params: { start: startDate, end: endDate, ...(plan === "MONTHLY" ? { plan } : {}) },
         withCredentials: true,
       },
     );
@@ -479,6 +503,7 @@ export const fetchVehicleDetails = async (
         params: {
           start: params.startDate,
           end: params.endDate,
+          ...(params.plan === "MONTHLY" ? { plan: "MONTHLY" } : {}),
         },
         withCredentials: true,
       },

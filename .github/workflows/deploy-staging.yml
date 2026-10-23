@@ -193,7 +193,10 @@ jobs:
               20261023090000_customer_refund \
               20261024090000_booking_locks \
               20261025090000_payment_void \
-              20261026090000_operation_notes
+              20261026090000_operation_notes \
+              20261027120000_monthly_expiry_reminder \
+              20261028100000_cash_shift_manager_close \
+              20261028110000_financials_paid_at_index
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

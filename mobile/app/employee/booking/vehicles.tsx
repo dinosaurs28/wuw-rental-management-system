@@ -292,11 +292,13 @@ export default function WalkinVehiclesScreen() {
   });
 
   const { data: vehicles = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['employee', 'walkin-vehicles', startISO, endISO, category, search, sort],
+    queryKey: ['employee', 'walkin-vehicles', startISO, endISO, category, search, sort, monthly],
     queryFn: async () => {
       const res = await employeeApi.searchVehicles({
         start: startISO,
         end: endISO,
+        // Monthly plan: listed (and grouped) at the price create charges
+        ...(monthly ? { plan: 'MONTHLY' as const } : {}),
         ...(category !== 'all' ? { category } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
         ...(sort !== 'default' ? { sort } : {}),
@@ -313,9 +315,14 @@ export default function WalkinVehiclesScreen() {
     isError: regError,
     refetch: refetchReg,
   } = useQuery({
-    queryKey: ['employee', 'walkin-reg-search', startISO, endISO, regTerm],
+    queryKey: ['employee', 'walkin-reg-search', startISO, endISO, regTerm, monthly],
     queryFn: async () => {
-      const res = await employeeApi.searchVehiclesByRegNo({ q: regTerm, start: startISO, end: endISO });
+      const res = await employeeApi.searchVehiclesByRegNo({
+        q: regTerm,
+        start: startISO,
+        end: endISO,
+        ...(monthly ? { plan: 'MONTHLY' as const } : {}),
+      });
       return (res.data?.data ?? []) as RegVehicle[];
     },
     enabled: !!customer && regMode && regTerm.length >= 2,
@@ -376,7 +383,7 @@ export default function WalkinVehiclesScreen() {
     const { start, end } = times;
     setSelecting(card.groupKey);
     try {
-      const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start, end });
+      const res = await employeeApi.vehicleGroupDetail(card.groupKey, { start, end, ...(monthly ? { plan: 'MONTHLY' as const } : {}) });
       const d = res.data?.data;
       setDates(start, end);
       setStorePlan(plan);
@@ -408,7 +415,7 @@ export default function WalkinVehiclesScreen() {
     const { start, end } = times;
     setSelecting(car.publicId);
     try {
-      const res = await employeeApi.vehicleDetail(car.publicId, { start, end });
+      const res = await employeeApi.vehicleDetail(car.publicId, { start, end, ...(monthly ? { plan: 'MONTHLY' as const } : {}) });
       const d = res.data?.data;
       // Re-checked for the (possibly bumped) times: taken meanwhile → stop here
       if (d?.availability === false) {

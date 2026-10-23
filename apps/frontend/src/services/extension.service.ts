@@ -44,8 +44,41 @@ export interface ExtensionFreeKm {
   minutesWithoutKm: number;
   freeKm24Hour: number;
   freeKm12Hour: number;
+  /** Monthly renewal: whole 30-day months that earned freeKmMonthly each. */
+  months?: number;
+  freeKmMonthly?: number;
   /** e.g. "150 km for 1 day; no km for the other 2 h". */
   label: string;
+}
+
+/** One part of a monthly renewal's charge (GST-inclusive 2-dp strings). */
+export interface RenewalPart {
+  part: "MONTHS" | "DAYS";
+  /** MONTHLY = the vehicle's monthly price; DAILY = its daily rate with the BM's duration slab */
+  rate: "MONTHLY" | "DAILY";
+  /** e.g. "1 month at the monthly price", "15 days at the daily rate" */
+  label: string;
+  from: string;
+  to: string;
+  price: string;
+  discount: string;
+  discountLabel: string | null;
+  total: string;
+}
+
+/**
+ * A monthly booking's renewal (staff only; null for other bookings, absent on
+ * older servers): whole 30-day months at the monthly price + the rest at the
+ * daily rate, each with its duration slab.
+ */
+export interface RenewalBreakdown {
+  months: number;
+  remainderMinutes: number;
+  /** e.g. "1 month + 15 days", "2 weeks" */
+  label: string;
+  /** The car has no monthly price — its months were priced at the daily rate. */
+  monthlyPriceMissing: boolean;
+  parts: RenewalPart[];
 }
 
 /**
@@ -71,6 +104,8 @@ export interface ResolutionOption extends ExtensionGstSplit {
   newTotalFinal: string;
   /** A partial option's festival / weekend parts. */
   specialShare?: ExtensionSpecialShare[];
+  /** A partial option's renewal breakdown (monthly bookings). */
+  renewal?: RenewalBreakdown | null;
   /** Free km this option adds (a partial option: up to partialNewEndAt). */
   extensionFreeKm?: ExtensionFreeKm | null;
 }
@@ -106,6 +141,8 @@ export interface ExtensionPricing extends ExtensionGstSplit {
   extensionFreeKm?: ExtensionFreeKm | null;
   /** Festival / weekend parts of additionalAmount (staff only; absent on older servers). */
   specialShare?: ExtensionSpecialShare[];
+  /** Monthly booking: the renewal breakdown (null otherwise; absent on older servers). */
+  renewal?: RenewalBreakdown | null;
 }
 
 /**
@@ -161,6 +198,8 @@ export interface BookingExtension extends ExtensionGstSplit {
   newTotalFinal: string;
   resolutionType?: ExtensionResolutionType;
   vehicleSwapOccurred: boolean;
+  /** A monthly booking's extension — shown as "Renewal" (absent on older servers). */
+  isRenewal?: boolean;
   actorPublicId: string;
   actorRole: string;
   notes?: string;
@@ -200,6 +239,8 @@ export interface CommitExtensionResult extends ExtensionGstSplit, ExtensionCarAv
   };
   /** Festival / weekend parts of additionalAmount (staff only). */
   specialShare?: ExtensionSpecialShare[];
+  /** Monthly booking: the committed renewal's breakdown (null otherwise). */
+  renewal?: RenewalBreakdown | null;
   /** True when the charge was deferred to the booking's pickup payment session. */
   usePaymentSession?: boolean;
   /** Free km the committed extension adds to the drop allowance. */

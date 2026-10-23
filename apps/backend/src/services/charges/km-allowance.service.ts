@@ -23,7 +23,7 @@ import { DateTime } from "luxon";
 import { PricingEngineService, heldToClosingOf, specialRulesOf, weekendDaysOf } from "../pricing/pricing-engine.service.js";
 import type { TxClient } from "../payment/paymentSession.service.js";
 import { isLiveExtension, type TimelineExtensionInput } from "./rental-timeline.service.js";
-import { extensionFreeKm, extensionKmMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
+import { extensionFreeKmFor, extensionKmMinutes, loadFreeKmRates, type FreeKmRates } from "./extension-km.js";
 import { segmentKmShares, swapKmRecorded, swapKmSnapshot, type SwapKmRecorded } from "./segment-km.js";
 
 const pricingEngine = new PricingEngineService();
@@ -201,7 +201,9 @@ async function sumExtensionFreeKm(
   const car = vehicle ?? (item ? { vehicleId: item.vehicleId, categoryId: item.vehicle.categoryId } : null);
   const rates: FreeKmRates | null = car ? await loadFreeKmRates(car, booking.branchId) : null;
   if (!rates) throw new Error("The vehicle's free-km rates aren't configured");
-  return extensionMinutesList.reduce((sum, minutes) => sum + extensionFreeKm(minutes, rates).km, 0);
+  // A monthly booking's renewals earn freeKmMonthly per whole 30-day month (extension-km.ts)
+  const monthly = booking.rentalPeriodType === "MONTHLY";
+  return extensionMinutesList.reduce((sum, minutes) => sum + extensionFreeKmFor(minutes, rates, { monthly }).km, 0);
 }
 
 /**

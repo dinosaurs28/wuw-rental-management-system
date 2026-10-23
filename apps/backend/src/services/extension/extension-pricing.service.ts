@@ -8,9 +8,12 @@ import {
   extensionCharge,
   extensionSpecialShare,
   extensionWindows,
+  renewalBreakdown,
+  renewalTermTotal,
   type ExtensionChargeTerm,
   type ExtensionPricingMode,
   type ExtensionSpecialShare,
+  type RenewalBreakdown,
 } from "./extension-charge.js";
 
 export interface ExtensionPricingResult {
@@ -39,10 +42,12 @@ export interface ExtensionPricingResult {
   /** Rental length before and after the extension, in hours */
   originalHours: number;
   extensionHours: number;
-  /** ADDED_TIME: the added window on its own; DELTA: monthly bookings (extension-charge.ts) */
+  /** ADDED_TIME: the added window on its own; MONTHLY_RENEWAL: monthly bookings (extension-charge.ts) */
   pricingMode: ExtensionPricingMode;
   /** Festival / weekend parts of additionalAmount (staff only — never sent to customers) */
   specialShare: ExtensionSpecialShare[];
+  /** MONTHLY_RENEWAL: the renewal's length and each part's rate / discount (staff screens); absent otherwise */
+  renewal?: RenewalBreakdown;
 }
 
 /** The BookingExtension columns that hold an extension's GST split. */
@@ -89,17 +94,16 @@ const hoursBetween = (from: DateTime, to: DateTime) =>
   Math.round(to.diff(from, "hours").hours * 100) / 100;
 
 /**
- * The booking's coupon as the extension applies it (extension-charge.ts): any
- * coupon for a MONTHLY booking (DELTA — both windows, so a flat coupon cancels
- * out), a PERCENTAGE coupon only for the added window (a flat coupon gave its
- * amount once, on the booking). Found by its rule id, else by its code.
+ * The booking's coupon as the extension applies it (extension-charge.ts): a
+ * PERCENTAGE coupon only, for the added window (or each part of a monthly
+ * renewal) — a flat coupon gave its amount once, on the booking. Found by its
+ * rule id, else by its code.
  */
 async function extensionCouponCode(
   booking: { couponCode: string | null; discountRuleId: number | null },
-  mode: ExtensionPricingMode,
 ): Promise<string | undefined> {
   const code = await bookingCouponCode(booking);
-  if (!code || mode === "DELTA") return code;
+  if (!code) return code;
   const rule = booking.discountRuleId != null
     ? await prisma.discountRule.findUnique({ where: { id: booking.discountRuleId }, select: { discountType: true } })
     : await prisma.discountRule.findUnique({ where: { code }, select: { discountType: true } });
@@ -110,8 +114,9 @@ class ExtensionPricingService {
   /**
    * Price an extension of a booking to `newEndAt` (extension-charge.ts):
    * ADDED_TIME — the engine's GST-inclusive rent for [current return,
-   * newEndAt] on its own; DELTA (monthly bookings) — the rent over [pickup,
-   * newEndAt] less the same over [pickup, current return]. Summed across every
+   * newEndAt] on its own; MONTHLY_RENEWAL (monthly bookings) — the added
+   * window's whole 30-day months and its remainder, each priced on its own
+   * (the monthly price / the daily rate, each with its duration slab). Summed across every
    * vehicle on the booking, clamped at ₹0, and split into taxableAmount + CGST
    * + SGST (splitRentTotal). newTotalFinal = booking.totalFinal +
    * additionalAmount.
@@ -162,7 +167,7 @@ class ExtensionPricingService {
     // its validity window / usage limits aren't re-checked. It applies once per
     // booking (first vehicle), as at booking creation. Found by its rule id, so a
     // code changed since the booking was made still resolves.
-    const couponCode = await extensionCouponCode(booking, mode);
+    const couponCode = await extensionCouponCode(booking);
     const priceAllItems = (from: Date, to: Date) =>
       Promise.all(
         booking.items.map((item, index) =>
@@ -181,15 +186,14 @@ class ExtensionPricingService {
               paymentPlan: booking.isAdvancePayment ? "ADVANCE" : "FULL",
               excludeBookingId: booking.id,
               couponLockedIn: Boolean(couponCode),
-              // DELTA: booked as 12 hours held to closing (item 6) — both windows bill
-              // at least 12 h. The added window is billed by its clock length (never
-              // the 12-hour package: a short evening extension goes by the hour)
-              heldToClosing: mode === "DELTA" ? heldToClosingOf(booking.pricingSnapshot) : false,
+              // The added window is billed by its clock length (never the 12-hour
+              // package: a short evening extension goes by the hour)
+              heldToClosing: false,
               // Weekend blocks by the weekend days it was booked with (none before weekend rates)
               weekendDays: weekendDaysOf(booking.pricingSnapshot),
               // Festival rules: today's (no specialRules) — the added time picks up a
-              // festival, even one created after the booking (DELTA: both windows, so
-              // the booked period cancels). Confirming the extension stores the rules
+              // festival, even one created after the booking (a renewal's months are
+              // never festival blocks). Confirming the extension stores the rules
               // touching the added time (recordBookingSpecialRules)
             },
           ),
@@ -197,19 +201,22 @@ class ExtensionPricingService {
       );
 
     const priced = await Promise.all(
-      terms.map(async (t) => ({ sign: t.sign, results: await priceAllItems(t.from, t.to) })),
+      terms.map(async (t) => ({ ...t, results: await priceAllItems(t.from, t.to) })),
     );
-    const chargeTerms: ExtensionChargeTerm[] = priced.flatMap(({ sign, results }) =>
+    // A renewal's months at the monthly price cost exactly that (no slab / coupon)
+    const totalOf = (part: (typeof priced)[number]["part"], r: PricingResult) =>
+      renewalTermTotal(part, r.pricingBreakdown.billedAsType, r.gross.price, r.gross.total);
+    const chargeTerms: ExtensionChargeTerm[] = priced.flatMap(({ sign, part, results }) =>
       results.map((r) => ({
         sign,
         grossPrice: r.gross.price,
-        grossTotal: r.gross.total,
+        grossTotal: totalOf(part, r),
         weekend: r.pricingBreakdown.weekend,
         festival: r.pricingBreakdown.festival,
       })),
     );
-    // The priced window to the new end: the added window, or (DELTA) the whole new one
-    const newPrices = priced[0]?.results ?? [];
+    // The priced window to the new end: the added window (a renewal: its last part)
+    const newPrices = priced[priced.length - 1]?.results ?? [];
 
     // Compute days for the new full duration
     const newDays = Math.max(1, Math.ceil(endAt.diff(startAt, "days").days));
@@ -240,6 +247,22 @@ class ExtensionPricingService {
       extensionHours: hoursBetween(currentEndAt, endAt),
       pricingMode: mode,
       specialShare: extensionSpecialShare(chargeTerms),
+      ...(mode === "MONTHLY_RENEWAL" && {
+        renewal: renewalBreakdown(
+          currentEnd,
+          newEndAt,
+          priced.map((t) => ({
+            part: t.part ?? "DAYS",
+            from: t.from,
+            to: t.to,
+            billedAs: t.results[0]?.pricingBreakdown.billedAs ?? "",
+            billedAsType: t.results[0]?.pricingBreakdown.billedAsType ?? "",
+            grossPrice: sumOf(t.results, (r) => r.gross.price),
+            grossTotal: sumOf(t.results, (r) => totalOf(t.part, r)),
+            durationDiscountLabel: t.results[0]?.durationDiscountLabel ?? null,
+          })),
+        ),
+      }),
     };
   }
 
@@ -249,11 +272,25 @@ class ExtensionPricingService {
    * (the response then just shows no part).
    */
   async specialShareFor(bookingId: number, fromEndAt: Date, toEndAt: Date): Promise<ExtensionSpecialShare[]> {
+    return (await this.staffExtrasFor(bookingId, fromEndAt, toEndAt)).specialShare;
+  }
+
+  /**
+   * The staff-only extras of an extension's charge, re-priced for [fromEndAt,
+   * toEndAt]: its festival / weekend parts and (a monthly renewal) its
+   * renewal breakdown. Never throws ([] / null when it can't be worked out).
+   */
+  async staffExtrasFor(
+    bookingId: number,
+    fromEndAt: Date,
+    toEndAt: Date,
+  ): Promise<{ specialShare: ExtensionSpecialShare[]; renewal: RenewalBreakdown | null }> {
     try {
-      return (await this.recalculate(bookingId, toEndAt, fromEndAt)).specialShare;
+      const p = await this.recalculate(bookingId, toEndAt, fromEndAt);
+      return { specialShare: p.specialShare, renewal: p.renewal ?? null };
     } catch (err) {
       console.warn(`[extension-pricing] Special share unavailable for booking ${bookingId}:`, err);
-      return [];
+      return { specialShare: [], renewal: null };
     }
   }
 }

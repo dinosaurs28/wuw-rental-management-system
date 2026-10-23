@@ -39,6 +39,7 @@ import {
   refreshPackageRange,
   type PackageRange,
 } from '../../lib/packages';
+import { CUSTOMER_MONTHLY_LABEL, monthlyEnd, type BookingPlan } from '../../lib/monthlyPlan';
 
 export interface SearchQuery {
   branchId: string;
@@ -47,6 +48,8 @@ export interface SearchQuery {
   end: string; // ISO
   /** Required trip type — the list is filtered by it (useCases). */
   tripType: VehicleUseCase;
+  /** Daily (STANDARD, the package flow) or Monthly: exactly 30 days from the pickup. */
+  plan: BookingPlan;
 }
 
 interface Branch {
@@ -62,6 +65,8 @@ interface Props {
   initialStart?: string;
   initialEnd?: string;
   ctaLabel?: string;
+  /** Daily / Monthly the card starts on (e.g. the search being edited). */
+  initialPlan?: BookingPlan;
   onSubmit: (q: SearchQuery) => void;
 }
 
@@ -79,8 +84,13 @@ export default function SearchCard({
   initialStart,
   initialEnd,
   ctaLabel = 'Show offers',
+  initialPlan = 'STANDARD',
   onSubmit,
 }: Props) {
+  // Daily / Monthly (client TODO item 1). Monthly: the return is pickup + 30
+  // days (read-only) and the package chips are hidden; Daily is unchanged.
+  const [plan, setPlan] = useState<BookingPlan>(initialPlan);
+  const monthly = plan === 'MONTHLY';
   // Customers book a pickup + a PACKAGE (BRIEF4 P1): "12 hours" or "1 day" …
   // "30 days". The return is pickup + the package — shown, never picked.
   const [pkg, setPkg] = useState(() => initialPackageRange(initialStart, initialEnd));
@@ -91,7 +101,7 @@ export default function SearchCard({
   // whose return the branch wouldn't take becomes the nearest one it would
   // (12 hours past closing returns at closing — client item 6).
   const { data: schedule } = useBranchSchedule(branch?.publicId);
-  const end = packageRangeEnd(pkg, 0, schedule);
+  const end = monthly ? monthlyEnd(pkg.start) : packageRangeEnd(pkg, 0, schedule);
   const fit = useCallback((r: PackageRange) => fitPackageRange(r, { config: schedule }), [schedule]);
   useEffect(() => {
     setPkg((r) => fit(r));
@@ -145,8 +155,9 @@ export default function SearchCard({
       branchId: branch.publicId,
       branchName: branch.name,
       start: next.start.toISOString(),
-      end: packageRangeEnd(next, 0, schedule).toISOString(),
+      end: (monthly ? monthlyEnd(next.start) : packageRangeEnd(next, 0, schedule)).toISOString(),
       tripType,
+      plan,
     });
   };
 
@@ -186,6 +197,32 @@ export default function SearchCard({
 
   return (
     <View style={styles.card}>
+      {/* Daily / Monthly */}
+      <View style={styles.planRow} accessibilityRole="radiogroup">
+        {(['STANDARD', 'MONTHLY'] as const).map((p) => {
+          const active = plan === p;
+          return (
+            <TouchableOpacity
+              key={p}
+              style={[styles.planBtn, active && styles.planBtnActive]}
+              onPress={() => setPlan(p)}
+              activeOpacity={0.85}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+            >
+              <Ionicons
+                name={p === 'MONTHLY' ? 'calendar-number-outline' : 'sunny-outline'}
+                size={15}
+                color={active ? Colors.white : Colors.onDarkMuted}
+              />
+              <Text style={[styles.planText, active && styles.planTextActive]}>
+                {p === 'MONTHLY' ? CUSTOMER_MONTHLY_LABEL : 'Daily'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       {/* Pick-up branch */}
       <TouchableOpacity style={styles.row} onPress={() => setBranchOpen(true)} activeOpacity={0.7}>
         <Ionicons name="location-outline" size={20} color={Colors.white} />
@@ -215,16 +252,23 @@ export default function SearchCard({
         </View>
       </View>
 
-      {/* Package (P1): 12 hours or whole days, up to the 30-day window + branch hours (#2) */}
+      {/* Package (P1): 12 hours or whole days, up to the 30-day window + branch hours (#2);
+          Monthly: a fixed 30 days at each car's monthly price */}
       <View style={styles.extras}>
-        <PackagePicker
-          tone="dark"
-          choices={choices}
-          selectedHours={pkg.hours}
-          onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
-        />
+        {monthly ? (
+          <Text style={styles.monthlyNote}>
+            {CUSTOMER_MONTHLY_LABEL} · return {fmtD(end)}, {timeLabel(timeOf(end))} · each car's monthly price
+          </Text>
+        ) : (
+          <PackagePicker
+            tone="dark"
+            choices={choices}
+            selectedHours={pkg.hours}
+            onSelect={(hours) => setPkg((r) => ({ ...r, hours }))}
+          />
+        )}
         <BranchHoursLine tone="dark" text={rangeHoursLine(schedule, start, end)} />
-        <TimesNotice tone="dark" notice={notice} />
+        {!monthly && <TimesNotice tone="dark" notice={notice} />}
       </View>
       <View style={styles.underline} />
 
@@ -254,13 +298,17 @@ export default function SearchCard({
         startDate={start}
         endDate={end}
         pickupOnly
-        returnFor={(p) => packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule)}
+        returnFor={(p) => (monthly ? monthlyEnd(p) : packageRangeEnd({ start: p, hours: pkg.hours }, 0, schedule))}
         onConfirm={(s) => setPkg((r) => ({ ...r, start: withTime(s, timeOf(r.start)) }))}
         onClose={() => setDateOpen(false)}
         maxStartDay={bookingWindowLastDay()}
         isDayClosed={schedule ? (d) => isClosedDay(schedule, d) : undefined}
         noPickupTimes={schedule ? (d) => noPickupTimesLeft(schedule, d) : undefined}
-        note={`12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`}
+        note={
+          monthly
+            ? `${CUSTOMER_MONTHLY_LABEL} · pickup up to ${ADVANCE_BOOKING_DAYS} days ahead`
+            : `12 hours or 1–${MAX_RENTAL_DAYS} days · book up to ${ADVANCE_BOOKING_DAYS} days ahead`
+        }
       />
       <TimeFieldPicker
         visible={pickupOpen}
@@ -299,6 +347,19 @@ const styles = StyleSheet.create({
   dash: { fontFamily: Fonts.body, fontSize: 16, color: Colors.onDarkMuted, marginHorizontal: 2 },
   underline: { height: 1, backgroundColor: Colors.hairlineOnDark, marginLeft: 34 },
   extras: { marginLeft: 34, paddingBottom: 16, gap: 10 },
+  planRow: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  planBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+  planBtnActive: { backgroundColor: Colors.orange },
+  planText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDarkMuted },
+  planTextActive: { fontFamily: Fonts.bodySemiBold, color: Colors.white },
+  monthlyNote: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.onDark, lineHeight: 20 },
   tripWrap: { flex: 1 },
 
   cta: {

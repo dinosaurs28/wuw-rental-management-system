@@ -28,6 +28,9 @@ import type {
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
 import { snapPickupPastClosedToday } from "@/utils/bookingPickers";
+import { addDays } from "date-fns";
+import { monthlyReturn } from "@/utils/customerMonthly";
+import type { SearchPlan } from "@/store/search.store";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -41,9 +44,12 @@ export const VehiclesPage = () => {
     returnDate,
     pickupTime: storePickupTime,
     returnTime: storeReturnTime,
+    plan,
     setSearchCriteria,
     resetSearch,
   } = useSearchStore();
+  // Monthly (client TODO item 1): 30 days from the pickup at each car's monthly price
+  const monthly = plan === "MONTHLY";
 
   // Branches data
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
@@ -139,6 +145,7 @@ export const VehiclesPage = () => {
     if (category && category !== "all") f.category = category;
     if (debouncedSearch) f.search = debouncedSearch;
     if (tripType) f.useCases = [tripType];
+    if (monthly) f.plan = "MONTHLY";
     if (sortBy && sortBy !== "default")
       f.sort = sortBy as "price_low_to_high" | "price_high_to_low";
 
@@ -171,6 +178,7 @@ export const VehiclesPage = () => {
     pickupTime,
     returnTime,
     currentPage,
+    monthly,
   ]);
 
   // Fetch vehicles - only when branch is selected, date range is valid and a
@@ -258,6 +266,21 @@ export const VehiclesPage = () => {
       setSearchCriteria({ tripType: next });
     },
     [setSearchCriteria],
+  );
+
+  // Daily ↔ Monthly: Monthly keeps the return at pickup + 30 days; Daily starts at 1 day
+  const handlePlanChange = useCallback(
+    (next: SearchPlan) => {
+      const base = selectedPickupDate ?? new Date();
+      const ret =
+        next === "MONTHLY"
+          ? monthlyReturn(base, pickupTime)
+          : { returnDate: addDays(new Date(base.getFullYear(), base.getMonth(), base.getDate()), 1), returnTime: pickupTime };
+      setSelectedReturnDate(ret.returnDate);
+      setReturnTime(ret.returnTime);
+      setSearchCriteria({ plan: next, ...ret });
+    },
+    [selectedPickupDate, pickupTime, setSearchCriteria],
   );
 
   const handleSortChange = useCallback((sort: string) => {
@@ -356,6 +379,8 @@ export const VehiclesPage = () => {
 
   // Write-back: when return is bumped, persist the adjusted date/time to local state + store
   useEffect(() => {
+    // Monthly: the return is fixed at pickup + 30 days (never moved)
+    if (monthly) return;
     if (!adjustedEndDateTime || scheduleVerdict?.status !== "RETURN_BUMPED") return;
     const adjusted = new Date(adjustedEndDateTime);
     if (isNaN(adjusted.getTime())) return;
@@ -366,7 +391,7 @@ export const VehiclesPage = () => {
     setSelectedReturnDate(newDate);
     setReturnTime(newTime);
     setSearchCriteria({ returnDate: newDate, returnTime: newTime });
-  }, [adjustedEndDateTime, scheduleVerdict?.status, setSearchCriteria]);
+  }, [adjustedEndDateTime, scheduleVerdict?.status, setSearchCriteria, monthly]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
@@ -481,6 +506,8 @@ export const VehiclesPage = () => {
             tripType={tripType}
             onTripTypeChange={handleTripTypeChange}
             packageMode="customer"
+            customerPlan={plan}
+            onCustomerPlanChange={handlePlanChange}
           />
         </div>
 

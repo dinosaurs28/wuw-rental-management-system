@@ -28,6 +28,15 @@ import {
 import { format } from "date-fns";
 import { gstSplitText } from "@/lib/gst";
 
+/** A monthly booking's extension is a renewal (client TODO 7). */
+function RenewalTag() {
+  return (
+    <span className="mr-1.5 inline-flex items-center rounded bg-orange-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-orange-700">
+      Renewal
+    </span>
+  );
+}
+
 const resolutionLabels: Record<string, string> = {
   SAME_VEHICLE: "Same vehicle",
   SWAP_CURRENT_TO_OTHER: "Vehicle swapped",
@@ -243,6 +252,7 @@ export function ExtensionsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">
+                        {ext.isRenewal && <RenewalTag />}
                         {ext.resolutionType
                           ? resolutionLabels[ext.resolutionType] ??
                             ext.resolutionType
@@ -287,6 +297,7 @@ export function ExtensionsPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>
+                      {ext.isRenewal && <RenewalTag />}
                       {ext.resolutionType
                         ? resolutionLabels[ext.resolutionType] ??
                           ext.resolutionType

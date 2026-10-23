@@ -135,11 +135,20 @@ export function presetRange(
 
 // ── Labels ──────────────────────────────────────────────────────────────────
 
-export function shiftStatusBadge(s: { status: ShiftStatus | string; reconciledAt?: string | null }): {
+export function shiftStatusBadge(s: {
+  status: ShiftStatus | string;
+  reconciledAt?: string | null;
+  closedByManager?: boolean;
+  result?: 'MATCHED' | 'MISMATCH' | null;
+}): {
   label: string;
   tone: BadgeTone;
 } {
   if (s.status === 'OPEN') return { label: 'Open', tone: 'info' };
+  // Closed by the branch manager at the cash handover (Oct 2026)
+  if (s.closedByManager) {
+    return s.result === 'MISMATCH' ? { label: 'Closed · mismatch', tone: 'warn' } : { label: 'Closed · matched', tone: 'good' };
+  }
   if (s.status === 'DISCREPANCY_FLAGGED') return { label: 'Flagged', tone: 'warn' };
   if (s.reconciledAt) return { label: 'Reconciled', tone: 'good' };
   return { label: 'Closed', tone: 'neutral' };

@@ -54,6 +54,8 @@ import { gstLabel } from "@/lib/gst";
 import { durationDiscountTitle } from "@/lib/paymentPlan";
 import { format } from "date-fns";
 import { formatRentalLength } from "@/utils/formatters";
+import { useSearchStore } from "@/store/search.store";
+import { CUSTOMER_MONTHLY_LABEL } from "@/utils/customerMonthly";
 import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 // Response types from API
@@ -198,7 +200,10 @@ export const BookingConfirmationPage = () => {
           // Advance only (item 18): the plan shown on review (the server's
           // options). Without options it's left to the server — never a guess.
           ...(useVehicleRentalStore.getState().paymentOptions ? { payment_flow: paymentFlow } : {}),
-          ...(couponCode ? { couponCode } : {}),
+          // Customer Monthly: exactly 30 days at the car's monthly price (no coupon)
+          ...(useSearchStore.getState().plan === "MONTHLY"
+            ? { plan: "MONTHLY" as const }
+            : couponCode ? { couponCode } : {}),
         });
 
         // Capture expiry for countdown timer
@@ -797,7 +802,8 @@ export const BookingConfirmationPage = () => {
                   Duration
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {bookingData?.billedAs ||
+                  {(useSearchStore.getState().plan === "MONTHLY" && CUSTOMER_MONTHLY_LABEL) ||
+                    bookingData?.billedAs ||
                     formatRentalLength(
                       bookingData?.startDate ?? (startDate && startTime ? `${startDate}T${startTime}` : null),
                       bookingData?.endDate ?? (endDate && endTime ? `${endDate}T${endTime}` : null),

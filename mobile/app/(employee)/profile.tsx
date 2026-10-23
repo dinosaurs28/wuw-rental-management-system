@@ -104,10 +104,11 @@ export default function EmployeeProfile() {
               onPress={() => router.push('/employee/shift/open')}
             />
             <View style={styles.divider} />
+            {/* Closing is the branch manager's job now (Oct 2026); this shows the running totals */}
             <MenuItem
-              icon="checkmark-circle-outline"
-              label="Close Current Shift"
-              onPress={() => router.push('/employee/shift/close')}
+              icon="wallet-outline"
+              label="Current Shift"
+              onPress={() => router.push('/employee/shift/current' as never)}
             />
             <View style={styles.divider} />
             <MenuItem

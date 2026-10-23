@@ -31,6 +31,8 @@ export interface CreateBookingSummaryRequest {
   payment_type: "CASH" | "ONLINE";
   payment_flow?: "FULL" | "ADVANCE";
   couponCode?: string;
+  /** MONTHLY = exactly 30 days at each vehicle's own monthly price (no coupon). Omitted = daily. */
+  plan?: "STANDARD" | "MONTHLY";
 }
 
 // Types for booking summary response

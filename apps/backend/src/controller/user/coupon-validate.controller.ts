@@ -14,6 +14,11 @@ const validateSchema = z
     endAt: z.string().min(1),
     // Plan the customer picked (optional — older clients omit it)
     paymentFlow: z.enum(["FULL", "ADVANCE"]).optional(),
+    // Booking plan (optional — older clients omit it): MONTHLY takes no coupon
+    plan: z
+      .preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase() : v), z.enum(["STANDARD", "MONTHLY"]))
+      .nullish()
+      .transform((v) => v ?? undefined),
   })
   .refine((d) => d.vehiclePublicId || d.groupKey, {
     message: "Either vehiclePublicId or groupKey is required",
@@ -35,7 +40,7 @@ export const ValidateCustomerCoupon = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.format() });
     }
 
-    const { couponCode, vehiclePublicId, groupKey, startAt, endAt, paymentFlow } = parsed.data;
+    const { couponCode, vehiclePublicId, groupKey, startAt, endAt, paymentFlow, plan } = parsed.data;
 
     // Resolve real customerId from the authenticated user
     const customer = await prisma.user.findUnique({
@@ -52,6 +57,7 @@ export const ValidateCustomerCoupon = async (req: Request, res: Response) => {
       endAt,
       customerId,
       paymentFlow,
+      plan,
     });
     if (result.status !== 200) {
       return res.status(result.status).json({ message: result.message });

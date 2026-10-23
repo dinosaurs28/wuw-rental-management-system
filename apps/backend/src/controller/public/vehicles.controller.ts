@@ -30,6 +30,8 @@ import {
   resolvePaymentOptions,
 } from "../../services/payment/payment-flow.service.js";
 import { isGstRuleMissing } from "../../services/tax/gst.service.js";
+import { CUSTOMER_MONTHLY_DAYS, parseBookingPlan, type BookingPlan } from "@repo/schemas";
+import { hasVehicleMonthlyPrice, MONTHLY_PRICING_SELECT, monthlyPlanInfo } from "../../utils/pricing/monthlyPlan.js";
 
 const pricingEngine = new PricingEngineService();
 
@@ -77,6 +79,23 @@ function parseGroupKey(groupKey: string): { make: string; model: string; categor
   return { make, model, categoryId, branchId };
 }
 
+/**
+ * `?plan=` of the customer endpoints: MONTHLY = the customer monthly booking
+ * (pickup + 30 days, the vehicle's own monthly price — utils/pricing/monthlyPlan.ts).
+ * Absent / STANDARD = the daily flow, unchanged.
+ */
+function readPlanQuery(req: Request, res: Response): BookingPlan | undefined | false {
+  const plan = parseBookingPlan((req.query as any).plan);
+  if (plan === null) {
+    res.status(StatusCode.BAD_REQUEST).json({ code: "INVALID_PLAN", message: "plan must be STANDARD or MONTHLY" });
+    return false;
+  }
+  return plan;
+}
+
+/** Prisma filter: cars with their own monthly price (enabled custom pricing, priceMonthly > 0). */
+const ownMonthlyPriceWhere = { customPricing: { is: { enabled: true, priceMonthly: { gt: 0 } } } } as const;
+
 // ── Listing ───────────────────────────────────────────────────────────────────
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
@@ -96,6 +115,15 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     // Trip-type tags: comma list or repeated key; unknown values are ignored. OR semantics.
     // Legacy tags from older app builds (HIGHWAY / HILL_STATION / LONG_DRIVE) filter as OUT_OF_UDUPI.
     const useCaseFilter = parseUseCasesFilter((req.query as any).useCases).sort();
+    const plan = readPlanQuery(req, res);
+    if (plan === false) return;
+    const monthly = plan === "MONTHLY";
+    if (monthly && !start) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        code: "MONTHLY_START_REQUIRED",
+        message: "Choose a pickup date and time to see monthly prices.",
+      });
+    }
 
     // Parse and validate dates
     let startDate: DateTime | null = null;
@@ -104,7 +132,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     if (start) {
       startDate = TimezoneService.parseISO(start);
 
-      if (end) {
+      if (monthly) {
+        // Monthly: always pickup + 30 days (the return can't be chosen)
+        endDate = startDate.plus({ days: CUSTOMER_MONTHLY_DAYS });
+      } else if (end) {
         endDate = TimezoneService.parseISO(end);
       } else {
         endDate = startDate.plus({ hours: 24 });
@@ -123,7 +154,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     const cacheKey = `public:vehicles:grouped:${category || "all"}:${branch || "all"}:${
       search || "all"
-    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}:uc=${useCaseFilter.join(",") || "all"}:d${istDayNumber(new Date())}`;
+    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${monthly ? "monthly" : end || "all"}:${limit}:${offset}:uc=${useCaseFilter.join(",") || "all"}:d${istDayNumber(new Date())}`;
     // d = today's IST day: a booking lock's lead starts at 00:00 IST, so a listing
     // cached the day before is never served once the car must be hidden
 
@@ -165,6 +196,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     if (categoryObj) filters.categoryId = categoryObj.id;
     if (branchObj) filters.branchId = branchObj.id;
     if (useCaseFilter.length > 0) filters.useCases = { hasSome: useCaseStoredValues(useCaseFilter) };
+    // Monthly: only cars with their own monthly price (never the branch default)
+    if (monthly) Object.assign(filters, ownMonthlyPriceWhere);
 
     // ── Fetch vehicles (single query, no skip/take — pagination applied after grouping) ───
 
@@ -178,13 +211,14 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           where: { isThumbnail: true },
           select: { file: { select: { url: true } } },
         },
+        ...(monthly && { customPricing: { select: MONTHLY_PRICING_SELECT } }),
       },
       orderBy: { createdAt: "desc" },
     });
     console.timeEnd("[perf] listing:vehicles-query");
 
     if (vehicles.length === 0) {
-      return res.status(StatusCode.OK).json({ count: 0, data: [] });
+      return res.status(StatusCode.OK).json({ count: 0, data: [], ...(monthly && { plan: "MONTHLY" }) });
     }
 
     // ── In-memory search/make/model filters ───────────────────────────────────
@@ -247,7 +281,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     }
 
     if (availableVehicles.length === 0) {
-      return res.status(StatusCode.OK).json({ count: 0, data: [] });
+      return res.status(StatusCode.OK).json({ count: 0, data: [], ...(monthly && { plan: "MONTHLY" }) });
     }
 
     // ── Batch pricing (TASK-007 / TASK-009): at most 2 queries for all vehicles
@@ -259,10 +293,13 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       durationInfo = DurationCalculatorService.calculate(startDate, endDate);
-      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo, {
-        startAt: TimezoneService.toPrisma(startDate),
-        endAt: TimezoneService.toPrisma(endDate),
-      });
+      durationPriceMap = await getBatchListingPrices(
+        availableVehicles,
+        durationInfo,
+        { startAt: TimezoneService.toPrisma(startDate), endAt: TimezoneService.toPrisma(endDate) },
+        // Monthly: exactly the monthly price, no duration slab (user decision Oct 23 2026)
+        monthly ? { monthlyPlan: true } : undefined,
+      );
     } else {
       fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
     }
@@ -294,6 +331,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       };
       /** The car the group is shown with (its images and price) */
       shown: { id: number; status: string; odo: number };
+      /** Monthly results: the shown car's monthly price / free km */
+      monthly?: ReturnType<typeof monthlyPlanInfo>;
       useCases: Set<string>;
     }
 
@@ -368,6 +407,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           pricingDetails,
           shown: { id: v.id, status: v.status, odo: v.odo },
           useCases: new Set(v.useCases),
+          ...(monthly && { monthly: monthlyPlanInfo((v as any).customPricing) }),
         });
       } else {
         existing.availableCount++;
@@ -384,6 +424,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
             ...(weekendDaily !== undefined ? { weekendDaily } : {}),
           };
           existing.pricingDetails = pricingDetails;
+          if (monthly) existing.monthly = monthlyPlanInfo((v as any).customPricing);
         }
       }
     }
@@ -403,6 +444,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       pricing:        g.pricing,
       pricingDetails: g.pricingDetails,
       useCases:       normalizeUseCases(Array.from(g.useCases)),
+      ...(g.monthly && { monthly: g.monthly }),
     }));
 
     if (sort === "price_low_to_high") {
@@ -413,7 +455,16 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     // Paginate grouped results
     const paginatedGroups = allGroups.slice(Number(offset), Number(offset) + Number(limit));
-    const result = { count: allGroups.length, data: paginatedGroups };
+    const result = {
+      count: allGroups.length,
+      data: paginatedGroups,
+      // Monthly results: every price is the 30-day monthly price (endAt = start + 30 days)
+      ...(monthly && startDate && endDate && {
+        plan: "MONTHLY",
+        startDate: TimezoneService.toPrisma(startDate).toISOString(),
+        endDate: TimezoneService.toPrisma(endDate).toISOString(),
+      }),
+    };
 
     // Cache with 30-second TTL (TASK-022)
     try {
@@ -443,13 +494,19 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     const { make, model, categoryId, branchId } = parsed;
 
     const { start, end } = req.query as { start?: string; end?: string };
+    const plan = readPlanQuery(req, res);
+    if (plan === false) return;
+    const monthly = plan === "MONTHLY";
 
     let startDate: DateTime | null = null;
     let endDate: DateTime | null = null;
 
     if (start) {
       startDate = TimezoneService.parseISO(start);
-      endDate = end ? TimezoneService.parseISO(end) : startDate.plus({ hours: 24 });
+      // Monthly: always pickup + 30 days (the return can't be chosen)
+      endDate = monthly
+        ? startDate.plus({ days: CUSTOMER_MONTHLY_DAYS })
+        : end ? TimezoneService.parseISO(end) : startDate.plus({ hours: 24 });
       if (startDate.toMillis() === endDate!.toMillis()) endDate = startDate.plus({ hours: 24 });
       if (!startDate.isValid || !endDate!.isValid) {
         return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid start or end date format" });
@@ -457,7 +514,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     }
 
     // d = today's IST day (a booking lock's lead starts at 00:00 IST)
-    const cacheKey = `public:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}:d${istDayNumber(new Date())}`;
+    const cacheKey = `public:vehicles:group:${groupKey}:${start || "nodate"}:${monthly ? "monthly" : end || "nodate"}:d${istDayNumber(new Date())}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
@@ -514,14 +571,20 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
     // rule as booking creation (pickGroupRepresentative), so the price and
     // advance quoted here come from the unit the booking will price and charge.
     // Without dates: the listable units not blocked for every window.
+    // Monthly: only the units with their own monthly price can be booked on it
+    const planVehicles = monthly ? groupVehicles.filter((v) => hasVehicleMonthlyPrice(v.customPricing)) : groupVehicles;
     const { representative, available } = await pickGroupRepresentative(
-      groupVehicles,
+      planVehicles,
       startDate && endDate ? TimezoneService.toPrisma(startDate) : null,
       startDate && endDate ? TimezoneService.toPrisma(endDate) : null,
     );
     const availableCount = available.length;
     const representativeVehicle =
-      representative ?? groupVehicles.find((v) => isListableStatus(v.status)) ?? groupVehicles[0]!;
+      representative ??
+      planVehicles.find((v) => isListableStatus(v.status)) ??
+      groupVehicles.find((v) => isListableStatus(v.status)) ??
+      groupVehicles[0]!;
+    const monthlyInfo = monthly ? monthlyPlanInfo(planVehicles.length > 0 ? representativeVehicle.customPricing : null) : null;
 
     // Use images from the representative vehicle only
     const allImages: string[] = representativeVehicle.images.map((img: any) => img.file.url);
@@ -533,7 +596,7 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       availability = availableCount > 0;
-      if (isInsuranceValid(representativeVehicle.insuranceExpiry) && availability) {
+      if (isInsuranceValid(representativeVehicle.insuranceExpiry) && availability && (!monthlyInfo || monthlyInfo.bookable)) {
         try {
           pricingDetails = await pricingEngine.calculateBookingPrice(
             representativeVehicle.id,
@@ -546,6 +609,8 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
             undefined,
             representativeVehicle.categoryId,
             representativeVehicle.customPricing,
+            // Monthly: exactly the monthly price, no duration slab
+            monthly ? { monthlyPlan: true } : undefined,
           );
           deposit = Number(pricingDetails.deposit);
           pricingDetails = {
@@ -612,6 +677,15 @@ export const getVehicleGroupDetails = async (req: Request, res: Response) => {
       customerPaymentMode: groupCustomerPaymentMode,
       paymentOptions: groupPaymentOptions,
       useCases: normalizeUseCases(groupVehicles.flatMap((v) => v.useCases)),
+      // Monthly: the monthly price shown (null = "Monthly price not set", not bookable)
+      ...(monthlyInfo && {
+        plan: "MONTHLY",
+        monthly: monthlyInfo,
+        ...(startDate && endDate && {
+          startDate: TimezoneService.toPrisma(startDate).toISOString(),
+          endDate: TimezoneService.toPrisma(endDate).toISOString(),
+        }),
+      }),
     };
 
     try {
@@ -637,6 +711,9 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     }
 
     const { start, end } = req.query as { start?: string; end?: string };
+    const plan = readPlanQuery(req, res);
+    if (plan === false) return;
+    const monthly = plan === "MONTHLY";
 
     let startDate: DateTime | null = null;
     let endDate: DateTime | null = null;
@@ -644,7 +721,10 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     if (start) {
       startDate = TimezoneService.parseISO(start);
 
-      if (end) {
+      if (monthly) {
+        // Monthly: always pickup + 30 days (the return can't be chosen)
+        endDate = startDate.plus({ days: CUSTOMER_MONTHLY_DAYS });
+      } else if (end) {
         endDate = TimezoneService.parseISO(end);
       } else {
         endDate = startDate.plus({ hours: 24 });
@@ -705,7 +785,12 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
 
     // Bookable at all (vehicleEligibility): listable status and insurance valid
     // through its expiry day; the dated check below adds bookings and holds
-    const isBookable = isListableStatus(vehicleData.status) && isInsuranceValid(vehicleData.insuranceExpiry);
+    // Monthly: only with the vehicle's own monthly price ("Monthly price not set" otherwise)
+    const monthlyInfo = monthly ? monthlyPlanInfo(vehicleData.customPricing) : null;
+    const isBookable =
+      isListableStatus(vehicleData.status) &&
+      isInsuranceValid(vehicleData.insuranceExpiry) &&
+      (!monthlyInfo || monthlyInfo.bookable);
 
     if (!startDate && isBookable && (await findActingLocks([vehicleData.id])).has(vehicleData.id)) {
       // No dates: a car under a booking lock acting now (its lead day included)
@@ -728,7 +813,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       // TASK-018: Check full pricing result cache before recomputing
       const startNorm = TimezoneService.toPrisma(startDate).toISOString();
       const endNorm = TimezoneService.toPrisma(endDate).toISOString();
-      const pricingCacheKey = vehicleDetailsPricingKey(vehicleData.id, startNorm, endNorm);
+      // Monthly is priced differently from a 30-day daily search of the same window
+      const pricingCacheKey = `${vehicleDetailsPricingKey(vehicleData.id, startNorm, endNorm)}${monthly ? ":monthly" : ""}`;
 
       let pricingResult: any = null;
       try {
@@ -741,7 +827,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         console.warn("[pricing-cache] Redis get error:", err);
       }
 
-      if (!pricingResult) {
+      if (!pricingResult && !(monthlyInfo && !monthlyInfo.bookable)) {
         // TASK-001 + TASK-016: pass categoryId and customPricing to skip redundant DB lookups
         try {
           pricingResult = await pricingEngine.calculateBookingPrice(
@@ -755,6 +841,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
             undefined,
             vehicleData.categoryId,
             vehicleData.customPricing,
+            // Monthly: exactly the monthly price, no duration slab
+            monthly ? { monthlyPlan: true } : undefined,
           );
         } catch (err) {
           // Branch without a GSTRule: no server price (pricingDetails null, clients show
@@ -770,6 +858,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         }
       }
 
+      if (monthlyInfo && !monthlyInfo.bookable) pricingResult = null;
       if (pricingResult) pricingDetails = {
         basePrice:       Number(pricingResult.basePrice),
         discountAmount:  Number(pricingResult.discountAmount),
@@ -836,6 +925,15 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       deposit,
       availability,
       pricingDetails,
+      // Monthly: the monthly price shown (null = "Monthly price not set", not bookable)
+      ...(monthlyInfo && {
+        plan: "MONTHLY",
+        monthly: monthlyInfo,
+        ...(startDate && endDate && {
+          startDate: TimezoneService.toPrisma(startDate).toISOString(),
+          endDate: TimezoneService.toPrisma(endDate).toISOString(),
+        }),
+      }),
     };
 
     return res.status(StatusCode.OK).json({ message: "Success", data: response });
