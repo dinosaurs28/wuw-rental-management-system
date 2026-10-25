@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/counterErrors";
-import { formatRupees } from "@/lib/counterPayment";
+import { formatRupees, type CounterProof } from "@/lib/counterPayment";
+import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
 import { formatIstDateTime } from "@/utils/overdueReturns";
 import {
   manualCancelService,
@@ -180,6 +181,9 @@ function CancelRentForm({
   const [reason, setReason] = useState("");
   const [amount, setAmount] = useState(refundable.toFixed(2));
   const [method, setMethod] = useState<ManualCancelRefundMethod | "">("");
+  // Oct 25 2026: photo of the refund's payment-success screen (required for UPI / bank transfer)
+  const [proof, setProof] = useState<CounterProof | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [vehicleLocation, setVehicleLocation] = useState<ManualCancelVehicleLocation | "">("");
   const [vehicleStatus, setVehicleStatus] = useState<ManualCancelVehicleStatus | "">("");
@@ -202,6 +206,9 @@ function CancelRentForm({
     if (!amountValid) return "Enter the refund amount (₹0 for no refund), with at most 2 decimals.";
     if (amountNum > refundable + 0.0001) return `The refund can be at most ${formatRupees(refundable)}.`;
     if (refunding && !method) return "Choose how the refund is paid back.";
+    if (refunding && (method === "UPI" || method === "BANK_TRANSFER") && !proof) {
+      return "Add the photo of the refund's payment-success screen.";
+    }
     if (refunding && method === "CASH" && !options.cashShiftOpen) {
       return "Open a cash shift to refund cash, or choose UPI or bank transfer.";
     }
@@ -234,6 +241,7 @@ function CancelRentForm({
           amount: amountNum,
           ...(refunding && method ? { method } : {}),
           ...(refunding && note.trim() ? { note: note.trim() } : {}),
+          ...(refunding && method && method !== "ORIGINAL_PAYMENT" && proof ? { proofFileId: proof.proofFileId } : {}),
         },
         ...(active
           ? {
@@ -250,7 +258,13 @@ function CancelRentForm({
       onClose();
     } catch (err) {
       // The server re-checks everything (money, state) — show why and re-read the rent
-      setError(apiErrorMessage(err, "Couldn't cancel the rent. Please try again."));
+      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      const message = apiErrorMessage(err, "Couldn't cancel the rent. Please try again.");
+      if (code === "REFUND_PROOF_REQUIRED" || code === "INVALID_PAYMENT_PROOF" || code === "DUPLICATE_PAYMENT_PROOF") {
+        setProofError(message);
+      } else {
+        setError(message);
+      }
       refetch();
     } finally {
       setSubmitting(false);
@@ -368,6 +382,31 @@ function CancelRentForm({
                         : "Cash, UPI and bank transfer are recorded as paid back now."}
                 </p>
               </div>
+              {(method === "UPI" || method === "BANK_TRANSFER" || method === "CASH") && (
+                <PaymentProofField
+                  id="cancel-refund-proof"
+                  role="manager"
+                  value={proof}
+                  onChange={(p) => {
+                    setProof(p);
+                    setProofError(null);
+                  }}
+                  error={proofError}
+                  required={method !== "CASH"}
+                  label={
+                    method === "CASH"
+                      ? "Photo of the cash refund (optional)"
+                      : method === "UPI"
+                        ? "Photo of the UPI refund success screen"
+                        : "Photo of the bank transfer success screen"
+                  }
+                  helper={
+                    method === "CASH"
+                      ? "Optional for cash."
+                      : "After sending the refund, photograph the payment-success screen. Required."
+                  }
+                />
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="cancel-refund-note">Refund note (optional)</Label>
                 <Input

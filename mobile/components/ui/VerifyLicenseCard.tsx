@@ -14,25 +14,26 @@ const CONFIG: Record<DLStatus, {
 }> = {
   approved: {
     eyebrow: 'VERIFIED', eyebrowColor: Colors.availGood, icon: 'checkmark-circle',
-    title: 'Driver’s licence verified', sub: 'Your driving licence is on file.',
+    title: 'Licence & Aadhaar verified', sub: 'Your driving licence and Aadhaar are on file.',
   },
   pending: {
     eyebrow: 'UNDER REVIEW', eyebrowColor: Colors.availLow, icon: 'time-outline',
-    title: 'Licence under review', sub: 'We’ll verify your driving licence shortly.',
+    title: 'Documents under review', sub: 'We’ll verify your driving licence and Aadhaar shortly.',
   },
-  // Both licence photos are required (Oct 17 2026): new bookings can't be made
-  // without them; an older booking's photos are captured at pickup if missing.
+  // Both licence photos (Oct 17 2026) and both Aadhaar photos (Oct 25 2026) are
+  // required: new bookings can't be made without them; an older booking's
+  // photos are captured at pickup if missing.
   none: {
     eyebrow: 'REQUIRED', eyebrowColor: Colors.orange, icon: 'card-outline',
-    title: 'Licence photos', sub: 'Upload both sides of your driving licence. Bring the original licence to pickup.', cta: 'Upload photos',
+    title: 'Licence & Aadhaar photos', sub: 'Upload both sides of your driving licence and your Aadhaar card. Bring the original licence to pickup.', cta: 'Upload photos',
   },
   rejected: {
     eyebrow: 'ACTION NEEDED', eyebrowColor: Colors.availLow, icon: 'alert-circle-outline',
-    title: 'Licence photo not accepted', sub: 'Your licence photo couldn’t be verified. Upload a clearer photo, and bring the original licence to pickup.', cta: 'Re-upload',
+    title: 'Photo not accepted', sub: 'A licence or Aadhaar photo couldn’t be verified. Upload a clearer photo, and bring the original licence to pickup.', cta: 'Re-upload',
   },
 };
 
-// Licence photo card for upcoming trips, driven by real KYC DL status.
+// Licence + Aadhaar photo card for upcoming trips, driven by real KYC status.
 export default function VerifyLicenseCard({ status, onVerify }: Props) {
   const c = CONFIG[status];
   return (

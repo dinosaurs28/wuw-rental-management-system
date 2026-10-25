@@ -291,9 +291,9 @@ export const BookingConfirmationPage = () => {
           return;
         }
 
-        // Both driving licence photos are required (Oct 17 2026): back to review,
-        // where they're uploaded inline.
-        if (errorCode === "DL_PHOTOS_REQUIRED") {
+        // Both driving licence (Oct 17 2026) and both Aadhaar (Oct 25 2026)
+        // photos are required: back to review, where they're uploaded inline.
+        if (errorCode === "DL_PHOTOS_REQUIRED" || errorCode === "AADHAAR_PHOTOS_REQUIRED") {
           toast.error(message, { duration: 8000 });
           useVehicleRentalStore.getState().setSelectedKyc(null);
           navigate("/booking/review-confirm", { replace: true });

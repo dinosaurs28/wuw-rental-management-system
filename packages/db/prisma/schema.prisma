@@ -442,6 +442,7 @@ model FileObject {
   bookingQrPhotos   Booking[]      @relation("BookingQrPhoto")
   paymentProofs     PaymentTransaction[] @relation("PaymentProof")
   paymentProofPhotos PaymentTransactionProof[] @relation("PaymentTransactionProofFile")
+  refundRequestProofs RefundRequest[] @relation("RefundRequestProof")
   promoBanners      PromoBanner[]  @relation("PromoBannerImage")
 
   @@index([publicId])
@@ -1956,6 +1957,10 @@ model RefundRequest {
   onlineTransactionRef String?
   rejectionReason    String?
   rejectedAt         DateTime?
+  // Oct 25 2026: photo of the refund's payment-success screen, taken when it is
+  // marked paid by UPI / bank transfer (required then; optional for cash)
+  proofFileId        Int?
+  proofFile          FileObject?  @relation("RefundRequestProof", fields: [proofFileId], references: [id], onDelete: SetNull)
 
   booking            Booking      @relation(fields: [bookingId], references: [id])
   branch             Branch       @relation(fields: [branchId], references: [id])
@@ -1969,6 +1974,7 @@ model RefundRequest {
   @@index([bookingId])
   @@index([branchId, status])
   @@index([requestedById])
+  @@index([proofFileId])
 }
 
 // Tracks an employee's cash-handling session (shift). All cash PaymentTransactions

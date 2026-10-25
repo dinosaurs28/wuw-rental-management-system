@@ -78,7 +78,7 @@ import {
   DlInUseError,
 } from "../../services/booking/dl-in-use.service.js";
 import {
-  assertDlPhotosOnFile,
+  assertKycPhotosOnFile,
   bookingDlKycFileId,
   DlPhotosRequiredError,
 } from "../../services/booking/dl-photos.service.js";
@@ -307,10 +307,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         kycFile = { id: sentKycFile.id };
       }
     }
-    // ── Driving licence photos are compulsory (Oct 17 2026): FRONT + BACK on
-    // file, not rejected — 422 DL_PHOTOS_REQUIRED otherwise. The booking's KYC
+    // ── Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos are
+    // compulsory: FRONT + BACK of each on file, not rejected — 422
+    // DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED otherwise. The booking's KYC
     // reference is the DL photo sent, else the DL front (auto-attached).
-    const dlPhotos = await assertDlPhotosOnFile(customerId, "customer");
+    const dlPhotos = await assertKycPhotosOnFile(customerId, "customer");
     kycFile = { id: bookingDlKycFileId(dlPhotos, kycFile?.id) };
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);

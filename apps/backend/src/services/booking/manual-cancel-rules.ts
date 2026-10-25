@@ -32,6 +32,7 @@
  */
 import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
+import { refundProofRefusal } from "../payment/refund-proof-rules.js";
 
 export const MANUAL_CANCEL_REASON_MIN = 3;
 export const MANUAL_CANCEL_REASON_MAX = 500;
@@ -87,7 +88,8 @@ export type ManualCancelErrorCode =
   | "REFUND_EXCEEDS_ONLINE"
   | "DROP_IN_PROGRESS"
   | "CASH_SHIFT_REQUIRED"
-  | "CANCEL_CONFLICT";
+  | "CANCEL_CONFLICT"
+  | "REFUND_PROOF_REQUIRED";
 
 export class ManualCancelError extends Error {
   constructor(
@@ -303,7 +305,16 @@ export function refundRecordFor(method: ManualCancelRefundMethod): {
 
 export interface ParsedManualCancel {
   reason: string;
-  refund: { amount: Decimal; method: ManualCancelRefundMethod | null; note: string | null };
+  refund: {
+    amount: Decimal;
+    method: ManualCancelRefundMethod | null;
+    note: string | null;
+    /**
+     * Oct 25 2026: the uploaded payment-success photo (FileObject publicId) —
+     * required for a UPI / bank transfer refund, kept for cash, ignored otherwise
+     */
+    proofFileId: string | null;
+  };
   /** ACTIVE rents only (null for an upcoming one) */
   vehicleLocation: ManualCancelVehicleLocation | null;
   /** ACTIVE rents only (null for an upcoming one) */
@@ -371,9 +382,25 @@ export function parseManualCancelBody(body: unknown, stage: ManualCancelStage): 
     }
     note = trimmed.length > 0 ? trimmed : null;
   }
+  // The refund's payment-success photo (`refund.proofFileId`; `refund.proof_file_id`
+  // accepted too). Required for UPI / bank transfer; cash may carry one; the
+  // original online payment (completed later with the Razorpay refund id) never does.
+  let proofFileId: string | null = null;
+  if (method && method !== "ORIGINAL_PAYMENT") {
+    const raw = b.refund.proofFileId ?? b.refund.proof_file_id;
+    if (raw != null && raw !== "") {
+      if (typeof raw !== "string" || raw.trim().length === 0 || raw.trim().length > 64) {
+        throw invalid("refund.proofFileId must be the id of the uploaded photo.", "refund.proofFileId");
+      }
+      proofFileId = raw.trim();
+    }
+    const noProof = refundProofRefusal(method, proofFileId !== null, { field: "refund.proofFileId" });
+    if (noProof) throw new ManualCancelError(noProof.status, noProof.code, noProof.message, { field: noProof.field });
+  }
+  const refund = { amount, method, note, proofFileId };
 
   if (stage === "UPCOMING") {
-    return { reason, refund: { amount, method, note }, vehicleLocation: null, vehicleStatus: null, odometer: null };
+    return { reason, refund, vehicleLocation: null, vehicleStatus: null, odometer: null };
   }
 
   // Active rent: where the car is (older clients send vehicleReturned: true = back at the branch)
@@ -407,7 +434,7 @@ export function parseManualCancelBody(body: unknown, stage: ManualCancelStage): 
   }
   return {
     reason,
-    refund: { amount, method, note },
+    refund,
     vehicleLocation,
     vehicleStatus,
     odometer,

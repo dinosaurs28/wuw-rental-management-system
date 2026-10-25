@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,7 +25,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { apiErrorMessage, handleShiftRequired } from '../../../lib/counterErrors';
-import { proofProblem } from '../../../lib/counterPayment';
+import { REFUND_PROOF_REQUIRED_MESSAGE, proofProblem } from '../../../lib/counterPayment';
+import ImageViewer from '../../ui/ImageViewer';
 import { fmtDateTime } from '../../../lib/dates';
 import { PaymentProofCapture, useProofShot } from '../CounterPaymentPicker';
 import type { StaffRefundMethod, StaffRefundResult } from '../../../types/paymentVoid';
@@ -70,6 +72,7 @@ export function RefundToCustomerSheet({
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState(newRequestId);
   const proof = useProofShot(() => setError(null));
+  const [viewing, setViewing] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -98,7 +101,8 @@ export function RefundToCustomerSheet({
     if (!amountValid) return 'Enter the amount to refund (more than ₹0, at most 2 decimals).';
     if (reason.trim().length < reasonMin) return `Enter the reason (at least ${reasonMin} characters).`;
     if (needsTick && !confirmOver) return 'Tick the confirmation to refund more than was received.';
-    if (!isCash) return proofProblem(proof.shot, false);
+    // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+    if (!isCash) return proof.shot ? proofProblem(proof.shot, true) : REFUND_PROOF_REQUIRED_MESSAGE;
     return null;
   }, [amountValid, reason, reasonMin, needsTick, confirmOver, isCash, proof.shot]);
 
@@ -256,9 +260,9 @@ export function RefundToCustomerSheet({
                     {options.proofPhotoSupported ? (
                       <PaymentProofCapture
                         ctl={proof}
-                        required={false}
-                        label="Transfer confirmation photo (optional)"
-                        helper="Photo of the UPI / bank transfer success screen."
+                        required
+                        label="Refund payment-success photo"
+                        helper="Required — photo of the UPI / bank transfer success screen."
                         disabled={submitting}
                       />
                     ) : null}
@@ -293,6 +297,12 @@ export function RefundToCustomerSheet({
                           </Text>
                           <Text style={[styles.moneyValue, r.voided && styles.struck]}>{inr(num(r.amount))}</Text>
                         </View>
+                        {/* Oct 25 2026: the refund's payment-success photo */}
+                        {r.proofPhotoUrl ? (
+                          <TouchableOpacity onPress={() => setViewing(r.proofPhotoUrl ?? null)} activeOpacity={0.8}>
+                            <Image source={{ uri: r.proofPhotoUrl }} style={{ width: 40, height: 52, borderRadius: 6, marginTop: 4 }} />
+                          </TouchableOpacity>
+                        ) : null}
                         {r.voided ? (
                           <Text style={styles.infoText}>
                             Voided{r.voidReason ? `: ${r.voidReason}` : ''}
@@ -335,6 +345,11 @@ export function RefundToCustomerSheet({
           </View>
         </KeyboardAvoidingView>
       </View>
+      <ImageViewer
+        visible={!!viewing}
+        images={viewing ? [{ url: viewing, label: 'Refund payment photo' }] : []}
+        onClose={() => setViewing(null)}
+      />
     </Modal>
   );
 }

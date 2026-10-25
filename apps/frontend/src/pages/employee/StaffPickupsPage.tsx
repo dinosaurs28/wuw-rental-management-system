@@ -75,7 +75,7 @@ import apiClient from "@/lib/axios";
 import { bookingService, type EmployeeBooking } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
 import { UploadKycDialog } from "@/components/booking/UploadKycDialog";
-import { describeDlPhotoSides, FUEL_BAR_OPTIONS, fuelBarOptionLabel } from "@repo/schemas";
+import { describeDlPhotoSides, describeKycPhotoSides, FUEL_BAR_OPTIONS, fuelBarOptionLabel } from "@repo/schemas";
 // import { extensionService } from "@/services/extension.service";
 import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
@@ -419,6 +419,8 @@ export default function StaffPickupsPage() {
   // --- STEP 3: DL photos (required, Oct 17 2026); the DL number is no longer asked ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [showDlPhotoUpload, setShowDlPhotoUpload] = useState(false);
+  // Which document the pickup "Capture …" button opens the upload dialog for
+  const [kycUploadType, setKycUploadType] = useState<"DL" | "AADHAAR">("DL");
   const [kycViewerIndex, setKycViewerIndex] = useState<number | null>(null);
   const [brokenKycImages, setBrokenKycImages] = useState<Set<string>>(new Set());
 
@@ -804,10 +806,24 @@ export default function StaffPickupsPage() {
   // --- DERIVED STATE ---
   // Both driving licence photos are required to book (Oct 17 2026); an older
   // booking may have none — staff capture them here before the handover. An
-  // older server (no dlPhotos field) doesn't block.
+  // older server (no dlPhotos field) doesn't block. The Aadhaar photos are
+  // required the same way since Oct 25 2026 (aadhaarPhotos, newer servers).
+  // Never "ready" while the documents are loading.
   const kycDocs = kycData?.kyc || [];
   const dlPhotos = kycData?.dlPhotos ?? null;
-  const dlPhotosReady = !dlPhotos || dlPhotos.ok;
+  const aadhaarPhotos = kycData?.aadhaarPhotos ?? null;
+  const dlPhotosReady = !isLoadingKyc && (!dlPhotos || dlPhotos.ok);
+  const aadhaarPhotosReady = !isLoadingKyc && (!aadhaarPhotos || aadhaarPhotos.ok);
+  const kycPhotosReady = dlPhotosReady && aadhaarPhotosReady;
+  const kycPhotosHint = !dlPhotosReady && !aadhaarPhotosReady
+    ? "Capture both driving licence and both Aadhaar photos (step 3)"
+    : !dlPhotosReady
+      ? "Capture both driving licence photos (step 3)"
+      : "Capture both Aadhaar photos (step 3)";
+  const openKycUpload = (type: "DL" | "AADHAAR") => {
+    setKycUploadType(type);
+    setShowDlPhotoUpload(true);
+  };
   const kycDocLabel = (doc: any) => {
     const side = doc.side === "FRONT" ? "Front" : doc.side === "BACK" ? "Back" : null;
     const type = getDocumentTypeName(doc.type);
@@ -856,7 +872,7 @@ export default function StaffPickupsPage() {
   const fastagReady = hasFastag ? fastag.value != null : fastagBalance.trim() === "" || fastag.value != null;
   const isHandoverReady =
     canProceedFromStep2 &&
-    dlPhotosReady &&
+    kycPhotosReady &&
     (watch("odo") ?? 0) > 0 &&
     watch("fuelLevel") !== "" &&
     fastagReady;
@@ -1411,19 +1427,19 @@ export default function StaffPickupsPage() {
         {/* STEPS 3–7: only shown/unlocked when step 2 is resolved      */}
         {/* ─────────────────────────────────────────────────────────── */}
 
-        {/* STEP 3: LICENCE PHOTOS (required) + OTHER KYC */}
+        {/* STEP 3: LICENCE + AADHAAR PHOTOS (required) + OTHER KYC */}
         <StepCard
           stepNum={3}
           title="Driving Licence & KYC"
-          subtitle="Licence photos (front + back) required"
-          isCompleted={dlPhotosReady}
+          subtitle="Licence + Aadhaar photos (front + back) required"
+          isCompleted={kycPhotosReady}
           isLocked={!canProceedFromStep2 || isPickedUp}
         >
           <CardContent className="pt-4">
             <p className="text-sm font-medium text-gray-900 mb-3">
               KYC documents{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                (driving licence front + back required · Aadhaar optional)
+                (driving licence and Aadhaar front + back required)
               </span>
             </p>
             {dlPhotos && !dlPhotos.ok && (
@@ -1447,9 +1463,39 @@ export default function StaffPickupsPage() {
                   <Button
                     size="sm"
                     className="bg-orange-600 hover:bg-orange-700 shrink-0"
-                    onClick={() => setShowDlPhotoUpload(true)}
+                    onClick={() => openKycUpload("DL")}
                   >
                     Capture licence
+                  </Button>
+                )}
+              </div>
+            )}
+            {aadhaarPhotos && !aadhaarPhotos.ok && (
+              <div
+                id="pickup-aadhaar-photos"
+                role="alert"
+                className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-orange-200 bg-orange-50 p-3"
+              >
+                <AlertCircle className="h-5 w-5 shrink-0 text-orange-600" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-orange-900">Aadhaar photos required</p>
+                  <p className="text-xs text-orange-800 mt-0.5">
+                    Capture the {describeKycPhotoSides(aadhaarPhotos.missingSides)} of the customer's Aadhaar before the handover
+                    {aadhaarPhotos.rejectedSides.length > 0
+                      ? ` (the ${describeKycPhotoSides(aadhaarPhotos.rejectedSides)} was rejected)`
+                      : ""}
+                    .
+                  </p>
+                </div>
+                {kycData?.customerUserPublicId && !isPickedUp && (
+                  <Button
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700 shrink-0"
+                    onClick={() => openKycUpload("AADHAAR")}
+                  >
+                    {aadhaarPhotos.missingSides.length === 1
+                      ? `Capture Aadhaar ${aadhaarPhotos.missingSides[0] === "FRONT" ? "front" : "back"}`
+                      : "Capture Aadhaar"}
                   </Button>
                 )}
               </div>
@@ -2187,8 +2233,8 @@ export default function StaffPickupsPage() {
                     </Button>
                     {!isHandoverReady ? (
                       <p className="text-xs text-center text-muted-foreground">
-                        {!dlPhotosReady
-                          ? "Capture both driving licence photos (step 3) to proceed"
+                        {!kycPhotosReady
+                          ? `${kycPhotosHint} to proceed`
                           : "Complete all steps above to proceed"}
                       </p>
                     ) : null}
@@ -2289,8 +2335,8 @@ export default function StaffPickupsPage() {
             </Button>
             {!isHandoverReady ? (
               <p className="text-xs text-center text-muted-foreground">
-                {!dlPhotosReady
-                  ? "Capture both driving licence photos (step 3) to enable handover"
+                {!kycPhotosReady
+                  ? `${kycPhotosHint} to enable handover`
                   : "Complete all steps above to enable handover"}
               </p>
             ) : legacyRemainingDue ? (
@@ -2461,7 +2507,7 @@ export default function StaffPickupsPage() {
             <Button
               className="bg-[#FF5F00] hover:bg-[#e65600]"
               onClick={handleSubmit(onConfirmHandoverLegacy)}
-              disabled={!dlPhotosReady || !dlChoiceReady || handoverMutation.isPending}
+              disabled={!kycPhotosReady || !dlChoiceReady || handoverMutation.isPending}
             >
               {handoverMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -2478,6 +2524,7 @@ export default function StaffPickupsPage() {
           open={showDlPhotoUpload}
           onOpenChange={setShowDlPhotoUpload}
           customerPublicId={kycData.customerUserPublicId}
+          defaultType={kycUploadType}
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ["booking-kyc", bookingId] })}
         />
       )}

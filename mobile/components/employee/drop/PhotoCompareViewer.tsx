@@ -77,6 +77,7 @@ export default function PhotoCompareViewer({
       {photo ? (
         <RemotePhoto
           uri={photo.displayUrl || photo.url}
+          fallbackUri={photo.url}
           resizeMode="contain"
           style={[styles.photo, { width: paneW, height: paneH }]}
           accessibilityLabel={`${title} photo ${n}`}

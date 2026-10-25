@@ -25,19 +25,25 @@ export function retryDelayMs(failures: number): number | null {
 
 interface Props {
   uri: string;
+  /** Loaded at once when `uri` fails (the original behind a display copy), then retried */
+  fallbackUri?: string;
   style?: StyleProp<ViewStyle>;
   resizeMode?: ImageResizeMode;
   accessibilityLabel?: string;
 }
 
 /**
- * A remote photo with a loading skeleton, automatic retries with backoff and a
- * tap-to-retry. On Android it is decoded at the size it is shown
+ * A remote photo with a loading skeleton, a switch to `fallbackUri` when `uri`
+ * fails, automatic retries with backoff and a tap-to-retry (back to `uri`). On Android it is decoded at the size it is shown
  * (resizeMethod "resize"), not at the photo's full resolution, so a strip of
  * large photos doesn't exhaust image memory.
  */
-export default function RemotePhoto({ uri, style, resizeMode = 'cover', accessibilityLabel }: Props) {
+export default function RemotePhoto({ uri, fallbackUri, style, resizeMode = 'cover', accessibilityLabel }: Props) {
   const [attempt, setAttempt] = useState(0);
+  // Showing the fallback (after `uri` failed)
+  const [onFallback, setOnFallback] = useState(false);
+  const hasFallback = !!fallbackUri && fallbackUri !== uri;
+  const shown = onFallback && hasFallback ? fallbackUri! : uri;
   const [failures, setFailures] = useState(0);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,8 +58,9 @@ export default function RemotePhoto({ uri, style, resizeMode = 'cover', accessib
     if (timer.current) clearTimeout(timer.current);
     setAttempt(0);
     setFailures(0);
+    setOnFallback(false);
     setStatus('loading');
-  }, [uri]);
+  }, [uri, fallbackUri]);
 
   useEffect(() => {
     if (status !== 'loading') return;
@@ -68,6 +75,11 @@ export default function RemotePhoto({ uri, style, resizeMode = 'cover', accessib
   }, [status, pulse]);
 
   const onError = () => {
+    if (hasFallback && !onFallback) {
+      setOnFallback(true);
+      setAttempt((n) => n + 1);
+      return;
+    }
     const next = failures + 1;
     setFailures(next);
     const delay = retryDelayMs(next);
@@ -79,6 +91,8 @@ export default function RemotePhoto({ uri, style, resizeMode = 'cover', accessib
   };
 
   const retry = () => {
+    if (timer.current) clearTimeout(timer.current);
+    setOnFallback(false);
     setFailures(0);
     setStatus('loading');
     setAttempt((n) => n + 1);
@@ -106,7 +120,7 @@ export default function RemotePhoto({ uri, style, resizeMode = 'cover', accessib
       ) : (
         <Image
           key={attempt}
-          source={{ uri }}
+          source={{ uri: shown }}
           style={StyleSheet.absoluteFill}
           resizeMode={resizeMode}
           resizeMethod="resize"

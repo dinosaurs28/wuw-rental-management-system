@@ -23,6 +23,7 @@ import { previewKmCharge, type KmChargeFigures } from "@/components/employee/dro
 import { RentalTimelineCard } from "@/components/employee/drop/RentalTimelineCard";
 import { LateReturnPanel, type LateReturnOptions } from "@/components/employee/drop/LateReturnPanel";
 import { DropBillSummary, LegacyReturnChargesSummary } from "@/components/employee/drop/DropBillSummary";
+import { DropRefundCard } from "@/components/employee/drop/DropRefundCard";
 import { SwapChargesNote } from "@/components/employee/drop/SwapChargesNote";
 import { DropOdometerFields } from "@/components/employee/drop/DropOdometerFields";
 import { DropSwapSection } from "@/components/employee/drop/DropSwapSection";
@@ -1738,7 +1739,12 @@ export default function ReturnProcessPage() {
                           updatedSession.credit &&
                             `₹${updatedSession.credit.amount} put on credit (collateral: ${updatedSession.credit.collateral})`,
                           updatedSession.depositRefund &&
-                            `deposit ₹${updatedSession.depositRefund.amount} refunded (${updatedSession.depositRefund.method === "CASH" ? "cash" : "UPI"})`,
+                            `deposit ₹${updatedSession.depositRefund.amount} refunded (${updatedSession.depositRefund.method === "CASH" ? "cash" : updatedSession.depositRefund.method === "BANK_TRANSFER" ? "bank transfer" : "UPI"})`,
+                          // Oct 25 2026: "Refund later" — left to the branch manager's Pending Settlements
+                          updatedSession.depositRefundDeferred &&
+                            `deposit ₹${updatedSession.depositRefundDeferred} refund sent to the branch manager`,
+                          updatedSession.refundDeferred &&
+                            `₹${updatedSession.refundDeferred} refund sent to the branch manager`,
                         ].filter(Boolean);
                         toast.success(
                           `Return settled — booking marked as Returned.${notes.length ? ` ${notes.join("; ")}.` : ""}`,
@@ -1834,10 +1840,12 @@ export default function ReturnProcessPage() {
                 Safety deposit {formatPrice(legacySubmissionResult.safetyDeposit.amount)}:{" "}
                 {legacySubmissionResult.safetyDeposit.handling === "REFUND_IN_FULL"
                   ? "to be refunded in full"
-                  : "set off against the charges"}{" "}
-                — the branch manager settles it.
+                  : "set off against the charges"}
+                .
               </p>
             )}
+            {/* Oct 25 2026: the Fleet Executive refunds what is owed back now, or leaves it to the manager */}
+            <DropRefundCard bookingPublicId={booking.publicId} />
             <Button className="w-full mt-4 bg-green-600 hover:bg-green-700" onClick={() => navigate("/employee/dashboard")}>
               Return to Dashboard
             </Button>

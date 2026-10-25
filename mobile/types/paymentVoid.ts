@@ -33,6 +33,8 @@ export interface StaffRefundRow extends PaymentVoidState {
   by: string | null;
   at: string;
   status?: string;
+  /** Additive (Oct 25 2026): the refund's payment-success photo (presigned URL, 15 min) */
+  proofPhotoUrl?: string | null;
 }
 
 export interface StaffRefundOptions {

@@ -39,6 +39,7 @@
  * Errors: HTTP 4xx { success:false, code, message, ...extra } (ManualCancelError).
  */
 import { lockShiftForPayment } from "../payment/counter-guard.service.js";
+import { claimPaymentProof, proofPhotosCreate, resolvePaymentProof } from "../payment/payment-proof.service.js";
 import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
 import type { Request } from "express";
 import Decimal from "decimal.js";
@@ -383,6 +384,8 @@ export interface ManualCancelResult {
     amount: string;
     method: ManualCancelRefundMethod;
     methodLabel: string;
+    /** Additive (Oct 25 2026): the payment-success photo's publicId (null for none / original payment) */
+    proofFileId: string | null;
   } | null;
   /** Active rents: what each car became (unchanged when another rental holds it or it is under review / inactive). */
   vehicles: Array<{
@@ -423,6 +426,9 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
     (await findBlocker(booking, await readMoney(booking.id), prisma, now)) ??
     (await remainingPaymentBlocker(booking));
   if (early) throw early;
+  // Oct 25 2026: the refund's payment-success photo (required for UPI / bank transfer —
+  // parseManualCancelBody) must be a proof uploaded at this branch, not backing another payment
+  const proof = input.refund.proofFileId ? await resolvePaymentProof(input.refund.proofFileId, booking.branchId) : null;
 
   const outcome = await prisma.$transaction(
     async (tx) => {
@@ -588,6 +594,7 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
         const amount = input.refund.amount.toFixed(2);
         const methodLabel = MANUAL_CANCEL_REFUND_METHOD_LABELS[input.refund.method];
         const notes = `Rent cancelled by the branch manager — ${methodLabel}${input.refund.note ? `: ${input.refund.note}` : ""}`;
+        if (proof && record.paidOutNow) await claimPaymentProof(proof, tx);
         const txn = record.paidOutNow
           ? await tx.paymentTransaction.create({
               data: {
@@ -602,6 +609,8 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
                 cashAmount: isCash ? amount : "0.00",
                 onlineAmount: isCash ? "0.00" : amount,
                 onlineGateway: record.onlineGateway,
+                proofFileId: proof?.id ?? null,
+                proofPhotos: proofPhotosCreate(proof ? [proof] : null),
                 collectedById: actor.id,
                 collectedAt: cancelledAt,
                 confirmedById: actor.id,
@@ -635,6 +644,7 @@ export async function manualCancelBooking(req: Request, bookingPublicId: string)
           amount,
           method: input.refund.method,
           methodLabel,
+          proofFileId: record.paidOutNow ? (proof?.publicId ?? null) : null,
         };
       }
 

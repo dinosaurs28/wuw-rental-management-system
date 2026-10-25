@@ -20,6 +20,7 @@ import RemainingBalanceCollect from '../../../components/employee/RemainingBalan
 import LedgerSummaryCard from '../../../components/ui/LedgerSummaryCard';
 import PhotoCaptureSection, { type CapturedPhoto } from '../../../components/employee/PhotoCaptureSection';
 import CounterPaymentPanel from '../../../components/employee/CounterPaymentPanel';
+import DropRefundPanel from '../../../components/employee/DropRefundPanel';
 import CounterPaymentPicker, {
   CounterRefundPicker,
   useCounterPayment,
@@ -951,7 +952,9 @@ export default function ReturnScreen() {
     if (mountedRef.current) setDone(true);
   };
 
-  const settleSession = async () => {
+  // later (Oct 25 2026): "Refund later (send to branch manager)" — the drop completes and
+  // the money owed back waits in the branch manager's Pending Settlements
+  const settleSession = async (later = false) => {
     if (!session || settleBusyRef.current) return;
     if (!damageStepDone) {
       setErrorMsg(DAMAGE_DECISION_MESSAGE);
@@ -964,13 +967,15 @@ export default function ReturnScreen() {
     const choice = net > 0 ? pay.resolve(net) : null;
     if (net > 0 && !choice) return;
     // Cash / UPI for money going back: the bill's refund, or the deposit in full
-    const refundChoice = net < 0 || depositRefundAmt > 0 ? refundPay.resolve() : null;
-    if ((net < 0 || depositRefundAmt > 0) && !refundChoice) return;
+    const refundChoice = !later && (net < 0 || depositRefundAmt > 0) ? refundPay.resolve() : null;
+    if (!later && (net < 0 || depositRefundAmt > 0) && !refundChoice) return;
     if (noteTooLong(dropNote)) {
       setErrorMsg(`Keep the drop note under ${OPERATION_NOTE_MAX} characters.`);
       return;
     }
-    const depositRefund = depositRefundAmt > 0 && refundChoice
+    const depositRefund = depositRefundAmt > 0 && later
+      ? { depositRefund: { method: 'LATER' as const } }
+      : depositRefundAmt > 0 && refundChoice
       ? {
         depositRefund: {
           method: refundChoice.method,
@@ -990,7 +995,13 @@ export default function ReturnScreen() {
       }
       // No draft save may land while (or after) the drop completes.
       await draft.beginCompletion();
-      if (net < 0 && refundChoice) {
+      if (net < 0 && later) {
+        await employeeApi.recordSessionRefund(session.publicId, {
+          method: 'LATER',
+          amount: Math.abs(net),
+          idempotencyKey: `refund-later:${session.publicId}`,
+        });
+      } else if (net < 0 && refundChoice) {
         await employeeApi.recordSessionRefund(session.publicId, {
           method: refundChoice.method,
           amount: Math.abs(net),
@@ -1031,10 +1042,12 @@ export default function ReturnScreen() {
       const refundedAmt = net < 0 ? Math.abs(net) : depositRefundAmt;
       const notes = [
         choice?.method === 'CREDIT' ? `${inr(net)} ${counterChoiceLabel(choice).charAt(0).toLowerCase()}${counterChoiceLabel(choice).slice(1)} — the branch manager clears it when the customer pays.` : null,
-        refundedAmt > 0 && refundChoice
+        refundedAmt > 0 && later
+          ? `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refund sent to the branch manager (Pending Settlements).`
+          : refundedAmt > 0 && refundChoice
           ? refundChoice.method === 'CASH'
             ? `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refunded in cash — the branch manager acknowledges it.`
-            : `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refunded by UPI.`
+            : `${inr(refundedAmt)} ${depositRefundAmt > 0 ? 'deposit ' : ''}refunded by ${refundChoice.method === 'UPI' ? 'UPI' : 'bank transfer'}.`
           : null,
       ].filter(Boolean);
       if (mountedRef.current) setSettledNote(notes.length ? notes.join('\n') : null);
@@ -1349,10 +1362,11 @@ export default function ReturnScreen() {
           {legacyResult?.safetyDeposit && (
             <Text style={styles.settledNote}>
               Safety deposit {inr(num(legacyResult.safetyDeposit.amount))}:{' '}
-              {SAFETY_DEPOSIT_HANDLING_LABELS[legacyResult.safetyDeposit.handling]?.toLowerCase() ?? legacyResult.safetyDeposit.handling}
-              {' '}— the branch manager settles it.
+              {SAFETY_DEPOSIT_HANDLING_LABELS[legacyResult.safetyDeposit.handling]?.toLowerCase() ?? legacyResult.safetyDeposit.handling}.
             </Text>
           )}
+          {/* Oct 25 2026: the Fleet Executive refunds what is owed back now, or leaves it to the manager */}
+          {legacyResult && <DropRefundPanel bookingPublicId={booking.publicId} />}
           <TouchableOpacity style={styles.doneBtn} onPress={() => router.replace('/(employee)/bookings')} activeOpacity={0.85}>
             <Text style={styles.doneBtnText}>Back to Queue</Text>
           </TouchableOpacity>
@@ -2439,6 +2453,26 @@ export default function ReturnScreen() {
                     title={depositRefundDue > 0 ? `Refund the ${inr(depositRefundDue)} deposit by` : undefined}
                     disabled={computing || settling}
                   />
+                  {/* Oct 25 2026: no cash on hand — finish the drop, the branch manager refunds it */}
+                  <TouchableOpacity
+                    style={styles.recomputeBtn}
+                    onPress={() => {
+                      if (billBusy || !damageStepDone) return;
+                      Alert.alert(
+                        'Refund later?',
+                        `The drop completes now and the ${inr(net < 0 ? Math.abs(net) : depositRefundDue)} refund goes to the branch manager's Pending Settlements.`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Send to branch manager', onPress: () => { void settleSession(true); } },
+                        ],
+                      );
+                    }}
+                    disabled={computing || settling}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="time-outline" size={15} color={Colors.ink2} />
+                    <Text style={styles.recomputeText}>Refund later (send to branch manager)</Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -2581,7 +2615,7 @@ export default function ReturnScreen() {
           ) : (
             <TouchableOpacity
               style={[styles.confirmBtn, settling && styles.confirmBtnDisabled]}
-              onPress={settleSession}
+              onPress={() => void settleSession()}
               disabled={settling}
               activeOpacity={0.85}
             >

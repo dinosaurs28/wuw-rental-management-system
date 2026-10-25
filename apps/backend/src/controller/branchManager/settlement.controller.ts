@@ -3,7 +3,7 @@ import { z } from "zod";
 import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, PaymentPurpose } from "@repo/database/client";
-import { listPendingSettlementsSchema, recordPaymentSchema } from "@repo/schemas";
+import { listPendingSettlementsSchema, recordSettlementPaymentSchema } from "@repo/schemas";
 import { settlementEngineService, paymentTransactionService } from "../../services/payment/index.js";
 import { CounterGuardError, lockShiftForPayment } from "../../services/payment/counter-guard.service.js";
 import { syncLegacyReturnInvoice } from "../../services/invoice-finalization.service.js";
@@ -24,7 +24,8 @@ const refundDepositSchema = z.object({
   method: z.enum(["CASH", "UPI"]),
   // Defaults to everything still to refund under the drop's choice
   amount: z.number().positive().optional(),
-  // Optional photo of the UPI transfer to the customer
+  // Photo of the UPI transfer to the customer — never required in Pending Settlements
+  // (Oct 25 2026, client: "remove photo upload there"); still accepted from older clients
   proof_file_id: z.string().trim().min(1).max(64).optional(),
   notes: z.string().max(500).optional(),
 });
@@ -97,14 +98,16 @@ export const RecordSettlementPayment = async (req: Request, res: Response): Prom
     // Inject the bookingPublicId from the URL — caller should not re-specify it
     const body = { ...req.body, bookingPublicId: booking.publicId };
 
-    const validation = recordPaymentSchema.safeParse(body);
+    // No payment photo / UTR needed for UPI here (Oct 25 2026)
+    const validation = recordSettlementPaymentSchema.safeParse(body);
     if (!validation.success) {
       res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: validation.error.format() });
       return;
     }
 
     const actor = await buildActorContext(req);
-    const txn = await paymentTransactionService.record(validation.data, actor);
+    // Oct 25 2026 (client): the manager settles after checking the transactions — no payment photo needed
+    const txn = await paymentTransactionService.record(validation.data, actor, { upiProofOptional: true });
 
     // Legacy drop: the return charges this settles go on the invoice, which turns
     // PAID once nothing is owed or awaiting confirmation (no-op for a drop-bill return)
@@ -494,7 +497,16 @@ export const RefundSettlementOverpayment = async (req: Request, res: Response): 
           completedAt: now,
         },
       });
-      return { txn, amount, remaining: due.sub(amount) };
+      const remaining = due.sub(amount);
+      // A drop bill's deposit left to the manager ("Refund later", Oct 25 2026): once
+      // everything owed back is paid, the deposit counts as refunded
+      if (remaining.lte(0) && owed.safetyDepositCredited.gt(0) && !owed.safetyDepositHandling) {
+        await tx.booking.updateMany({
+          where: { id: booking.id, safetyDepositRefunded: false },
+          data: { safetyDepositRefunded: true, safetyDepositRefundedAt: now },
+        });
+      }
+      return { txn, amount, remaining };
     });
 
     syncLegacyReturnInvoice(booking.id).catch((err) =>

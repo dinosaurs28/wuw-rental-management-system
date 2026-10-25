@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,6 +62,8 @@ interface UploadKycDialogProps {
   onOpenChange: (open: boolean) => void;
   customerPublicId: string;
   onSuccess: () => void;
+  /** Preselects the document type when the dialog opens (e.g. pickup "Capture Aadhaar"). */
+  defaultType?: "DL" | "AADHAAR";
 }
 
 export const UploadKycDialog = ({
@@ -69,6 +71,7 @@ export const UploadKycDialog = ({
   onOpenChange,
   customerPublicId,
   onSuccess,
+  defaultType,
 }: UploadKycDialogProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -76,6 +79,10 @@ export const UploadKycDialog = ({
   const form = useForm<UploadKycFormValues>({
     resolver: zodResolver(uploadKycSchema),
   });
+
+  useEffect(() => {
+    if (open && defaultType) form.setValue("type", defaultType);
+  }, [open, defaultType, form]);
 
   const onSubmit = async (data: UploadKycFormValues) => {
     setIsUploading(true);
@@ -156,7 +163,7 @@ export const UploadKycDialog = ({
                   <FormLabel>Document Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>

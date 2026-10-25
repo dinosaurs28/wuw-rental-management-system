@@ -20,7 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { KycDocument, KycDocumentType } from "@/services/kyc.service";
-import { describeDlPhotoSides, dlPhotosState } from "@repo/schemas";
+import { describeKycPhotoSides, requiredKycPhotosState, type KycPhotoDocLike, type KycPhotosState } from "@repo/schemas";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -91,7 +91,7 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence + Aadhaar required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -109,7 +109,7 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-orange-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence + Aadhaar required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -132,28 +132,41 @@ export const KycDocumentList = ({
     );
   }
 
-  // Both driving licence photos are required to book (Oct 17 2026; server: 422
-  // DL_PHOTOS_REQUIRED). A side staff rejected doesn't count — capture it again.
-  const dl = dlPhotosState(documents);
-  const dlNotice = dl.ok ? null : (
-    <div
-      role="alert"
-      className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-orange-200 bg-orange-50 p-3 text-left"
-    >
-      <AlertCircle className="size-5 shrink-0 text-orange-600" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-orange-900">Driving licence photos required</p>
-        <p className="text-xs text-orange-800 mt-0.5">
-          Capture the {describeDlPhotoSides(dl.missingSides)} of the customer's driving licence before booking
-          {dl.rejectedSides.length > 0 ? ` (the ${describeDlPhotoSides(dl.rejectedSides)} was rejected)` : ""}.
-        </p>
+  // Both sides of the driving licence (Oct 17 2026) and of the Aadhaar card
+  // (Oct 25 2026) are required to book (server: 422 DL_PHOTOS_REQUIRED /
+  // AADHAAR_PHOTOS_REQUIRED). A side staff rejected doesn't count — capture it again.
+  const requiredPhotos = requiredKycPhotosState(documents);
+  const photosNotice = (
+    state: KycPhotosState<KycPhotoDocLike>,
+    title: string,
+    noun: string,
+    buttonLabel: string,
+  ) =>
+    state.ok ? null : (
+      <div
+        role="alert"
+        className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-orange-200 bg-orange-50 p-3 text-left"
+      >
+        <AlertCircle className="size-5 shrink-0 text-orange-600" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-orange-900">{title}</p>
+          <p className="text-xs text-orange-800 mt-0.5">
+            Capture the {describeKycPhotoSides(state.missingSides)} of the customer's {noun} before booking
+            {state.rejectedSides.length > 0 ? ` (the ${describeKycPhotoSides(state.rejectedSides)} was rejected)` : ""}.
+          </p>
+        </div>
+        {onUploadClick && (
+          <Button size="sm" onClick={onUploadClick} className="bg-orange-600 hover:bg-orange-700 shrink-0">
+            {buttonLabel}
+            <Upload className="ml-2 size-4" />
+          </Button>
+        )}
       </div>
-      {onUploadClick && (
-        <Button size="sm" onClick={onUploadClick} className="bg-orange-600 hover:bg-orange-700 shrink-0">
-          Capture licence
-          <Upload className="ml-2 size-4" />
-        </Button>
-      )}
+    );
+  const dlNotice = requiredPhotos.ok ? null : (
+    <div className="space-y-2">
+      {photosNotice(requiredPhotos.dl, "Driving licence photos required", "driving licence", "Capture licence")}
+      {photosNotice(requiredPhotos.aadhaar, "Aadhaar photos required", "Aadhaar", "Capture Aadhaar")}
     </div>
   );
 
@@ -169,7 +182,7 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence + Aadhaar required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -188,7 +201,7 @@ export const KycDocumentList = ({
               <>
                 <p className="text-base font-medium text-foreground mb-1">No documents uploaded</p>
                 <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                  Both sides of the driving licence are required to book. Aadhaar is optional.
+                  Both sides of the driving licence and of the Aadhaar are required to book.
                 </p>
               </>
             )}
@@ -232,11 +245,11 @@ export const KycDocumentList = ({
       <Card className={cn("bg-white border border-zinc-200 rounded-xl shadow-sm", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">
-            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence required)</span>
+            KYC Documents <span className="text-sm font-normal text-muted-foreground">(driving licence + Aadhaar required)</span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Both sides of the driving licence are required to book and are attached to
-            the booking. Aadhaar is optional.
+            Both sides of the driving licence and of the Aadhaar are required to book. The
+            driving licence is attached to the booking.
           </p>
         </CardHeader>
 

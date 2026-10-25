@@ -162,6 +162,14 @@ export function PhotoLightbox({
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
+                    // The smaller copy failed: the original, once
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (it.previewUrl && img.dataset.fallback !== "1") {
+                        img.dataset.fallback = "1";
+                        img.src = it.url;
+                      }
+                    }}
                   />
                 ) : (
                   <FileText className="w-5 h-5 text-zinc-400" />

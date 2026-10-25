@@ -20,6 +20,7 @@
  * deposit refund is left. The booking status is never written. Audit log
  * CRITICAL with the actor's role.
  */
+import { proofPhotoFields, PROOF_FILE_RELATION_SELECT, PROOF_PHOTOS_RELATION_SELECT } from "./payment-proof.service.js";
 import type { Request } from "express";
 import Decimal from "decimal.js";
 import { prisma, AuditSeverity } from "@repo/database/client";
@@ -166,6 +167,12 @@ export async function listBookingPayments(req: Request, scope: PaymentStaffScope
     prisma.paymentTransaction.findMany({ where: { bookingId: booking.id }, orderBy: { createdAt: "asc" }, select: TXN_SELECT }),
     financialStateService.getState(booking.id),
   ]);
+  const photoRows = await prisma.paymentTransaction.findMany({
+    where: { id: { in: rows.map((r) => r.id) } },
+    select: { id: true, proofFile: PROOF_FILE_RELATION_SELECT, proofPhotos: PROOF_PHOTOS_RELATION_SELECT },
+  });
+  const photoById = new Map(photoRows.map((r) => [r.id, r]));
+  const photos = rows.map((r) => photoById.get(r.id));
   return {
     bookingPublicId: booking.publicId,
     status: booking.status,
@@ -179,7 +186,10 @@ export async function listBookingPayments(req: Request, scope: PaymentStaffScope
       amountDue: state.amountDue.toFixed(2),
       lifecycleState: state.lifecycleState,
     },
-    transactions: rows.map(paymentHistoryRow),
+    // Additive (Oct 25 2026): each row's payment / refund photo (proofPhoto / proofs)
+    transactions: await Promise.all(
+      rows.map(async (t, i) => ({ ...paymentHistoryRow(t), ...(await proofPhotoFields(photos[i]?.proofFile, photos[i]?.proofPhotos)) })),
+    ),
   };
 }
 

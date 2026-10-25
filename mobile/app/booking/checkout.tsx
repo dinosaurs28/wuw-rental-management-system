@@ -48,7 +48,7 @@ import { activeOfferCoupon, useOfferCouponStore } from '../../store/offerCoupon'
 import { SignInRequired, useIsGuest } from '../../lib/auth-gate';
 import { profileIncompleteMessage } from '../../lib/identity';
 import { handleDlInUse } from '../../lib/dlInUse';
-import { DL_PHOTOS_REQUIRED, DL_PHOTOS_REQUIRED_MESSAGE, dlPhotosState } from '../../lib/dlPhotos';
+import { DL_PHOTOS_REQUIRED_MESSAGE, isKycPhotosRequiredCode, kycPhotosRequiredMessage, requiredKycPhotosState } from '../../lib/kycPhotos';
 import DlPhotosUpload from '../../components/booking/DlPhotosUpload';
 import { inrExact, rentGstNoteLines, rentInclGstView, round2 } from '../../lib/gst';
 import StudioImage from '../../components/cars/StudioImage';
@@ -172,7 +172,7 @@ export default function Checkout() {
   const plan = parsePlan(planRaw);
   const monthly = plan === 'MONTHLY';
   // Booking is account-based (the API requires a token and a complete profile,
-  // name, phone, address and age, and both driving licence photos). Normally
+  // name, phone, address and age, and both driving licence and Aadhaar photos). Normally
   // requireAuth on the vehicle CTA stops a guest before
   // they get here; this guards a deep link or a restored navigation state.
   const isGuest = useIsGuest();
@@ -545,11 +545,15 @@ export default function Checkout() {
         return;
       }
     }
-    // Both driving licence photos are required (Oct 17 2026; server: 422
-    // DL_PHOTOS_REQUIRED) — uploaded in the step above.
-    const dlNow = dlPhotosState(kyc);
-    if (!dlNow.ok || !dlNow.front) {
-      Alert.alert('Driving licence photos', DL_PHOTOS_REQUIRED_MESSAGE);
+    // Both driving licence (Oct 17 2026) and both Aadhaar (Oct 25 2026) photos
+    // are required (server: 422 DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED) —
+    // uploaded in the steps above.
+    const kycNow = requiredKycPhotosState(kyc);
+    if (!kycNow.ok || !kycNow.dl.front) {
+      Alert.alert(
+        kycNow.dl.ok ? 'Aadhaar photos' : kycNow.aadhaar.ok ? 'Driving licence photos' : 'Licence and Aadhaar photos',
+        kycPhotosRequiredMessage(kycNow.missingTypes),
+      );
       return;
     }
     if (!terms) {
@@ -593,7 +597,7 @@ export default function Checkout() {
         start: startDate.toISOString(),
         end: endDate.toISOString(),
         // The DL front is the booking's KYC document (the server attaches it anyway)
-        ...(dlNow.front.file?.publicId ? { file_public_id: dlNow.front.file.publicId } : {}),
+        ...(kycNow.dl.front.file?.publicId ? { file_public_id: kycNow.dl.front.file.publicId } : {}),
         payment_type: 'ONLINE',
         payment_flow: sendFlow,
         // Monthly: plan=MONTHLY, never a coupon
@@ -684,9 +688,9 @@ export default function Checkout() {
         );
         return;
       }
-      if (err?.response?.data?.code === DL_PHOTOS_REQUIRED) {
+      if (isKycPhotosRequiredCode(err?.response?.data?.code)) {
         void refetchKyc(); // a photo was removed or rejected elsewhere
-        Alert.alert('Driving licence photos', err.response.data.message ?? DL_PHOTOS_REQUIRED_MESSAGE);
+        Alert.alert('Documents required', err.response.data.message ?? DL_PHOTOS_REQUIRED_MESSAGE);
         return;
       }
       if (err?.response?.data?.code === 'PROFILE_INCOMPLETE') {
@@ -811,8 +815,8 @@ export default function Checkout() {
   // baseTotal − coupon (only an older server without a breakdown).
   const total = couponPricing ? couponPricing.payableTotal : Math.max(0, baseTotal - couponDiscount);
 
-  // Both driving licence photos on file (front + back, not rejected)
-  const dlReady = dlPhotosState(kyc).ok;
+  // Both driving licence and both Aadhaar photos on file (front + back, not rejected)
+  const dlReady = requiredKycPhotosState(kyc).ok;
   // Advance only (item 18): the one plan the server allows for this total
   // ("Pay ₹X now · ₹Y at pickup"); handleBook sends the same plan.
   const payOptions = checkoutPaymentOptions(vehicle, appliedCoupon, pd ? total : null);
@@ -895,12 +899,27 @@ export default function Checkout() {
         )}
 
         {/* Driving licence photos — required to book (Oct 17 2026); the front is
-            attached to the booking. Aadhaar stays optional (profile tab). */}
+            attached to the booking. */}
         <View style={styles.sectionTitleRow}>
           <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Driving licence photos</Text>
           <Text style={styles.requiredTag}>Required</Text>
         </View>
         <DlPhotosUpload
+          docs={kyc}
+          onBlocked={
+            profile && !profile.isProfileCompleted
+              ? () => promptCompleteProfile(profileIncompleteMessage(profile.missingFields ?? [], 'self'))
+              : undefined
+          }
+        />
+
+        {/* Aadhaar photos — required to book too (Oct 25 2026) */}
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Aadhaar photos</Text>
+          <Text style={styles.requiredTag}>Required</Text>
+        </View>
+        <DlPhotosUpload
+          type="AADHAAR"
           docs={kyc}
           onBlocked={
             profile && !profile.isProfileCompleted

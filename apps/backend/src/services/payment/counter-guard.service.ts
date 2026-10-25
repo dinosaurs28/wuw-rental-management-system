@@ -24,6 +24,9 @@ export type CounterGuardCode =
   | "PAYMENT_PROOF_REQUIRED"
   | "INVALID_PAYMENT_PROOF"
   | "DUPLICATE_PAYMENT_PROOF"
+  // Refund paid by UPI / bank transfer without its payment-success photo (Oct 25 2026,
+  // services/payment/refund-proof-rules.ts)
+  | "REFUND_PROOF_REQUIRED"
   // CREDIT payment option (#11) — services/payment/customer-credit.service.ts
   | "COLLATERAL_REQUIRED"
   | "CREDIT_NOT_FOR_DEPOSIT"

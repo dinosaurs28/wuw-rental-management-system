@@ -258,6 +258,13 @@ export interface RefundItem {
   approvedBy?: string;
   approvedAt?: string;
   onlineTransactionRef?: string;
+  /** Additive (Oct 25 2026): marking it paid needs the refund's payment-success photo */
+  proofRequired?: boolean;
+  /** A refund to the original online payment (Razorpay refund id, no photo) */
+  gatewayRefund?: boolean;
+  completedBy?: string | null;
+  completedAt?: string | null;
+  proofPhoto?: { url: string; proofFileId?: string; capturedAt?: string | null } | null;
 }
 
 export interface CashShift {
@@ -678,11 +685,11 @@ export const paymentService = {
       )
       .then((r) => r.data),
 
-  completeRefund: (publicId: string, onlineTransactionRef?: string) =>
+  completeRefund: (publicId: string, onlineTransactionRef?: string, proofFileId?: string) =>
     apiClient
       .post<{ message: string }>(
         `/branchManager/payment/refunds/${publicId}/complete`,
-        { onlineTransactionRef }
+        { onlineTransactionRef, ...(proofFileId ? { proof_file_id: proofFileId } : {}) }
       )
       .then((r) => r.data),
 

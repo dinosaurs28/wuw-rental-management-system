@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import { formatRupees } from "@/lib/counterPayment";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import { formatIstDateTime } from "@/utils/overdueReturns";
 import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
 import { VoidPaymentDialog, VoidedNote, type VoidTarget } from "@/components/manager/payments/VoidPaymentDialog";
@@ -125,6 +126,10 @@ export function BookingPaymentsDialog({
                       )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
+                      {/* Oct 25 2026: the payment / refund success-screen photo */}
+                      {t.proofPhoto && (
+                        <ProofPhotoThumb photo={t.proofPhoto} photos={t.proofs} size="sm" caption={`${paymentRowLabel(t)} · ${formatRupees(num(t.totalAmount))}`} />
+                      )}
                       <span className={cn("font-semibold tabular-nums", t.isRefund && "text-orange-700", t.voided && "text-zinc-400 line-through")}>
                         {t.isRefund ? "−" : ""}
                         {formatRupees(num(t.totalAmount))}

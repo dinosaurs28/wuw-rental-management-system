@@ -122,6 +122,12 @@ export const kycService = {
         missingSides: KycSide[];
         rejectedSides: KycSide[];
       };
+      /** Aadhaar photos on file (required to book, Oct 25 2026) — newer servers */
+      aadhaarPhotos?: {
+        ok: boolean;
+        missingSides: KycSide[];
+        rejectedSides: KycSide[];
+      };
       kyc: {
         publicId: string;
         type: KycDocumentType;

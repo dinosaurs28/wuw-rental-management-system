@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { format } from "date-fns";
 import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, GitCompare, ImageOff, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
 import { SWAP_PHOTOS_MISSING_NOTE } from "@/components/swap/SwapPhotoStrip";
 import { PhotoCompareDialog, type ComparePhoto } from "./PhotoCompareDialog";
+import { usePhotoFallback } from "./usePhotoFallback";
 
 /** A photo's number in its set (the order taken): #1 at pickup is compared with #1 at the drop. */
 export function PhotoNumber({ n, className }: { n: number; className?: string }) {
@@ -110,39 +111,20 @@ function lightboxItems(set: ConditionPhotoSet): LightboxItem[] {
   }));
 }
 
-const RETRY_DELAYS_MS = [800, 2500];
-
 /**
- * A strip photo: loading skeleton, two automatic retries with backoff, then
- * a "Retry" button. The display copy is the default source; the original is
- * offered through srcset for screens dense enough to use it.
+ * A strip photo: loading skeleton; the display copy first, the original if it
+ * fails, two automatic retries with backoff, then a "Retry" button
+ * (usePhotoFallback). The original is offered through srcset for screens
+ * dense enough to use it. Off-screen photos load lazily (fewer requests at
+ * once to the photo host).
  */
 function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
-  const [attempt, setAttempt] = useState(0);
-  const [failures, setFailures] = useState(0);
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-
-  const display = photo.displayUrl || photo.url;
-  const onError = () => {
-    const next = failures + 1;
-    setFailures(next);
-    const delay = RETRY_DELAYS_MS[next - 1];
-    if (delay == null) {
-      setStatus("error");
-      return;
-    }
-    timer.current = setTimeout(() => setAttempt((n) => n + 1), delay);
-  };
+  const { src, usingDisplay, attempt, status, onLoad, onError, retry: restart } = usePhotoFallback(photo.url, photo.displayUrl);
   const retry = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFailures(0);
-    setStatus("loading");
-    setAttempt((n) => n + 1);
+    restart();
   };
+  const withOriginal = usingDisplay && src !== photo.url;
 
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
@@ -167,9 +149,9 @@ function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
       ) : (
         <img
           key={attempt}
-          src={display}
-          srcSet={display !== photo.url ? `${display} 1200w, ${photo.url} 2000w` : undefined}
-          sizes={display !== photo.url ? "(min-width: 640px) 520px, 85vw" : undefined}
+          src={src}
+          srcSet={withOriginal ? `${src} 1200w, ${photo.url} 2000w` : undefined}
+          sizes={withOriginal ? "(min-width: 640px) 520px, 85vw" : undefined}
           alt={alt}
           className={cn(
             "absolute inset-0 h-full w-full object-cover cursor-zoom-in transition-opacity",
@@ -177,7 +159,7 @@ function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
           )}
           loading="lazy"
           decoding="async"
-          onLoad={() => setStatus("loaded")}
+          onLoad={onLoad}
           onError={onError}
         />
       )}

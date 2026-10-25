@@ -40,7 +40,7 @@ import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
-import { DL_PHOTOS_REQUIRED_STAFF_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
+import { kycPhotosRequiredMessage, requiredKycPhotosState } from "@repo/schemas";
 import { employeeService } from "@/services/employee.service";
 import type { VehicleGroupDetails } from "@/services/vehicle.service";
 
@@ -257,10 +257,12 @@ export const EmployeeVehicleGroupDetailsPage = () => {
       document.getElementById("qr-photo-section")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    // Both driving licence photos are required (Oct 17 2026; server: 422
-    // DL_PHOTOS_REQUIRED) — captured in the KYC section.
-    if (!hasDlPhotosOnFile(kycDocuments)) {
-      toast.error(DL_PHOTOS_REQUIRED_STAFF_MESSAGE);
+    // Both driving licence (Oct 17 2026) and both Aadhaar (Oct 25 2026) photos
+    // are required (server: 422 DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED) —
+    // captured in the KYC section.
+    const requiredPhotos = requiredKycPhotosState(kycDocuments);
+    if (!requiredPhotos.ok) {
+      toast.error(kycPhotosRequiredMessage(requiredPhotos.missingTypes, "staff"));
       document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -486,7 +488,7 @@ export const EmployeeVehicleGroupDetailsPage = () => {
                     <div>
                       <h3 className="font-semibold text-amber-900">Profile Incomplete</h3>
                       <p className="text-amber-700 text-sm mt-1 max-w-sm mx-auto">
-                        Customer profile is missing required details (such as the age or address). Complete the profile to book — both driving licence photos are required too.
+                        Customer profile is missing required details (such as the age or address). Complete the profile to book — both driving licence and both Aadhaar photos are required too.
                       </p>
                     </div>
                     <Button

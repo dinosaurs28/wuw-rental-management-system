@@ -44,17 +44,26 @@ test("describeDlPhotoSides", () => {
 });
 
 test("DlPhotosRequiredError answers 422 DL_PHOTOS_REQUIRED with the customer message", () => {
-  const e = new DlPhotosRequiredError("customer", ["BACK"], []);
+  const aadhaarOk = { ok: true, missingSides: [], rejectedSides: [] };
+  const dlBack = { ok: false, missingSides: ["BACK" as const], rejectedSides: [] };
+  const e = new DlPhotosRequiredError("customer", dlBack, aadhaarOk);
   assert.equal(e.status, 422);
+  // The old fields keep their values; the Aadhaar check (Oct 25 2026) only adds fields.
   assert.deepEqual(e.toJSON(), {
     success: false,
     code: DL_PHOTOS_REQUIRED,
     message: DL_PHOTOS_REQUIRED_MESSAGE,
     missingSides: ["BACK"],
     rejectedSides: [],
+    missingDocuments: ["DL"],
+    dlPhotos: dlBack,
+    aadhaarPhotos: aadhaarOk,
   });
   assert.equal(DL_PHOTOS_REQUIRED_MESSAGE, "Upload both sides of your driving licence to book.");
-  assert.notEqual(new DlPhotosRequiredError("staff", ["FRONT"], []).message, DL_PHOTOS_REQUIRED_MESSAGE);
+  assert.notEqual(
+    new DlPhotosRequiredError("staff", { ok: false, missingSides: ["FRONT"], rejectedSides: [] }, aadhaarOk).message,
+    DL_PHOTOS_REQUIRED_MESSAGE,
+  );
 });
 
 test("the booking keeps the named DL photo, else the DL front", () => {

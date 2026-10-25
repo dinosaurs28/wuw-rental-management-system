@@ -56,7 +56,8 @@ export interface ManualCancelOptions {
 
 export interface ManualCancelBody {
   reason: string;
-  refund: { amount: number; method?: ManualCancelRefundMethod; note?: string };
+  /** proofFileId (Oct 25 2026): the refund's payment-success photo — required for UPI / bank transfer */
+  refund: { amount: number; method?: ManualCancelRefundMethod; note?: string; proofFileId?: string };
   /** Active rents: where the car is. */
   vehicleLocation?: ManualCancelVehicleLocation;
   vehicleStatus?: ManualCancelVehicleStatus;

@@ -246,7 +246,16 @@ class PaymentTransactionService {
    * Record a new payment transaction. Determines initial status based on
    * payment method and branch config. Links to active cash shift if any.
    */
-  async record(input: RecordPaymentInput, actor: ActorContext): Promise<PaymentTransaction> {
+  /**
+   * `opts.upiProofOptional` (Oct 25 2026, BM Pending Settlements): the branch
+   * manager settles after checking the transactions, so a UPI payment there needs
+   * no payment photo (one sent by an older client is still checked and stored).
+   */
+  async record(
+    input: RecordPaymentInput,
+    actor: ActorContext,
+    opts: { upiProofOptional?: boolean } = {},
+  ): Promise<PaymentTransaction> {
     // Resolve booking by publicId
     const booking = await prisma.booking.findUnique({
       where: { publicId: input.bookingPublicId },
@@ -292,7 +301,12 @@ class PaymentTransactionService {
     let upi: CounterUpi | null = null;
     if (onlineAmount.gt(ZERO) || input.method === "ONLINE") {
       const isUpi = !onlineGateway || onlineGateway.toUpperCase() === "UPI";
-      if (isUpi) {
+      const nothingBacksUpi =
+        !input.onlineTransactionRef?.trim() && !input.proof_file_id && !(input.proof_file_ids?.length);
+      if (isUpi && opts.upiProofOptional && nothingBacksUpi) {
+        // Settlements: confirmed by the manager against the transactions — no photo
+        onlineGateway = "UPI";
+      } else if (isUpi) {
         // A photo of the payment screen (#3) or, from older builds, the UTR
         upi = await resolveCounterUpi({
           utr: input.onlineTransactionRef,
@@ -355,7 +369,7 @@ class PaymentTransactionService {
           cashAmount,
           onlineAmount,
           onlineTransactionRef: onlineRef,
-          onlineGateway: onlineRef || upi ? onlineGateway : null,
+          onlineGateway: onlineRef || upi || (opts.upiProofOptional && onlineGateway === "UPI") ? onlineGateway : null,
           proofFileId: upi?.proof?.id ?? null,
           proofPhotos: proofPhotosCreate(upi?.proofs),
           collectedById: input.method !== "ONLINE" ? actor.actorId : null,

@@ -112,8 +112,9 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
       where: { customerId_type_side: { customerId, type: type as KycType, side: side as KycSide } },
     });
 
-    // A side staff REJECTED is replaced in place (driving licence photos are
-    // required to book, Oct 17 2026); any other existing side must be deleted first.
+    // A side staff REJECTED is replaced in place, for any document type
+    // (driving licence and Aadhaar photos are required to book, Oct 17 / Oct 25
+    // 2026); any other existing side must be deleted first.
     if (existingKyc && existingKyc.status !== KycStatus.REJECTED) {
       await fs.unlink(file.path).catch(() => {});
       return res.status(StatusCode.CONFLICT).json({

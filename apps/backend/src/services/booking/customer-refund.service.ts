@@ -35,7 +35,14 @@ import { notifyEvents } from "../notification/notification.events.js";
 import { computeBookingOwed, creditOutstanding, getBookingMoney } from "../payment/booking-owed.service.js";
 import { getBookingCreditSummary } from "../payment/customer-credit.service.js";
 import { depositToRefund } from "../payment/settlement-engine.service.js";
-import { claimPaymentProof, proofPhotosCreate, resolvePaymentProof } from "../payment/payment-proof.service.js";
+import {
+  claimPaymentProof,
+  proofPhotosCreate,
+  resolvePaymentProof,
+  proofPhotoFields,
+  PROOF_FILE_RELATION_SELECT,
+  PROOF_PHOTOS_RELATION_SELECT,
+} from "../payment/payment-proof.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { assertOpenShift, lockShiftForPayment } from "../payment/counter-guard.service.js";
 import { voidView } from "../payment/payment-void-rules.js";
@@ -172,9 +179,12 @@ export async function listCustomerRefunds(bookingId: number, db: Db = prisma) {
       notes: true,
       createdAt: true,
       collectedBy: { select: { name: true } },
+      // Oct 25 2026: the refund's payment-success photo, shown in the refund history
+      proofFile: PROOF_FILE_RELATION_SELECT,
+      proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
     },
   });
-  return rows.map((t) => ({
+  return Promise.all(rows.map(async (t) => ({
     publicId: t.publicId,
     amount: new Decimal(t.totalAmount.toString()).toFixed(2),
     goodwillAmount: new Decimal(t.goodwillAmount.toString()).toFixed(2),
@@ -188,7 +198,9 @@ export async function listCustomerRefunds(bookingId: number, db: Db = prisma) {
     // Additive (Oct 2026): void state — a voided refund is shown struck through
     status: t.status,
     ...voidView(t),
-  }));
+    // Additive (Oct 25 2026): proofPhoto / proofPhotoUrl / proofs
+    ...(await proofPhotoFields(t.proofFile, t.proofPhotos)),
+  })));
 }
 
 // ── GET: what the dialog needs ───────────────────────────────────────────────
@@ -230,8 +242,13 @@ export async function getCustomerRefundOptions(req: Request, scope: CustomerRefu
     /** A cash refund is recorded against this shift; without one it is recorded outside a shift */
     cashShiftOpen: shift !== null,
     methods: CUSTOMER_REFUND_METHODS.map((value) => ({ value, label: CUSTOMER_REFUND_METHOD_LABELS[value] })),
-    /** Payment-proof photos are uploaded through the branch manager's portal or the staff app */
-    proofPhotoSupported: scope.role !== "ADMIN",
+    /**
+     * Payment-success photos: the branch manager's portal / staff app upload route, or
+     * (Oct 25 2026) POST /api/admin/bookings/:publicId/refund-proof for the admin
+     */
+    proofPhotoSupported: true,
+    /** Additive (Oct 25 2026): methods whose refund needs the payment-success photo */
+    proofRequiredMethods: ["UPI", "BANK_TRANSFER"],
     /** Additive (Oct 2026): the actor's role — a Fleet Executive needs an open cash shift for a cash refund */
     actorRole: scope.role,
     limits: {

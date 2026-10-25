@@ -31,6 +31,7 @@
 import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { parseRupees } from "./manual-cancel-rules.js";
+import { refundProofRefusal } from "../payment/refund-proof-rules.js";
 
 export const CUSTOMER_REFUND_REASON_MIN = 3;
 export const CUSTOMER_REFUND_REASON_MAX = 500;
@@ -59,7 +60,8 @@ export type CustomerRefundErrorCode =
   | "UNAUTHORIZED"
   | "BOOKING_NOT_FOUND"
   | "CONFIRM_OVER_RECEIVED"
-  | "DUPLICATE_REFUND";
+  | "DUPLICATE_REFUND"
+  | "REFUND_PROOF_REQUIRED";
 
 export class CustomerRefundError extends Error {
   constructor(
@@ -87,7 +89,7 @@ export interface ParsedCustomerRefund {
   reason: string;
   /** UPI / bank transfer only: the transfer's reference / UTR (optional) */
   reference: string | null;
-  /** UPI / bank transfer only: the uploaded payment-proof photo id (optional) */
+  /** UPI / bank transfer only: the uploaded payment-success photo id (required for them since Oct 25 2026) */
   proofFileId: string | null;
   /** The actor saw the "more than received" warning and ticked it */
   confirmOverReceived: boolean;
@@ -152,6 +154,12 @@ export function parseCustomerRefundBody(body: unknown): ParsedCustomerRefund {
         throw invalid("proofFileId must be the id of the uploaded photo.", "proofFileId");
       }
       proofFileId = b.proofFileId.trim();
+    }
+    // Oct 25 2026: a refund paid by UPI / bank transfer needs the photo of its
+    // payment-success screen (old builds without the photo get this 400)
+    const noProof = refundProofRefusal(method, proofFileId !== null);
+    if (noProof) {
+      throw new CustomerRefundError(noProof.status, noProof.code, noProof.message, { field: noProof.field });
     }
   }
 

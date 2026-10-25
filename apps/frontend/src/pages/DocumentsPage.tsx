@@ -2,7 +2,7 @@ import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Shield, Loader2, User, AlertCircle, CheckCircle2 } from "lucide-react";
-import { describeDlPhotoSides, dlPhotosState } from "@repo/schemas";
+import { describeKycPhotoSides, requiredKycPhotosState, type KycPhotoDocLike, type KycPhotosState } from "@repo/schemas";
 import axios from "axios";
 import type { KycDocumentType, KycSide } from "@/services/kyc.service";
 
@@ -194,7 +194,20 @@ export function DocumentsPage() {
   );
 
   const KYC_TYPES: KycDocumentType[] = ["DL", "AADHAAR"];
-  const dlPhotos = dlPhotosState(uploadedDocuments);
+  // Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos: both
+  // sides of each are required to book.
+  const requiredPhotos = requiredKycPhotosState(uploadedDocuments);
+  const missingPhotoText = (state: KycPhotosState<KycPhotoDocLike>, name: string) =>
+    state.ok
+      ? null
+      : state.rejectedSides.length > 0
+        ? `Upload a clearer photo of the ${describeKycPhotoSides(state.missingSides)} of your ${name} — our team couldn't accept the last one.`
+        : `Upload the ${describeKycPhotoSides(state.missingSides)} of your ${name}.`;
+  const requiredPhotosText = requiredPhotos.ok
+    ? "Both sides of your driving licence and Aadhaar card are on file."
+    : [missingPhotoText(requiredPhotos.dl, "driving licence"), missingPhotoText(requiredPhotos.aadhaar, "Aadhaar card")]
+        .filter(Boolean)
+        .join(" ");
 
   const fullyUploadedTypes = KYC_TYPES.filter((type) => {
     const hasFront = uploadedDocuments.some((d) => d.type === type && d.side === "FRONT" && d.status !== "REJECTED");
@@ -279,31 +292,27 @@ export function DocumentsPage() {
               </div>
             ) : (
               <>
-                {/* Driving licence photos are required to book (Oct 17 2026); Aadhaar is optional */}
+                {/* Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos are required to book */}
                 {!isFetching && (
                   <div
                     role="status"
                     className={
-                      dlPhotos.ok
+                      requiredPhotos.ok
                         ? "flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4"
                         : "flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4"
                     }
                   >
-                    {dlPhotos.ok ? (
+                    {requiredPhotos.ok ? (
                       <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
                     ) : (
                       <AlertCircle className="w-5 h-5 shrink-0 text-orange-600 mt-0.5" />
                     )}
                     <div>
-                      <p className={dlPhotos.ok ? "font-bold text-emerald-900" : "font-bold text-orange-900"}>
-                        Driving licence photos — required to book
+                      <p className={requiredPhotos.ok ? "font-bold text-emerald-900" : "font-bold text-orange-900"}>
+                        Driving licence and Aadhaar photos — required to book
                       </p>
-                      <p className={dlPhotos.ok ? "text-sm text-emerald-800" : "text-sm text-orange-800"}>
-                        {dlPhotos.ok
-                          ? "Both sides are on file. Aadhaar is optional."
-                          : dlPhotos.rejectedSides.length > 0
-                            ? `Upload a clearer photo of the ${describeDlPhotoSides(dlPhotos.missingSides)} of your licence — our team couldn't accept the last one.`
-                            : `Upload the ${describeDlPhotoSides(dlPhotos.missingSides)} of your driving licence. Aadhaar is optional.`}
+                      <p className={requiredPhotos.ok ? "text-sm text-emerald-800" : "text-sm text-orange-800"}>
+                        {requiredPhotosText}
                       </p>
                     </div>
                   </div>

@@ -20,13 +20,26 @@ export interface PaymentProofView {
   expiresIn: number;
 }
 
-/** Fleet Executive (/employee) or Branch Manager (/branchManager) upload route. */
-export type PaymentProofRole = "staff" | "manager";
+/**
+ * Fleet Executive (/employee) or Branch Manager (/branchManager) upload route, or
+ * (Oct 25 2026) `admin:<bookingPublicId>` — the admin's refund photo, stored under
+ * that booking's branch (POST /admin/bookings/:publicId/refund-proof; no re-fetch).
+ */
+export type PaymentProofRole = "staff" | "manager" | `admin:${string}`;
 
-const BASE: Record<PaymentProofRole, string> = {
+const BASE: Record<"staff" | "manager", string> = {
   staff: "/employee/payment/proof",
   manager: "/branchManager/payment/proof",
 };
+
+const uploadUrl = (role: PaymentProofRole) =>
+  role.startsWith("admin:")
+    ? `/admin/bookings/${encodeURIComponent(role.slice("admin:".length))}/refund-proof`
+    : BASE[role as "staff" | "manager"];
+
+/** The upload role for "Refund to customer": the admin uploads against the booking. */
+export const refundProofRole = (scope: "manager" | "admin" | "employee", bookingPublicId: string): PaymentProofRole =>
+  scope === "admin" ? `admin:${bookingPublicId}` : scope === "employee" ? "staff" : "manager";
 
 export const paymentProofService = {
   /**
@@ -36,7 +49,7 @@ export const paymentProofService = {
   upload: async (role: PaymentProofRole, file: File): Promise<PaymentProofView> => {
     const form = new FormData();
     form.append("file", file);
-    const res = await apiClient.post<{ data: PaymentProofView; message: string }>(BASE[role], form, {
+    const res = await apiClient.post<{ data: PaymentProofView; message: string }>(uploadUrl(role), form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data.data;
@@ -44,8 +57,9 @@ export const paymentProofService = {
 
   /** A fresh presigned URL. 404 PAYMENT_PROOF_NOT_FOUND (missing / other branch). */
   get: async (role: PaymentProofRole, proofFileId: string): Promise<PaymentProofView> => {
+    if (role.startsWith("admin:")) throw new Error("No re-fetch route for an admin refund photo");
     const res = await apiClient.get<{ data: PaymentProofView }>(
-      `${BASE[role]}/${encodeURIComponent(proofFileId)}`,
+      `${BASE[role as "staff" | "manager"]}/${encodeURIComponent(proofFileId)}`,
     );
     return res.data.data;
   },

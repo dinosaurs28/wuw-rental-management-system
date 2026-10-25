@@ -68,8 +68,8 @@ test("parse: amount must be above ₹0 with at most 2 decimals", () => {
 test("parse: method must be cash, UPI or bank transfer", () => {
   expectError(() => parseCustomerRefundBody({ ...valid, method: "ORIGINAL_PAYMENT" }), "VALIDATION_ERROR", "method");
   expectError(() => parseCustomerRefundBody({ ...valid, method: undefined }), "VALIDATION_ERROR", "method");
-  assert.equal(parseCustomerRefundBody({ ...valid, method: "UPI" }).method, "UPI");
-  assert.equal(parseCustomerRefundBody({ ...valid, method: "BANK_TRANSFER" }).method, "BANK_TRANSFER");
+  assert.equal(parseCustomerRefundBody({ ...valid, method: "UPI", proofFileId: "p1" }).method, "UPI");
+  assert.equal(parseCustomerRefundBody({ ...valid, method: "BANK_TRANSFER", proofFileId: "p1" }).method, "BANK_TRANSFER");
 });
 
 test("parse: a reason is required (3–500 characters, trimmed)", () => {
@@ -83,20 +83,31 @@ test("parse: reference and photo are kept for UPI / bank, ignored for cash", () 
   const upi = parseCustomerRefundBody({ ...valid, method: "UPI", reference: " 123456789012 ", proofFileId: "abc123" });
   assert.equal(upi.reference, "123456789012");
   assert.equal(upi.proofFileId, "abc123");
-  const bank = parseCustomerRefundBody({ ...valid, method: "BANK_TRANSFER", reference: "NEFT/HDFC-0001" });
+  const bank = parseCustomerRefundBody({ ...valid, method: "BANK_TRANSFER", reference: "NEFT/HDFC-0001", proofFileId: "p1" });
   assert.equal(bank.reference, "NEFT/HDFC-0001");
   const cash = parseCustomerRefundBody({ ...valid, reference: "123", proofFileId: "abc" });
   assert.equal(cash.reference, null);
   assert.equal(cash.proofFileId, null);
   // Optional: blank is none
-  assert.equal(parseCustomerRefundBody({ ...valid, method: "UPI", reference: "  " }).reference, null);
+  assert.equal(parseCustomerRefundBody({ ...valid, method: "UPI", reference: "  ", proofFileId: "p1" }).reference, null);
   expectError(
-    () => parseCustomerRefundBody({ ...valid, method: "UPI", reference: "x".repeat(65) }),
+    () => parseCustomerRefundBody({ ...valid, method: "UPI", reference: "x".repeat(65), proofFileId: "p1" }),
     "VALIDATION_ERROR",
     "reference",
   );
-  expectError(() => parseCustomerRefundBody({ ...valid, method: "UPI", reference: "<script>" }), "VALIDATION_ERROR", "reference");
+  expectError(() => parseCustomerRefundBody({ ...valid, method: "UPI", reference: "<script>", proofFileId: "p1" }), "VALIDATION_ERROR", "reference");
   expectError(() => parseCustomerRefundBody({ ...valid, method: "UPI", proofFileId: 12 }), "VALIDATION_ERROR", "proofFileId");
+});
+
+test("parse: UPI / bank transfer refunds need the payment-success photo (Oct 25 2026); cash doesn't", () => {
+  expectError(() => parseCustomerRefundBody({ ...valid, method: "UPI" }), "REFUND_PROOF_REQUIRED", "proofFileId");
+  expectError(() => parseCustomerRefundBody({ ...valid, method: "BANK_TRANSFER", reference: "NEFT1" }), "REFUND_PROOF_REQUIRED", "proofFileId");
+  try {
+    parseCustomerRefundBody({ ...valid, method: "UPI" });
+  } catch (err) {
+    assert.equal((err as CustomerRefundError).status, 400);
+  }
+  assert.equal(parseCustomerRefundBody({ ...valid, method: "CASH" }).proofFileId, null);
 });
 
 test("parse: confirmation tick only when exactly true; requestId format", () => {

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Banknote, HandCoins, Smartphone, Split } from "lucide-react";
+import { Banknote, HandCoins, Landmark, Smartphone, Split } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import {
   type CounterRefundMethod,
 } from "@/lib/counterPayment";
 import type { PaymentProofRole } from "@/services/paymentProof.service";
+import { COUNTER_REFUND_METHODS, COUNTER_REFUND_METHOD_LABELS } from "@repo/schemas";
 import { PaymentProofField } from "./PaymentProofField";
 import { PaymentProofSlots } from "./PaymentProofSlots";
 
@@ -251,6 +252,12 @@ export function CounterPaymentFields({
 
 // ── Refunds (deposit refund at drop, refund of a drop remainder) ─────────────
 
+const REFUND_METHOD_ICONS: Record<CounterRefundMethod, ReactNode> = {
+  CASH: <Banknote className="h-4 w-4" />,
+  UPI: <Smartphone className="h-4 w-4" />,
+  BANK_TRANSFER: <Landmark className="h-4 w-4" />,
+};
+
 interface RefundMethodFieldsProps {
   method: CounterRefundMethod;
   onMethodChange: (method: CounterRefundMethod) => void;
@@ -262,12 +269,22 @@ interface RefundMethodFieldsProps {
   disabled?: boolean;
   idPrefix?: string;
   className?: string;
+  /** Methods offered (default Cash / UPI / Bank transfer). */
+  methods?: readonly CounterRefundMethod[];
+  /**
+   * Ask for the photo of the refund's payment-success screen (default true).
+   * Off in the BM's Pending Settlements (Oct 25 2026, client: no photo there).
+   */
+  showProof?: boolean;
+  /** Shown under the chips when Cash is picked (default: drawer + manager acknowledgement). */
+  cashNote?: ReactNode;
 }
 
 /**
- * Cash or UPI back to the customer. A UPI refund may carry a photo of the
- * transfer (optional). A cash refund comes out of the drawer and the branch
- * manager acknowledges it.
+ * Cash, UPI or bank transfer back to the customer. Oct 25 2026: a UPI / bank
+ * refund needs a photo of its payment-success screen (REFUND_PROOF_REQUIRED on
+ * the server); a cash refund comes out of the drawer and the branch manager
+ * acknowledges it.
  */
 export function RefundMethodFields({
   method,
@@ -280,13 +297,16 @@ export function RefundMethodFields({
   disabled = false,
   idPrefix = "refund",
   className,
+  methods = COUNTER_REFUND_METHODS,
+  showProof = true,
+  cashNote,
 }: RefundMethodFieldsProps) {
   return (
     <div className={cn("space-y-3", className)}>
       <div className="space-y-2">
         <Label className="text-sm text-neutral-600">{label}</Label>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={label}>
-          {(["CASH", "UPI"] as const).map((m) => (
+        <div className={cn("grid gap-2", methods.length > 2 ? "grid-cols-3" : "grid-cols-2")} role="radiogroup" aria-label={label}>
+          {methods.map((m) => (
             <button
               key={m}
               type="button"
@@ -301,29 +321,34 @@ export function RefundMethodFields({
                   : "border-neutral-200 text-neutral-600 hover:border-neutral-300",
               )}
             >
-              {METHOD_ICONS[m]}
-              {m === "CASH" ? "Cash" : "UPI"}
+              {REFUND_METHOD_ICONS[m]}
+              {COUNTER_REFUND_METHOD_LABELS[m]}
             </button>
           ))}
         </div>
       </div>
       {method === "CASH" ? (
         <p className="text-xs text-neutral-500">
-          Paid from the cash drawer. The branch manager acknowledges cash refunds.
+          {cashNote ?? "Paid from the cash drawer. The branch manager acknowledges cash refunds."}
         </p>
-      ) : (
+      ) : showProof ? (
         <PaymentProofField
           id={`${idPrefix}-proof`}
           role={proofRole}
           value={proof}
           onChange={onProofChange}
           error={proofError}
-          required={false}
-          label="Photo of the UPI transfer"
-          helper="After sending the refund by UPI, photograph the transfer screen."
+          required
+          label={method === "BANK_TRANSFER" ? "Photo of the bank transfer success screen" : "Photo of the UPI refund success screen"}
+          helper="After sending the refund, photograph the payment-success screen. Required."
           disabled={disabled}
         />
-      )}
+      ) : null}
     </div>
   );
+}
+
+/** Client check before a refund request: a UPI / bank refund needs its photo. */
+export function refundProofMissing(method: CounterRefundMethod, proof: CounterProof | null): boolean {
+  return method !== "CASH" && !proof;
 }

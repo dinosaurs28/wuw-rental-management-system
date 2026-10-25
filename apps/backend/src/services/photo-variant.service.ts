@@ -3,17 +3,21 @@
  * damage photos, for the drop screen strips. New uploads store one right away
  * (putDisplayVariant); photos uploaded before Oct 18 2026 get one the first
  * time a drop screen asks for them (ensureDisplayVariants). The original is
- * never touched, and every failure leaves the photo on its original URL.
+ * never touched, and every failure leaves the photo on its original URL. A
+ * stored copy is linked only once it is confirmed in the bucket (Oct 25 2026).
  */
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@repo/database/client";
 import { r2, PUBLIC_BUCKET } from "../lib/r2.client.js";
 import { processDisplayImage } from "../utils/image-processor.js";
 import {
+  ConfirmedDisplayKeys,
   IMMUTABLE_CACHE_CONTROL,
   canHaveDisplayVariant,
+  confirmedDisplayKey,
   displayVariantKey,
   variantSaveOutcome,
+  type DisplayCopyDeps,
   type VariantFile,
 } from "../utils/photo-variant.js";
 
@@ -135,10 +139,38 @@ export function ensureDisplayVariant(file: VariantCandidate): Promise<string | n
   return job;
 }
 
+// Display keys checked to be in the bucket (once per process per photo)
+const confirmedKeys = new ConfirmedDisplayKeys();
+
+function isNotFound(error: any): boolean {
+  return error?.name === "NotFound" || error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404;
+}
+
+const displayCopyDeps: DisplayCopyDeps = {
+  async exists(displayKey) {
+    try {
+      await r2.send(new HeadObjectCommand({ Bucket: PUBLIC_BUCKET, Key: displayKey }), {
+        abortSignal: AbortSignal.timeout(R2_TIMEOUT_MS),
+      });
+      return true;
+    } catch (error) {
+      if (isNotFound(error)) return false;
+      throw error;
+    }
+  },
+  async forget(fileId, displayKey) {
+    console.warn(`[photo-variant] Display copy ${displayKey} is missing from the bucket — making it again`);
+    await prisma.fileObject.updateMany({ where: { id: fileId, displayKey }, data: { displayKey: null } });
+  },
+  make: (file) => ensureDisplayVariant(file),
+};
+
 /**
- * Makes the missing display copies of `files`, waiting at most `budgetMs`.
- * Returns file id → displayKey for every copy that exists by then (stored or
- * just made); the rest keep going in the background and show up next time.
+ * The display copies of `files` the drop screens may link to, waiting at most
+ * `budgetMs`. Returns file id → displayKey for every copy confirmed in the
+ * bucket by then (stored and checked, or just made); a photo left out shows
+ * from its original URL (a missing / unmade copy is never linked), and the
+ * unfinished copies keep going in the background for the next view.
  */
 export async function ensureDisplayVariants(
   files: VariantCandidate[],
@@ -146,15 +178,14 @@ export async function ensureDisplayVariants(
 ): Promise<Map<number, string>> {
   const ready = new Map<number, string>();
   const jobs: Promise<unknown>[] = [];
+  if (!PUBLIC_BUCKET) return ready;
   for (const file of files) {
-    if (file.displayKey) {
-      ready.set(file.id, file.displayKey);
-      continue;
-    }
     jobs.push(
-      ensureDisplayVariant(file).then((key) => {
-        if (key) ready.set(file.id, key);
-      }),
+      confirmedDisplayKey(file, displayCopyDeps, confirmedKeys)
+        .then((key) => {
+          if (key) ready.set(file.id, key);
+        })
+        .catch(() => {}),
     );
   }
   if (jobs.length > 0) {

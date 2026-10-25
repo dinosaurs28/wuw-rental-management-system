@@ -15,7 +15,7 @@ import StudioImage from '../../components/cars/StudioImage';
 import StatusBadge, { type BadgeTone } from '../../components/ui/StatusBadge';
 import ItineraryTimeline from '../../components/ui/ItineraryTimeline';
 import VerifyLicenseCard, { type DLStatus } from '../../components/ui/VerifyLicenseCard';
-import { dlPhotosState } from '../../lib/dlPhotos';
+import { requiredKycPhotosState } from '../../lib/kycPhotos';
 import type { BookingTrip, BookingVehicle, ExtensionEligibility } from '../../types/api';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -38,13 +38,14 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   CANCELLED: 'bad',
 };
 
-// Both licence sides are required (Oct 17 2026): "verified" only when the
-// front and the back are both approved; a missing side reads as none, a
-// rejected one as rejected.
+// Both licence sides (Oct 17 2026) and both Aadhaar sides (Oct 25 2026) are
+// required: "verified" only when all four photos are approved; a missing side
+// reads as none, a rejected one as rejected.
 function dlStatusFrom(rows: any[]): DLStatus {
-  const dl = dlPhotosState((rows ?? []).filter((d) => !!d));
-  if (!dl.ok) return dl.rejectedSides.length > 0 ? 'rejected' : 'none';
-  return dl.front?.status === 'APPROVED' && dl.back?.status === 'APPROVED' ? 'approved' : 'pending';
+  const req = requiredKycPhotosState((rows ?? []).filter((d) => !!d));
+  if (!req.ok) return req.dl.rejectedSides.length + req.aadhaar.rejectedSides.length > 0 ? 'rejected' : 'none';
+  const approved = [req.dl.front, req.dl.back, req.aadhaar.front, req.aadhaar.back].every((d) => d?.status === 'APPROVED');
+  return approved ? 'approved' : 'pending';
 }
 
 // The list endpoint is the only customer booking read; page through it for
@@ -229,7 +230,7 @@ export default function TripDetail() {
   const upcoming = status === 'HOLD' || status === 'CONFIRMED';
   // Real DL/KYC status drives the "verify your licence" card (only for upcoming trips).
   const { data: dlStatus = 'none' } = useQuery<DLStatus>({
-    queryKey: ['user-kyc-dl'],
+    queryKey: ['user-kyc-photos'],
     queryFn: async () => {
       const res = await userApi.kyc();
       const rows = (res.data?.kyc ?? res.data?.data ?? []) as any[];
@@ -363,7 +364,7 @@ export default function TripDetail() {
           </View>
         )}
 
-        {/* Verify licence — only for upcoming trips, driven by real KYC DL status */}
+        {/* Licence + Aadhaar photos — only for upcoming trips, driven by real KYC status */}
         {upcoming ? (
           <View style={styles.section}>
             <VerifyLicenseCard status={dlStatus} onVerify={() => router.push('/(tabs)/profile')} />

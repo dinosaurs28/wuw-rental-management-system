@@ -5,6 +5,10 @@ import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { ORIGINAL_PAYMENT_REFUND_REASON_PREFIX } from "../booking/manual-cancel-rules.js";
+import { StatusCode } from "../../types/statusCode.js";
+import { CounterGuardError } from "./counter-guard.service.js";
+import { claimPaymentProof, proofPhotoFields, PROOF_FILE_RELATION_SELECT, resolvePaymentProof } from "./payment-proof.service.js";
+import { isGatewayRefundRef, refundProofRefusal } from "./refund-proof-rules.js";
 import type { RefundRequest, PaymentMethod, Role } from "@repo/database/client";
 
 interface ActorContext {
@@ -17,6 +21,32 @@ interface ActorContext {
 }
 
 const ZERO = new Decimal(0);
+
+/**
+ * The request was written next to a refund already paid out WITH its
+ * payment-success photo (a Fleet Executive's drop-bill refund / deposit refund /
+ * drop refund: an APPROVED ONLINE request beside the CONFIRMED refund row that
+ * carries the photo), so marking it paid needs no second photo. Paired like
+ * payment-void's pairedRefundRequest: same booking and amount, within 10 s.
+ */
+async function paidOutWithPhoto(refund: Pick<RefundRequest, "bookingId" | "amount" | "createdAt">): Promise<boolean> {
+  const windowMs = 10_000;
+  const row = await prisma.paymentTransaction.findFirst({
+    where: {
+      bookingId: refund.bookingId,
+      purpose: { in: ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"] },
+      status: "CONFIRMED",
+      totalAmount: refund.amount,
+      proofFileId: { not: null },
+      createdAt: {
+        gte: new Date(refund.createdAt.getTime() - windowMs),
+        lte: new Date(refund.createdAt.getTime() + windowMs),
+      },
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
 
 class RefundService {
   async request(
@@ -171,21 +201,57 @@ class RefundService {
     return updated;
   }
 
-  async complete(publicId: string, onlineTransactionRef: string | undefined, actor: ActorContext): Promise<RefundRequest> {
+  async complete(
+    publicId: string,
+    onlineTransactionRef: string | undefined,
+    actor: ActorContext,
+    proofFileId?: string,
+  ): Promise<RefundRequest> {
     const refund = await prisma.refundRequest.findUnique({ where: { publicId } });
     if (!refund) throw new Error("Refund request not found.");
     if (refund.status !== "APPROVED") {
       throw new Error(`Cannot complete refund in ${refund.status} state. Approve it first.`);
     }
 
-    const updated = await prisma.refundRequest.update({
-      where: { publicId },
-      data: {
-        status: "COMPLETED",
-        completedById: actor.actorId,
-        completedAt: new Date(),
-        onlineTransactionRef: onlineTransactionRef ?? null,
-      },
+    // Oct 25 2026: marking a UPI / bank refund paid needs the photo of its
+    // payment-success screen. Exempt: a refund to the original online payment
+    // (manual cancel, completed with the Razorpay refund id) or any refund
+    // completed with a Razorpay refund id ("rfnd_…"); cash keeps it optional.
+    const gatewayRefund =
+      refund.reason.startsWith(ORIGINAL_PAYMENT_REFUND_REASON_PREFIX) || isGatewayRefundRef(onlineTransactionRef);
+    const noProof = refundProofRefusal(refund.method, !!proofFileId, { gateway: gatewayRefund ? "RAZORPAY" : null, field: "proof_file_id" });
+    // Already paid out with its photo (Fleet refunds at the drop): no second photo
+    if (noProof && !(await paidOutWithPhoto(refund))) throw new CounterGuardError(noProof.status, noProof.code, noProof.message, { field: noProof.field });
+    const proof = proofFileId ? await resolvePaymentProof(proofFileId, refund.branchId) : null;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (proof) {
+        await claimPaymentProof(proof, tx);
+        // …and not already the photo of another refund request
+        const other = await tx.refundRequest.findFirst({
+          where: { proofFileId: proof.id, NOT: { id: refund.id } },
+          select: { id: true },
+        });
+        if (other) {
+          throw new CounterGuardError(
+            StatusCode.CONFLICT,
+            "DUPLICATE_PAYMENT_PROOF",
+            "This photo is already attached to another refund. Take a photo of this refund's success screen.",
+          );
+        }
+      }
+      const done = await tx.refundRequest.updateMany({
+        where: { id: refund.id, status: "APPROVED" },
+        data: {
+          status: "COMPLETED",
+          completedById: actor.actorId,
+          completedAt: new Date(),
+          onlineTransactionRef: onlineTransactionRef ?? null,
+          ...(proof && { proofFileId: proof.id }),
+        },
+      });
+      if (done.count === 0) throw new Error("Cannot complete refund: it was completed or changed meanwhile.");
+      return tx.refundRequest.findUniqueOrThrow({ where: { id: refund.id } });
     });
 
     await auditService.log({
@@ -199,7 +265,7 @@ class RefundService {
       entity: "RefundRequest",
       entityId: refund.publicId,
       before: { status: "APPROVED" },
-      after: { status: "COMPLETED", onlineTransactionRef },
+      after: { status: "COMPLETED", onlineTransactionRef, ...(proof && { proofFileId: proof.publicId }) },
     });
 
     await staffActivityService.log({
@@ -282,6 +348,7 @@ class RefundService {
         requestedBy: { select: { publicId: true, name: true, role: true } },
         approvedBy: { select: { publicId: true, name: true, role: true } },
         completedBy: { select: { publicId: true, name: true, role: true } },
+        proofFile: PROOF_FILE_RELATION_SELECT,
         booking: {
           select: {
             publicId: true,
@@ -293,6 +360,7 @@ class RefundService {
     });
 
     if (!refund) return null;
+    const gatewayRefund = refund.reason.startsWith(ORIGINAL_PAYMENT_REFUND_REASON_PREFIX);
 
     return {
       publicId: refund.publicId,
@@ -307,6 +375,15 @@ class RefundService {
       approvedBy: refund.approvedBy?.name,
       approvedAt: refund.approvedAt?.toISOString(),
       onlineTransactionRef: refund.onlineTransactionRef,
+      // Additive (Oct 25 2026): marking it paid needs the payment-success photo (UPI /
+      // bank refunds; not a Razorpay refund), and the photo once taken
+      proofRequired:
+        refundProofRefusal(refund.method, false, { gateway: gatewayRefund ? "RAZORPAY" : null }) !== null &&
+        !(refund.status === "APPROVED" && (await paidOutWithPhoto(refund))),
+      gatewayRefund,
+      completedBy: refund.completedBy?.name ?? null,
+      completedAt: refund.completedAt?.toISOString() ?? null,
+      ...(await proofPhotoFields(refund.proofFile, null)),
     };
   }
 

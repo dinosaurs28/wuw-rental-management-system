@@ -19,7 +19,7 @@ import {
 } from "@/lib/counterPayment";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
 import type { AdjustmentLine } from "@/services/completedOperation.service";
-import { CounterPaymentFields, RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
+import { CounterPaymentFields, RefundMethodFields, refundProofMissing } from "@/components/payment/counter/CounterPaymentFields";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { Button } from "@/components/ui/button";
 
@@ -106,6 +106,11 @@ export function AdjustmentSettle({ session, lines, collectMethods, onSettled, on
         return;
       }
     }
+    // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+    if (net < 0 && refundProofMissing(refundMethod, refundProof)) {
+      setRefundProofError("Add the photo of the refund's payment-success screen.");
+      return;
+    }
     setSaving(true);
     try {
       if (net < 0) {
@@ -114,10 +119,14 @@ export function AdjustmentSettle({ session, lines, collectMethods, onSettled, on
           amount: Math.abs(net),
           idempotencyKey,
           notes: "Refund of the difference after an edit",
-          ...(refundProof ? { proof_file_id: refundProof.proofFileId } : {}),
+          ...(refundMethod !== "CASH" && refundProof ? { proof_file_id: refundProof.proofFileId } : {}),
         });
         toast.success(`Refunded ${inr(net)}`);
-        onSettled(refundMethod === "CASH" ? `${inr(net)} refunded in cash — the branch manager acknowledges it.` : `${inr(net)} refunded by UPI.`);
+        onSettled(
+          refundMethod === "CASH"
+            ? `${inr(net)} refunded in cash — the branch manager acknowledges it.`
+            : `${inr(net)} refunded by ${refundMethod === "UPI" ? "UPI" : "bank transfer"}.`,
+        );
       } else {
         await paymentSessionService.recordPayment(session.publicId, {
           ...sessionPaymentFields(pay, net),

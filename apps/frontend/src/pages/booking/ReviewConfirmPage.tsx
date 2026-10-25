@@ -47,7 +47,7 @@ import {
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VehicleSummaryCard } from "@/components/booking/VehicleSummaryCard";
-import { DlPhotosCheckoutCard } from "@/components/booking/DlPhotosCheckoutCard";
+import { AadhaarPhotosCheckoutCard, DlPhotosCheckoutCard } from "@/components/booking/DlPhotosCheckoutCard";
 import { PaymentMethodCard } from "@/components/booking/PaymentMethodCard";
 import { EmptyBookingState } from "@/components/booking/EmptyBookingState";
 import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
@@ -57,7 +57,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useSearchStore } from "@/store/search.store";
 import { CUSTOMER_MONTHLY_LABEL } from "@/utils/customerMonthly";
 import { useKycStore } from "@/store/kyc.store";
-import { DL_PHOTOS_REQUIRED_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
+import { kycPhotosRequiredMessage, requiredKycPhotosState } from "@repo/schemas";
 
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
@@ -245,16 +245,22 @@ export const ReviewConfirmPage = () => {
     navigate("/profile/personal-information");
   };
 
-  // Driving licence photos are required to book (Oct 17 2026): both sides on
-  // file, not rejected (server: 422 DL_PHOTOS_REQUIRED). Uploaded inline in
-  // DlPhotosCheckoutCard, which keeps the KYC store current.
-  // Not while the card is (re)loading them: the store may still hold another
+  // Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos are
+  // required to book: both sides of each on file, not rejected (server: 422
+  // DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED). Uploaded inline in the
+  // DL / Aadhaar checkout cards, which keep the KYC store current.
+  // Not while the cards are (re)loading them: the store may still hold another
   // session's documents (the KYC store isn't cleared on logout).
-  const dlPhotosReady = useKycStore((s) => !s.isFetching && hasDlPhotosOnFile(s.uploadedDocuments));
+  const kycFetching = useKycStore((s) => s.isFetching);
+  const uploadedKycDocuments = useKycStore((s) => s.uploadedDocuments);
+  const requiredPhotos = requiredKycPhotosState(uploadedKycDocuments);
+  const dlPhotosReady = !kycFetching && requiredPhotos.dl.ok;
+  const aadhaarPhotosReady = !kycFetching && requiredPhotos.aadhaar.ok;
+  const kycPhotosReady = dlPhotosReady && aadhaarPhotosReady;
 
-  // Check if form is valid for submission: a complete profile, both DL photos,
-  // a payment method and the terms.
-  const isFormValid = paymentType && termsAccepted && !profileIncomplete && dlPhotosReady;
+  // Check if form is valid for submission: a complete profile, both DL and both
+  // Aadhaar photos, a payment method and the terms.
+  const isFormValid = paymentType && termsAccepted && !profileIncomplete && kycPhotosReady;
 
   // Handle Confirm & Pay click - validate, check type-class limits, then navigate
   const handleConfirmAndPay = () => {
@@ -268,8 +274,12 @@ export const ReviewConfirmPage = () => {
       return;
     }
 
-    if (!dlPhotosReady) {
-      toast.error(DL_PHOTOS_REQUIRED_MESSAGE);
+    if (!kycPhotosReady) {
+      toast.error(
+        requiredPhotos.missingTypes.length > 0
+          ? kycPhotosRequiredMessage(requiredPhotos.missingTypes)
+          : "Loading your documents… try again in a moment.",
+      );
       return;
     }
 
@@ -418,6 +428,9 @@ export const ReviewConfirmPage = () => {
 
                 {/* Driving licence photos — required, attached as the booking's KYC */}
                 <DlPhotosCheckoutCard />
+
+                {/* Aadhaar photos — required too (Oct 25 2026) */}
+                <AadhaarPhotosCheckoutCard />
 
                 {/* Payment Method */}
                 <PaymentMethodCard />
@@ -591,6 +604,7 @@ export const ReviewConfirmPage = () => {
                     <p className="text-xs text-muted-foreground text-center mt-3">
                       {profileIncomplete && "Complete your profile • "}
                       {!dlPhotosReady && "Upload both driving licence photos • "}
+                      {!aadhaarPhotosReady && "Upload both Aadhaar photos • "}
                       {!paymentType && "Select payment method • "}
                       {!termsAccepted && "Accept terms & conditions"}
                     </p>

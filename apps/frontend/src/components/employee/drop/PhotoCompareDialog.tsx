@@ -1,13 +1,48 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { usePhotoFallback } from "./usePhotoFallback";
 
 export interface ComparePhoto {
   url: string;
   /** Smaller copy shown in the pane; `url` when absent */
   displayUrl?: string | null;
   label?: string | null;
+}
+
+/** One pane's photo: display copy, then the original, then "Photo didn't load" + Retry. */
+function ComparePaneImage({ photo, alt }: { photo: ComparePhoto; alt: string }) {
+  const { src, attempt, status, onLoad, onError, retry } = usePhotoFallback(photo.url, photo.displayUrl);
+  if (status === "error") {
+    return (
+      <div className="w-full aspect-[4/3] rounded-md bg-zinc-100 flex flex-col items-center justify-center gap-2 text-zinc-500">
+        <ImageOff className="h-6 w-6" />
+        <span className="text-xs">Photo didn&apos;t load</span>
+        <button
+          type="button"
+          onClick={retry}
+          className="inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Retry
+        </button>
+      </div>
+    );
+  }
+  return (
+    <a href={photo.url} target="_blank" rel="noopener noreferrer" className="block relative">
+      {status === "loading" && <div className="absolute inset-0 rounded-md animate-pulse bg-zinc-200" />}
+      <img
+        key={`${photo.url}-${attempt}`}
+        src={src}
+        alt={alt}
+        className="w-full aspect-[4/3] object-contain rounded-md bg-zinc-100"
+        onLoad={onLoad}
+        onError={onError}
+      />
+    </a>
+  );
 }
 
 /**
@@ -60,14 +95,7 @@ export function PhotoCompareDialog({
         {photo?.label ? <span className="font-normal text-zinc-500"> · {photo.label}</span> : null}
       </p>
       {photo ? (
-        <a href={photo.url} target="_blank" rel="noopener noreferrer" className="block">
-          <img
-            key={photo.url}
-            src={photo.displayUrl || photo.url}
-            alt={`${title} photo ${n}`}
-            className="w-full aspect-[4/3] object-contain rounded-md bg-zinc-100"
-          />
-        </a>
+        <ComparePaneImage key={photo.url} photo={photo} alt={`${title} photo ${n}`} />
       ) : (
         <div className="w-full aspect-[4/3] rounded-md border border-dashed bg-zinc-50 flex flex-col items-center justify-center gap-1.5 text-zinc-400">
           <ImageOff className="h-6 w-6" />

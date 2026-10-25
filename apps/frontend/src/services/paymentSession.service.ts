@@ -135,6 +135,10 @@ export interface SessionDepositRefund {
 export type RecordPaymentResult = PaymentSession & {
   credit?: SessionCreditRecorded | null;
   depositRefund?: SessionDepositRefund | null;
+  /** Oct 25 2026: the deposit refund left to the branch manager (amount), or null */
+  depositRefundDeferred?: string | null;
+  /** Oct 25 2026: record-refund LATER — the refund left to the branch manager (amount) */
+  refundDeferred?: string;
 };
 
 export interface ReturnSessionResponse {
@@ -425,8 +429,12 @@ export const paymentSessionService = {
       proof_file_ids?: string[];
       /** CREDIT: what was taken from the customer until it is cleared. */
       collateral?: string;
-      /** Drop bill refunding the safety deposit in full (#6): how it is paid back. */
-      depositRefund?: { method: "CASH" | "UPI"; proof_file_id?: string; notes?: string };
+      /**
+       * Drop bill refunding the safety deposit in full (#6): how it is paid back.
+       * Oct 25 2026: BANK_TRANSFER; UPI / bank need the success-screen photo;
+       * LATER = "Refund later (send to branch manager)".
+       */
+      depositRefund?: { method: "CASH" | "UPI" | "BANK_TRANSFER" | "LATER"; proof_file_id?: string; notes?: string };
     },
   ): Promise<RecordPaymentResult> {
     const { data } = await apiClient.post(
@@ -442,14 +450,18 @@ export const paymentSessionService = {
   async recordRefund(
     sessionPublicId: string,
     payload: {
-      /** UPI = paid back by UPI, optionally with a photo of the transfer. */
-      method: "CASH" | "ONLINE" | "UPI";
+      /**
+       * UPI / BANK_TRANSFER = paid back by transfer — the payment-success photo is
+       * required (Oct 25 2026). LATER (drop bill only) = "Refund later (send to
+       * branch manager)": the drop completes and the refund waits in Pending Settlements.
+       */
+      method: "CASH" | "ONLINE" | "UPI" | "BANK_TRANSFER" | "LATER";
       amount: number;
       idempotencyKey: string;
       notes?: string;
       proof_file_id?: string;
     },
-  ): Promise<PaymentSession> {
+  ): Promise<RecordPaymentResult> {
     const { data } = await apiClient.post(
       `/employee/sessions/${sessionPublicId}/record-refund`,
       payload,

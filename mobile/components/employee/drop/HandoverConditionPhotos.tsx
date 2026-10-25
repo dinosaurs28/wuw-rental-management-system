@@ -148,7 +148,7 @@ function PhotoStrip({ set, onOpen }: { set: ConditionPhotoSet; onOpen: (images: 
               onPress={() => onOpen(viewerImages(set), i)}
             >
               <View>
-                <RemotePhoto uri={src(p)} style={[styles.photo, { width: itemWidth, height: Math.round((itemWidth * 3) / 4) }]} />
+                <RemotePhoto uri={src(p)} fallbackUri={p.url} style={[styles.photo, { width: itemWidth, height: Math.round((itemWidth * 3) / 4) }]} />
                 <View style={styles.numBadge} pointerEvents="none">
                   <Text style={styles.numBadgeText}>{i + 1}</Text>
                 </View>

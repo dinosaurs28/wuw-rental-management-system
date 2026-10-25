@@ -27,7 +27,7 @@ import { displayEmail, joinProfileFieldLabels } from '../../lib/identity';
 import Avatar from '../../components/ui/Avatar';
 import Toast from '../../components/ui/Toast';
 import DlPhotosSheet, { dlPairCompletedByUpload } from '../../components/ui/DlPhotosSheet';
-import { describeDlPhotoSides, dlPhotosState } from '../../lib/dlPhotos';
+import { describeKycPhotoSides, requiredKycPhotosState } from '../../lib/kycPhotos';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { notificationsScreenHref, unreadBadgeLabel } from '../../lib/notifications';
 import type { KycDocument, KycType, KycSide } from '../../types/api';
@@ -171,7 +171,16 @@ export default function Profile() {
   const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
 
   const approvedCount = kyc.filter((d) => d.status === 'APPROVED').length;
-  const dlPhotos = dlPhotosState(kyc);
+  // Both licence sides (Oct 17 2026) and both Aadhaar sides (Oct 25 2026) are required to book
+  const requiredPhotos = requiredKycPhotosState(kyc);
+  const requiredPhotosHint = requiredPhotos.ok
+    ? 'Your driving licence and Aadhaar photos are on file. Bring your original licence to pickup.'
+    : `Upload ${[
+        requiredPhotos.dl.ok ? null : `the ${describeKycPhotoSides(requiredPhotos.dl.missingSides)} of your driving licence`,
+        requiredPhotos.aadhaar.ok ? null : `the ${describeKycPhotoSides(requiredPhotos.aadhaar.missingSides)} of your Aadhaar`,
+      ]
+        .filter(Boolean)
+        .join(' and ')} to book.`;
   const isProfileComplete = profile?.isProfileCompleted ?? false;
 
   return (
@@ -293,8 +302,8 @@ export default function Profile() {
           <LinkRow icon="receipt-outline" label="Cancellations & fees" onPress={() => router.push('/cancellations')} last />
         </View>
 
-        {/* KYC documents — both driving licence photos are required to book
-            (Oct 17 2026); Aadhaar / student ID stay optional */}
+        {/* KYC documents — both driving licence photos (Oct 17 2026) and both
+            Aadhaar photos (Oct 25 2026) are required to book; student ID stays optional */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionTitleGroup}>
             <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Identity Documents</Text>
@@ -303,10 +312,8 @@ export default function Profile() {
         </View>
         <Text style={styles.docsHint}>
           {kycLoading
-            ? 'Both sides of your driving licence are required to book. Aadhaar is optional.'
-            : dlPhotos.ok
-            ? 'Your driving licence photos are on file. Bring your original licence to pickup.'
-            : `Upload the ${describeDlPhotoSides(dlPhotos.missingSides)} of your driving licence to book. Aadhaar is optional.`}
+            ? 'Both sides of your driving licence and your Aadhaar are required to book.'
+            : requiredPhotosHint}
         </Text>
 
         {!isProfileComplete && (
@@ -331,8 +338,8 @@ export default function Profile() {
                   <Ionicons name={docType.icon} size={18} color={Colors.ink3} />
                 </View>
                 <Text style={styles.docLabel}>{docType.label}</Text>
-                <Text style={docType.type === 'DL' ? styles.requiredTag : styles.optionalTag}>
-                  {docType.type === 'DL' ? 'Required to book' : 'Optional'}
+                <Text style={docType.type === 'DL' || docType.type === 'AADHAAR' ? styles.requiredTag : styles.optionalTag}>
+                  {docType.type === 'DL' || docType.type === 'AADHAAR' ? 'Required to book' : 'Optional'}
                 </Text>
               </View>
 

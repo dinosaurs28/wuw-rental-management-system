@@ -16,6 +16,9 @@ import {
 
 import { RefundStatusBadge } from "@/components/manager/payment/PaymentStateBadge";
 import { paymentService, type RefundItem } from "@/services/payment.service";
+import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
+import type { CounterProof } from "@/lib/counterPayment";
 import { usePaymentStore } from "@/store/payment.store";
 
 // ── Refund Detail Modal ───────────────────────────────────────────────────────
@@ -35,6 +38,9 @@ function RefundDetailModal({
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [txnRef, setTxnRef] = useState("");
+  // Oct 25 2026: photo of the refund's payment-success screen (UPI / bank refunds)
+  const [proof, setProof] = useState<CounterProof | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
 
   useEffect(() => {
     paymentService
@@ -67,14 +73,24 @@ function RefundDetailModal({
     } finally { setActionLoading(false); }
   };
 
+  // A Razorpay refund id ("rfnd_…") backs a gateway refund — no photo then
+  const gatewayRef = /^rfnd_/i.test(txnRef.trim());
+  const needsProof = !!refund?.proofRequired && !gatewayRef;
   const handleDisburse = async () => {
+    if (needsProof && !proof) {
+      setProofError("Add the photo of the refund's payment-success screen.");
+      return;
+    }
     setActionLoading(true);
     try {
-      await paymentService.completeRefund(publicId, txnRef || undefined);
+      await paymentService.completeRefund(publicId, txnRef || undefined, proof?.proofFileId);
       toast.success("Refund disbursed successfully.");
       onDone();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to mark refund as disbursed.");
+      const code = err?.response?.data?.code;
+      const message = err?.response?.data?.message || "Failed to mark refund as disbursed.";
+      if (code === "REFUND_PROOF_REQUIRED" || code === "INVALID_PAYMENT_PROOF" || code === "DUPLICATE_PAYMENT_PROOF") setProofError(message);
+      else toast.error(message);
     } finally { setActionLoading(false); }
   };
 
@@ -164,6 +180,25 @@ function RefundDetailModal({
                           <Input placeholder="e.g. refund_pay_abc123" className="h-11" value={txnRef} onChange={(e) => setTxnRef(e.target.value)} />
                         </div>
                       )}
+                      {(refund.proofRequired || refund.method === "CASH") && !refund.gatewayRefund && (
+                        <PaymentProofField
+                          id="refund-complete-proof"
+                          role="manager"
+                          value={proof}
+                          onChange={(p) => { setProof(p); setProofError(null); }}
+                          error={proofError}
+                          required={needsProof}
+                          label={needsProof ? "Photo of the refund's payment-success screen" : "Photo of the refund (optional)"}
+                          helper={needsProof ? "After sending the refund, photograph the payment-success screen. Required." : "Optional for cash."}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {/* Oct 25 2026: the refund's payment-success photo, once marked paid */}
+                  {refund.proofPhoto && (
+                    <div className="flex items-center gap-2 text-xs text-neutral-500">
+                      <ProofPhotoThumb photo={refund.proofPhoto} size="md" caption={`Refund · ${refund.bookingPublicId}`} />
+                      Refund payment photo
                     </div>
                   )}
                 </div>

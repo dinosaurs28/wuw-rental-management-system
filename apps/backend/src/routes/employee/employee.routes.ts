@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { GetDropRefund, RecordDropRefund } from "../../controller/employee/dropRefund.controller.js";
 import { Login } from "../../controller/employee/login.controller.js";
 import {
   makeForgotPasswordController,
@@ -285,5 +286,9 @@ router.get("/bookings/:publicId/refund-to-customer", EmployeeCheck, EmployeeGetC
 router.post("/bookings/:publicId/refund-to-customer", EmployeeCheck, EmployeeRecordCustomerRefund);
 router.get("/bookings/:publicId/payments", EmployeeCheck, EmployeeListBookingPayments);
 router.post("/payments/:transactionPublicId/void", EmployeeCheck, EmployeeVoidPayment);
+// Oct 25 2026: the Fleet Executive refunds what is owed back once the drop is recorded
+// (legacy drop deposit, a drop bill's refund sent to the manager, over-payment)
+router.get("/bookings/:publicId/drop-refund", EmployeeCheck, GetDropRefund);
+router.post("/bookings/:publicId/drop-refund", EmployeeCheck, RecordDropRefund);
 
 export default router;

@@ -272,6 +272,8 @@ export const apiCode = (err: unknown): string | undefined => {
 /** The photo is missing, unknown or already backs another payment — take a new one. */
 export const PROOF_ERROR_CODES = new Set([
   "PAYMENT_PROOF_REQUIRED",
+  // Oct 25 2026: a UPI / bank refund without its payment-success photo
+  "REFUND_PROOF_REQUIRED",
   "INVALID_PAYMENT_PROOF",
   "DUPLICATE_PAYMENT_PROOF",
 ]);

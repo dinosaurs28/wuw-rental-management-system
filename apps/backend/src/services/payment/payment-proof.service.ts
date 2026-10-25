@@ -196,7 +196,11 @@ async function assertProofUnused(fileId: number, db: Db, position?: number): Pro
     where: { ...live, OR: [{ proofFileId: fileId }, { proofPhotos: { some: { fileId } } }] },
     select: { publicId: true },
   });
-  if (used) {
+  // Oct 25 2026: or as the photo of a refund request marked paid
+  const usedByRefund = used
+    ? null
+    : await db.refundRequest.findFirst({ where: { proofFileId: fileId }, select: { publicId: true } });
+  if (used || usedByRefund) {
     throw new CounterGuardError(
       StatusCode.CONFLICT,
       "DUPLICATE_PAYMENT_PROOF",

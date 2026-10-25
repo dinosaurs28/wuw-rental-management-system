@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -43,13 +44,16 @@ import {
   type DlCollectionStatus,
   type DlStatusFields,
 } from '../../../lib/dlStatus';
-import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
 import { couponRejection, employeeApi } from '../../../lib/api';
-import { describeDlPhotoSides, type DlPhotoSide } from '../../../lib/dlPhotos';
+import { describeKycPhotoSides, type KycPhotoSide, type KycPhotoType } from '../../../lib/kycPhotos';
+
+type DlPhotoSide = KycPhotoSide;
+type PhotosSummary = { ok: boolean; missingSides: KycPhotoSide[]; rejectedSides: KycPhotoSide[] };
 import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../../lib/image';
 import * as ImagePicker from 'expo-image-picker';
 import { counterCouponCapNote } from '../../../lib/discounts';
@@ -138,11 +142,13 @@ interface KycDoc {
 }
 
 // GET /employee/kyc/:bookingId. customerUserPublicId / dlPhotos come from
-// newer servers (Oct 17 2026: both licence photos are required to book).
+// newer servers (Oct 17 2026: both licence photos are required to book);
+// aadhaarPhotos from Oct 25 2026 (both Aadhaar sides required too).
 interface BookingKycData {
   customerName: string;
   customerUserPublicId?: string;
-  dlPhotos?: { ok: boolean; missingSides: DlPhotoSide[]; rejectedSides: DlPhotoSide[] };
+  dlPhotos?: PhotosSummary;
+  aadhaarPhotos?: PhotosSummary;
   kyc: KycDoc[];
 }
 
@@ -313,7 +319,8 @@ export default function PickupScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [kycViewer, setKycViewer] = useState<{ url: string; label: string } | null>(null);
   // Licence photo side being captured here (older bookings without DL photos)
-  const [dlPhotoUploading, setDlPhotoUploading] = useState<DlPhotoSide | null>(null);
+  // "DL:FRONT", "AADHAAR:BACK"… while a missing KYC side is being captured
+  const [dlPhotoUploading, setDlPhotoUploading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // P4c — the Reschedule sheet (CONFIRMED bookings, not picked up yet).
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -363,6 +370,10 @@ export default function PickupScreen() {
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [legacyDiscountBusy, setLegacyDiscountBusy] = useState<'apply' | 'remove' | null>(null);
   const [settling, setSettling] = useState(false);
+  // Back on the handover details with the bill open (client, Oct 25 2026): the
+  // licence choice and the note stay changeable until the pickup completes.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsSaving, setDetailsSaving] = useState(false);
   // How the bill is settled: Cash / UPI (photo) / Split / Credit, or a refund (Cash / UPI)
   const pay = useCounterPayment('CASH');
   const refundPay = useCounterRefund();
@@ -419,6 +430,40 @@ export default function PickupScreen() {
       refetch();
     }, [refetch]),
   );
+
+  // On the bill, back (header arrow, Android back button / gesture) returns to
+  // the handover details instead of leaving the pickup; iOS swipe-back is off
+  // there. Only while this screen is focused.
+  const onBill = !!session && !detailsOpen && !editMode && !done;
+  const navigation = useNavigation();
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !onBill });
+  }, [navigation, onBill]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!onBill) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setDetailsOpen(true);
+        return true;
+      });
+      return () => sub.remove();
+    }, [onBill]),
+  );
+  // Opening the details: start from the licence status the server holds (it may
+  // have been changed on the bill's DL card or on another device).
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const recorded = booking?.dlStatus;
+    setDlStatus(recorded && recorded !== 'DEPOSIT' ? recorded : null);
+    setDlRejected(false);
+    setErrorMsg(null);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailsOpen]);
+  // The bill closed (completed elsewhere, or dropped): nothing to go back from
+  useEffect(() => {
+    if (!session) setDetailsOpen(false);
+  }, [session]);
 
   const { data: captureFields = [] } = useQuery<CaptureField[]>({
     queryKey: ['employee', 'pickup', 'capture-config', bookingId],
@@ -682,6 +727,42 @@ export default function PickupScreen() {
       if (!mountedRef.current) return;
       if (fresh.data?.status === 'PICKED_UP') onPickupDone(null);
       else setSession(null);
+    }
+  };
+
+  // Handover details → back to the bill. A changed licence choice is saved first
+  // through PATCH …/dl-status (allowed while the booking is CONFIRMED, i.e. until
+  // the pickup completes). The DL status carries no money (the DL deposit was
+  // removed), so the bill and anything already paid stay as they are. A changed
+  // note is saved when the bill is settled (settleSession).
+  const continueFromDetails = async () => {
+    if (!booking || detailsSaving) return;
+    if (noteTooLong(pickupNote)) {
+      setErrorMsg(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
+      return;
+    }
+    const recorded = booking.dlStatus ?? null;
+    if (!dlStatus || dlStatus === recorded) {
+      setDetailsOpen(false);
+      return;
+    }
+    setDetailsSaving(true);
+    setErrorMsg(null);
+    setDlRejected(false);
+    try {
+      await employeeApi.updateDlStatus(booking.publicId, dlChoiceBody(dlStatus));
+      await refetch();
+      qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+      if (mountedRef.current) setDetailsOpen(false);
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
+      setErrorMsg(apiErrorMessage(err, "Couldn't save the licence status. Please try again."));
+      // 409 DL_STATUS_LOCKED / 404: the pickup moved on (completed or cancelled elsewhere)
+      const status = err?.response?.status;
+      if (status === 409 || status === 404) void reloadSession();
+    } finally {
+      if (mountedRef.current) setDetailsSaving(false);
     }
   };
 
@@ -1005,6 +1086,10 @@ export default function PickupScreen() {
   // (no dlPhotos) doesn't block.
   const dlPhotos = kycData?.dlPhotos ?? null;
   const dlPhotosMissing = !editMode && !!dlPhotos && !dlPhotos.ok;
+  // Both Aadhaar sides are required the same way (Oct 25 2026); an older server
+  // (no aadhaarPhotos) doesn't block.
+  const aadhaarPhotos = kycData?.aadhaarPhotos ?? null;
+  const aadhaarPhotosMissing = !editMode && !!aadhaarPhotos && !aadhaarPhotos.ok;
 
   // First thing still missing before the handover can go ahead (shown above the button).
   // The DL status (X1) is optional; both licence photos aren't. The DL number
@@ -1014,7 +1099,9 @@ export default function PickupScreen() {
     : !editMode && kycLoading
         ? 'Loading the customer\'s documents…'
         : dlPhotosMissing
-        ? `Capture the ${describeDlPhotoSides(dlPhotos!.missingSides)} of the driving licence.`
+        ? `Capture the ${describeKycPhotoSides(dlPhotos!.missingSides)} of the driving licence.`
+        : aadhaarPhotosMissing
+        ? `Capture the ${describeKycPhotoSides(aadhaarPhotos!.missingSides)} of the Aadhaar.`
         : !odoValid
           ? 'Enter the odometer reading.'
           : fuelLevel == null
@@ -1344,6 +1431,26 @@ export default function PickupScreen() {
       : null;
   const manualDiscountMax = session?.pickupDiscountMax != null ? num(session.pickupDiscountMax) : null;
   const sessionBusy = !!sessionAction || settling;
+  // Odometer / fuel / FASTag as saved with the pickup session (bill and handover details)
+  const savedReadingsCard = (recordedOdo != null || recordedFuel != null || recordedFastag != null) ? (
+    <View style={styles.card}>
+      {recordedOdo != null && (
+        <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
+      )}
+      {recordedFuel != null && (
+        <>
+          {recordedOdo != null && <View style={styles.divider} />}
+          <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
+        </>
+      )}
+      {recordedFastag != null && (
+        <>
+          {(recordedOdo != null || recordedFuel != null) && <View style={styles.divider} />}
+          <InfoRow icon="card-outline" label="FASTag balance" value={fastagInr(recordedFastag)} />
+        </>
+      )}
+    </View>
+  ) : null;
 
   const handleConfirm = () => {
     if (handoverBlocker) {
@@ -1359,31 +1466,70 @@ export default function PickupScreen() {
     setShowConfirm(true);
   };
 
-  /** Captures a missing licence side with the camera (walk-in KYC upload), then reloads the documents. */
-  const captureDlPhoto = async (side: DlPhotoSide) => {
+  /** Captures a missing licence / Aadhaar side with the camera (walk-in KYC upload), then reloads the documents. */
+  const captureDlPhoto = async (side: DlPhotoSide, type: KycPhotoType = 'DL') => {
     const customerPublicId = kycData?.customerUserPublicId;
     if (!customerPublicId) return;
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Camera permission needed', 'Enable camera access to capture the licence.');
+      Alert.alert('Camera permission needed', `Enable camera access to capture the ${type === 'DL' ? 'licence' : 'Aadhaar'}.`);
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 1, allowsEditing: false });
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    setDlPhotoUploading(side);
+    setDlPhotoUploading(`${type}:${side}`);
     try {
-      const file = await prepareImageForUpload(asset, `kyc_dl_${side.toLowerCase()}_${Date.now()}`);
+      const file = await prepareImageForUpload(asset, `kyc_${type.toLowerCase()}_${side.toLowerCase()}_${Date.now()}`);
       await employeeApi.walkinKycUpload(
-        toUploadForm(file, { kyc_type: 'DL', side, customer_public_id: customerPublicId }),
+        toUploadForm(file, { kyc_type: type, side, customer_public_id: customerPublicId }),
       );
       await refetchKyc();
     } catch (err: any) {
-      Alert.alert('Upload failed', uploadErrorMessage(err, 'Could not upload the licence photo.'));
+      Alert.alert('Upload failed', uploadErrorMessage(err, `Could not upload the ${type === 'DL' ? 'licence' : 'Aadhaar'} photo.`));
     } finally {
       setDlPhotoUploading(null);
     }
+  };
+
+  /** "Capture front / back" card for a required document with sides missing (licence, Aadhaar). */
+  const renderMissingPhotosCard = (type: KycPhotoType, photos: PhotosSummary) => {
+    const noun = type === 'DL' ? 'driving licence' : 'Aadhaar';
+    const btnPrefix = type === 'DL' ? 'Capture' : 'Capture Aadhaar';
+    return (
+      <View style={styles.dlPhotosCard}>
+        <View style={styles.dlPhotosHead}>
+          <Ionicons name="alert-circle-outline" size={18} color={Colors.orange} />
+          <Text style={styles.dlPhotosText}>
+            {`Capture the ${describeKycPhotoSides(photos.missingSides)} of the customer's ${noun} before the handover`}
+            {photos.rejectedSides.length > 0 ? ` (the ${describeKycPhotoSides(photos.rejectedSides)} was rejected).` : '.'}
+          </Text>
+        </View>
+        {kycData?.customerUserPublicId ? (
+          <View style={styles.dlPhotosBtns}>
+            {photos.missingSides.map((side) => (
+              <TouchableOpacity
+                key={side}
+                style={[styles.dlPhotosBtn, !!dlPhotoUploading && { opacity: 0.6 }]}
+                onPress={() => captureDlPhoto(side, type)}
+                disabled={!!dlPhotoUploading}
+                activeOpacity={0.85}
+              >
+                {dlPhotoUploading === `${type}:${side}` ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <>
+                    <Ionicons name="camera-outline" size={16} color={Colors.white} />
+                    <Text style={styles.dlPhotosBtnText}>{`${btnPrefix} ${side === 'FRONT' ? 'front' : 'back'}`}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+      </View>
+    );
   };
 
   const openKycDoc = async (tapped: KycDoc) => {
@@ -1413,7 +1559,12 @@ export default function PickupScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
+        <TouchableOpacity
+          onPress={() => (onBill ? setDetailsOpen(true) : router.back())}
+          style={styles.back}
+          hitSlop={8}
+          accessibilityLabel={onBill ? 'Back to handover details' : 'Back'}
+        >
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -1486,45 +1637,15 @@ export default function PickupScreen() {
           </View>
         </View>
 
-        {/* KYC document photos — both licence sides required (Oct 17 2026),
-            captured here when an older booking has none; viewable and verifiable */}
+        {/* KYC document photos — both licence sides (Oct 17 2026) and both Aadhaar
+            sides (Oct 25 2026) required, captured here when an older booking has
+            none; viewable and verifiable */}
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionHeader, styles.sectionHeaderInline]}>Identity Documents</Text>
-          <Text style={dlPhotosMissing ? styles.requiredTag : styles.optionalTag}>Licence front + back required</Text>
+          <Text style={dlPhotosMissing || aadhaarPhotosMissing ? styles.requiredTag : styles.optionalTag}>Licence + Aadhaar front & back required</Text>
         </View>
-        {dlPhotosMissing && (
-          <View style={styles.dlPhotosCard}>
-            <View style={styles.dlPhotosHead}>
-              <Ionicons name="alert-circle-outline" size={18} color={Colors.orange} />
-              <Text style={styles.dlPhotosText}>
-                {`Capture the ${describeDlPhotoSides(dlPhotos!.missingSides)} of the customer's driving licence before the handover`}
-                {dlPhotos!.rejectedSides.length > 0 ? ` (the ${describeDlPhotoSides(dlPhotos!.rejectedSides)} was rejected).` : '.'}
-              </Text>
-            </View>
-            {kycData?.customerUserPublicId ? (
-              <View style={styles.dlPhotosBtns}>
-                {dlPhotos!.missingSides.map((side) => (
-                  <TouchableOpacity
-                    key={side}
-                    style={[styles.dlPhotosBtn, !!dlPhotoUploading && { opacity: 0.6 }]}
-                    onPress={() => captureDlPhoto(side)}
-                    disabled={!!dlPhotoUploading}
-                    activeOpacity={0.85}
-                  >
-                    {dlPhotoUploading === side ? (
-                      <ActivityIndicator size="small" color={Colors.white} />
-                    ) : (
-                      <>
-                        <Ionicons name="camera-outline" size={16} color={Colors.white} />
-                        <Text style={styles.dlPhotosBtnText}>{side === 'FRONT' ? 'Capture front' : 'Capture back'}</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        )}
+        {dlPhotosMissing && renderMissingPhotosCard('DL', dlPhotos!)}
+        {aadhaarPhotosMissing && renderMissingPhotosCard('AADHAAR', aadhaarPhotos!)}
         <View style={styles.card}>
           {kycLoading ? (
             <ActivityIndicator size="small" color={Colors.orange} />
@@ -1787,29 +1908,11 @@ export default function PickupScreen() {
         <SectionHeader title="Payment" />
         <CounterPaymentPanel bookingPublicId={booking.publicId} />
 
-        {session ? (
+        {session && !detailsOpen ? (
           <>
             {/* Saved with the session — the vehicle goes out when it's settled */}
             <SectionHeader title="Handover Details" />
-            {(recordedOdo != null || recordedFuel != null || recordedFastag != null) && (
-              <View style={styles.card}>
-                {recordedOdo != null && (
-                  <InfoRow icon="speedometer-outline" label="Odometer" value={`${recordedOdo.toLocaleString('en-IN')} km`} />
-                )}
-                {recordedFuel != null && (
-                  <>
-                    {recordedOdo != null && <View style={styles.divider} />}
-                    <InfoRow icon="water-outline" label="Fuel level" value={`${recordedFuel}/10`} />
-                  </>
-                )}
-                {recordedFastag != null && (
-                  <>
-                    {(recordedOdo != null || recordedFuel != null) && <View style={styles.divider} />}
-                    <InfoRow icon="card-outline" label="FASTag balance" value={fastagInr(recordedFastag)} />
-                  </>
-                )}
-              </View>
-            )}
+            {savedReadingsCard}
             {/* Original driving licence (#3), as saved with the session — still changeable */}
             <DlStatusCard
               booking={booking}
@@ -1819,6 +1922,17 @@ export default function PickupScreen() {
                 refetch();
               }}
             />
+            {/* Back to the previous step (licence choice, note) until the pickup completes */}
+            <TouchableOpacity
+              style={styles.extendBtn}
+              onPress={() => setDetailsOpen(true)}
+              disabled={sessionBusy}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="arrow-back-outline" size={18} color={Colors.ink2} />
+              <Text style={styles.extendBtnText}>Back to handover details</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
+            </TouchableOpacity>
 
             {/* The bill */}
             <SectionHeader title="Bill" />
@@ -2003,6 +2117,52 @@ export default function PickupScreen() {
                 <CounterRefundPicker ctl={refundPay} amount={Math.abs(net)} disabled={sessionBusy} />
               </View>
             )}
+          </>
+        ) : session ? (
+          <>
+            {/* Back on the handover details with the bill open. The readings and photos
+                were saved when the payment started; the licence choice and the note
+                can still change. Continue saves them and returns to the same bill. */}
+            <SectionHeader title="Handover Details" />
+            {savedReadingsCard}
+            <Text style={[styles.toggleSub, { marginTop: 6 }]}>
+              Odometer, fuel, FASTag and photos were saved when you continued to payment. Fix them with Edit Pickup after the handover.
+            </Text>
+
+            <SectionHeader title="Original Licence" />
+            <View style={[styles.card, dlRejected && styles.cardError]}>
+              <View style={styles.toggleRow}>
+                <View style={[styles.toggleTitleRow, styles.toggleTextWrap]}>
+                  <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
+                  <Text style={styles.optionalTag}>Optional</Text>
+                </View>
+                {/* Once recorded it can be changed, not cleared */}
+                {dlStatus && !booking.dlStatus && (
+                  <TouchableOpacity
+                    onPress={() => { setDlStatus(null); setDlRejected(false); }}
+                    disabled={detailsSaving}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.link}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={[styles.toggleSub, styles.dlSub]}>
+                {booking.dlStatus === 'DEPOSIT'
+                  ? `Recorded as the old DL deposit${booking.dlDepositNote ? ` (${booking.dlDepositNote})` : ''}. Pick Collected or Not collected to change it.`
+                  : 'Change it here until the pickup is completed.'}
+              </Text>
+              <DlStatusSelector
+                value={dlStatus}
+                onChange={(v) => { setDlStatus(v); setDlRejected(false); }}
+                disabled={detailsSaving}
+              />
+            </View>
+
+            <SectionHeader title="Note" />
+            <View style={styles.card}>
+              <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
+            </View>
           </>
         ) : (
           <>
@@ -2355,6 +2515,23 @@ export default function PickupScreen() {
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
                 <Text style={styles.confirmBtnText}>{pendingPhotos > 0 ? 'Uploading photos…' : 'Save changes'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : session && detailsOpen ? (
+          // Handover details with the bill open: save the licence choice, back to the bill
+          <TouchableOpacity
+            style={[styles.confirmBtn, detailsSaving && styles.confirmBtnDisabled]}
+            onPress={continueFromDetails}
+            disabled={detailsSaving}
+            activeOpacity={0.85}
+          >
+            {detailsSaving ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <>
+                <Text style={styles.confirmBtnText}>Continue to Payment</Text>
+                <Ionicons name="arrow-forward" size={20} color={Colors.white} />
               </>
             )}
           </TouchableOpacity>

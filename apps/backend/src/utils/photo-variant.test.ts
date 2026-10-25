@@ -8,12 +8,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
 import {
+  ConfirmedDisplayKeys,
   DISPLAY_VARIANT_SUFFIX,
   canHaveDisplayVariant,
+  confirmedDisplayKey,
   displayVariantKey,
   isDisplayVariantKey,
   photoUrls,
   variantSaveOutcome,
+  type DisplayCopyDeps,
 } from "./photo-variant.js";
 import { DISPLAY_IMAGE_MAX_PX, processDisplayImage } from "./image-processor.js";
 
@@ -102,4 +105,88 @@ test("a display copy written for a photo deleted meanwhile is an orphan", () => 
   // another request stored the same key first: the object is in use, keep it
   assert.equal(variantSaveOutcome(0, true), "kept");
   assert.equal(variantSaveOutcome(0, false), "orphan");
+});
+
+// ── Only a display copy known to exist (drop screen "pickup photos not loading", Oct 25 2026) ──
+
+const COPY = "pickup/2026-10-01/abc123.jpg__md.jpg";
+function fakeDeps(over: { inBucket?: string[]; existsThrows?: boolean; makes?: string | null; makeThrows?: boolean } = {}) {
+  const calls: string[] = [];
+  const inBucket = new Set(over.inBucket ?? []);
+  const deps: DisplayCopyDeps = {
+    async exists(key) {
+      calls.push(`exists:${key}`);
+      if (over.existsThrows) throw new Error("timeout");
+      return inBucket.has(key);
+    },
+    async forget(id, key) {
+      calls.push(`forget:${id}:${key}`);
+    },
+    async make(file) {
+      calls.push(`make:${file.id}:${file.displayKey}`);
+      if (over.makeThrows) throw new Error("sharp");
+      return over.makes === undefined ? COPY : over.makes;
+    },
+  };
+  return { deps, calls };
+}
+const stored = (displayKey: string | null = COPY) => ({ id: 7, ...pickup({ displayKey }) });
+
+test("a stored copy is linked once confirmed in the bucket, then not checked again", async () => {
+  const confirmed = new ConfirmedDisplayKeys();
+  const { deps, calls } = fakeDeps({ inBucket: [COPY] });
+  assert.equal(await confirmedDisplayKey(stored(), deps, confirmed), COPY);
+  assert.equal(await confirmedDisplayKey(stored(), deps, confirmed), COPY);
+  assert.deepEqual(calls, [`exists:${COPY}`]);
+});
+
+test("a stored copy missing from the bucket is forgotten and made again", async () => {
+  const { deps, calls } = fakeDeps({ inBucket: [] });
+  assert.equal(await confirmedDisplayKey(stored(), deps, new ConfirmedDisplayKeys()), COPY);
+  assert.deepEqual(calls, [`exists:${COPY}`, `forget:7:${COPY}`, "make:7:null"]);
+});
+
+test("a missing copy that can't be made again → the original (null), never the missing key", async () => {
+  for (const over of [{ makes: null }, { makeThrows: true }]) {
+    const { deps } = fakeDeps({ inBucket: [], ...over });
+    assert.equal(await confirmedDisplayKey(stored(), deps, new ConfirmedDisplayKeys()), null);
+  }
+});
+
+test("the bucket check failing (timeout, R2 down) → the original, nothing cleared", async () => {
+  const confirmed = new ConfirmedDisplayKeys();
+  const { deps, calls } = fakeDeps({ existsThrows: true });
+  assert.equal(await confirmedDisplayKey(stored(), deps, confirmed), null);
+  assert.deepEqual(calls, [`exists:${COPY}`]);
+  assert.equal(confirmed.size, 0);
+});
+
+test("a photo without a copy gets one made; a failed copy → the original", async () => {
+  const confirmed = new ConfirmedDisplayKeys();
+  const ok = fakeDeps();
+  assert.equal(await confirmedDisplayKey(stored(null), ok.deps, confirmed), COPY);
+  assert.deepEqual(ok.calls, ["make:7:null"]);
+  assert.equal(confirmed.has(7, COPY), true);
+  const failed = fakeDeps({ makes: null });
+  assert.equal(await confirmedDisplayKey({ ...stored(null), id: 8 }, failed.deps, confirmed), null);
+});
+
+test("private files and non-images never get a display copy linked", async () => {
+  const { deps, calls } = fakeDeps({ inBucket: [COPY] });
+  const privateFile = { id: 9, ...pickup({ url: "pickup/2026-10-01/abc123.jpg", displayKey: COPY }) };
+  assert.equal(await confirmedDisplayKey(privateFile, deps, new ConfirmedDisplayKeys()), null);
+  assert.equal(await confirmedDisplayKey({ id: 10, ...pickup({ mime: "application/pdf" }) }, deps, new ConfirmedDisplayKeys()), null);
+  assert.deepEqual(calls, []);
+});
+
+test("confirmed keys: a different key for the photo isn't confirmed; bounded size", () => {
+  const confirmed = new ConfirmedDisplayKeys(2);
+  confirmed.add(1, "a");
+  assert.equal(confirmed.has(1, "a"), true);
+  assert.equal(confirmed.has(1, "b"), false);
+  confirmed.add(2, "b");
+  confirmed.add(3, "c");
+  assert.equal(confirmed.size, 2);
+  assert.equal(confirmed.has(1, "a"), false);
+  assert.equal(confirmed.has(3, "c"), true);
 });

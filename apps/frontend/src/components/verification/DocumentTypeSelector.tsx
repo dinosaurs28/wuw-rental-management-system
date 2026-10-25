@@ -19,7 +19,7 @@ const documentTypes: DocumentTypeOption[] = [
   {
     type: "AADHAAR",
     label: "Aadhaar",
-    description: "Optional · government-issued ID",
+    description: "Required to book · front & back photos",
     icon: <User className="w-6 h-6" />,
   },
 ];

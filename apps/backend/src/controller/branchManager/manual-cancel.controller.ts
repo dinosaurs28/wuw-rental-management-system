@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { getManualCancelOptions, manualCancelBooking } from "../../services/booking/manual-cancel.service.js";
 import { ManualCancelError } from "../../services/booking/manual-cancel-rules.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
 
 function sendManualCancelError(res: Response, error: unknown, label: string) {
-  if (error instanceof ManualCancelError) {
+  // CounterGuardError: a bad refund photo (INVALID_PAYMENT_PROOF / DUPLICATE_PAYMENT_PROOF)
+  if (error instanceof ManualCancelError || error instanceof CounterGuardError) {
     return res.status(error.status).json(error.toJSON());
   }
   console.error(`${label} Error:`, error);

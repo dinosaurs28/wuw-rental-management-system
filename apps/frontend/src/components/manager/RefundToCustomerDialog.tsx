@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
+import { refundProofRole } from "@/services/paymentProof.service";
 import { cn } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/counterErrors";
 import { formatRupees, type CounterProof } from "@/lib/counterPayment";
@@ -178,6 +180,8 @@ function RefundForm({
   const overBy = amountValid ? Math.max(0, amountNum - Math.max(0, netReceived)) : 0;
   const goodwill = amountValid ? Math.max(0, amountNum - owedBack) : 0;
   const transfer = method === "UPI" || method === "BANK_TRANSFER";
+  // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+  const proofRequired = transfer && (options.proofRequiredMethods ?? ["UPI", "BANK_TRANSFER"]).includes(method as CustomerRefundMethod);
   const depositHeld = toNumber(options.money.safetyDepositHeld);
   const depositToRefund = toNumber(options.money.depositToRefund);
 
@@ -188,6 +192,7 @@ function RefundForm({
       return `Enter the reason (at least ${options.limits.reasonMin} characters).`;
     }
     if (overBy > 0.004 && !confirmOver) return "Tick the confirmation to refund more than was received.";
+    if (proofRequired && !proof) return "Add the photo of the refund's payment-success screen.";
     return null;
   })();
 
@@ -217,7 +222,7 @@ function RefundForm({
     } catch (err) {
       const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
       const message = apiErrorMessage(err, "Couldn't record the refund. Please try again.");
-      if (code === "INVALID_PAYMENT_PROOF" || code === "DUPLICATE_PAYMENT_PROOF") setProofError(message);
+      if (code === "INVALID_PAYMENT_PROOF" || code === "DUPLICATE_PAYMENT_PROOF" || code === "REFUND_PROOF_REQUIRED") setProofError(message);
       else setError(message);
       // The server re-reads the money — show the fresh figures (the tick reappears if needed)
       if (code !== "DUPLICATE_REFUND") refetch();
@@ -363,16 +368,16 @@ function RefundForm({
             {options.proofPhotoSupported && (
               <PaymentProofField
                 id="ctr-proof"
-                role="manager"
+                role={refundProofRole(portal, options.bookingPublicId)}
                 value={proof}
                 onChange={(p) => {
                   setProof(p);
                   setProofError(null);
                 }}
                 error={proofError}
-                required={false}
-                label={method === "UPI" ? "Photo of the UPI transfer (optional)" : "Photo of the bank transfer (optional)"}
-                helper="After sending the money, photograph the transfer screen."
+                required={proofRequired}
+                label={method === "UPI" ? "Photo of the UPI refund success screen" : "Photo of the bank transfer success screen"}
+                helper="After sending the money, photograph the payment-success screen. Required."
               />
             )}
           </div>
@@ -420,8 +425,19 @@ function RefundForm({
                       </span>
                     )}
                   </span>
-                  <span className={cn("tabular-nums", r.voided && "text-zinc-400 line-through")}>
-                    {formatRupees(toNumber(r.amount))}
+                  <span className="flex items-center gap-2">
+                    {/* Oct 25 2026: the refund's payment-success photo */}
+                    {r.proofPhoto && (
+                      <ProofPhotoThumb
+                        photo={r.proofPhoto}
+                        photos={r.proofs}
+                        size="sm"
+                        caption={`Refund · ${formatRupees(toNumber(r.amount))}`}
+                      />
+                    )}
+                    <span className={cn("tabular-nums", r.voided && "text-zinc-400 line-through")}>
+                      {formatRupees(toNumber(r.amount))}
+                    </span>
                   </span>
                 </li>
               ))}

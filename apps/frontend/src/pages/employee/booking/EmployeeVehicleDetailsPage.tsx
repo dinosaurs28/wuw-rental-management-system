@@ -40,7 +40,7 @@ import { useEmployeeBookingStore } from "@/store/employeeBooking.store";
 import { walkInPaymentFields } from "@/lib/counterPayment";
 import { customerSession as sessionUtils } from "@/utils/customerSession";
 import { kycService, type KycDocument } from "@/services/kyc.service";
-import { DL_PHOTOS_REQUIRED_STAFF_MESSAGE, hasDlPhotosOnFile } from "@repo/schemas";
+import { kycPhotosRequiredMessage, requiredKycPhotosState } from "@repo/schemas";
 import { employeeService } from "@/services/employee.service";
 
 export const EmployeeVehicleDetailsPage = () => {
@@ -288,10 +288,12 @@ export const EmployeeVehicleDetailsPage = () => {
         ?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    // Both driving licence photos are required (Oct 17 2026; server: 422
-    // DL_PHOTOS_REQUIRED) — captured in the KYC section.
-    if (!hasDlPhotosOnFile(kycDocuments)) {
-      toast.error(DL_PHOTOS_REQUIRED_STAFF_MESSAGE);
+    // Both driving licence (Oct 17 2026) and both Aadhaar (Oct 25 2026) photos
+    // are required (server: 422 DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED) —
+    // captured in the KYC section.
+    const requiredPhotos = requiredKycPhotosState(kycDocuments);
+    if (!requiredPhotos.ok) {
+      toast.error(kycPhotosRequiredMessage(requiredPhotos.missingTypes, "staff"));
       document.getElementById("kyc-section")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -530,7 +532,7 @@ export const EmployeeVehicleDetailsPage = () => {
                     <p className="text-amber-700 max-w-sm mx-auto mt-1">
                       Customer profile details are missing (such as the age or
                       address). Complete the profile to book — both driving
-                      licence photos are required too.
+                      licence and both Aadhaar photos are required too.
                     </p>
                   </div>
                   <Button onClick={() => setShowCompleteProfile(true)}>

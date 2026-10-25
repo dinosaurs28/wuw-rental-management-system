@@ -210,9 +210,10 @@ test("refund methods map onto the cash / online refund records", () => {
 
 test("upcoming: reason + refund; no vehicle fields needed", () => {
   const parsed = parseManualCancelBody(
-    { reason: "  Customer called to cancel  ", refund: { amount: 1500, method: "UPI", note: " sent to 98xxxx " } },
+    { reason: "  Customer called to cancel  ", refund: { amount: 1500, method: "UPI", note: " sent to 98xxxx ", proofFileId: " pf1 " } },
     "UPCOMING",
   );
+  assert.equal(parsed.refund.proofFileId, "pf1");
   assert.equal(parsed.reason, "Customer called to cancel");
   assert.equal(parsed.refund.amount.toFixed(2), "1500.00");
   assert.equal(parsed.refund.method, "UPI");
@@ -257,6 +258,47 @@ test("refund amount is required (₹0 allowed); a method only when money goes ba
   const none = parseManualCancelBody({ reason: "No show", refund: { amount: 0, method: "CHEQUE" } }, "UPCOMING");
   assert.equal(none.refund.method, null);
   assert.equal(none.refund.amount.toFixed(2), "0.00");
+});
+
+test("refund photo (Oct 25 2026): required for UPI / bank transfer, optional for cash, ignored for the original payment", () => {
+  const base = { reason: "No show" };
+  expectError(
+    () => parseManualCancelBody({ ...base, refund: { amount: 100, method: "UPI" } }, "UPCOMING"),
+    "REFUND_PROOF_REQUIRED",
+    "refund.proofFileId",
+  );
+  expectError(
+    () => parseManualCancelBody({ ...base, refund: { amount: 100, method: "BANK_TRANSFER", proofFileId: "" } }, "UPCOMING"),
+    "REFUND_PROOF_REQUIRED",
+    "refund.proofFileId",
+  );
+  expectError(
+    () => parseManualCancelBody({ ...base, refund: { amount: 100, method: "UPI", proofFileId: 7 } }, "UPCOMING"),
+    "VALIDATION_ERROR",
+    "refund.proofFileId",
+  );
+  // proof_file_id accepted too
+  assert.equal(
+    parseManualCancelBody({ ...base, refund: { amount: 100, method: "BANK_TRANSFER", proof_file_id: "pf2" } }, "UPCOMING").refund.proofFileId,
+    "pf2",
+  );
+  assert.equal(parseManualCancelBody({ ...base, refund: { amount: 100, method: "CASH" } }, "UPCOMING").refund.proofFileId, null);
+  assert.equal(parseManualCancelBody({ ...base, refund: { amount: 100, method: "CASH", proofFileId: "pf3" } }, "UPCOMING").refund.proofFileId, "pf3");
+  assert.equal(
+    parseManualCancelBody({ ...base, refund: { amount: 100, method: "ORIGINAL_PAYMENT", proofFileId: "pf4" } }, "UPCOMING").refund.proofFileId,
+    null,
+  );
+  // No refund: nothing to photograph
+  assert.equal(parseManualCancelBody({ ...base, refund: { amount: 0, method: "UPI" } }, "UPCOMING").refund.proofFileId, null);
+  // Active rent too
+  expectError(
+    () =>
+      parseManualCancelBody(
+        { ...base, refund: { amount: 100, method: "UPI" }, vehicleLocation: "AT_BRANCH", vehicleStatus: "AVAILABLE" },
+        "ACTIVE",
+      ),
+    "REFUND_PROOF_REQUIRED",
+  );
 });
 
 test("refund note: optional, at most 500 characters", () => {

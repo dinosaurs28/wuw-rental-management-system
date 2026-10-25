@@ -126,6 +126,8 @@ export interface CustomerRefundRow extends PaymentVoidState {
   notes: string | null;
   by: string | null;
   at: string;
+  /** Additive (Oct 25 2026): the refund's payment-success photo (presigned URL, 15 min) */
+  proofPhotoUrl?: string | null;
 }
 
 export interface PickupSummary extends SummaryBase {

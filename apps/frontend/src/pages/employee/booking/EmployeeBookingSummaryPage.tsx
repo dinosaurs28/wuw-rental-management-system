@@ -178,10 +178,12 @@ export const EmployeeBookingSummaryPage = () => {
       }
 
       // The KYC document isn't this customer's — make staff pick one again.
-      // DL_PHOTOS_REQUIRED: the page we go back to asks for the licence photos.
+      // DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED: the page we go back to
+      // asks for the licence / Aadhaar photos.
       if (
         error?.response?.data?.code === "KYC_CUSTOMER_MISMATCH" ||
-        error?.response?.data?.code === "DL_PHOTOS_REQUIRED"
+        error?.response?.data?.code === "DL_PHOTOS_REQUIRED" ||
+        error?.response?.data?.code === "AADHAAR_PHOTOS_REQUIRED"
       ) {
         useEmployeeBookingStore.getState().setCustomerKycId(null);
       }

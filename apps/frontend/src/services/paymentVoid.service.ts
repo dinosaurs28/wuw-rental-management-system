@@ -1,5 +1,6 @@
 import apiClient from "@/lib/axios";
 import type { PaymentVoidState } from "@/services/payment.service";
+import type { ProofPhotoInfo } from "@/components/payment/counter/ProofPhotoThumb";
 
 /** Branch manager (own branch) or admin (any branch). */
 export type PaymentVoidPortal = "manager" | "admin";
@@ -30,6 +31,9 @@ export interface BookingPaymentRow extends PaymentVoidState {
   cashShift: { publicId: string; status: string } | null;
   notes: string | null;
   createdAt: string;
+  /** Additive (Oct 25 2026): the payment / refund photo(s) */
+  proofPhoto?: ProofPhotoInfo | null;
+  proofs?: ProofPhotoInfo[];
 }
 
 export interface BookingPayments {

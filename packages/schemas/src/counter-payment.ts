@@ -64,9 +64,30 @@ export const SAFETY_DEPOSIT_HANDLING_LABELS: Record<SafetyDepositHandling, strin
   REFUND_IN_FULL: "Refund in full",
 };
 
-/** Methods a deposit refund / remainder refund can be paid out with. */
-export const COUNTER_REFUND_METHODS = ["CASH", "UPI"] as const;
+/**
+ * Methods a deposit refund / remainder refund can be paid out with.
+ * Oct 25 2026: bank transfer added (Fleet refunds at drop).
+ */
+export const COUNTER_REFUND_METHODS = ["CASH", "UPI", "BANK_TRANSFER"] as const;
 export type CounterRefundMethod = (typeof COUNTER_REFUND_METHODS)[number];
 
+export const COUNTER_REFUND_METHOD_LABELS: Record<CounterRefundMethod, string> = {
+  CASH: "Cash",
+  UPI: "UPI",
+  BANK_TRANSFER: "Bank transfer",
+};
+
 export const DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE =
-  "Choose how the safety deposit is refunded to the customer (cash or UPI).";
+  "Choose how the safety deposit is refunded to the customer (cash, UPI or bank transfer).";
+
+/**
+ * Oct 25 2026: a refund paid by UPI / bank transfer needs a photo of its
+ * payment-success screen (server code REFUND_PROOF_REQUIRED). Cash: optional.
+ */
+export const REFUND_PROOF_REQUIRED_MESSAGE =
+  "Add a photo of the refund's payment-success screen (UPI / bank transfer) before recording the refund. " +
+  "If your app has no photo option, update the app or record the refund from the branch manager portal.";
+
+/** Whether a refund by this method needs the payment-success photo. */
+export const refundMethodNeedsProof = (method: string | null | undefined): boolean =>
+  method === "UPI" || method === "BANK_TRANSFER" || method === "ONLINE";

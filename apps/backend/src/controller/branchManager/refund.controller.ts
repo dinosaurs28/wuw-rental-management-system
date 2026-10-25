@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createRefundRequestSchema, rejectRefundSchema, completeRefundSchema } from "@repo/schemas";
 import { refundService } from "../../services/payment/index.js";
+import { CounterGuardError } from "../../services/payment/counter-guard.service.js";
 import type { PaymentMethod } from "@repo/database/client";
 
 const buildActorContext = async (req: Request) => {
@@ -133,9 +134,19 @@ export const CompleteRefund = async (req: Request, res: Response): Promise<void>
       return;
     }
     const actor = await buildActorContext(req);
-    const refund = await refundService.complete(req.params.publicId!, validation.data.onlineTransactionRef, actor);
+    const refund = await refundService.complete(
+      req.params.publicId!,
+      validation.data.onlineTransactionRef,
+      actor,
+      validation.data.proof_file_id,
+    );
     res.status(StatusCode.OK).json({ message: "Refund disbursed", data: { publicId: refund.publicId, status: refund.status } });
   } catch (error: any) {
+    // REFUND_PROOF_REQUIRED / INVALID_PAYMENT_PROOF / DUPLICATE_PAYMENT_PROOF
+    if (error instanceof CounterGuardError) {
+      res.status(error.status).json(error.toJSON());
+      return;
+    }
     console.error("CompleteRefund Error:", error);
     if (error.message?.includes("Approve it first") || error.message?.includes("Cannot complete")) {
       res.status(StatusCode.BAD_REQUEST).json({ message: error.message });

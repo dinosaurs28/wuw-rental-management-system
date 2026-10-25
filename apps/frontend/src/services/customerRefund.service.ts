@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import type { ProofPhotoInfo } from "@/components/payment/counter/ProofPhotoThumb";
 
 /** How the money goes back to the customer (backend CUSTOMER_REFUND_METHODS) — paid out now. */
 export type CustomerRefundMethod = "CASH" | "UPI" | "BANK_TRANSFER";
@@ -23,6 +24,9 @@ export interface CustomerRefundRow {
   voidedAt?: string | null;
   voidedBy?: string | null;
   voidReason?: string | null;
+  /** Additive (Oct 25 2026): the refund's payment-success photo(s) */
+  proofPhoto?: ProofPhotoInfo | null;
+  proofs?: ProofPhotoInfo[];
 }
 
 /** GET …/bookings/:publicId/refund-to-customer — what the Refund to customer dialog needs. */
@@ -51,6 +55,8 @@ export interface CustomerRefundOptions {
   cashShiftOpen: boolean;
   methods: { value: CustomerRefundMethod; label: string }[];
   proofPhotoSupported: boolean;
+  /** Additive (Oct 25 2026): methods whose refund needs the payment-success photo */
+  proofRequiredMethods?: CustomerRefundMethod[];
   limits: { reasonMin: number; reasonMax: number; referenceMax: number };
   refunds: CustomerRefundRow[];
 }

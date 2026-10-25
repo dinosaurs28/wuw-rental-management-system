@@ -39,7 +39,7 @@ import {
 } from '../../../lib/counterPayment';
 import { durationLabel } from '../../../lib/pricing';
 import { handleDlInUse } from '../../../lib/dlInUse';
-import { DL_PHOTOS_REQUIRED, DL_PHOTOS_REQUIRED_STAFF_MESSAGE } from '../../../lib/dlPhotos';
+import { DL_PHOTOS_REQUIRED, DL_PHOTOS_REQUIRED_STAFF_MESSAGE, AADHAAR_PHOTOS_REQUIRED_STAFF_MESSAGE, isKycPhotosRequiredCode } from '../../../lib/kycPhotos';
 import { rangeLengthLabel, toLocalMinuteIso } from '../../../lib/dates';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import { profileIncompleteMessage } from '../../../lib/identity';
@@ -553,12 +553,13 @@ export default function WalkinSummaryScreen() {
         );
         return;
       }
-      if (err?.response?.data?.code === DL_PHOTOS_REQUIRED) {
-        // Both licence photos are required — capture them on the documents step.
+      if (isKycPhotosRequiredCode(err?.response?.data?.code)) {
+        // Both licence and both Aadhaar photos are required — capture them on the documents step.
+        const dlMissing = err.response.data.code === DL_PHOTOS_REQUIRED;
         qc.invalidateQueries({ queryKey: ['employee', 'walkin-kyc', customer.publicId] });
         Alert.alert(
-          'Driving licence photos',
-          apiErrorMessage(err, DL_PHOTOS_REQUIRED_STAFF_MESSAGE),
+          dlMissing ? 'Driving licence photos' : 'Aadhaar photos',
+          apiErrorMessage(err, dlMissing ? DL_PHOTOS_REQUIRED_STAFF_MESSAGE : AADHAAR_PHOTOS_REQUIRED_STAFF_MESSAGE),
           [{ text: 'OK', onPress: () => router.back() }],
           { cancelable: false },
         );

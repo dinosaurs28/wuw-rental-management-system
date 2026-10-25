@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { handleImageUpload } from "../../middlewares/upload.middleware.js";
+import { PAYMENT_PROOF_MAX_BYTES } from "../../services/payment/payment-proof.service.js";
 import { Login } from "../../controller/admin/auth.controller.js";
 import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
 import {
@@ -80,6 +82,7 @@ import {
 import {
   AdminGetCustomerRefundOptions,
   AdminRecordCustomerRefund,
+  AdminUploadRefundProof,
 } from "../../controller/branchManager/customer-refund.controller.js";
 import { AdminListBookingPayments, AdminVoidPayment } from "../../controller/branchManager/payment-void.controller.js";
 
@@ -181,6 +184,13 @@ router.post("/booking-locks/:publicId/cancel", AdminCheck, AdminCancelBookingLoc
 // Refund to the customer on any booking of any branch (same rules as the branch manager's)
 router.get("/bookings/:publicId/refund-to-customer", AdminCheck, AdminGetCustomerRefundOptions);
 router.post("/bookings/:publicId/refund-to-customer", AdminCheck, AdminRecordCustomerRefund);
+// Oct 25 2026: photo of the refund's payment-success screen (required for UPI / bank transfer)
+router.post(
+  "/bookings/:publicId/refund-proof",
+  AdminCheck,
+  handleImageUpload("file", { maxBytes: PAYMENT_PROOF_MAX_BYTES }),
+  AdminUploadRefundProof,
+);
 // Void a payment (reverse a wrong entry) on any branch's booking
 router.get("/bookings/:publicId/payments", AdminCheck, AdminListBookingPayments);
 router.post("/payments/:transactionPublicId/void", AdminCheck, AdminVoidPayment);

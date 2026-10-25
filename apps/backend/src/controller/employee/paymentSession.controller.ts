@@ -80,6 +80,7 @@ import {
 } from "../../services/payment/customer-credit.service.js";
 import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE } from "@repo/schemas";
 import { SAFETY_DEPOSIT_REFUND_REF } from "../../services/payment/safety-deposit.service.js";
+import { refundProofRefusal } from "../../services/payment/refund-proof-rules.js";
 import {
   adjustmentPendingBody,
   adjustmentSettleCheck,
@@ -101,10 +102,15 @@ function isUpiGateway(gateway?: string | null): boolean {
   return !g || g.toUpperCase() === "UPI";
 }
 
-/** How the deposit is paid back when the drop bill refunds it in full (REFUND_IN_FULL). */
+/**
+ * How the deposit is paid back when the drop bill refunds it in full (REFUND_IN_FULL).
+ * Oct 25 2026: BANK_TRANSFER added; UPI / bank / ONLINE need the photo of the
+ * refund's payment-success screen (REFUND_PROOF_REQUIRED); LATER = "Refund later
+ * (send to branch manager)" — nothing is paid out now and the deposit is left to
+ * the branch manager's Pending Settlements.
+ */
 const depositRefundSchema = z.object({
-  method: z.enum(["CASH", "UPI", "ONLINE"]),
-  // Optional photo of the UPI transfer to the customer
+  method: z.enum(["CASH", "UPI", "ONLINE", "BANK_TRANSFER", "LATER"]),
   proof_file_id: z.string().trim().min(1).max(64).optional(),
   notes: z.string().max(500).optional(),
 });
@@ -141,8 +147,12 @@ const recordPaymentSchema = z.object({
 });
 
 const recordRefundSchema = z.object({
-  // UPI = ONLINE paid back by UPI (optionally with a photo of the transfer)
-  method: z.enum(["CASH", "ONLINE", "UPI"]),
+  // UPI = ONLINE paid back by UPI; BANK_TRANSFER (Oct 25 2026) = ONLINE by bank
+  // transfer — both need the photo of the refund's payment-success screen.
+  // LATER (Oct 25 2026, drop bill only) = "Refund later (send to branch manager)":
+  // the drop completes, nothing is paid out, and the money owed back is left to
+  // the branch manager's Pending Settlements (refund-overpayment).
+  method: z.enum(["CASH", "ONLINE", "UPI", "BANK_TRANSFER", "LATER"]),
   amount: z.coerce.number().positive(),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
@@ -265,6 +275,8 @@ type DepositRefunded = { publicId: string; amount: string; method: string };
 interface DepositRefundChoice {
   method: "CASH" | "ONLINE";
   isUpi: boolean;
+  /** Oct 25 2026: paid back by bank transfer (ONLINE, gateway BANK_TRANSFER) */
+  isBank?: boolean;
   proof: ResolvedProof | null;
   notes: string | null;
 }
@@ -306,8 +318,9 @@ async function writeDepositRefund(
       totalAmount: amount,
       cashAmount: isCash ? amount : "0.00",
       onlineAmount: isCash ? "0.00" : amount,
-      onlineGateway: p.choice.isUpi ? "UPI" : null,
+      onlineGateway: p.choice.isUpi ? "UPI" : p.choice.isBank ? "BANK_TRANSFER" : null,
       proofFileId: p.choice.proof?.id ?? null,
+      proofPhotos: proofPhotosCreate(p.choice.proof ? [p.choice.proof] : null),
       collectedById: p.actorId,
       collectedAt: now,
       confirmedById: p.actorId,
@@ -334,7 +347,7 @@ async function writeDepositRefund(
     where: { id: p.session.bookingId },
     data: { safetyDepositRefunded: true, safetyDepositRefundedAt: now },
   });
-  return { publicId: txn.publicId, amount, method: p.choice.isUpi ? "UPI" : p.choice.method };
+  return { publicId: txn.publicId, amount, method: p.choice.isUpi ? "UPI" : p.choice.isBank ? "BANK_TRANSFER" : p.choice.method };
 }
 
 /**
@@ -617,7 +630,11 @@ export const RecordPayment = async (req: Request, res: Response) => {
     // in the same settlement, so staff must say how (cash / UPI).
     const depositRefundDue = depositRefundOnBill(session.entries);
     let refundChoice: DepositRefundChoice | null = null;
-    if (depositRefundDue) {
+    // "Refund later": the deposit is left to the branch manager's Pending Settlements
+    let depositRefundDeferred = false;
+    if (depositRefundDue && depositRefund?.method === "LATER") {
+      depositRefundDeferred = true;
+    } else if (depositRefundDue) {
       if (!depositRefund) {
         return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
@@ -626,11 +643,16 @@ export const RecordPayment = async (req: Request, res: Response) => {
           depositRefundAmount: depositRefundDue.toFixed(2),
         });
       }
-      const refundIsUpi = depositRefund.method !== "CASH";
+      const refundIsBank = depositRefund.method === "BANK_TRANSFER";
+      const refundIsUpi = depositRefund.method === "UPI" || depositRefund.method === "ONLINE";
+      // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+      const noProof = refundProofRefusal(depositRefund.method, !!depositRefund.proof_file_id, { field: "depositRefund.proof_file_id" });
+      if (noProof) throw new CounterGuardError(noProof.status, noProof.code, noProof.message, { field: noProof.field });
       refundChoice = {
-        method: refundIsUpi ? "ONLINE" : "CASH",
+        method: refundIsUpi || refundIsBank ? "ONLINE" : "CASH",
         isUpi: refundIsUpi,
-        proof: refundIsUpi ? await resolvePaymentProof(depositRefund.proof_file_id, session.branchId) : null,
+        isBank: refundIsBank,
+        proof: refundIsUpi || refundIsBank ? await resolvePaymentProof(depositRefund.proof_file_id, session.branchId) : null,
         notes: depositRefund.notes?.trim() || null,
       };
       // Paying the deposit back is money out of the executive's shift
@@ -961,6 +983,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         ...(upi && upi.proofs.length > 1 && { proofFileIds: upi.proofs.map((p) => p.publicId) }),
         ...(credit && { credit }),
         ...(refunded && { depositRefund: refunded }),
+        ...(depositRefundDeferred && { depositRefundDeferredToManager: depositRefundDue!.toFixed(2) }),
       },
     });
 
@@ -996,6 +1019,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
         // Additive: what this settlement put on credit / refunded, and the booking's credit position
         credit: credit ?? null,
         depositRefund: refunded ?? null,
+        // Additive (Oct 25 2026): the deposit refund was left to the branch manager
+        depositRefundDeferred: depositRefundDeferred ? depositRefundDue!.toFixed(2) : null,
         bookingCredit: serializeCreditSummary(creditSummary),
       },
     });
@@ -1011,6 +1036,110 @@ export const RecordPayment = async (req: Request, res: Response) => {
   }
 };
 
+// ── record-refund { method: "LATER" } — "Refund later (send to branch manager)" ──
+
+/**
+ * Oct 25 2026 (client: "Refund during drop should be given to fleet members"):
+ * the Fleet Executive refunds what a drop bill owes back themselves (record-refund
+ * CASH / UPI / BANK_TRANSFER). When they can't — no cash on hand, say — they
+ * complete the drop with "Refund later": nothing is paid out, no ledger line or
+ * PaymentTransaction is written, the deposit isn't marked refunded, and the money
+ * owed back shows in the branch manager's Pending Settlements (computeBookingOwed
+ * counts the drop bill's deposit credit, so the booking reads as paid beyond what
+ * it owes → overpaidToRefund → refund-overpayment). Drop bills only: an edit's
+ * difference is never settled in Settlements.
+ */
+async function deferRefundToManager(
+  req: Request,
+  res: Response,
+  body: { amount: number; idempotencyKey: string; notes?: string },
+) {
+  const { amount, notes } = body;
+  const actor = await resolveActor(req);
+  const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
+  if (session.sessionType !== PaymentSessionType.RETURN) {
+    return res.status(StatusCode.BAD_REQUEST).json({
+      success: false,
+      code: "REFUND_LATER_DROP_ONLY",
+      message: "Only a drop bill's refund can be left to the branch manager. Refund the customer now.",
+    });
+  }
+  if (session.status !== PaymentSessionStatus.AWAITING_PAYMENT) {
+    return res.status(StatusCode.BAD_REQUEST).json({ message: `Session is not awaiting payment` });
+  }
+  const check = await ledgerService.validateSessionAmount(session.id, -Math.abs(amount));
+  if (!check.valid) {
+    return res.status(StatusCode.CONFLICT).json({
+      message: `Refund amount mismatch. Session refundable is ₹${check.recomputed.abs().toFixed(2)}.`,
+      sessionNetPayable: check.recomputed.toFixed(2),
+    });
+  }
+  if (!(await isDropBillInSync(session.bookingId, session.id))) {
+    return res.status(StatusCode.CONFLICT).json(DROP_BILL_STALE);
+  }
+
+  let returnedVehicleIds: number[] = [];
+  await prisma.$transaction(async (tx) => {
+    // No money moves, so no shift lock; the booking / session checks are re-run under the lock
+    await lockSessionForSettlement(tx, session, -Math.abs(amount), ["AWAITING_PAYMENT"]);
+    await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
+    // Kept on the bill for the completed-drop summary
+    const meta = await tx.paymentSession.findUniqueOrThrow({ where: { id: session.id }, select: { metadata: true } });
+    await tx.paymentSession.update({
+      where: { id: session.id },
+      data: {
+        metadata: {
+          ...((meta.metadata as Record<string, unknown> | null) ?? {}),
+          refundDeferredToManager: Math.abs(amount).toFixed(2),
+        } as any,
+      },
+    });
+    await clearActiveSession(tx, session);
+    returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+  }, { timeout: 15000 });
+
+  if (returnedVehicleIds.length > 0) {
+    try {
+      await invalidateVehicleAvailability(redis, returnedVehicleIds);
+      await invalidateGroupListingCache(redis as any);
+    } catch (redisErr) {
+      console.warn("[refund-later] Cache invalidation failed (non-fatal):", redisErr);
+    }
+  }
+  const creditOpen = (await getBookingCreditSummary(session.bookingId))?.pending.gt(0) ?? false;
+  finalizeInvoice(session.bookingId, { markPaid: !creditOpen }).catch((err) =>
+    console.error("[refund-later] Invoice finalization error:", err),
+  );
+
+  const owedBack = Math.abs(amount).toFixed(2);
+  await auditService.log({
+    actorId: actor.id,
+    actorName: actor.name,
+    actorRole: actor.role,
+    actorBranchId: actor.branchId ?? undefined,
+    action: "REFUND_DEFERRED_TO_MANAGER",
+    category: AuditCategory.PAYMENT,
+    description: `Drop completed on session ${session.publicId}; refund of ₹${owedBack} left to the branch manager (Pending Settlements)${notes ? `: ${notes}` : ""}`,
+    entity: "PaymentSession",
+    entityId: session.publicId,
+    metadata: { amount: owedBack, notes: notes ?? null },
+  });
+  await staffActivityService.logFromRequest(req, {
+    actionType: StaffActionType.COMPLETED,
+    entityType: StaffEntityType.PAYMENT_SESSION,
+    entityRef: session.publicId,
+    description: `Drop completed — refund of ₹${owedBack} sent to the branch manager`,
+    metadata: { amount: owedBack },
+  });
+  void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
+
+  const updatedSession = await paymentSessionService.getSession(session.publicId);
+  return res.status(StatusCode.OK).json({
+    message: `Drop completed. The ₹${owedBack} refund is sent to the branch manager's Pending Settlements.`,
+    data: { ...serializeSession(updatedSession!), refundDeferred: owedBack },
+  });
+}
+
 // ── POST /sessions/:sessionPublicId/record-refund ─────────────────────────────
 
 export const RecordRefund = async (req: Request, res: Response) => {
@@ -1020,9 +1149,16 @@ export const RecordRefund = async (req: Request, res: Response) => {
       return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
     }
     const { amount, idempotencyKey, notes } = validation.data;
-    // UPI = paid back by UPI (ONLINE through the UPI gateway), optionally with a photo
+    if (validation.data.method === "LATER") return await deferRefundToManager(req, res, validation.data);
+    // UPI = paid back by UPI (ONLINE through the UPI gateway); BANK_TRANSFER = ONLINE by bank
     const refundIsUpi = validation.data.method === "UPI";
-    const method = refundIsUpi ? "ONLINE" : validation.data.method;
+    const refundIsBank = validation.data.method === "BANK_TRANSFER";
+    const method = refundIsUpi || refundIsBank ? "ONLINE" : validation.data.method;
+    const methodLabel = refundIsUpi ? "UPI" : refundIsBank ? "BANK_TRANSFER" : method;
+    // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+    // (old builds that send none get 400 REFUND_PROOF_REQUIRED)
+    const noProof = refundProofRefusal(validation.data.method, !!validation.data.proof_file_id, { field: "proof_file_id" });
+    if (noProof) throw new CounterGuardError(noProof.status, noProof.code, noProof.message, { field: noProof.field });
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
     const refundProof = method === "ONLINE"
@@ -1092,8 +1228,9 @@ export const RecordRefund = async (req: Request, res: Response) => {
           totalAmount: amount.toFixed(2),
           cashAmount: method === "CASH" ? amount.toFixed(2) : "0.00",
           onlineAmount: method === "ONLINE" ? amount.toFixed(2) : "0.00",
-          onlineGateway: refundIsUpi ? "UPI" : null,
+          onlineGateway: refundIsUpi ? "UPI" : refundIsBank ? "BANK_TRANSFER" : null,
           proofFileId: refundProof?.id ?? null,
+          proofPhotos: proofPhotosCreate(refundProof ? [refundProof] : null),
           collectedById: actor.id,
           collectedAt: new Date(),
           confirmedById: actor.id,
@@ -1161,10 +1298,10 @@ export const RecordRefund = async (req: Request, res: Response) => {
       actorBranchId: actor.branchId ?? undefined,
       action: "REFUND_RECORDED",
       category: AuditCategory.PAYMENT,
-      description: `Refund of ₹${amount} (${refundIsUpi ? "UPI" : method}) issued via session ${session.publicId}`,
+      description: `Refund of ₹${amount} (${methodLabel}) issued via session ${session.publicId}`,
       entity: "PaymentSession",
       entityId: session.publicId,
-      metadata: { method: refundIsUpi ? "UPI" : method, amount, ...(refundProof && { proofFileId: refundProof.publicId }) },
+      metadata: { method: methodLabel, amount, ...(refundProof && { proofFileId: refundProof.publicId }) },
     });
 
     void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });

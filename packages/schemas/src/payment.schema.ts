@@ -96,6 +96,34 @@ export const recordPaymentSchema = recordPaymentBase
     { message: "onlineTransactionRef (or a proof_file_id photo for UPI) is required for SPLIT payments", path: ["onlineTransactionRef"] },
   );
 
+/**
+ * BM Pending Settlements "settle" (Oct 25 2026, client: "we need not add photo for
+ * the settlement, the branch manager will check the transactions and then settle").
+ * Same as recordPaymentSchema except a UPI payment (gateway unset or "UPI") needs no
+ * reference or photo; any other gateway still needs its reference.
+ */
+const isUpiGatewayName = (g?: string | null) => !g?.trim() || g.trim().toUpperCase() === "UPI";
+export const recordSettlementPaymentSchema = recordPaymentBase
+  .refine(
+    (d) => (d.method === "CASH" ? Math.abs(d.cashAmount - d.totalAmount) < 0.01 : true),
+    { message: "For CASH method, cashAmount must equal totalAmount", path: ["cashAmount"] },
+  )
+  .refine(
+    (d) => (d.method === "ONLINE" ? Math.abs(d.onlineAmount - d.totalAmount) < 0.01 : true),
+    { message: "For ONLINE method, onlineAmount must equal totalAmount", path: ["onlineAmount"] },
+  )
+  .refine(
+    (d) => {
+      if (d.method !== "SPLIT") return true;
+      return Math.abs((d.cashAmount ?? 0) + (d.onlineAmount ?? 0) - d.totalAmount) < 0.01;
+    },
+    { message: "For SPLIT method, cashAmount + onlineAmount must equal totalAmount", path: ["totalAmount"] },
+  )
+  .refine(
+    (d) => d.method === "CASH" || isUpiGatewayName(d.onlineGateway) || !!d.onlineTransactionRef?.trim(),
+    { message: "Transaction reference is required for online payments other than UPI", path: ["onlineTransactionRef"] },
+  );
+
 // ─── Cash Confirmation ─────────────────────────────────────────────────────
 
 export const confirmCashPaymentSchema = z.object({
@@ -121,6 +149,9 @@ export const rejectRefundSchema = z.object({
 
 export const completeRefundSchema = z.object({
   onlineTransactionRef: z.string().max(128).optional(),
+  // Oct 25 2026: photo of the refund's payment-success screen (FileObject publicId
+  // from the payment-proof upload) — required to mark a UPI / bank refund paid
+  proof_file_id: z.string().trim().min(1).max(64).optional(),
 });
 
 // ─── Cash Shift ────────────────────────────────────────────────────────────

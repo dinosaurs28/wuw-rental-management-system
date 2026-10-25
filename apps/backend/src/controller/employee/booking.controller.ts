@@ -93,7 +93,7 @@ import {
 } from "../../services/booking/dl-in-use.service.js";
 import { blacklistRefusal } from "../../services/customer/customer-blacklist.service.js";
 import {
-  assertDlPhotosOnFile,
+  assertKycPhotosOnFile,
   bookingDlKycFileId,
   DlPhotosRequiredError,
 } from "../../services/booking/dl-photos.service.js";
@@ -423,11 +423,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       if (kycRecord.type !== "PAN") kycFileId = kycRecord.fileId;
     }
 
-    // Driving licence photos are compulsory (Oct 17 2026): FRONT + BACK on file
-    // (captured on the walk-in KYC screen), not rejected — 422
-    // DL_PHOTOS_REQUIRED otherwise. The booking keeps the DL photo staff
-    // selected, else the DL front.
-    const dlPhotos = await assertDlPhotosOnFile(customer.customerProfile.id, "staff");
+    // Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos are
+    // compulsory: FRONT + BACK of each on file (captured on the walk-in KYC
+    // screen), not rejected — 422 DL_PHOTOS_REQUIRED / AADHAAR_PHOTOS_REQUIRED
+    // otherwise. The booking keeps the DL photo staff selected, else the DL front.
+    const dlPhotos = await assertKycPhotosOnFile(customer.customerProfile.id, "staff");
     kycFileId = bookingDlKycFileId(dlPhotos, kycFileId);
 
     // Parse dates (IST) — used as Luxon DateTime for pricing engine

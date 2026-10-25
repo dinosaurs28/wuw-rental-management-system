@@ -65,12 +65,24 @@ export const SAFETY_DEPOSIT_HANDLING_LABELS: Record<SafetyDepositHandling, strin
   REFUND_IN_FULL: 'Refund in full',
 };
 
-/** Methods a deposit refund / remainder refund can be paid out with. */
-export const COUNTER_REFUND_METHODS = ['CASH', 'UPI'] as const;
+/**
+ * Methods a deposit refund / remainder refund can be paid out with.
+ * Oct 25 2026: bank transfer added; a UPI / bank refund needs the photo of its
+ * payment-success screen (server 400 REFUND_PROOF_REQUIRED otherwise).
+ */
+export const COUNTER_REFUND_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'] as const;
 export type CounterRefundMethod = (typeof COUNTER_REFUND_METHODS)[number];
 
+export const COUNTER_REFUND_METHOD_LABELS: Record<CounterRefundMethod, string> = {
+  CASH: 'Cash',
+  UPI: 'UPI',
+  BANK_TRANSFER: 'Bank transfer',
+};
+
 export const DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE =
-  'Choose how the safety deposit is refunded to the customer (cash or UPI).';
+  'Choose how the safety deposit is refunded to the customer (cash, UPI or bank transfer).';
+
+export const REFUND_PROOF_REQUIRED_MESSAGE = "Add a photo of the refund's payment-success screen.";
 
 /** POST / GET …/payment/proof → data. `url` is presigned for `expiresIn` s (900). */
 export interface PaymentProof {
@@ -220,6 +232,7 @@ export function resolveCounterPayment(
 /** Server codes that belong to the payment picker (shown under its fields). */
 export type CounterPaymentErrorCode =
   | 'PAYMENT_PROOF_REQUIRED'
+  | 'REFUND_PROOF_REQUIRED'
   | 'INVALID_PAYMENT_PROOF'
   | 'DUPLICATE_PAYMENT_PROOF'
   | 'INVALID_UTR'
@@ -246,6 +259,9 @@ export function counterPaymentServerError(
   switch (code) {
     case 'PAYMENT_PROOF_REQUIRED':
       return { errors: { proof: message ?? PAYMENT_PROOF_REQUIRED_MESSAGE }, dropProof: false };
+    // Oct 25 2026: a UPI / bank refund without the photo of its payment-success screen
+    case 'REFUND_PROOF_REQUIRED':
+      return { errors: { proof: message ?? REFUND_PROOF_REQUIRED_MESSAGE }, dropProof: false };
     case 'INVALID_PAYMENT_PROOF':
       return {
         errors: { proof: message ?? "The payment photo wasn't found. Take the photo of the customer's payment screen again.", ...at },

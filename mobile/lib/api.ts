@@ -587,14 +587,17 @@ export const employeeApi = {
       collateral?: string;
       // Drop bill with the deposit refunded in full (#6): how it's paid back.
       // Without it: 400 DEPOSIT_REFUND_METHOD_REQUIRED { depositRefundAmount }.
-      depositRefund?: { method: CounterRefundMethod; proof_file_id?: string; notes?: string };
+      // Oct 25 2026: UPI / BANK_TRANSFER need proof_file_id (REFUND_PROOF_REQUIRED);
+      // LATER = "Refund later (send to branch manager)" — left to Pending Settlements
+      depositRefund?: { method: CounterRefundMethod | 'LATER'; proof_file_id?: string; notes?: string };
     },
   ) => api.post(`/api/employee/sessions/${sessionPublicId}/record-payment`, body),
   recordSessionRefund: (
     sessionPublicId: string,
     body: {
-      // UPI = ONLINE paid back by UPI, optionally with a photo of the transfer
-      method: 'CASH' | 'ONLINE' | 'UPI';
+      // UPI / BANK_TRANSFER = paid back by transfer — the success-screen photo is required
+      // (Oct 25 2026). LATER (drop bill) = "Refund later (send to branch manager)".
+      method: 'CASH' | 'ONLINE' | 'UPI' | 'BANK_TRANSFER' | 'LATER';
       amount: number;
       idempotencyKey: string;
       notes?: string;
@@ -990,6 +993,21 @@ export const employeeApi = {
     api.get<{ success: boolean; data: StaffRefundOptions }>(
       `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`,
     ),
+  // Oct 25 2026: refund what is owed back once the drop is recorded (legacy drop deposit,
+  // a drop bill's refund sent to the manager, over-payment) — against the open shift
+  getDropRefund: (bookingPublicId: string) =>
+    api.get<{ success: boolean; data: DropRefundOptions }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/drop-refund`,
+    ),
+  recordDropRefund: (
+    bookingPublicId: string,
+    body: { method: CounterRefundMethod; amount?: number; proof_file_id?: string; notes?: string },
+  ) =>
+    api.post<{ success: boolean; message: string; data: { amount: string; method: string; remainingOwedBack: string } }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/drop-refund`,
+      body,
+      { timeout: 20000 },
+    ),
   refundToCustomer: (bookingPublicId: string, body: StaffRefundBody) =>
     api.post<{ success: boolean; message: string; data: StaffRefundResult }>(
       `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`,
@@ -1259,3 +1277,18 @@ export const deepLinkApi = {
       { timeout: 6_000 },
     ),
 };
+
+/** GET /api/employee/bookings/:publicId/drop-refund (Oct 25 2026). Money as 2-dp strings. */
+export interface DropRefundOptions {
+  bookingPublicId: string;
+  bookingStatus: string;
+  owedBack: string;
+  depositToRefund: string;
+  overpaidToRefund: string;
+  safetyDepositHandling: 'SET_OFF' | 'REFUND_IN_FULL' | null;
+  canRefund: boolean;
+  blockedCode: string | null;
+  blockedReason: string | null;
+  cashShiftOpen: boolean;
+  proofRequiredMethods: CounterRefundMethod[];
+}

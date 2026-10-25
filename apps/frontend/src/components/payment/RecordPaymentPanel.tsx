@@ -22,7 +22,8 @@ import {
   type CounterProof,
   type CounterRefundMethod,
 } from "@/lib/counterPayment";
-import { CounterPaymentFields, RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
+import { CounterPaymentFields, RefundMethodFields, refundProofMissing } from "@/components/payment/counter/CounterPaymentFields";
+import { COUNTER_REFUND_METHOD_LABELS } from "@repo/schemas";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { dlConflictLabel } from "@/lib/dlInUse";
 import { useActiveShift } from "@/components/employee/counter/useActiveShift";
@@ -62,6 +63,8 @@ export function RecordPaymentPanel({
   // Deposit refunded in full on a drop bill (#6) — paid back with this settlement
   const [depositMethod, setDepositMethod] = useState<CounterRefundMethod>("CASH");
   const [depositProof, setDepositProof] = useState<CounterProof | null>(null);
+  // Oct 25 2026: "Refund later (send to branch manager)" — e.g. no cash on hand
+  const [depositLater, setDepositLater] = useState(false);
   const { activeShift, needsShift } = useActiveShift();
 
   const netPayable = parseFloat(session.netPayable);
@@ -71,11 +74,16 @@ export function RecordPaymentPanel({
   const depositRefundDue = depositRefundOnSession(session);
   const depositRefund =
     depositRefundDue > 0
-      ? {
-          method: depositMethod,
-          ...(depositMethod === "UPI" && depositProof ? { proof_file_id: depositProof.proofFileId } : {}),
-        }
+      ? depositLater
+        ? { method: "LATER" as const }
+        : {
+            method: depositMethod,
+            ...(depositMethod !== "CASH" && depositProof ? { proof_file_id: depositProof.proofFileId } : {}),
+          }
       : undefined;
+  // A UPI / bank refund needs the photo of its payment-success screen (Oct 25 2026)
+  const depositProofMissing = depositRefundDue > 0 && !depositLater && refundProofMissing(depositMethod, depositProof);
+  const isDropBill = session.sessionType === "RETURN";
   // A safety deposit can't go on credit (CREDIT_NOT_FOR_DEPOSIT)
   const creditBlocked = payment.method === "CREDIT" && chargesSafetyDeposit(session);
 
@@ -130,8 +138,21 @@ export function RecordPaymentPanel({
         method: refundMethod,
         amount,
         idempotencyKey,
-        notes: `${refundMethod === "CASH" ? "Cash" : "UPI"} refund of ₹${amount.toFixed(2)}`,
-        ...(refundMethod === "UPI" && refundProof ? { proof_file_id: refundProof.proofFileId } : {}),
+        notes: `${COUNTER_REFUND_METHOD_LABELS[refundMethod]} refund of ₹${amount.toFixed(2)}`,
+        ...(refundMethod !== "CASH" && refundProof ? { proof_file_id: refundProof.proofFileId } : {}),
+      }),
+    onSuccess,
+    onError,
+  });
+
+  // Oct 25 2026: drop bill — complete the drop and leave the refund to the branch manager
+  const refundLaterMutation = useMutation({
+    mutationFn: () =>
+      paymentSessionService.recordRefund(session.publicId, {
+        method: "LATER",
+        amount,
+        idempotencyKey,
+        notes: `Refund of ₹${amount.toFixed(2)} sent to the branch manager`,
       }),
     onSuccess,
     onError,
@@ -153,8 +174,9 @@ export function RecordPaymentPanel({
     resetZero();
   }, [session.publicId, session.netPayable, resetPay, resetRefund, resetZero]);
 
-  const isLoading = payMutation.isPending || refundMutation.isPending || zeroMutation.isPending;
-  const error = payMutation.error || refundMutation.error || zeroMutation.error;
+  const isLoading = payMutation.isPending || refundMutation.isPending || zeroMutation.isPending || refundLaterMutation.isPending;
+  const error = payMutation.error || refundMutation.error || zeroMutation.error || refundLaterMutation.error;
+  const refundPhotoMissing = isRefund && refundProofMissing(refundMethod, refundProof);
   const errorCode = counterErrorCode(error);
   // Cash, UPI and split take money and need an open shift; credit and refunds
   // don't (the server returns SHIFT_REQUIRED only for the gated methods).
@@ -170,13 +192,14 @@ export function RecordPaymentPanel({
   const refundPhotoError = errorField === "proof" && !paymentHasPhoto ? fieldErrors.proof ?? null : null;
   const generalError = !!error && !errorField && errorCode !== "SHIFT_REQUIRED";
   const problem = isRefund || isZeroBalance ? null : counterPaymentProblem(payment, amount);
-  const canSubmit = !shiftRequired && !problem && !creditBlocked;
+  const canSubmit = !shiftRequired && !problem && !creditBlocked && !depositProofMissing;
 
   // Staff changed the input a server error referred to — clear it.
   const clearErrors = () => {
     if (payMutation.error) resetPay();
     if (refundMutation.error) resetRefund();
     if (zeroMutation.error) resetZero();
+    if (refundLaterMutation.error) refundLaterMutation.reset();
   };
 
   const generalErrorText = generalError && (
@@ -196,23 +219,43 @@ export function RecordPaymentPanel({
         </span>
         <span className="text-sm font-semibold text-blue-900">{formatRupees(depositRefundDue)}</span>
       </div>
-      <RefundMethodFields
-        idPrefix="rpp-deposit-refund"
-        label="Refund the deposit by"
-        method={depositMethod}
-        onMethodChange={(m) => {
-          setDepositMethod(m);
-          clearErrors();
-        }}
-        proof={depositProof}
-        onProofChange={(p) => {
-          setDepositProof(p);
-          clearErrors();
-        }}
-        proofRole="staff"
-        proofError={refundPhotoError}
-        disabled={isLoading}
-      />
+      {!depositLater && (
+        <RefundMethodFields
+          idPrefix="rpp-deposit-refund"
+          label="Refund the deposit by"
+          method={depositMethod}
+          onMethodChange={(m) => {
+            setDepositMethod(m);
+            clearErrors();
+          }}
+          proof={depositProof}
+          onProofChange={(p) => {
+            setDepositProof(p);
+            clearErrors();
+          }}
+          proofRole="staff"
+          proofError={refundPhotoError}
+          disabled={isLoading}
+        />
+      )}
+      {isDropBill && (
+        <label className="flex items-start gap-2 text-xs text-blue-900">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={depositLater}
+            disabled={isLoading}
+            onChange={(e) => {
+              setDepositLater(e.target.checked);
+              clearErrors();
+            }}
+          />
+          <span>
+            Refund later (send to branch manager) — e.g. no cash on hand. The deposit stays in the branch
+            manager's Pending Settlements.
+          </span>
+        </label>
+      )}
     </div>
   );
 
@@ -244,13 +287,15 @@ export function RecordPaymentPanel({
           {generalErrorText}
           <Button
             className="w-full"
-            disabled={zeroMutation.isPending}
+            disabled={zeroMutation.isPending || depositProofMissing}
             onClick={() => zeroMutation.mutate()}
           >
             {zeroMutation.isPending ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing…</>
             ) : depositRefundDue > 0 ? (
-              `Complete — refund deposit ${formatRupees(depositRefundDue)} (${depositMethod === "CASH" ? "Cash" : "UPI"})`
+              depositLater
+                ? `Complete — deposit ${formatRupees(depositRefundDue)} refunded later by the branch manager`
+                : `Complete — refund deposit ${formatRupees(depositRefundDue)} (${COUNTER_REFUND_METHOD_LABELS[depositMethod]})`
             ) : (
               "Complete — No Payment Needed"
             )}
@@ -318,7 +363,7 @@ export function RecordPaymentPanel({
           />
         )}
 
-        {/* Refund of the remainder — Cash, or UPI with an optional photo */}
+        {/* Refund of the remainder — Cash, or UPI / bank with the success-screen photo (required) */}
         {isRefund && (
           <RefundMethodFields
             idPrefix="rpp-refund"
@@ -344,13 +389,13 @@ export function RecordPaymentPanel({
 
         <Button
           className="w-full"
-          disabled={isLoading || (!isRefund && !canSubmit)}
+          disabled={isLoading || (isRefund ? refundPhotoMissing : !canSubmit)}
           onClick={() => isRefund ? refundMutation.mutate() : payMutation.mutate()}
         >
           {isLoading
             ? "Processing…"
             : isRefund
-              ? `Refund ${formatRupees(amount)} (${refundMethod === "UPI" ? "UPI" : "Cash"})`
+              ? `Refund ${formatRupees(amount)} (${COUNTER_REFUND_METHOD_LABELS[refundMethod]})`
               : `${
                   payment.method === "CASH"
                     ? `Mark ${formatRupees(amount)} as collected (Cash)`
@@ -363,6 +408,23 @@ export function RecordPaymentPanel({
         </Button>
         {!isRefund && !shiftRequired && problem && (payment.method !== "SPLIT" || payment.splitCash !== "") && (
           <p className="text-center text-xs text-muted-foreground">{problem}</p>
+        )}
+        {((isRefund && refundPhotoMissing) || (!isRefund && depositProofMissing)) && (
+          <p className="text-center text-xs text-muted-foreground">
+            Add the photo of the refund's payment-success screen to continue.
+          </p>
+        )}
+        {/* Oct 25 2026: no cash on hand — finish the drop and leave the refund to the branch manager */}
+        {isRefund && isDropBill && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={isLoading}
+            onClick={() => refundLaterMutation.mutate()}
+          >
+            {refundLaterMutation.isPending ? "Processing…" : "Refund later (send to branch manager)"}
+          </Button>
         )}
       </div>
     </div>

@@ -28,14 +28,12 @@ import {
   type OnlineGateway,
 } from "@/services/payment.service";
 import { apiErrorMessage } from "@/lib/counterErrors";
-import {
-  counterPaymentErrorField,
-  formatRupees,
-  type CounterProof,
-  type CounterRefundMethod,
-} from "@/lib/counterPayment";
-import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
+import { counterPaymentErrorField, formatRupees } from "@/lib/counterPayment";
 import { RefundMethodFields } from "@/components/payment/counter/CounterPaymentFields";
+
+/** The settlement refund endpoints pay back by cash or UPI (no photo here — Oct 25 2026). */
+const SETTLEMENT_REFUND_METHODS = ["CASH", "UPI"] as const;
+type SettlementRefundMethod = (typeof SETTLEMENT_REFUND_METHODS)[number];
 import apiClient from "@/lib/axios";
 import { CreditNoteDialog, type CreditNote } from "@/components/manager/CreditNoteDialog";
 import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
@@ -59,18 +57,16 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
   const [txnRef, setTxnRef] = useState("");
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [loading, setLoading] = useState(false);
-  // Shown at the reference / photo field (client check or a refused photo)
+  // Shown at the reference field (client check or a server refusal)
   const [refError, setRefError] = useState<string | null>(null);
-  // UPI at the counter is backed by a photo of the customer's payment screen (#3)
-  const [proof, setProof] = useState<CounterProof | null>(null);
+  // Oct 25 2026 (client): no payment photo in Pending Settlements — the branch manager
+  // checks the transactions and then settles. The refunds below are recorded without one too.
   // Legacy drop (#6): the held safety deposit paid back by the branch manager
-  const [depositMethod, setDepositMethod] = useState<CounterRefundMethod>("CASH");
-  const [depositProof, setDepositProof] = useState<CounterProof | null>(null);
+  const [depositMethod, setDepositMethod] = useState<SettlementRefundMethod>("CASH");
   const [depositError, setDepositError] = useState<string | null>(null);
   const [refunding, setRefunding] = useState(false);
   // Paid beyond what is owed (e.g. charges lowered by an edit after they were collected)
-  const [overpayMethod, setOverpayMethod] = useState<CounterRefundMethod>("CASH");
-  const [overpayProof, setOverpayProof] = useState<CounterProof | null>(null);
+  const [overpayMethod, setOverpayMethod] = useState<SettlementRefundMethod>("CASH");
   const [overpayError, setOverpayError] = useState<string | null>(null);
   const [refundingOverpay, setRefundingOverpay] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
@@ -98,12 +94,9 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
 
   const handleSubmit = async () => {
     if (totalNum <= 0) { toast.error("Please enter a valid amount."); return; }
-    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !proof : !txnRef.trim())) {
-      setRefError(
-        isUpi
-          ? "Add a photo of the customer's UPI payment-success screen."
-          : "Transaction reference is required for online payments.",
-      );
+    // UPI: settled after checking the transactions — no photo; other gateways keep their reference
+    if ((method === "ONLINE" || method === "SPLIT") && !isUpi && !txnRef.trim()) {
+      setRefError("Transaction reference is required for online payments.");
       return;
     }
     if (method === "SPLIT" && (cashNum <= 0 || onlineNum <= 0)) { toast.error("Both cash and online portions must be greater than 0."); return; }
@@ -114,7 +107,6 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
         onlineTransactionRef: method !== "CASH" && !isUpi ? txnRef.trim() : undefined,
-        proof_file_id: method !== "CASH" && isUpi ? proof?.proofFileId : undefined,
         onlineGateway: method !== "CASH" ? gateway : undefined,
         idempotencyKey: idempotencyKey.current,
       });
@@ -122,7 +114,7 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
       onDone();
     } catch (err) {
       if (counterPaymentErrorField(err) === "proof") {
-        setRefError(apiErrorMessage(err, "Check the payment photo and try again."));
+        setRefError(apiErrorMessage(err, "Check the payment details and try again."));
       } else {
         toast.error(apiErrorMessage(err, "Failed to record settlement."));
       }
@@ -137,14 +129,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
     setRefunding(true);
     setDepositError(null);
     try {
-      const res = await paymentService.refundSettlementDeposit(bookingPublicId, {
-        method: depositMethod,
-        ...(depositMethod === "UPI" && depositProof ? { proof_file_id: depositProof.proofFileId } : {}),
-      });
+      const res = await paymentService.refundSettlementDeposit(bookingPublicId, { method: depositMethod });
       toast.success(res.message || "Safety deposit refunded.");
       setSummary(res.data.settlement);
       setAmount(payableHere(res.data.settlement).toFixed(2));
-      setDepositProof(null);
     } catch (err) {
       setDepositError(apiErrorMessage(err, "Couldn't record the deposit refund."));
     } finally {
@@ -160,14 +148,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
     setRefundingOverpay(true);
     setOverpayError(null);
     try {
-      const res = await paymentService.refundSettlementOverpayment(bookingPublicId, {
-        method: overpayMethod,
-        ...(overpayMethod === "UPI" && overpayProof ? { proof_file_id: overpayProof.proofFileId } : {}),
-      });
+      const res = await paymentService.refundSettlementOverpayment(bookingPublicId, { method: overpayMethod });
       toast.success(res.message || "Refund recorded.");
       setSummary(res.data.settlement);
       setAmount(payableHere(res.data.settlement).toFixed(2));
-      setOverpayProof(null);
     } catch (err) {
       setOverpayError(apiErrorMessage(err, "Couldn't record the refund."));
     } finally {
@@ -301,10 +285,13 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   <RefundMethodFields
                     idPrefix="settle-deposit"
                     method={depositMethod}
-                    onMethodChange={(m) => { setDepositMethod(m); setDepositError(null); }}
-                    proof={depositProof}
-                    onProofChange={(p) => { setDepositProof(p); setDepositError(null); }}
+                    onMethodChange={(m) => { setDepositMethod(m as SettlementRefundMethod); setDepositError(null); }}
+                    proof={null}
+                    onProofChange={() => {}}
                     proofRole="manager"
+                    methods={SETTLEMENT_REFUND_METHODS}
+                    showProof={false}
+                    cashNote="Paid from your cash drawer."
                     disabled={refunding}
                   />
                   {depositError && <p className="text-xs text-red-600">{depositError}</p>}
@@ -334,10 +321,13 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                   <RefundMethodFields
                     idPrefix="settle-overpayment"
                     method={overpayMethod}
-                    onMethodChange={(m) => { setOverpayMethod(m); setOverpayError(null); }}
-                    proof={overpayProof}
-                    onProofChange={(p) => { setOverpayProof(p); setOverpayError(null); }}
+                    onMethodChange={(m) => { setOverpayMethod(m as SettlementRefundMethod); setOverpayError(null); }}
+                    proof={null}
+                    onProofChange={() => {}}
                     proofRole="manager"
+                    methods={SETTLEMENT_REFUND_METHODS}
+                    showProof={false}
+                    cashNote="Paid from your cash drawer."
                     disabled={refundingOverpay}
                   />
                   {overpayError && <p className="text-xs text-red-600">{overpayError}</p>}
@@ -416,15 +406,10 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                     </Select>
                   </div>
                   {isUpi ? (
-                    // Counter UPI (#3): a photo of the customer's payment screen, no UTR box
-                    <PaymentProofField
-                      id="settle-proof"
-                      className="col-span-2"
-                      role="manager"
-                      value={proof}
-                      onChange={(p) => { setProof(p); setRefError(null); }}
-                      error={refError}
-                    />
+                    // Oct 25 2026 (client): no photo — the branch manager checks the transactions, then settles
+                    <p className="col-span-2 text-xs text-neutral-500">
+                      Check the UPI payment in the branch's transactions, then record the settlement. No photo needed.
+                    </p>
                   ) : (
                     <div className="space-y-1.5">
                       <Label className="text-xs text-neutral-600">Transaction Ref <span className="text-red-500">*</span></Label>

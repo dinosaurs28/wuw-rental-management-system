@@ -21,6 +21,7 @@ import {
   PAYMENT_PROOF_HELPER,
   PAYMENT_PROOF_LABEL,
   PAYMENT_PROOF_MAX_PHOTOS,
+  REFUND_PROOF_REQUIRED_MESSAGE,
   counterPaymentServerError,
   inrCounter,
   proofProblem,
@@ -305,14 +306,18 @@ export function useCounterRefund(): CounterRefundController {
         setError(null);
         return { method };
       }
-      // The transfer photo is optional — but one that's still on its way must land first.
-      const problem = proofProblem(proof.shot, false);
+      // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+      if (!proof.shot) {
+        setError(REFUND_PROOF_REQUIRED_MESSAGE);
+        return null;
+      }
+      const problem = proofProblem(proof.shot, true);
       if (problem) {
-        setError(problem.replace('payment photo', 'transfer photo'));
+        setError(problem.replace('payment photo', 'refund photo'));
         return null;
       }
       setError(null);
-      return proof.shot?.status === 'ready' ? { method, proofFileId: proof.shot.proof.proofFileId } : { method };
+      return proof.shot?.status === 'ready' ? { method, proofFileId: proof.shot.proof.proofFileId } : null;
     },
     showServerError: (err) => {
       const mapped = counterPaymentServerError(err);
@@ -681,6 +686,8 @@ export function CounterRefundPicker({
         options={[
           { key: 'CASH' as const, label: 'Cash', icon: 'wallet-outline' as IconName },
           { key: 'UPI' as const, label: 'UPI', icon: 'qr-code-outline' as IconName },
+          // Oct 25 2026
+          { key: 'BANK_TRANSFER' as const, label: 'Bank', icon: 'business-outline' as IconName },
         ]}
         value={ctl.method}
         onSelect={ctl.setMethod}
@@ -695,12 +702,15 @@ export function CounterRefundPicker({
         </>
       ) : (
         <>
-          <Text style={styles.hint}>Send {amountText} to the customer by UPI.</Text>
+          <Text style={styles.hint}>
+            Send {amountText} to the customer by {ctl.method === 'UPI' ? 'UPI' : 'bank transfer'}, then photograph the
+            payment-success screen.
+          </Text>
           <PaymentProofCapture
             ctl={ctl.proof}
-            required={false}
-            label="Photo of the UPI transfer (optional)"
-            helper="Photograph the transfer's success screen if you can."
+            required
+            label={ctl.method === 'UPI' ? 'Photo of the UPI refund success screen' : 'Photo of the bank transfer success screen'}
+            helper="Required — the amount, date and reference must be visible."
             error={ctl.error}
             disabled={disabled}
           />

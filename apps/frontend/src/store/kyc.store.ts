@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { hasDlPhotosOnFile } from "@repo/schemas";
+import { hasRequiredKycPhotosOnFile } from "@repo/schemas";
 import type { KycDocument, KycDocumentType, KycSide } from "@/services/kyc.service";
 
 interface KycState {
@@ -64,8 +64,8 @@ export const useKycStore = create<KycState>((set, get) => ({
   setDeletingDocumentId: (publicId) => set({ deletingDocumentId: publicId }),
 
   // Computed helpers
-  // Both driving licence photos (front + back, not rejected) — required to book
-  hasRequiredDocuments: () => hasDlPhotosOnFile(get().uploadedDocuments),
+  // Both driving licence and both Aadhaar photos (front + back, not rejected) — required to book
+  hasRequiredDocuments: () => hasRequiredKycPhotosOnFile(get().uploadedDocuments),
 
   getDocumentByType: (type, side) => {
     const { uploadedDocuments } = get();

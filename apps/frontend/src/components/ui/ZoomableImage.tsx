@@ -30,9 +30,12 @@ export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight 
     setFullReady(false);
     const full = new Image();
     full.onload = () => setFullReady(true);
+    // The preload failed: show the full image element itself (never stuck on a broken preview)
+    full.onerror = () => setFullReady(true);
     full.src = src;
     return () => {
       full.onload = null;
+      full.onerror = null;
     };
   }, [src, usePlaceholder]);
   const shownSrc = fullReady || !placeholderSrc ? src : placeholderSrc;

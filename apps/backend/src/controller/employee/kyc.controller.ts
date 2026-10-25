@@ -5,7 +5,8 @@ import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 import { resolveFileUrl } from "../../utils/file-url.js";
-import { dlPhotosState } from "@repo/schemas";
+import { requiredKycPhotosState } from "@repo/schemas";
+import { kycPhotosSummary } from "../../services/booking/dl-photos.service.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -67,11 +68,13 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         })),
     );
 
-    // Driving licence photos (required to book, Oct 17 2026): an older booking
-    // may have none — the pickup screens ask staff to capture them (walk-in KYC
-    // upload, keyed by customerUserPublicId).
-    const dl = dlPhotosState(allKycRecords.filter((k) => k.file));
-    const dlPhotos = { ok: dl.ok, missingSides: dl.missingSides, rejectedSides: dl.rejectedSides };
+    // Driving licence (Oct 17 2026) and Aadhaar (Oct 25 2026) photos are
+    // required to book: an older booking may have none — the pickup screens ask
+    // staff to capture them (walk-in KYC upload, keyed by customerUserPublicId).
+    // aadhaarPhotos is additive; old builds read dlPhotos only.
+    const required = requiredKycPhotosState(allKycRecords.filter((k) => k.file));
+    const dlPhotos = kycPhotosSummary(required.dl);
+    const aadhaarPhotos = kycPhotosSummary(required.aadhaar);
     const customerUserPublicId = booking.customer.user.publicId;
 
     if (kycDocs.length === 0) {
@@ -80,6 +83,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
         customerName: booking.customer.user.name,
         customerUserPublicId,
         dlPhotos,
+        aadhaarPhotos,
       });
     }
 
@@ -88,6 +92,7 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
       customerName: booking.customer.user.name,
       customerUserPublicId,
       dlPhotos,
+      aadhaarPhotos,
       kyc: kycDocs,
     });
   } catch (error) {
