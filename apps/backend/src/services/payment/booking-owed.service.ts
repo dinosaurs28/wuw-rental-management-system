@@ -58,7 +58,11 @@ import {
 } from "@repo/database/client";
 import type { TxClient } from "./paymentSession.service.js";
 import { PICKUP_DISCOUNT_REF } from "../discount/pickup-discount-rules.js";
-import { legacyReturnChargesTotal } from "../charges/legacy-return-charges.service.js";
+import {
+  LEGACY_RETURN_CHARGE_TYPES,
+  legacyReturnChargesTotal,
+  sumLegacyReturnCharges,
+} from "../charges/legacy-return-charges.service.js";
 import { DROP_DAMAGE_REF, dropDamageAmount } from "../damage/drop-damage.service.js";
 import {
   LEGACY_DEPOSIT_REFUND_KEY_PREFIX,
@@ -203,24 +207,8 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     db.booking.findUnique({ where: { id: bookingId }, select: { totalFinal: true, pricingSnapshot: true } }),
     // Drop bill lines and safety-deposit lines of every payment session still in play
     db.ledgerEntry.findMany({
-      where: {
-        bookingId,
-        isVoided: false,
-        session: { status: { not: PaymentSessionStatus.ABANDONED } },
-        OR: [
-          { entryType: LedgerEntryType.DEPOSIT },
-          { session: { sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] } } },
-        ],
-      },
-      select: {
-        entryType: true,
-        classification: true,
-        amount: true,
-        gstAmount: true,
-        referenceType: true,
-        referenceId: true,
-        session: { select: { sessionType: true, status: true } },
-      },
+      where: { bookingId, ...OWED_LEDGER_WHERE },
+      select: OWED_LEDGER_SELECT,
     }),
     legacyReturnChargesTotal(bookingId, db),
     db.damageReport.findMany({
@@ -229,49 +217,94 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     }),
     // A deposit taken outside a payment session (legacy pickup, BM record payment)
     db.paymentTransaction.findMany({
-      where: {
-        bookingId,
-        purpose: PaymentPurpose.SAFETY_DEPOSIT,
-        status: { in: ["COLLECTED", "CONFIRMED"] },
-        NOT: { idempotencyKey: { startsWith: SESSION_TXN_KEY_PREFIX } },
-      },
+      where: { bookingId, ...STANDALONE_DEPOSIT_WHERE },
       select: { totalAmount: true },
     }),
     // Deposit refunds recorded through the BM settlement (legacy drop)
     db.paymentTransaction.findMany({
-      where: {
-        bookingId,
-        purpose: { in: REFUND_PAYMENT_PURPOSES },
-        status: { in: ["COLLECTED", "CONFIRMED"] },
-        idempotencyKey: { startsWith: LEGACY_DEPOSIT_REFUND_KEY_PREFIX },
-      },
+      where: { bookingId, ...LEGACY_DEPOSIT_REFUND_WHERE },
       select: { totalAmount: true },
     }),
     // "Refund to customer" beyond what the booking owed back (goodwill)
     db.paymentTransaction.aggregate({
-      where: {
-        bookingId,
-        purpose: { in: REFUND_PAYMENT_PURPOSES },
-        status: { in: ["COLLECTED", "CONFIRMED"] },
-        goodwillAmount: { gt: 0 },
-      },
+      where: { bookingId, ...GOODWILL_WHERE },
       _sum: { goodwillAmount: true },
     }),
   ]);
   if (!booking) throw new Error("Booking not found.");
 
-  // Rounded to paise: rows written from JS numbers can carry float noise (e.g. 9885.200000000001)
-  const totalFinal = dec(booking.totalFinal).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  return assembleBookingOwed({
+    totalFinal: booking.totalFinal,
+    pricingSnapshot: booking.pricingSnapshot,
+    entries,
+    legacyReturnCharges,
+    dropDamages,
+    standaloneDeposits: standaloneDeposits.map((t) => t.totalAmount),
+    legacyDepositRefunds: legacyDepositRefunds.map((t) => t.totalAmount),
+    goodwill: goodwill._sum.goodwillAmount,
+  });
+}
 
-  const tally = tallyOwedEntries(entries);
+// Shared where-clauses of computeBookingOwed and computeBookingsOwed (one rule, two read shapes)
+const OWED_LEDGER_WHERE = {
+  isVoided: false,
+  session: { status: { not: PaymentSessionStatus.ABANDONED } },
+  OR: [
+    { entryType: LedgerEntryType.DEPOSIT },
+    { session: { sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] } } },
+  ],
+};
+const OWED_LEDGER_SELECT = {
+  entryType: true,
+  classification: true,
+  amount: true,
+  gstAmount: true,
+  referenceType: true,
+  referenceId: true,
+  session: { select: { sessionType: true, status: true } },
+} as const;
+const STANDALONE_DEPOSIT_WHERE = {
+  purpose: PaymentPurpose.SAFETY_DEPOSIT,
+  status: { in: ["COLLECTED", "CONFIRMED"] as ("COLLECTED" | "CONFIRMED")[] },
+  NOT: { idempotencyKey: { startsWith: SESSION_TXN_KEY_PREFIX } },
+};
+const LEGACY_DEPOSIT_REFUND_WHERE = {
+  purpose: { in: REFUND_PAYMENT_PURPOSES },
+  status: { in: ["COLLECTED", "CONFIRMED"] as ("COLLECTED" | "CONFIRMED")[] },
+  idempotencyKey: { startsWith: LEGACY_DEPOSIT_REFUND_KEY_PREFIX },
+};
+const GOODWILL_WHERE = {
+  purpose: { in: REFUND_PAYMENT_PURPOSES },
+  status: { in: ["COLLECTED", "CONFIRMED"] as ("COLLECTED" | "CONFIRMED")[] },
+  goodwillAmount: { gt: 0 },
+};
+
+/** Everything computeBookingOwed reads for one booking. */
+export interface BookingOwedInput {
+  totalFinal: DecimalLike;
+  pricingSnapshot: unknown;
+  entries: OwedLedgerEntry[];
+  legacyReturnCharges: Decimal;
+  dropDamages: Array<{ publicId: string; finalCost: { toString(): string } | null; estimatedCost: { toString(): string } }>;
+  standaloneDeposits: DecimalLike[];
+  legacyDepositRefunds: DecimalLike[];
+  goodwill: DecimalLike | null | undefined;
+}
+
+/** The owed arithmetic (pure) — shared by the single and the batched read. */
+export function assembleBookingOwed(input: BookingOwedInput): BookingOwed {
+  // Rounded to paise: rows written from JS numbers can carry float noise (e.g. 9885.200000000001)
+  const totalFinal = dec(input.totalFinal).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+  const tally = tallyOwedEntries(input.entries);
   const { dropBillCharges, damagesOnBill, adjustmentPending } = tally;
   let { safetyDepositCharged, safetyDepositCredited } = tally;
 
-  for (const t of standaloneDeposits) safetyDepositCharged = safetyDepositCharged.add(dec(t.totalAmount));
+  for (const t of input.standaloneDeposits) safetyDepositCharged = safetyDepositCharged.add(dec(t));
 
   // Legacy drop: the staff's deposit choice, settled by the branch manager
-  const safetyDepositHandling = readLegacyDepositHandling(booking.pricingSnapshot);
-  const legacyDepositRefunded = legacyDepositRefunds.reduce((acc, t) => acc.add(dec(t.totalAmount)), ZERO);
+  const safetyDepositHandling = readLegacyDepositHandling(input.pricingSnapshot);
+  const legacyDepositRefunded = input.legacyDepositRefunds.reduce<Decimal>((acc, t) => acc.add(dec(t)), ZERO);
   let legacyDepositSetOff = ZERO;
   if (safetyDepositHandling) {
     const held = Decimal.max(ZERO, safetyDepositCharged.sub(safetyDepositCredited));
@@ -281,12 +314,13 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     );
   }
 
-  const dropDamageOutsideBill = dropDamages
+  const dropDamageOutsideBill = input.dropDamages
     .filter((d) => !damagesOnBill.has(d.publicId))
     .reduce((acc, d) => acc.add(dropDamageAmount(d)), ZERO);
 
+  const legacyReturnCharges = input.legacyReturnCharges;
   const returnCharges = dropBillCharges.add(legacyReturnCharges).add(dropDamageOutsideBill);
-  const refundsGoodwill = dec(goodwill._sum.goodwillAmount);
+  const refundsGoodwill = dec(input.goodwill);
   const totalOwed = totalFinal.add(returnCharges).add(safetyDepositCharged).sub(safetyDepositCredited).sub(refundsGoodwill);
 
   return {
@@ -305,6 +339,81 @@ export async function computeBookingOwed(bookingId: number, tx?: TxClient): Prom
     legacyDepositSetOff,
     adjustmentPending,
   };
+}
+
+/**
+ * computeBookingOwed for many bookings with a fixed number of queries (reports).
+ * Same reads, same arithmetic (assembleBookingOwed); bookings not found are left out.
+ */
+export async function computeBookingsOwed(bookingIds: number[], tx?: TxClient): Promise<Map<number, BookingOwed>> {
+  const db = tx ?? prisma;
+  const out = new Map<number, BookingOwed>();
+  const ids = [...new Set(bookingIds)];
+  if (ids.length === 0) return out;
+  const CHUNK = 5000;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const inChunk = { in: chunk };
+    const [bookings, entries, legacyRows, dropDamages, standaloneDeposits, legacyDepositRefunds, goodwill] = await Promise.all([
+      db.booking.findMany({ where: { id: inChunk }, select: { id: true, totalFinal: true, pricingSnapshot: true } }),
+      db.ledgerEntry.findMany({
+        where: { bookingId: inChunk, ...OWED_LEDGER_WHERE },
+        select: { bookingId: true, ...OWED_LEDGER_SELECT },
+      }),
+      db.chargeEntry.findMany({
+        where: { bookingId: inChunk, chargeType: { in: LEGACY_RETURN_CHARGE_TYPES } },
+        select: { bookingId: true, finalAmount: true, gstAmount: true, cgstAmount: true, sgstAmount: true, taxRate: true, notes: true },
+      }),
+      db.damageReport.findMany({
+        where: { bookingId: inChunk, status: "APPROVED", chargedAtDrop: true },
+        select: { bookingId: true, publicId: true, finalCost: true, estimatedCost: true },
+      }),
+      db.paymentTransaction.findMany({
+        where: { bookingId: inChunk, ...STANDALONE_DEPOSIT_WHERE },
+        select: { bookingId: true, totalAmount: true },
+      }),
+      db.paymentTransaction.findMany({
+        where: { bookingId: inChunk, ...LEGACY_DEPOSIT_REFUND_WHERE },
+        select: { bookingId: true, totalAmount: true },
+      }),
+      db.paymentTransaction.groupBy({
+        by: ["bookingId"],
+        where: { bookingId: inChunk, ...GOODWILL_WHERE },
+        _sum: { goodwillAmount: true },
+      }),
+    ]);
+    const group = <T extends { bookingId: number }>(rows: T[]) => {
+      const m = new Map<number, T[]>();
+      for (const r of rows) {
+        const l = m.get(r.bookingId);
+        if (l) l.push(r);
+        else m.set(r.bookingId, [r]);
+      }
+      return m;
+    };
+    const entriesBy = group(entries);
+    const legacyBy = group(legacyRows);
+    const damagesBy = group(dropDamages);
+    const depositsBy = group(standaloneDeposits);
+    const sdrBy = group(legacyDepositRefunds);
+    const goodwillBy = new Map(goodwill.map((g) => [g.bookingId, g._sum.goodwillAmount]));
+    for (const b of bookings) {
+      out.set(
+        b.id,
+        assembleBookingOwed({
+          totalFinal: b.totalFinal,
+          pricingSnapshot: b.pricingSnapshot,
+          entries: entriesBy.get(b.id) ?? [],
+          legacyReturnCharges: sumLegacyReturnCharges(legacyBy.get(b.id) ?? []),
+          dropDamages: damagesBy.get(b.id) ?? [],
+          standaloneDeposits: (depositsBy.get(b.id) ?? []).map((t) => t.totalAmount),
+          legacyDepositRefunds: (sdrBy.get(b.id) ?? []).map((t) => t.totalAmount),
+          goodwill: goodwillBy.get(b.id),
+        }),
+      );
+    }
+  }
+  return out;
 }
 
 /**

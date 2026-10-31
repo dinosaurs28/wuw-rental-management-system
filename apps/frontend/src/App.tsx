@@ -96,6 +96,32 @@ import { AdminUserTransferPage } from "./pages/admin/AdminUserTransferPage";
 import { InvoiceReportPage } from "./pages/admin/reports/InvoiceReportPage";
 import { ReceiptReportPage } from "./pages/admin/reports/ReceiptReportPage";
 import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
+import { ReportsHubPage } from "./pages/admin/reports/ReportsHubPage";
+// rpt-bookings
+import { BookingSummaryPage } from "./pages/admin/reports/bookings/BookingSummaryPage";
+import { CancellationsPage } from "./pages/admin/reports/bookings/CancellationsPage";
+import { BookingSourcePage } from "./pages/admin/reports/bookings/BookingSourcePage";
+import { DurationLeadTimePage } from "./pages/admin/reports/bookings/DurationLeadTimePage";
+import { ExtensionsLatePage } from "./pages/admin/reports/bookings/ExtensionsLatePage";
+import { CustomerSummaryPage } from "./pages/admin/reports/bookings/CustomerSummaryPage";
+import { CustomerLtvPage } from "./pages/admin/reports/bookings/CustomerLtvPage";
+import { BranchComparisonPage } from "./pages/admin/reports/bookings/BranchComparisonPage";
+import { StaffActivityReportPage } from "./pages/admin/reports/bookings/StaffActivityReportPage";
+// rpt-finance
+import { RevenueSummaryPage } from "./pages/admin/reports/finance/RevenueSummaryPage";
+import { PaymentsCollectionsPage } from "./pages/admin/reports/finance/PaymentsCollectionsPage";
+import { OutstandingDuesPage } from "./pages/admin/reports/finance/OutstandingDuesPage";
+import { SecurityDepositsPage } from "./pages/admin/reports/finance/SecurityDepositsPage";
+import { DiscountsRefundsPage } from "./pages/admin/reports/finance/DiscountsRefundsPage";
+// rpt-fleet
+import { VehicleUtilizationPage } from "./pages/admin/reports/fleet/VehicleUtilizationPage";
+import { IdleVehiclesPage } from "./pages/admin/reports/fleet/IdleVehiclesPage";
+import { VehicleProfitabilityPage } from "./pages/admin/reports/fleet/VehicleProfitabilityPage";
+import { KmMileagePage } from "./pages/admin/reports/fleet/KmMileagePage";
+import { DamageReportPage } from "./pages/admin/reports/fleet/DamageReportPage";
+import { VehicleDowntimePage } from "./pages/admin/reports/fleet/VehicleDowntimePage";
+import { DocumentExpiryPage } from "./pages/admin/reports/fleet/DocumentExpiryPage";
+import { VehicleExpensesPage } from "./pages/admin/reports/fleet/VehicleExpensesPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
@@ -331,6 +357,33 @@ function App() {
             />
 
             {/* Admin Report Routes */}
+            {/* rpt-core */}
+            <Route path="/admin/reports/hub" element={<ReportsHubPage />} />
+            {/* rpt-bookings */}
+            <Route path="/admin/reports/booking-summary" element={<BookingSummaryPage />} />
+            <Route path="/admin/reports/cancellations" element={<CancellationsPage />} />
+            <Route path="/admin/reports/booking-source" element={<BookingSourcePage />} />
+            <Route path="/admin/reports/duration-lead-time" element={<DurationLeadTimePage />} />
+            <Route path="/admin/reports/extensions-late-returns" element={<ExtensionsLatePage />} />
+            <Route path="/admin/reports/customer-summary" element={<CustomerSummaryPage />} />
+            <Route path="/admin/reports/customer-ltv" element={<CustomerLtvPage />} />
+            <Route path="/admin/reports/branch-comparison" element={<BranchComparisonPage />} />
+            <Route path="/admin/reports/staff-activity" element={<StaffActivityReportPage />} />
+            {/* rpt-finance */}
+            <Route path="/admin/reports/revenue-summary" element={<RevenueSummaryPage />} />
+            <Route path="/admin/reports/payments-collections" element={<PaymentsCollectionsPage />} />
+            <Route path="/admin/reports/outstanding-dues" element={<OutstandingDuesPage />} />
+            <Route path="/admin/reports/security-deposits" element={<SecurityDepositsPage />} />
+            <Route path="/admin/reports/discounts-refunds" element={<DiscountsRefundsPage />} />
+            {/* rpt-fleet */}
+            <Route path="/admin/reports/fleet/utilization" element={<VehicleUtilizationPage />} />
+            <Route path="/admin/reports/fleet/idle" element={<IdleVehiclesPage />} />
+            <Route path="/admin/reports/fleet/profitability" element={<VehicleProfitabilityPage />} />
+            <Route path="/admin/reports/fleet/km" element={<KmMileagePage />} />
+            <Route path="/admin/reports/fleet/damage" element={<DamageReportPage />} />
+            <Route path="/admin/reports/fleet/downtime" element={<VehicleDowntimePage />} />
+            <Route path="/admin/reports/fleet/document-expiry" element={<DocumentExpiryPage />} />
+            <Route path="/admin/reports/fleet/expenses" element={<VehicleExpensesPage />} />
             <Route
               path="/admin/reports/daily-summary"
               element={<DailySummaryPage />}

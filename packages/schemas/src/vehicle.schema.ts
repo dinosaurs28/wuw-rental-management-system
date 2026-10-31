@@ -127,6 +127,13 @@ const chargeRateField = (label: string) =>
 /** Rate fields whose validation message is shown to the manager as-is. */
 export const CHARGE_RATE_FIELDS = ["extraKmRate", "extraHourRate"] as const;
 
+/** Optional document expiry date: "" (clear) or a parseable date string. */
+const optionalDocDate = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || !Number.isNaN(Date.parse(v)), "Enter a valid date")
+  .optional();
+
 export const createVehicleSchema = z.object({
   make: z.string().min(1, "Make is required").transform((s) => s.trim().replace(/\s+/g, " ")),
   model: z.string().min(1, "Model is required").transform((s) => s.trim().replace(/\s+/g, " ")),
@@ -134,6 +141,12 @@ export const createVehicleSchema = z.object({
   regNo: z.string().min(1, "Registration Number is required"),
   odo: z.coerce.number().min(0),
   insuranceExpiry: z.string(),
+  // Other document expiries (Admin Reports 6.1, Oct 31 2026) — optional dates
+  // (ISO / yyyy-MM-dd); "" clears a date on edit. Older clients don't send them.
+  rcExpiry: optionalDocDate,
+  permitExpiry: optionalDocDate,
+  pucExpiry: optionalDocDate,
+  fitnessExpiry: optionalDocDate,
   categoryId: z.coerce.number().int().positive(),
   policyNumber: z.string().min(1, "Policy Number is required"),
   provider: z.string().min(1, "Provider is required"),

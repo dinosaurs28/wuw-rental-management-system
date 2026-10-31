@@ -236,6 +236,13 @@ export async function legacyReturnChargesTotal(bookingId: number, tx?: TxClient)
     where: { bookingId, chargeType: { in: LEGACY_RETURN_CHARGE_TYPES } },
     select: { finalAmount: true, gstAmount: true, cgstAmount: true, sgstAmount: true, taxRate: true, notes: true },
   });
+  return sumLegacyReturnCharges(entries);
+}
+
+/** Σ finalAmount + frozen GST of legacy return-charge rows (pure; legacyReturnChargesTotal and the batched owed read). */
+export function sumLegacyReturnCharges(
+  entries: Array<ChargeEntryGstSource & { finalAmount: DecimalLike }>,
+): Decimal {
   return entries.reduce((sum, e) => {
     const gst = chargeEntryGst(e)?.gst ?? new Decimal(0);
     return sum.plus(new Decimal(e.finalAmount.toString())).plus(gst);

@@ -293,6 +293,7 @@ model User {
   specialPricingRulesCreated SpecialPricingRule[] @relation("SpecialPricingRuleCreator")
   specialPricingRulesUpdated SpecialPricingRule[] @relation("SpecialPricingRuleUpdater")
   bookingLocksCreated   BookingLock[]          @relation("BookingLockCreator")
+  vehicleExpensesCreated VehicleExpense[]      @relation("VehicleExpenseCreator")
   bookingLocksCancelled BookingLock[]          @relation("BookingLockCanceller")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -731,6 +732,11 @@ model Vehicle {
   fuelBar         Decimal?      @db.Decimal(10, 2)
   advancePayAmount Decimal      @default(0)
   insuranceExpiry DateTime
+  // Other document expiries (Oct 31 2026, Admin Reports 6.1) — optional, null = not recorded
+  rcExpiry        DateTime?
+  permitExpiry    DateTime?
+  pucExpiry       DateTime?
+  fitnessExpiry   DateTime?
   status          VehicleStatus @default(AVAILABLE)
   fastagNumber    String?
   hasFastag       Boolean       @default(false)
@@ -749,6 +755,8 @@ model Vehicle {
   swapsAsNew       VehicleSwap[]              @relation("NewVehicle")
   extensionSwaps   BookingExtension[]         @relation("ExtensionSwappedVehicle")
   bookingPhotos    BookingPhoto[]
+  statusHistory    VehicleStatusHistory[]
+  expenses         VehicleExpense[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -867,6 +875,57 @@ model VehicleMaintenanceRecord {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@index([vehicleId])
+}
+
+// Every Vehicle.status change (Oct 31 2026, Admin Reports 4.1 / 5.2). Written by
+// the Postgres trigger "Vehicle_status_history_trg" (migration
+// 20261031100000_fleet_reports) on INSERT and on any UPDATE that changes status,
+// so no application code path can skip it. source = 'BASELINE' for the one row
+// per existing vehicle the migration adds (status at deploy time — history before
+// it is unknown), 'INSERT' when a vehicle is created, 'UPDATE' for a change.
+model VehicleStatusHistory {
+  id         Int            @id @default(autoincrement())
+  vehicleId  Int
+  fromStatus VehicleStatus?
+  toStatus   VehicleStatus
+  changedAt  DateTime       @default(now())
+  source     String         @default("UPDATE")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, changedAt])
+  @@index([changedAt])
+}
+
+enum VehicleExpenseCategory {
+  MAINTENANCE
+  REPAIR
+  OTHER
+}
+
+// A cost recorded against a vehicle by an admin (Oct 31 2026, Admin Reports 4.3 /
+// 5.1). REPAIR rows may point at the DamageReport they repaired.
+model VehicleExpense {
+  id             Int                    @id @default(autoincrement())
+  publicId       String                 @unique
+  vehicleId      Int
+  category       VehicleExpenseCategory
+  amount         Decimal                @db.Decimal(12, 2)
+  incurredAt     DateTime
+  note           String?
+  damageReportId Int?
+  createdById    Int?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+  damageReport DamageReport? @relation(fields: [damageReportId], references: [id], onDelete: SetNull)
+  createdBy    User?         @relation("VehicleExpenseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, incurredAt])
+  @@index([incurredAt])
+  @@index([damageReportId])
 }
 
 model VehicleImage {
@@ -1167,6 +1226,7 @@ model DamageReport {
   vehicle       Vehicle                   @relation(fields: [vehicleId], references: [id])
   approvedBy    User?                     @relation(fields: [approvedById], references: [id], onDelete: SetNull)
   photos        BookingPhoto[]
+  expenses      VehicleExpense[]
 
   createdAt DateTime @default(now())
 }

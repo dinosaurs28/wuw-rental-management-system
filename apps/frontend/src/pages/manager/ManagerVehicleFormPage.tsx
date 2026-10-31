@@ -79,6 +79,17 @@ import { formatInrExact, formatGstRate } from "@/lib/gst";
  * Insurance is valid through the end of its expiry day; customers stop seeing
  * the vehicle the day after (item 7). Warns on a date that is today or past.
  */
+/** Optional document expiry fields (Admin Reports 6.1). */
+const DOC_EXPIRY_FIELDS = [
+  { name: "rcExpiry", label: "RC Expiry" },
+  { name: "permitExpiry", label: "Permit Expiry" },
+  { name: "pucExpiry", label: "PUC Expiry" },
+  { name: "fitnessExpiry", label: "Fitness Certificate Expiry" },
+] as const;
+
+/** Stored date (ISO, saved from a yyyy-MM-dd input) → yyyy-MM-dd for <input type="date">. */
+const docDateInput = (v: string | null | undefined): string => (v ? String(v).slice(0, 10) : "");
+
 function InsuranceExpiryWarning({ date }: { date: Date | undefined }) {
   if (!date) return null;
   const today = new Date();
@@ -168,6 +179,11 @@ const vehicleSchema = z.object({
     .min(1, "At least one image is required"),
   hasFastag: z.boolean().default(false),
   fastagNumber: z.string().optional(),
+  // Other document expiries (Admin Reports 6.1) — optional yyyy-MM-dd, "" = not recorded
+  rcExpiry: z.string().optional(),
+  permitExpiry: z.string().optional(),
+  pucExpiry: z.string().optional(),
+  fitnessExpiry: z.string().optional(),
   useCases: z.array(z.enum(VEHICLE_USE_CASES)).default([]),
 });
 
@@ -214,6 +230,10 @@ export const ManagerVehicleFormPage = () => {
       images: [],
       hasFastag: false,
       fastagNumber: "",
+      rcExpiry: "",
+      permitExpiry: "",
+      pucExpiry: "",
+      fitnessExpiry: "",
       // Every car can do Udupi/Manipal trips; the manager adds Out of Udupi
       useCases: ["LOCAL"],
     },
@@ -303,6 +323,10 @@ export const ManagerVehicleFormPage = () => {
                 .map((img: any) => img.file.url),
             hasFastag: vehicle.hasFastag ?? false,
             fastagNumber: vehicle.fastagNumber ?? "",
+            rcExpiry: docDateInput(vehicle.rcExpiry),
+            permitExpiry: docDateInput(vehicle.permitExpiry),
+            pucExpiry: docDateInput(vehicle.pucExpiry),
+            fitnessExpiry: docDateInput(vehicle.fitnessExpiry),
             // Legacy Highway / Hill Station / Long Drive read as Out of Udupi
             useCases: normalizeUseCases(vehicle.useCases),
           });
@@ -332,6 +356,10 @@ export const ManagerVehicleFormPage = () => {
       formData.append("provider", data.provider);
       formData.append("status", data.status);
       formData.append("hasFastag", data.hasFastag.toString());
+      // Optional document expiries: "" clears a date on edit
+      for (const key of DOC_EXPIRY_FIELDS) {
+        formData.append(key.name, data[key.name] ?? "");
+      }
       if (data.hasFastag && data.fastagNumber) {
         formData.append("fastagNumber", data.fastagNumber);
       }
@@ -1126,6 +1154,45 @@ export const ManagerVehicleFormPage = () => {
                         </FormItem>
                       )}
                     />
+                  </div>
+                </div>
+
+                {/* Section: Other documents (Admin Reports 6.1 — Vehicle Document Expiry) */}
+                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-neutral-900 text-[15px]">Other Documents</h2>
+                      <p className="text-xs text-neutral-500">Expiry dates (optional) — shown in the admin Document Expiry report</p>
+                    </div>
+                  </div>
+                  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {DOC_EXPIRY_FIELDS.map((doc) => (
+                      <FormField
+                        key={doc.name}
+                        control={form.control}
+                        name={doc.name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-neutral-700">{doc.label}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                className="h-11"
+                                data-testid={`vehicle-${doc.name}`}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value)}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
                   </div>
                 </div>
 

@@ -369,6 +369,11 @@ export interface VehicleDetails {
   policyNumber?: string;
   provider?: string;
   insuranceExpiry?: string;
+  // Optional document expiries (Admin Reports 6.1); null = not recorded
+  rcExpiry?: string | null;
+  permitExpiry?: string | null;
+  pucExpiry?: string | null;
+  fitnessExpiry?: string | null;
   customPricing?: {
     hourlyRate?: number;
     price12Hour?: number;

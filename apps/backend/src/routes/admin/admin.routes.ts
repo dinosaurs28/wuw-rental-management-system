@@ -4,6 +4,19 @@ import { PAYMENT_PROOF_MAX_BYTES } from "../../services/payment/payment-proof.se
 import { Login } from "../../controller/admin/auth.controller.js";
 import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
 import {
+  GetFleetUtilization,
+  GetFleetIdle,
+  GetFleetProfitability,
+  GetFleetKm,
+  GetFleetDamage,
+  GetFleetDowntime,
+  GetFleetDocumentExpiry,
+  ListVehicleExpenses,
+  CreateVehicleExpense,
+  UpdateVehicleExpense,
+  DeleteVehicleExpense,
+} from "../../controller/admin/fleetReports.controller.js";
+import {
   makeForgotPasswordController,
   resetPasswordController,
 } from "../../services/passwordReset/passwordReset.controller.js";
@@ -49,6 +62,28 @@ import { GetGSTReport } from "../../controller/admin/gstReportController.js";
 import { GetInvoiceReport } from "../../controller/admin/invoiceReportController.js";
 import { GetReceiptReport } from "../../controller/admin/receiptReportController.js";
 import { GetCustomerReport } from "../../controller/admin/customerReportController.js";
+import { GetReportFilterOptions } from "../../controller/admin/reports/filterOptions.controller.js";
+import { GetDashboardHome } from "../../controller/admin/reports/dashboardHome.controller.js";
+// rpt-finance
+import {
+  GetFinanceRevenue,
+  GetFinanceCollections,
+  GetFinanceDues,
+  GetFinanceDeposits,
+  GetFinanceDiscountsRefunds,
+} from "../../controller/admin/financeReports.controller.js";
+// rpt-bookings
+import {
+  GetBookingSummaryReport,
+  GetCancellationsReport,
+  GetBookingSourceReport,
+  GetDurationLeadTimeReport,
+  GetExtensionsLateReport,
+  GetCustomerSummaryReport,
+  GetCustomerLtvReport,
+  GetBranchComparisonReport,
+  GetStaffActivityReport,
+} from "../../controller/admin/reports/bookingReports.controller.js";
 import { GetAllCategories } from "../../controller/admin/category.controller.js";
 import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.js";
 import { GetAllVehicles, UpdateVehicleUseCases } from "../../controller/admin/vehicle.controller.js";
@@ -162,6 +197,41 @@ router.get("/dashboard/reports/gst", AdminCheck, GetGSTReport);
 router.get("/dashboard/reports/invoices", AdminCheck, GetInvoiceReport);
 router.get("/dashboard/reports/receipts", AdminCheck, GetReceiptReport);
 router.get("/dashboard/reports/customers", AdminCheck, GetCustomerReport);
+
+// rpt-core: shared report framework + Dashboard Home
+router.get("/dashboard/reports/filter-options", AdminCheck, GetReportFilterOptions);
+router.get("/dashboard/reports/home", AdminCheck, GetDashboardHome);
+
+// rpt-finance: Admin Reports 2.1–2.5 (JSON, or CSV with export=csv)
+router.get("/dashboard/reports/finance/revenue", AdminCheck, GetFinanceRevenue);
+router.get("/dashboard/reports/finance/collections", AdminCheck, GetFinanceCollections);
+router.get("/dashboard/reports/finance/dues", AdminCheck, GetFinanceDues);
+router.get("/dashboard/reports/finance/deposits", AdminCheck, GetFinanceDeposits);
+router.get("/dashboard/reports/finance/discounts-refunds", AdminCheck, GetFinanceDiscountsRefunds);
+
+// rpt-fleet: Admin Reports 4.1–4.4, 5.1, 5.2, 6.1 (JSON, or CSV with export=csv) + vehicle expenses
+router.get("/dashboard/reports/fleet/utilization", AdminCheck, GetFleetUtilization);
+router.get("/dashboard/reports/fleet/idle", AdminCheck, GetFleetIdle);
+router.get("/dashboard/reports/fleet/profitability", AdminCheck, GetFleetProfitability);
+router.get("/dashboard/reports/fleet/km", AdminCheck, GetFleetKm);
+router.get("/dashboard/reports/fleet/damage", AdminCheck, GetFleetDamage);
+router.get("/dashboard/reports/fleet/downtime", AdminCheck, GetFleetDowntime);
+router.get("/dashboard/reports/fleet/document-expiry", AdminCheck, GetFleetDocumentExpiry);
+router.get("/dashboard/fleet/expenses", AdminCheck, ListVehicleExpenses);
+router.post("/dashboard/fleet/expenses", AdminCheck, CreateVehicleExpense);
+router.patch("/dashboard/fleet/expenses/:publicId", AdminCheck, UpdateVehicleExpense);
+router.delete("/dashboard/fleet/expenses/:publicId", AdminCheck, DeleteVehicleExpense);
+
+// rpt-bookings: Admin Reports 3.1–3.5, 7.1, 7.2, 8.1, 8.2 (JSON, or CSV with export=csv)
+router.get("/dashboard/reports/booking-summary", AdminCheck, GetBookingSummaryReport);
+router.get("/dashboard/reports/cancellations", AdminCheck, GetCancellationsReport);
+router.get("/dashboard/reports/booking-source", AdminCheck, GetBookingSourceReport);
+router.get("/dashboard/reports/duration-lead-time", AdminCheck, GetDurationLeadTimeReport);
+router.get("/dashboard/reports/extensions-late-returns", AdminCheck, GetExtensionsLateReport);
+router.get("/dashboard/reports/customer-summary", AdminCheck, GetCustomerSummaryReport);
+router.get("/dashboard/reports/customer-ltv", AdminCheck, GetCustomerLtvReport);
+router.get("/dashboard/reports/branch-comparison", AdminCheck, GetBranchComparisonReport);
+router.get("/dashboard/reports/staff-activity", AdminCheck, GetStaffActivityReport);
 
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 router.get("/dashboard/vehicles", AdminCheck, GetAllVehicles);

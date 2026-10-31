@@ -114,6 +114,11 @@ const items = [
 
 const reportItems = [
   {
+    title: "Reports Hub",
+    url: "/admin/reports/hub",
+    icon: BarChart3,
+  },
+  {
     title: "Vehicle Reports",
     url: "/admin/vehicle-reports",
     icon: Car,

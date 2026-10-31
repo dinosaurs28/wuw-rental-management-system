@@ -70,6 +70,9 @@ export const UpdateVehicleFastag = async (req: Request, res: Response) => {
   }
 };
 
+/** "" / undefined → null (not recorded), else the date. */
+const docExpiryDate = (v: string | undefined): Date | null => (v ? new Date(v) : null);
+
 export const AddVehicle = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
   const files = req.files as Express.Multer.File[];
@@ -117,6 +120,10 @@ export const AddVehicle = async (req: Request, res: Response) => {
       fastagNumber,
       hasFastag,
       useCases,
+      rcExpiry,
+      permitExpiry,
+      pucExpiry,
+      fitnessExpiry,
     } = validation.data;
 
     // "Total rent incl. GST" (item 17): totalRent* when sent, else price* (older
@@ -151,6 +158,11 @@ export const AddVehicle = async (req: Request, res: Response) => {
         hasFastag: hasFastag ?? false,
         useCases: useCases ?? [],
         insuranceExpiry: new Date(insuranceExpiry),
+        // Optional document expiries (Admin Reports 6.1); blank = not recorded
+        rcExpiry: docExpiryDate(rcExpiry),
+        permitExpiry: docExpiryDate(permitExpiry),
+        pucExpiry: docExpiryDate(pucExpiry),
+        fitnessExpiry: docExpiryDate(fitnessExpiry),
         status: VehicleStatus.AVAILABLE,
         customPricing: rent24Hour !== undefined ? {
           create: {
@@ -396,6 +408,10 @@ export const EditVehicle = async (req: Request, res: Response) => {
 
     if (data.insuranceExpiry) {
       updateData.insuranceExpiry = new Date(data.insuranceExpiry);
+    }
+    // Optional document expiries: absent = untouched, "" = cleared
+    for (const key of ["rcExpiry", "permitExpiry", "pucExpiry", "fitnessExpiry"] as const) {
+      if (data[key] !== undefined) updateData[key] = docExpiryDate(data[key]);
     }
 
     if (data.status) {

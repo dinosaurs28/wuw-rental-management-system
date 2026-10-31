@@ -197,7 +197,8 @@ jobs:
               20261027120000_monthly_expiry_reminder \
               20261028100000_cash_shift_manager_close \
               20261028110000_financials_paid_at_index \
-              20261029090000_refund_request_proof
+              20261029090000_refund_request_proof \
+              20261031100000_fleet_reports
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

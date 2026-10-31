@@ -136,6 +136,10 @@ export function initCleanupWorker(): void {
               await tx.vehiclePricingOverride.deleteMany({
                 where: { vehicleId: { in: vehicleIds } },
               });
+              // VehicleExpense → Vehicle is ON DELETE RESTRICT (status history cascades)
+              await tx.vehicleExpense.deleteMany({
+                where: { vehicleId: { in: vehicleIds } },
+              });
               await tx.vehicle.deleteMany({ where: { branchId } });
             }
 

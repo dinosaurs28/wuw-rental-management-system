@@ -29,6 +29,7 @@ import {
 } from "@/components/admin/AdminRevenueCharts";
 import { exportAllDashboardData } from "@/lib/exportUtils";
 import { DashboardFilters } from "@/components/admin/DashboardFilters";
+import { DashboardHome } from "@/components/admin/reports/DashboardHome";
 
 export const AdminDashboardPage = () => {
   const [branches, setBranches] = useState<AdminBranch[]>([]);
@@ -240,7 +241,7 @@ export const AdminDashboardPage = () => {
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbPage className="font-semibold text-neutral-900">
-                Analytics
+                Dashboard
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -248,10 +249,10 @@ export const AdminDashboardPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
-              Revenue Analytics
+              Dashboard
             </h1>
             <p className="text-neutral-500 mt-1 text-sm md:text-base">
-              Comprehensive insights into business performance and trends.
+              Today's business, fleet and alerts — every figure links to its detailed report.
             </p>
           </div>
           <Button
@@ -264,6 +265,11 @@ export const AdminDashboardPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Dashboard Home (spec §1) */}
+      <DashboardHome />
+
+      <h2 className="mb-3 text-lg font-semibold text-neutral-900">Revenue analytics</h2>
 
       {/* Filters Panel */}
       <DashboardFilters
