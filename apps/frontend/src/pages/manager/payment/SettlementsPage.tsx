@@ -38,7 +38,8 @@ import apiClient from "@/lib/axios";
 import { CreditNoteDialog, type CreditNote } from "@/components/manager/CreditNoteDialog";
 import { BookingPaymentsDialog } from "@/components/manager/payments/BookingPaymentsDialog";
 
-const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
+const gateways: OnlineGateway[] = ["UPI", "Card", "Razorpay", "Other"];
+const gatewayLabel = (g: OnlineGateway) => (g === "Card" ? "Credit Card" : g);
 
 /** Money on credit (#11) stays in netPayable but is collected on the Customer Credit page, not here. */
 const payableHere = (s: SettlementSummary) =>
@@ -70,7 +71,8 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
   const [overpayError, setOverpayError] = useState<string | null>(null);
   const [refundingOverpay, setRefundingOverpay] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
-  const isUpi = gateway === "UPI";
+  // Credit Card (Nov 2026): like UPI here — checked against the card machine's settlement, no photo
+  const isUpi = gateway === "UPI" || gateway === "Card";
 
   useEffect(() => {
     paymentService.getSettlementSummary(bookingPublicId)
@@ -107,7 +109,7 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
         onlineTransactionRef: method !== "CASH" && !isUpi ? txnRef.trim() : undefined,
-        onlineGateway: method !== "CASH" ? gateway : undefined,
+        onlineGateway: method !== "CASH" ? (gateway === "Card" ? "CARD" : gateway) : undefined,
         idempotencyKey: idempotencyKey.current,
       });
       toast.success("Settlement payment recorded.");
@@ -402,13 +404,15 @@ function SettleModal({ bookingPublicId, onClose, onDone }: { bookingPublicId: st
                     <Label className="text-xs text-neutral-600">Gateway</Label>
                     <Select value={gateway} onValueChange={(v) => { setGateway(v as OnlineGateway); setRefError(null); }}>
                       <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                      <SelectContent>{gateways.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                      <SelectContent>{gateways.map((g) => <SelectItem key={g} value={g}>{gatewayLabel(g)}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   {isUpi ? (
                     // Oct 25 2026 (client): no photo — the branch manager checks the transactions, then settles
                     <p className="col-span-2 text-xs text-neutral-500">
-                      Check the UPI payment in the branch's transactions, then record the settlement. No photo needed.
+                      {gateway === "Card"
+                        ? "Check the card payment on the card machine's settlement report, then record the settlement. No photo needed."
+                        : "Check the UPI payment in the branch's transactions, then record the settlement. No photo needed."}
                     </p>
                   ) : (
                     <div className="space-y-1.5">

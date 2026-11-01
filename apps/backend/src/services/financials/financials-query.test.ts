@@ -109,12 +109,14 @@ test("LIKE wildcards in a search are escaped", () => {
 
 test("mode / type filters and sort", () => {
   assert.equal(modeWhereSql(ok({})).sql, "TRUE");
-  assert.equal(modeWhereSql(ok({ modes: "CASH,UPI,GATEWAY" })).sql, "TRUE");
+  assert.equal(modeWhereSql(ok({ modes: "CASH,UPI,CARD,GATEWAY" })).sql, "TRUE");
   assert.equal(modeWhereSql(ok({ modes: "CASH" })).sql, "(cash_part > 0)");
   assert.equal(
     modeWhereSql(ok({ modes: "UPI,GATEWAY" })).sql,
-    "((total - cash_part > 0 AND NOT is_gateway) OR (total - cash_part > 0 AND is_gateway))",
+    "((total - cash_part > 0 AND NOT is_gateway AND NOT is_card) OR (total - cash_part > 0 AND is_gateway))",
   );
+  // Credit Card (Nov 2026): its own mode
+  assert.equal(modeWhereSql(ok({ modes: "CARD" })).sql, "((total - cash_part > 0 AND is_card))");
   assert.equal(typeWhereSql(ok({})).sql, "TRUE");
   assert.equal(typeWhereSql(ok({ types: "LATE_FEE,DAMAGES" })).sql, "type IN ('LATE_FEE', 'DAMAGES')");
   assert.equal(orderBySql(ok({})).sql, "paid_at DESC, id DESC, type_ord ASC");

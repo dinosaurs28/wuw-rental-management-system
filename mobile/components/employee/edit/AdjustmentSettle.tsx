@@ -104,8 +104,8 @@ export default function AdjustmentSettle({ session, lines, collectMethods, onSet
               onlineGateway: 'UPI',
               proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds,
             }
-            : choice.method === 'UPI'
-              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
+            : choice.method === 'UPI' || choice.method === 'CARD'
+              ? { method: choice.method, amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
               : choice.method === 'CREDIT'
                 ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral }
                 : { method: 'CASH', amount: net, idempotencyKey },

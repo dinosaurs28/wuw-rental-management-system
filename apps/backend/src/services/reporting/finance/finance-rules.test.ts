@@ -107,12 +107,12 @@ test("future confirmed booking is not yet due; cancelled never due; overpaid is 
 });
 
 test("mode split: cash / UPI / bank transfer / gateway", () => {
-  assert.deepEqual(modeSplitOf({ method: "SPLIT", totalAmount: 1000, cashAmount: 400, onlineAmount: 600, onlineGateway: "UPI" }), { CASH: 400, UPI: 600, BANK_TRANSFER: 0, GATEWAY: 0 });
-  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 900, cashAmount: 0, onlineAmount: 900, onlineGateway: "RAZORPAY" }), { CASH: 0, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 900 });
-  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 300, cashAmount: 0, onlineAmount: 300, onlineGateway: "BANK_TRANSFER" }), { CASH: 0, UPI: 0, BANK_TRANSFER: 300, GATEWAY: 0 });
+  assert.deepEqual(modeSplitOf({ method: "SPLIT", totalAmount: 1000, cashAmount: 400, onlineAmount: 600, onlineGateway: "UPI" }), { CASH: 400, UPI: 600, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
+  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 900, cashAmount: 0, onlineAmount: 900, onlineGateway: "RAZORPAY" }), { CASH: 0, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 900 });
+  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 300, cashAmount: 0, onlineAmount: 300, onlineGateway: "BANK_TRANSFER" }), { CASH: 0, UPI: 0, CARD: 0, BANK_TRANSFER: 300, GATEWAY: 0 });
   // legacy rows with both parts 0 take the method's side
-  assert.deepEqual(modeSplitOf({ method: "CASH", totalAmount: 250, cashAmount: 0, onlineAmount: 0, onlineGateway: null }), { CASH: 250, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
-  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 250, cashAmount: 0, onlineAmount: 0, onlineGateway: null }), { CASH: 0, UPI: 250, BANK_TRANSFER: 0, GATEWAY: 0 });
+  assert.deepEqual(modeSplitOf({ method: "CASH", totalAmount: 250, cashAmount: 0, onlineAmount: 0, onlineGateway: null }), { CASH: 250, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
+  assert.deepEqual(modeSplitOf({ method: "ONLINE", totalAmount: 250, cashAmount: 0, onlineAmount: 0, onlineGateway: null }), { CASH: 0, UPI: 250, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
 });
 
 const crow = (o: Partial<CollectionRow>): CollectionRow => ({
@@ -127,7 +127,7 @@ const crow = (o: Partial<CollectionRow>): CollectionRow => ({
   status: "CONFIRMED",
   counted: true,
   amount: 0,
-  modes: { CASH: 0, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 },
+  modes: { CASH: 0, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 },
   modeLabel: "",
   onlineGateway: null,
   reference: null,
@@ -143,11 +143,11 @@ const crow = (o: Partial<CollectionRow>): CollectionRow => ({
 
 test("collections: counted rows only; deposits apart; refunds net off", () => {
   const t = summariseCollections([
-    crow({ amount: 1000, modes: { CASH: 1000, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
-    crow({ amount: 500, status: "COLLECTED", modes: { CASH: 500, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
-    crow({ amount: 2000, purpose: "SAFETY_DEPOSIT", modes: { CASH: 0, UPI: 2000, BANK_TRANSFER: 0, GATEWAY: 0 } }),
-    crow({ amount: 700, status: "VOIDED", counted: false, modes: { CASH: 700, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
-    crow({ amount: 300, direction: "OUT", purpose: "OVERPAYMENT_REFUND", modes: { CASH: 300, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
+    crow({ amount: 1000, modes: { CASH: 1000, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
+    crow({ amount: 500, status: "COLLECTED", modes: { CASH: 500, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
+    crow({ amount: 2000, purpose: "SAFETY_DEPOSIT", modes: { CASH: 0, UPI: 2000, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
+    crow({ amount: 700, status: "VOIDED", counted: false, modes: { CASH: 700, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
+    crow({ amount: 300, direction: "OUT", purpose: "OVERPAYMENT_REFUND", modes: { CASH: 300, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 } }),
   ]);
   assert.equal(t.collected, 3500);
   assert.equal(t.confirmed, 3000);
@@ -157,8 +157,8 @@ test("collections: counted rows only; deposits apart; refunds net off", () => {
   assert.equal(t.refundsPaidOut, 300);
   assert.equal(t.net, 3200);
   assert.equal(t.transactions, 3);
-  assert.deepEqual(t.modes, { CASH: 1500, UPI: 2000, BANK_TRANSFER: 0, GATEWAY: 0 });
-  assert.equal(t.modes.CASH + t.modes.UPI + t.modes.BANK_TRANSFER + t.modes.GATEWAY, t.collected);
+  assert.deepEqual(t.modes, { CASH: 1500, UPI: 2000, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
+  assert.equal(t.modes.CASH + t.modes.UPI + t.modes.CARD + t.modes.BANK_TRANSFER + t.modes.GATEWAY, t.collected);
 });
 
 const owedBase = {

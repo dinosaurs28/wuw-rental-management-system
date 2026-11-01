@@ -42,7 +42,7 @@ export default function CurrentShiftScreen() {
           <Text style={styles.emptySub}>
             {isError
               ? 'Check your connection and try again.'
-              : 'Open a shift to collect payments. Your branch manager closes it when you hand over the cash.'}
+              : 'Open a shift to collect payments. If you collect cash, your branch manager closes it when you hand it over.'}
           </Text>
           {isError ? (
             <TouchableOpacity onPress={() => refetch()}>

@@ -90,6 +90,8 @@ interface ExecutiveRow {
   totalRevenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card (Nov 2026; absent on older servers) */
+  cardCollected?: number;
   outstanding: number;
   cancellations: number;
 }
@@ -100,6 +102,8 @@ interface ExecutivesSummary {
   totalRevenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card (Nov 2026; absent on older servers) */
+  cardCollected?: number;
   outstanding: number;
   cancellations: number;
 }
@@ -289,6 +293,15 @@ export const FleetExecutiveReport = ({
       cell: ({ row }) => (
         <div className="text-right font-mono">
           ₹{row.original.upiCollected.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "cardCollected",
+      header: "Card Collected",
+      cell: ({ row }) => (
+        <div className="text-right font-mono">
+          ₹{(row.original.cardCollected ?? 0).toLocaleString("en-IN")}
         </div>
       ),
     },

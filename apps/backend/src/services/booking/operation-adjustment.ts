@@ -350,7 +350,7 @@ export function settlementMethods(input: {
 }): { collect: string[]; refund: string[] } {
   if (input.settledByBranchManager || input.action === "NONE") return { collect: [], refund: [] };
   if (input.action === "REFUND") return { collect: [], refund: ["CASH", "UPI"] };
-  const collect = ["CASH", "UPI", "SPLIT"];
+  const collect = ["CASH", "UPI", "CARD", "SPLIT"]; // CARD = Credit Card (Nov 2026)
   if (!input.depositIncrease) collect.push("CREDIT");
   return { collect, refund: [] };
 }

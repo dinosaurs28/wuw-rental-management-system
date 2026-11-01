@@ -12,11 +12,12 @@
  * refunded) and never typed. The shell owns the `shift` URL param: shiftId opens
  * that shift (payments if open, the report if closed).
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Lock, RefreshCw, Wallet, Users, CalendarCheck, Scale } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,7 +82,7 @@ function shortName(name: string): string {
 
 function paymentMode(p: Pick<CashShiftPayment, "method" | "onlineGateway" | "cashAmount" | "onlineAmount">): string {
   const gateway = (p.onlineGateway ?? "").toUpperCase();
-  const online = gateway === "UPI" ? "UPI" : gateway ? "Card / online" : "UPI";
+  const online = gateway === "UPI" ? "UPI" : gateway === "CARD" ? "Credit Card" : gateway ? "Online" : "UPI";
   if (p.method === "CASH") return "Cash";
   if (p.method === "SPLIT") return `Cash + ${online}`;
   return online;
@@ -221,7 +222,9 @@ function ShiftSheet({
                     <span className="font-semibold">Note: </span>{view.discrepancyExplanation}
                   </p>
                 )}
-                {!view.closedByManager && (
+                {view.selfClosedNoCash ? (
+                  <p className="mt-2 text-[11px] text-neutral-500">Closed by the fleet member — no cash was collected in this shift.</p>
+                ) : !view.closedByManager && (
                   <p className="mt-2 text-[11px] text-neutral-500">Closed by the fleet member (before managers closed shifts).</p>
                 )}
               </div>
@@ -249,8 +252,10 @@ function ShiftSheet({
                     )}
                     {view.transactions.map((t) => {
                       const dead = ["VOIDED", "REJECTED", "FAILED"].includes(t.status);
+                      const proof = t.proofPhoto ?? (t.proofPhotoUrl ? { url: t.proofPhotoUrl } : null);
                       return (
-                        <tr key={t.publicId} className={`border-t border-neutral-100 ${dead ? "text-neutral-400 line-through" : ""}`}>
+                        <Fragment key={t.publicId}>
+                        <tr className={`border-t border-neutral-100 ${dead ? "text-neutral-400 line-through" : ""}`}>
                           <td className="px-3 py-2">
                             {paymentType(t)}
                             {dead && <span className="ml-1 text-[10px] no-underline">({t.status.toLowerCase()})</span>}
@@ -274,6 +279,20 @@ function ShiftSheet({
                             </td>
                           )}
                         </tr>
+                        {/* Nov 2026: the payment / receipt photo at a readable size (click to zoom) */}
+                        {proof && (
+                          <tr>
+                            <td colSpan={6} className={`px-3 pb-3 pt-0 ${dead ? "opacity-50" : ""}`}>
+                              <ProofPhotoThumb
+                                size="read"
+                                photo={proof}
+                                photos={t.proofs}
+                                caption={`#${t.bookingPublicId.slice(-8).toUpperCase()} · ${paymentMode(t)} · ${formatMoney(t.totalAmount)}`}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -619,16 +638,17 @@ function UnconfirmedSection({ reloadKey, onChanged }: { reloadKey: number; onCha
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.transactionPublicId} className="border-t border-neutral-100">
+            {rows.map((r) => {
+              const proof = r.proofPhoto ?? (r.proofPhotoUrl ? { url: r.proofPhotoUrl } : null);
+              return (
+              <Fragment key={r.transactionPublicId}>
+              <tr className="border-t border-neutral-100">
                 <td className="px-3 py-2">{r.employeeName ?? "—"}</td>
                 <td className="px-3 py-2 font-mono text-xs">#{r.bookingPublicId.slice(-8).toUpperCase()}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatMoney(r.amount)}</td>
                 <td className="px-3 py-2">
-                  {r.method === "CASH" ? "Cash" : r.method === "SPLIT" ? "Cash + UPI" : r.isUpi ? "UPI" : "Online"}
-                  {r.proofPhotoUrl && (
-                    <a href={r.proofPhotoUrl} target="_blank" rel="noreferrer" className="ml-1 text-xs text-sky-700 underline">photo</a>
-                  )}
+                  {r.method === "CASH" ? "Cash" : r.method === "SPLIT" ? (r.isCard ? "Cash + Credit Card" : "Cash + UPI") : r.isUpi ? "UPI" : r.isCard ? "Credit Card" : "Online"}
+
                 </td>
                 <td className="px-3 py-2 text-xs">{formatIstDateTime(r.collectedAt)}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
@@ -636,7 +656,22 @@ function UnconfirmedSection({ reloadKey, onChanged }: { reloadKey: number; onCha
                   <Button size="sm" variant="ghost" className="ml-1 text-red-600" disabled={busy === r.transactionPublicId} onClick={() => { setRejecting(r); setReason(""); }}>Reject</Button>
                 </td>
               </tr>
-            ))}
+              {/* Nov 2026: the payment photo at a readable size (click to zoom) */}
+              {proof && (
+                <tr>
+                  <td colSpan={6} className="px-3 pb-3 pt-0">
+                    <ProofPhotoThumb
+                      size="read"
+                      photo={proof}
+                      photos={r.proofs}
+                      caption={`#${r.bookingPublicId.slice(-8).toUpperCase()} · ${formatMoney(r.amount)}`}
+                    />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

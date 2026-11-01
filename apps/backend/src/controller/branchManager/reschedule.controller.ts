@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { getRescheduleOptions, rescheduleBooking } from "../../services/booking/reschedule.service.js";
+import { getRescheduleOptions, quoteReschedulePeriod, rescheduleBooking } from "../../services/booking/reschedule.service.js";
 import { rescheduledMessage, sendRescheduleError } from "../employee/reschedule.controller.js";
 
 /**
@@ -31,5 +31,15 @@ export const RescheduleBookingByManager = async (req: Request, res: Response) =>
     });
   } catch (error) {
     return sendRescheduleError(res, error, "RescheduleBookingByManager");
+  }
+};
+
+/** POST /api/branchManager/bookings/:publicId/reschedule/quote — the period preview (see the Fleet endpoint). */
+export const QuoteReschedulePeriodByManager = async (req: Request, res: Response) => {
+  try {
+    const data = await quoteReschedulePeriod(req, req.params.publicId!);
+    return res.status(StatusCode.OK).json({ success: true, data });
+  } catch (error) {
+    return sendRescheduleError(res, error, "QuoteReschedulePeriodByManager");
   }
 };

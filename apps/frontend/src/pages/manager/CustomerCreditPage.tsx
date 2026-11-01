@@ -41,7 +41,9 @@ const clearanceMethodLabel = (c: CreditClearance) =>
       ? "Split (cash + UPI)"
       : c.paymentMethod === "CASH"
         ? "Cash"
-        : "UPI";
+        : c.paymentMethod === "CARD"
+          ? "Credit Card"
+          : "UPI";
 
 export const CustomerCreditPage = () => {
   const { customerId } = useParams<{ customerId: string }>();

@@ -109,7 +109,7 @@ import dashboardRouter from "./dashboard.routes.js";
 import { makeNotificationRouter } from "../notification/notification.routes.js";
 import { makeCustomersRouter } from "../branchManger/customers.routes.js";
 import { UpdateBookingDlStatus } from "../../controller/employee/dlStatus.controller.js";
-import { GetRescheduleOptions, RescheduleBooking } from "../../controller/employee/reschedule.controller.js";
+import { GetRescheduleOptions, QuoteReschedulePeriod, RescheduleBooking } from "../../controller/employee/reschedule.controller.js";
 import {
   ListOperationDrafts,
   makeDiscardOperationDraft,
@@ -264,6 +264,8 @@ router.patch("/bookings/:publicId/dl-status", EmployeeCheck, UpdateBookingDlStat
 // Reschedule a confirmed booking (not picked up): new pickup, return shifted the same, price unchanged
 router.get("/bookings/:publicId/reschedule", EmployeeCheck, GetRescheduleOptions);
 router.post("/bookings/:publicId/reschedule", EmployeeCheck, RescheduleBooking);
+// Reschedule rental period (TODO 4): preview a new start + end and the price difference
+router.post("/bookings/:publicId/reschedule/quote", EmployeeCheck, QuoteReschedulePeriod);
 
 // ── Charge Engine ─────────────────────────────────────────────────────────────
 

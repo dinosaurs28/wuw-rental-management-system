@@ -11,6 +11,7 @@ import { AuditCategory, AuditSeverity } from "@repo/database/client";
 import type { Prisma } from "@repo/database/client";
 import { lockBookingRow } from "./booking-row-lock.js";
 import { revertLegacyPickupDiscountOnCancel } from "../discount/pickup-discount.service.js";
+import { remainingKeySuffix } from "./reschedule-period.js";
 
 /** 409: the remaining balance moved (e.g. a pickup discount) since it was read — nothing was recorded. */
 export class RemainingBalanceChangedError extends Error {
@@ -123,7 +124,8 @@ export class AdvanceDepositService {
     paidDuring: "PICKUP" | "RETURN",
     // Counter UPI: the UTR (older builds) and/or the payment-screen photo (#3)
     // (`proofs` = every photo, 1–3, first = `proof`)
-    upi?: { utr: string | null; collectedById: number; proof?: ResolvedProof | null; proofs?: ResolvedProof[] },
+    // `gateway` "CARD" (Nov 2026) = a counter Credit Card payment backed by its receipt photos
+    upi?: { utr: string | null; collectedById: number; proof?: ResolvedProof | null; proofs?: ResolvedProof[]; gateway?: "UPI" | "CARD" },
     cash?: { collectedById: number },
     online?: { collectedById?: number | null; gatewayPaymentId?: string | null },
     // Split at the counter: cash + UPI (backed like `upi`); one COLLECTED SPLIT transaction
@@ -150,6 +152,9 @@ export class AdvanceDepositService {
     ) {
       throw new Error("Booking must be CONFIRMED or PICKED_UP to collect remaining payment");
     }
+
+    // A balance re-opened by a period reschedule is collected again: its own key
+    const keySuffix = remainingKeySuffix(booking.pricingSnapshot);
 
     return await prisma.$transaction(async (tx) => {
       // The collector's open shift first, locked FOR SHARE (never a shift being
@@ -234,7 +239,7 @@ export class AdvanceDepositService {
           data: {
             publicId: createID(),
             // One counter UPI remaining payment per booking — a double submit hits this key
-            idempotencyKey: `remaining:upi:${booking.publicId}`,
+            idempotencyKey: `remaining:${upi.gateway === "CARD" ? "card" : "upi"}:${booking.publicId}${keySuffix}`,
             bookingId: booking.id,
             branchId: booking.branchId,
             purpose: PaymentPurpose.REMAINING_BALANCE,
@@ -244,7 +249,7 @@ export class AdvanceDepositService {
             cashAmount: 0,
             onlineAmount: booking.remainingBalance,
             onlineTransactionRef: upi.utr,
-            onlineGateway: "UPI",
+            onlineGateway: upi.gateway === "CARD" ? "CARD" : "UPI",
             proofFileId: upi.proof?.id ?? null,
             proofPhotos: proofPhotosCreate(upiProofs),
             collectedById: upi.collectedById,
@@ -266,7 +271,7 @@ export class AdvanceDepositService {
           data: {
             publicId: createID(),
             // One counter split remaining payment per booking — a double submit hits this key
-            idempotencyKey: `remaining:split:${booking.publicId}`,
+            idempotencyKey: `remaining:split:${booking.publicId}${keySuffix}`,
             bookingId: booking.id,
             branchId: booking.branchId,
             purpose: PaymentPurpose.REMAINING_BALANCE,
@@ -295,7 +300,7 @@ export class AdvanceDepositService {
           data: {
             publicId: createID(),
             // One counter cash remaining payment per booking — a double submit hits this key
-            idempotencyKey: `remaining:cash:${booking.publicId}`,
+            idempotencyKey: `remaining:cash:${booking.publicId}${keySuffix}`,
             bookingId: booking.id,
             branchId: booking.branchId,
             purpose: PaymentPurpose.REMAINING_BALANCE,
@@ -319,7 +324,7 @@ export class AdvanceDepositService {
           data: {
             publicId: createID(),
             // One Razorpay remaining payment per booking — a concurrent status check hits this key
-            idempotencyKey: `remaining:razorpay:${booking.publicId}`,
+            idempotencyKey: `remaining:razorpay:${booking.publicId}${keySuffix}`,
             bookingId: booking.id,
             branchId: booking.branchId,
             purpose: PaymentPurpose.REMAINING_BALANCE,

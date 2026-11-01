@@ -59,6 +59,16 @@ export interface ShiftView {
   // The manager who closed it (the executive themselves for shifts closed before Oct 2026).
   closedByName?: string | null;
   closedByManager?: boolean;
+  // ── Nov 2026: the executive may close their own shift when it holds no cash ──
+  // (absent on older servers → treat as "the branch manager closes it")
+  canSelfClose?: boolean;
+  selfCloseReason?: 'OK' | 'NOT_OPEN' | 'CASH_COLLECTED' | 'CASH_REFUNDED' | 'OPENING_FLOAT';
+  // Why not ('' when allowed).
+  selfCloseMessage?: string;
+  // Cash the branch manager must receive (opening + collected − refunded).
+  cashToHandOver?: string;
+  // Closed by the executive themselves with no cash in it.
+  selfClosedNoCash?: boolean;
 }
 
 export type ShiftTransactionPurpose =

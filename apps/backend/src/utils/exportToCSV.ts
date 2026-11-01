@@ -156,7 +156,7 @@ export const exportSalesReportToCSV = (
     "Total Amount": formatCurrencyForCSV(booking.financial.totalAmount),
     "Amount Paid": formatCurrencyForCSV(booking.financial.amountPaid),
     Balance: formatCurrencyForCSV(booking.financial.balanceAmount),
-    "Payment Method": booking.payment.depositMethod,
+    "Payment Method": booking.payment.depositMethod === "CARD" ? "Credit Card" : booking.payment.depositMethod,
     "Payment Status": booking.payment.paymentStatus,
     Status: booking.status,
     Branch: booking.branch,

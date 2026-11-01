@@ -46,6 +46,7 @@ export const dominantMode = (t: CollectionTxn): ReportMode => {
   const entries: [ReportMode, number][] = [
     ["Cash", t.cash],
     ["Gateway", t.gateway],
+    ["Card", t.card],
     ["UPI", t.upi],
   ];
   entries.sort((a, b) => b[1] - a[1]);
@@ -65,6 +66,7 @@ const parseModeFilter = (
   if (v === "CASH") return "Cash";
   if (v === "UPI") return "UPI";
   if (v === "GATEWAY") return "Gateway";
+  if (v === "CARD") return "Card";
   if (v === "CREDIT") return "Credit";
   if (v === "ONLINE") return "Online";
   return undefined;
@@ -74,7 +76,7 @@ const modeMatches = (
   rowMode: ReportMode,
   filter: ReportMode | "Online",
 ): boolean => {
-  if (filter === "Online") return rowMode === "UPI" || rowMode === "Gateway";
+  if (filter === "Online") return rowMode === "UPI" || rowMode === "Gateway" || rowMode === "Card";
   return rowMode === filter;
 };
 
@@ -207,7 +209,9 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
     const totalCash = matched.reduce((s, r) => s + r.txn.cash, 0);
     const totalUpi = matched.reduce((s, r) => s + r.txn.upi, 0);
     const totalGateway = matched.reduce((s, r) => s + r.txn.gateway, 0);
-    const grandTotalCollected = totalCash + totalUpi + totalGateway;
+    // Counter Credit Card (Nov 2026)
+    const totalCard = matched.reduce((s, r) => s + r.txn.card, 0);
+    const grandTotalCollected = totalCash + totalUpi + totalGateway + totalCard;
     // Credit (outstanding) is not derivable from collected txns. Shown as 0
     // for visibility; excluded from Grand Total. See report data-gap note.
     const totalCredit = 0;
@@ -227,6 +231,7 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
         totalCash,
         totalUpi,
         totalGateway,
+        totalCard,
         totalCredit,
         grandTotalCollected,
         totalTransactions: rows.length,
@@ -266,6 +271,9 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
         }),
         summaryRow(columns, "Total Gateway", {
           "Amount Collected": csvCurrency(totalGateway),
+        }),
+        summaryRow(columns, "Total Credit Card", {
+          "Amount Collected": csvCurrency(totalCard),
         }),
         summaryRow(columns, "Total Credit", {
           "Amount Collected": csvCurrency(totalCredit),
@@ -315,6 +323,7 @@ const emptyReport = (
     totalCash: 0,
     totalUpi: 0,
     totalGateway: 0,
+    totalCard: 0,
     totalCredit: 0,
     grandTotalCollected: 0,
     totalTransactions: 0,

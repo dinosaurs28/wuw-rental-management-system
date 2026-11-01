@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PAYMENT_PROOF_MAX_PHOTOS } from "./counter-payment.js";
+import { PAYMENT_PROOF_MAX_PHOTOS, isCardGateway } from "./counter-payment.js";
 
 // ─── Branch Payment Config ─────────────────────────────────────────────────
 
@@ -120,7 +120,8 @@ export const recordSettlementPaymentSchema = recordPaymentBase
     { message: "For SPLIT method, cashAmount + onlineAmount must equal totalAmount", path: ["totalAmount"] },
   )
   .refine(
-    (d) => d.method === "CASH" || isUpiGatewayName(d.onlineGateway) || !!d.onlineTransactionRef?.trim(),
+    // Credit Card (gateway "CARD", Nov 2026): like UPI here — the manager checks the receipt
+    (d) => d.method === "CASH" || isUpiGatewayName(d.onlineGateway) || isCardGateway(d.onlineGateway) || !!d.onlineTransactionRef?.trim(),
     { message: "Transaction reference is required for online payments other than UPI", path: ["onlineTransactionRef"] },
   );
 

@@ -14,7 +14,8 @@ import {
   assertOpenShift,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
-import { resolveCounterUpi, type CounterUpi } from "../../services/payment/payment-proof.service.js";
+import { resolveCounterUpi, resolveCounterCard, type CounterUpi } from "../../services/payment/payment-proof.service.js";
+import { CARD_GATEWAY } from "@repo/schemas";
 import { PAYMENT_PROOF_MAX_PHOTOS } from "../../services/payment/payment-proof-list.js";
 import { parseCollateral } from "../../services/payment/customer-credit.service.js";
 import { extensionPricingService, extensionSplitView } from "../../services/extension/extension-pricing.service.js";
@@ -51,7 +52,8 @@ import { isDropRecorded } from "../../utils/availability/vehicleEligibility.js";
 // the same way). CREDIT = the amount stays owed against the collateral noted.
 // Cash, UPI and split all wait for the branch manager's confirmation (#12).
 const collectExtensionSchema = z.object({
-  method: z.enum(["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT"]),
+  // CARD (Nov 2026) = Credit Card: ONLINE via the CARD gateway, 1–3 receipt photos required
+  method: z.enum(["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT", "CARD"]),
   onlineTransactionRef: z.string().optional(),
   proof_file_id: z.string().trim().min(1).max(64).optional(),
   // Up to three payment-screen photos (slot order; the first = proof_file_id)
@@ -297,7 +299,8 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
       return;
     }
     // UPI is ONLINE through the counter UPI gateway
-    const method = validation.data.method === "UPI" ? "ONLINE" : validation.data.method;
+    const method = validation.data.method === "UPI" || validation.data.method === "CARD" ? "ONLINE" : validation.data.method;
+    const isCard = validation.data.method === "CARD";
 
     const pending = await prisma.bookingExtension.findUnique({
       where: { publicId: req.params.extensionPublicId! },
@@ -338,7 +341,13 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
           }
           split = { cash, online };
         }
-        if (method === "ONLINE" || method === "SPLIT") {
+        if (isCard) {
+          upi = await resolveCounterCard({
+            proofFileId: validation.data.proof_file_id,
+            proofFileIds: validation.data.proof_file_ids,
+            branchId: req.branch_Id,
+          });
+        } else if (method === "ONLINE" || method === "SPLIT") {
           upi = await resolveCounterUpi({
             utr: validation.data.onlineTransactionRef,
             proofFileId: validation.data.proof_file_id,
@@ -355,7 +364,7 @@ export const CollectExtensionPayment = async (req: Request, res: Response): Prom
       actor,
       upi?.utr ?? undefined,
       {
-        onlineGateway: method === "ONLINE" || method === "SPLIT" ? "UPI" : undefined,
+        onlineGateway: isCard ? CARD_GATEWAY : method === "ONLINE" || method === "SPLIT" ? "UPI" : undefined,
         upi,
         split,
         collateral,

@@ -29,8 +29,12 @@ import fs from "fs/promises";
 import sharp from "sharp";
 import { prisma } from "@repo/database/client";
 import type { Prisma } from "@repo/database/client";
-import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@repo/schemas";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE, CARD_RECEIPT_REQUIRED_MESSAGE } from "@repo/schemas";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { uploadKycToR2, generatePresignedUrl } from "../r2-upload.js";
+import { r2, PRIVATE_BUCKET } from "../../lib/r2.client.js";
+import { processDisplayImage } from "../../utils/image-processor.js";
+import { displayVariantKey } from "../../utils/photo-variant.js";
 import { createID } from "../../utils/nanoID.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { CounterGuardError, validateNewUtr, claimUtr } from "./counter-guard.service.js";
@@ -69,7 +73,14 @@ export interface PaymentProofView {
   /** FileObject publicId — send it as `proof_file_id` */
   proofFileId: string;
   publicId: string;
+  /** The stored photo (up to 2000 px) — the zoom viewer's full-size image. */
   url: string;
+  /**
+   * Nov 2026: a ~1200 px copy for showing the photo at a readable size without
+   * downloading the full one (presigned like `url`). Same as `url` for photos
+   * uploaded before it existed or when the copy could not be made.
+   */
+  displayUrl: string;
   mime: string;
   size: number;
   capturedAt: string;
@@ -83,9 +94,13 @@ const PROOF_FILE_SELECT = {
   mime: true,
   size: true,
   createdAt: true,
+  displayKey: true,
 } satisfies Prisma.FileObjectSelect;
 
-type ProofFileRow = Prisma.FileObjectGetPayload<{ select: typeof PROOF_FILE_SELECT }>;
+/** displayKey optional: hand-written selects from before Nov 2026 fall back to the original. */
+type ProofFileRow = Omit<Prisma.FileObjectGetPayload<{ select: typeof PROOF_FILE_SELECT }>, "displayKey"> & {
+  displayKey?: string | null;
+};
 
 /** Every proof uploaded in a branch lives under this key prefix (branch scope check). */
 function branchKeyPrefix(branchId: number): string {
@@ -93,10 +108,13 @@ function branchKeyPrefix(branchId: number): string {
 }
 
 export async function toPaymentProofView(file: ProofFileRow): Promise<PaymentProofView> {
+  const url = await generatePresignedUrl(file.key, PAYMENT_PROOF_URL_TTL_SECONDS);
+  const displayUrl = file.displayKey ? await generatePresignedUrl(file.displayKey, PAYMENT_PROOF_URL_TTL_SECONDS) : url;
   return {
     proofFileId: file.publicId,
     publicId: file.publicId,
-    url: await generatePresignedUrl(file.key, PAYMENT_PROOF_URL_TTL_SECONDS),
+    url,
+    displayUrl,
     mime: file.mime,
     size: file.size,
     capturedAt: file.createdAt.toISOString(),
@@ -166,8 +184,31 @@ export async function savePaymentProof(input: {
   const buffer = await normaliseProofPhoto(input.tmpPath);
   const key = `${branchKeyPrefix(input.branchId)}${input.uploaderPublicId}/${createID()}.jpg`;
   const { fileId } = await uploadKycToR2(buffer, key, "image/jpeg", buffer.length);
+  const displayKey = await putPrivateDisplayCopy(key, buffer);
+  if (displayKey) await prisma.fileObject.update({ where: { id: fileId }, data: { displayKey } });
   const file = await prisma.fileObject.findUniqueOrThrow({ where: { id: fileId }, select: PROOF_FILE_SELECT });
   return toPaymentProofView(file);
+}
+
+/**
+ * The ~1200 px display copy of a proof photo (`<key>__md.jpg`), in the PRIVATE
+ * bucket beside the original and presigned per view like it. Returns its key,
+ * or null when it could not be stored — the upload never fails over it and the
+ * readers fall back to the original.
+ */
+async function putPrivateDisplayCopy(key: string, source: Buffer): Promise<string | null> {
+  try {
+    const display = await processDisplayImage(source);
+    const displayKey = displayVariantKey(key);
+    await r2.send(
+      new PutObjectCommand({ Bucket: PRIVATE_BUCKET, Key: displayKey, Body: display.buffer, ContentType: display.mimeType }),
+      { abortSignal: AbortSignal.timeout(20_000) },
+    );
+    return displayKey;
+  } catch (error) {
+    console.warn(`[PaymentProof] Could not store the display copy of ${key}:`, error);
+    return null;
+  }
 }
 
 /** A proof uploaded in this branch, by its publicId — or null. */
@@ -339,6 +380,27 @@ export async function claimCounterUpi(upi: CounterUpi, tx: Prisma.TransactionCli
   if (upi.utr) await claimUtr(upi.utr, tx);
   const proofs = upi.proofs?.length ? upi.proofs : upi.proof ? [upi.proof] : [];
   if (proofs.length) await claimPaymentProofs(proofs, tx);
+}
+
+/**
+ * The backing of a counter Credit Card payment (Nov 2026, client TODO 3): 1–3
+ * photos of the card-machine receipt (`proof_file_ids`, or one `proof_file_id`),
+ * checked exactly like UPI payment screenshots (same upload, branch scope,
+ * single use). There is no UTR fallback — no photo → 400 PAYMENT_PROOF_REQUIRED.
+ * `opts.optional` (BM Pending Settlements, like UPI there): no photo is fine.
+ * Claim it with claimCounterUpi (utr is always null).
+ */
+export async function resolveCounterCard(input: {
+  proofFileId?: unknown;
+  proofFileIds?: unknown;
+  branchId: number;
+  optional?: boolean;
+}): Promise<CounterUpi> {
+  const proofs = await resolvePaymentProofs(input.proofFileId, input.proofFileIds, input.branchId);
+  const [first] = proofs;
+  if (first) return { utr: null, proof: first, proofs };
+  if (input.optional) return { utr: null, proof: null, proofs: [] };
+  throw new CounterGuardError(StatusCode.BAD_REQUEST, "PAYMENT_PROOF_REQUIRED", CARD_RECEIPT_REQUIRED_MESSAGE);
 }
 
 // ── Read side (BM cash confirmations, shift detail, credit page) ─────────────

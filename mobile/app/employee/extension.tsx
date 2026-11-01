@@ -652,8 +652,9 @@ export default function ExtensionScreen() {
     try {
       const res = await employeeApi.collectExtension(
         extensionPublicId,
-        choice.method === 'UPI'
-          ? { method: 'UPI', proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
+        // CARD = Credit Card (Nov 2026): receipt photos, same fields as UPI
+        choice.method === 'UPI' || choice.method === 'CARD'
+          ? { method: choice.method, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
           : choice.method === 'SPLIT'
             ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
             : choice.method === 'CREDIT'
@@ -672,7 +673,7 @@ export default function ExtensionScreen() {
           : confirmed
             ? 'The extension is confirmed.'
             : amountDue > 0
-              ? `${choice.method === 'UPI' ? 'UPI payment' : choice.method === 'SPLIT' ? 'Split payment' : 'Cash'} recorded. The extension is final once the branch manager confirms the payment.`
+              ? `${choice.method === 'UPI' ? 'UPI payment' : choice.method === 'CARD' ? 'Credit card payment' : choice.method === 'SPLIT' ? 'Split payment' : 'Cash'} recorded. The extension is final once the branch manager confirms the payment.`
               : 'The extension awaits manager confirmation.',
       );
       setPhase('done');
@@ -1142,7 +1143,7 @@ export default function ExtensionScreen() {
                 {amountDue > 0
                   ? method === 'CREDIT'
                     ? `Put ${inr(amountDue)} on credit`
-                    : `Collect ${inr(amountDue)}${method === 'UPI' ? ' via UPI' : method === 'SPLIT' ? ' (split)' : ' cash'}`
+                    : `Collect ${inr(amountDue)}${method === 'UPI' ? ' via UPI' : method === 'CARD' ? ' by credit card' : method === 'SPLIT' ? ' (split)' : ' cash'}`
                   : isMonthly ? 'Confirm renewal' : 'Confirm extension'}
               </Text>
             )}

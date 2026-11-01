@@ -53,6 +53,8 @@ interface ExecutiveRow {
   totalRevenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card money (Nov 2026) — not in upiCollected */
+  cardCollected: number;
   outstanding: number;
   cancellations: number;
 }
@@ -160,6 +162,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
       cancellations: number;
       cashCollected: number;
       upiCollected: number;
+      cardCollected: number;
     }
     const aggByKey = new Map<string, Agg>();
     const ensure = (id: number | null): Agg => {
@@ -174,6 +177,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
           cancellations: 0,
           cashCollected: 0,
           upiCollected: 0,
+          cardCollected: 0,
         };
         aggByKey.set(key, a);
       }
@@ -197,7 +201,8 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
     for (const t of collections) {
       const a = ensure(t.collectedById ?? null);
       a.cashCollected += t.cash;
-      a.upiCollected += t.upi + t.gateway; // full online portion
+      a.upiCollected += t.upi + t.gateway; // online portion except counter card
+      a.cardCollected += t.card;
     }
 
     // --- Resolve User name + branch for every key that has a real user id ---
@@ -228,6 +233,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         totalRevenue: a.totalRevenue,
         cashCollected: a.cashCollected,
         upiCollected: a.upiCollected,
+        cardCollected: a.cardCollected,
         outstanding: a.outstanding,
         cancellations: a.cancellations,
       };
@@ -248,6 +254,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         totalRevenue: s.totalRevenue + e.totalRevenue,
         cashCollected: s.cashCollected + e.cashCollected,
         upiCollected: s.upiCollected + e.upiCollected,
+        cardCollected: s.cardCollected + e.cardCollected,
         outstanding: s.outstanding + e.outstanding,
         cancellations: s.cancellations + e.cancellations,
       }),
@@ -257,6 +264,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         totalRevenue: 0,
         cashCollected: 0,
         upiCollected: 0,
+        cardCollected: 0,
         outstanding: 0,
         cancellations: 0,
       },
@@ -486,6 +494,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         "Total Revenue",
         "Cash Collected",
         "UPI Collected",
+        "Card Collected",
         "Outstanding",
         "Cancellations",
       ];
@@ -496,6 +505,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         "Total Revenue": csvCurrency(e.totalRevenue),
         "Cash Collected": csvCurrency(e.cashCollected),
         "UPI Collected": csvCurrency(e.upiCollected),
+        "Card Collected": csvCurrency(e.cardCollected),
         Outstanding: csvCurrency(e.outstanding),
         Cancellations: e.cancellations,
       }));
@@ -504,6 +514,7 @@ export const GetFleetExecutiveReport = async (req: Request, res: Response) => {
         "Total Revenue": csvCurrency(executivesSummary.totalRevenue),
         "Cash Collected": csvCurrency(executivesSummary.cashCollected),
         "UPI Collected": csvCurrency(executivesSummary.upiCollected),
+        "Card Collected": csvCurrency(executivesSummary.cardCollected),
         Outstanding: csvCurrency(executivesSummary.outstanding),
         Cancellations: executivesSummary.cancellations,
       });

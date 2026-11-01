@@ -400,7 +400,10 @@ export async function transformBookingToInvoiceData(
 
   // ── Payment info ──────────────────────────────────────────────────────────────
   const latestPayment = booking.invoice.payments[0];
-  const paymentMethod = latestPayment?.method ? String(latestPayment.method) : undefined;
+  // Counter Credit Card (Nov 2026): DepositMethod CARD prints as "Credit Card"
+  const paymentMethod = latestPayment?.method
+    ? String(latestPayment.method) === "CARD" ? "Credit Card" : String(latestPayment.method)
+    : undefined;
 
   // Safety deposit set off against the drop charges (#6): a completed drop bill
   // stores its deposit block (REFUND_IN_FULL sets off nothing, SET_OFF up to the

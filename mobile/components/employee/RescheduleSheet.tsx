@@ -19,13 +19,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
 import { apiErrorMessage } from '../../lib/counterErrors';
-import { isSameDay, startOfDay, withTime, type TimeSlot } from '../../lib/dates';
+import { isSameDay, startOfDay, timeOf, withTime, type TimeSlot } from '../../lib/dates';
 import { isClosedDay, rangeHoursLine, toScheduleConfig } from '../../lib/branchSchedule';
-import { istMinuteIso, rescheduleReturn, rescheduleSlots, shiftLabel } from '../../lib/reschedule';
+import {
+  canPickupNow,
+  differenceLabel,
+  istMinuteIso,
+  periodEndLimits,
+  periodEndSlots,
+  periodStartSlots,
+  rescheduleReturn,
+  rescheduleSlots,
+  rupees,
+} from '../../lib/reschedule';
 import { BranchHoursLine } from '../booking/BranchHours';
 import type { RescheduleResult } from '../../types/api';
 
 const REASON_MAX = 500;
+const NOW = 'NOW';
 
 function fmtWhen(d: Date | string) {
   return new Date(d).toLocaleString('en-IN', {
@@ -41,9 +52,14 @@ interface Props {
   onRescheduled: (result: RescheduleResult, message: string) => void;
 }
 
-// Fleet "Reschedule" (BRIEF4 P4c): move a confirmed booking that hasn't been
-// picked up to a new pickup time. The return moves by the same amount; the
-// length and the price stay as they are. Only valid times are offered.
+type DayEntry = { day: Date; slots: TimeSlot[]; closed: boolean };
+
+// Fleet "Reschedule rental period" (client TODO 4): a confirmed booking that
+// hasn't been picked up gets a new start AND a new end, each picked on its own
+// (branch hours, 30-minute grid; "Now" for a customer who is already here).
+// The server checks the period and prices it; the sheet shows the old total,
+// the new total and the difference before the FE confirms. An older server
+// (no periodReschedule) only moves the pickup, as before.
 export default function RescheduleSheet({ visible, bookingPublicId, onClose, onRescheduled }: Props) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -54,80 +70,221 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
     staleTime: 0,
     retry: false,
   });
+  const periodMode = data?.periodReschedule === true;
 
-  const [day, setDay] = useState<Date | null>(null);
-  const [time, setTime] = useState<string | null>(null);
+  const [startDay, setStartDay] = useState<Date | null>(null);
+  const [startTime, setStartTime] = useState<string | null>(null);
+  const [endDay, setEndDay] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<string | null>(null);
+  const [nowAt, setNowAt] = useState<Date>(() => new Date());
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A fresh form every time the sheet opens (the options reload on their own:
-  // the query turns on with the sheet and is always stale).
+  // A fresh form every time the sheet opens, on the booking's current period
   useEffect(() => {
     if (!visible) return;
-    setDay(null);
-    setTime(null);
+    setStartDay(null);
+    setStartTime(null);
+    setEndDay(null);
+    setEndTime(null);
     setReason('');
     setError(null);
+    setNowAt(new Date());
   }, [visible]);
 
   const config = useMemo(() => toScheduleConfig(data?.officeHours), [data?.officeHours]);
-  // IST days from now to the latest pickup, each with the times it offers.
-  const days = useMemo(() => {
+
+  // Start days: today … the latest pickup
+  const startDays = useMemo<DayEntry[]>(() => {
     if (!data?.reschedulable) return [];
     const first = startOfDay(new Date(data.earliestStartAt));
     const last = startOfDay(new Date(data.latestStartAt));
-    const out: { day: Date; slots: TimeSlot[]; closed: boolean }[] = [];
+    const out: DayEntry[] = [];
     for (let i = 0; i < 200; i++) {
       const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i);
       if (d.getTime() > last.getTime()) break;
-      out.push({ day: d, slots: rescheduleSlots(d, data, new Date()), closed: isClosedDay(config, d) });
+      const slots = periodMode ? periodStartSlots(d, data, nowAt) : rescheduleSlots(d, data, nowAt);
+      out.push({ day: d, slots, closed: isClosedDay(config, d) });
     }
     return out;
-  }, [data, config]);
+  }, [data, config, periodMode, nowAt]);
 
-  // Open on the booking's own pickup day when it has times, else the first day that does.
+  const nowAllowed = !!data && periodMode && canPickupNow(data, nowAt);
+
+  // Preselect the booking's own period (period mode), else its pickup day
   useEffect(() => {
-    if (day || !data || days.length === 0) return;
+    if (startDay || !data || startDays.length === 0) return;
     const current = new Date(data.startAt);
-    const own = days.find((d) => isSameDay(d.day, current) && d.slots.length > 0);
-    const first = own ?? days.find((d) => d.slots.length > 0);
-    if (first) setDay(first.day);
-  }, [days, data, day]);
+    const own = startDays.find((d) => isSameDay(d.day, current) && d.slots.length > 0);
+    const first = own ?? startDays.find((d) => d.slots.length > 0);
+    if (!first) return;
+    setStartDay(first.day);
+    if (periodMode && own && own.slots.some((s) => s.value === timeOf(current))) {
+      setStartTime(timeOf(current));
+      setEndDay(startOfDay(new Date(data.endAt)));
+      setEndTime(timeOf(new Date(data.endAt)));
+    }
+  }, [startDays, data, startDay, periodMode]);
 
-  const daySlots = day ? days.find((d) => isSameDay(d.day, day))?.slots ?? [] : [];
-  // A time picked on one day that isn't offered any more (options reloaded) is dropped.
+  const startSlots = startDay ? startDays.find((d) => isSameDay(d.day, startDay))?.slots ?? [] : [];
+  const isTodayStart = !!startDay && isSameDay(startDay, nowAt);
   useEffect(() => {
-    if (time && !daySlots.some((s) => s.value === time)) setTime(null);
-  }, [daySlots, time]);
+    if (startTime && startTime !== NOW && !startSlots.some((s) => s.value === startTime)) setStartTime(null);
+  }, [startSlots, startTime]);
 
-  const newStart = day && time ? withTime(day, time) : null;
-  // pickup + the length, or a 12-hour package's return for the new pickup (item 6)
-  const newEnd = newStart && data ? rescheduleReturn(newStart, data, config) : null;
-  const shiftMs = newStart && data ? newStart.getTime() - new Date(data.startAt).getTime() : 0;
+  const newStart = startDay && startTime
+    ? startTime === NOW ? new Date(Math.ceil(nowAt.getTime() / 60000) * 60000) : withTime(startDay, startTime)
+    : null;
+
+  // End days: the start day … start + 30 days (monthly: + 180)
+  const endDays = useMemo<DayEntry[]>(() => {
+    if (!data || !newStart || !periodMode) return [];
+    const { min, max } = periodEndLimits(newStart, data);
+    const first = startOfDay(min.getTime() - newStart.getTime() > 86400000 ? min : newStart);
+    const last = startOfDay(max);
+    const out: DayEntry[] = [];
+    for (let i = 0; i < 200; i++) {
+      const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i);
+      if (d.getTime() > last.getTime()) break;
+      out.push({ day: d, slots: periodEndSlots(d, newStart, data, nowAt), closed: isClosedDay(config, d) });
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, config, periodMode, newStart?.getTime(), nowAt]);
+
+  const endSlots = endDay ? endDays.find((d) => isSameDay(d.day, endDay))?.slots ?? [] : [];
+  useEffect(() => {
+    if (endTime && !endSlots.some((s) => s.value === endTime)) setEndTime(null);
+  }, [endSlots, endTime]);
+
+  const newEnd = periodMode
+    ? endDay && endTime ? withTime(endDay, endTime) : null
+    : newStart && data ? rescheduleReturn(newStart, data, config) : null;
+
+  const changed =
+    !!data && !!newStart && !!newEnd &&
+    (Math.abs(newStart.getTime() - new Date(data.startAt).getTime()) >= 60000 ||
+      Math.abs(newEnd.getTime() - new Date(data.endAt).getTime()) >= 60000);
+
+  // The server's checks + price for the chosen period
+  const quoteKey = periodMode && changed && newStart && newEnd ? [istMinuteIso(newStart), istMinuteIso(newEnd)] : null;
+  const quote = useQuery({
+    queryKey: ['employee', 'reschedule-quote', bookingPublicId, ...(quoteKey ?? [])],
+    queryFn: async () =>
+      (await employeeApi.rescheduleQuote(bookingPublicId, { newStartAt: quoteKey![0]!, newEndAt: quoteKey![1]! })).data.data,
+    enabled: visible && !!quoteKey,
+    staleTime: 0,
+    retry: false,
+  });
+  const pricing = quote.data?.pricing;
+  const quoteError = quote.isError ? apiErrorMessage(quote.error, 'This period is not available.') : null;
+
+  const canSubmit = !!newStart && !!newEnd && changed && !submitting && (!periodMode || (!!pricing && !quote.isFetching));
 
   const submit = async () => {
-    if (!newStart || submitting) return;
+    if (!canSubmit || !newStart || !newEnd) return;
     setSubmitting(true);
     setError(null);
     try {
       const trimmed = reason.trim();
       const res = await employeeApi.rescheduleBooking(bookingPublicId, {
         newStartAt: istMinuteIso(newStart),
+        ...(periodMode
+          ? { newEndAt: istMinuteIso(newEnd), acceptPriceChange: true, ...(pricing ? { expectedNewTotal: pricing.newTotal } : {}) }
+          : {}),
         ...(trimmed ? { reason: trimmed } : {}),
       });
       onRescheduled(res.data.data, res.data.message ?? 'Booking rescheduled.');
     } catch (err: any) {
       setError(apiErrorMessage(err, 'Could not reschedule the booking. Please try again.'));
-      // Something changed meanwhile (a new booking, a hold, a payment): reload what's free.
       const status = err?.response?.status;
-      if (status === 409 || status === 400) void refetch();
+      if (status === 409 || status === 400) {
+        void refetch();
+        void quote.refetch();
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   const loadMessage = isError ? apiErrorMessage(loadError, 'Could not load the reschedule options.') : null;
+  const diff = pricing ? Number(pricing.difference) : 0;
+  const confirmLabel = !newStart
+    ? 'Choose a new start'
+    : !newEnd
+      ? 'Choose a new return'
+      : !changed
+        ? 'Change the start or the return'
+        : !periodMode
+          ? `Move pickup to ${fmtWhen(newStart)}`
+          : !pricing
+            ? quote.isFetching ? 'Checking…' : 'Choose an available period'
+            : diff > 0
+              ? `Reschedule · ${rupees(diff)} more`
+              : diff < 0
+                ? `Reschedule · ${rupees(-diff)} less`
+                : 'Reschedule · same price';
+
+  const dayRow = (days: DayEntry[], selected: Date | null, onPick: (d: Date) => void, offLabel: string) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayRow}>
+      {days.map((d) => {
+        const active = !!selected && isSameDay(d.day, selected);
+        const off = d.slots.length === 0 && !(onPick === pickStartDay && nowAllowed && isSameDay(d.day, nowAt));
+        return (
+          <TouchableOpacity
+            key={d.day.getTime()}
+            style={[styles.dayPill, active && styles.dayPillActive, off && styles.dayPillOff]}
+            onPress={() => onPick(d.day)}
+            disabled={off}
+            activeOpacity={0.85}
+            accessibilityState={{ selected: active, disabled: off }}
+          >
+            <Text style={[styles.dayWeek, active && styles.dayTextActive]}>
+              {d.day.toLocaleDateString('en-IN', { weekday: 'short' })}
+            </Text>
+            <Text style={[styles.dayNum, active && styles.dayTextActive]}>{d.day.getDate()}</Text>
+            <Text style={[styles.dayMonth, active && styles.dayTextActive]}>
+              {d.closed ? 'Closed' : off ? offLabel : d.day.toLocaleDateString('en-IN', { month: 'short' })}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+
+  function pickStartDay(d: Date) {
+    setStartDay(d);
+    setStartTime(null);
+    setError(null);
+  }
+  const pickEndDay = (d: Date) => {
+    setEndDay(d);
+    setEndTime(null);
+    setError(null);
+  };
+
+  const slotGrid = (slots: TimeSlot[], value: string | null, onPick: (v: string) => void, extra?: TimeSlot) => (
+    <View style={styles.slotGrid}>
+      {[...(extra ? [extra] : []), ...slots].map((s) => {
+        const active = value === s.value;
+        return (
+          <TouchableOpacity
+            key={s.value}
+            style={[styles.slot, active && styles.slotActive]}
+            onPress={() => {
+              onPick(s.value);
+              setError(null);
+            }}
+            activeOpacity={0.85}
+            accessibilityState={{ selected: active }}
+          >
+            <Text style={[styles.slotText, active && styles.slotTextActive]}>{s.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
@@ -140,10 +297,10 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
           style={[styles.kav, { paddingTop: insets.top + 8 }]}
           pointerEvents="box-none"
         >
-          <View style={[styles.sheet, { maxHeight: Math.round(height * 0.88), paddingBottom: insets.bottom + 16 }]}>
+          <View style={[styles.sheet, { maxHeight: Math.round(height * 0.9), paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.handle} />
             <View style={styles.header}>
-              <Text style={styles.title}>Reschedule pickup</Text>
+              <Text style={styles.title}>{data && !periodMode ? 'Reschedule pickup' : 'Reschedule rental period'}</Text>
               <TouchableOpacity onPress={onClose} hitSlop={10} accessibilityLabel="Close">
                 <Ionicons name="close" size={22} color={Colors.ink} />
               </TouchableOpacity>
@@ -177,89 +334,93 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
                   showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.currentCard}>
-                    <Text style={styles.currentLabel}>NOW</Text>
+                    <Text style={styles.currentLabel}>CURRENT PERIOD</Text>
                     <Text style={styles.currentValue}>
                       {fmtWhen(data.startAt)} → {fmtWhen(data.endAt)}
                     </Text>
                     <Text style={styles.currentSub}>
-                      {data.halfDayPackage
-                        ? '12-hour package · the return is 12 hours after pickup (or closing that day), the price stays the same'
-                        : `${data.durationLabel} · the return moves with the pickup, the price stays the same`}
+                      {periodMode
+                        ? `${data.durationLabel}${data.isMonthly ? ' · monthly plan (30–180 days)' : ''} · change the start, the return or both — the price follows`
+                        : data.halfDayPackage
+                          ? '12-hour package · the return is 12 hours after pickup (or closing that day), the price stays the same'
+                          : `${data.durationLabel} · the return moves with the pickup, the price stays the same`}
                     </Text>
                   </View>
 
-                  <Text style={styles.sectionLabel}>New pickup date</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayRow}>
-                    {days.map((d) => {
-                      const active = !!day && isSameDay(d.day, day);
-                      const off = d.slots.length === 0;
-                      return (
-                        <TouchableOpacity
-                          key={d.day.getTime()}
-                          style={[styles.dayPill, active && styles.dayPillActive, off && styles.dayPillOff]}
-                          onPress={() => {
-                            setDay(d.day);
-                            setTime(null);
-                            setError(null);
-                          }}
-                          disabled={off}
-                          activeOpacity={0.85}
-                          accessibilityState={{ selected: active, disabled: off }}
-                        >
-                          <Text style={[styles.dayWeek, active && styles.dayTextActive]}>
-                            {d.day.toLocaleDateString('en-IN', { weekday: 'short' })}
-                          </Text>
-                          <Text style={[styles.dayNum, active && styles.dayTextActive]}>{d.day.getDate()}</Text>
-                          <Text style={[styles.dayMonth, active && styles.dayTextActive]}>
-                            {d.closed ? 'Closed' : off ? 'No slots' : d.day.toLocaleDateString('en-IN', { month: 'short' })}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                  {days.every((d) => d.slots.length === 0) ? (
+                  <Text style={styles.sectionLabel}>{periodMode ? 'Rental start (pickup)' : 'New pickup date'}</Text>
+                  {dayRow(startDays, startDay, pickStartDay, 'No slots')}
+                  {startDays.every((d) => d.slots.length === 0) && !nowAllowed ? (
                     <Text style={styles.hint}>
-                      No pickup time is free for this booking's length in the next days — the vehicle or the
-                      customer's licence is booked, or the return would fall outside branch hours.
+                      No pickup time is free for this booking in the next days — the vehicle or the customer's licence
+                      is booked, or the branch is closed.
                     </Text>
                   ) : null}
+                  {startDay
+                    ? slotGrid(
+                        startSlots,
+                        startTime,
+                        setStartTime,
+                        isTodayStart && nowAllowed ? { value: NOW, label: 'Now' } : undefined,
+                      )
+                    : null}
 
-                  {day ? (
+                  {periodMode && newStart ? (
                     <>
-                      <Text style={styles.sectionLabel}>New pickup time</Text>
-                      <View style={styles.slotGrid}>
-                        {daySlots.map((s) => {
-                          const active = time === s.value;
-                          return (
-                            <TouchableOpacity
-                              key={s.value}
-                              style={[styles.slot, active && styles.slotActive]}
-                              onPress={() => {
-                                setTime(s.value);
-                                setError(null);
-                              }}
-                              activeOpacity={0.85}
-                              accessibilityState={{ selected: active }}
-                            >
-                              <Text style={[styles.slotText, active && styles.slotTextActive]}>{s.label}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                      <BranchHoursLine
-                        text={rangeHoursLine(config, newStart ?? day, newEnd ?? newStart ?? day)}
-                      />
+                      <Text style={styles.sectionLabel}>Rental end (return)</Text>
+                      {dayRow(endDays, endDay, pickEndDay, 'No slots')}
+                      {endDays.every((d) => d.slots.length === 0) ? (
+                        <Text style={styles.hint}>
+                          No return time is free after this start — another booking, a lock or branch hours are in the way.
+                        </Text>
+                      ) : null}
+                      {endDay ? slotGrid(endSlots, endTime, setEndTime) : null}
                     </>
                   ) : null}
 
-                  {newStart && newEnd ? (
+                  {newStart ? (
+                    <BranchHoursLine text={rangeHoursLine(config, newStart, newEnd ?? newStart)} />
+                  ) : null}
+
+                  {newStart && newEnd && changed ? (
                     <View style={styles.previewCard}>
-                      <PreviewRow label="New pickup" value={fmtWhen(newStart)} />
+                      <PreviewRow label="New pickup" value={startTime === NOW ? `Now (${fmtWhen(newStart)})` : fmtWhen(newStart)} />
                       <PreviewRow label="New return" value={fmtWhen(newEnd)} strong />
-                      <Text style={styles.previewNote}>
-                        {shiftMs > 0 ? 'Later' : 'Earlier'} by {shiftLabel(shiftMs)} ·{' '}
-                        {data.halfDayPackage ? '12-hour package' : `same length (${data.durationLabel})`} — price unchanged
-                      </Text>
+                      {periodMode ? (
+                        quote.isFetching ? (
+                          <ActivityIndicator color={Colors.orange} style={{ marginVertical: 6 }} />
+                        ) : quoteError ? (
+                          <Text style={styles.quoteError}>{quoteError}</Text>
+                        ) : pricing ? (
+                          <>
+                            <View style={styles.divider} />
+                            <PreviewRow label="Length" value={`${quote.data!.previous.durationLabel} → ${quote.data!.next.durationLabel}`} />
+                            <PreviewRow label="Current total" value={rupees(pricing.oldTotal)} />
+                            <PreviewRow label="New total" value={rupees(pricing.newTotal)} strong />
+                            <PreviewRow label="Difference" value={differenceLabel(pricing.difference)} strong />
+                            {Number(pricing.dueAtPickup) > 0 ? (
+                              <PreviewRow label="Due at pickup" value={rupees(pricing.dueAtPickup)} />
+                            ) : null}
+                            {Number(pricing.refundable) > 0 ? (
+                              <PreviewRow label="To refund to the customer" value={rupees(pricing.refundable)} />
+                            ) : null}
+                            {pricing.freeKm.after != null && pricing.freeKm.after !== pricing.freeKm.before ? (
+                              <PreviewRow label="Free km" value={`${pricing.freeKm.before ?? '—'} → ${pricing.freeKm.after}`} />
+                            ) : null}
+                            <Text style={styles.previewNote}>
+                              {diff > 0
+                                ? 'The difference is collected with the remaining balance at pickup.'
+                                : diff < 0
+                                  ? 'The customer has paid more than the new total — refund it with "Refund to customer" (not automatic).'
+                                  : 'Same price — only the dates change.'}
+                              {pricing.couponCode && pricing.couponAppliesToNewWindow === false
+                                ? ` Coupon ${pricing.couponCode} doesn't apply to the new period.`
+                                : ''}
+                            </Text>
+                          </>
+                        ) : null
+                      ) : (
+                        <Text style={styles.previewNote}>Same length ({data.durationLabel}) — price unchanged</Text>
+                      )}
                     </View>
                   ) : null}
 
@@ -268,7 +429,7 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
                     style={styles.reasonInput}
                     value={reason}
                     onChangeText={(t) => setReason(t.slice(0, REASON_MAX))}
-                    placeholder="e.g. Customer asked to come in the evening"
+                    placeholder="e.g. Customer arrived a day early"
                     placeholderTextColor={Colors.ink4}
                     multiline
                     maxLength={REASON_MAX}
@@ -283,17 +444,15 @@ export default function RescheduleSheet({ visible, bookingPublicId, onClose, onR
                 </ScrollView>
 
                 <TouchableOpacity
-                  style={[styles.confirmBtn, (!newStart || submitting) && styles.confirmBtnDisabled]}
+                  style={[styles.confirmBtn, !canSubmit && styles.confirmBtnDisabled]}
                   onPress={submit}
-                  disabled={!newStart || submitting}
+                  disabled={!canSubmit}
                   activeOpacity={0.85}
                 >
                   {submitting ? (
                     <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <Text style={styles.confirmText}>
-                      {newStart ? `Move pickup to ${fmtWhen(newStart)}` : 'Choose a new pickup time'}
-                    </Text>
+                    <Text style={styles.confirmText}>{confirmLabel}</Text>
                   )}
                 </TouchableOpacity>
               </>
@@ -381,6 +540,8 @@ const styles = StyleSheet.create({
   previewValue: { flexShrink: 1, textAlign: 'right', fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.ink },
   previewValueStrong: { fontFamily: Fonts.bodySemiBold, color: Colors.ink },
   previewNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, lineHeight: 17 },
+  quoteError: { fontFamily: Fonts.body, fontSize: 13, color: Colors.availNone, lineHeight: 18 },
+  divider: { height: 1, backgroundColor: '#ff6a1f26', marginVertical: 4 },
 
   reasonInput: {
     minHeight: 64, textAlignVertical: 'top', fontFamily: Fonts.body, fontSize: 14, color: Colors.ink,

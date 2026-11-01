@@ -83,7 +83,7 @@ function PaymentConfirmForm({
             onChange={setPayment}
             amount={totalAmount}
             proofRole="manager"
-            methods={["CASH", "UPI", "SPLIT"]}
+            methods={["CASH", "UPI", "CARD", "SPLIT"]}
             errors={counterFieldErrors(error)}
             onEdit={onEdit}
             disabled={loading}

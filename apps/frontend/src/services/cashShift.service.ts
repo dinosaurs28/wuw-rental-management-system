@@ -1,3 +1,4 @@
+import type { ProofPhotoInfo } from "@/components/payment/counter/ProofPhotoThumb";
 /**
  * Financials → Cash Shift (Oct 2026): the branch manager sees Fleet members'
  * shifts and closes them once the cash is handed over ("Verify & close").
@@ -35,6 +36,8 @@ export interface CashShiftRow {
   result: ShiftResult | null;
   closedByName: string | null;
   closedByManager: boolean;
+  /** Nov 2026: the fleet member closed it themselves — no cash was collected. */
+  selfClosedNoCash?: boolean;
   discrepancyExplanation: string | null;
   legacyVariance: boolean;
 }
@@ -70,7 +73,8 @@ export interface CashShiftPayment {
   allocations?: ShiftPaymentAllocation[];
   voidShiftClosed?: boolean;
   proofPhotoUrl?: string | null;
-  proofs?: { fileId: string; position: number; url: string }[];
+  proofPhoto?: ProofPhotoInfo | null;
+  proofs?: (ProofPhotoInfo & { fileId: string; position: number })[];
 }
 
 export interface CashShiftDetail extends CashShiftRow {
@@ -106,6 +110,8 @@ export interface UnconfirmedPayment {
   cashAmount: string;
   onlineAmount: string;
   isUpi: boolean;
+  /** Additive (Nov 2026): counter Credit Card payment (absent on older servers) */
+  isCard?: boolean;
   onlineTransactionRef: string | null;
   collectedAt: string;
   employeeName: string | null;
@@ -113,6 +119,8 @@ export interface UnconfirmedPayment {
   shiftStatus: string | null;
   notes: string | null;
   proofPhotoUrl?: string | null;
+  proofPhoto?: ProofPhotoInfo | null;
+  proofs?: (ProofPhotoInfo & { fileId: string; position: number })[];
 }
 
 export interface CloseShiftPayload {

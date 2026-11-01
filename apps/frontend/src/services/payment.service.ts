@@ -11,7 +11,8 @@ export type PaymentPurpose =
   | "DAMAGE_FEE";
 
 export type PaymentMethod = "CASH" | "ONLINE" | "SPLIT";
-export type OnlineGateway = "UPI" | "Razorpay" | "Other";
+// "Card" = counter Credit Card (Nov 2026) — sent to the server as onlineGateway "CARD"
+export type OnlineGateway = "UPI" | "Card" | "Razorpay" | "Other";
 
 export type LifecycleState =
   | "UNPAID"
@@ -125,6 +126,8 @@ export interface PaymentProofPhoto {
   proofFileId: string;
   publicId: string;
   url: string;
+  /** Nov 2026: ~1200 px copy (equals `url` for older photos; absent on older servers). */
+  displayUrl?: string;
   mime: string;
   size: number;
   capturedAt: string;
@@ -173,6 +176,8 @@ export interface PendingCashItem extends ProofPhotoRowFields {
   // Additive (#3 / #12): counter UPI and split payments wait here too. Absent on older servers.
   method?: PaymentMethod;
   isUpi?: boolean;
+  /** Additive (Nov 2026): counter Credit Card payment */
+  isCard?: boolean;
   cashAmount?: string;
   onlineAmount?: string;
   onlineGateway?: string | null;
@@ -292,6 +297,15 @@ export interface CashShift {
   confirmedCash?: string;
   rejectedCash?: string;
   upiCollected?: string;
+  /** Counter Credit Card money (Nov 2026; absent on older servers) — not in the drawer */
+  cardCollected?: string;
+  // Nov 2026: may the fleet member close it themselves (no cash in the shift)?
+  canSelfClose?: boolean;
+  selfCloseReason?: "OK" | "NOT_OPEN" | "CASH_COLLECTED" | "CASH_REFUNDED" | "OPENING_FLOAT";
+  /** Why not ("" when allowed). */
+  selfCloseMessage?: string;
+  /** Cash the branch manager must receive (opening + collected − refunded). */
+  cashToHandOver?: string;
 }
 
 // ── Cash shift views (D10 contract) ──────────────────────────────────────────
@@ -318,6 +332,8 @@ export interface ShiftView {
   confirmedCash: string;
   rejectedCash: string;
   upiCollected: string;
+  /** Counter Credit Card money (Nov 2026; absent on older servers) */
+  cardCollected?: string;
   transactionCount: number;
   discrepancyExplanation: string | null;
   reconciledByName: string | null;
@@ -388,6 +404,8 @@ export interface ShiftDayTotals {
   variance: string;
   pendingCash: string;
   upiCollected: string;
+  /** Counter Credit Card money (Nov 2026; absent on older servers) */
+  cardCollected?: string;
   /** Closed shifts flagged legacyVariance, whose variance is left out of `variance`. */
   legacyCount: number;
 }
@@ -878,8 +896,18 @@ export const employeePaymentService = {
       )
       .then((r) => r.data.data),
 
-  // No closeShift: Fleet members can't close shifts (Oct 2026) — the branch
-  // manager closes them in Financials → Cash Shift.
+  /**
+   * Nov 2026: close your OWN shift — only when it holds no cash (canSelfClose on
+   * the active shift). Otherwise 403 SHIFT_CLOSE_MANAGER_ONLY: the branch
+   * manager verifies the cash and closes it in Financials → Cash Shift.
+   */
+  closeShift: (publicId: string) =>
+    apiClient
+      .post<{ data: { publicId: string; status: ShiftStatus; unconfirmedNonCash?: number }; message: string }>(
+        `/employee/payment/shifts/${publicId}/close`,
+        {}
+      )
+      .then((r) => r.data),
 
   /** The signed-in Fleet Executive's own shifts, across every branch. */
   getMyShifts: (page = 1, pageSize = 20, filters?: Omit<ShiftListFilters, "employeePublicId">) =>

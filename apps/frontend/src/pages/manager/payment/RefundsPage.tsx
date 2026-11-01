@@ -196,9 +196,9 @@ function RefundDetailModal({
                   )}
                   {/* Oct 25 2026: the refund's payment-success photo, once marked paid */}
                   {refund.proofPhoto && (
-                    <div className="flex items-center gap-2 text-xs text-neutral-500">
-                      <ProofPhotoThumb photo={refund.proofPhoto} size="md" caption={`Refund · ${refund.bookingPublicId}`} />
-                      Refund payment photo
+                    <div className="space-y-1 text-xs text-neutral-500">
+                      <p>Refund payment photo</p>
+                      <ProofPhotoThumb photo={refund.proofPhoto} size="read" kind="Refund payment" caption={`Refund · ${refund.bookingPublicId}`} />
                     </div>
                   )}
                 </div>

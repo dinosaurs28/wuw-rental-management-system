@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { OperationNotesCard } from "@/components/employee/OperationNotes";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, ImageIcon, Undo2 } from "lucide-react";
+import { Ban, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
 import { VoidPaymentDialog, VoidedNote, type VoidTarget } from "@/components/manager/payments/VoidPaymentDialog";
@@ -13,9 +13,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
+import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import type { CustomersService } from "@/services/managerCustomers.service";
 import { apiMessage, inr, isPositive, istDateTime } from "./format";
+import { isCardPayment } from "@/lib/counterPayment";
 
 function Row({
   label,
@@ -51,8 +52,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-const methodLabel = (m: string) =>
-  m === "CASH" ? "Cash" : m === "ONLINE" ? "Online" : m === "SPLIT" ? "Split" : m;
+// Nov 2026: a counter Credit Card payment (gateway CARD) / card clearance shows as "Credit Card"
+const methodLabel = (m: string, onlineGateway?: string | null) =>
+  m === "CARD" || (m === "ONLINE" && isCardPayment(onlineGateway))
+    ? "Credit Card"
+    : m === "SPLIT" && isCardPayment(onlineGateway)
+      ? "Split (cash + card)"
+      : m === "CASH" ? "Cash" : m === "ONLINE" ? "Online" : m === "SPLIT" ? "Split" : m;
 
 export function BookingDrawer({
   service,
@@ -78,7 +84,6 @@ export function BookingDrawer({
   const [refundOpen, setRefundOpen] = useState(false);
   // Oct 2026: void a CONFIRMED staff-recorded entry (same people as the refund: the branch manager, own branch)
   const [voidTarget, setVoidTarget] = useState<VoidTarget | null>(null);
-  const [proof, setProof] = useState<{ url: string; mime: string; label: string }[] | null>(null);
 
   const query = useQuery({
     queryKey: [...queryKey, customerId, bookingId],
@@ -257,7 +262,7 @@ export function BookingDrawer({
                           <div className="flex justify-between gap-2">
                             <span className={`font-medium ${t.voided ? "text-zinc-400 line-through" : ""}`}>
                               {t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} ·{" "}
-                              {methodLabel(t.method)}
+                              {methodLabel(t.method, t.onlineGateway)}
                             </span>
                             <span className={`tabular-nums font-semibold ${t.voided ? "text-zinc-400 line-through" : ""}`}>
                               {t.isRefund ? "− " : ""}
@@ -297,26 +302,16 @@ export function BookingDrawer({
                             <p className="text-xs text-zinc-500 font-mono">Ref {t.onlineTransactionRef}</p>
                           )}
                           {t.notes && <p className="text-xs text-zinc-500">{t.notes}</p>}
+                          {/* Nov 2026: the payment / refund photo at a readable size (click to zoom) */}
                           {t.proofPhoto && (
-                            <button
-                              type="button"
-                              className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-orange-600 hover:underline"
-                              onClick={() =>
-                                setProof(
-                                  (t.proofs?.length ? t.proofs : [t.proofPhoto!]).map((p, i, all) => ({
-                                    url: p.url,
-                                    mime: p.mime,
-                                    label:
-                                      all.length > 1
-                                        ? `${methodLabel(t.method)} payment proof ${i + 1} of ${all.length}`
-                                        : `${methodLabel(t.method)} payment proof`,
-                                  })),
-                                )
-                              }
-                            >
-                              <ImageIcon className="h-3.5 w-3.5" /> View payment proof
-                              {(t.proofs?.length ?? 0) > 1 ? `s (${t.proofs!.length})` : ""}
-                            </button>
+                            <ProofPhotoThumb
+                              size="read"
+                              className="mt-1.5"
+                              photo={t.proofPhoto}
+                              photos={t.proofs}
+                              kind={`${methodLabel(t.method, t.onlineGateway)} payment`}
+                              caption={`${methodLabel(t.method, t.onlineGateway)} · ${inr(t.totalAmount)}`}
+                            />
                           )}
                           {canRefundToCustomer && d.booking.isOwnBranch && t.voidable && (
                             <div className="mt-1.5 flex justify-end">
@@ -330,7 +325,7 @@ export function BookingDrawer({
                                     transactionPublicId: t.publicId,
                                     bookingPublicId: bookingId!,
                                     amount: t.totalAmount,
-                                    label: `${t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · ${methodLabel(t.method)}`,
+                                    label: `${t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · ${methodLabel(t.method, t.onlineGateway)}`,
                                     isRefund: t.isRefund,
                                   })
                                 }
@@ -396,12 +391,6 @@ export function BookingDrawer({
         />
       )}
 
-      <PhotoLightbox
-        open={!!proof}
-        onOpenChange={(o) => !o && setProof(null)}
-        items={proof ?? []}
-        title="Payment proof"
-      />
     </>
   );
 }

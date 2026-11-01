@@ -83,13 +83,14 @@ import {
   assertOpenShift,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
-import { resolveCounterUpi } from "../../services/payment/payment-proof.service.js";
+import { resolveCounterUpi, resolveCounterCard } from "../../services/payment/payment-proof.service.js";
 import { parseCollateral } from "../../services/payment/customer-credit.service.js";
 import Decimal from "decimal.js";
 import {
   assertDlFree,
   lockAndAssertDlFree,
   DlInUseError,
+  resolveTypeClasses,
 } from "../../services/booking/dl-in-use.service.js";
 import { blacklistRefusal } from "../../services/customer/customer-blacklist.service.js";
 import {
@@ -316,7 +317,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       !customer_public_id ||
       !start ||
       !end ||
-      !["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT"].includes(payment_type)
+      !["CASH", "ONLINE", "UPI", "SPLIT", "CREDIT", "CARD"].includes(payment_type)
     ) {
       return res
         .status(StatusCode.BAD_REQUEST)
@@ -348,6 +349,15 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           })
         : null;
     const upiUtr = counterUpi?.utr ?? null;
+    // Credit Card (Nov 2026): 1–3 photos of the card-machine receipt, required
+    const counterCard =
+      payment_type === "CARD"
+        ? await resolveCounterCard({
+            proofFileId: req.body.proof_file_id,
+            proofFileIds: req.body.proof_file_ids,
+            branchId: req.branch_Id,
+          })
+        : null;
     // CREDIT (#11): the whole booking stays owed against the collateral noted
     const creditCollateral = payment_type === "CREDIT" ? parseCollateral(req.body.collateral) : null;
 
@@ -482,11 +492,17 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     }
     const periodFields = bookingPeriodFields(startDate, endDate, { monthly: isMonthlyPlan });
 
-    // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
+    // ── One car + one scooter per driving licence (X3 / TODO 5) — re-checked
+    // under a lock below. Classes from the cars picked, else the group's category.
+    const groupCategoryId = !hasVehicles && hasGroupKey ? parseGroupKey(group_key)?.categoryId : undefined;
+    const dlTypeClasses = await resolveTypeClasses(
+      hasVehicles ? { vehiclePublicIds: vehicles } : { categoryIds: groupCategoryId ? [groupCategoryId] : [] },
+    );
     await assertDlFree({
       dlNumber: customer.customerProfile.drivingLicenceNumber,
       mode: "create",
       window: { startAt: startDate, endAt: endDate },
+      typeClasses: dlTypeClasses,
     });
 
     // ── Resolve vehicle list: explicit IDs or pick from group ────────────────
@@ -877,6 +893,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       transactionId = `SPLIT_${createID()}`;
     } else if (payment_type === "CREDIT") {
       transactionId = `CREDIT_${createID()}`;
+    } else if (payment_type === "CARD") {
+      transactionId = `CARD_${createID()}`;
     } else {
       transactionId = `CASH_${createID()}`;
     }
@@ -914,7 +932,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
     const booking = await prisma.$transaction(async (tx) => {
       // Same driving licence on two concurrent bookings: serialised here, one wins (X3)
       await lockAndAssertDlFree(
-        { customerId: customer.customerProfile!.id, mode: "create", window: { startAt: startDate, endAt: endDate } },
+        {
+          customerId: customer.customerProfile!.id,
+          mode: "create",
+          window: { startAt: startDate, endAt: endDate },
+          typeClasses: dlTypeClasses,
+        },
         tx,
       );
 
@@ -985,6 +1008,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
               ? DepositMethod.CASH
               : payment_type === "UPI"
                 ? DepositMethod.UPI
+                : payment_type === "CARD"
+                  ? DepositMethod.CARD
                 : payment_type === "CREDIT"
                   ? null
                   : DepositMethod.ONLINE_RAZORPAY,
@@ -1044,6 +1069,13 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
               },
             }),
             ...(creditCollateral && { credit: { collateral: creditCollateral } }),
+            // Credit Card (Nov 2026): read back by confirmBookingPayment
+            ...(counterCard && {
+              card: {
+                proofFileId: counterCard.proof?.publicId ?? null,
+                proofFileIds: counterCard.proofs.map((p) => p.publicId),
+              },
+            }),
           },
           createdById: staff.id,
         },

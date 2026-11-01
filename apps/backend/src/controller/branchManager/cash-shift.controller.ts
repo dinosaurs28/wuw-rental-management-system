@@ -10,7 +10,6 @@ import {
   listPendingCashSchema,
 } from "@repo/schemas";
 import { cashShiftService, CashShiftError } from "../../services/payment/index.js";
-import { FE_CLOSE_MESSAGE } from "../../services/payment/cash-shift-rules.js";
 
 /** Replies with the shift error contract; false when it isn't a CashShiftError. */
 const sendShiftError = (res: Response, error: unknown): boolean => {
@@ -167,13 +166,47 @@ export const CloseShift = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
- * Fleet Executive close (POST /employee/payment/shifts/:publicId/close) — removed
- * Oct 2026: the branch manager closes shifts. Old app builds still call it and
- * get a clear 403.
+ * Fleet Executive close (POST /employee/payment/shifts/:publicId/close).
+ * Oct 2026 made it manager-only; since Nov 2026 the executive may close their
+ * OWN shift when it holds no cash (no cash collected, no cash refund, no
+ * opening float — cash-shift-rules.ts selfCloseEligibility). Otherwise 403
+ * SHIFT_CLOSE_MANAGER_ONLY with the reason, so old builds show the message.
+ * The body is ignored (old builds sent a counted total; with no cash it is 0).
  */
-export const EmployeeCloseShiftRemoved = (_req: Request, res: Response): void => {
-  const error = new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_CLOSE_MANAGER_ONLY", FE_CLOSE_MESSAGE);
-  res.status(error.status).json(error.toJSON());
+export const EmployeeSelfCloseShift = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = await buildActorContext(req);
+    const { shift, pendingNonCash } = await cashShiftService.selfClose(req.params.publicId!, actor);
+    res.status(StatusCode.OK).json({
+      message: "Shift closed",
+      data: {
+        publicId: shift.publicId,
+        status: shift.status,
+        result: "MATCHED",
+        closedAt: shift.closedAt,
+        selfClosed: true,
+        openingCash: shift.openingCash.toFixed(2),
+        cashCollected: shift.cashCollected.toFixed(2),
+        cashRefunded: shift.cashRefunded.toFixed(2),
+        expectedCash: shift.expectedTotal.toFixed(2),
+        cashReceived: shift.actualTotal.toFixed(2),
+        difference: shift.discrepancy.toFixed(2),
+        /** Non-cash payments still awaiting the manager's confirmation (left for the BM). */
+        unconfirmedNonCash: pendingNonCash,
+        // Older keys
+        discrepancy: shift.discrepancy,
+        expectedTotal: shift.expectedTotal.toFixed(2),
+        expectedClosing: shift.expectedTotal.toFixed(2),
+        actualTotal: shift.actualTotal.toFixed(2),
+        closingCash: shift.actualTotal.toFixed(2),
+        variance: shift.discrepancy.toFixed(2),
+      },
+    });
+  } catch (error: any) {
+    if (sendShiftError(res, error)) return;
+    console.error("EmployeeSelfCloseShift Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
 };
 
 /** BM: the Cash Shift summary cards (?from&to = IST dates for the mismatches card). */

@@ -8,7 +8,7 @@ import {
 import {
   OpenShift,
   GetMyActiveShift,
-  EmployeeCloseShiftRemoved,
+  EmployeeSelfCloseShift,
   ListMyShifts,
   GetMyShiftDetails,
 } from "../../controller/branchManager/cash-shift.controller.js";
@@ -31,13 +31,14 @@ router.get("/bookings/:bookingPublicId/transactions", ListBookingPayments);
 // Record payment (employee collects cash / online at pickup)
 router.post("/transactions", RecordPayment);
 
-// Cash shift: the executive opens their own shift; only the branch manager
-// closes it (Oct 2026). The old close route answers 403 for old app builds.
+// Cash shift: the executive opens their own shift. They may close it themselves
+// only when it holds no cash (Nov 2026); otherwise the branch manager verifies
+// and closes it, and this route answers 403 SHIFT_CLOSE_MANAGER_ONLY.
 router.post("/shifts", OpenShift);
 router.get("/shifts/me/active", GetMyActiveShift);
 // Own shift history (declared after /me/active so "active" never reads as a publicId)
 router.get("/shifts/me", ListMyShifts);
 router.get("/shifts/me/:publicId", GetMyShiftDetails);
-router.post("/shifts/:publicId/close", EmployeeCloseShiftRemoved);
+router.post("/shifts/:publicId/close", EmployeeSelfCloseShift);
 
 export default router;

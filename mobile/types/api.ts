@@ -444,6 +444,8 @@ export interface FinancialStateTxn {
   totalAmount: string;
   collectedAt: string | null;
   confirmedAt: string | null;
+  /** Additive (Nov 2026): UPI / CARD (Credit Card) / gateway; absent on older servers */
+  onlineGateway?: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -578,6 +580,47 @@ export interface RescheduleOptions {
   >;
   /** Other bookings on the customer's driving licence. */
   dlBusy: RescheduleBusyRange[];
+  /** Reschedule rental period (TODO 4): the server takes newEndAt + the quote endpoint. Absent from older servers. */
+  periodReschedule?: boolean;
+  periodRules?: {
+    pastSlackMinutes: number;
+    minHours: number;
+    maxRentalDays: number;
+    monthlyMinDays: number;
+    monthlyMaxDays: number;
+    advanceBookingDays: number;
+  };
+}
+
+/** Price side of a period reschedule (quote and result). Amounts are "1234.00" strings. */
+export interface ReschedulePeriodPricing {
+  oldTotal: string;
+  newTotal: string;
+  /** + more to pay, − less */
+  difference: string;
+  oldWindowRent: string;
+  newWindowRent: string;
+  priceChanged: boolean;
+  couponCode: string | null;
+  couponAppliesToNewWindow: boolean | null;
+  netPaid: string;
+  dueAtPickup: string;
+  /** Paid beyond the new total — refunded by staff through "Refund to customer" (never automatic) */
+  refundable: string;
+  outcome: 'OPEN_BALANCE_ADJUSTED' | 'BALANCE_REOPENED' | 'OVERPAID' | 'COVERED_BY_OVERPAYMENT' | 'UNCHANGED';
+  freeKm: { before: number | null; after: number | null };
+  billedAs: { before: string | null; after: string | null };
+  rentalPeriodType: RentalPeriodType | null;
+}
+
+// POST /api/employee/bookings/:publicId/reschedule/quote → data
+export interface ReschedulePeriodQuote {
+  bookingPublicId: string;
+  previous: { startAt: string; endAt: string; durationMinutes: number; durationLabel: string };
+  next: { startAt: string; endAt: string; durationMinutes: number; durationLabel: string };
+  pureShift: boolean;
+  confirmationRequired: boolean;
+  pricing: ReschedulePeriodPricing;
 }
 
 // POST /api/employee/bookings/:publicId/reschedule → data
@@ -597,6 +640,8 @@ export interface RescheduleResult {
   shiftMinutes: number;
   reason: string | null;
   releasedExtensionQuotePublicId: string | null;
+  /** Period reschedule only */
+  pricing?: ReschedulePeriodPricing;
 }
 
 /** Customer Monthly (plan=MONTHLY) block on listing groups and vehicle / group details. */

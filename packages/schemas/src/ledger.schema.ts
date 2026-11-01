@@ -34,7 +34,8 @@ export const addCreditSchema = z.object({
 export const clearCreditSchema = z
   .object({
     sectionKeys: z.array(z.string().min(1)).min(1, "At least one section must be selected"),
-    paymentMethod: z.enum(["CASH", "ONLINE", "UPI", "SPLIT"]),
+    // CARD (Nov 2026) = Credit Card: 1–3 photos of the card-machine receipt
+    paymentMethod: z.enum(["CASH", "ONLINE", "UPI", "SPLIT", "CARD"]),
     transactionRef: z.string().optional(),
     proof_file_id: z.string().trim().min(1).max(64).optional(),
     // Up to three payment-screen photos (the first one = proof_file_id)
@@ -43,6 +44,10 @@ export const clearCreditSchema = z
     onlineAmount: z.number().min(0).optional(),
     notes: z.string().max(500).optional(),
   })
+  .refine(
+    (data) => data.paymentMethod !== "CARD" || !!data.proof_file_id || !!data.proof_file_ids?.length,
+    { message: "Add a photo of the card payment receipt", path: ["proof_file_id"] }
+  )
   .refine(
     (data) =>
       data.paymentMethod === "CASH" ||

@@ -12,8 +12,9 @@
  *     Collection report); security deposits are held money, shown apart.
  *   Refunds paid out = OVERPAYMENT_REFUND / CANCELLATION_REFUND rows (COLLECTED /
  *     CONFIRMED) in the range; Net = collected − refunds paid out.
- *   Mode split: modeSplitOf (booking-finance.ts) — Card is not recorded apart from
- *     the Razorpay gateway.
+ *   Mode split: modeSplitOf (booking-finance.ts) — counter Credit Card payments
+ *     (onlineGateway CARD, Nov 2026 onwards) are their own mode; card paid inside
+ *     the Razorpay gateway is still not told apart from it (and older rows unchanged).
  *   Staff = collectedBy; no collector = paid online by the customer.
  *   Discrepancies: awaiting confirmation; voided (by voidedAt) and rejected (by
  *     rejectedAt) in the range; cash shifts closed in the range whose counted cash
@@ -66,7 +67,7 @@ export interface CollectionRow {
   notes: string | null;
 }
 
-const zeroModes = (): ModeSplit => ({ CASH: 0, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
+const zeroModes = (): ModeSplit => ({ CASH: 0, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 });
 const addModes = (a: ModeSplit, b: ModeSplit) => {
   for (const k of MODE_KEYS) a[k] = r2(a[k] + b[k]);
 };
@@ -358,6 +359,7 @@ export async function buildCollectionsReport(f: ReportFilters, opts: { compare: 
           net: computeDelta(summary.net, previous.net),
           cash: computeDelta(summary.modes.CASH, previous.modes.CASH),
           upi: computeDelta(summary.modes.UPI, previous.modes.UPI),
+          card: computeDelta(summary.modes.CARD, previous.modes.CARD),
           bankTransfer: computeDelta(summary.modes.BANK_TRANSFER, previous.modes.BANK_TRANSFER),
           gateway: computeDelta(summary.modes.GATEWAY, previous.modes.GATEWAY),
           transactions: computeDelta(summary.transactions, previous.transactions),

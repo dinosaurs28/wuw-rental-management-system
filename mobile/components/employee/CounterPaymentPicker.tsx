@@ -20,6 +20,7 @@ import {
   COUNTER_PAYMENT_METHODS,
   PAYMENT_PROOF_HELPER,
   PAYMENT_PROOF_LABEL,
+  CARD_RECEIPT_HELPER,
   PAYMENT_PROOF_MAX_PHOTOS,
   REFUND_PROOF_REQUIRED_MESSAGE,
   counterPaymentServerError,
@@ -49,15 +50,17 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const METHOD_ICON: Record<PaymentMethodKey, IconName> = {
   CASH: 'wallet-outline',
   UPI: 'qr-code-outline',
+  CARD: 'card-outline',
   SPLIT: 'pie-chart-outline',
   CREDIT: 'hourglass-outline',
-  ONLINE: 'card-outline',
+  ONLINE: 'globe-outline',
 };
 
-// Short chip labels so four fit as a 2 × 2 grid.
+// Short chip labels (four fit as a 2 × 2 grid; five or more go three to a row).
 const CHIP_LABEL: Record<PaymentMethodKey, string> = {
   CASH: 'Cash',
   UPI: 'UPI',
+  CARD: 'Credit Card',
   SPLIT: 'Split',
   CREDIT: 'Credit',
   ONLINE: 'Online',
@@ -509,6 +512,9 @@ export function PaymentProofSlots({
   error,
   errorIndex,
   firstLabel,
+  slotLabel = 'Payment screenshot',
+  firstHelper = PAYMENT_PROOF_HELPER,
+  extraHelper = 'If the customer paid in more than one UPI transaction, photograph this one too.',
   disabled,
 }: {
   ctl: ProofSetController;
@@ -516,6 +522,10 @@ export function PaymentProofSlots({
   errorIndex?: number;
   /** Label of screenshot 1 (e.g. with the split's UPI amount). */
   firstLabel?: string;
+  /** Slot label prefix (card: "Card receipt photo"). */
+  slotLabel?: string;
+  firstHelper?: string;
+  extraHelper?: string;
   disabled?: boolean;
 }) {
   const { slots, shots } = ctl;
@@ -532,12 +542,8 @@ export function PaymentProofSlots({
             ctl={slot}
             // Screenshot 1 is the required one — unless another slot already holds a photo
             required={i === 0 && !anyReady}
-            label={i === 0 ? (firstLabel ?? 'Payment screenshot 1') : `Payment screenshot ${i + 1} (optional)`}
-            helper={
-              i === 0
-                ? PAYMENT_PROOF_HELPER
-                : 'If the customer paid in more than one UPI transaction, photograph this one too.'
-            }
+            label={i === 0 ? (firstLabel ?? `${slotLabel} 1`) : `${slotLabel} ${i + 1} (optional)`}
+            helper={i === 0 ? firstHelper : extraHelper}
             error={errAt === i ? error : null}
             disabled={disabled}
           />
@@ -591,6 +597,24 @@ export default function CounterPaymentPicker({
             Ask the customer to pay {amountText} to the shop's UPI QR, then photograph the payment-success screen on their phone.
           </Text>
           <PaymentProofSlots ctl={ctl.proof} error={errors.proof} errorIndex={errors.proofIndex} disabled={disabled} />
+        </>
+      )}
+
+      {method === 'CARD' && (
+        <>
+          <Text style={styles.hint}>
+            Take {amountText} on the shop's card machine, then photograph the printed receipt. Credit Card is money received — to leave
+            the amount owed, choose Credit.
+          </Text>
+          <PaymentProofSlots
+            ctl={ctl.proof}
+            error={errors.proof}
+            errorIndex={errors.proofIndex}
+            slotLabel="Card receipt photo"
+            firstHelper={CARD_RECEIPT_HELPER}
+            extraHelper="Another receipt slip (optional) — e.g. when the card was charged more than once."
+            disabled={disabled}
+          />
         </>
       )}
 

@@ -27,6 +27,8 @@ export interface DailySummaryDay {
   revenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card (Nov 2026; absent on older servers) */
+  cardCollected?: number;
   outstanding: number;
   cancellations: number;
 }
@@ -38,6 +40,8 @@ export interface DailySummaryTotals {
   revenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card (Nov 2026; absent on older servers) */
+  cardCollected?: number;
   outstanding: number;
   cancellations: number;
 }

@@ -28,6 +28,8 @@ export interface PaymentTransactionSummary {
   cashOutsideShift: boolean;
   /** Additive (Oct 2026): UPI / bank reference of the payment or refund */
   onlineTransactionRef: string | null;
+  /** Additive (Nov 2026): UPI / CARD (counter Credit Card) / gateway name — tells card apart from UPI */
+  onlineGateway: string | null;
   notes: string | null;
   /** Additive (Oct 2026): void state — a VOIDED row counts in no total */
   voided: boolean;
@@ -126,6 +128,7 @@ class FinancialStateService {
       isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
       cashOutsideShift: isCashRefundOutsideShift(t),
       onlineTransactionRef: t.onlineTransactionRef ?? null,
+      onlineGateway: t.onlineGateway ?? null,
       notes: t.notes ?? null,
       ...voidView(t),
     }));

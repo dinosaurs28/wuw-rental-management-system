@@ -60,6 +60,8 @@ export const checkPayment = async (req: Request, res: Response) => {
     // Counter split (cash + UPI) and credit (#11) settle without a gateway too
     const isSplit = transactionId.startsWith("SPLIT_");
     const isCredit = transactionId.startsWith("CREDIT_");
+    // Counter Credit Card (Nov 2026): receipt photos on the snapshot, no gateway
+    const isCard = transactionId.startsWith("CARD_");
 
     let gatewayStatus: GatewayPaymentStatus | null = null;
     if (isRazorpayOrderId(transactionId)) {
@@ -82,7 +84,7 @@ export const checkPayment = async (req: Request, res: Response) => {
 
     console.log(`[checkPayment] isCash=${isCash} isUpi=${isUpi} isOnlineSuccess=${isOnlineSuccess} isOnlinePending=${isOnlinePending} state=${gatewayStatus?.state}`);
 
-    if (isOnlineSuccess || isCash || isUpi || isSplit || isCredit) {
+    if (isOnlineSuccess || isCash || isUpi || isSplit || isCredit || isCard) {
       const { alreadyConfirmed, skipped } = await confirmBookingPayment({
         bookingId: booking.id,
         transactionId,
@@ -90,6 +92,7 @@ export const checkPayment = async (req: Request, res: Response) => {
         isUpi,
         isSplit,
         isCredit,
+        isCard,
         gatewayPaymentId: gatewayStatus?.paymentId ?? null,
         actor: {
           ip: req.ip,
@@ -102,6 +105,13 @@ export const checkPayment = async (req: Request, res: Response) => {
       if (skipped === "CANCELLED") {
         // Counter UPI: the money is already in the branch account and the UTR
         // was never claimed, so staff simply book again with it.
+        if (isCard) {
+          return res.status(StatusCode.OK).json({
+            status: "Failed",
+            message: "This booking's hold expired before it was confirmed. The card payment was received at the counter — create the booking again with the same receipt photo(s).",
+            redirectURL: "FRONTEND_FAILED_URL",
+          });
+        }
         if (isUpi || isSplit) {
           console.warn(`[checkPayment] counter UPI booking=${booking.publicId} is ${booking.status} — staff to re-create it`);
           return res.status(StatusCode.OK).json({

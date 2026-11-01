@@ -8,6 +8,7 @@ import {
   getCustomerEntriesSchema,
   addCreditSchema,
   clearCreditSchema,
+  CARD_GATEWAY,
 } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { displayEmail } from "../../utils/customer/identity.js";
@@ -18,6 +19,7 @@ import {
 } from "../../services/payment/customer-credit.service.js";
 import {
   resolveCounterUpi,
+  resolveCounterCard,
   claimCounterUpi,
   proofPhotoFields,
   PROOF_FILE_RELATION_SELECT,
@@ -579,8 +581,15 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
 
     // The money arrives now (#11): UPI (and a split's UPI part) is backed by a photo
     // of the customer's payment screen or a 12-digit UTR, like every counter UPI.
+    // Credit Card (Nov 2026): backed by 1–3 photos of the card-machine receipt
     const upi: CounterUpi | null =
-      method === "UPI" || method === "SPLIT"
+      method === "CARD"
+        ? await resolveCounterCard({
+            proofFileId: parsed.data.proof_file_id,
+            proofFileIds: parsed.data.proof_file_ids,
+            branchId: req.branch_Id,
+          })
+        : method === "UPI" || method === "SPLIT"
         ? await resolveCounterUpi({
             utr: transactionRef,
             proofFileId: parsed.data.proof_file_id,
@@ -719,7 +728,7 @@ export const ClearCreditSections = async (req: Request, res: Response): Promise<
             cashAmount: cashPart.toFixed(2),
             onlineAmount: onlinePart.toFixed(2),
             onlineTransactionRef: onlinePart.gt(0) ? (upi?.utr ?? null) : null,
-            onlineGateway: onlinePart.gt(0) ? "UPI" : null,
+            onlineGateway: onlinePart.gt(0) ? (method === "CARD" ? CARD_GATEWAY : "UPI") : null,
             proofFileId: onlinePart.gt(0) ? (upi?.proof?.id ?? null) : null,
             proofPhotos: onlinePart.gt(0) ? proofPhotosCreate(upi?.proofs) : undefined,
             collectedById: actor.actorId,

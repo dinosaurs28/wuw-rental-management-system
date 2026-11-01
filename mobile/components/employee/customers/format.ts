@@ -15,8 +15,13 @@ export const shortRef = (publicId: string) => `#${publicId.slice(-8).toUpperCase
 
 export const humanize = (s: string) => s.replace(/_/g, ' ');
 
-export const methodLabel = (m: string) =>
-  m === 'CASH' ? 'Cash' : m === 'ONLINE' ? 'Online' : m === 'SPLIT' ? 'Split' : humanize(m);
+/** Nov 2026: a counter Credit Card payment (gateway CARD) / card clearance shows as "Credit Card". */
+export const methodLabel = (m: string, onlineGateway?: string | null) => {
+  const card = (onlineGateway ?? '').trim().toUpperCase() === 'CARD';
+  if (m === 'CARD' || (m === 'ONLINE' && card)) return 'Credit Card';
+  if (m === 'SPLIT' && card) return 'Split (cash + card)';
+  return m === 'CASH' ? 'Cash' : m === 'ONLINE' ? 'Online' : m === 'SPLIT' ? 'Split' : humanize(m);
+};
 
 export const RENT_BUCKETS: { key: RentBucket; label: string }[] = [
   { key: 'upcoming', label: 'Upcoming' },

@@ -160,6 +160,8 @@ export interface RentsPage {
 
 export interface ProofPhoto {
   url: string;
+  /** Nov 2026: ~1200 px copy (equals `url` for older photos; absent on older servers). */
+  displayUrl?: string;
   mime: string;
   expiresIn: number | null;
 }

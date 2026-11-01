@@ -56,4 +56,4 @@ export const REVENUE_PAYMENT_PURPOSES: PaymentPurpose[] = [
 ];
 
 /** Spec payment modes shown in cash-flow reports. */
-export type SpecPaymentMode = "Cash" | "UPI" | "Gateway" | "Credit";
+export type SpecPaymentMode = "Cash" | "UPI" | "Card" | "Gateway" | "Credit";

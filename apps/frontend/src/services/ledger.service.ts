@@ -55,7 +55,7 @@ export interface ClearancePayment {
 /** POST /ledger/entry/:id/clear (#11): Cash, UPI (photo) or Split. */
 export interface ClearCreditPayload {
   sectionKeys: string[];
-  paymentMethod: "CASH" | "UPI" | "SPLIT";
+  paymentMethod: "CASH" | "UPI" | "SPLIT" | "CARD";
   proof_file_id?: string;
   /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
   proof_file_ids?: string[];
@@ -93,7 +93,7 @@ export interface CreditClearance {
   amountCleared: string | number;
   /** "ONLINE" on clearances recorded before UPI / split (#11). */
   /** ALREADY_PAID: a hand-added section the booking's payments already covered — no payment recorded */
-  paymentMethod: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "ALREADY_PAID";
+  paymentMethod: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CARD" | "ALREADY_PAID";
   transactionRef: string | null;
   clearedAt: string;
   /** The payments this clearance recorded (absent on older servers). */

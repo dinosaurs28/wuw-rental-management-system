@@ -148,11 +148,11 @@ test("cross-effect: a corrected pickup reading re-prices the completed drop's km
 
 test("settlement methods: cash / UPI / split / credit to collect, cash / UPI to refund", () => {
   assert.deepEqual(settlementMethods({ action: "COLLECT", depositIncrease: false, settledByBranchManager: false }), {
-    collect: ["CASH", "UPI", "SPLIT", "CREDIT"],
+    collect: ["CASH", "UPI", "CARD", "SPLIT", "CREDIT"],
     refund: [],
   });
   // A safety deposit is never taken on credit
-  assert.deepEqual(settlementMethods({ action: "COLLECT", depositIncrease: true, settledByBranchManager: false }).collect, ["CASH", "UPI", "SPLIT"]);
+  assert.deepEqual(settlementMethods({ action: "COLLECT", depositIncrease: true, settledByBranchManager: false }).collect, ["CASH", "UPI", "CARD", "SPLIT"]);
   assert.deepEqual(settlementMethods({ action: "REFUND", depositIncrease: false, settledByBranchManager: false }), {
     collect: [],
     refund: ["CASH", "UPI"],

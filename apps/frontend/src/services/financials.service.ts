@@ -41,6 +41,8 @@ export interface FinancialsRow {
   amount: number;
   cash: number;
   upi: number;
+  /** counter Credit Card part (Nov 2026; absent on older servers) */
+  card?: number;
   gateway: number;
   mode: string;
   method: string;
@@ -69,10 +71,10 @@ export interface FinancialsResponse {
   summary: {
     total: { amount: number; count: number };
     byType: FinancialsTypeCard[];
-    byMode: { cash: number; upi: number; gateway: number };
+    byMode: { cash: number; upi: number; card?: number; gateway: number };
   };
   rows: FinancialsRow[];
-  pageTotal: { count: number; amount: number; cash: number; upi: number; gateway: number };
+  pageTotal: { count: number; amount: number; cash: number; upi: number; card?: number; gateway: number };
   pagination: { page: number; pageSize: number; totalRows: number; totalPages: number };
 }
 

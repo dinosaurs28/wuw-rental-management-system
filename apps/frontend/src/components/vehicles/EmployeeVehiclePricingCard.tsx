@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, MapPin, Check, Loader2, CreditCard } from "lucide-react";
+import { CalendarIcon, MapPin, Check, Loader2, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -548,7 +548,7 @@ export const EmployeeVehiclePricingCard = ({
             proofRole="staff"
             extraChip={{
               label: "Online",
-              icon: <CreditCard className="h-4 w-4" />,
+              icon: <Globe className="h-4 w-4" />,
               selected: isOnline,
               onSelect: () => setPaymentType("ONLINE"),
             }}

@@ -33,7 +33,7 @@ import { DateTime } from "luxon";
 import { prisma, BookingStatus } from "@repo/database/client";
 import { computeBookingsOwed, summarizeBookingMoney, type BookingOwed } from "../../payment/booking-owed.service.js";
 import { getExtraOutputGstByBooking } from "../../../utils/reporting/extraOutputGst.js";
-import { normaliseParts, isGatewayPayment } from "../../financials/payment-type.js";
+import { normaliseParts, isGatewayPayment, isCounterCardPayment } from "../../financials/payment-type.js";
 import { SYSTEM_TIMEZONE } from "../../timezone/timezone.service.js";
 
 const r2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -227,11 +227,12 @@ export async function getDuesByBooking(ids: number[], now: Date = new Date()): P
 
 // ── Payment modes ─────────────────────────────────────────────────────────────
 
-export type ModeKey = "CASH" | "UPI" | "BANK_TRANSFER" | "GATEWAY";
-export const MODE_KEYS: ModeKey[] = ["CASH", "UPI", "BANK_TRANSFER", "GATEWAY"];
+export type ModeKey = "CASH" | "UPI" | "CARD" | "BANK_TRANSFER" | "GATEWAY";
+export const MODE_KEYS: ModeKey[] = ["CASH", "UPI", "CARD", "BANK_TRANSFER", "GATEWAY"];
 export const MODE_LABELS: Record<ModeKey, string> = {
   CASH: "Cash",
   UPI: "UPI",
+  CARD: "Credit card",
   BANK_TRANSFER: "Bank transfer",
   GATEWAY: "Online gateway (Razorpay)",
 };
@@ -239,6 +240,8 @@ export const MODE_LABELS: Record<ModeKey, string> = {
 export interface ModeSplit {
   CASH: number;
   UPI: number;
+  /** counter Credit Card (onlineGateway CARD, Nov 2026) */
+  CARD: number;
   BANK_TRANSFER: number;
   GATEWAY: number;
 }
@@ -248,9 +251,10 @@ export interface ModeSplit {
  * (cashAmount / onlineAmount, normalised like BM Financials) plus the free-text
  * onlineGateway:
  *   onlineGateway BANK_TRANSFER / "bank…"           → Bank transfer
+ *   onlineGateway CARD (counter Credit Card, Nov 2026) → Credit card — tracked for
+ *       rows recorded with the new method; older rows are unchanged
  *   a gateway name (razorpay, …; isGatewayPayment)  → Online gateway — card, UPI and
- *       netbanking inside Razorpay are NOT told apart (the instrument isn't stored),
- *       so "Card" is never shown as its own figure
+ *       netbanking inside Razorpay are NOT told apart (the instrument isn't stored)
  *   anything else (UPI, null, counter QR)           → UPI
  */
 export function modeSplitOf(t: {
@@ -261,10 +265,11 @@ export function modeSplitOf(t: {
   onlineGateway: string | null;
 }): ModeSplit {
   const { cash, online } = normaliseParts({ method: t.method, total: t.totalAmount, cash: t.cashAmount, online: t.onlineAmount });
-  const out: ModeSplit = { CASH: cash, UPI: 0, BANK_TRANSFER: 0, GATEWAY: 0 };
+  const out: ModeSplit = { CASH: cash, UPI: 0, CARD: 0, BANK_TRANSFER: 0, GATEWAY: 0 };
   if (online > 0) {
     const g = t.onlineGateway ?? "";
-    if (/bank/i.test(g)) out.BANK_TRANSFER = online;
+    if (isCounterCardPayment(g)) out.CARD = online;
+    else if (/bank/i.test(g)) out.BANK_TRANSFER = online;
     else if (isGatewayPayment(g)) out.GATEWAY = online;
     else out.UPI = online;
   }

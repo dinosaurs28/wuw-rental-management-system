@@ -44,6 +44,7 @@ export interface ShiftFigures {
   confirmedCash?: string;
   rejectedCash?: string;
   upiCollected?: string;
+  cardCollected?: string;
   legacyVariance?: boolean;
 }
 
@@ -149,6 +150,13 @@ export function ShiftMoneyBreakdown({
           <span className="font-semibold tabular-nums text-neutral-700">{formatMoney(shift.upiCollected)}</span>
         </div>
       )}
+      {/* Counter Credit Card (Nov 2026): non-cash, never in the expected drawer */}
+      {shift.cardCollected !== undefined && toPaise(shift.cardCollected) > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-dashed border-neutral-200 px-4 py-2 text-xs">
+          <span className="text-neutral-500">Credit card collected <span className="text-neutral-400">(not in the drawer)</span></span>
+          <span className="font-semibold tabular-nums text-neutral-700">{formatMoney(shift.cardCollected)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -170,7 +178,7 @@ function TransactionAmount({ txn }: { txn: ShiftTransaction }) {
   const out = txn.direction === "OUT";
   const cash = toPaise(txn.cashAmount);
   const online = toPaise(txn.onlineAmount);
-  const onlineLabel = txn.onlineGateway === "UPI" ? "UPI" : "Online";
+  const onlineLabel = txn.onlineGateway === "UPI" ? "UPI" : (txn.onlineGateway ?? "").toUpperCase() === "CARD" ? "Credit Card" : "Online";
   return (
     <div className="text-right">
       <p className={`text-sm font-semibold tabular-nums ${out ? "text-red-600" : "text-neutral-900"}`}>
@@ -224,18 +232,18 @@ function TransactionRow({ txn }: { txn: ShiftTransaction }) {
         {txn.onlineTransactionRef && !(txn.proofPhoto || txn.proofPhotoUrl) && (
           <span className="font-mono">UTR {txn.onlineTransactionRef}</span>
         )}
-        {/* The customer's UPI payment screen (#3) */}
-        {(txn.proofPhoto || txn.proofPhotoUrl) && (
-          <span className="inline-flex items-center gap-1.5">
-            <ProofPhotoThumb
-              photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
-              photos={txn.proofs}
-              caption={`${txn.bookingPublicId}${txn.customerName ? ` · ${txn.customerName}` : ""} · ${formatMoney(txn.totalAmount)}`}
-            />
-            UPI photo
-          </span>
-        )}
       </div>
+      {/* The customer's payment screen (#3), readable without zooming (Nov 2026); click to zoom */}
+      {(txn.proofPhoto || txn.proofPhotoUrl) && (
+        <div className="pl-8 pt-1">
+          <ProofPhotoThumb
+            size="read"
+            photo={txn.proofPhoto ?? { url: txn.proofPhotoUrl! }}
+            photos={txn.proofs}
+            caption={`${txn.bookingPublicId}${txn.customerName ? ` · ${txn.customerName}` : ""} · ${formatMoney(txn.totalAmount)}`}
+          />
+        </div>
+      )}
       {(txn.confirmedAt || txn.rejectedAt) && (
         <p className="pl-8 text-[11px] text-neutral-500">
           {txn.confirmedAt && (

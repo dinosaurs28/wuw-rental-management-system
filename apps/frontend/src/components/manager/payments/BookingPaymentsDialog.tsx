@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/counterErrors";
-import { formatRupees } from "@/lib/counterPayment";
+import { formatRupees, isCardPayment } from "@/lib/counterPayment";
 import { ProofPhotoThumb } from "@/components/payment/counter/ProofPhotoThumb";
 import { formatIstDateTime } from "@/utils/overdueReturns";
 import { RefundToCustomerDialog } from "@/components/manager/RefundToCustomerDialog";
@@ -27,7 +27,15 @@ const METHOD_LABELS: Record<string, string> = { CASH: "Cash", ONLINE: "Online", 
 
 export const paymentRowLabel = (t: Pick<BookingPaymentRow, "purpose" | "method" | "isCustomerRefund" | "onlineGateway">) => {
   const purpose = t.isCustomerRefund ? "Refund to customer" : (PAYMENT_PURPOSE_LABELS[t.purpose] ?? t.purpose);
-  const method = t.method === "ONLINE" && t.onlineGateway ? t.onlineGateway.replace(/_/g, " ").toLowerCase() : (METHOD_LABELS[t.method] ?? t.method);
+  // Credit Card (Nov 2026) and UPI by name; other gateways as before
+  const method =
+    t.method === "ONLINE" && isCardPayment(t.onlineGateway)
+      ? "Credit Card"
+      : t.method === "SPLIT" && isCardPayment(t.onlineGateway)
+        ? "Cash + Credit Card"
+        : t.method === "ONLINE" && t.onlineGateway
+          ? t.onlineGateway.replace(/_/g, " ").toLowerCase()
+          : (METHOD_LABELS[t.method] ?? t.method);
   return `${purpose} · ${method}`;
 };
 
@@ -124,12 +132,18 @@ export function BookingPaymentsDialog({
                           formatAt={formatIstDateTime}
                         />
                       )}
+                      {/* The payment / refund success-screen photo, readable without zooming (Nov 2026); click to zoom */}
+                      {t.proofPhoto && (
+                        <ProofPhotoThumb
+                          size="read"
+                          className="mt-1.5"
+                          photo={t.proofPhoto}
+                          photos={t.proofs}
+                          caption={`${paymentRowLabel(t)} · ${formatRupees(num(t.totalAmount))}`}
+                        />
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
-                      {/* Oct 25 2026: the payment / refund success-screen photo */}
-                      {t.proofPhoto && (
-                        <ProofPhotoThumb photo={t.proofPhoto} photos={t.proofs} size="sm" caption={`${paymentRowLabel(t)} · ${formatRupees(num(t.totalAmount))}`} />
-                      )}
                       <span className={cn("font-semibold tabular-nums", t.isRefund && "text-orange-700", t.voided && "text-zinc-400 line-through")}>
                         {t.isRefund ? "−" : ""}
                         {formatRupees(num(t.totalAmount))}

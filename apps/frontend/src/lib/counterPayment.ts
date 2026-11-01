@@ -7,6 +7,7 @@ import {
   PAYMENT_PROOF_MAX_BYTES,
   PAYMENT_PROOF_MAX_PHOTOS,
   PAYMENT_PROOF_REQUIRED_MESSAGE,
+  CARD_RECEIPT_REQUIRED_MESSAGE,
   round2,
   type CounterPaymentMethod,
   type CounterRefundMethod,
@@ -22,6 +23,9 @@ import { compressImage } from "@/lib/utils";
  *    payment-success screen is required (uploaded first → `proof_file_id`),
  *    plus up to two more when they paid in several UPI transactions (all of
  *    them, in slot order → `proof_file_ids`)
+ *  - CARD ("Credit Card", Nov 2026): the customer paid on the branch's card
+ *    machine; 1–3 photos of the printed receipt are required (same slots and
+ *    upload as the UPI screenshots). Money received — not Credit.
  *  - SPLIT: a cash part + the UPI part (the rest), the UPI part backed by a photo
  *  - CREDIT: nothing is paid now; the amount stays owed against the collateral
  *    noted until the branch manager clears it
@@ -64,6 +68,13 @@ export const PAYMENT_PROOF_LABEL = "Photo of the customer's payment screen";
 export const PAYMENT_PROOF_HELPER =
   "After the customer pays the branch UPI QR, photograph the payment-success screen on their phone.";
 export const PAYMENT_PROOF_ACCEPT = "image/*";
+export const CARD_RECEIPT_LABEL = "Photo of the card payment receipt";
+export const CARD_RECEIPT_HELPER =
+  "After the card payment goes through, photograph the receipt printed by the card machine. Add more photos if there is more than one slip.";
+/** Methods whose form carries payment photos (UPI screenshots / card receipts). */
+export const counterMethodHasPhotos = (method: CounterPaymentMethod) =>
+  method === "UPI" || method === "SPLIT" || method === "CARD";
+export { CARD_RECEIPT_REQUIRED_MESSAGE };
 export { COLLATERAL_REQUIRED_MESSAGE, PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENT_PROOF_MAX_PHOTOS };
 
 /** Every payment screenshot of a form, in slot order (screenshot 1 first). */
@@ -93,23 +104,25 @@ export function withCounterProofAt(
   return { proof: first, extraProofs: rest };
 }
 
-/** Cash and UPI parts a payment form stands for (CREDIT: both 0). */
+/** Cash, UPI and card parts a payment form stands for (CREDIT: all 0). */
 export function counterPaymentParts(
   value: CounterPaymentValue,
   amount: number | null,
-): { cash: number; upi: number } {
+): { cash: number; upi: number; card: number } {
   const total = amount == null ? null : round2(amount);
   switch (value.method) {
     case "CASH":
-      return { cash: total ?? 0, upi: 0 };
+      return { cash: total ?? 0, upi: 0, card: 0 };
     case "UPI":
-      return { cash: 0, upi: total ?? 0 };
+      return { cash: 0, upi: total ?? 0, card: 0 };
+    case "CARD":
+      return { cash: 0, upi: 0, card: total ?? 0 };
     case "SPLIT": {
       const cash = round2(Math.max(0, parseFloat(value.splitCash) || 0));
-      return { cash, upi: total == null ? 0 : round2(Math.max(0, total - cash)) };
+      return { cash, upi: total == null ? 0 : round2(Math.max(0, total - cash)), card: 0 };
     }
     default:
-      return { cash: 0, upi: 0 };
+      return { cash: 0, upi: 0, card: 0 };
   }
 }
 
@@ -124,6 +137,8 @@ export function counterPaymentProblem(value: CounterPaymentValue, amount: number
       return null;
     case "UPI":
       return value.proof ? null : PAYMENT_PROOF_REQUIRED_MESSAGE;
+    case "CARD":
+      return value.proof ? null : CARD_RECEIPT_REQUIRED_MESSAGE;
     case "SPLIT": {
       const { cash, upi } = counterPaymentParts(value, amount);
       if (cash <= 0) return "Enter the cash part of the split.";
@@ -145,7 +160,7 @@ export function counterPaymentProblem(value: CounterPaymentValue, amount: number
   }
 }
 
-/** Cash, UPI and split take money now, so they need the executive's open shift. */
+/** Cash, UPI, card and split take money now, so they need the executive's open shift. */
 export const counterMethodTakesMoney = (method: CounterPaymentMethod) => method !== "CREDIT";
 
 // ── Payment sessions (pickup / drop bill) ────────────────────────────────────
@@ -190,6 +205,8 @@ export function sessionPaymentFields(value: CounterPaymentValue, amount: number)
   switch (value.method) {
     case "UPI":
       return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
+    case "CARD":
+      return { method: "CARD" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, onlineGateway: "UPI", proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
@@ -205,6 +222,8 @@ export function extensionCollectFields(value: CounterPaymentValue, amount: numbe
   switch (value.method) {
     case "UPI":
       return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
+    case "CARD":
+      return { method: "CARD" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
@@ -220,6 +239,8 @@ export function remainingPaymentFields(value: CounterPaymentValue, amount: numbe
   switch (value.method) {
     case "UPI":
       return { method: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
+    case "CARD":
+      return { method: "CARD" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return { method: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "CREDIT":
@@ -234,6 +255,8 @@ export function walkInPaymentFields(value: CounterPaymentValue) {
   switch (value.method) {
     case "UPI":
       return { payment_type: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
+    case "CARD":
+      return { payment_type: "CARD" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return {
         payment_type: "SPLIT" as const,
@@ -253,6 +276,8 @@ export function creditClearanceFields(value: CounterPaymentValue, amount: number
   switch (value.method) {
     case "UPI":
       return { paymentMethod: "UPI" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
+    case "CARD":
+      return { paymentMethod: "CARD" as const, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     case "SPLIT":
       return { paymentMethod: "SPLIT" as const, cashAmount: cash, onlineAmount: upi, proof_file_id: proofId(value), proof_file_ids: proofIds(value) };
     default:
@@ -346,3 +371,27 @@ export function paymentProofUploadMessage(err: unknown): string {
 
 export const formatRupees = (amount: number) =>
   `₹${round2(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// ── How a recorded payment was paid (readers) ────────────────────────────────
+
+/** The online part's kind from a PaymentTransaction's onlineGateway (Nov 2026: CARD = Credit Card). */
+export function onlineKindLabel(onlineGateway: string | null | undefined): string {
+  const g = (onlineGateway ?? "").trim().toUpperCase();
+  if (!g || g === "UPI") return "UPI";
+  if (g === "CARD") return "Credit Card";
+  if (g === "BANK_TRANSFER") return "Bank transfer";
+  if (g.includes("RAZORPAY")) return "Online (Razorpay)";
+  return "Online";
+}
+
+/** "Cash", "UPI", "Credit Card", "Cash + UPI", "Cash + Credit Card", "Online" … for a recorded payment. */
+export function paymentKindLabel(t: { method: string; onlineGateway?: string | null }): string {
+  if (t.method === "CASH") return "Cash";
+  if (t.method === "SPLIT") return `Cash + ${onlineKindLabel(t.onlineGateway)}`;
+  if (t.method === "ONLINE") return onlineKindLabel(t.onlineGateway);
+  return t.method;
+}
+
+/** A counter Credit Card payment (onlineGateway CARD). */
+export const isCardPayment = (onlineGateway: string | null | undefined) =>
+  (onlineGateway ?? "").trim().toUpperCase() === "CARD";

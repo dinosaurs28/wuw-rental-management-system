@@ -34,6 +34,8 @@ interface ConfirmBookingPaymentParams {
   isSplit?: boolean;
   /** Counter credit — nothing paid; the collateral is read from `pricingSnapshot.credit` (#11). */
   isCredit?: boolean;
+  /** Counter Credit Card (Nov 2026) — the receipt photos are read from `pricingSnapshot.card`. */
+  isCard?: boolean;
   /** Razorpay `pay_xxx` id, when known. Stored on PaymentTransaction.notes. */
   gatewayPaymentId?: string | null;
   /**
@@ -83,9 +85,9 @@ async function clearHolds(
 export async function confirmBookingPayment(
   params: ConfirmBookingPaymentParams,
 ): Promise<{ alreadyConfirmed: boolean; skipped?: "CANCELLED" | "DUPLICATE_UTR" | "DUPLICATE_PAYMENT_PROOF" }> {
-  const { bookingId, transactionId, isCash, isUpi = false, isSplit = false, isCredit = false, gatewayPaymentId, callerNotifiesRefund = false, actor } = params;
+  const { bookingId, transactionId, isCash, isUpi = false, isSplit = false, isCredit = false, isCard = false, gatewayPaymentId, callerNotifiesRefund = false, actor } = params;
   // Taken at the counter without a gateway: the hold lapsing just means staff re-create it
-  const isCounterNoGateway = isUpi || isSplit || isCredit;
+  const isCounterNoGateway = isUpi || isSplit || isCredit || isCard;
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -135,8 +137,9 @@ export async function confirmBookingPayment(
     upi?: { utr?: string | null; proofFileId?: string | null; proofFileIds?: string[] };
     split?: { cash?: number; upi?: number; utr?: string | null; proofFileId?: string | null; proofFileIds?: string[] };
     credit?: { collateral?: string };
+    card?: { proofFileId?: string | null; proofFileIds?: string[]; utr?: null };
   } | null;
-  const counterSnap = isUpi ? snapshot?.upi : isSplit ? snapshot?.split : undefined;
+  const counterSnap = isUpi ? snapshot?.upi : isSplit ? snapshot?.split : isCard ? snapshot?.card : undefined;
   // Every payment photo (Oct 18 2026: up to 3, slot order); older holds carry one
   const proofIds = Array.isArray(counterSnap?.proofFileIds) && counterSnap.proofFileIds.length
     ? counterSnap.proofFileIds
@@ -163,6 +166,9 @@ export async function confirmBookingPayment(
   if (isSplit && (!splitCash!.gt(0) || !splitUpi!.gt(0))) {
     throw new Error(`[confirmBookingPayment] split booking=${booking.publicId} has no cash/UPI parts on its snapshot`);
   }
+  if (isCard && proofFiles.length === 0) {
+    throw new Error(`[confirmBookingPayment] card booking=${booking.publicId} has no receipt photo on its snapshot`);
+  }
   if (isCredit && !creditCollateral) {
     throw new Error(`[confirmBookingPayment] credit booking=${booking.publicId} has no collateral on its snapshot`);
   }
@@ -178,6 +184,8 @@ export async function confirmBookingPayment(
     ? DepositMethod.CASH
     : isUpi
       ? DepositMethod.UPI
+      : isCard
+        ? DepositMethod.CARD
       : isCredit
         ? null
         : DepositMethod.ONLINE_RAZORPAY;
@@ -193,7 +201,7 @@ export async function confirmBookingPayment(
         // needs one; a gateway payment links when one is open, never refused.
         const lockedShift = isCredit
           ? null
-          : await lockShiftForPayment(tx, { id: booking.createdById }, { optional: !(isCash || isUpi || isSplit) });
+          : await lockShiftForPayment(tx, { id: booking.createdById }, { optional: !(isCash || isUpi || isSplit || isCard) });
 
         // Claim inside the transaction: the UTR / payment photo may have been used
         // for another payment while this booking sat on HOLD.
@@ -322,7 +330,7 @@ export async function confirmBookingPayment(
         // before it is counted as received — regardless of cashConfirmationEnabled.
         // A split's cash part does too. Online payments (Razorpay and counter UPI)
         // confirm immediately.
-        const collectedAtCounter = isCash || isUpi || isSplit;
+        const collectedAtCounter = isCash || isUpi || isSplit || isCard;
         // Every payment a Fleet Executive takes lands in their shift (gateway ones as non-cash)
         const activeShiftId: number | null = lockedShift?.id ?? null;
 
@@ -345,7 +353,7 @@ export async function confirmBookingPayment(
             // ref; the pay_xxx id is kept alongside it for reconciliation.
             // Counter UPI payments are keyed on the customer's UTR instead.
             onlineTransactionRef: isCash ? null : (upiUtr ?? transactionId),
-            onlineGateway:       isCash ? null : isUpi || isSplit ? "UPI" : "RAZORPAY",
+            onlineGateway:       isCash ? null : isUpi || isSplit ? "UPI" : isCard ? "CARD" : "RAZORPAY",
             // Photo of the customer's payment screen (#3)
             proofFileId:         proofFile?.id ?? null,
             proofPhotos:         proofPhotosCreate(proofFiles),
@@ -426,6 +434,8 @@ export async function confirmBookingPayment(
         ? "cash"
         : isUpi
           ? proofFile ? "UPI (payment photo)" : "UPI (UTR)"
+          : isCard
+            ? "credit card (receipt photo)"
           : isSplit
             ? "split (cash + UPI)"
             : isCredit

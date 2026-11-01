@@ -10,6 +10,9 @@
  *  - Up to three such photos per payment (Oct 2026): screenshot 1 is required,
  *    2 and 3 are optional for a customer who paid in several UPI transactions.
  *    All of them go as `proof_file_ids` (slot order) next to `proof_file_id`.
+ *  - CARD = "Credit Card" (Nov 2026): the customer paid on the branch's card
+ *    machine; 1–3 photos of the printed receipt are required (same slots and
+ *    upload as the UPI screenshots). Money received — NOT Credit.
  *  - CREDIT = the amount stays owed by the customer against a note of the
  *    collateral held, until the branch manager clears it.
  *  - Safety deposit at drop: SET_OFF (default) credits it against the drop
@@ -18,7 +21,7 @@
  */
 
 /** Payment methods a Fleet Executive can pick at the counter. */
-export const COUNTER_PAYMENT_METHODS = ['CASH', 'UPI', 'SPLIT', 'CREDIT'] as const;
+export const COUNTER_PAYMENT_METHODS = ['CASH', 'UPI', 'CARD', 'SPLIT', 'CREDIT'] as const;
 export type CounterPaymentMethod = (typeof COUNTER_PAYMENT_METHODS)[number];
 
 /** Counter methods plus Razorpay checkout ("Online") where a screen offers it. */
@@ -27,6 +30,7 @@ export type PaymentMethodKey = CounterPaymentMethod | 'ONLINE';
 export const COUNTER_PAYMENT_METHOD_LABELS: Record<PaymentMethodKey, string> = {
   CASH: 'Cash',
   UPI: 'UPI',
+  CARD: 'Credit Card',
   SPLIT: 'Split (cash + UPI)',
   CREDIT: 'Credit',
   ONLINE: 'Online',
@@ -44,6 +48,11 @@ export const CREDIT_NOT_FOR_DEPOSIT_MESSAGE =
   "A safety deposit can't be put on credit. Remove the safety deposit from this bill (the collateral covers it) or take the payment in cash, UPI or split.";
 
 export const PAYMENT_PROOF_REQUIRED_MESSAGE = "Add a photo of the customer's UPI payment-success screen.";
+export const CARD_RECEIPT_REQUIRED_MESSAGE =
+  'Add a photo of the card payment receipt (the slip printed by the card machine after the payment).';
+export const CARD_RECEIPT_LABEL = 'Photo of the card payment receipt';
+export const CARD_RECEIPT_HELPER =
+  'After the card payment goes through, photograph the receipt printed by the card machine. Add more photos if there is more than one slip.';
 export const PAYMENT_PROOF_LABEL = "Photo of the customer's payment screen";
 export const PAYMENT_PROOF_HELPER =
   'Photograph the payment-success screen on the customer’s phone — amount, date and reference visible.';
@@ -115,6 +124,7 @@ export interface CounterPaymentErrors {
 export type CounterPaymentChoice =
   | { method: 'CASH'; amount: number }
   | { method: 'UPI'; amount: number; proofFileId: string; proofFileIds: string[] }
+  | { method: 'CARD'; amount: number; proofFileId: string; proofFileIds: string[] }
   | { method: 'SPLIT'; amount: number; cashAmount: number; upiAmount: number; proofFileId: string; proofFileIds: string[] }
   | { method: 'CREDIT'; amount: number; collateral: string }
   | { method: 'ONLINE'; amount: number };
@@ -194,6 +204,14 @@ export function resolveCounterPayment(
       const proofs = proofsProblem(input.proofs);
       if (!proofs.ok) return { ok: false, errors: { proof: proofs.error, proofIndex: proofs.index } };
       return { ok: true, choice: { method: 'UPI', amount: total, proofFileId: proofs.ids[0]!, proofFileIds: proofs.ids } };
+    }
+    case 'CARD': {
+      const proofs = proofsProblem(input.proofs);
+      if (!proofs.ok) {
+        const error = proofs.error === PAYMENT_PROOF_REQUIRED_MESSAGE ? CARD_RECEIPT_REQUIRED_MESSAGE : proofs.error;
+        return { ok: false, errors: { proof: error, proofIndex: proofs.index } };
+      }
+      return { ok: true, choice: { method: 'CARD', amount: total, proofFileId: proofs.ids[0]!, proofFileIds: proofs.ids } };
     }
     case 'SPLIT': {
       const cash = parseCashPart(input.cash);
@@ -293,6 +311,7 @@ export function counterChoiceLabel(choice: CounterPaymentChoice): string {
   switch (choice.method) {
     case 'CASH': return 'Cash';
     case 'UPI': return 'UPI';
+    case 'CARD': return 'Credit Card';
     case 'ONLINE': return 'Online';
     case 'SPLIT': return `Cash ${inrCounter(choice.cashAmount)} + UPI ${inrCounter(choice.upiAmount)}`;
     case 'CREDIT': return `On credit (collateral: ${choice.collateral})`;
@@ -355,4 +374,19 @@ export function dropBillNetNote(net: number, entries: DropLedgerLine[] | null | 
   }
   if (net < 0) return 'Refund the difference to the customer to complete the return.';
   return null;
+}
+
+// ── How a recorded payment was paid (readers) ──────────────────────────────
+
+/** A counter Credit Card payment (onlineGateway CARD, Nov 2026). */
+export const isCardGateway = (gateway: string | null | undefined) => (gateway ?? '').trim().toUpperCase() === 'CARD';
+
+/** "Cash", "UPI", "Credit Card", "Cash + UPI", "Cash + Credit Card", "Online" for a recorded payment. */
+export function paymentKindLabel(t: { method: string; onlineGateway?: string | null }): string {
+  const g = (t.onlineGateway ?? '').trim().toUpperCase();
+  const online = !g || g === 'UPI' ? 'UPI' : g === 'CARD' ? 'Credit Card' : g === 'BANK_TRANSFER' ? 'Bank transfer' : 'Online';
+  if (t.method === 'CASH') return 'Cash';
+  if (t.method === 'SPLIT') return `Cash + ${online}`;
+  if (t.method === 'ONLINE') return online;
+  return t.method;
 }

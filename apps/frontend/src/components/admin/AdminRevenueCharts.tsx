@@ -334,7 +334,9 @@ export const PaymentMethodChart = ({
         ? "Online"
         : item.paymentMethod === "CASH"
           ? "Cash"
-          : item.paymentMethod.toUpperCase(),
+          : item.paymentMethod === "CARD"
+            ? "Credit Card"
+            : item.paymentMethod.toUpperCase(),
     value: item.totalRevenue,
     percentage: item.percentageShare,
     count: item.transactionCount,

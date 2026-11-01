@@ -71,6 +71,9 @@ export function TotalsStrip({ totals }: { totals: ShiftDayTotals }) {
         }
       />
       <TotalsTile label="UPI collected" value={formatMoney(totals.upiCollected)} sub="Not in the drawer" />
+      {totals.cardCollected !== undefined && (
+        <TotalsTile label="Credit card collected" value={formatMoney(totals.cardCollected)} sub="Not in the drawer" />
+      )}
     </div>
   );
 }

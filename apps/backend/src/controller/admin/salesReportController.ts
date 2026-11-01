@@ -39,7 +39,7 @@ const SALES_TABLE_STATUSES: BookingStatus[] = [
   BookingStatus.CANCELLED,
 ];
 
-type SpecMode = "Cash" | "UPI" | "Gateway" | "Credit";
+type SpecMode = "Cash" | "UPI" | "Card" | "Gateway" | "Credit";
 
 const primaryMode = (paid: PaidAmounts | undefined): SpecMode => {
   if (!paid || paid.total <= 0) return "Credit";
@@ -47,6 +47,7 @@ const primaryMode = (paid: PaidAmounts | undefined): SpecMode => {
     ["Cash", paid.cash],
     ["UPI", paid.upi],
     ["Gateway", paid.gateway],
+    ["Card", paid.card],
   ];
   entries.sort((a, b) => b[1] - a[1]);
   return entries[0]![1] > 0 ? entries[0]![0] : "Credit";

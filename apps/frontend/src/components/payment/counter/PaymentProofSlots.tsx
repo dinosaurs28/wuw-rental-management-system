@@ -17,6 +17,10 @@ interface PaymentProofSlotsProps {
   errorPosition?: number | null;
   /** Helper under screenshot 1 */
   helper?: string;
+  /** Slot label prefix (default "Payment screenshot"; card: "Card receipt photo") */
+  slotLabel?: string;
+  /** Helper under slots 2 and 3 */
+  extraHelper?: string;
   disabled?: boolean;
   idPrefix: string;
 }
@@ -35,6 +39,8 @@ export function PaymentProofSlots({
   error,
   errorPosition,
   helper,
+  slotLabel = "Payment screenshot",
+  extraHelper = "If the customer paid in more than one UPI transaction, photograph this one too.",
   disabled,
   idPrefix,
 }: PaymentProofSlotsProps) {
@@ -53,12 +59,8 @@ export function PaymentProofSlots({
           onChange={(next) => onChange(withCounterProofAt({ proof, extraProofs }, i, next))}
           error={errorAt === i + 1 ? error : null}
           required={i === 0}
-          label={`Payment screenshot ${i + 1}`}
-          helper={
-            i === 0
-              ? helper
-              : "If the customer paid in more than one UPI transaction, photograph this one too."
-          }
+          label={`${slotLabel} ${i + 1}`}
+          helper={i === 0 ? helper : extraHelper}
           disabled={disabled}
         />
       ))}

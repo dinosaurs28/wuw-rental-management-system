@@ -4,6 +4,7 @@ import { PlusCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LifecycleBadge, TransactionBadge } from "./PaymentStateBadge";
 import { RecordPaymentModal } from "./RecordPaymentModal";
+import { isCardPayment } from "@/lib/counterPayment";
 import {
   paymentService,
   employeePaymentService,
@@ -167,7 +168,7 @@ export function BookingPaymentPanel({ bookingPublicId, role = "manager" }: Booki
                       {purposeLabels[txn.purpose] ?? txn.purpose}
                     </p>
                     <p className="text-xs text-neutral-500 mt-0.5">
-                      {methodLabels[txn.method] ?? txn.method} • {txn.collectedBy} •{" "}
+                      {txn.method !== "CASH" && isCardPayment(txn.onlineGateway) ? (txn.method === "SPLIT" ? "Split (cash + card)" : "Credit Card") : (methodLabels[txn.method] ?? txn.method)} • {txn.collectedBy} •{" "}
                       {formatDateTime(txn.collectedAt)}
                     </p>
                   </div>

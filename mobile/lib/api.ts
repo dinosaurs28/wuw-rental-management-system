@@ -16,7 +16,7 @@ import type { DlCollectionStatus, UpdateDlStatusBody } from './dlStatus';
 import type { ExtensionGstFields, RentInclGstFields } from './gst';
 import type { ExtensionFreeKm } from '../types/api';
 import type { PaymentFlow, PaymentOptions } from '../types/api';
-import type { RescheduleOptions, RescheduleResult } from '../types/api';
+import type { RescheduleOptions, ReschedulePeriodQuote, RescheduleResult } from '../types/api';
 import type { PublicOffersResponse } from '../types/offers';
 import type { UpiQrTarget, UpiQrView } from '../types/upiQr';
 import type { CounterRefundMethod, PaymentProof, SafetyDepositHandling } from './counterPayment';
@@ -365,8 +365,10 @@ export const employeeApi = {
   // 201 { data: { publicId, status, openedAt, openingCash } }; 409 SHIFT_ALREADY_OPEN,
   // 400 INVALID_OPENING_CASH.
   openShift: (body?: { openingCash: number }) => api.post('/api/employee/payment/shifts', body ?? {}),
-  // No closeShift (Oct 2026): the branch manager closes shifts at the cash
-  // handover; the old endpoint answers 403 SHIFT_CLOSE_MANAGER_ONLY.
+  // Nov 2026: close your OWN shift — allowed only when it holds no cash
+  // (canSelfClose on the shift). Otherwise 403 SHIFT_CLOSE_MANAGER_ONLY with the
+  // reason: the branch manager verifies the cash and closes it. 409 SHIFT_NOT_OPEN.
+  closeShift: (publicId: string) => api.post(`/api/employee/payment/shifts/${publicId}/close`, {}),
   // Own shift history across every branch (#22): MyShiftsResponse.
   getMyShifts: (params?: MyShiftsParams) => api.get('/api/employee/payment/shifts/me', { params }),
   // One own shift with its transactions: { data: ShiftDetail }; 404 SHIFT_NOT_FOUND.
@@ -570,7 +572,7 @@ export const employeeApi = {
     sessionPublicId: string,
     body: {
       // UPI ≡ ONLINE through the counter UPI gateway; CREDIT = stays owed (#11)
-      method: 'CASH' | 'ONLINE' | 'SPLIT' | 'UPI' | 'CREDIT';
+      method: 'CASH' | 'ONLINE' | 'SPLIT' | 'UPI' | 'CREDIT' | 'CARD';
       amount: number;
       idempotencyKey: string;
       notes?: string;
@@ -695,7 +697,7 @@ export const employeeApi = {
     customer_kyc_id?: string;
     start: string;
     end: string;
-    payment_type: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT';
+    payment_type: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT' | 'CARD';
     /** Older builds' UPI proof — this app sends proof_file_id instead. */
     utr?: string;
     /** UPI / SPLIT: the payment-screen photo (#3); then confirmed via bookingPaymentStatus like CASH. */
@@ -806,7 +808,7 @@ export const employeeApi = {
   collectExtension: (
     extensionPublicId: string,
     body: {
-      method: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT';
+      method: 'CASH' | 'ONLINE' | 'UPI' | 'SPLIT' | 'CREDIT' | 'CARD';
       onlineTransactionRef?: string;
       proof_file_id?: string;
       proof_file_ids?: string[];
@@ -835,9 +837,22 @@ export const employeeApi = {
   // EXTENSION_PENDING, RESCHEDULE_NO_CHANGE, RESCHEDULE_IN_PAST,
   // BOOKING_MAX_PERIOD_EXCEEDED, BRANCH_SCHEDULE_VIOLATION, DL_IN_USE,
   // VEHICLE_TYPE_LIMIT_EXCEEDED, VEHICLE_UNAVAILABLE, RESCHEDULE_BUSY, RESCHEDULE_CONFLICT.
-  rescheduleBooking: (bookingPublicId: string, body: { newStartAt: string; reason?: string }) =>
+  // Reschedule rental period (TODO 4): also send newEndAt — start and end move
+  // independently and the price follows; a price change needs acceptPriceChange
+  // (409 RESCHEDULE_PRICE_CONFIRMATION_REQUIRED otherwise) and expectedNewTotal
+  // guards against a stale preview (409 RESCHEDULE_PRICE_STALE).
+  rescheduleBooking: (
+    bookingPublicId: string,
+    body: { newStartAt: string; newEndAt?: string; acceptPriceChange?: boolean; expectedNewTotal?: string; reason?: string },
+  ) =>
     api.post<{ success: boolean; message: string; data: RescheduleResult }>(
       `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/reschedule`,
+      body,
+    ),
+  // Preview of a new rental period: every check + the price difference. 4xx as the POST.
+  rescheduleQuote: (bookingPublicId: string, body: { newStartAt: string; newEndAt: string }) =>
+    api.post<{ success: boolean; data: ReschedulePeriodQuote }>(
+      `/api/employee/bookings/${encodeURIComponent(bookingPublicId)}/reschedule/quote`,
       body,
     ),
 
@@ -1060,7 +1075,7 @@ export const employeeCustomersApi = {
 // Legacy remaining balance (#3 / #11) — POST …/initiate-remaining-payment.
 export type RemainingPaymentBody =
   | { method: 'CASH' | 'ONLINE_RAZORPAY' }
-  | { method: 'UPI'; proof_file_id?: string; proof_file_ids?: string[]; utr?: string }
+  | { method: 'UPI' | 'CARD'; proof_file_id?: string; proof_file_ids?: string[]; utr?: string }
   | { method: 'SPLIT'; cashAmount: number; onlineAmount: number; proof_file_id?: string; proof_file_ids?: string[]; utr?: string }
   | { method: 'CREDIT'; collateral: string };
 

@@ -26,7 +26,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { adminService } from "@/services/admin.service";
 
-type PaymentModeFilter = "all" | "Cash" | "UPI" | "Gateway" | "Credit";
+type PaymentModeFilter = "all" | "Cash" | "UPI" | "Card" | "Gateway" | "Credit";
 
 interface CollectionReportProps {
   startDate: string;
@@ -51,6 +51,8 @@ interface CollectionSummary {
   totalCash: number;
   totalUpi: number;
   totalGateway: number;
+  /** counter Credit Card (Nov 2026; absent on older servers) */
+  totalCard?: number;
   totalCredit: number;
   grandTotalCollected: number;
   totalTransactions: number;
@@ -315,6 +317,7 @@ export const CollectionReport = ({
               <SelectItem value="all">All Modes</SelectItem>
               <SelectItem value="Cash">Cash</SelectItem>
               <SelectItem value="UPI">UPI</SelectItem>
+              <SelectItem value="Card">Credit Card</SelectItem>
               <SelectItem value="Gateway">Gateway</SelectItem>
               <SelectItem value="Credit">Credit</SelectItem>
             </SelectContent>
@@ -323,7 +326,7 @@ export const CollectionReport = ({
       </FilterPanel>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <MetricCard
           title="Total Cash"
           value={formatCurrency(summary?.totalCash || 0)}
@@ -341,6 +344,13 @@ export const CollectionReport = ({
         <MetricCard
           title="Total Gateway"
           value={formatCurrency(summary?.totalGateway || 0)}
+          icon={CreditCard}
+          variant="fleet"
+          isLoading={loading}
+        />
+        <MetricCard
+          title="Total Credit Card"
+          value={formatCurrency(summary?.totalCard || 0)}
           icon={CreditCard}
           variant="fleet"
           isLoading={loading}

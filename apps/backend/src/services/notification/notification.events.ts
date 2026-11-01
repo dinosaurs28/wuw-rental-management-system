@@ -457,6 +457,11 @@ export const notifyEvents = {
     bookingId: number;
     previousStartAt: Date;
     newStartAt: Date;
+    /** Period reschedule (TODO 4): the end moved on its own and the price may have changed */
+    previousEndAt?: Date;
+    newEndAt?: Date;
+    priceDifference?: number;
+    dueAtPickup?: number;
     actorUserId?: number | null;
     reason?: string | null;
   }): Promise<void> {
@@ -465,20 +470,28 @@ export const notifyEvents = {
       // Moved again (or cancelled) since — the later event speaks for it
       if (!booking || booking.status !== "CONFIRMED") return;
       if (booking.startAt.getTime() !== args.newStartAt.getTime()) return;
+      if (args.newEndAt && booking.endAt.getTime() !== args.newEndAt.getTime()) return;
+      const diff = args.priceDifference ?? 0;
+      const priceLine =
+        diff > 0
+          ? ` The new price is ${money(diff)} more${args.dueAtPickup && args.dueAtPickup > 0 ? ` — ${money(args.dueAtPickup)} is due at pickup` : ""}.`
+          : diff < 0
+            ? ` The new price is ${money(-diff)} less — the branch will refund the difference.`
+            : " The price is unchanged.";
       const vehicle = booking.items[0]?.vehicle;
       const base = {
         type: "BOOKING_CONFIRMED" as const,
         branchId: booking.branchId,
         bookingId: booking.id,
         data: bookingData(booking),
-        dedupeKey: `rescheduled:${booking.publicId}:${args.newStartAt.toISOString()}`,
+        dedupeKey: `rescheduled:${booking.publicId}:${args.newStartAt.toISOString()}${args.newEndAt ? `:${args.newEndAt.toISOString()}` : ""}`,
       };
 
       await notify({
         ...base,
         recipients: [booking.customer.userId],
         title: "Booking rescheduled",
-        body: `Your booking ${ref(booking.publicId)} for the ${vehicleName(vehicle)} now starts ${when(booking.startAt)} (was ${when(args.previousStartAt)}). Please return it by ${when(booking.endAt)}. The price is unchanged.`,
+        body: `Your booking ${ref(booking.publicId)} for the ${vehicleName(vehicle)} now starts ${when(booking.startAt)} (was ${when(args.previousStartAt)}). Please return it by ${when(booking.endAt)}.${priceLine}`,
       });
       const why = args.reason?.trim() ? ` Reason: ${args.reason.trim()}` : "";
       await notify({

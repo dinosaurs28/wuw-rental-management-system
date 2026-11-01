@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { ShiftRequiredNotice } from "@/components/employee/counter/ShiftRequiredNotice";
 import { apiErrorMessage, counterErrorCode } from "@/lib/counterErrors";
-import { counterPaymentErrorField, type CounterProof } from "@/lib/counterPayment";
+import { CARD_RECEIPT_HELPER, CARD_RECEIPT_LABEL, counterPaymentErrorField, type CounterProof } from "@/lib/counterPayment";
 import { PaymentProofField } from "@/components/payment/counter/PaymentProofField";
 
 interface RecordPaymentModalProps {
@@ -59,7 +59,8 @@ const methodLabels: Record<PaymentMethod, string> = {
   SPLIT: "Split (Cash + Online)",
 };
 
-const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
+const gateways: OnlineGateway[] = ["UPI", "Card", "Razorpay", "Other"];
+const gatewayLabel = (g: OnlineGateway) => (g === "Card" ? "Credit Card" : g);
 
 export function RecordPaymentModal({
   open,
@@ -87,6 +88,9 @@ export function RecordPaymentModal({
   const [shiftRequired, setShiftRequired] = useState(false);
   const idempotencyKey = useRef(crypto.randomUUID());
   const isUpi = gateway === "UPI";
+  // Counter Credit Card (Nov 2026): backed by a photo of the card-machine receipt
+  const isCard = gateway === "Card";
+  const usesPhoto = isUpi || isCard;
 
   const totalNum = parseFloat(amount) || 0;
   const cashNum = parseFloat(cashAmount) || 0;
@@ -123,11 +127,13 @@ export function RecordPaymentModal({
       toast.error("Please enter a valid amount.");
       return;
     }
-    if ((method === "ONLINE" || method === "SPLIT") && (isUpi ? !proof : !txnRef.trim())) {
+    if ((method === "ONLINE" || method === "SPLIT") && (usesPhoto ? !proof : !txnRef.trim())) {
       setRefError(
         isUpi
           ? "Add a photo of the customer's UPI payment-success screen."
-          : "Transaction reference is required for online payments.",
+          : isCard
+            ? "Add a photo of the card payment receipt."
+            : "Transaction reference is required for online payments.",
       );
       return;
     }
@@ -145,9 +151,9 @@ export function RecordPaymentModal({
         totalAmount: totalNum,
         cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
         onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef: method !== "CASH" && !isUpi ? txnRef.trim() : undefined,
-        proof_file_id: method !== "CASH" && isUpi ? proof?.proofFileId : undefined,
-        onlineGateway: method !== "CASH" ? gateway : undefined,
+        onlineTransactionRef: method !== "CASH" && !usesPhoto ? txnRef.trim() : undefined,
+        proof_file_id: method !== "CASH" && usesPhoto ? proof?.proofFileId : undefined,
+        onlineGateway: method !== "CASH" ? (isCard ? "CARD" : gateway) : undefined,
         notes: notes || undefined,
         idempotencyKey: idempotencyKey.current,
       });
@@ -375,14 +381,15 @@ export function RecordPaymentModal({
                       <SelectContent>
                         {gateways.map((g) => (
                           <SelectItem key={g} value={g}>
-                            {g}
+                            {gatewayLabel(g)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  {isUpi ? (
-                    // Counter UPI (#3): photo of the customer's payment screen
+                  {usesPhoto ? (
+                    // Counter UPI (#3): photo of the customer's payment screen;
+                    // Credit Card (Nov 2026): photo of the card-machine receipt
                     <PaymentProofField
                       id="record-payment-proof"
                       role={role === "employee" ? "staff" : "manager"}
@@ -392,6 +399,7 @@ export function RecordPaymentModal({
                         setRefError(null);
                       }}
                       error={refError}
+                      {...(isCard ? { label: CARD_RECEIPT_LABEL, helper: CARD_RECEIPT_HELPER } : {})}
                     />
                   ) : (
                     <div className="space-y-2">

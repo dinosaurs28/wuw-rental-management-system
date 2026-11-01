@@ -59,8 +59,11 @@ export class CashShiftError extends Error {
   }
 }
 
-/** What an old app build sees when it tries to close its own shift. */
-export const FE_CLOSE_MESSAGE = "Your branch manager closes shifts now. Hand over your cash to close this shift.";
+/**
+ * A non-manager on the manager's "Verify & close". (Since Nov 2026 an executive
+ * closes their own cash-free shift on the employee route — selfCloseEligibility.)
+ */
+export const FE_CLOSE_MESSAGE = "Only your branch manager can verify and close this shift. Hand over your cash to close it.";
 
 const ZERO = new Decimal(0);
 const dec = (v: { toString(): string } | number | string | null | undefined): Decimal =>
@@ -268,4 +271,86 @@ export function shiftDurationLabel(fromMs: number, toMs: number): string {
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+// ── Fleet Executive self-close (Nov 2026) ────────────────────────────────────
+/*
+ * A Fleet Executive may close their OWN shift from the Fleet app only when the
+ * drawer never held any cash; otherwise the branch manager verifies the cash
+ * and closes it ("Verify & close"). Decided on the same live rows the close
+ * counts (countsInShift / shiftFigures):
+ *
+ *   - cash collected  > 0 → BM. The cash part of every IN payment linked to the
+ *     shift that is COLLECTED or CONFIRMED — a split's cash part included.
+ *   - cash refunded   > 0 → BM. A cash refund paid out of the shift moved cash
+ *     through the drawer (it came from the float or from collected cash, or the
+ *     executive's own pocket) — the manager has to reconcile it.
+ *   - opening float   > 0 → BM. There is cash in the drawer to hand over.
+ *   - VOIDED rows count nowhere (a voided row means the money never was), and
+ *     neither do REJECTED / FAILED / INITIATED ones: a shift whose only cash row
+ *     was voided (or rejected by the manager) may be self-closed.
+ *   - UPI / card / bank (non-cash) money never blocks a self-close.
+ *
+ * A self-close snapshots zeros (cash received 0, difference 0 — there was no
+ * cash), closedById = the executive, no reconciler, and confirms NOTHING:
+ * non-cash rows still COLLECTED (rare — counter UPI is recorded CONFIRMED) stay
+ * for the manager, who sees them under "Unconfirmed payments" in Cash Shift.
+ * Self-approval of money is never allowed.
+ */
+
+export type SelfCloseReason = "OK" | "NOT_OPEN" | "CASH_COLLECTED" | "CASH_REFUNDED" | "OPENING_FLOAT";
+
+export const SELF_CLOSE_CASH_MESSAGE = "You collected cash in this shift — your branch manager must verify and close it.";
+export const SELF_CLOSE_REFUND_MESSAGE = "You paid out a cash refund in this shift — your branch manager must verify and close it.";
+export const SELF_CLOSE_FLOAT_MESSAGE = "This shift started with cash in the drawer — your branch manager must verify and close it.";
+
+export interface SelfCloseEligibility {
+  canSelfClose: boolean;
+  reason: SelfCloseReason;
+  /** Why not, for the app ("" when allowed). */
+  message: string;
+  /** Cash the manager has to receive (opening + collected − refunded), 2 dp. */
+  cashToHandOver: string;
+  cashCollected: string;
+  cashRefunded: string;
+  openingCash: string;
+}
+
+/** Pure eligibility rule for a Fleet Executive closing their own shift (see above). */
+export function selfCloseEligibility(p: {
+  status: string;
+  figures: Pick<ShiftFigures, "openingCash" | "cashCollected" | "cashRefunded">;
+}): SelfCloseEligibility {
+  const opening = dec(p.figures.openingCash);
+  const collected = dec(p.figures.cashCollected);
+  const refunded = dec(p.figures.cashRefunded);
+  const base = {
+    cashToHandOver: money2(expectedCash({ openingCash: opening, cashCollected: collected, cashRefunded: refunded })),
+    cashCollected: money2(collected),
+    cashRefunded: money2(refunded),
+    openingCash: money2(opening),
+  };
+  const no = (reason: SelfCloseReason, message: string): SelfCloseEligibility => ({ canSelfClose: false, reason, message, ...base });
+  if (p.status !== "OPEN") return no("NOT_OPEN", "This shift is already closed. Closed shifts can't be changed.");
+  if (collected.gt(0)) return no("CASH_COLLECTED", SELF_CLOSE_CASH_MESSAGE);
+  if (refunded.gt(0)) return no("CASH_REFUNDED", SELF_CLOSE_REFUND_MESSAGE);
+  if (opening.gt(0)) return no("OPENING_FLOAT", SELF_CLOSE_FLOAT_MESSAGE);
+  return { canSelfClose: true, reason: "OK", message: "", ...base };
+}
+
+/** Throws the 403 an executive gets when their shift needs the manager (old builds read `message`). */
+export function assertSelfClosable(e: SelfCloseEligibility): void {
+  if (e.canSelfClose) return;
+  if (e.reason === "NOT_OPEN") {
+    throw new CashShiftError(StatusCode.CONFLICT, "SHIFT_NOT_OPEN", e.message);
+  }
+  // Same code older builds already branch on (SHIFT_CLOSE_MANAGER_ONLY)
+  throw new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_CLOSE_MANAGER_ONLY", e.message, {
+    reason: e.reason,
+    canSelfClose: false,
+    cashToHandOver: e.cashToHandOver,
+    cashCollected: e.cashCollected,
+    cashRefunded: e.cashRefunded,
+    openingCash: e.openingCash,
+  });
 }

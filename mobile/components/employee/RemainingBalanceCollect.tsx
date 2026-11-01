@@ -48,8 +48,8 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
   // server-side; credit leaves the balance owed against the collateral (#11).
   const record = async (choice: CounterPaymentChoice) => {
     const body: RemainingPaymentBody =
-      choice.method === 'UPI'
-        ? { method: 'UPI', proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
+      choice.method === 'UPI' || choice.method === 'CARD'
+        ? { method: choice.method, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
         : choice.method === 'SPLIT'
           ? { method: 'SPLIT', cashAmount: choice.cashAmount, onlineAmount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
           : choice.method === 'CREDIT'
@@ -97,6 +97,8 @@ export default function RemainingBalanceCollect({ bookingId, amount, context, on
       ? `Collect ${amountText} cash`
       : method === 'UPI'
         ? `Record ${amountText} UPI payment`
+        : method === 'CARD'
+          ? `Record ${amountText} credit card payment`
         : method === 'SPLIT'
           ? `Record ${amountText} split payment`
           : `Put ${amountText} on credit`;

@@ -32,7 +32,15 @@ import {
 import { formatPackageReturn } from "@/components/booking/PackagePicker";
 import { formatScheduleTime } from "@/utils/branchScheduleValidator";
 import { istCalendarParts } from "@/utils/bookingPickers";
-import { istWallClock, rescheduleDays, type RescheduleSlot } from "@/utils/rescheduleSlots";
+import {
+  canStartNow,
+  istWallClock,
+  periodEndDays,
+  periodStartDays,
+  rescheduleDays,
+  type PeriodDay,
+  type RescheduleSlot,
+} from "@/utils/rescheduleSlots";
 import { BOOKING_TURNAROUND_HOURS } from "@repo/schemas";
 
 const REASON_MAX = 500;
@@ -61,8 +69,9 @@ export function RescheduleBookingSheet({
   onRescheduled,
 }: RescheduleBookingSheetProps) {
   const isMobile = useIsMobile();
-  const title = "Reschedule booking";
-  const description = "Move the pickup earlier or later. The return moves with it; the price stays the same.";
+  const title = "Reschedule rental period";
+  const description =
+    "Change the rental start, the return or both. Allowed times follow branch hours and other bookings; the price follows the new period.";
   // Rendered only while open, so each opening starts fresh (and refetches the free times)
   const body = (
     <RescheduleBody
@@ -157,6 +166,18 @@ function RescheduleBody({
           Close
         </Button>
       </div>
+    );
+  }
+  if (options.periodReschedule) {
+    return (
+      <PeriodForm
+        options={options}
+        role={role}
+        bookingPublicId={bookingPublicId}
+        onClose={onClose}
+        onRescheduled={onRescheduled}
+        refetch={() => void query.refetch()}
+      />
     );
   }
   return (
@@ -359,6 +380,322 @@ function RescheduleForm({
         >
           {submitting ? <Loader2 className="size-4 animate-spin" /> : "Reschedule"}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+const rupees = (v: string | number) =>
+  `₹${Number(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/**
+ * Reschedule rental period (TODO 4): a new start AND a new end, picked on
+ * their own ("Now" for an immediate pickup). The server checks the period and
+ * prices it (quote); the FE sees the old total, the new total and the
+ * difference, then confirms.
+ */
+function PeriodForm({
+  options,
+  role,
+  bookingPublicId,
+  onClose,
+  onRescheduled,
+  refetch,
+}: {
+  options: RescheduleOptions;
+  role: RescheduleRole;
+  bookingPublicId: string;
+  onClose: () => void;
+  onRescheduled?: (result: RescheduleResult) => void;
+  refetch: () => void;
+}) {
+  const [now] = useState(() => new Date());
+  const startDays = useMemo(() => periodStartDays(options, now), [options, now]);
+  const nowOk = useMemo(() => canStartNow(options, now), [options, now]);
+  const ownStart = new Date(options.startAt);
+  const ownEnd = new Date(options.endAt);
+  const ownStartFree = startDays.some((d) => d.times.some((x) => x.at.getTime() === ownStart.getTime()));
+  const [start, setStart] = useState<Date | null>(ownStartFree ? ownStart : null);
+  const [startDayKey, setStartDayKey] = useState<number | null>(
+    () => (ownStartFree ? istCalendarParts(ownStart).day.getTime() : startDays.find((d) => d.times.length > 0)?.day.getTime()) ?? null,
+  );
+  const [end, setEnd] = useState<Date | null>(ownStartFree ? ownEnd : null);
+  const [endDayKey, setEndDayKey] = useState<number | null>(ownStartFree ? istCalendarParts(ownEnd).day.getTime() : null);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const endDays = useMemo(() => (start ? periodEndDays(options, start) : []), [options, start]);
+  useEffect(() => {
+    if (end && !endDays.some((d) => d.times.some((x) => x.at.getTime() === end.getTime()))) setEnd(null);
+  }, [endDays, end]);
+
+  const changed =
+    !!start && !!end &&
+    (Math.abs(start.getTime() - ownStart.getTime()) >= MINUTE || Math.abs(end.getTime() - ownEnd.getTime()) >= MINUTE);
+  const quote = useQuery({
+    queryKey: ["reschedule-quote", role, bookingPublicId, start?.getTime(), end?.getTime()],
+    queryFn: () => rescheduleService.quote(role, bookingPublicId, { newStartAt: istWallClock(start!), newEndAt: istWallClock(end!) }),
+    enabled: changed,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
+  const pricing = quote.data?.pricing;
+  const diff = pricing ? Number(pricing.difference) : 0;
+
+  const submit = async () => {
+    if (!start || !end || !pricing || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await rescheduleService.reschedule(role, bookingPublicId, {
+        newStartAt: istWallClock(start),
+        newEndAt: istWallClock(end),
+        acceptPriceChange: true,
+        expectedNewTotal: pricing.newTotal,
+        ...(reason.trim() ? { reason: reason.trim() } : {}),
+      });
+      toast.success(res.message || "Booking rescheduled.");
+      onRescheduled?.(res.data);
+      onClose();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Couldn't reschedule the booking. Please try again."));
+      refetch();
+      void quote.refetch();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const vehicleName = options.vehicles.map((v) => `${v.make} ${v.model} (${v.regNo})`).join(", ");
+  const todayKey = istCalendarParts(now).day.getTime();
+  const startDay = startDays.find((d) => d.day.getTime() === startDayKey) ?? null;
+  const endDay = endDays.find((d) => d.day.getTime() === endDayKey) ?? null;
+  const nowSlot = new Date(Math.ceil(now.getTime() / MINUTE) * MINUTE);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+        <CurrentTimes options={options} vehicleName={vehicleName} />
+
+        <DayStrip
+          label="Rental start (pickup)"
+          days={startDays}
+          activeKey={startDayKey}
+          extraEnabledKey={nowOk ? todayKey : null}
+          onPick={(k) => {
+            setStartDayKey(k);
+            setStart(null);
+          }}
+        />
+        {startDay && (
+          <TimeGrid
+            label="Start time"
+            times={[
+              ...(nowOk && startDay.day.getTime() === todayKey ? [{ at: nowSlot, time: "NOW" }] : []),
+              ...startDay.times,
+            ]}
+            active={start}
+            onPick={(at) => setStart(at)}
+          />
+        )}
+
+        {start && (
+          <>
+            <DayStrip
+              label="Rental end (return)"
+              days={endDays}
+              activeKey={endDayKey}
+              onPick={(k) => {
+                setEndDayKey(k);
+                setEnd(null);
+              }}
+            />
+            {endDays.every((d) => d.times.length === 0) && (
+              <Notice tone="warning">No return time is free after this start — another booking, a lock or branch hours are in the way.</Notice>
+            )}
+            {endDay && <TimeGrid label="Return time" times={endDay.times} active={end} onPick={(at) => setEnd(at)} />}
+          </>
+        )}
+
+        {changed && start && end && (
+          <div className="space-y-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm">
+            <p className="flex flex-wrap items-center gap-1.5 text-zinc-900">
+              <span className="font-semibold">New pickup:</span> {formatPackageReturn(start)}
+              <ArrowRight className="size-3.5 text-zinc-400" />
+              <span className="font-semibold">New return:</span> {formatPackageReturn(end)}
+            </p>
+            {quote.isFetching ? (
+              <p className="flex items-center gap-2 text-xs text-zinc-500">
+                <Loader2 className="size-3.5 animate-spin" /> Checking the period and its price…
+              </p>
+            ) : quote.isError ? (
+              <p className="text-xs text-red-700">{apiErrorMessage(quote.error, "This period is not available.")}</p>
+            ) : pricing ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-zinc-700">
+                <span>Length</span>
+                <span className="text-right">{quote.data!.previous.durationLabel} → {quote.data!.next.durationLabel}</span>
+                <span>Current total</span>
+                <span className="text-right">{rupees(pricing.oldTotal)}</span>
+                <span className="font-semibold">New total</span>
+                <span className="text-right font-semibold">{rupees(pricing.newTotal)}</span>
+                <span className="font-semibold">Difference</span>
+                <span className={cn("text-right font-semibold", diff > 0 ? "text-orange-700" : diff < 0 ? "text-emerald-700" : "")}>
+                  {diff === 0 ? "No change" : `${diff > 0 ? "+" : "−"}${rupees(Math.abs(diff))}`}
+                </span>
+                {Number(pricing.dueAtPickup) > 0 && (
+                  <>
+                    <span>Due at pickup</span>
+                    <span className="text-right">{rupees(pricing.dueAtPickup)}</span>
+                  </>
+                )}
+                {Number(pricing.refundable) > 0 && (
+                  <>
+                    <span>To refund to the customer</span>
+                    <span className="text-right">{rupees(pricing.refundable)}</span>
+                  </>
+                )}
+                <p className="col-span-2 pt-1 text-[11px] text-zinc-500">
+                  {diff > 0
+                    ? "The difference is collected with the remaining balance at pickup."
+                    : diff < 0
+                      ? 'The customer has paid more than the new total: refund it with "Refund to customer" (not automatic).'
+                      : "Same price; only the dates change."}
+                  {pricing.couponCode && pricing.couponAppliesToNewWindow === false
+                    ? ` Coupon ${pricing.couponCode} doesn't apply to the new period.`
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        <BusyList options={options} />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reschedule-reason">Reason (optional)</Label>
+          <Textarea
+            id="reschedule-reason"
+            value={reason}
+            maxLength={REASON_MAX}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. Customer arrived a day early"
+            className="min-h-[64px] text-sm"
+          />
+        </div>
+
+        {error && <Notice tone="error">{error}</Notice>}
+      </div>
+
+      <div className="flex gap-2">
+        <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button
+          className="flex-1 bg-orange-500 text-white hover:bg-orange-600"
+          onClick={() => void submit()}
+          disabled={!changed || !pricing || quote.isFetching || submitting}
+        >
+          {submitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : !pricing ? (
+            "Reschedule"
+          ) : diff > 0 ? (
+            `Reschedule · ${rupees(diff)} more`
+          ) : diff < 0 ? (
+            `Reschedule · ${rupees(-diff)} less`
+          ) : (
+            "Reschedule · same price"
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const MINUTE = 60_000;
+
+function DayStrip({
+  label,
+  days,
+  activeKey,
+  extraEnabledKey = null,
+  onPick,
+}: {
+  label: string;
+  days: PeriodDay[];
+  activeKey: number | null;
+  extraEnabledKey?: number | null;
+  onPick: (key: number) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <div className="flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-label={label}>
+        {days.map((d) => {
+          const key = d.day.getTime();
+          const active = key === activeKey;
+          const empty = d.times.length === 0 && key !== extraEnabledKey;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={empty}
+              title={empty ? (d.closed ? "Branch closed" : "No free time") : undefined}
+              onClick={() => onPick(key)}
+              className={cn(
+                "flex min-w-[64px] shrink-0 flex-col items-center rounded-xl border px-2.5 py-2 text-xs transition-colors",
+                active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-200",
+              )}
+            >
+              <span className="font-semibold">{format(d.day, "EEE")}</span>
+              <span>{format(d.day, "d MMM")}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TimeGrid({
+  label,
+  times,
+  active,
+  onPick,
+}: {
+  label: string;
+  times: Array<{ at: Date; time: string }>;
+  active: Date | null;
+  onPick: (at: Date) => void;
+}) {
+  if (times.length === 0) return <p className="text-xs text-zinc-500">No free time that day.</p>;
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" role="radiogroup" aria-label={label}>
+        {times.map((x) => {
+          const on = active?.getTime() === x.at.getTime();
+          return (
+            <button
+              key={x.time}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onPick(x.at)}
+              className={cn(
+                "h-9 rounded-lg border text-xs font-semibold transition-colors",
+                on ? "border-orange-500 bg-orange-500 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+              )}
+            >
+              {x.time === "NOW" ? "Now" : formatScheduleTime(x.time)}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

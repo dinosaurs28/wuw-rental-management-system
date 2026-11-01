@@ -51,6 +51,8 @@ interface DayRow {
   revenue: number;
   cashCollected: number;
   upiCollected: number;
+  /** counter Credit Card money (Nov 2026) */
+  cardCollected: number;
   outstanding: number;
   cancellations: number;
 }
@@ -169,6 +171,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         revenue: 0,
         cashCollected: 0,
         upiCollected: 0,
+        cardCollected: 0,
         outstanding: 0,
         cancellations: 0,
       };
@@ -212,6 +215,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       if (i < 0) continue;
       rows[i]!.cashCollected += c.cash;
       rows[i]!.upiCollected += c.upi;
+      rows[i]!.cardCollected += c.card;
     }
 
     // ── Totals ────────────────────────────────────────────────────────────────
@@ -222,6 +226,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         acc.revenue += r.revenue;
         acc.cashCollected += r.cashCollected;
         acc.upiCollected += r.upiCollected;
+        acc.cardCollected += r.cardCollected;
         acc.outstanding += r.outstanding;
         acc.cancellations += r.cancellations;
         return acc;
@@ -232,6 +237,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         revenue: 0,
         cashCollected: 0,
         upiCollected: 0,
+        cardCollected: 0,
         outstanding: 0,
         cancellations: 0,
       },
@@ -261,6 +267,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         "Revenue",
         "Cash Collected",
         "UPI Collected",
+        "Card Collected",
         "Outstanding",
         "Cancellations",
       ];
@@ -272,6 +279,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         Revenue: csvCurrency(r.revenue),
         "Cash Collected": csvCurrency(r.cashCollected),
         "UPI Collected": csvCurrency(r.upiCollected),
+        "Card Collected": csvCurrency(r.cardCollected),
         Outstanding: csvCurrency(r.outstanding),
         Cancellations: r.cancellations,
       }));
@@ -282,6 +290,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         Revenue: csvCurrency(totals.revenue),
         "Cash Collected": csvCurrency(totals.cashCollected),
         "UPI Collected": csvCurrency(totals.upiCollected),
+        "Card Collected": csvCurrency(totals.cardCollected),
         Outstanding: csvCurrency(totals.outstanding),
         Cancellations: totals.cancellations,
       });

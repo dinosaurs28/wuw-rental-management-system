@@ -972,8 +972,8 @@ export default function PickupScreen() {
               onlineGateway: 'UPI',
               proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds,
             }
-            : choice.method === 'UPI'
-              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
+            : choice.method === 'UPI' || choice.method === 'CARD'
+              ? { method: choice.method, amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
               : choice.method === 'CREDIT'
                 ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral }
                 : { method: 'CASH', amount: net, idempotencyKey },
@@ -1900,7 +1900,7 @@ export default function PickupScreen() {
           activeOpacity={0.85}
         >
           <Ionicons name="time-outline" size={18} color={Colors.ink2} />
-          <Text style={styles.extendBtnText}>Reschedule pickup</Text>
+          <Text style={styles.extendBtnText}>Reschedule rental period</Text>
           <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
         </TouchableOpacity>
 

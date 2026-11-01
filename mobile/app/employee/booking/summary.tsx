@@ -346,7 +346,7 @@ export default function WalkinSummaryScreen() {
         start,
         end,
         payment_type: choice.method,
-        ...(choice.method === 'UPI' ? { proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds } : {}),
+        ...(choice.method === 'UPI' || choice.method === 'CARD' ? { proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds } : {}),
         // Both parts are sent so a total that moved on the server is refused, not re-split.
         ...(choice.method === 'SPLIT'
           ? { cash_amount: choice.cashAmount, upi_amount: choice.upiAmount, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds }
@@ -427,6 +427,8 @@ export default function WalkinSummaryScreen() {
         setStatusText(
           choice.method === 'UPI'
             ? 'Confirming UPI payment…'
+            : choice.method === 'CARD'
+              ? 'Confirming credit card payment…'
             : choice.method === 'SPLIT'
               ? 'Confirming split payment…'
               : choice.method === 'CREDIT'

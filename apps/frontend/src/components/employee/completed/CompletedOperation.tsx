@@ -384,7 +384,7 @@ function SummaryContent({ summary }: { summary: Summary }) {
 
 /** A safety deposit raised by the edit is never taken on credit. */
 const collectMethodsOf = (lines: { entryType: string; delta: string }[]) =>
-  lines.some((l) => l.entryType === "DEPOSIT" && num(l.delta) > 0) ? ["CASH", "UPI", "SPLIT"] : undefined;
+  lines.some((l) => l.entryType === "DEPOSIT" && num(l.delta) > 0) ? ["CASH", "UPI", "CARD", "SPLIT"] : undefined;
 
 /** The difference of an earlier edit, settled from the summary. */
 export function PendingAdjustment({ summary, record }: { summary: Summary; record: AdjustmentRecord }) {

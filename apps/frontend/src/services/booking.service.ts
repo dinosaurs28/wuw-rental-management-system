@@ -720,7 +720,7 @@ export const bookingService = {
     context: "pickup" | "return",
     data: {
       /** UPI = counter UPI backed by proof_file_id; SPLIT = cashAmount + onlineAmount; CREDIT needs collateral (#11). */
-      method: "CASH" | "UPI" | "ONLINE" | "SPLIT" | "CREDIT";
+      method: "CASH" | "UPI" | "ONLINE" | "SPLIT" | "CREDIT" | "CARD";
       proof_file_id?: string;
       /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */
       proof_file_ids?: string[];
@@ -846,7 +846,7 @@ export const bookingService = {
     start: string;
     end: string;
     /** ONLINE = Razorpay; SPLIT = cash + UPI; CREDIT = owed against collateral (#11). */
-    payment_type: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
+    payment_type: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT" | "CARD";
     /** 12-digit UPI UTR — older clients only; new UIs send proof_file_id. */
     utr?: string;
     /** Photo of the customer's UPI payment screen (#3) — UPI and the UPI part of SPLIT. */

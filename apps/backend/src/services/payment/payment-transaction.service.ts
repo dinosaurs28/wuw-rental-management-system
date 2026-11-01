@@ -15,6 +15,7 @@ import { notifyEvents } from "../notification/notification.events.js";
 import { assertOpenShift, claimUtr, lockShiftForPayment } from "./counter-guard.service.js";
 import {
   resolveCounterUpi,
+  resolveCounterCard,
   claimCounterUpi,
   proofPhotoFields,
   PROOF_FILE_RELATION_SELECT,
@@ -30,6 +31,7 @@ import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js"
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
 import { voidView } from "./payment-void-rules.js";
+import { CARD_GATEWAY, isCardGateway } from "@repo/schemas";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -301,9 +303,21 @@ class PaymentTransactionService {
     let upi: CounterUpi | null = null;
     if (onlineAmount.gt(ZERO) || input.method === "ONLINE") {
       const isUpi = !onlineGateway || onlineGateway.toUpperCase() === "UPI";
+      const isCard = isCardGateway(onlineGateway);
       const nothingBacksUpi =
         !input.onlineTransactionRef?.trim() && !input.proof_file_id && !(input.proof_file_ids?.length);
-      if (isUpi && opts.upiProofOptional && nothingBacksUpi) {
+      if (isCard) {
+        // Credit Card (Nov 2026): 1–3 receipt photos (optional only in BM settlements);
+        // a card reference typed by the manager is kept as-is (not unique-checked)
+        upi = await resolveCounterCard({
+          proofFileId: input.proof_file_id,
+          proofFileIds: input.proof_file_ids,
+          branchId,
+          optional: opts.upiProofOptional,
+        });
+        onlineRef = input.onlineTransactionRef?.trim() || null;
+        onlineGateway = CARD_GATEWAY;
+      } else if (isUpi && opts.upiProofOptional && nothingBacksUpi) {
         // Settlements: confirmed by the manager against the transactions — no photo
         onlineGateway = "UPI";
       } else if (isUpi) {
@@ -349,7 +363,8 @@ class PaymentTransactionService {
     // is locked FOR SHARE inside the insert transaction, so a payment never
     // lands in a shift a manager is closing (SHIFT_REQUIRED instead). Managers
     // link to their own open shift when they have one (cash / UPI as before).
-    const linksForManager = (input.method !== "ONLINE" && cashAmount.gt(ZERO)) || onlineGateway === "UPI";
+    const linksForManager =
+      (input.method !== "ONLINE" && cashAmount.gt(ZERO)) || onlineGateway === "UPI" || onlineGateway === CARD_GATEWAY;
 
     const txn = await prisma.$transaction(async (tx) => {
       const shift = await lockShiftForPayment(tx, { id: actor.actorId, role: actor.actorRole });
@@ -708,6 +723,8 @@ class PaymentTransactionService {
       // Additive (Oct 2026): how it was paid and the proof photo for UPI
       method: t.method,
       isUpi: String(t.onlineGateway ?? "").toUpperCase() === "UPI",
+      // Additive (Nov 2026): a counter Credit Card payment (receipt photos in proofs)
+      isCard: isCardGateway(t.onlineGateway),
       cashAmount: Number(t.cashAmount).toFixed(2),
       onlineAmount: Number(t.onlineAmount).toFixed(2),
       onlineGateway: t.onlineGateway ?? null,

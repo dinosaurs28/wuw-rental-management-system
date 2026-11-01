@@ -107,7 +107,7 @@ export const EmployeeBookingSummaryPage = () => {
     const field = counterPaymentErrorField(error);
     const total = Number((error as { response?: { data?: { total?: unknown } } })?.response?.data?.total);
     const store = useEmployeeBookingStore.getState();
-    const method = (["CASH", "UPI", "SPLIT", "CREDIT"] as const).find((m) => m === payload?.payment_type) ?? "UPI";
+    const method = (["CASH", "UPI", "CARD", "SPLIT", "CREDIT"] as const).find((m) => m === payload?.payment_type) ?? "UPI";
     setPaymentRetry({
       message: apiErrorMessage(error, "Check the payment details and try again."),
       field,
@@ -401,7 +401,7 @@ export const EmployeeBookingSummaryPage = () => {
   // Counter UPI / split / credit settle without a gateway: the server confirms
   // them directly (#3 / #11). Cash goes to the status page as before.
   const counterType =
-    (["UPI", "SPLIT", "CREDIT"] as const).find(
+    (["UPI", "CARD", "SPLIT", "CREDIT"] as const).find(
       (t) =>
         bookingPayload?.payment_type === t ||
         (typeof transactionId === "string" && transactionId.startsWith(`${t}_`)),
@@ -671,6 +671,8 @@ export const EmployeeBookingSummaryPage = () => {
               <div className="text-center text-green-600 font-medium p-3 bg-green-50 rounded-lg">
                 {counterType === "UPI"
                   ? "UPI Payment — Confirm Collection"
+                  : counterType === "CARD"
+                    ? "Credit Card Payment — Confirm Collection"
                   : counterType === "SPLIT"
                     ? "Split Payment (Cash + UPI) — Confirm Collection"
                     : counterType === "CREDIT"
@@ -689,14 +691,14 @@ export const EmployeeBookingSummaryPage = () => {
                     Nothing is collected now — the total stays owed. Collateral held: {bookingPayload.collateral}
                   </p>
                 )}
-                {(counterType === "UPI" || counterType === "SPLIT") &&
+                {(counterType === "UPI" || counterType === "SPLIT" || counterType === "CARD") &&
                   upiProof &&
                   upiProof.proofFileId === bookingPayload?.proof_file_id && (
                     <div className="mt-2 flex items-center justify-center gap-2 text-xs font-normal text-green-700">
                       <ProofPhotoThumb
                         photo={upiProof}
                         photos={[upiProof, ...upiExtraProofs]}
-                        caption="Customer's UPI payment screen"
+                        caption={counterType === "CARD" ? "Card payment receipt" : "Customer's UPI payment screen"}
                         size="md"
                       />
                       {upiExtraProofs.length > 0

@@ -182,6 +182,15 @@ export const DailySummaryReports = () => {
       ),
     },
     {
+      accessorKey: "cardCollected",
+      header: "Card Collected",
+      cell: ({ row }) => (
+        <div className="text-sm font-mono">
+          {formatCurrency(row.original.cardCollected ?? 0)}
+        </div>
+      ),
+    },
+    {
       accessorKey: "outstanding",
       header: "Outstanding",
       cell: ({ row }) => (

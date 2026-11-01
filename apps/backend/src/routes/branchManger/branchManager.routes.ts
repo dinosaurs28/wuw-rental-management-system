@@ -147,6 +147,7 @@ import { UpdateBookingDlStatusByManager } from "../../controller/branchManager/d
 import {
   GetRescheduleOptionsByManager,
   RescheduleBookingByManager,
+  QuoteReschedulePeriodByManager,
 } from "../../controller/branchManager/reschedule.controller.js";
 import {
   GetManualCancelOptions,
@@ -412,6 +413,7 @@ router.patch("/bookings/:publicId/dl-status", ManagerCheck, UpdateBookingDlStatu
 // Reschedule a confirmed booking (not picked up): new pickup, return shifted the same, price unchanged
 router.get("/bookings/:publicId/reschedule", ManagerCheck, GetRescheduleOptionsByManager);
 router.post("/bookings/:publicId/reschedule", ManagerCheck, RescheduleBookingByManager);
+router.post("/bookings/:publicId/reschedule/quote", ManagerCheck, QuoteReschedulePeriodByManager);
 // Cancel an upcoming or active rent by hand (Fleet tab): status CANCELLED, record kept, optional refund
 router.get("/bookings/:publicId/cancel", ManagerCheck, GetManualCancelOptions);
 router.post("/bookings/:publicId/cancel", ManagerCheck, ManualCancelBooking);

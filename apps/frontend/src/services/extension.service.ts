@@ -333,7 +333,7 @@ export const extensionService = {
     extensionPublicId: string,
     payload: {
       /** UPI = counter UPI backed by proof_file_id; SPLIT = cashAmount + onlineAmount; CREDIT needs collateral (#12). */
-      method: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
+      method: "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT" | "CARD";
       onlineTransactionRef?: string;
       proof_file_id?: string;
       /** Every payment screenshot (1–3, slot order; the first = proof_file_id). */

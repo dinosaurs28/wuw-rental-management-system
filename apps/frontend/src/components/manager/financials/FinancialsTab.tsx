@@ -445,6 +445,7 @@ export function FinancialsTab({
                   </td>
                   <td className="px-3 py-3 text-xs font-normal text-neutral-500" colSpan={7}>
                     Cash {formatInr(data.pageTotal.cash)} · UPI {formatInr(data.pageTotal.upi)}
+                    {(data.pageTotal.card ?? 0) > 0 ? ` · Card ${formatInr(data.pageTotal.card ?? 0)}` : ""}
                     {data.pageTotal.gateway > 0 ? ` · Online ${formatInr(data.pageTotal.gateway)}` : ""}
                   </td>
                 </tr>
@@ -659,11 +660,12 @@ function DateRangePicker({
   );
 }
 
-function ModeSplit({ byMode, total }: { byMode: { cash: number; upi: number; gateway: number }; total: number }) {
+function ModeSplit({ byMode, total }: { byMode: { cash: number; upi: number; card?: number; gateway: number }; total: number }) {
   const parts = useMemo(
     () => [
       { key: "cash", label: "Cash", amount: byMode.cash, color: "bg-emerald-500" },
       { key: "upi", label: "UPI", amount: byMode.upi, color: "bg-blue-500" },
+      { key: "card", label: "Credit Card", amount: byMode.card ?? 0, color: "bg-amber-500" },
       { key: "gateway", label: "Online (gateway)", amount: byMode.gateway, color: "bg-violet-500" },
     ],
     [byMode],
@@ -744,12 +746,12 @@ function RowDetails({ row }: { row: FinancialsRow }) {
         <div>
           <p className="text-xs text-neutral-500 mb-1">Receipt photo</p>
           {proof.isLoading ? (
-            <Skeleton className="h-16 w-12" />
+            <Skeleton className="h-96 w-[min(320px,80vw)]" />
           ) : proof.data?.proofPhoto ? (
             <ProofPhotoThumb
               photo={proof.data.proofPhoto}
               photos={proof.data.proofs}
-              size="md"
+              size="read"
               caption={`${row.customerName} · ${row.bookingId} · ${formatInr(row.transactionTotal)}`}
             />
           ) : (

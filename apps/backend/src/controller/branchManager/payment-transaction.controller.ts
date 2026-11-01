@@ -89,7 +89,7 @@ export const GetPaymentTransaction = async (req: Request, res: Response): Promis
     const proofFile = txn.proofFileId
       ? await prisma.fileObject.findUnique({
           where: { id: txn.proofFileId },
-          select: { id: true, publicId: true, key: true, mime: true, size: true, createdAt: true },
+          select: { id: true, publicId: true, key: true, mime: true, size: true, createdAt: true, displayKey: true },
         })
       : null;
     // …and every photo when the customer paid in several UPI transactions

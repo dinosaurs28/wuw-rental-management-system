@@ -161,8 +161,10 @@ export function OpenShiftModal({
   );
 }
 
-// Fleet members don't close shifts (Oct 2026): the branch manager verifies the
-// cash handed over and closes the shift in Financials → Cash Shift.
+// Fleet members close their own shift only when it holds no cash (Nov 2026);
+// otherwise the branch manager verifies the cash handed over and closes it in
+// Financials → Cash Shift. The server decides (canSelfClose on the active shift)
+// and re-checks inside the close.
 
 // ── Shift Banner ──────────────────────────────────────────────────────────────
 
@@ -186,6 +188,26 @@ export function ShiftBanner() {
   const { setActiveShift } = usePaymentStore();
   const [openShiftModal, setOpenShiftModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const handleSelfClose = async () => {
+    if (!activeShift) return;
+    setClosing(true);
+    try {
+      await employeePaymentService.closeShift(activeShift.publicId);
+      setActiveShift(null);
+      toast.success("Shift closed.");
+      setConfirmClose(false);
+    } catch (err) {
+      // e.g. a cash payment landed meanwhile: 403 with the reason
+      toast.error(apiErrorMessage(err, "Couldn't close the shift."));
+      setConfirmClose(false);
+      void refreshActiveShift();
+    } finally {
+      setClosing(false);
+    }
+  };
 
   // Running totals come from the server; refresh on demand
   const handleRefresh = async () => {
@@ -271,7 +293,21 @@ export function ShiftBanner() {
               </div>
               <div className="flex items-center gap-2">
                 <MyShiftsLink className="text-green-800 hover:bg-green-100" />
-                <span className="hidden text-xs text-green-700 md:inline">Your branch manager closes this shift</span>
+                {activeShift.canSelfClose ? (
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setConfirmClose(true)}
+                  >
+                    Close shift
+                  </Button>
+                ) : (
+                  <span className="hidden text-xs text-green-700 md:inline">
+                    {activeShift.canSelfClose === false && toPaise(activeShift.cashToHandOver) > 0
+                      ? `Branch manager will close this shift (cash ${formatMoney(activeShift.cashToHandOver)})`
+                      : activeShift.selfCloseMessage || "Your branch manager closes this shift"}
+                  </span>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -291,6 +327,26 @@ export function ShiftBanner() {
         open={openShiftModal}
         onClose={() => setOpenShiftModal(false)}
       />
+
+      <Dialog open={confirmClose} onOpenChange={(o) => !closing && setConfirmClose(o)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Close your shift?</DialogTitle>
+            <DialogDescription>
+              You collected no cash in this shift, so you can close it yourself. You'll need to open a new
+              shift before taking another payment.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmClose(false)} disabled={closing}>
+              Cancel
+            </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => void handleSelfClose()} disabled={closing}>
+              {closing ? "Closing…" : "Close shift"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

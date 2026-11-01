@@ -342,6 +342,7 @@ export default function EmployeeShiftHistoryPage() {
                         Opening {formatMoney(s.openingCash)} · Collected {formatMoney(s.cashCollected)}
                         {toPaise(s.cashRefunded) > 0 ? ` · Refunded ${formatMoney(s.cashRefunded)}` : ""}
                         {toPaise(s.upiCollected) > 0 ? ` · UPI ${formatMoney(s.upiCollected)}` : ""}
+                        {s.cardCollected && toPaise(s.cardCollected) > 0 ? ` · Card ${formatMoney(s.cardCollected)}` : ""}
                       </p>
                       {s.reconciledAt && (
                         <p className="mt-1 text-[11px] text-green-700">

@@ -288,6 +288,7 @@ export const formatStatus = (status: string): string => {
     REFUNDED: "Refunded",
     CASH: "Cash",
     UPI: "UPI",
+    CARD: "Credit Card",
     ONLINE_RAZORPAY: "Online (Razorpay)",
   };
 

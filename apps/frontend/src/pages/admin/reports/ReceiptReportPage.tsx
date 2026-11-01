@@ -245,6 +245,7 @@ export const ReceiptReportPage = () => {
                 <SelectItem value="all">All Modes</SelectItem>
                 <SelectItem value="Cash">Cash</SelectItem>
                 <SelectItem value="UPI">UPI</SelectItem>
+                <SelectItem value="Card">Credit Card</SelectItem>
                 <SelectItem value="Gateway">Gateway</SelectItem>
               </SelectContent>
             </Select>

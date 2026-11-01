@@ -48,6 +48,7 @@ import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js"
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
 import { assertDlFree, lockAndAssertDlFree } from "../booking/dl-in-use.service.js";
 import { assertExtensionQrsClosedForCancel } from "../payment/upi-qr.service.js";
+import { CARD_GATEWAY, isCardGateway } from "@repo/schemas";
 import {
   bookingExtensionFreeKm,
   loadFreeKmRates,
@@ -283,8 +284,8 @@ class ExtensionService {
       }
     }
 
-    // One vehicle per driving licence (X3): the added time must not overlap
-    // another active booking on the same DL. Throws DlInUseError (409).
+    // One car + one scooter per driving licence (X3 / TODO 5): the added time must not overlap
+    // another active booking of the same vehicle type on the same DL. Throws DlInUseError (409).
     await assertDlFree({
       customerId: booking.customerId,
       mode: "extend",
@@ -1102,6 +1103,8 @@ class ExtensionService {
 
     const additionalAmount = new Decimal(extension.additionalAmount.toString());
     const isUpi = method === "ONLINE" && options.onlineGateway === "UPI";
+    // Credit Card at the counter (Nov 2026): waits for the manager like counter UPI
+    const isCard = method === "ONLINE" && isCardGateway(options.onlineGateway);
 
     // ₹0 due — a zero PaymentTransaction would only pollute reports
     if (additionalAmount.lte(0)) {
@@ -1255,7 +1258,7 @@ class ExtensionService {
     // payment (#12) and a split are COLLECTED and the extension PAYMENT_COLLECTED
     // until the BM confirms it in Cash Confirmations (confirmCash finalizes it).
     // Only an online gateway other than counter UPI confirms at once.
-    const isOnline = method === "ONLINE" && !isUpi;
+    const isOnline = method === "ONLINE" && !isUpi && !isCard;
     const isSplit = method === "SPLIT";
     const cashPart = isSplit
       ? (options.split?.cash ?? new Decimal(0))
@@ -1294,7 +1297,7 @@ class ExtensionService {
           cashAmount: cashPart.toFixed(2),
           onlineAmount: onlinePart.toFixed(2),
           onlineTransactionRef: onlinePart.gt(0) ? (onlineTransactionRef ?? null) : null,
-          onlineGateway: onlinePart.gt(0) ? (upiPart ? "UPI" : (options.onlineGateway ?? null)) : null,
+          onlineGateway: onlinePart.gt(0) ? (upiPart ? "UPI" : isCard ? CARD_GATEWAY : (options.onlineGateway ?? null)) : null,
           proofFileId: options.upi?.proof?.id ?? null,
           proofPhotos: proofPhotosCreate(options.upi?.proofs),
           collectedById: actor.actorId,
@@ -1344,12 +1347,12 @@ class ExtensionService {
         actorBranchId: actor.actorBranchId,
         action: isOnline
           ? "Extension payment confirmed (online)"
-          : `Extension payment collected (${isUpi ? "UPI" : isSplit ? "cash + UPI" : "cash"} — pending manager confirmation)`,
+          : `Extension payment collected (${isUpi ? "UPI" : isCard ? "credit card" : isSplit ? "cash + UPI" : "cash"} — pending manager confirmation)`,
         category: AuditCategory.PAYMENT,
         severity: AuditSeverity.INFO,
         entity: "BookingExtension",
         entityId: extension.publicId,
-        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${isUpi ? (options.upi?.proof ? "UPI (payment photo)" : "UPI (UTR)") : isSplit ? `split (₹${cashPart.toFixed(2)} cash + ₹${onlinePart.toFixed(2)} UPI)` : method}`,
+        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${isUpi ? (options.upi?.proof ? "UPI (payment photo)" : "UPI (UTR)") : isCard ? "credit card (receipt photo)" : isSplit ? `split (₹${cashPart.toFixed(2)} cash + ₹${onlinePart.toFixed(2)} UPI)` : method}`,
       }),
       staffActivityService.log({
         actorPublicId: actor.actorPublicId,
@@ -1360,7 +1363,7 @@ class ExtensionService {
         actionType: StaffActionType.COLLECTED,
         entityType: StaffEntityType.BOOKING_EXTENSION,
         entityRef: extension.publicId,
-        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI" : isSplit ? "cash + UPI" : method}`,
+        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${isUpi ? "UPI" : isCard ? "credit card" : isSplit ? "cash + UPI" : method}`,
       }),
     ]);
 

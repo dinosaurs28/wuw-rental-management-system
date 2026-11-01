@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
 import { employeeApi } from '../../lib/api';
+import { paymentKindLabel } from '../../lib/counterPayment';
 import type { FinancialState } from '../../types/api';
 
 const inr = (v: unknown) => `₹${Math.abs(Number(v ?? 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -128,7 +129,7 @@ export default function CounterPaymentPanel({ bookingPublicId }: Props) {
                   <View style={styles.txnLeft}>
                     <Text style={styles.txnPurpose}>{prettyPurpose(t.purpose)}</Text>
                     <Text style={styles.txnMeta}>
-                      {t.method} · {fmtDate(t.confirmedAt ?? t.collectedAt)}
+                      {paymentKindLabel(t)} · {fmtDate(t.confirmedAt ?? t.collectedAt)}
                     </Text>
                   </View>
                   <View style={styles.txnRight}>

@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { Banknote, HandCoins, Landmark, Smartphone, Split } from "lucide-react";
+import { Banknote, CreditCard, HandCoins, Landmark, Smartphone, Split } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
+  CARD_RECEIPT_HELPER,
   COLLATERAL_HELPER,
   COLLATERAL_LABEL,
   COLLATERAL_MAX_LENGTH,
@@ -26,6 +27,7 @@ import { PaymentProofSlots } from "./PaymentProofSlots";
 const METHOD_ICONS: Record<CounterPaymentMethod, ReactNode> = {
   CASH: <Banknote className="h-4 w-4" />,
   UPI: <Smartphone className="h-4 w-4" />,
+  CARD: <CreditCard className="h-4 w-4" />,
   SPLIT: <Split className="h-4 w-4" />,
   CREDIT: <HandCoins className="h-4 w-4" />,
 };
@@ -34,6 +36,7 @@ const METHOD_ICONS: Record<CounterPaymentMethod, ReactNode> = {
 const CHIP_LABELS: Record<CounterPaymentMethod, string> = {
   CASH: COUNTER_PAYMENT_METHOD_LABELS.CASH,
   UPI: COUNTER_PAYMENT_METHOD_LABELS.UPI,
+  CARD: COUNTER_PAYMENT_METHOD_LABELS.CARD,
   SPLIT: "Split",
   CREDIT: COUNTER_PAYMENT_METHOD_LABELS.CREDIT,
 };
@@ -45,7 +48,7 @@ interface CounterPaymentFieldsProps {
   amount: number | null;
   /** Upload route for the UPI photo. */
   proofRole: PaymentProofRole;
-  /** Methods offered here (default Cash / UPI / Split / Credit). */
+  /** Methods offered here (default Cash / UPI / Credit Card / Split / Credit). */
   methods?: readonly CounterPaymentMethod[];
   /** Server errors shown at their field. */
   errors?: CounterFieldErrors;
@@ -167,6 +170,27 @@ export function CounterPaymentFields({
           errorPosition={errors?.proofPosition}
           disabled={disabled}
         />
+      )}
+
+      {active === "CARD" && (
+        <div className="space-y-2">
+          <PaymentProofSlots
+            idPrefix={idPrefix}
+            role={proofRole}
+            proof={value.proof}
+            extraProofs={value.extraProofs}
+            onChange={(next) => update(next)}
+            error={errors?.proof}
+            errorPosition={errors?.proofPosition}
+            slotLabel="Card receipt photo"
+            helper={CARD_RECEIPT_HELPER}
+            extraHelper="Another receipt slip (optional) — e.g. when the card was charged more than once."
+            disabled={disabled}
+          />
+          <p className="text-xs text-neutral-500">
+            Credit Card = money received on the card machine. To leave the amount owed by the customer, use Credit.
+          </p>
+        </div>
       )}
 
       {active === "SPLIT" && (

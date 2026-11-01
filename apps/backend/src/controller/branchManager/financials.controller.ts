@@ -25,7 +25,7 @@ import { CLIENT_PAYMENT_TYPES, CLIENT_PAYMENT_TYPE_LABELS } from "../../services
  *   GET /api/branchManager/financials/options          payment types + fleet members for the filters
  *
  * Always the manager's own branch (req.branch_Id from the JWT). Filters (all optional):
- * from/to (YYYY-MM-DD IST, default today) · types=RENT,LATE_FEE… · modes=CASH,UPI,GATEWAY ·
+ * from/to (YYYY-MM-DD IST, default today) · types=RENT,LATE_FEE… · modes=CASH,UPI,CARD,GATEWAY ·
  * collectedBy=<user publicId>|ONLINE · shiftStatus=OPEN|CLOSED|NONE · search ·
  * sort=date|amount|type · dir=asc|desc · page · pageSize (≤ 100).
  */
@@ -59,7 +59,7 @@ const echoFilters = (f: FinancialsFilter) => ({
   dir: f.dir,
 });
 
-const sum = (rows: FinancialsRow[], k: "amount" | "cash" | "upi" | "gateway") =>
+const sum = (rows: FinancialsRow[], k: "amount" | "cash" | "upi" | "card" | "gateway") =>
   Math.round(rows.reduce((s, r) => s + r[k], 0) * 100) / 100;
 
 export const GetFinancialsPayments = async (req: Request, res: Response): Promise<void> => {
@@ -74,7 +74,7 @@ export const GetFinancialsPayments = async (req: Request, res: Response): Promis
         filters: echoFilters(f),
         summary,
         rows,
-        pageTotal: { count: rows.length, amount: sum(rows, "amount"), cash: sum(rows, "cash"), upi: sum(rows, "upi"), gateway: sum(rows, "gateway") },
+        pageTotal: { count: rows.length, amount: sum(rows, "amount"), cash: sum(rows, "cash"), upi: sum(rows, "upi"), card: sum(rows, "card"), gateway: sum(rows, "gateway") },
         pagination: { page: f.page, pageSize: f.pageSize, totalRows, totalPages: Math.max(1, Math.ceil(totalRows / f.pageSize)) },
       },
     });
@@ -94,6 +94,7 @@ const COLUMNS = [
   "Amount",
   "Cash",
   "UPI",
+  "Credit card",
   "Online gateway",
   "Payment mode",
   "Booking ID",
@@ -116,6 +117,7 @@ const toExportRow = (r: FinancialsRow): Record<string, string | number> => ({
   Amount: r.amount,
   Cash: r.cash,
   UPI: r.upi,
+  "Credit card": r.card,
   "Online gateway": r.gateway,
   "Payment mode": r.mode,
   "Booking ID": r.bookingId,
@@ -143,7 +145,7 @@ export const ExportFinancialsPayments = async (req: Request, res: Response): Pro
     if (!f) return;
     const rows = await exportFinancialsRows(f);
     const filename = `financials_${f.from}_to_${f.to}`;
-    const totals = { Amount: sum(rows, "amount"), Cash: sum(rows, "cash"), UPI: sum(rows, "upi"), "Online gateway": sum(rows, "gateway") };
+    const totals = { Amount: sum(rows, "amount"), Cash: sum(rows, "cash"), UPI: sum(rows, "upi"), "Credit card": sum(rows, "card"), "Online gateway": sum(rows, "gateway") };
 
     if (format === "csv") {
       exportRowsToCSV(res, {
@@ -196,6 +198,7 @@ export const GetFinancialsOptions = async (req: Request, res: Response): Promise
         modes: [
           { mode: "CASH", label: "Cash" },
           { mode: "UPI", label: "UPI" },
+          { mode: "CARD", label: "Credit Card" },
           { mode: "GATEWAY", label: "Online (gateway)" },
         ],
         collectors,

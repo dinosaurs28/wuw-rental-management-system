@@ -16,6 +16,8 @@ import {
   decideClose,
   isOneOpenShiftViolation,
   shiftFigures,
+  selfCloseEligibility,
+  assertSelfClosable,
   REFUND_PURPOSES,
   type ShiftTxnRow,
 } from "./cash-shift-rules.js";
@@ -95,6 +97,8 @@ export interface ShiftView {
   confirmedCash: string;
   rejectedCash: string;
   upiCollected: string;
+  /** Counter Credit Card money in the shift (Nov 2026) — non-cash, never in the drawer */
+  cardCollected: string;
   transactionCount: number;
   discrepancyExplanation: string | null;
   reconciledByName: string | null;
@@ -119,8 +123,12 @@ export interface ShiftView {
   /** Who closed it: the manager; for shifts closed before Oct 2026, the executive. */
   closedByName: string | null;
   closedByPublicId: string | null;
-  /** Closed by a manager (verify & close) rather than by the executive (old builds). */
+  /** Closed by a manager (verify & close) rather than by the executive (old builds / self-close). */
   closedByManager: boolean;
+  /** Closed by the executive themselves (no cash in the shift — Nov 2026 self-close, or an old build). */
+  closedBySelf: boolean;
+  /** Nov 2026 self-close: the executive closed it with no cash in the shift (closedById = the executive). */
+  selfClosedNoCash: boolean;
 }
 
 export interface ShiftDayTotals {
@@ -137,6 +145,8 @@ export interface ShiftDayTotals {
   variance: string;
   pendingCash: string;
   upiCollected: string;
+  /** Counter Credit Card money (Nov 2026) */
+  cardCollected: string;
   /** Closed shifts flagged legacyVariance — their variance is not in `variance`. */
   legacyCount: number;
 }
@@ -191,6 +201,7 @@ interface LiveTotals {
   confirmedCash: Decimal;
   rejectedCash: Decimal;
   upiCollected: Decimal;
+  cardCollected: Decimal;
   nonCashIn: Decimal;
   nonCashOut: Decimal;
   paymentCount: number;
@@ -204,6 +215,7 @@ const EMPTY_TOTALS: LiveTotals = {
   confirmedCash: ZERO,
   rejectedCash: ZERO,
   upiCollected: ZERO,
+  cardCollected: ZERO,
   nonCashIn: ZERO,
   nonCashOut: ZERO,
   paymentCount: 0,
@@ -237,6 +249,10 @@ const liveTotalsSql = (shiftIdPredicate: Prisma.Sql) => Prisma.sql`
     COALESCE(SUM(t."onlineAmount") FILTER (
       WHERE ${MONEY_IN} AND t."status" IN ('COLLECTED', 'CONFIRMED') AND UPPER(COALESCE(t."onlineGateway", '')) = 'UPI'
     ), 0) AS "upiCollected",
+    -- Counter Credit Card (Nov 2026): non-cash like UPI, never in the expected drawer
+    COALESCE(SUM(t."onlineAmount") FILTER (
+      WHERE ${MONEY_IN} AND t."status" IN ('COLLECTED', 'CONFIRMED') AND UPPER(TRIM(COALESCE(t."onlineGateway", ''))) = 'CARD'
+    ), 0) AS "cardCollected",
     -- Non-cash and the payment count include a row voided after its shift closed:
     -- it was live at close, and a closed shift's figures never move.
     COALESCE(SUM(t."onlineAmount") FILTER (WHERE ${MONEY_IN} AND (t."status" IN ('COLLECTED', 'CONFIRMED') OR ${FROZEN_VOID})), 0) AS "nonCashIn",
@@ -519,6 +535,106 @@ class CashShiftService {
     return updated;
   }
 
+  /**
+   * Fleet Executive closes their OWN shift (Nov 2026) — allowed only when the
+   * shift holds no cash (selfCloseEligibility in cash-shift-rules.ts):
+   *   1. same lock order as the manager's close: the executive's advisory lock,
+   *      then the shift row FOR UPDATE. A payment being written holds the row
+   *      FOR SHARE (lockShiftForPayment), so the close waits for it and then
+   *      sees its cash (→ 403); a payment arriving after the lock waits, then
+   *      finds no OPEN shift (SHIFT_REQUIRED) — never a cash row in a shift
+   *      closed as cash-free;
+   *   2. the linked rows locked FOR UPDATE and the rule re-checked on them —
+   *      cash collected / cash refunded / opening float → 403
+   *      SHIFT_CLOSE_MANAGER_ONLY with the reason; not OPEN → 409;
+   *   3. snapshot zeros: cash received 0, difference 0, closedById = the
+   *      executive, no reconciler. Nothing is confirmed: non-cash COLLECTED
+   *      rows stay for the manager (Cash Shift → unconfirmed payments).
+   */
+  async selfClose(publicId: string, actor: ActorContext): Promise<{ shift: CashShift; pendingNonCash: number }> {
+    const { found, updated, pendingNonCash, nonCash } = await prisma.$transaction(
+      async (tx) => {
+        const found = await tx.cashShift.findUnique({ where: { publicId } });
+        if (!found) throw new CashShiftError(StatusCode.NOT_FOUND, "SHIFT_NOT_FOUND", "Cash shift not found.");
+        if (found.employeeId !== actor.actorId) {
+          throw new CashShiftError(StatusCode.FORBIDDEN, "SHIFT_NOT_YOURS", "You can only close your own shift.");
+        }
+
+        await this.lockEmployee(found.employeeId, tx);
+        const [row] = await tx.$queryRaw<{ status: string; openingCash: Prisma.Decimal }[]>`
+          SELECT "status"::text AS "status", "openingCash" FROM "CashShift" WHERE "id" = ${found.id} FOR UPDATE`;
+
+        const rows = await tx.$queryRaw<Array<ShiftTxnRow & { id: number }>>`
+          SELECT "id", "purpose"::text AS "purpose", "status"::text AS "status", "cashAmount", "onlineAmount"
+          FROM "PaymentTransaction" WHERE "cashShiftId" = ${found.id}
+          ORDER BY "id"
+          FOR UPDATE`;
+
+        const figs = shiftFigures(row?.openingCash ?? found.openingCash, rows);
+        assertSelfClosable(selfCloseEligibility({ status: row?.status ?? found.status, figures: figs }));
+
+        const now = new Date();
+        const saved = await tx.cashShift.update({
+          where: { id: found.id },
+          data: {
+            status: "CLOSED",
+            closedAt: now,
+            closedById: actor.actorId,
+            cashCollected: "0.00",
+            cashRefunded: "0.00",
+            expectedTotal: "0.00",
+            actualTotal: "0.00",
+            discrepancy: "0.00",
+            discrepancyExplanation: null,
+          },
+        });
+        const pending = rows.filter((r) => r.status === "COLLECTED").length;
+        return { found, updated: saved, pendingNonCash: pending, nonCash: figs.nonCashCollected };
+      },
+      { timeout: 30000 },
+    );
+
+    await auditService.log({
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      actorBranchId: found.branchId,
+      action: "CLOSE_CASH_SHIFT",
+      category: AuditCategory.PAYMENT,
+      description: `Cash shift closed by ${actor.actorName} themselves — no cash collected (non-cash ₹${money(nonCash)})`,
+      entity: "CashShift",
+      entityId: found.publicId,
+      before: { status: "OPEN" },
+      after: {
+        status: updated.status,
+        selfClose: true,
+        openingCash: "0.00",
+        cashCollected: "0.00",
+        cashRefunded: "0.00",
+        expectedTotal: "0.00",
+        actualTotal: "0.00",
+        discrepancy: "0.00",
+        nonCashCollected: money(nonCash),
+        unconfirmedNonCashLeftForManager: pendingNonCash,
+      },
+    });
+
+    await staffActivityService.log({
+      actorPublicId: actor.actorPublicId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      branchId: found.branchId,
+      branchName: actor.branchName,
+      actionType: StaffActionType.COMPLETED,
+      entityType: StaffEntityType.CASH_SHIFT,
+      entityRef: found.publicId,
+      description: `Closed own cash shift (no cash collected; non-cash ₹${money(nonCash)})`,
+      metadata: { selfClose: true, nonCashCollected: money(nonCash) },
+    });
+
+    return { shift: updated, pendingNonCash };
+  }
+
   async reconcile(publicId: string, discrepancyExplanation: string, actor: ActorContext): Promise<CashShift> {
     const shift = await prisma.cashShift.findUnique({ where: { publicId } });
     if (!shift) throw new CashShiftError(StatusCode.NOT_FOUND, "SHIFT_NOT_FOUND", "Cash shift not found.");
@@ -623,6 +739,7 @@ class CashShiftService {
         confirmedCash: dec(r.confirmedCash),
         rejectedCash: dec(r.rejectedCash),
         upiCollected: dec(r.upiCollected),
+        cardCollected: dec(r.cardCollected),
         nonCashIn: dec(r.nonCashIn),
         nonCashOut: dec(r.nonCashOut),
         paymentCount: Number(r.paymentCount ?? 0),
@@ -660,6 +777,7 @@ class CashShiftService {
       confirmedCash: money(live.confirmedCash),
       rejectedCash: money(live.rejectedCash),
       upiCollected: money(live.upiCollected),
+      cardCollected: money(live.cardCollected),
       transactionCount: live.transactionCount,
       discrepancyExplanation: s.discrepancyExplanation ?? null,
       reconciledByName: s.reconciledBy?.name ?? null,
@@ -679,7 +797,9 @@ class CashShiftService {
       paymentCount: live.paymentCount,
       closedByName: isOpen ? null : (s.closedBy?.name ?? s.employee.name),
       closedByPublicId: isOpen ? null : (s.closedBy?.publicId ?? s.employee.publicId),
-      closedByManager: !!s.closedById,
+      closedByManager: !!s.closedById && s.closedById !== s.employeeId,
+      closedBySelf: !isOpen && (!s.closedById || s.closedById === s.employeeId),
+      selfClosedNoCash: !isOpen && s.closedById === s.employeeId,
     };
   }
 
@@ -693,6 +813,15 @@ class CashShiftService {
       actualTotal: dec(s.actualTotal).toString(),
       discrepancy: dec(s.discrepancy).toString(),
     };
+  }
+
+  /** canSelfClose & co. from a view's live figures (the close re-checks them under lock). */
+  private selfCloseFields(view: ShiftView) {
+    const e = selfCloseEligibility({
+      status: view.status,
+      figures: { openingCash: dec(view.openingCash), cashCollected: dec(view.cashCollected), cashRefunded: dec(view.cashRefunded) },
+    });
+    return { canSelfClose: e.canSelfClose, selfCloseReason: e.reason, selfCloseMessage: e.message, cashToHandOver: e.cashToHandOver };
   }
 
   async getActiveShift(employeeId: number): Promise<any | null> {
@@ -714,6 +843,8 @@ class CashShiftService {
       // Cash collected but not yet confirmed by the manager
       pendingTotal: view.pendingCash,
       ...view,
+      // Nov 2026: may the executive close it themselves (no cash in the drawer)?
+      ...this.selfCloseFields(view),
     };
   }
 
@@ -846,6 +977,8 @@ class CashShiftService {
         cashRefunded: view.cashRefunded,
         expectedCash: view.expectedCash,
       },
+      // Nov 2026: may the executive close it themselves (OPEN shifts; false once closed)?
+      ...this.selfCloseFields(view),
     };
     return opts.legacy
       ? { ...record, ...this.legacyKeys(view, record), ...view, ...extra, transactions }
@@ -964,6 +1097,8 @@ class CashShiftService {
       onlineGateway: t.onlineGateway,
       onlineTransactionRef: t.onlineTransactionRef,
       isUpi: String(t.onlineGateway ?? "").toUpperCase() === "UPI",
+      // Additive (Nov 2026): counter Credit Card payment (its receipt photos are in proofs)
+      isCard: String(t.onlineGateway ?? "").trim().toUpperCase() === "CARD",
       collectedAt: (t.collectedAt ?? t.createdAt).toISOString(),
       employeeName: t.collectedBy?.name ?? null,
       shiftPublicId: t.cashShift?.publicId ?? null,
@@ -1120,7 +1255,8 @@ class CashShiftService {
         COALESCE(SUM(f."discrepancy") FILTER (WHERE f."status" <> 'OPEN' AND NOT ${LEGACY_CLOSE_SQL}), 0) AS "variance",
         (COUNT(f."id") FILTER (WHERE ${LEGACY_CLOSE_SQL}))::int AS "legacyCount",
         COALESCE(SUM(l."pendingCash"), 0) AS "pendingCash",
-        COALESCE(SUM(l."upiCollected"), 0) AS "upiCollected"
+        COALESCE(SUM(l."upiCollected"), 0) AS "upiCollected",
+        COALESCE(SUM(l."cardCollected"), 0) AS "cardCollected"
       FROM f LEFT JOIN l ON l."shiftId" = f."id"
       GROUP BY GROUPING SETS ((f."day"), ())
       ORDER BY "isTotal" DESC, f."day" DESC`);
@@ -1138,6 +1274,7 @@ class CashShiftService {
       variance: money(dec(r?.variance)),
       pendingCash: money(dec(r?.pendingCash)),
       upiCollected: money(dec(r?.upiCollected)),
+      cardCollected: money(dec(r?.cardCollected)),
       legacyCount: Number(r?.legacyCount ?? 0),
     });
 

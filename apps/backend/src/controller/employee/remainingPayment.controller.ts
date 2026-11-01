@@ -11,7 +11,7 @@ import {
   assertOpenShift,
   CounterGuardError,
 } from "../../services/payment/counter-guard.service.js";
-import { resolveCounterUpi } from "../../services/payment/payment-proof.service.js";
+import { resolveCounterUpi, resolveCounterCard } from "../../services/payment/payment-proof.service.js";
 import { parseCollateral } from "../../services/payment/customer-credit.service.js";
 import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
@@ -71,11 +71,11 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
   const { method, paidDuring, utr } = req.body;
   const branchId = req.branch_Id;
 
-  if (!["CASH", "UPI", "SPLIT", "CREDIT", "ONLINE_RAZORPAY"].includes(method)) {
+  if (!["CASH", "UPI", "CARD", "SPLIT", "CREDIT", "ONLINE_RAZORPAY"].includes(method)) {
     return res.status(StatusCode.BAD_REQUEST).json({
       success: false,
       code: "INVALID_PAYMENT_METHOD",
-      message: "Invalid payment method. Use CASH, UPI, SPLIT, CREDIT or ONLINE_RAZORPAY.",
+      message: "Invalid payment method. Use CASH, UPI, CARD, SPLIT, CREDIT or ONLINE_RAZORPAY.",
     });
   }
 
@@ -171,8 +171,8 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // CASH, UPI or SPLIT: record directly, no payment gateway needed
-    if (method === "CASH" || method === "UPI" || method === "SPLIT") {
+    // CASH, UPI, CARD (credit card, Nov 2026) or SPLIT: record directly, no payment gateway needed
+    if (method === "CASH" || method === "UPI" || method === "CARD" || method === "SPLIT") {
       const actor = await prisma.user.findUnique({
         where: { publicId: req.public_Id },
         select: { id: true, role: true },
@@ -183,6 +183,7 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       await assertOpenShift(actor);
 
       const isUpi = method === "UPI";
+      const isCard = method === "CARD";
       const isSplit = method === "SPLIT";
       const balance = new Decimal(booking.remainingBalance.toString()).toDecimalPlaces(2);
       let split: { cash: Decimal; online: Decimal } | null = null;
@@ -199,7 +200,10 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
         split = { cash, online };
       }
       // UPI (and a split's UPI part): payment-screen photo or, from older builds, a UTR
-      const backing = isUpi || isSplit
+      // Credit card: 1–3 photos of the card-machine receipt (required)
+      const backing = isCard
+        ? await resolveCounterCard({ proofFileId: req.body?.proof_file_id, proofFileIds: req.body?.proof_file_ids, branchId })
+        : isUpi || isSplit
         ? await resolveCounterUpi({
             utr,
             proofFileId: req.body?.proof_file_id,
@@ -208,9 +212,10 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
           })
         : null;
       // DepositMethod has no split — the cash part is what awaits confirmation
-      const depositMethod = isUpi ? DepositMethod.UPI : DepositMethod.CASH;
+      const depositMethod = isUpi ? DepositMethod.UPI : isCard ? DepositMethod.CARD : DepositMethod.CASH;
       const transactionId = isUpi
         ? `UPI_REM_${createID()}`
+        : isCard ? `CARD_REM_${createID()}`
         : isSplit ? `SPLIT_REM_${createID()}` : `CASH_REM_${createID()}`;
 
       await advanceDepositService.recordRemainingPayment(
@@ -218,7 +223,9 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
         depositMethod,
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
-        isUpi && backing ? { utr: backing.utr, collectedById: actor.id, proof: backing.proof, proofs: backing.proofs } : undefined,
+        (isUpi || isCard) && backing
+          ? { utr: backing.utr, collectedById: actor.id, proof: backing.proof, proofs: backing.proofs, gateway: isCard ? "CARD" : "UPI" }
+          : undefined,
         // Counter cash lands in the collector's open shift (asserted above)
         method === "CASH" ? { collectedById: actor.id } : undefined,
         undefined,
@@ -229,7 +236,7 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
 
       return res.status(StatusCode.OK).json({
         success: true,
-        message: `Remaining payment of ₹${booking.remainingBalance} collected via ${method}.`,
+        message: `Remaining payment of ₹${booking.remainingBalance} collected via ${isCard ? "credit card" : method}.`,
         data: {
           amountCollected: booking.remainingBalance,
           method,
@@ -450,6 +457,7 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
       booking.remainingPaymentId.startsWith("CASH_REM_") ||
       booking.remainingPaymentId.startsWith("UPI_REM_") ||
       booking.remainingPaymentId.startsWith("SPLIT_REM_") ||
+      booking.remainingPaymentId.startsWith("CARD_REM_") ||
       booking.remainingPaymentId.startsWith("CREDIT_REM_")
     ) {
       return res.status(StatusCode.OK).json({ status: "SUCCESS" });

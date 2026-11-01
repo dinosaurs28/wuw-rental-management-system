@@ -25,6 +25,7 @@ import {
   COLLECTED_PURPOSES,
   COLLECTED_STATUSES,
   GATEWAY_REGEX,
+  CARD_SQL,
   chargeCaseSql,
   ledgerCaseSql,
   paymentModeLabel,
@@ -40,7 +41,7 @@ import {
 
 export const FINANCIALS_SORTS = ["date", "amount", "type"] as const;
 export const SHIFT_STATUS_FILTERS = ["OPEN", "CLOSED", "NONE"] as const;
-export const PAYMENT_MODE_KEYS = ["CASH", "UPI", "GATEWAY"] as const;
+export const PAYMENT_MODE_KEYS = ["CASH", "UPI", "CARD", "GATEWAY"] as const;
 /** `collectedBy` value for payments no staff member took (online, by the customer). */
 export const COLLECTED_BY_ONLINE = "ONLINE";
 export const MAX_PAGE_SIZE = 100;
@@ -90,7 +91,7 @@ const querySchema = z.object({
   ),
   modes: z.preprocess(
     csvList,
-    z.array(z.enum(PAYMENT_MODE_KEYS, { message: "'modes' must be from CASH, UPI, GATEWAY" })),
+    z.array(z.enum(PAYMENT_MODE_KEYS, { message: "'modes' must be from CASH, UPI, CARD, GATEWAY" })),
   ),
   collectedBy: z.preprocess(blank, z.string().max(64).optional()),
   shiftStatus: z.preprocess(
@@ -223,8 +224,10 @@ export function modeWhereSql(f: FinancialsFilter): Prisma.Sql {
     m === "CASH"
       ? "cash_part > 0"
       : m === "UPI"
-        ? "(total - cash_part > 0 AND NOT is_gateway)"
-        : "(total - cash_part > 0 AND is_gateway)",
+        ? "(total - cash_part > 0 AND NOT is_gateway AND NOT is_card)"
+        : m === "CARD"
+          ? "(total - cash_part > 0 AND is_card)"
+          : "(total - cash_part > 0 AND is_gateway)",
   );
   return raw(`(${ors.join(" OR ")})`);
 }
@@ -268,7 +271,9 @@ WITH base AS (
                WHEN t.method::text = 'CASH' THEN t."totalAmount"
                WHEN t.method::text = 'ONLINE' THEN 0::numeric
                ELSE LEAST(t."cashAmount", t."totalAmount") END) AS cash_part,
-         (t."onlineGateway" IS NOT NULL AND t."onlineGateway" ~* ${raw(`'${GATEWAY_REGEX}'`)}) AS is_gateway
+         (t."onlineGateway" IS NOT NULL AND t."onlineGateway" ~* ${raw(`'${GATEWAY_REGEX}'`)} AND NOT ${raw(CARD_SQL)}) AS is_gateway,
+         -- Counter Credit Card (Nov 2026): onlineGateway exactly CARD
+         (${raw(CARD_SQL)}) AS is_card
   FROM "PaymentTransaction" t
   WHERE ${where}
 ),
@@ -321,7 +326,8 @@ a1 AS (
 ),
 alloc AS (
   SELECT a1.*, a1.cash + a1.online AS amount,
-         CASE WHEN a1.is_gateway THEN 0::numeric ELSE a1.online END AS upi,
+         CASE WHEN a1.is_gateway OR a1.is_card THEN 0::numeric ELSE a1.online END AS upi,
+         CASE WHEN a1.is_card THEN a1.online ELSE 0::numeric END AS card,
          CASE WHEN a1.is_gateway THEN a1.online ELSE 0::numeric END AS gateway
   FROM a1
 )`;
@@ -335,7 +341,7 @@ export function financialsCteSql(f: FinancialsFilter): Prisma.Sql {
 export function aggregateSql(f: FinancialsFilter): Prisma.Sql {
   return Prisma.sql`${financialsCteSql(f)}
 SELECT type, COUNT(*)::int AS count, COALESCE(SUM(amount), 0) AS amount, COALESCE(SUM(cash), 0) AS cash,
-       COALESCE(SUM(upi), 0) AS upi, COALESCE(SUM(gateway), 0) AS gateway
+       COALESCE(SUM(upi), 0) AS upi, COALESCE(SUM(card), 0) AS card, COALESCE(SUM(gateway), 0) AS gateway
 FROM alloc GROUP BY type`;
 }
 
@@ -349,7 +355,7 @@ pg AS (
 )
 SELECT pg.id, pg.txn_public_id, pg.purpose, pg.method, pg.status, pg.total, pg.online_gateway, pg.online_ref,
        pg.proof_file_id, pg.notes, pg.paid_at, pg.type, pg.type_ord, pg.part_count::int AS part_count,
-       pg.amount, pg.cash, pg.online, pg.upi, pg.gateway, pg.cash_part, pg.online_part,
+       pg.amount, pg.cash, pg.online, pg.upi, pg.card, pg.gateway, pg.cash_part, pg.online_part,
        bk."publicId" AS booking_public_id, cu."publicId" AS customer_public_id,
        u.name AS customer_name, u.phone AS customer_phone,
        (SELECT STRING_AGG(v."regNo", ', ' ORDER BY bi.id) FROM "BookingItem" bi JOIN "Vehicle" v ON v.id = bi."vehicleId"
@@ -386,6 +392,8 @@ export interface TypeCard {
 export interface ModeSplit {
   cash: number;
   upi: number;
+  /** counter Credit Card (Nov 2026) */
+  card: number;
   gateway: number;
 }
 
@@ -405,6 +413,8 @@ export interface FinancialsRow {
   amount: number;
   cash: number;
   upi: number;
+  /** counter Credit Card part (Nov 2026) */
+  card: number;
   gateway: number;
   mode: string;
   method: string;
@@ -432,7 +442,7 @@ export interface FinancialsRow {
 
 export async function getFinancialsSummary(f: FinancialsFilter): Promise<FinancialsSummary> {
   const rows = await prisma.$queryRaw<
-    { type: ClientPaymentType; count: number; amount: unknown; cash: unknown; upi: unknown; gateway: unknown }[]
+    { type: ClientPaymentType; count: number; amount: unknown; cash: unknown; upi: unknown; card: unknown; gateway: unknown }[]
   >(aggregateSql(f));
   const selected = (t: ClientPaymentType) => f.types.length === 0 || f.types.includes(t);
   const byType: TypeCard[] = CLIENT_PAYMENT_TYPES.map((type) => {
@@ -447,7 +457,7 @@ export async function getFinancialsSummary(f: FinancialsFilter): Promise<Financi
       amountInRange: r ? num(r.amount) : 0,
     };
   });
-  const byMode: ModeSplit = { cash: 0, upi: 0, gateway: 0 };
+  const byMode: ModeSplit = { cash: 0, upi: 0, card: 0, gateway: 0 };
   let amount = 0;
   let count = 0;
   for (const r of rows) {
@@ -456,13 +466,14 @@ export async function getFinancialsSummary(f: FinancialsFilter): Promise<Financi
     count += Number(r.count);
     byMode.cash += num(r.cash);
     byMode.upi += num(r.upi);
+    byMode.card += num(r.card);
     byMode.gateway += num(r.gateway);
   }
   const r2 = (n: number) => Math.round(n * 100) / 100;
   return {
     total: { amount: r2(amount), count },
     byType,
-    byMode: { cash: r2(byMode.cash), upi: r2(byMode.upi), gateway: r2(byMode.gateway) },
+    byMode: { cash: r2(byMode.cash), upi: r2(byMode.upi), card: r2(byMode.card), gateway: r2(byMode.gateway) },
   };
 }
 
@@ -483,6 +494,7 @@ function toRow(r: RawRow): FinancialsRow {
     amount: num(r.amount),
     cash,
     upi: num(r.upi),
+    card: num(r.card),
     gateway: num(r.gateway),
     mode: paymentModeLabel({ cash: num(r.cash_part), online: num(r.online_part), onlineGateway: gw }),
     method: String(r.method),

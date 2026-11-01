@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../../constants/colors';
@@ -18,6 +18,7 @@ import { employeeApi } from '../../../lib/api';
 import { apiErrorMessage } from '../../../lib/counterErrors';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import ImageViewer from '../../../components/ui/ImageViewer';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 import {
   PURPOSE_LABEL,
   TXN_STATUS_BADGE,
@@ -64,7 +65,8 @@ function Line({
 
 // "Cash", "UPI", or "Cash ₹500.00 + UPI ₹300.00" for a split.
 function methodLabel(t: ShiftTransaction): string {
-  const online = t.onlineGateway === 'UPI' ? 'UPI' : 'Online';
+  // Nov 2026: counter Credit Card (gateway CARD)
+  const online = t.onlineGateway === 'UPI' ? 'UPI' : (t.onlineGateway ?? '').toUpperCase() === 'CARD' ? 'Credit Card' : 'Online';
   if (t.method === 'CASH') return 'Cash';
   if (t.method === 'ONLINE') return online;
   return `Cash ${inrOrDash(t.cashAmount)} + ${online} ${inrOrDash(t.onlineAmount)}`;
@@ -154,6 +156,16 @@ export default function ShiftDetailScreen() {
   });
 
   const [pulling, setPulling] = useState(false);
+  // Nov 2026: close your own shift when it holds no cash (the server re-checks)
+  const qc = useQueryClient();
+  const [confirmClose, setConfirmClose] = useState(false);
+  const closeMutation = useMutation({
+    mutationFn: () => employeeApi.closeShift(publicId!),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['employee', 'active-shift'] });
+      qc.invalidateQueries({ queryKey: ['employee', 'shifts'] });
+    },
+  });
   const onPull = async () => {
     setPulling(true);
     try {
@@ -264,7 +276,9 @@ export default function ShiftDetailScreen() {
             <Text style={styles.infoText}>
               {shift.closedAt
                 ? `Closed ${istDateTime(shift.closedAt)}${shift.closedByManager && shift.closedByName ? ` by ${shift.closedByName}` : ''}`
-                : 'Still open — your branch manager closes it when you hand over the cash'}
+                : shift.canSelfClose
+                  ? 'Still open — no cash collected, so you can close it yourself'
+                  : 'Still open — your branch manager closes it when you hand over the cash'}
             </Text>
           </View>
           {shift.branchName ? (
@@ -365,6 +379,54 @@ export default function ShiftDetailScreen() {
           </View>
         ) : null}
 
+        {/* Nov 2026: close it yourself when there is no cash, else the manager closes it */}
+        {shift.isOpen ? (
+          shift.canSelfClose ? (
+            <View style={styles.card}>
+              <TouchableOpacity
+                style={[styles.closeBtn, closeMutation.isPending && { opacity: 0.6 }]}
+                onPress={() => setConfirmClose(true)}
+                disabled={closeMutation.isPending}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                {closeMutation.isPending ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <>
+                    <Ionicons name="lock-closed-outline" size={16} color={Colors.white} />
+                    <Text style={styles.closeBtnText}>Close shift</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <Text style={styles.note}>You collected no cash in this shift, so you can close it yourself.</Text>
+              {closeMutation.isError ? (
+                <Text style={[styles.note, { color: Colors.availNone }]}>
+                  {apiErrorMessage(closeMutation.error, 'Could not close the shift. Try again.')}
+                </Text>
+              ) : null}
+            </View>
+          ) : shift.canSelfClose === false ? (
+            <View style={styles.card}>
+              <View style={styles.infoRow}>
+                <Ionicons name="person-circle-outline" size={16} color={Colors.ink3} />
+                <Text style={styles.infoText}>
+                  {(money(shift.cashToHandOver) ?? 0) > 0
+                    ? `Branch manager will close this shift (cash ${inr2(money(shift.cashToHandOver) ?? 0)})`
+                    : shift.selfCloseMessage || 'Your branch manager will close this shift.'}
+                </Text>
+              </View>
+            </View>
+          ) : null
+        ) : shift.selfClosedNoCash ? (
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <Ionicons name="checkmark-done-outline" size={16} color={Colors.availGood} />
+              <Text style={styles.infoText}>You closed this shift — no cash was collected.</Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* Payments */}
         <Text style={styles.sectionTitle}>
           Payments{shift.transactions.length ? ` (${shift.transactions.length})` : ''}
@@ -392,6 +454,18 @@ export default function ShiftDetailScreen() {
         }))}
         onClose={() => setProofView(null)}
       />
+      <ConfirmModal
+        visible={confirmClose}
+        icon="lock-closed-outline"
+        title="Close your shift?"
+        message="You collected no cash in this shift. Once closed, open a new shift before taking another payment."
+        confirmLabel="Close shift"
+        onCancel={() => setConfirmClose(false)}
+        onConfirm={() => {
+          setConfirmClose(false);
+          closeMutation.mutate(undefined, { onSuccess: () => refetch() });
+        }}
+      />
     </View>
   );
 }
@@ -411,6 +485,17 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, marginTop: 2 },
 
   content: { paddingHorizontal: 20, gap: 12 },
+  closeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.orange,
+    borderRadius: 999,
+    paddingVertical: 12,
+    minHeight: 46,
+  },
+  closeBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white },
   sectionTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 12,

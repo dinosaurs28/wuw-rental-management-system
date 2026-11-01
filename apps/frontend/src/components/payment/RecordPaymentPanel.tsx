@@ -11,6 +11,7 @@ import {
   chargesSafetyDeposit,
   counterFieldErrors,
   counterMethodTakesMoney,
+  counterMethodHasPhotos,
   depositRefundOnSession,
   counterPaymentErrorField,
   counterPaymentParts,
@@ -110,6 +111,8 @@ export function RecordPaymentPanel({
           ? `Cash payment of ₹${amount.toFixed(2)}`
           : payment.method === "UPI"
             ? `UPI payment of ₹${amount.toFixed(2)}`
+            : payment.method === "CARD"
+              ? `Credit card payment of ₹${amount.toFixed(2)}`
             : payment.method === "SPLIT"
               ? `Split: ₹${parts.cash.toFixed(2)} cash + ₹${parts.upi.toFixed(2)} UPI`
               : undefined; // Credit: the server notes the collateral
@@ -187,7 +190,7 @@ export function RecordPaymentPanel({
   // payment itself carries no photo is about the refund photo.
   const errorField = counterPaymentErrorField(error);
   const fieldErrors = counterFieldErrors(error);
-  const paymentHasPhoto = !isRefund && !isZeroBalance && (payment.method === "UPI" || payment.method === "SPLIT");
+  const paymentHasPhoto = !isRefund && !isZeroBalance && counterMethodHasPhotos(payment.method);
   const paymentErrors = paymentHasPhoto ? fieldErrors : { ...fieldErrors, proof: null };
   const refundPhotoError = errorField === "proof" && !paymentHasPhoto ? fieldErrors.proof ?? null : null;
   const generalError = !!error && !errorField && errorCode !== "SHIFT_REQUIRED";
@@ -401,6 +404,8 @@ export function RecordPaymentPanel({
                     ? `Mark ${formatRupees(amount)} as collected (Cash)`
                     : payment.method === "UPI"
                       ? `Record UPI payment ${formatRupees(amount)}`
+                      : payment.method === "CARD"
+                        ? `Record credit card payment ${formatRupees(amount)}`
                       : payment.method === "SPLIT"
                         ? `Record split payment ${formatRupees(amount)}`
                         : `Put ${formatRupees(amount)} on credit`

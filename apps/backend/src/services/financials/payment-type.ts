@@ -233,24 +233,39 @@ export function normaliseParts(p: { method: string; total: number; cash: number;
 /** Online part through a payment gateway (Razorpay …) rather than counter UPI — utils/reporting classifyOnline. */
 export const GATEWAY_REGEX = "razorpay|stripe|cashfree|payu|paytm|gateway|online|card";
 
-export function isGatewayPayment(onlineGateway: string | null | undefined): boolean {
-  return !!onlineGateway && new RegExp(GATEWAY_REGEX, "i").test(onlineGateway);
+/**
+ * A counter Credit Card payment (Nov 2026): onlineGateway exactly "CARD". Only
+ * rows recorded with the new method — an older free-text gateway that merely
+ * mentions "card" stays a gateway payment as before.
+ */
+export function isCounterCardPayment(onlineGateway: string | null | undefined): boolean {
+  return (onlineGateway ?? "").trim().toUpperCase() === "CARD";
 }
 
-export type PaymentModeKey = "CASH" | "UPI" | "GATEWAY";
+/** SQL twin of isCounterCardPayment (alias t = PaymentTransaction). */
+export const CARD_SQL = `UPPER(TRIM(COALESCE(t."onlineGateway", ''))) = 'CARD'`;
+
+export function isGatewayPayment(onlineGateway: string | null | undefined): boolean {
+  return !!onlineGateway && !isCounterCardPayment(onlineGateway) && new RegExp(GATEWAY_REGEX, "i").test(onlineGateway);
+}
+
+export type PaymentModeKey = "CASH" | "UPI" | "CARD" | "GATEWAY";
 
 export const PAYMENT_MODE_LABELS: Record<PaymentModeKey, string> = {
   CASH: "Cash",
   UPI: "UPI",
+  CARD: "Credit Card",
   GATEWAY: "Online (gateway)",
 };
 
-/** "Cash", "UPI", "Cash + UPI", "Online (Razorpay)" … */
+/** "Cash", "UPI", "Cash + UPI", "Credit Card", "Online (Razorpay)" … */
 export function paymentModeLabel(p: { cash: number; online: number; onlineGateway: string | null | undefined }): string {
   const parts: string[] = [];
   if (p.cash > 0) parts.push("Cash");
   if (p.online > 0) {
-    if (isGatewayPayment(p.onlineGateway)) {
+    if (isCounterCardPayment(p.onlineGateway)) {
+      parts.push("Credit Card");
+    } else if (isGatewayPayment(p.onlineGateway)) {
       const g = String(p.onlineGateway);
       parts.push(/razorpay/i.test(g) ? "Online (Razorpay)" : "Online (gateway)");
     } else {

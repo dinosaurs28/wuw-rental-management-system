@@ -132,6 +132,7 @@ const COLLECTION_COLUMNS: CsvColumn<CollectionRow>[] = [
   { header: "Amount", value: (r) => r.amount, type: "money" },
   { header: "Cash", value: (r) => r.modes.CASH, type: "money" },
   { header: "UPI", value: (r) => r.modes.UPI, type: "money" },
+  { header: "Credit card", value: (r) => r.modes.CARD, type: "money" },
   { header: "Bank transfer", value: (r) => r.modes.BANK_TRANSFER, type: "money" },
   { header: "Online gateway", value: (r) => r.modes.GATEWAY, type: "money" },
   { header: "Mode", value: (r) => r.modeLabel },
@@ -173,7 +174,8 @@ export const GetFinanceCollections = async (req: Request, res: Response) => {
         meta: meta(f),
         modeLabels: MODE_LABELS,
         notTracked: {
-          card: "Card payments are not recorded separately: Razorpay card, UPI and netbanking all show as Online gateway.",
+          card:
+            "Counter Credit Card payments (recorded from Nov 2026) show as Credit card. Card paid inside Razorpay, and card payments recorded before then, are not told apart: they show as Online gateway.",
         },
         ...report,
         rows: p.rows,

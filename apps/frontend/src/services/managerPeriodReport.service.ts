@@ -21,6 +21,8 @@ export interface PeriodKpis {
     online: number;
     upi: number;
     gateway: number;
+    /** counter Credit Card (Nov 2026; absent on older servers) */
+    card?: number;
     payments: number;
   };
   outstanding: number;

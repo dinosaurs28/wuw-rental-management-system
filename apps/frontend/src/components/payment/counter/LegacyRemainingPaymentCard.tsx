@@ -110,7 +110,7 @@ export function LegacyRemainingPaymentCard({
           {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {payment.method === "CREDIT"
             ? `Put ${formatRupees(amount)} on credit`
-            : `Record ${formatRupees(amount)} (${payment.method === "SPLIT" ? "Split" : payment.method === "UPI" ? "UPI" : "Cash"})`}
+            : `Record ${formatRupees(amount)} (${payment.method === "SPLIT" ? "Split" : payment.method === "UPI" ? "UPI" : payment.method === "CARD" ? "Credit Card" : "Cash"})`}
         </Button>
         {problem && !shiftRequired && (payment.method !== "SPLIT" || payment.splitCash !== "") && (
           <p className="text-center text-xs text-muted-foreground">{problem}</p>

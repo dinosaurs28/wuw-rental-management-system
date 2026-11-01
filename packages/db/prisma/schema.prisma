@@ -128,6 +128,8 @@ enum DepositMethod {
   ONLINE_RAZORPAY
   CASH
   UPI
+  // Nov 2026: counter Credit Card payment (receipt photos on its PaymentTransaction)
+  CARD
 }
 
 enum CustomerPaymentMode {
@@ -2065,7 +2067,9 @@ model CashShift {
   // Oct 2026: the branch manager closes the shift (verify & close). actualTotal
   // is then the cash the manager received, discrepancy received − expected,
   // discrepancyExplanation the manager's note; reconciledById/At are set to the
-  // same manager and time. Null on shifts the executive closed themselves.
+  // same manager and time. Null on shifts the executive closed themselves before
+  // Oct 2026; since Nov 2026 an executive's self-close of a cash-free shift sets
+  // it to the executive (actualTotal/discrepancy 0, no reconciler).
   closedById            Int?
 
   employee              User            @relation("ShiftEmployee", fields: [employeeId], references: [id])

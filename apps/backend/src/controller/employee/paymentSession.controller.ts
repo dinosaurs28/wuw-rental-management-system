@@ -64,6 +64,7 @@ import { discardOperationDraft } from "../../services/booking/operation-draft.se
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import {
   resolveCounterUpi,
+  resolveCounterCard,
   claimCounterUpi,
   resolvePaymentProof,
   claimPaymentProof,
@@ -78,7 +79,7 @@ import {
   getBookingCreditSummary,
   serializeCreditSummary,
 } from "../../services/payment/customer-credit.service.js";
-import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE } from "@repo/schemas";
+import { CREDIT_NOT_FOR_DEPOSIT_MESSAGE, DEPOSIT_REFUND_METHOD_REQUIRED_MESSAGE, CARD_GATEWAY, isCardGateway } from "@repo/schemas";
 import { SAFETY_DEPOSIT_REFUND_REF } from "../../services/payment/safety-deposit.service.js";
 import { refundProofRefusal } from "../../services/payment/refund-proof-rules.js";
 import {
@@ -118,7 +119,9 @@ const depositRefundSchema = z.object({
 const recordPaymentSchema = z.object({
   // UPI = ONLINE with the UPI gateway (merchant QR); CREDIT = the amount stays
   // owed by the customer against the collateral noted (#11)
-  method: z.enum(["CASH", "ONLINE", "SPLIT", "UPI", "CREDIT"]),
+  // CARD (Nov 2026) = "Credit Card": ONLINE with the CARD gateway, backed by 1–3
+  // photos of the card-machine receipt (proof_file_ids) — not CREDIT
+  method: z.enum(["CASH", "ONLINE", "SPLIT", "UPI", "CREDIT", "CARD"]),
   amount: z.coerce.number().min(0),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
@@ -137,7 +140,9 @@ const recordPaymentSchema = z.object({
   depositRefund: depositRefundSchema.optional(),
 }).superRefine((d, ctx) => {
   // UPI refs are checked as UTRs (or a proof photo) in the handler; other gateways just need a ref
-  if (d.method === "UPI" || d.method === "CREDIT" || isUpiGateway(d.onlineGateway)) return;
+  if (d.method === "UPI" || d.method === "CREDIT" || d.method === "CARD" || isUpiGateway(d.onlineGateway)) return;
+  // A card payment is backed by its receipt photos (checked in the handler), not a reference
+  if (d.method === "ONLINE" && isCardGateway(d.onlineGateway)) return;
   if (d.method === "ONLINE" && !d.onlineTransactionRef?.trim()) {
     ctx.addIssue({ code: "custom", message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] });
   }
@@ -535,8 +540,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
     }
     const { amount, idempotencyKey, notes, onlineTransactionRef, cashAmount: splitCash, onlineAmount: splitOnline, proof_file_id, proof_file_ids, depositRefund } = validation.data;
     // "UPI" is a counter UPI (merchant QR) payment: ONLINE through the UPI gateway
-    const method = validation.data.method === "UPI" ? "ONLINE" : validation.data.method;
-    const onlineGateway = validation.data.method === "UPI" ? "UPI" : validation.data.onlineGateway;
+    // "CARD" is a counter Credit Card payment: ONLINE through the CARD gateway
+    const method = validation.data.method === "UPI" || validation.data.method === "CARD" ? "ONLINE" : validation.data.method;
+    const onlineGateway =
+      validation.data.method === "UPI" ? "UPI" : validation.data.method === "CARD" ? CARD_GATEWAY : validation.data.onlineGateway;
     const actor = await resolveActor(req);
     const session = await resolveSession(req.params.sessionPublicId!, actor.branchId!);
 
@@ -605,6 +612,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
     // no money and aren't gated.
     const hasOnlinePart = method === "ONLINE" || (method === "SPLIT" && (splitOnline ?? 0) > 0);
     const isUpi = hasOnlinePart && isUpiGateway(onlineGateway);
+    // Credit Card (Nov 2026): the whole amount, backed by the card receipt photos
+    const isCard = method === "ONLINE" && isCardGateway(onlineGateway);
     let onlineRef: string | null = onlineTransactionRef?.trim() || null;
     let gateway: string | null = onlineGateway?.trim() || null;
     let upi: CounterUpi | null = null;
@@ -620,6 +629,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
         });
         onlineRef = upi.utr;
         gateway = "UPI";
+      } else if (isCard) {
+        upi = await resolveCounterCard({ proofFileId: proof_file_id, proofFileIds: proof_file_ids, branchId: session.branchId });
+        onlineRef = null;
+        gateway = CARD_GATEWAY;
       } else if (hasOnlinePart) {
         await assertUtrUnused(onlineRef!);
       }
@@ -755,7 +768,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
           LedgerEntryType.PAYMENT,
           LedgerEntryClassification.PAYMENT,
           -Math.abs(amount),
-          notes ?? `Online payment of ₹${amount}${onlineRef ? ` (ref: ${onlineRef})` : ""}`,
+          notes ?? (isCard ? `Credit card payment of ₹${amount}` : `Online payment of ₹${amount}${onlineRef ? ` (ref: ${onlineRef})` : ""}`),
           actor.id,
           String(actor.role),
           { idempotencyKey, referenceType: "ONLINE_PAYMENT" },
@@ -765,7 +778,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
         // A Fleet Executive's online payment (UPI or card) lands in their open shift
         // as non-cash; a manager's counter UPI in theirs when they have one
         const lockedShift = await lockShiftForPayment(tx, actor);
-        const upiShift = lockedShift && (actor.role === "STAFF" || isUpiGateway(gateway)) ? lockedShift : null;
+        const upiShift = lockedShift && (actor.role === "STAFF" || isUpiGateway(gateway) || isCardGateway(gateway)) ? lockedShift : null;
 
         await createSessionPaymentTransactions(tx, {
           sessionId: session.id,
@@ -962,7 +975,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
     }
 
     // Audit + activity outside transaction
-    const methodLabel = validation.data.method === "UPI" || (method === "ONLINE" && isUpi) ? "UPI" : method;
+    const methodLabel = validation.data.method === "UPI" || (method === "ONLINE" && isUpi) ? "UPI" : isCard ? "CARD" : method;
     await auditService.log({
       actorId: actor.id,
       actorName: actor.name,

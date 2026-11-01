@@ -42,10 +42,11 @@ export const formatPaymentTypes = (allocs: readonly Pick<PaymentAllocation, "typ
     .map((t) => PAYMENT_TYPE_LABELS[t])
     .join(" + ");
 
-export type PaymentModeKey = "CASH" | "UPI" | "GATEWAY";
+export type PaymentModeKey = "CASH" | "UPI" | "CARD" | "GATEWAY";
 
 export const PAYMENT_MODE_LABELS: Record<PaymentModeKey, string> = {
   CASH: "Cash",
   UPI: "UPI",
+  CARD: "Credit Card",
   GATEWAY: "Online (gateway)",
 };

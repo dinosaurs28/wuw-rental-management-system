@@ -291,6 +291,8 @@ export interface PeriodKpis {
     online: number;
     upi: number;
     gateway: number;
+    /** counter Credit Card (Nov 2026) */
+    card: number;
     payments: number;
   };
   outstanding: number;
@@ -338,13 +340,14 @@ const summarize = (facts: PeriodFacts): PeriodKpis => {
     }
   }
 
-  const collected = { total: 0, cash: 0, online: 0, upi: 0, gateway: 0 };
+  const collected = { total: 0, cash: 0, online: 0, upi: 0, gateway: 0, card: 0 };
   for (const c of facts.collections) {
     collected.total += c.total;
     collected.cash += c.cash;
     collected.online += c.online;
     collected.upi += c.upi;
     collected.gateway += c.gateway;
+    collected.card += c.card;
   }
 
   const ext = {
@@ -378,6 +381,7 @@ const summarize = (facts: PeriodFacts): PeriodKpis => {
       online: round2(collected.online),
       upi: round2(collected.upi),
       gateway: round2(collected.gateway),
+      card: round2(collected.card),
       payments: facts.collections.length,
     },
     outstanding: round2(outstanding),

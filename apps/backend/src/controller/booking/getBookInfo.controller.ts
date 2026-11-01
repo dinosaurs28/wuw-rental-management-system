@@ -76,6 +76,7 @@ import {
   assertDlFree,
   lockAndAssertDlFree,
   DlInUseError,
+  resolveTypeClasses,
 } from "../../services/booking/dl-in-use.service.js";
 import {
   assertKycPhotosOnFile,
@@ -389,8 +390,21 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       heldToClosing = true;
     }
 
-    // ── One vehicle per driving licence (X3) — re-checked under a lock below ──
-    await assertDlFree({ customerId, mode: "create", window: { startAt: startDate, endAt: endDate } });
+    // ── One car + one scooter per driving licence (X3 / TODO 5) — re-checked
+    // under a lock below. Classes from the cars picked and the groups' categories.
+    const dlTypeClasses = await resolveTypeClasses({
+      vehiclePublicIds: vehicles ?? [],
+      categoryIds: (groupKeys ?? []).flatMap((gk) => {
+        const parsedKey = parseGroupKey(gk);
+        return parsedKey ? [parsedKey.categoryId] : [];
+      }),
+    });
+    await assertDlFree({
+      customerId,
+      mode: "create",
+      window: { startAt: startDate, endAt: endDate },
+      typeClasses: dlTypeClasses,
+    });
 
     // ── Resolve groupKeys to specific vehicles (atomic within the DB transaction below) ──
     // We pre-check here (outside tx) to return early on obvious mismatches.
@@ -916,7 +930,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     const booking = await prisma.$transaction(async (tx) => {
       // Same driving licence on two concurrent holds: serialised here, one wins (X3)
       await lockAndAssertDlFree(
-        { customerId, mode: "create", window: { startAt: startDate, endAt: endDate } },
+        { customerId, mode: "create", window: { startAt: startDate, endAt: endDate }, typeClasses: dlTypeClasses },
         tx,
       );
 

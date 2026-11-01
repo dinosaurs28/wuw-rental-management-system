@@ -415,7 +415,7 @@ export const paymentSessionService = {
     sessionPublicId: string,
     payload: {
       /** UPI = counter UPI (merchant QR) backed by proof_file_id; CREDIT needs collateral (#11). */
-      method: "CASH" | "ONLINE" | "SPLIT" | "UPI" | "CREDIT";
+      method: "CASH" | "ONLINE" | "SPLIT" | "UPI" | "CREDIT" | "CARD";
       amount: number;
       idempotencyKey: string;
       notes?: string;

@@ -159,7 +159,9 @@ export function PeriodKpiGrid({ report }: { report: PeriodReport }) {
                 Cash {formatInr(s.collected.cash)} · Online {formatInr(s.collected.online)}
               </p>
               <p className="text-neutral-400">
-                UPI {formatInr(s.collected.upi)} · Gateway {formatInr(s.collected.gateway)} ·{" "}
+                UPI {formatInr(s.collected.upi)} ·{" "}
+                {(s.collected.card ?? 0) > 0 ? <>Card {formatInr(s.collected.card ?? 0)} · </> : null}
+                Gateway {formatInr(s.collected.gateway)} ·{" "}
                 {formatCount(s.collected.payments)} payment{s.collected.payments === 1 ? "" : "s"}
               </p>
             </>

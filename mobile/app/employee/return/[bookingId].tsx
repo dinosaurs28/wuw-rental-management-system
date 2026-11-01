@@ -1031,8 +1031,8 @@ export default function ReturnScreen() {
               proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds,
               ...depositRefund,
             }
-            : choice.method === 'UPI'
-              ? { method: 'UPI', amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds, ...depositRefund }
+            : choice.method === 'UPI' || choice.method === 'CARD'
+              ? { method: choice.method, amount: net, idempotencyKey, proof_file_id: choice.proofFileId, proof_file_ids: choice.proofFileIds, ...depositRefund }
               : choice.method === 'CREDIT'
                 ? { method: 'CREDIT', amount: net, idempotencyKey, collateral: choice.collateral, ...depositRefund }
                 : { method: 'CASH', amount: net, idempotencyKey, ...depositRefund },
@@ -1058,7 +1058,7 @@ export default function ReturnScreen() {
       if (handleShiftRequired(err)) return;
       // Photo / split / collateral problems show under the picker they belong to:
       // the payment's photo is checked first, the deposit refund's after it.
-      const paymentHasPhoto = choice?.method === 'UPI' || choice?.method === 'SPLIT';
+      const paymentHasPhoto = choice?.method === 'UPI' || choice?.method === 'SPLIT' || choice?.method === 'CARD';
       if (net > 0 && (paymentHasPhoto || !refundChoice) && pay.showServerError(err)) return;
       if (refundChoice && refundPay.showServerError(err)) return;
       if (net > 0 && pay.showServerError(err)) return;

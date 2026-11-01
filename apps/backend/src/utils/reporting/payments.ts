@@ -16,6 +16,8 @@ export interface PaidAmounts {
   upi: number;
   /** Online portion classified as a payment gateway (Razorpay etc.). */
   gateway: number;
+  /** Online portion paid by counter Credit Card (onlineGateway CARD, Nov 2026). */
+  card: number;
 }
 
 const empty = (): PaidAmounts => ({
@@ -23,6 +25,7 @@ const empty = (): PaidAmounts => ({
   cash: 0,
   online: 0,
   upi: 0,
+  card: 0,
   gateway: 0,
 });
 
@@ -37,7 +40,9 @@ const empty = (): PaidAmounts => ({
  */
 export const classifyOnline = (
   gateway: string | null | undefined,
-): Extract<SpecPaymentMode, "UPI" | "Gateway"> => {
+): Extract<SpecPaymentMode, "UPI" | "Gateway" | "Card"> => {
+  // Counter Credit Card (Nov 2026): exactly "CARD" — older free text keeps the old rule
+  if ((gateway ?? "").trim().toUpperCase() === "CARD") return "Card";
   if (gateway && /razorpay|stripe|cashfree|payu|paytm|gateway|online|card/i.test(gateway)) {
     return "Gateway";
   }
@@ -78,7 +83,9 @@ export const getPaidByBooking = async (
     entry.cash += cash;
     entry.online += online;
     if (online > 0) {
-      if (classifyOnline(t.onlineGateway) === "Gateway") entry.gateway += online;
+      const kind = classifyOnline(t.onlineGateway);
+      if (kind === "Gateway") entry.gateway += online;
+      else if (kind === "Card") entry.card += online;
       else entry.upi += online;
     }
     result.set(t.bookingId, entry);
@@ -95,6 +102,8 @@ export interface CollectionTxn {
   online: number;
   upi: number;
   gateway: number;
+  /** counter Credit Card part (Nov 2026) */
+  card: number;
   onlineGateway: string | null;
   onlineTransactionRef: string | null;
   collectedById: number | null;
@@ -148,15 +157,18 @@ export const getCollections = async (opts: {
 
   return txns.map((t) => {
     const online = Number(t.onlineAmount);
-    const isGateway = classifyOnline(t.onlineGateway) === "Gateway";
+    const kind = classifyOnline(t.onlineGateway);
+    const isGateway = kind === "Gateway";
+    const isCard = kind === "Card";
     return {
       bookingId: t.bookingId,
       collectedAt: t.collectedAt ?? t.createdAt,
       total: Number(t.totalAmount),
       cash: Number(t.cashAmount),
       online,
-      upi: online > 0 && !isGateway ? online : 0,
+      upi: online > 0 && !isGateway && !isCard ? online : 0,
       gateway: online > 0 && isGateway ? online : 0,
+      card: online > 0 && isCard ? online : 0,
       onlineGateway: t.onlineGateway,
       onlineTransactionRef: t.onlineTransactionRef,
       collectedById: t.collectedById,

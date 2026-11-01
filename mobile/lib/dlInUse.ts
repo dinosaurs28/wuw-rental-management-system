@@ -1,10 +1,13 @@
 import { Alert } from 'react-native';
 
 /**
- * 409 DL_IN_USE — one vehicle per driving licence (X3). The server refuses a
- * booking, pickup or extension while the same DL number has a vehicle out, or
- * a HOLD / CONFIRMED booking overlapping the dates. Customer responses carry a
- * message only; staff responses add `conflictingBooking`.
+ * 409 DL_IN_USE — one car and one scooter per driving licence (X3, client
+ * TODO 5). The server refuses a booking, extension or reschedule while the same
+ * DL number has a vehicle of the SAME type out, or a HOLD / CONFIRMED booking of
+ * that type overlapping the dates (a car never blocks a scooter, or the reverse),
+ * or when one booking has two cars / two scooters. Customer responses carry a
+ * message only; staff responses add `conflictingBooking` (absent for the
+ * two-in-one-booking case).
  * See apps/backend/src/services/booking/dl-in-use.service.ts.
  */
 export const DL_IN_USE = 'DL_IN_USE';

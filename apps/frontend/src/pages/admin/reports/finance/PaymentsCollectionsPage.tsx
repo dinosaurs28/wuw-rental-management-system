@@ -21,7 +21,8 @@ import {
   type Pagination,
 } from "./financeShared";
 
-type Modes = { CASH: number; UPI: number; BANK_TRANSFER: number; GATEWAY: number };
+// CARD = counter Credit Card (Nov 2026)
+type Modes = { CASH: number; UPI: number; CARD: number; BANK_TRANSFER: number; GATEWAY: number };
 interface Totals {
   collected: number;
   confirmed: number;
@@ -94,8 +95,9 @@ interface CollectionsData {
   pagination: Pagination;
 }
 
-const MODE_ORDER: Array<keyof Modes> = ["CASH", "UPI", "BANK_TRANSFER", "GATEWAY"];
-const DELTA_KEY: Record<keyof Modes, string> = { CASH: "cash", UPI: "upi", BANK_TRANSFER: "bankTransfer", GATEWAY: "gateway" };
+const MODE_ORDER: Array<keyof Modes> = ["CASH", "UPI", "CARD", "BANK_TRANSFER", "GATEWAY"];
+const DELTA_KEY: Record<keyof Modes, string> = { CASH: "cash", UPI: "upi", CARD: "card", BANK_TRANSFER: "bankTransfer", GATEWAY: "gateway" };
+const MODE_FALLBACK_LABELS: Record<keyof Modes, string> = { CASH: "Cash", UPI: "UPI", CARD: "Credit card", BANK_TRANSFER: "Bank transfer", GATEWAY: "Online gateway (Razorpay)" };
 
 export function PaymentsCollectionsPage() {
   const { filters, setFilters, params } = useReportFilters();
@@ -119,7 +121,7 @@ export function PaymentsCollectionsPage() {
       notes={[
         "Collected = payments with status Collected (awaiting the branch manager's confirmation) or Confirmed, by payment time (collected time, else created time). Voided and rejected entries count nowhere and are listed under discrepancies.",
         "Rental collections exclude security deposits (held money). Net = collected − refunds paid out.",
-        "Mode: cash and online parts come from each payment. Online is UPI unless it was recorded as a bank transfer or went through the Razorpay gateway.",
+        "Mode: cash and online parts come from each payment. Online is UPI unless it was recorded as a counter credit card payment, a bank transfer or went through the Razorpay gateway.",
         d?.notTracked.card ?? "",
         "Staff is the person who recorded the payment. Payments the customer made online have no collector.",
         "Cash shifts have no category or vehicle, so only the branch filter applies to them.",
@@ -143,15 +145,14 @@ export function PaymentsCollectionsPage() {
                 <MetricCard
                   key={k}
                   testId={`col-mode-${k}`}
-                  label={d.modeLabels[k]}
-                  value={d.summary.modes[k]}
+                  label={d.modeLabels[k] ?? MODE_FALLBACK_LABELS[k]}
+                  value={d.summary.modes[k] ?? 0}
                   format="money"
                   delta={d.deltas?.[DELTA_KEY[k]]}
                   compareLabel={cmp}
                   hint={d.summary.refundModes[k] ? `Refunded ${money(d.summary.refundModes[k])}` : undefined}
                 />
               ))}
-              <MetricCard label="Card" value={null} notTracked={d.notTracked.card} />
             </div>
           </Section>
 

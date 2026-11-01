@@ -40,10 +40,11 @@ type ReportMode = SpecPaymentMode; // "Cash" | "UPI" | "Gateway" | "Credit"
 const STAFF_ROLES: Role[] = [Role.STAFF, Role.MANAGER, Role.ADMIN];
 
 /** Dominant mode of a collected payment (cash > gateway > upi by amount). */
-const dominantMode = (cash: number, upi: number, gateway: number): ReportMode => {
+const dominantMode = (cash: number, upi: number, gateway: number, card = 0): ReportMode => {
   const entries: [ReportMode, number][] = [
     ["Cash", cash],
     ["Gateway", gateway],
+    ["Card", card],
     ["UPI", upi],
   ];
   entries.sort((a, b) => b[1] - a[1]);
@@ -59,6 +60,7 @@ const parseModeFilter = (
   if (v === "CASH") return "Cash";
   if (v === "UPI") return "UPI";
   if (v === "GATEWAY") return "Gateway";
+  if (v === "CARD") return "Card";
   if (v === "CREDIT") return "Credit";
   if (v === "ONLINE") return "Online";
   return undefined;
@@ -68,7 +70,7 @@ const modeMatches = (
   rowMode: ReportMode,
   filter: ReportMode | "Online",
 ): boolean => {
-  if (filter === "Online") return rowMode === "UPI" || rowMode === "Gateway";
+  if (filter === "Online") return rowMode === "UPI" || rowMode === "Gateway" || rowMode === "Card";
   return rowMode === filter;
 };
 
@@ -173,13 +175,15 @@ export const GetReceiptReport = async (req: Request, res: Response) => {
     // Classify each payment and apply the payment-mode filter (identical to Collection).
     const classified = txns.map((t) => {
       const online = Number(t.onlineAmount);
-      const isGateway = classifyOnline(t.onlineGateway) === "Gateway";
+      const kind = classifyOnline(t.onlineGateway);
+      const isGateway = kind === "Gateway";
       const cash = Number(t.cashAmount);
-      const upi = online > 0 && !isGateway ? online : 0;
+      const upi = online > 0 && kind === "UPI" ? online : 0;
       const gateway = online > 0 && isGateway ? online : 0;
+      const card = online > 0 && kind === "Card" ? online : 0;
       return {
         t,
-        mode: dominantMode(cash, upi, gateway),
+        mode: dominantMode(cash, upi, gateway, card),
         amount: Number(t.totalAmount),
       };
     });

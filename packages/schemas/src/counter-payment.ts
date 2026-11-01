@@ -15,16 +15,35 @@ import { z } from "zod";
  *    collected on their own.
  */
 
-/** Payment methods a Fleet Executive can pick at the counter. */
-export const COUNTER_PAYMENT_METHODS = ["CASH", "UPI", "SPLIT", "CREDIT"] as const;
+/**
+ * Payment methods a Fleet Executive can pick at the counter.
+ * Nov 2026 (client TODO 3): CARD = "Credit Card" — the customer paid on the
+ * branch's card machine. It is NOT Credit (money still owed): it is money
+ * received, non-cash (never in the drawer). Recorded as method ONLINE with
+ * onlineGateway "CARD" and 1–3 photos of the card-machine receipt
+ * (`proof_file_ids`, same upload + limits as the UPI payment screenshots).
+ */
+export const COUNTER_PAYMENT_METHODS = ["CASH", "UPI", "CARD", "SPLIT", "CREDIT"] as const;
 export type CounterPaymentMethod = (typeof COUNTER_PAYMENT_METHODS)[number];
 
 export const COUNTER_PAYMENT_METHOD_LABELS: Record<CounterPaymentMethod, string> = {
   CASH: "Cash",
   UPI: "UPI",
+  CARD: "Credit Card",
   SPLIT: "Split (cash + UPI)",
   CREDIT: "Credit",
 };
+
+/** onlineGateway stored on a counter Credit Card payment (method ONLINE). */
+export const CARD_GATEWAY = "CARD";
+export const CREDIT_CARD_LABEL = "Credit Card";
+
+/** True for a counter Credit Card payment's onlineGateway ("CARD", any case). */
+export const isCardGateway = (gateway: string | null | undefined): boolean =>
+  (gateway ?? "").trim().toUpperCase() === CARD_GATEWAY;
+
+export const CARD_RECEIPT_REQUIRED_MESSAGE =
+  "Add a photo of the card payment receipt (the slip printed by the card machine after the payment).";
 
 export const COLLATERAL_MIN_LENGTH = 3;
 export const COLLATERAL_MAX_LENGTH = 300;

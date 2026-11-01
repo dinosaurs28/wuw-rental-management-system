@@ -11,7 +11,7 @@ interface Pricing {
 }
 
 /** ONLINE = Razorpay checkout; the rest are counter methods (#3 / #11). */
-export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT";
+export type EmployeePaymentType = "CASH" | "ONLINE" | "UPI" | "SPLIT" | "CREDIT" | "CARD";
 
 /** Counter plan (#15/#17): MONTHLY = 30–180 days, stored as rentalPeriodType MONTHLY. */
 export type EmployeeBookingPlan = "STANDARD" | "MONTHLY";

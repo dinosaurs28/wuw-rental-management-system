@@ -102,7 +102,9 @@ export const formatDashboardDataForExport = (data: {
         "Payment Method":
           item.paymentMethod === "ONLINE_RAZORPAY"
             ? "Online"
-            : item.paymentMethod,
+            : item.paymentMethod === "CARD"
+              ? "Credit Card"
+              : item.paymentMethod,
         "Total Revenue (₹)": item.totalRevenue,
         "Transaction Count": item.transactionCount,
         "Avg Transaction Value (₹)": item.avgTransactionValue?.toFixed(2) || 0,
