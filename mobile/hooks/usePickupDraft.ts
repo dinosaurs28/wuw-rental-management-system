@@ -1,9 +1,11 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import type { CapturedPhoto } from '../components/employee/PhotoCaptureSection';
 import type { CounterPaymentController, CounterRefundController } from '../components/employee/CounterPaymentPicker';
 import { COUNTER_PAYMENT_METHODS, COUNTER_REFUND_METHODS } from '../lib/counterPayment';
 import { DL_SELECTABLE_STATUSES, type DlCollectionStatus } from '../lib/dlStatus';
 import { draftBool, draftNumber, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
+import { mergeKeepPhotos, mergeRestoredPhotos } from '../lib/draftPhotos';
 import { fuelBarsNumber } from '../lib/fuel';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
@@ -47,7 +49,8 @@ interface Options {
   fields: PickupDraftFields;
   setters: { [K in keyof PickupDraftFields as `set${Capitalize<K>}`]: Setter<PickupDraftFields[K]> };
   photos: CapturedPhoto[];
-  setPhotos: Setter<CapturedPhoto[]>;
+  // A state setter: restored photos are merged into the current list.
+  setPhotos: Dispatch<SetStateAction<CapturedPhoto[]>>;
   pendingPhotos: number;
   pay: CounterPaymentController;
   refundPay: CounterRefundController;
@@ -92,6 +95,7 @@ export function usePickupDraft({
     schemaVersion: PICKUP_DRAFT_SCHEMA,
     isEmpty,
     pendingUploads: pendingPhotos,
+    vehicleKey,
     snapshot: {
       data: {
         vehicleKey,
@@ -108,6 +112,7 @@ export function usePickupDraft({
       photos,
     },
     onGone,
+    onKeepMine: (otherPhotos) => setPhotos((current) => mergeKeepPhotos(current, otherPhotos)),
     onRestore: (draft, savedPhotos) => {
       const d = draft.data;
       const savedVehicle = draftString(d, 'vehicleKey') || null;
@@ -119,7 +124,9 @@ export function usePickupDraft({
         const fuel = draftNumber(d, 'fuelLevel');
         s.setFuelLevel(fuelBarsNumber(fuel));
         s.setFastagBalance(draftString(d, 'fastagBalance'));
-        setPhotos(savedPhotos);
+        // Merged: photos already on the screen (taken while this loaded, or
+        // kept on the phone from an earlier visit) stay.
+        setPhotos((current) => mergeRestoredPhotos(savedPhotos, current));
       } else {
         Alert.alert(
           'Vehicle changed',

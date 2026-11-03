@@ -1688,6 +1688,8 @@ export default function ReturnScreen() {
                   }}
                   genericLabel="Add"
                   onPendingChange={setPhotosPending}
+                  // Paused drop: shots kept on the phone until the saved draft has them
+                  persistKey={draft.photoRecordKey}
                 />
               </View>
             </>

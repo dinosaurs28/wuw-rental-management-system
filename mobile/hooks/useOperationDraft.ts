@@ -12,6 +12,8 @@ import {
   type OperationDraftType,
 } from '../lib/operationDraft';
 import type { CapturedPhoto } from '../components/employee/PhotoCaptureSection';
+import { photoRefs as toPhotoRefs, shotRecordKey, shotRecordPrefix } from '../lib/draftPhotos';
+import { clearShotRecords, forgetFileIds, shotRecordAvailable } from '../lib/pendingShotStore';
 
 // Paused pickup / drop (client item 2). Keeps everything entered on the screen
 // saved on the server while it's open (debounced, and on leave / background),
@@ -20,6 +22,10 @@ import type { CapturedPhoto } from '../components/employee/PhotoCaptureSection';
 // calls completed() after its own explicit confirm succeeded.
 
 const AUTOSAVE_DELAY_MS = 1000;
+// The saved draft is read again after a failed read (offline, timeout) before
+// the screen starts saving on its own: a save that never saw the draft would
+// otherwise have to replace it (and its photos) or ask.
+const READ_RETRY_DELAYS_MS = [1500, 4000];
 
 export interface OperationDraftSnapshot {
   // The screen's own fields (stored as-is, read back with lib/operationDraft readers).
@@ -38,8 +44,13 @@ interface Options {
   isEmpty: boolean;
   // Photos still uploading (or failed): they aren't in the snapshot yet.
   pendingUploads: number;
-  // Put the saved fields back on the screen (once, when it opens).
+  // The vehicle the photos belong to (part of the on-phone shot record's key).
+  vehicleKey?: string | null;
+  // Put the saved fields back on the screen (once, when it opens). Photos are
+  // MERGED with the ones already on the screen, never replace them.
   onRestore: (draft: OperationDraft, photos: CapturedPhoto[]) => void;
+  // "Keep mine" after a conflict: add the other phone's photos to this one's.
+  onKeepMine?: (otherPhotos: CapturedPhoto[]) => void;
   // The booking moved past this step elsewhere (409 DRAFT_NOT_ALLOWED) — reload it.
   onGone?: () => void;
 }
@@ -63,6 +74,9 @@ export interface OperationDraftController {
   abortCompletion: () => void;
   // The pickup / drop was completed (the server already deleted the draft).
   completed: () => void;
+  // PhotoCaptureSection persistKey: shots kept on this phone until the server
+  // draft holds them (null when this screen can't be paused).
+  photoRecordKey: string | null;
 }
 
 export function useOperationDraft({
@@ -73,13 +87,17 @@ export function useOperationDraft({
   snapshot,
   isEmpty,
   pendingUploads,
+  vehicleKey = null,
   onRestore,
+  onKeepMine,
   onGone,
 }: Options): OperationDraftController {
   const navigation = useNavigation();
   const qc = useQueryClient();
   const kind = draftKindOf(type);
   const noun = type === 'PICKUP' ? 'pickup' : 'drop';
+  const recordPrefix = bookingId ? shotRecordPrefix(kind, bookingId) : null;
+  const recordKey = bookingId ? shotRecordKey(kind, bookingId, vehicleKey) : null;
 
   // The initial read finished (found or not) — nothing is saved before it, so
   // a draft from another phone can't be overwritten unseen.
@@ -109,14 +127,27 @@ export function useOperationDraft({
   // What was last saved (or restored), to skip identical saves.
   const savedKeyRef = useRef<string | null>(null);
   const adoptedGenRef = useRef(0);
+  // The photo list the server sent with the last restore (what it already holds).
+  const restoredPhotosRef = useRef<ReturnType<typeof toPhotoRefs>>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef<Promise<SaveResult> | null>(null);
   // Identifies this screen session's saves to the server (see writerId).
   const writerIdRef = useRef(`${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 
   // Latest values for the async paths (timers, AppState, unmount).
-  const latest = useRef({ snapshot, isEmpty, enabled, pendingUploads, onRestore, onGone });
-  latest.current = { snapshot, isEmpty, enabled, pendingUploads, onRestore, onGone };
+  const latest = useRef({ snapshot, isEmpty, enabled, pendingUploads, onRestore, onKeepMine, onGone, recordKey, recordPrefix });
+  latest.current = { snapshot, isEmpty, enabled, pendingUploads, onRestore, onKeepMine, onGone, recordKey, recordPrefix };
+
+  // Shots kept on this phone that the server draft now holds: the phone's copy can go.
+  const forgetSavedShots = (fileIds: string[]) => {
+    const key = latest.current.recordKey;
+    if (key && fileIds.length) forgetFileIds(key, fileIds);
+  };
+  // Completed / discarded / gone elsewhere: nothing of it stays on the phone.
+  const clearSavedShots = () => {
+    const prefix = latest.current.recordPrefix;
+    if (prefix) clearShotRecords(prefix);
+  };
 
   const photoRefs = toDraftPhotos(snapshot.photos);
   const snapshotKey = JSON.stringify({ d: snapshot.data, p: photoRefs });
@@ -136,7 +167,10 @@ export function useOperationDraft({
   const applyDraft = (draft: OperationDraft) => {
     versionRef.current = draft.version;
     markHasDraft(true);
-    latest.current.onRestore(draft, fromDraftPhotos(draft.photos));
+    const saved = fromDraftPhotos(draft.photos);
+    restoredPhotosRef.current = toPhotoRefs(saved);
+    forgetSavedShots(saved.map((p) => p.fileId));
+    latest.current.onRestore(draft, saved);
     if (mountedRef.current) {
       setRestoreGen((g) => g + 1);
       setResumed({ updatedAt: draft.updatedAt, updatedByName: draft.updatedBy?.name ?? null });
@@ -156,6 +190,13 @@ export function useOperationDraft({
             conflictRef.current = false;
             versionRef.current = server?.version ?? 0;
             savedKeyRef.current = null;
+            // This phone's entries replace the other version's, but its photos
+            // are added, never thrown away. Saved once the merge is on screen.
+            if (server?.photos?.length && latest.current.onKeepMine) {
+              latest.current.onKeepMine(fromDraftPhotos(server.photos));
+              setTimeout(() => { void saveRef.current(); }, 0);
+              return;
+            }
             void saveRef.current();
           },
         },
@@ -202,6 +243,7 @@ export function useOperationDraft({
         const meta = res.data?.data;
         if (meta) versionRef.current = meta.version;
         savedKeyRef.current = key;
+        forgetSavedShots((photos ?? []).map((p) => p.fileId));
         const created = !hasDraftRef.current;
         markHasDraft(true);
         if (created) refreshLists();
@@ -241,6 +283,7 @@ export function useOperationDraft({
         if (code === 'DRAFT_NOT_ALLOWED') {
           // Completed / cancelled elsewhere: nothing left to pause.
           doneRef.current = true;
+          clearSavedShots();
           if (mountedRef.current) setDone(true);
           latest.current.onGone?.();
           return 'skipped';
@@ -270,17 +313,29 @@ export function useOperationDraft({
     startedRef.current = true;
     (async () => {
       try {
-        const res = await employeeApi.getOperationDraft(kind, bookingId);
-        const draft = res.data?.data ?? null;
-        if (draft && mountedRef.current) applyDraft(draft);
-      } catch (err: any) {
-        // No draft endpoints on this server: keep the screen as it was.
-        if (err?.response?.status === 404) {
-          availableRef.current = false;
-          if (mountedRef.current) setAvailable(false);
+        for (let attempt = 0; ; attempt++) {
+          try {
+            const res = await employeeApi.getOperationDraft(kind, bookingId);
+            const draft = res.data?.data ?? null;
+            if (draft && mountedRef.current) applyDraft(draft);
+            break;
+          } catch (err: any) {
+            // No draft endpoints on this server: keep the screen as it was.
+            if (err?.response?.status === 404) {
+              availableRef.current = false;
+              if (mountedRef.current) setAvailable(false);
+              break;
+            }
+            // Offline / timeout: read again a couple of times. Still failing,
+            // start from the screen; a later save to an existing draft comes
+            // back as a conflict, so nothing is overwritten unseen.
+            const delay = READ_RETRY_DELAYS_MS[attempt];
+            const status = err?.response?.status;
+            if (delay == null || !mountedRef.current || (status && status < 500)) break;
+            await new Promise((r) => setTimeout(r, delay));
+            if (!mountedRef.current) break;
+          }
         }
-        // Otherwise (offline…) start from the screen; a later save to an
-        // existing draft comes back as a conflict, so nothing is overwritten.
       } finally {
         readyRef.current = true;
         if (mountedRef.current) setReady(true);
@@ -293,10 +348,12 @@ export function useOperationDraft({
   useEffect(() => {
     if (!ready || !available || done || !enabled) return;
     if (adoptedGenRef.current !== restoreGen) {
-      // The first state after a restore is what the server already has.
+      // The first state after a restore: its fields are what the server already
+      // has, its photos only if they're the list the server sent. Photos merged
+      // in (taken while the draft loaded, kept on this phone) are saved now.
       adoptedGenRef.current = restoreGen;
-      savedKeyRef.current = snapshotKey;
-      return;
+      savedKeyRef.current = JSON.stringify({ d: snapshot.data, p: restoredPhotosRef.current });
+      if (snapshotKey === savedKeyRef.current) return;
     }
     if (snapshotKey === savedKeyRef.current) return;
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -365,6 +422,7 @@ export function useOperationDraft({
       if (inFlightRef.current) await inFlightRef.current.catch(() => 'failed');
       // Always sent: a draft may exist even if the first read failed (no-op otherwise).
       if (bookingId) await employeeApi.discardOperationDraft(kind, bookingId);
+      clearSavedShots();
       refreshLists();
       leave(go);
     } catch (err: any) {
@@ -387,10 +445,15 @@ export function useOperationDraft({
     );
   };
 
+  // Shots not uploaded yet are kept on this phone (lib/pendingShotStore) and
+  // finish uploading when the pickup / drop is opened here again.
+  const keptOnPhone = shotRecordAvailable();
   const uploadsWarning = (count: number) =>
-    count > 0
-      ? `\n\n${count} photo${count > 1 ? 's are' : ' is'} still uploading and will be lost if you leave now.`
-      : '';
+    count <= 0
+      ? ''
+      : keptOnPhone
+        ? `\n\n${count} photo${count > 1 ? "s haven't" : " hasn't"} finished uploading. ${count > 1 ? 'They are' : 'It is'} kept on this phone and finish${count > 1 ? '' : 'es'} uploading when you continue this ${noun} on this phone — on another phone ${count > 1 ? 'they' : 'it'} would be missing. Wait here to finish now.`
+        : `\n\n${count} photo${count > 1 ? 's are' : ' is'} still uploading and will be lost if you leave now.`;
 
   // Leaving with something entered: keep it for later (default) or discard it.
   const guard = enabled && ready && available && !done && (hasDraft || !isEmpty);
@@ -421,7 +484,9 @@ export function useOperationDraft({
     if (pending > 0) {
       Alert.alert('Photos still uploading', uploadsWarning(pending).trim(), [
         { text: 'Wait', style: 'cancel' },
-        { text: 'Leave anyway', style: 'destructive', onPress: () => { void leaveSaved(go); } },
+        keptOnPhone
+          ? { text: 'Continue later', onPress: () => { void leaveSaved(go); } }
+          : { text: 'Leave anyway', style: 'destructive', onPress: () => { void leaveSaved(go); } },
       ]);
       return;
     }
@@ -453,6 +518,7 @@ export function useOperationDraft({
     doneRef.current = true;
     if (mountedRef.current) setDone(true);
     markHasDraft(false);
+    clearSavedShots();
     refreshLists();
   };
 
@@ -466,5 +532,7 @@ export function useOperationDraft({
     beginCompletion,
     abortCompletion,
     completed,
+    // Kept on the phone only while this pickup / drop can still be paused.
+    photoRecordKey: enabled && !done ? recordKey : null,
   };
 }

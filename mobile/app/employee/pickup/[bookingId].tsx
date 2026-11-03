@@ -2276,6 +2276,8 @@ export default function PickupScreen() {
                 }}
                 genericLabel="Add"
                 onPendingChange={setPendingPhotos}
+                // Paused pickup: shots kept on the phone until the saved draft has them
+                persistKey={draft.photoRecordKey}
               />
             </View>
 

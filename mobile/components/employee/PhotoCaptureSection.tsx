@@ -16,6 +16,15 @@ import {
   type UploadProfile,
 } from '../../lib/image';
 import { insertInCaptureOrder, nextCaptureAt } from '../../lib/photoOrder';
+import { mergeRestoredPhotos, unuploadedShots, uploadedShotPhotos } from '../../lib/draftPhotos';
+import {
+  dropShot,
+  forgetFileIds,
+  keepShot,
+  loadShots,
+  uploadShot,
+  type ShotUploadResult,
+} from '../../lib/pendingShotStore';
 import ImageViewer from '../ui/ImageViewer';
 import CameraCapture, { type CapturedSize } from './CameraCapture';
 
@@ -50,6 +59,11 @@ interface Props {
   // 'damage' keeps more detail (2000px, q0.8) for damage evidence; the default
   // keeps licence/KYC-style small uploads. A 413 retries once at 'standard'.
   profile?: UploadProfile;
+  // Pickup / drop screens that can be paused (lib/draftPhotos.shotRecordKey):
+  // every shot is kept on the phone until the paused draft holds it, so a shot
+  // still uploading / failed when the screen closes (or the app is killed)
+  // comes back — and finishes uploading — the next time the screen opens.
+  persistKey?: string | null;
 }
 
 // A shot that has been taken but isn't in `value` yet.
@@ -71,6 +85,7 @@ export default function PhotoCaptureSection({
   genericLabel = 'Add photo',
   onPendingChange,
   profile = 'standard',
+  persistKey = null,
 }: Props) {
   // Camera-only on purpose: no gallery, and no confirm step after the shot.
   // A labeled slot opens a single shot; the generic tile stays open for many.
@@ -103,47 +118,77 @@ export default function PhotoCaptureSection({
     onChange(next);
   };
 
+  const sendShot = async (shot: PendingShot): Promise<ShotUploadResult> => {
+    // Raw camera output is 3–8 MB and is rejected by the reverse proxy
+    // before it reaches the API — always downscale first.
+    const asset = { uri: shot.uri, width: shot.width, mimeType: 'image/jpeg' };
+    const file = await prepareImageForUpload(asset, `photo_${shot.key}`, profile);
+    try {
+      return await upload(toUploadForm(file));
+    } catch (err: any) {
+      // The larger damage profile can trip a tight proxy limit — retry once
+      // at the standard size before giving up.
+      if (profile !== 'standard' && err?.response?.status === 413) {
+        const small = await prepareImageForUpload(asset, `photo_${shot.key}`, 'standard');
+        return upload(toUploadForm(small));
+      }
+      throw err;
+    }
+  };
+
   const startUpload = async (shot: PendingShot) => {
     try {
-      // Raw camera output is 3–8 MB and is rejected by the reverse proxy
-      // before it reaches the API — always downscale first.
-      const asset = { uri: shot.uri, width: shot.width, mimeType: 'image/jpeg' };
-      const file = await prepareImageForUpload(asset, `photo_${shot.key}`, profile);
-      let result: { fileId: string; url: string };
-      try {
-        result = await upload(toUploadForm(file));
-      } catch (err: any) {
-        // The larger damage profile can trip a tight proxy limit — retry once
-        // at the standard size before giving up.
-        if (profile !== 'standard' && err?.response?.status === 413) {
-          const small = await prepareImageForUpload(asset, `photo_${shot.key}`, 'standard');
-          result = await upload(toUploadForm(small));
-        } else {
-          throw err;
-        }
-      }
-      const { fileId, url } = result;
+      // Kept on the phone (persistKey): the upload carries on, and is recorded,
+      // even if this screen closes before it finishes.
+      const { fileId, url } = await uploadShot(persistKey, shot.key, () => sendShot(shot));
       if (!mounted.current) return;
       // Replace any existing photo for a labeled slot. Either way the photo goes
       // where it was taken in the sequence, not where its upload finished.
       const current = valueRef.current;
+      const replaced = shot.label ? current.filter((p) => p.label === shot.label && p.fileId !== fileId) : [];
+      const photo: CapturedPhoto = shot.label
+        ? { fileId, url, label: shot.label, capturedAt: shot.capturedAt }
+        : { fileId, url, capturedAt: shot.capturedAt };
       commit(
-        shot.label
-          ? insertInCaptureOrder(current.filter((p) => p.label !== shot.label), {
-              fileId,
-              url,
-              label: shot.label,
-              capturedAt: shot.capturedAt,
-            })
-          : insertInCaptureOrder(current, { fileId, url, capturedAt: shot.capturedAt }),
+        insertInCaptureOrder(
+          current.filter((p) => p.fileId !== fileId && !replaced.includes(p)),
+          photo,
+        ),
       );
+      if (persistKey && replaced.length) forgetFileIds(persistKey, replaced.map((p) => p.fileId));
       setPending((list) => list.filter((p) => p.key !== shot.key));
     } catch (err: any) {
       if (!mounted.current) return;
+      // Stays on screen with Retry (and on the phone, for the next time it opens).
       setPending((list) => list.map((p) => (p.key === shot.key ? { ...p, failed: true } : p)));
       setUploadError(uploadErrorMessage(err));
     }
   };
+
+  // Shots kept on this phone from an earlier visit (left while uploading, a
+  // failed upload, the app closed): uploaded ones go back in the list, the rest
+  // upload again. Once per record.
+  const restoredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!persistKey || restoredRef.current === persistKey) return;
+    restoredRef.current = persistKey;
+    const shots = loadShots(persistKey);
+    if (shots.length === 0) return;
+    const uploaded = uploadedShotPhotos(shots) as CapturedPhoto[];
+    if (uploaded.length) commit(mergeRestoredPhotos(valueRef.current, uploaded));
+    const again = unuploadedShots(shots).map((s): PendingShot => ({
+      key: s.key,
+      uri: s.uri,
+      width: s.width,
+      label: s.label,
+      capturedAt: s.capturedAt,
+      failed: false,
+    }));
+    if (again.length === 0) return;
+    setPending((list) => [...list, ...again.filter((s) => !list.some((p) => p.key === s.key))]);
+    again.forEach((s) => { void startUpload(s); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persistKey]);
 
   const onShot = (uri: string, size: CapturedSize) => {
     seq.current += 1;
@@ -155,6 +200,17 @@ export default function PhotoCaptureSection({
       capturedAt: nextCaptureAt(),
       failed: false,
     };
+    // Out of the camera cache into the app's documents folder, listed until the
+    // paused draft holds it.
+    if (persistKey) {
+      shot.uri = keepShot(persistKey, {
+        key: shot.key,
+        uri: shot.uri,
+        width: shot.width,
+        capturedAt: shot.capturedAt,
+        ...(shot.label ? { label: shot.label } : {}),
+      });
+    }
     setPending((list) => [...list, shot]);
     startUpload(shot);
   };
@@ -165,9 +221,15 @@ export default function PhotoCaptureSection({
     startUpload(again);
   };
 
-  const discard = (key: string) => setPending((list) => list.filter((p) => p.key !== key));
+  const discard = (key: string) => {
+    if (persistKey) dropShot(persistKey, key);
+    setPending((list) => list.filter((p) => p.key !== key));
+  };
 
-  const remove = (fileId: string) => commit(valueRef.current.filter((p) => p.fileId !== fileId));
+  const remove = (fileId: string) => {
+    if (persistKey) forgetFileIds(persistKey, [fileId]);
+    commit(valueRef.current.filter((p) => p.fileId !== fileId));
+  };
 
   const openViewer = (fileId: string) => {
     const index = Math.max(0, value.findIndex((p) => p.fileId === fileId));
