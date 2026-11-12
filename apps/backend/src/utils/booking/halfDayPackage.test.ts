@@ -26,8 +26,11 @@ const ist = (local: string) => new Date(`${local}+05:30`);
 const everyDay = (openTime: string, closeTime: string) =>
   Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: true, openTime, closeTime }));
 
-/** The live Manipal hours: 08:00–22:30 every day, no grace. */
-const manipal: BranchScheduleConfig = { schedules: everyDay("08:00", "22:30"), graceMinutes: 0, is24Hours: false };
+/**
+ * The live Manipal hours: 08:00–23:00 every day, no grace → the last return is
+ * 22:30 (closing − 30 min, client TODO 4), so a held 12-hour return is 22:30.
+ */
+const manipal: BranchScheduleConfig = { schedules: everyDay("08:00", "23:00"), graceMinutes: 0, is24Hours: false };
 
 test("12 hours inside office hours is pickup + 12 h", () => {
   for (const pickup of ["2026-10-12T08:00:00", "2026-10-12T10:30:00", "2026-10-12T20:00:00", "2026-10-12T22:00:00"]) {
@@ -45,12 +48,19 @@ test("12 hours past closing / midnight / before opening returns at closing on th
   }
 });
 
-test("branch without saved hours uses the default 08:00–23:00", () => {
+test("branch without saved hours uses the default 08:00–23:00 (last return 22:30)", () => {
   const defaults: BranchScheduleConfig = { schedules: [], graceMinutes: 0, is24Hours: false };
-  assert.equal(halfDayReturnFor(defaults, ist("2026-10-12T11:00:00"))?.clamped, false);
-  const r = halfDayReturnFor(defaults, ist("2026-10-12T11:05:00"));
+  assert.equal(halfDayReturnFor(defaults, ist("2026-10-12T10:30:00"))?.clamped, false);
+  const r = halfDayReturnFor(defaults, ist("2026-10-12T10:35:00"));
   assert.equal(r?.clamped, true);
-  assert.equal(r?.endAt.toISOString(), ist("2026-10-12T23:00:00").toISOString());
+  assert.equal(r?.endAt.toISOString(), ist("2026-10-12T22:30:00").toISOString());
+});
+
+test("a held 12-hour booking made before Nov 2026 (held to 23:00 closing) is still recognised", () => {
+  const defaults: BranchScheduleConfig = { schedules: [], graceMinutes: 0, is24Hours: false };
+  assert.equal(isClampedHalfDay(defaults, ist("2026-10-12T14:00:00"), ist("2026-10-12T23:00:00")), true);
+  assert.equal(isClampedHalfDay(defaults, ist("2026-10-12T14:00:00"), ist("2026-10-12T22:30:00")), true);
+  assert.equal(isClampedHalfDay(defaults, ist("2026-10-12T14:00:00"), ist("2026-10-12T22:45:00")), false);
 });
 
 test("a return inside the grace window is not clamped; a 24-hour branch never is", () => {
@@ -68,10 +78,11 @@ test("a closed next day still clamps to the pickup day's closing", () => {
   assert.equal(r?.endAt.toISOString(), ist("2026-10-10T22:30:00").toISOString());
 });
 
-test("under an hour before closing only whole days remain", () => {
+test("under an hour before the last return only whole days remain", () => {
+  // 09:00–15:00 → last return 14:30
   const short: BranchScheduleConfig = { schedules: everyDay("09:00", "15:00"), graceMinutes: 0, is24Hours: false };
-  assert.equal(halfDayReturnFor(short, ist("2026-10-12T14:30:00")), null);
-  assert.equal(halfDayReturnFor(short, ist("2026-10-12T14:00:00"))?.clamped, true);
+  assert.equal(halfDayReturnFor(short, ist("2026-10-12T14:00:00")), null);
+  assert.equal(halfDayReturnFor(short, ist("2026-10-12T13:30:00"))?.clamped, true);
 });
 
 test("isClampedHalfDay accepts only the computed closing (±1 minute)", () => {

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
-import { useQuery, type Query } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constants/colors';
@@ -25,6 +25,7 @@ import { fmtDurationMinutes } from '../../lib/dates';
 import { DlStatusLine } from '../../components/employee/DlStatus';
 import { PausedChip } from '../../components/employee/OperationDraftParts';
 import PausedOperations from '../../components/employee/PausedOperations';
+import RescheduleSheet from '../../components/employee/RescheduleSheet';
 import { useDebouncedValue } from '../../components/employee/customers/useCustomers';
 import {
   QueueFilterButton,
@@ -103,6 +104,10 @@ function formatDate(iso: string) {
 
 function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }) {
   const router = useRouter();
+  const qc = useQueryClient();
+  // TODO 5 (Nov 12 2026): "Reschedule rental" straight from the Pickup Queue —
+  // the same sheet as inside the pickup (new pickup and return, repriced).
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const vehicle = booking.items[0]?.vehicle;
   const customer = booking.customer?.user;
   const dateLabel = type === 'pickups' ? 'Pickup' : 'Return';
@@ -202,11 +207,36 @@ function BookingCard({ booking, type }: { booking: QueueBooking; type: ListTab }
           </TouchableOpacity>
         ) : (
           <View style={styles.amountRow}>
+            {type === 'pickups' && booking.status === 'CONFIRMED' && (
+              <TouchableOpacity
+                style={styles.rescheduleBtn}
+                onPress={() => setRescheduleOpen(true)}
+                hitSlop={8}
+                activeOpacity={0.7}
+                accessibilityLabel="Reschedule rental"
+              >
+                <Ionicons name="calendar-outline" size={14} color={Colors.orange} />
+                <Text style={styles.actionText}>Reschedule</Text>
+              </TouchableOpacity>
+            )}
             <Text style={styles.amount}>₹{Number(booking.totalFinal).toLocaleString('en-IN')}</Text>
             <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
           </View>
         )}
       </View>
+      {rescheduleOpen && (
+        <RescheduleSheet
+          visible={rescheduleOpen}
+          bookingPublicId={booking.publicId}
+          onClose={() => setRescheduleOpen(false)}
+          onRescheduled={(_result, message) => {
+            setRescheduleOpen(false);
+            qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
+            qc.invalidateQueries({ queryKey: ['employee', 'pickup', booking.publicId] });
+            Alert.alert('Booking rescheduled', message);
+          }}
+        />
+      )}
     </TouchableOpacity>
   );
 }
@@ -773,6 +803,7 @@ const styles = StyleSheet.create({
   statusAwaitingText: { color: Colors.availLow },
   cardCompleted: { backgroundColor: '#fbfbfa' },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rescheduleBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 10 },
   completedSection: { gap: 10, marginTop: 6 },
   completedHeader: {
     fontFamily: Fonts.bodySemiBold,

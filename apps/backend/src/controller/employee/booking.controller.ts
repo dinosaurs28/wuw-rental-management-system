@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { storedReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
 import { getOperationNotes } from "../../services/booking/operation-notes.service.js";
 import { readPickupDiscount, serializePickupDiscount } from "../../services/discount/pickup-discount-rules.js";
 import { StatusCode } from "../../types/statusCode.js";
@@ -1233,6 +1234,12 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         publicId: true,
         startAt: true,
         endAt: true,
+        // Actual handover (client TODO 10) — a late pickup moved startAt / endAt
+        pickedUpAt: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+        pickupDelayMinutes: true,
+        pickupShiftCapReason: true,
         status: true,
         totalFinal: true,
         requiresManagerConfirmation: true,
@@ -1368,6 +1375,8 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
       data: {
         ...qrPhotoFields,
         ...bookingData,
+        // Additive (client TODO 10): the return after the handover and why it moved
+        returnShift: storedReturnShift(booking),
         items: items.map(({ vehicleId: _vid, ...rest }) => rest),
         // The fuel the vehicle being handed back started with: after a mid-rental swap
         // with readings, the replacement's fuel at the swap

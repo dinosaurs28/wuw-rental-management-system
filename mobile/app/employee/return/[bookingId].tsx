@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -40,7 +41,23 @@ import {
   noteForRequest,
   noteTooLong,
 } from '../../../components/employee/OperationNotes';
-import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
+import FlowStepper from '../../../components/employee/FlowStepper';
+import {
+  billChangeNotice,
+  bodySignature,
+  clampStep,
+  firstBlockedBefore,
+  needsRecompute,
+  nextStep,
+  prevStep,
+  resolveJump,
+  returnSteps,
+  stepIndex,
+  stepStates,
+  type ReturnStepKey,
+  type StepBlockers,
+} from '../../../lib/flowSteps';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,6 +85,7 @@ import type {
 import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
 import RentalTimeBlock from '../../../components/employee/drop/RentalTimeBlock';
 import LateReturnCard from '../../../components/employee/drop/LateReturnCard';
+import DropOtherRefundCard from '../../../components/employee/drop/DropOtherRefundCard';
 import DropBillCard, {
   LegacyReturnChargesCard,
   SwapChargesCard,
@@ -256,6 +274,15 @@ export default function ReturnScreen() {
   const [settledNote, setSettledNote] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Steps (client TODO 11, Nov 12 2026): Booking → Photos → Readings → Condition
+  // (→ Bill with payment sessions). Every field lives on this screen; the steps
+  // only show and hide, so nothing typed or uploading is lost going back.
+  const [step, setStepRaw] = useState<ReturnStepKey>('booking');
+  const [maxReached, setMaxReached] = useState(0);
+  // The inputs the bill on screen was computed from (null: restored, not known yet)
+  const computedSigRef = useRef<string | null>(null);
+  // The bill's balance last shown — a recompute says when it moved
+  const lastNetRef = useRef<number | null>(null);
 
   // ── Edit Return (full edit) ──
   const [editPreview, setEditPreview] = useState<EditPreview | null>(null);
@@ -431,6 +458,10 @@ export default function ReturnScreen() {
           return;
         }
         setSession(s);
+        lastNetRef.current = num(s.netPayable);
+        // The bill is open: start on it (the earlier steps stay one tap away)
+        setStepRaw('bill');
+        setMaxReached(4);
         applyKm((data?.km ?? null) as ReturnKmSummary | null);
         setBill((data?.bill ?? null) as DropBill | null);
         setFastagSummary((data?.fastag ?? null) as FastagUsageSummary | null);
@@ -443,6 +474,69 @@ export default function ReturnScreen() {
     })();
   }, [bookingId, booking?.usePaymentSessions]);
 
+  // ── Steps: Android back / the header arrow go to the previous step; only the
+  // first step leaves the drop (with the usual pause / leave handling).
+  const sessionModeFlag = !!booking?.usePaymentSessions;
+  const steps = useMemo(() => returnSteps(sessionModeFlag), [sessionModeFlag]);
+  const stepIdx = stepIndex(steps, step);
+  // What the compute is worked out from (the note is saved separately, no recompute)
+  const inputSig = (over?: { discount?: AppliedDiscount | null; depositHandling?: SafetyDepositHandling }) =>
+    bodySignature({
+      endOdo: endOdo.trim(),
+      fuelLevel,
+      chargeFuel,
+      fuelAmt: chargeFuel ? fuelAmt : '',
+      fastagNow: fastagNow.trim(),
+      chargeFastag,
+      fastagAmt: chargeFastag ? fastagAmt : '',
+      fastagNote: chargeFastag ? fastagNote.trim() : '',
+      other: chargeOther ? otherLines.map((l) => [l.label.trim(), l.amount]) : [],
+      photos: returnPhotos.map((p) => p.fileId),
+      discount: over && 'discount' in over ? over.discount : discount,
+      depositHandling: over?.depositHandling ?? depositHandling,
+      applyGrace,
+      waive: waiveLate ? waiveReason.trim() : null,
+      manualKm: manualKm.trim(),
+    });
+  const goToStep = (key: ReturnStepKey) => {
+    // Leaving a bill restored from the server: what's on screen now is its baseline
+    if (step === 'bill' && key !== 'bill' && session && computedSigRef.current == null) {
+      computedSigRef.current = inputSig();
+    }
+    setStepRaw(key);
+    const i = stepIndex(steps, key);
+    setMaxReached((m) => Math.max(m, i));
+    setErrorMsg(null);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 0);
+  };
+  const goToStepRef = useRef(goToStep);
+  goToStepRef.current = goToStep;
+  const inFlow = !editMode && !done && booking?.status === 'PICKED_UP' && !booking.requiresManagerConfirmation;
+  const backTarget = inFlow ? prevStep(steps, step) : null;
+  const navigation = useNavigation();
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !backTarget });
+  }, [navigation, backTarget]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!backTarget) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        goToStepRef.current(backTarget);
+        return true;
+      });
+      return () => sub.remove();
+    }, [backTarget]),
+  );
+  useEffect(() => {
+    const valid = clampStep(steps, step, 'charges');
+    if (valid !== step) setStepRaw(valid);
+  }, [steps, step]);
+  // On the Bill step with no bill (it went stale, or a paused draft said Bill):
+  // back to the step that computes it.
+  useEffect(() => {
+    if (step === 'bill' && !session && !computing && restoreTriedRef.current) setStepRaw('charges');
+  }, [step, session, computing]);
+
   // Pause / resume (client item 2): everything entered here is saved on the
   // server as it changes and comes back when the drop is opened again.
   const draft = useReturnDraft({
@@ -453,12 +547,18 @@ export default function ReturnScreen() {
     fields: {
       endOdo, fuelLevel, chargeFuel, fuelAmt, chargeFastag, fastagAmt, fastagNote, fastagNow, chargeOther, otherLines,
       damageDecision, discount, depositHandling, applyGrace, waiveLate, waiveReason, manualKm, requireManager,
-      dropNote,
+      dropNote, step,
     },
     setters: {
       setEndOdo, setFuelLevel, setChargeFuel, setFuelAmt, setChargeFastag, setFastagAmt, setFastagNote,
       setFastagNow, setChargeOther, setOtherLines, setDamageDecision, setDiscount, setDepositHandling, setApplyGrace,
       setWaiveLate, setWaiveReason, setManualKm, setRequireManager, setDropNote,
+      // The step it was paused on (TODO 11)
+      setStep: (v: string) => {
+        const k = clampStep(steps, v, 'booking');
+        setStepRaw(k);
+        setMaxReached((m) => Math.max(m, stepIndex(steps, k)));
+      },
     },
     photos: returnPhotos,
     setPhotos: setReturnPhotos,
@@ -752,6 +852,8 @@ export default function ReturnScreen() {
       const body: Parameters<typeof employeeApi.computeReturnSession>[1] = {
         endOdometer: endOdoNum,
         returnImageIds: returnPhotos.map((p) => p.fileId),
+        // The whole list: a photo removed after an earlier compute comes off (TODO 11)
+        returnPhotosComplete: true,
       };
       if (fuelBars(fuelLevel) != null) body.returnFuelLevel = fuelLevel;
       if (chargeFuel && num(fuelAmt) > 0) body.fuelCharge = num(fuelAmt);
@@ -779,6 +881,12 @@ export default function ReturnScreen() {
       const data = res.data?.data;
       dropNoteSentRef.current = noteSent;
       computedHereRef.current = true;
+      computedSigRef.current = inputSig({ discount: nextDiscount, depositHandling: handling });
+      // Gone back and changed something: say how the balance moved (payments
+      // already recorded stay recorded — they aren't part of this bill)
+      const newNet = num((data?.session as ReturnSession | undefined)?.netPayable);
+      const moved = billChangeNotice(lastNetRef.current, newNet);
+      lastNetRef.current = newNet;
       if (mountedRef.current) {
         setReturnStarted(true);
         setSession(data?.session as ReturnSession);
@@ -793,7 +901,7 @@ export default function ReturnScreen() {
         setDepositHandling(handling);
         setDropDeposit((data?.deposit ?? null) as DropDeposit | null);
         setBillStale(false);
-        setNotice(null);
+        setNotice(moved);
       }
       return true;
     } catch (err: any) {
@@ -1367,6 +1475,8 @@ export default function ReturnScreen() {
           )}
           {/* Oct 25 2026: the Fleet Executive refunds what is owed back now, or leaves it to the manager */}
           {legacyResult && <DropRefundPanel bookingPublicId={booking.publicId} />}
+          {/* TODO 9: the other-reasons refund stays available after the drop is settled */}
+          {!requireManager && <DropOtherRefundCard bookingPublicId={booking.publicId} />}
           <TouchableOpacity style={styles.doneBtn} onPress={() => router.replace('/(employee)/bookings')} activeOpacity={0.85}>
             <Text style={styles.doneBtnText}>Back to Queue</Text>
           </TouchableOpacity>
@@ -1403,6 +1513,68 @@ export default function ReturnScreen() {
   const showDamages = !hasRemainingBalance && !sessionDone && !awaitingManager;
   // The bill on screen may not include the latest damages yet.
   const billBusy = computing || billStale || damagesFetching || !!deletingDamageId;
+  // ── Steps (TODO 11): what's still missing on each, where a tap lands ──
+  const stepBlockers: StepBlockers<ReturnStepKey> = {
+    booking: hasRemainingBalance ? 'Collect the rental balance to continue.' : null,
+    photos: photosPending > 0
+      ? 'Finish uploading photos (retry or remove failed ones).'
+      : returnPhotos.length === 0
+        ? 'Take at least one return photo to continue.'
+        : null,
+    readings: !isWholeKm(endOdo)
+      ? 'Enter the end odometer reading in whole km.'
+      : !vehicleSwapped && kmPreview?.belowStart && startOdo != null
+        ? `The end odometer can't be below ${km(startOdo)}.`
+        : fuelModuleEnabled && fuelBars(fuelLevel) == null
+          ? 'Select the return fuel level.'
+          : fastagNowNeeded && fastagNowValue == null
+            ? fastagBalanceError(fastagNow) ?? 'Enter the FASTag balance.'
+            : lateShown && waiveLate && waiveReason.trim().length < 3
+              ? WAIVE_REASON_MESSAGE
+              : manualKmAllowed && manualKm.trim() && !isWholeKm(manualKm)
+                ? 'Enter the extra km as a whole number.'
+                : null,
+    charges: !damageStepDone ? 'Record the vehicle condition to continue.' : null,
+    bill: null,
+  };
+  const flowBusy = computing || settling || !!deletingDamageId;
+  const states = stepStates(steps, stepBlockers, step, maxReached);
+  const currentBlocker = stepBlockers[step] ?? null;
+  // Hidden (not unmounted) when it isn't the current step. Edit Return is one page.
+  const pane = (key: ReturnStepKey) => (editMode || step === key ? undefined : styles.hiddenPane);
+  // Into the bill: compute it, or recompute when anything it's worked out from
+  // changed on an earlier step (the existing compute endpoint; it replaces the
+  // bill's lines on the same open session — payments are never duplicated).
+  const enterBill = async () => {
+    if (flowBusy) return;
+    const recompute = needsRecompute({
+      hasBill: !!session,
+      billStale,
+      computedSig: computedSigRef.current,
+      currentSig: inputSig(),
+    });
+    if (!recompute) {
+      goToStep('bill');
+      return;
+    }
+    const ok = await runCompute(discount, 'form');
+    if (ok && mountedRef.current) goToStep('bill');
+  };
+  const jumpTo = (target: ReturnStepKey) => {
+    if (flowBusy || target === step) return;
+    const r = resolveJump(steps, stepBlockers, step, target);
+    if (r.to === 'bill' && !r.blockedBy) {
+      void enterBill();
+      return;
+    }
+    goToStep(r.to);
+    if (r.blockedBy) setErrorMsg(r.blockedBy);
+  };
+  const goNext = () => {
+    const next = nextStep(steps, step);
+    if (next) jumpTo(next);
+  };
+
   // Typed FASTag / toll charge — drop bill (Additional Charges) and legacy drop (Return Inspection)
   const fastagManualToggle = (
     <ChargeToggle label="FASTag / toll charge" enabled={chargeFastag} onToggle={setChargeFastag}>
@@ -1436,7 +1608,12 @@ export default function ReturnScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back} hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => (backTarget ? goToStep(backTarget) : router.back())}
+            style={styles.back}
+            hitSlop={8}
+            accessibilityLabel={backTarget ? 'Previous step' : 'Back'}
+          >
             <Ionicons name="arrow-back" size={22} color={Colors.ink} />
           </TouchableOpacity>
           <View style={styles.headerText}>
@@ -1454,6 +1631,9 @@ export default function ReturnScreen() {
           )}
         </View>
 
+        {!editMode && !awaitingManager && (
+          <FlowStepper steps={steps} states={states} onSelect={jumpTo} disabled={flowBusy} />
+        )}
         <ScrollView
           ref={scrollRef}
           innerViewRef={contentRef as React.RefObject<View>}
@@ -1462,6 +1642,7 @@ export default function ReturnScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <ResumedBanner draft={draft} />
+          <View style={pane('booking')}>
           {/* Remaining rental balance — must be collected first */}
           {hasRemainingBalance && (
             <RemainingBalanceCollect
@@ -1589,8 +1770,10 @@ export default function ReturnScreen() {
           {/* Payment ledger */}
           <SectionHeader title="Payment" />
           <CounterPaymentPanel bookingPublicId={booking.publicId} />
+          </View>
 
           {/* State at pickup */}
+          <View style={pane('readings')}>
           {(pickupOdo != null || booking.pickupFuelLevel || booking.pickupFastagBalance != null) && (
             <>
               <SectionHeader title="State at Pickup" />
@@ -1660,17 +1843,20 @@ export default function ReturnScreen() {
             <DropSwapSection segments={kmSegments!.segments} currentStartOdometer={kmSegments!.currentStartOdometer} />
           )}
 
+          </View>
+
+          <View style={pane('photos')}>
           {/* Reference photos (#55): the returning car's handover — pickup, or its swap (item 2) */}
           <HandoverConditionPhotos
             data={pickupCaptures}
             onOpen={(images, index) => setPhotoViewer({ images, index })}
             failed={pickupCapturesFailed}
             onRetry={() => refetchPickupCaptures()}
-            dropPhotos={returnPhotos.map((p) => ({ url: p.url, label: p.label }))}
           />
 
-          {/* Return condition photos — required before compute / complete (like the web) */}
-          {!hasRemainingBalance && !session && !awaitingManager && (
+          {/* Return condition photos — required before compute / complete (like the web).
+              Still here after the bill is computed (TODO 11): add / remove / retake */}
+          {!hasRemainingBalance && !awaitingManager && (
             <>
               <SectionHeader title="Return Condition Photos" />
               <View style={styles.card}>
@@ -1695,9 +1881,12 @@ export default function ReturnScreen() {
             </>
           )}
 
+          </View>
+
           {/* === Charges / settlement (only once rental balance is clear) === */}
           {/* Odometer on every branch: legacy drops bill extra km too (#21) */}
-          {!hasRemainingBalance && !session && !awaitingManager && (
+          <View style={pane('readings')}>
+          {!hasRemainingBalance && !awaitingManager && (
             <>
               <SectionHeader title="Return Inspection" />
               <View style={styles.card}>
@@ -1861,7 +2050,10 @@ export default function ReturnScreen() {
             </>
           )}
 
-          {!hasRemainingBalance && booking.usePaymentSessions && !session && !awaitingManager && (
+          </View>
+
+          <View style={pane('charges')}>
+          {!hasRemainingBalance && booking.usePaymentSessions && !awaitingManager && (
             <>
               <SectionHeader title="Additional Charges" />
               <View style={styles.card}>
@@ -2218,9 +2410,16 @@ export default function ReturnScreen() {
             </>
           )}
 
+          {/* TODO 9 (Nov 2026): refund for other reasons — independent of the drop bill.
+              Legacy drops: on the last step (no bill step) */}
+          {!booking.usePaymentSessions && !editMode && !awaitingManager && (
+            <DropOtherRefundCard bookingPublicId={booking.publicId} />
+          )}
+          </View>
+
           {/* Computed ledger + settlement */}
           {session && (
-            <>
+            <View style={pane('bill')}>
               {kmSummary && (
                 <>
                   <SectionHeader title="Kilometres" />
@@ -2481,27 +2680,19 @@ export default function ReturnScreen() {
               {!sessionDone && (
                 <TouchableOpacity
                   style={styles.recomputeBtn}
-                  onPress={() => {
-                    setSession(null);
-                    setKmSummary(null);
-                    setServerDiscount(null);
-                    setBill(null);
-                    setFastagSummary(null);
-                    setDropDeposit(null);
-                    setLateSummary(null);
-                    setDiscountOpen(false);
-                    setBillStale(false);
-                    setErrorMsg(null);
-                    setDiscountError(null);
-                  }}
+                  onPress={() => goToStep('readings')}
                   disabled={computing || settling}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="refresh-outline" size={15} color={Colors.ink2} />
-                  <Text style={styles.recomputeText}>Edit charges</Text>
+                  <Ionicons name="create-outline" size={15} color={Colors.ink2} />
+                  <Text style={styles.recomputeText}>Change photos, readings or charges</Text>
                 </TouchableOpacity>
               )}
-            </>
+
+              {/* TODO 9 (Nov 2026): refund for other reasons — independent of the drop bill,
+                  on the bill step while it's open (and on the success screen after it) */}
+              <DropOtherRefundCard bookingPublicId={booking.publicId} />
+            </View>
           )}
 
           {notice && (
@@ -2547,89 +2738,99 @@ export default function ReturnScreen() {
               <Ionicons name="time-outline" size={16} color={Colors.ink3} />
               <Text style={styles.footerNoteText}>Waiting for the branch manager to confirm this return.</Text>
             </View>
-          ) : hasRemainingBalance ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="lock-closed-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Collect the rental balance to continue.</Text>
-            </View>
-          ) : photosPending > 0 && !session ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="cloud-upload-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Finish uploading photos above (retry or remove failed ones)</Text>
-            </View>
-          ) : returnPhotos.length === 0 && !session ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="camera-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Take at least one return photo to continue.</Text>
-            </View>
-          ) : !booking.usePaymentSessions && !damageStepDone ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="car-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Record the vehicle condition above to continue.</Text>
-            </View>
-          ) : !booking.usePaymentSessions ? (
-            <TouchableOpacity
-              style={[styles.confirmBtn, (settling || !!deletingDamageId || !endOdo.trim()) && styles.confirmBtnDisabled]}
-              onPress={requestLegacyComplete}
-              disabled={settling || !!deletingDamageId || !endOdo.trim()}
-              activeOpacity={0.85}
-            >
-              {settling ? <ActivityIndicator size="small" color={Colors.white} /> : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-                  <Text style={styles.confirmBtnText}>Complete Return</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : !session ? (
-            <TouchableOpacity
-              style={[styles.confirmBtn, (computing || !endOdo.trim()) && styles.confirmBtnDisabled]}
-              onPress={compute}
-              disabled={computing || !endOdo.trim()}
-              activeOpacity={0.85}
-            >
-              {computing ? <ActivityIndicator size="small" color={Colors.white} /> : (
-                <>
-                  <Ionicons name="calculator-outline" size={20} color={Colors.white} />
-                  <Text style={styles.confirmBtnText}>Compute Charges</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : billBusy && !sessionDone ? (
-            <View style={styles.footerNote}>
-              {billStale && !computing ? (
-                <>
-                  <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
-                  <Text style={styles.footerNoteText}>Bill is out of date — fix the error above or tap Edit charges.</Text>
-                </>
-              ) : (
-                <>
-                  <ActivityIndicator size="small" color={Colors.ink3} />
-                  <Text style={styles.footerNoteText}>Updating the bill…</Text>
-                </>
-              )}
-            </View>
-          ) : !damageStepDone && !sessionDone ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="car-outline" size={16} color={Colors.ink3} />
-              <Text style={styles.footerNoteText}>Record the vehicle condition above to continue.</Text>
-            </View>
           ) : (
-            <TouchableOpacity
-              style={[styles.confirmBtn, settling && styles.confirmBtnDisabled]}
-              onPress={() => void settleSession()}
-              disabled={settling}
-              activeOpacity={0.85}
-            >
-              {settling ? <ActivityIndicator size="small" color={Colors.white} /> : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-                  <Text style={styles.confirmBtnText}>
-                    {settleLabel}
-                  </Text>
-                </>
+            <>
+              {step !== 'bill' && currentBlocker && (
+                <Text style={styles.footerHint} numberOfLines={2}>{currentBlocker}</Text>
               )}
-            </TouchableOpacity>
+              <View style={styles.footerRow}>
+                {backTarget && (
+                  <TouchableOpacity
+                    style={[styles.stepBackBtn, flowBusy && styles.confirmBtnDisabled]}
+                    onPress={() => goToStep(backTarget)}
+                    disabled={flowBusy}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Previous step"
+                  >
+                    <Ionicons name="arrow-back" size={18} color={Colors.ink} />
+                    <Text style={styles.stepBackText}>Back</Text>
+                  </TouchableOpacity>
+                )}
+                <View style={styles.footerMain}>
+                  {step === 'bill' && session ? (
+                    billBusy && !sessionDone ? (
+                      <View style={styles.footerNote}>
+                        {billStale && !computing ? (
+                          <>
+                            <Ionicons name="alert-circle-outline" size={16} color={Colors.ink3} />
+                            <Text style={styles.footerNoteText}>Bill is out of date — fix the error above or go back a step.</Text>
+                          </>
+                        ) : (
+                          <>
+                            <ActivityIndicator size="small" color={Colors.ink3} />
+                            <Text style={styles.footerNoteText}>Updating the bill…</Text>
+                          </>
+                        )}
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.confirmBtn, (settling || !damageStepDone) && styles.confirmBtnDisabled]}
+                        onPress={() => void settleSession()}
+                        disabled={settling || !damageStepDone}
+                        activeOpacity={0.85}
+                      >
+                        {settling ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                          <>
+                            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                            <Text style={styles.confirmBtnText} numberOfLines={1}>{settleLabel}</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )
+                  ) : step === 'charges' && !booking.usePaymentSessions ? (
+                    <TouchableOpacity
+                      style={[styles.confirmBtn, (settling || !!deletingDamageId || !!currentBlocker) && styles.confirmBtnDisabled]}
+                      onPress={() => {
+                        // An earlier step still missing something: show it there
+                        const blocked = firstBlockedBefore(steps, stepBlockers, 'charges');
+                        if (blocked) {
+                          goToStep(blocked.key);
+                          setErrorMsg(blocked.message);
+                          return;
+                        }
+                        requestLegacyComplete();
+                      }}
+                      disabled={settling || !!deletingDamageId || !!currentBlocker}
+                      activeOpacity={0.85}
+                    >
+                      {settling ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                        <>
+                          <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                          <Text style={styles.confirmBtnText}>Complete Return</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.confirmBtn, (!!currentBlocker || flowBusy) && styles.confirmBtnDisabled]}
+                      onPress={goNext}
+                      disabled={!!currentBlocker || flowBusy}
+                      activeOpacity={0.85}
+                    >
+                      {computing ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                        <>
+                          {step === 'charges' && <Ionicons name="calculator-outline" size={20} color={Colors.white} />}
+                          <Text style={styles.confirmBtnText}>
+                            {step === 'charges' ? (session ? 'Update & review bill' : 'Compute Charges') : 'Next'}
+                          </Text>
+                          {step !== 'charges' && <Ionicons name="arrow-forward" size={20} color={Colors.white} />}
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -2676,6 +2877,23 @@ export default function ReturnScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
+  // TODO 11 steps: a step that isn't shown stays mounted (nothing typed or uploading is lost)
+  hiddenPane: { display: 'none' },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  footerMain: { flex: 1 },
+  footerHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.ink3, textAlign: 'center', marginBottom: 8 },
+  stepBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 17,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.ink4,
+    backgroundColor: Colors.white,
+  },
+  stepBackText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
   loader: { marginTop: 100 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 12 },

@@ -69,6 +69,8 @@ export interface BranchTransaction extends PaymentVoidState {
   onlineAmount?: string;
   // Additive (Oct 2026): "Refund to customer" rows and cash refunds paid out with no shift open
   isCustomerRefund?: boolean;
+  /** Additive (Nov 2026, TODO 9) */
+  isDropOtherRefund?: boolean;
   cashOutsideShift?: boolean;
   notes?: string | null;
 }

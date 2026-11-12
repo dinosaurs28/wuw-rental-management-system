@@ -62,7 +62,7 @@ export function DurationPresetChips({
             ? `A 12-hour return would be before the branch opens (${verdict.openingTime})`
             : verdict.reason === "CLOSED_DAY"
               ? `A 12-hour return would fall on ${verdict.closedDayName}, when the branch is closed`
-              : `A 12-hour return would be after closing (${verdict.closingTime})`;
+              : `A 12-hour return would be after the last return time (${verdict.gracePeriodEnd ?? verdict.closingTime})`;
       }
     }
 

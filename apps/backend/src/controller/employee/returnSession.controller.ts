@@ -133,6 +133,10 @@ const computeReturnSessionSchema = z.object({
   returnFastagBalance: fastagBalanceField,
   otherCharges: z.array(z.object({ label: z.string().min(1), amount: z.coerce.number().min(0) })).optional(),
   returnImageIds: z.array(z.string()).optional(),
+  // TODO 11 (Nov 12 2026): returnImageIds is the drop's whole photo list as it is
+  // now — a photo removed after an earlier compute is taken off the drop.
+  // Absent (older builds / the web): photos are only ever added, as before.
+  returnPhotosComplete: z.boolean().optional(),
   // Deprecated: the driving-licence-returned tick was removed from the drop.
   // Older app builds still send it — accepted and ignored.
   licenseReturned: z.boolean().optional(),
@@ -230,6 +234,7 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
     const {
       endOdometer,
       returnImageIds,
+      returnPhotosComplete,
       returnFuelLevel,
       fuelCharge,
       fastagAmount,
@@ -890,6 +895,18 @@ export const ComputeReturnSession = async (req: Request, res: Response) => {
       await prisma.fuelRecord.update({
         where: { bookingId: booking.id },
         data: { returnFuelLevel: returnFuelLevel as any, returnAt: new Date(), capturedByReturnId: actor.id },
+      });
+    }
+
+    // Gone back and removed a photo after the last compute (TODO 11): the drop keeps
+    // exactly the photos sent (only with a non-empty complete list)
+    if (returnPhotosComplete === true && returnFiles.length > 0) {
+      await prisma.bookingPhoto.deleteMany({
+        where: {
+          bookingId: booking.id,
+          type: BookingPhotoType.POST_RETURN,
+          fileId: { notIn: returnFiles.map((f) => f.id) },
+        },
       });
     }
 

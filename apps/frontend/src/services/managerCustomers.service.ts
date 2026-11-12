@@ -174,6 +174,8 @@ export interface DrawerTransaction extends PaymentVoidState {
   isRefund: boolean;
   /** "Refund to customer" row (Oct 2026); absent on older servers. */
   isCustomerRefund?: boolean;
+  /** Additive (Nov 2026, TODO 9) */
+  isDropOtherRefund?: boolean;
   /** A cash refund paid out with no cash shift open (Oct 2026); absent on older servers. */
   cashOutsideShift?: boolean;
   /** Part of a "Refund to customer" beyond what was owed back (goodwill); absent on older servers. */

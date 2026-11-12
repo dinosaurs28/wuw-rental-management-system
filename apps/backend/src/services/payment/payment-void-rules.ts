@@ -206,6 +206,10 @@ export function voidEffectNote(t: { purpose: string; totalAmount: DecimalLike; g
   if (isRefundPurpose(t.purpose)) {
     const goodwill = new Decimal((t.goodwillAmount ?? 0).toString());
     const owedAgain = amount.sub(goodwill);
+    // An independent refund (Nov 2026 drop refund, all goodwill) never touched the balance
+    if (goodwill.gt(0) && owedAgain.lte(0)) {
+      return `The refund no longer counts: the ₹${goodwill.toFixed(2)} paid back is undone. The booking's balance is unchanged.`;
+    }
     return goodwill.gt(0)
       ? `The refund no longer counts: ₹${owedAgain.toFixed(2)} is owed to the customer again and the ₹${goodwill.toFixed(2)} goodwill is undone.`
       : `The refund no longer counts: ₹${amount.toFixed(2)} is owed to the customer again.`;

@@ -44,6 +44,8 @@ export interface ReturnDraftFields {
   requireManager: boolean;
   // Optional Fleet drop note (Oct 20 2026) — absent in drafts saved by older builds
   dropNote: string;
+  // The step it was paused on (client TODO 11) — absent in older drafts
+  step: string;
 }
 
 interface Options {
@@ -183,6 +185,8 @@ export function useReturnDraft({
       s.setWaiveReason(draftString(d, 'waiveReason'));
       s.setRequireManager(draftBool(d, 'requireManager'));
       s.setDropNote(draftString(d, 'dropNote'));
+      const savedStep = draftString(d, 'step');
+      if (savedStep) s.setStep(savedStep);
       // How the bill was going to be settled (the amounts come from the server
       // again; a proof photo is re-checked when the payment is recorded).
       const method = draftOneOf(d, 'payMethod', COUNTER_PAYMENT_METHODS);

@@ -29,7 +29,7 @@ import { refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
-import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey, isDropOtherRefundKey } from "../booking/customer-refund-rules.js";
 import { voidView } from "./payment-void-rules.js";
 import { CARD_GATEWAY, isCardGateway } from "@repo/schemas";
 
@@ -662,6 +662,8 @@ class PaymentTransactionService {
       onlineAmount: Number(t.onlineAmount).toFixed(2),
       // Additive (Oct 2026): "Refund to customer" rows and cash refunds paid out with no shift open
       isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+      // Additive (Nov 2026, TODO 9): the independent "Drop refund (other)"
+      isDropOtherRefund: isDropOtherRefundKey(t.idempotencyKey),
       cashOutsideShift: isCashRefundOutsideShift(t),
       notes: t.notes ?? null,
       // Additive (Oct 2026): void state (voided rows struck through; voidable → Void action)

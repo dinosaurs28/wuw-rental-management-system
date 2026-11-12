@@ -11,6 +11,9 @@ import Decimal from "decimal.js";
 import {
   CUSTOMER_REFUND_KEY_PREFIX,
   CustomerRefundError,
+  DROP_OTHER_REFUND_KEY_PREFIX,
+  customerRefundKindOf,
+  isDropOtherRefundKey,
   cashShiftLink,
   customerRefundKey,
   customerRefundNote,
@@ -260,4 +263,88 @@ test("shift: a cash refund row with no shift reads as outside a shift", () => {
   assert.equal(isCashRefundOutsideShift({ purpose: "OVERPAYMENT_REFUND", cashAmount: "0.00", cashShiftId: null }), false);
   // Money in is never a "refund outside a shift"
   assert.equal(isCashRefundOutsideShift({ purpose: "ADVANCE", cashAmount: "500.00", cashShiftId: null }), false);
+});
+
+// ── TODO 9 (Nov 2026): the independent drop refund (kind DROP_OTHER) ─────────
+
+import { assembleBookingOwed } from "../payment/booking-owed.service.js";
+import { refundKindOf, REFUND_KIND_LABELS } from "../reporting/finance/discounts-refunds.js";
+import { voidEffectNote } from "../payment/payment-void-rules.js";
+
+test("drop refund: kind parses; default STANDARD; unknown kind refused", () => {
+  assert.equal(parseCustomerRefundBody({ amount: 100, method: "CASH", reason: "fuel top-up" }).kind, "STANDARD");
+  assert.equal(parseCustomerRefundBody({ amount: 100, method: "CASH", reason: "fuel top-up", kind: "DROP_OTHER" }).kind, "DROP_OTHER");
+  expectError(() => parseCustomerRefundBody({ amount: 100, method: "CASH", reason: "fuel top-up", kind: "X" }), "VALIDATION_ERROR", "kind");
+});
+
+test("drop refund: cash or UPI only; UPI needs a photo, cash none", () => {
+  expectError(
+    () => parseCustomerRefundBody({ amount: 100, method: "BANK_TRANSFER", reason: "toll", kind: "DROP_OTHER", proofFileId: "p1" }),
+    "VALIDATION_ERROR",
+    "method",
+  );
+  expectError(() => parseCustomerRefundBody({ amount: 100, method: "UPI", reason: "toll", kind: "DROP_OTHER" }), "REFUND_PROOF_REQUIRED");
+  const cash = parseCustomerRefundBody({ amount: 100, method: "CASH", reason: "toll", kind: "DROP_OTHER", proofFileIds: ["p1"] });
+  assert.deepEqual(cash.proofFileIds, []); // ignored for cash
+  const upi = parseCustomerRefundBody({ amount: 100, method: "UPI", reason: "toll", kind: "DROP_OTHER", proofFileIds: ["p1", "p2"] });
+  assert.deepEqual(upi.proofFileIds, ["p1", "p2"]);
+  assert.equal(upi.proofFileId, "p1");
+});
+
+test("refund photos: proofFileIds (≤3, no duplicates) or the single proofFileId", () => {
+  assert.deepEqual(parseCustomerRefundBody({ amount: 1, method: "UPI", reason: "abc", proofFileId: "p9" }).proofFileIds, ["p9"]);
+  expectError(
+    () => parseCustomerRefundBody({ amount: 1, method: "UPI", reason: "abc", proofFileIds: ["a", "b", "c", "d"] }),
+    "VALIDATION_ERROR",
+    "proofFileIds",
+  );
+  expectError(() => parseCustomerRefundBody({ amount: 1, method: "UPI", reason: "abc", proofFileIds: ["a", "a"] }), "VALIDATION_ERROR", "proofFileIds");
+  expectError(() => parseCustomerRefundBody({ amount: 1, method: "UPI", reason: "abc", proofFileIds: [] }), "REFUND_PROOF_REQUIRED");
+});
+
+test("drop refund: the whole amount is goodwill — an owed-back over-payment is not consumed", () => {
+  assert.deepEqual(splitCustomerRefund(d(300), d(1000), "DROP_OTHER"), { covered: d(0), goodwill: d(300) });
+  // STANDARD would have paid back the over-payment first
+  assert.deepEqual(splitCustomerRefund(d(300), d(1000)), { covered: d(300), goodwill: d(0) });
+  // The balance (owed back 1000 → netPayable −1000; due 500 → +500) doesn't move
+  assert.equal(netPayableAfterRefund(d(-1000), d(300), "DROP_OTHER").toFixed(2), "-1000.00");
+  assert.equal(netPayableAfterRefund(d(500), d(300), "DROP_OTHER").toFixed(2), "500.00");
+});
+
+test("drop refund: owed and paid both drop by the amount, so the amount due / owed back hold", () => {
+  const base = {
+    totalFinal: "5000",
+    pricingSnapshot: null,
+    entries: [],
+    legacyReturnCharges: d(0),
+    dropDamages: [],
+    standaloneDeposits: [],
+    legacyDepositRefunds: [],
+  };
+  const before = assembleBookingOwed({ ...base, goodwill: 0 });
+  const after = assembleBookingOwed({ ...base, goodwill: "300" });
+  const paidBefore = summarizeBookingMoney([{ purpose: "ADVANCE", status: "CONFIRMED", totalAmount: "6000" }]).netConfirmed;
+  const paidAfter = summarizeBookingMoney([
+    { purpose: "ADVANCE", status: "CONFIRMED", totalAmount: "6000" },
+    { purpose: "OVERPAYMENT_REFUND", status: "CONFIRMED", totalAmount: "300" },
+  ]).netConfirmed;
+  assert.equal(before.totalOwed.sub(paidBefore).toFixed(2), "-1000.00");
+  assert.equal(after.totalOwed.sub(paidAfter).toFixed(2), "-1000.00");
+  // Return charges (the drop bill side) are untouched
+  assert.equal(after.returnCharges.toFixed(2), before.returnCharges.toFixed(2));
+});
+
+test("drop refund: key, kind, note, report type and void note", () => {
+  const key = customerRefundKey("BK123", "req-abc-123", "DROP_OTHER");
+  assert.equal(key, `${DROP_OTHER_REFUND_KEY_PREFIX}BK123:req-abc-123`);
+  assert.equal(isCustomerRefundKey(key), true); // still a ctr: row (history, void, shift)
+  assert.equal(isDropOtherRefundKey(key), true);
+  assert.equal(isDropOtherRefundKey(customerRefundKey("BK123", "req-abc-123")), false);
+  assert.equal(customerRefundKindOf(key), "DROP_OTHER");
+  assert.equal(customerRefundKindOf("ctr:BK1:x"), "STANDARD");
+  assert.match(customerRefundNote({ method: "UPI", reason: "Toll refund", kind: "DROP_OTHER" }, false), /^Drop refund \(other\) \(UPI transfer\): Toll refund$/);
+  assert.equal(refundKindOf(key, "OVERPAYMENT_REFUND"), "DROP_OTHER_REFUND");
+  assert.equal(REFUND_KIND_LABELS.DROP_OTHER_REFUND, "Drop refund (other)");
+  assert.equal(refundKindOf("ctr:BK1:x", "OVERPAYMENT_REFUND"), "CUSTOMER_REFUND");
+  assert.match(voidEffectNote({ purpose: "OVERPAYMENT_REFUND", totalAmount: "300.00", goodwillAmount: "300.00" }), /balance is unchanged/);
 });

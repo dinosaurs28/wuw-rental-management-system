@@ -25,11 +25,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/colors';
 import { employeeApi } from '../../../lib/api';
 import { apiErrorMessage, handleShiftRequired } from '../../../lib/counterErrors';
-import { REFUND_PROOF_REQUIRED_MESSAGE, proofProblem } from '../../../lib/counterPayment';
+import { REFUND_PROOF_REQUIRED_MESSAGE, proofProblem, proofsProblem } from '../../../lib/counterPayment';
 import ImageViewer from '../../ui/ImageViewer';
 import { fmtDateTime } from '../../../lib/dates';
-import { PaymentProofCapture, useProofShot } from '../CounterPaymentPicker';
-import type { StaffRefundMethod, StaffRefundResult } from '../../../types/paymentVoid';
+import { PaymentProofCapture, PaymentProofSlots, useProofShot, useProofShots } from '../CounterPaymentPicker';
+import type { StaffRefundKind, StaffRefundMethod, StaffRefundResult } from '../../../types/paymentVoid';
 import { sheetStyles as styles } from './sheetStyles';
 
 const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
@@ -45,9 +45,16 @@ export function RefundToCustomerSheet({
   bookingPublicId,
   onClose,
   onDone,
+  kind = 'STANDARD',
 }: {
   visible: boolean;
   bookingPublicId: string;
+  /**
+   * Nov 2026 (TODO 9): DROP_OTHER = "Refund to customer (other reasons)" during the
+   * drop — cash or UPI (1–3 success photos), kept apart from the rent, charges,
+   * discounts and the drop bill (the bill and the amount due don't move).
+   */
+  kind?: StaffRefundKind;
   onClose: () => void;
   /** Recorded: the server's message */
   onDone: (message: string, result: StaffRefundResult) => void;
@@ -72,6 +79,12 @@ export function RefundToCustomerSheet({
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState(newRequestId);
   const proof = useProofShot(() => setError(null));
+  // The drop refund takes up to 3 photos (a refund sent in several UPI transfers)
+  const proofs = useProofShots(() => setError(null));
+  const dropOther = kind === 'DROP_OTHER';
+  const methods = dropOther
+    ? (options?.dropOther?.methods ?? (options?.methods ?? []).filter((m) => m.value === 'CASH' || m.value === 'UPI'))
+    : (options?.methods ?? []);
   const [viewing, setViewing] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,6 +97,7 @@ export function RefundToCustomerSheet({
     setError(null);
     setRequestId(newRequestId());
     proof.clear();
+    proofs.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, bookingPublicId]);
 
@@ -102,9 +116,18 @@ export function RefundToCustomerSheet({
     if (reason.trim().length < reasonMin) return `Enter the reason (at least ${reasonMin} characters).`;
     if (needsTick && !confirmOver) return 'Tick the confirmation to refund more than was received.';
     // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
+    if (!isCash && dropOther) {
+      const p = proofsProblem(proofs.shots);
+      return p.ok ? null : proofs.shots.some(Boolean) ? p.error : REFUND_PROOF_REQUIRED_MESSAGE;
+    }
     if (!isCash) return proof.shot ? proofProblem(proof.shot, true) : REFUND_PROOF_REQUIRED_MESSAGE;
     return null;
-  }, [amountValid, reason, reasonMin, needsTick, confirmOver, isCash, proof.shot]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amountValid, reason, reasonMin, needsTick, confirmOver, isCash, proof.shot, dropOther, ...proofs.shots]);
+  const dropProofIds = (() => {
+    const p = proofsProblem(proofs.shots);
+    return p.ok ? p.ids : [];
+  })();
 
   const close = () => {
     if (!submitting) onClose();
@@ -120,7 +143,9 @@ export function RefundToCustomerSheet({
         method,
         reason: reason.trim(),
         reference: !isCash && reference.trim() ? reference.trim() : undefined,
-        proofFileId: !isCash && proof.shot?.status === 'ready' ? proof.shot.proof.proofFileId : undefined,
+        ...(dropOther
+          ? { kind: 'DROP_OTHER' as const, proofFileIds: !isCash && dropProofIds.length > 0 ? dropProofIds : undefined }
+          : { proofFileId: !isCash && proof.shot?.status === 'ready' ? proof.shot.proof.proofFileId : undefined }),
         confirmOverReceived: needsTick ? confirmOver : undefined,
         requestId,
       });
@@ -149,7 +174,7 @@ export function RefundToCustomerSheet({
           <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.handle} />
             <View style={styles.header}>
-              <Text style={styles.title}>Refund to customer</Text>
+              <Text style={styles.title}>{dropOther ? 'Refund (other reasons)' : 'Refund to customer'}</Text>
               <TouchableOpacity onPress={close} hitSlop={10} accessibilityLabel="Close">
                 <Ionicons name="close" size={22} color={Colors.ink} />
               </TouchableOpacity>
@@ -168,7 +193,9 @@ export function RefundToCustomerSheet({
             ) : (
               <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <Text style={styles.body}>
-                  Pay money back to {options.customer.name} now. The booking and its status stay as they are.
+                  {dropOther
+                    ? `Money paid back to ${options.customer.name} for a reason other than rent adjustments or discounts. It is recorded on its own — the drop bill, the charges and the amount due don't change.`
+                    : `Pay money back to ${options.customer.name} now. The booking and its status stay as they are.`}
                 </Text>
                 <View style={styles.card}>
                   {[
@@ -224,7 +251,7 @@ export function RefundToCustomerSheet({
 
                 <Text style={styles.sectionLabel}>Paid back by</Text>
                 <View style={styles.chips}>
-                  {options.methods.map((m) => (
+                  {methods.map((m) => (
                     <TouchableOpacity
                       key={m.value}
                       style={[styles.chip, method === m.value && styles.chipOn]}
@@ -257,7 +284,16 @@ export function RefundToCustomerSheet({
                       maxLength={referenceMax}
                       editable={!submitting}
                     />
-                    {options.proofPhotoSupported ? (
+                    {options.proofPhotoSupported && dropOther ? (
+                      <PaymentProofSlots
+                        ctl={proofs}
+                        firstLabel="Refund payment-success photo"
+                        slotLabel="Refund payment photo"
+                        firstHelper="Required — photo of the UPI success screen."
+                        extraHelper="Sent in more than one UPI transfer? Photograph this one too."
+                        disabled={submitting}
+                      />
+                    ) : options.proofPhotoSupported ? (
                       <PaymentProofCapture
                         ctl={proof}
                         required
@@ -291,6 +327,7 @@ export function RefundToCustomerSheet({
                       <View key={r.publicId}>
                         <View style={styles.moneyRow}>
                           <Text style={[styles.moneyLabel, r.voided && styles.struck]}>
+                            {r.kind === 'DROP_OTHER' ? `${r.kindLabel ?? 'Drop refund (other)'} · ` : ''}
                             {fmtDateTime(r.at)}
                             {r.by ? ` · ${r.by}` : ''}
                             {r.cashOutsideShift ? ' · outside a shift' : ''}

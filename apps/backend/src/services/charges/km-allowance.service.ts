@@ -317,7 +317,7 @@ export async function pickedUpAtMarker(bookingId: number, db: TxClient = prisma)
   const [booking, firstHandoverPhoto] = await Promise.all([
     db.booking.findUnique({
       where: { id: bookingId },
-      select: { licenseCollectedAt: true, fuelRecord: { select: { pickupAt: true } } },
+      select: { licenseCollectedAt: true, pickedUpAt: true, fuelRecord: { select: { pickupAt: true } } },
     }),
     db.bookingPhoto.findFirst({
       where: { bookingId, type: BookingPhotoType.PRE_DELIVERY },
@@ -327,6 +327,7 @@ export async function pickedUpAtMarker(bookingId: number, db: TxClient = prisma)
   ]);
   const markers = [
     booking?.licenseCollectedAt,
+    booking?.pickedUpAt,
     booking?.fuelRecord?.pickupAt,
     firstHandoverPhoto?.createdAt,
   ].filter((d): d is Date => d instanceof Date);
@@ -438,7 +439,7 @@ export async function wasVehicleSwappedAfterPickup(bookingId: number, tx?: TxCli
   const [booking, firstHandoverPhoto] = await Promise.all([
     db.booking.findUnique({
       where: { id: bookingId },
-      select: { licenseCollectedAt: true, fuelRecord: { select: { pickupAt: true } } },
+      select: { licenseCollectedAt: true, pickedUpAt: true, fuelRecord: { select: { pickupAt: true } } },
     }),
     db.bookingPhoto.findFirst({
       where: { bookingId, type: BookingPhotoType.PRE_DELIVERY },
@@ -449,6 +450,7 @@ export async function wasVehicleSwappedAfterPickup(bookingId: number, tx?: TxCli
 
   const markers = [
     booking?.licenseCollectedAt,
+    booking?.pickedUpAt,
     booking?.fuelRecord?.pickupAt,
     firstHandoverPhoto?.createdAt,
   ].filter((d): d is Date => d instanceof Date);

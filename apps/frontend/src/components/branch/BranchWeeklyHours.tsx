@@ -75,7 +75,7 @@ export function BranchWeeklyHours({
       )}
       {showGrace && schedule.graceMinutes > 0 && (
         <p className="text-xs text-zinc-500">
-          Returns accepted up to {schedule.graceMinutes} min after closing
+          Returns accepted up to {schedule.graceMinutes} min after the last return (30 min before closing)
         </p>
       )}
     </div>

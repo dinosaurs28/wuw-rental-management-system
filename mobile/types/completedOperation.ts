@@ -116,6 +116,9 @@ interface SummaryBase {
 // Void state (Oct 2026): a voided refund isn't paid out (shown struck through).
 export interface CustomerRefundRow extends PaymentVoidState {
   publicId: string;
+  /** Additive (Nov 2026, TODO 9): DROP_OTHER = the independent "Drop refund (other)" */
+  kind?: 'STANDARD' | 'DROP_OTHER';
+  kindLabel?: string;
   amount: string;
   goodwillAmount: string;
   method: string;

@@ -544,6 +544,8 @@ export const employeeApi = {
       returnFastagBalance?: number;
       otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
+      // TODO 11: returnImageIds is the whole list — a photo removed since the last compute comes off
+      returnPhotosComplete?: boolean;
       // re-applied on every compute — resend it on recomputes. Drop charges carry no GST (item 8).
       discount?: { amount: number; reason: string };
       // Late return: "Apply grace" (MANUAL grace branches only)
@@ -955,6 +957,22 @@ export const employeeApi = {
     api.patch(`/api/employee/bookings/${publicId}/dl-status`, body),
   getActivePickupSession: (bookingId: string) =>
     api.get(`/api/employee/bookings/${bookingId}/pickup-session`),
+  // TODO 11 (Nov 12 2026): back on an earlier step with the bill open — change the
+  // handover details of the SAME open pickup bill (never a new one). `photos` is the
+  // whole list in the order taken; photos already saved are kept, not attached again.
+  // 409 PICKUP_BILL_CLOSED once it's paid / closed; 404 on servers without it.
+  updatePickupSessionHandover: (
+    bookingId: string,
+    body: {
+      odo?: number;
+      fuelLevel?: number;
+      pickupFuelLevel?: string;
+      pickupFastagBalance?: number;
+      photos?: { fileId: string; label?: string | null }[];
+      dlStatus?: DlCollectionStatus;
+      pickupNote?: string | null;
+    },
+  ) => api.patch(`/api/employee/bookings/${bookingId}/pickup-session/handover`, body),
   getPickupCaptureConfig: (bookingId: string) =>
     api.get(`/api/employee/pickup/${bookingId}/capture-config`),
   addDepositToPickupSession: (bookingId: string, body: { amount: number; reason: string }) =>

@@ -105,18 +105,20 @@ function istClock(at: Date): string {
 
 /**
  * Why a return can't be booked: past the window, or outside the branch's
- * return hours (open day, opening … closing + grace). null = fine.
+ * return hours (open day, opening … last return 10:30 PM + grace). null = fine.
  */
 export function packageReturnProblem(
   schedule: BranchScheduleConfig | undefined,
   returnAt: Date,
   maxReturnAt: Date | null,
+  /** The pickup: a late-window pickup may return at its own clock time (client TODO 4). */
+  pickupAt?: Date | null,
 ): string | null {
   if (maxReturnAt && returnAt.getTime() > maxReturnAt.getTime()) {
     return `Past the ${MAX_RENTAL_DAYS}-day booking limit`;
   }
   if (!schedule) return null;
-  const verdict = validateReturnTime(schedule, returnAt);
+  const verdict = validateReturnTime(schedule, returnAt, { pickupAt });
   if (verdict.status !== "RETURN_OUTSIDE_HOURS") return null;
   if (verdict.reason === "CLOSED_DAY") {
     return `The return would fall on ${verdict.closedDayName ?? "a closed day"}, when the branch is closed`;
@@ -124,11 +126,10 @@ export function packageReturnProblem(
   if (verdict.reason === "BEFORE_OPEN") {
     return `The return would be ${istClock(returnAt)}, before the branch opens (${verdict.openingTime})`;
   }
-  const grace =
-    verdict.gracePeriodEnd && verdict.gracePeriodEnd !== verdict.closingTime
-      ? `, returns until ${verdict.gracePeriodEnd}`
-      : "";
-  return `The return would be ${istClock(returnAt)}, after the branch closes (${verdict.closingTime}${grace})`;
+  // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+  return verdict.gracePeriodEnd
+    ? `The return would be ${istClock(returnAt)}, after the last return time (${verdict.gracePeriodEnd})`
+    : `The return would be ${istClock(returnAt)}, after the branch closes (${verdict.closingTime})`;
 }
 
 /**
@@ -198,7 +199,7 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
       return {
         hours: extra,
         returnAt,
-        disabledReason: packageReturnProblem(input.schedule, returnAt, maxReturnAt),
+        disabledReason: packageReturnProblem(input.schedule, returnAt, maxReturnAt, start),
       };
     });
 
@@ -207,7 +208,7 @@ function build(input: PackageRangeInput & { pickupDate: Date }): Built {
     // window by the pickers) — on the actual return
     .filter(({ returnAt }) => returnAt.getTime() <= maxReturnAt.getTime())
     .map(({ pkg, returnAt }) => {
-      let disabledReason = packageReturnProblem(input.schedule, returnAt, null);
+      let disabledReason = packageReturnProblem(input.schedule, returnAt, null, start);
       // Fleet: a package is usable when some extra hours bring the return inside hours
       if (disabledReason && maxExtra > 0 && extrasFor(pkg.hours).some((e) => !e.disabledReason)) {
         disabledReason = null;

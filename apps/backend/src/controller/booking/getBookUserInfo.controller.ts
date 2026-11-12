@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { storedReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { customerPaymentSummary } from "../../services/payment/payment-flow.service.js";
@@ -94,6 +95,9 @@ export const getUserBookings = async (req: Request, res: Response) => {
       paymentStatus: booking.paymentStatus,
       startAt: booking.startAt,
       endAt: booking.endAt,
+      // Additive (client TODO 10): set once the car is handed over — the rental runs
+      // from the handover, so a late pickup moved startAt / endAt (scheduled* = as booked)
+      returnShift: storedReturnShift(booking),
       days: booking.days,
       // Monthly bookings (customer "Monthly · 30 days" or the counter monthly plan)
       rentalPeriodType: booking.rentalPeriodType,

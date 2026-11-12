@@ -357,7 +357,7 @@ function SummaryContent({ summary }: { summary: Summary }) {
         {(summary.customerRefunds ?? []).map((r) => (
           <div key={r.publicId} className="border-t border-gray-100 py-1.5 text-sm">
             <div className="flex justify-between gap-4">
-              <span className={r.voided ? "text-gray-400 line-through" : "text-gray-700"}>Refund to customer · {r.method === "CASH" ? "Cash" : r.onlineGateway === "BANK_TRANSFER" ? "Bank transfer" : "UPI"}</span>
+              <span className={r.voided ? "text-gray-400 line-through" : "text-gray-700"}>{r.kind === "DROP_OTHER" ? (r.kindLabel ?? "Drop refund (other)") : "Refund to customer"} · {r.method === "CASH" ? "Cash" : r.onlineGateway === "BANK_TRANSFER" ? "Bank transfer" : "UPI"}</span>
               <span className={r.voided ? "font-medium text-gray-400 line-through" : "font-medium text-gray-900"}>− {inr(num(r.amount))}</span>
             </div>
             <p className="text-xs text-muted-foreground">

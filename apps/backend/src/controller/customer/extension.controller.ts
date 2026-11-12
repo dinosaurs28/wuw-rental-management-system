@@ -56,12 +56,14 @@ async function longestPackageEndWithin(
   branchId: number,
   oldEndAt: Date,
   latestEnd: Date,
+  // The booking's pickup: a late-window pickup keeps its clock time for returns (client TODO 4)
+  pickupAt?: Date,
 ): Promise<{ endAt: Date; hours: number } | null> {
   const schedule = await loadBranchScheduleConfig(branchId);
   const options = extensionPackageOptions(oldEndAt, latestEnd);
   for (let i = options.length - 1; i >= 0; i--) {
     const option = options[i]!;
-    if (!schedule || validateReturnTime(schedule, option.newEndAt).status !== "RETURN_OUTSIDE_HOURS") {
+    if (!schedule || validateReturnTime(schedule, option.newEndAt, { pickupAt }).status !== "RETURN_OUTSIDE_HOURS") {
       return { endAt: option.newEndAt, hours: option.hours };
     }
   }
@@ -108,6 +110,7 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
       select: {
         id: true,
         status: true,
+        startAt: true,
         endAt: true,
         branchId: true,
         branch: { select: { name: true } },
@@ -198,6 +201,7 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
             booking.branchId,
             new Date(evaluation.oldEndAt),
             new Date(partial.partialNewEndAt!),
+            booking.startAt,
           )
         : null;
 
@@ -500,7 +504,7 @@ export const GetExtensionEligibility = async (req: Request, res: Response): Prom
       hours: option.hours,
       label: option.label,
       newEndAt: option.newEndAt.toISOString(),
-      insideHours: !schedule || validateReturnTime(schedule, option.newEndAt).status !== "RETURN_OUTSIDE_HOURS",
+      insideHours: !schedule || validateReturnTime(schedule, option.newEndAt, { pickupAt: booking.startAt }).status !== "RETURN_OUTSIDE_HOURS",
       available: !availableUntil || option.newEndAt.getTime() <= availableUntil.getTime(),
     }));
     const noPackageFits = !limits.atCap && packageOptions.length === 0;

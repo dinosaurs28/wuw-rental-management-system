@@ -8,6 +8,9 @@ import {
   halfDayPackageReturn,
   isClampedHalfDayReturn,
   istDayNumber,
+  istMinuteOfDay,
+  lastReturnMinute,
+  returnWindowEndMinute,
   sameDayPickupStatus,
   type HalfDayReturn,
 } from "@repo/schemas";
@@ -192,7 +195,7 @@ function bumpVerdict(
   config: BranchScheduleConfig,
   pickupLocal: Date,
   returnLocal: Date,
-  extra: Pick<ScheduleVerdict, "reason" | "closingTime" | "openingTime" | "closedDayName">,
+  extra: Pick<ScheduleVerdict, "reason" | "closingTime" | "openingTime" | "closedDayName" | "gracePeriodEnd">,
 ): ScheduleVerdict {
   const bumpTarget = findBumpTarget(config, pickupLocal, returnLocal);
   if (!bumpTarget) return { status: "NO_OPEN_DAY_IN_WINDOW" };
@@ -220,7 +223,8 @@ export function getDayWindow(
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
     lastPickupMin: day.closeMinutes - pickupCutoffMinutes(config),
-    graceEndMin: day.closeMinutes + config.graceMinutes,
+    // Latest return: the last return (closing − 30 min, 10:30 PM) + grace — client TODO 4
+    graceEndMin: returnWindowEndMinute(day.closeMinutes, config.graceMinutes),
   };
 }
 
@@ -289,7 +293,10 @@ export function validateBookingSchedule(
 
   const returnMins = returnHours * 60 + returnMinsVal;
   const closeMins = returnDay.closeMinutes;
-  const graceEndMins = closeMins + config.graceMinutes;
+  // Last return 10:30 PM (closing − 30 min) + grace; a late-window pickup may
+  // return at its own clock time (client TODO 4, returnWindowEndMinute)
+  const lastReturnMins = lastReturnMinute(closeMins);
+  const graceEndMins = returnWindowEndMinute(closeMins, config.graceMinutes, pickupMins);
 
   // Return before opening (e.g. an overnight 12 h trip) is treated like one after closing
   if (returnMins < returnDay.openMinutes) {
@@ -299,7 +306,7 @@ export function validateBookingSchedule(
     });
   }
 
-  if (returnMins <= closeMins) return { status: "OK" };
+  if (returnMins <= Math.max(lastReturnMins, Math.min(graceEndMins, pickupMins))) return { status: "OK" };
 
   if (returnMins <= graceEndMins) {
     return {
@@ -313,6 +320,7 @@ export function validateBookingSchedule(
   return bumpVerdict(config, pickupLocal, returnLocal, {
     reason: "AFTER_CLOSE",
     closingTime: minutesToDisplay(closeMins),
+    gracePeriodEnd: minutesToDisplay(graceEndMins),
   });
 }
 
@@ -320,7 +328,12 @@ export function validateBookingSchedule(
  * Extension check: is `returnLocal` inside the branch's return window — an open
  * day, at or after opening and no later than closing + grace? No adjustment.
  */
-export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
+export function validateReturnTime(
+  config: BranchScheduleConfig,
+  returnLocal: Date,
+  /** The booking's pickup: a late-window pickup may return at that clock time on a later day. */
+  opts: { pickupAt?: Date | null } = {},
+): ScheduleVerdict {
   if (config.is24Hours) return { status: "OK" };
   const { dayOfWeek, hours, minutes } = getBranchLocalTime(returnLocal);
   const day = getScheduleForDay(config, dayOfWeek);
@@ -329,7 +342,9 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
     return { status: "RETURN_OUTSIDE_HOURS", reason: "CLOSED_DAY", closedDayName: DAY_NAMES[dayOfWeek] };
   }
   const returnMins = hours * 60 + minutes;
-  const graceEndMins = day.closeMinutes + config.graceMinutes;
+  const pickupMin = opts.pickupAt ? istMinuteOfDay(opts.pickupAt) : null;
+  const lastReturnMins = lastReturnMinute(day.closeMinutes);
+  const graceEndMins = returnWindowEndMinute(day.closeMinutes, config.graceMinutes, pickupMin);
   if (returnMins < day.openMinutes) {
     return {
       status: "RETURN_OUTSIDE_HOURS",
@@ -347,7 +362,7 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
       gracePeriodEnd: minutesToDisplay(graceEndMins),
     };
   }
-  if (returnMins > day.closeMinutes) {
+  if (returnMins > Math.max(lastReturnMins, Math.min(graceEndMins, pickupMin ?? -1))) {
     return {
       status: "RETURN_GRACE",
       closingTime: minutesToDisplay(day.closeMinutes),
@@ -366,7 +381,9 @@ function closingOnDayOf(config: BranchScheduleConfig, at: Date): Date | null {
   const day = getScheduleForDay(config, dayOfWeek);
   if (!day.isOpen) return null;
   const minuteStart = Math.floor(at.getTime() / 60_000) * 60_000;
-  return new Date(minuteStart + (day.closeMinutes - (hours * 60 + minutes)) * 60_000);
+  // Held to the last return (closing − 30 min, + grace) — client TODO 4
+  const endMin = returnWindowEndMinute(day.closeMinutes, config.graceMinutes);
+  return new Date(minuteStart + (endMin - (hours * 60 + minutes)) * 60_000);
 }
 
 /**
@@ -411,11 +428,10 @@ export function buildScheduleUserMessage(verdict: ScheduleVerdict): string {
       if (verdict.reason === "BEFORE_OPEN") {
         return `Branch opens at ${verdict.openingTime ?? "opening time"} that day. Please choose a later return time.`;
       }
-      return `Branch closes at ${verdict.closingTime ?? "closing time"} that day${
-        verdict.gracePeriodEnd && verdict.gracePeriodEnd !== verdict.closingTime
-          ? ` (returns accepted until ${verdict.gracePeriodEnd})`
-          : ""
-      }. Please choose an earlier return time.`;
+      // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+      return verdict.gracePeriodEnd
+        ? `Returns are taken until ${verdict.gracePeriodEnd} that day (the branch closes at ${verdict.closingTime ?? "closing time"}). Please choose an earlier return time.`
+        : `Branch closes at ${verdict.closingTime ?? "closing time"} that day. Please choose an earlier return time.`;
     case "RETURN_BUMPED":
       return `Return time adjusted to ${verdict.nextOpenLabel ?? "the next available time"} due to branch operating hours.`;
     default:
@@ -447,7 +463,8 @@ export function calendarDayWindow(
     openMin,
     closeMin,
     lastPickupMin: closeMin - pickupCutoffMinutes(config),
-    graceEndMin: closeMin + config.graceMinutes,
+    // Latest return: the last return (closing − 30 min, 10:30 PM) + grace — client TODO 4
+    graceEndMin: returnWindowEndMinute(closeMin, config.graceMinutes),
   };
 }
 
@@ -484,7 +501,7 @@ function nowMinutesIst(now: Date): number {
   return hours * 60 + minutes;
 }
 
-/** Return allowed at `minutes` past midnight: open day, open ≤ t ≤ close + grace. */
+/** Return allowed at `minutes` past midnight: open day, open ≤ t ≤ last return (closing − 30 min) + grace. */
 export function isReturnSlotAllowed(
   config: BranchScheduleConfig | undefined,
   day: Date,

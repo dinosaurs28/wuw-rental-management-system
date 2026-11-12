@@ -3,7 +3,7 @@ import Decimal from "decimal.js";
 import type { PaymentTransaction } from "@repo/database/client";
 import { computeBookingOwed, summarizeBookingMoney } from "./booking-owed.service.js";
 import { getBookingCreditSummary, serializeCreditSummary } from "./customer-credit.service.js";
-import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey, isDropOtherRefundKey } from "../booking/customer-refund-rules.js";
 import { voidView } from "./payment-void-rules.js";
 
 export type PaymentLifecycleState =
@@ -126,6 +126,8 @@ class FinancialStateService {
       collectedAt: t.collectedAt,
       confirmedAt: t.confirmedAt,
       isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+      // Additive (Nov 2026, TODO 9): the independent "Drop refund (other)"
+      isDropOtherRefund: isDropOtherRefundKey(t.idempotencyKey),
       cashOutsideShift: isCashRefundOutsideShift(t),
       onlineTransactionRef: t.onlineTransactionRef ?? null,
       onlineGateway: t.onlineGateway ?? null,

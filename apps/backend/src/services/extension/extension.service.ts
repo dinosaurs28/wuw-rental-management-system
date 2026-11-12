@@ -278,7 +278,7 @@ class ExtensionService {
     // (PARTIAL_EXTENSION / narrowQuote) is never refused for office hours.
     const scheduleConfig = await loadBranchScheduleConfig(booking.branchId);
     if (scheduleConfig) {
-      const returnVerdict = validateReturnTime(scheduleConfig, newEndAt);
+      const returnVerdict = validateReturnTime(scheduleConfig, newEndAt, { pickupAt: booking.startAt });
       if (returnVerdict.status === "RETURN_OUTSIDE_HOURS") {
         throw new BranchScheduleError(returnVerdict);
       }

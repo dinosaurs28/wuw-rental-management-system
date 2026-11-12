@@ -12,6 +12,9 @@ import {
   halfDayPackageReturn,
   isClampedHalfDayReturn,
   istDayNumber,
+  istMinuteOfDay,
+  lastReturnMinute,
+  returnWindowEndMinute,
   sameDayPickupStatus,
   validateBookingWindow,
   type HalfDayReturn,
@@ -192,7 +195,7 @@ function bumpVerdict(
   config: BranchScheduleConfig,
   pickupLocal: Date,
   returnLocal: Date,
-  extra: Pick<ScheduleVerdict, 'reason' | 'closingTime' | 'openingTime' | 'closedDayName'>,
+  extra: Pick<ScheduleVerdict, 'reason' | 'closingTime' | 'openingTime' | 'closedDayName' | 'gracePeriodEnd'>,
 ): ScheduleVerdict {
   const bumpTarget = findBumpTarget(config, pickupLocal, returnLocal);
   if (!bumpTarget) {
@@ -223,7 +226,8 @@ export function getDayWindow(
     isOpen: day.isOpen,
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
-    graceEndMin: day.closeMinutes + config.graceMinutes,
+    // Latest return: the last return (closing − 30 min, 10:30 PM) + grace — client TODO 4
+    graceEndMin: returnWindowEndMinute(day.closeMinutes, config.graceMinutes),
     lastPickupMin: day.closeMinutes - pickupCutoffOf(config),
   };
 }
@@ -338,7 +342,10 @@ export function validateBookingSchedule(
 
   const returnMins = returnHours * 60 + returnMinsVal;
   const closeMins = returnDay.closeMinutes;
-  const graceEndMins = closeMins + config.graceMinutes;
+  // Last return 10:30 PM (closing − 30 min) + grace; a late-window pickup may
+  // return at its own clock time (client TODO 4)
+  const lastReturnMins = lastReturnMinute(closeMins);
+  const graceEndMins = returnWindowEndMinute(closeMins, config.graceMinutes, pickupMins);
 
   // Return before opening (e.g. an overnight 12 h trip) is treated like one after closing
   if (returnMins < returnDay.openMinutes) {
@@ -348,7 +355,7 @@ export function validateBookingSchedule(
     });
   }
 
-  if (returnMins <= closeMins) {
+  if (returnMins <= Math.max(lastReturnMins, Math.min(graceEndMins, pickupMins))) {
     return { status: 'OK' };
   }
 
@@ -364,6 +371,7 @@ export function validateBookingSchedule(
   return bumpVerdict(config, pickupLocal, returnLocal, {
     reason: 'AFTER_CLOSE',
     closingTime: minutesToDisplay(closeMins),
+    gracePeriodEnd: minutesToDisplay(graceEndMins),
   });
 }
 
@@ -373,7 +381,12 @@ export function validateBookingSchedule(
  * offered (staff and customers pick the new end explicitly).
  * Returns OK / RETURN_GRACE, or RETURN_OUTSIDE_HOURS with a reason.
  */
-export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
+export function validateReturnTime(
+  config: BranchScheduleConfig,
+  returnLocal: Date,
+  /** The booking's pickup: a late-window pickup may return at that clock time on a later day. */
+  opts: { pickupAt?: Date | null } = {},
+): ScheduleVerdict {
   // 24-hour branch only — no saved rows means default hours apply
   if (config.is24Hours) {
     return { status: 'OK' };
@@ -385,7 +398,9 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
     return { status: 'RETURN_OUTSIDE_HOURS', reason: 'CLOSED_DAY', closedDayName: DAY_NAMES[dayOfWeek] };
   }
   const returnMins = hours * 60 + minutes;
-  const graceEndMins = day.closeMinutes + config.graceMinutes;
+  const pickupMin = opts.pickupAt ? istMinuteOfDay(opts.pickupAt) : null;
+  const lastReturnMins = lastReturnMinute(day.closeMinutes);
+  const graceEndMins = returnWindowEndMinute(day.closeMinutes, config.graceMinutes, pickupMin);
   if (returnMins < day.openMinutes) {
     return {
       status: 'RETURN_OUTSIDE_HOURS',
@@ -403,7 +418,7 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
       gracePeriodEnd: minutesToDisplay(graceEndMins),
     };
   }
-  if (returnMins > day.closeMinutes) {
+  if (returnMins > Math.max(lastReturnMins, Math.min(graceEndMins, pickupMin ?? -1))) {
     return {
       status: 'RETURN_GRACE',
       closingTime: minutesToDisplay(day.closeMinutes),
@@ -422,7 +437,9 @@ function closingOnDayOf(config: BranchScheduleConfig, at: Date): Date | null {
   const day = getScheduleForDay(config, dayOfWeek);
   if (!day.isOpen) return null;
   const minuteStart = Math.floor(at.getTime() / 60_000) * 60_000;
-  return new Date(minuteStart + (day.closeMinutes - (hours * 60 + minutes)) * 60_000);
+  // Held to the last return (closing − 30 min, + grace) — client TODO 4
+  const endMin = returnWindowEndMinute(day.closeMinutes, config.graceMinutes);
+  return new Date(minuteStart + (endMin - (hours * 60 + minutes)) * 60_000);
 }
 
 /**
@@ -468,11 +485,10 @@ export function buildScheduleErrorMessage(verdict: Pick<ScheduleVerdict, Exclude
       if (verdict.reason === 'BEFORE_OPEN') {
         return `Branch opens at ${verdict.openingTime ?? 'opening time'} that day. Please choose a later return time.`;
       }
-      return `Branch closes at ${verdict.closingTime ?? 'closing time'} that day${
-        verdict.gracePeriodEnd && verdict.gracePeriodEnd !== verdict.closingTime
-          ? ` (returns accepted until ${verdict.gracePeriodEnd})`
-          : ''
-      }. Please choose an earlier return time.`;
+      // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+      return verdict.gracePeriodEnd
+        ? `Returns are taken until ${verdict.gracePeriodEnd} that day (the branch closes at ${verdict.closingTime ?? 'closing time'}). Please choose an earlier return time.`
+        : `Branch closes at ${verdict.closingTime ?? 'closing time'} that day. Please choose an earlier return time.`;
     case 'RETURN_BUMPED':
       return `Return time adjusted to ${verdict.nextOpenLabel ?? 'the next available time'} due to branch operating hours.`;
     default:
@@ -542,7 +558,7 @@ export function isPickupTimeAllowed(config: BranchScheduleConfig, at: Date, now:
   return status === 'OK' || status === 'LATE_OK';
 }
 
-/** Return allowed at this instant: open day, open ≤ time ≤ close + grace. */
+/** Return allowed at this instant: open day, open ≤ time ≤ last return (closing − 30 min) + grace. */
 export function isReturnTimeAllowed(config: BranchScheduleConfig, at: Date): boolean {
   const w = getDayWindow(config, at);
   if (!w) return true;
@@ -587,7 +603,8 @@ export function slotsWithinHours(
   const w = hasOfficeHours(config) ? getDayWindow(config, withTime(day, '12:00')) : null;
   if (w && w.isOpen) {
     // Pickups: closing too, for tonight's late window (the filter below drops it otherwise)
-    const edges = kind === 'pickup' ? [w.openMin, w.lastPickupMin, w.closeMin] : [w.openMin, w.closeMin, w.graceEndMin];
+    // Returns: opening and the last return (closing − 30 min + grace, client TODO 4)
+    const edges = kind === 'pickup' ? [w.openMin, w.lastPickupMin, w.closeMin] : [w.openMin, w.graceEndMin];
     for (const mins of edges) {
       if (mins < 0 || mins >= 1440) continue;
       const value = hhmm(mins);

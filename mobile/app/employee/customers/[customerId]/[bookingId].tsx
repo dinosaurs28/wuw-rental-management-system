@@ -279,7 +279,7 @@ export default function CustomerBookingScreen() {
             <View key={t.publicId} style={[styles.txn, t.voided && styles.txnVoided]}>
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, styles.rowBold, t.voided && styles.struck]}>
-                  {t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · {methodLabel(t.method, t.onlineGateway)}
+                  {t.isDropOtherRefund ? 'Drop refund (other)' : t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · {methodLabel(t.method, t.onlineGateway)}
                 </Text>
                 <Text style={[styles.rowValue, styles.rowBold, t.voided && styles.struck]}>
                   {t.isRefund ? '− ' : ''}
@@ -326,7 +326,7 @@ export default function CustomerBookingScreen() {
                     setVoidTarget({
                       transactionPublicId: t.publicId,
                       amount: t.totalAmount,
-                      label: `${t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · ${methodLabel(t.method, t.onlineGateway)}`,
+                      label: `${t.isDropOtherRefund ? 'Drop refund (other)' : t.isCustomerRefund ? 'Refund to customer' : t.isRefund ? 'Refund' : humanize(t.purpose)} · ${methodLabel(t.method, t.onlineGateway)}`,
                       isRefund: t.isRefund,
                     })
                   }

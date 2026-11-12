@@ -199,7 +199,8 @@ jobs:
               20261028110000_financials_paid_at_index \
               20261029090000_refund_request_proof \
               20261031100000_fleet_reports \
-              20261101120000_credit_card_payment
+              20261101120000_credit_card_payment \
+              20261112090000_actual_pickup_shift
             do
               (cd packages/db && pnpm exec dotenv -e "$DB_ENV_FILE" -- \
                 pnpm exec prisma db execute \

@@ -15,6 +15,8 @@ export interface BookingPaymentRow extends PaymentVoidState {
   status: string;
   isRefund: boolean;
   isCustomerRefund: boolean;
+  /** Additive (Nov 2026, TODO 9) */
+  isDropOtherRefund?: boolean;
   cashOutsideShift: boolean;
   totalAmount: string;
   cashAmount: string;

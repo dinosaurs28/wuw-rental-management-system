@@ -172,6 +172,12 @@ export const ManagerConfirmations = ({
         requireManagerConfirmation: false
       });
       toast.success(res.message || "Pickup confirmed successfully");
+      // The return after the handover (client TODO 10): a late pickup moves it
+      const shift = (res as { returnShift?: { message: string; shifted: boolean; afterHours: boolean } | null }).returnShift;
+      if (shift?.message) {
+        if (shift.shifted || shift.afterHours) toast.warning(shift.message, { duration: 12000 });
+        else toast.info(shift.message);
+      }
       setIsDialogOpen(false);
       loadConfirmations();
       onChanged?.();

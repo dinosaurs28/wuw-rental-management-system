@@ -37,6 +37,8 @@ export interface PickupDraftFields {
   discountReason: string;
   // Optional Fleet pickup note (Oct 20 2026) — absent in drafts saved by older builds
   pickupNote: string;
+  // The step it was paused on (client TODO 11) — absent in older drafts
+  step: string;
 }
 
 interface Options {
@@ -146,6 +148,8 @@ export function usePickupDraft({
       s.setDiscountAmount(draftString(d, 'discountAmount'));
       s.setDiscountReason(draftString(d, 'discountReason'));
       s.setPickupNote(draftString(d, 'pickupNote'));
+      const savedStep = draftString(d, 'step');
+      if (savedStep) s.setStep(savedStep);
       // How the bill was going to be settled (the amounts come from the server
       // again; a proof photo is re-checked when the payment is recorded).
       const method = draftOneOf(d, 'payMethod', COUNTER_PAYMENT_METHODS);

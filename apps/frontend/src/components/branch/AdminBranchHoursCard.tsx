@@ -215,7 +215,7 @@ export function AdminBranchHoursCard({ branchPublicId }: { branchPublicId: strin
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Return grace (minutes after closing)
+                Return grace (minutes after the last return, 30 min before closing)
               </Label>
               <Input
                 type="number"

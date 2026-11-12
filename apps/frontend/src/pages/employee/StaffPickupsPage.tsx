@@ -374,6 +374,20 @@ const DL_ERROR_CODES = ["INVALID_DL_STATUS", "DL_STATUS_INVALID"];
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
+
+/** returnShift of a pickup response (client TODO 10). */
+interface ReturnShiftInfo {
+  message: string;
+  shifted: boolean;
+  afterHours: boolean;
+}
+
+/** Tells staff the return time after the handover — loud when a late pickup moved it. */
+function showReturnShift(shift: ReturnShiftInfo | null | undefined) {
+  if (!shift?.message) return;
+  if (shift.shifted || shift.afterHours) toast.warning(shift.message, { duration: 12000 });
+  else toast.info(shift.message);
+}
 export default function StaffPickupsPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -601,6 +615,8 @@ export default function StaffPickupsPage() {
     }) => bookingService.approvePickup(bookingId!, data),
     onSuccess: (response: any) => {
       toast.success(response?.message || "Vehicle Handover Confirmed!");
+      // The return after the handover (client TODO 10): moved by a late pickup
+      showReturnShift(response?.returnShift ?? response?.data?.returnShift);
       setIsConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       navigate("/employee/dashboard");
@@ -2270,6 +2286,7 @@ export default function StaffPickupsPage() {
                               ? `₹${updatedSession.credit.amount} put on credit (collateral: ${updatedSession.credit.collateral}). Booking marked as Picked Up.`
                               : "Payment collected! Booking marked as Picked Up.",
                           );
+                          showReturnShift((updatedSession as { returnShift?: ReturnShiftInfo | null }).returnShift);
                           queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
                           navigate("/employee/dashboard");
                         }

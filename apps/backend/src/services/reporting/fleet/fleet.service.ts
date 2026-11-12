@@ -151,6 +151,8 @@ export async function loadRentals(vehicleIds: number[], from: Date | null, to: D
       returnedAt: true,
       cancelledAt: true,
       licenseCollectedAt: true,
+      // Exact handover time (recorded from Nov 2026, client TODO 10)
+      pickedUpAt: true,
       fuelRecord: { select: { pickupAt: true, returnAt: true } },
       items: { select: { vehicleId: true } },
       vehicleSwaps: {
@@ -182,7 +184,7 @@ export async function loadRentals(vehicleIds: number[], from: Date | null, to: D
       pickedUpAt = marker;
       endedAt = b.returnedAt ?? b.cancelledAt;
     } else {
-      pickedUpAt = marker ?? b.startAt;
+      pickedUpAt = b.pickedUpAt ?? marker ?? b.startAt;
       endedAt =
         b.status === BookingStatus.PICKED_UP ? null : (b.returnedAt ?? b.fuelRecord?.returnAt ?? b.endAt);
     }

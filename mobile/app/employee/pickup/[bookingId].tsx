@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -71,6 +71,28 @@ import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../co
 import type { KmAllowance } from '../../../types/return';
 import { cleanFastagInput, fastagBalanceError, fastagInr, parseFastagBalance } from '../../../lib/fastag';
 import { FUEL_BAR_LEVELS } from '../../../lib/fuel';
+import FlowStepper from '../../../components/employee/FlowStepper';
+import {
+  clampStep,
+  handoverChanges,
+  nextStep,
+  pickupSteps,
+  prevStep,
+  resolveJump,
+  stepIndex,
+  stepStates,
+  type HandoverSnapshot,
+  type PickupStepKey,
+  type StepBlockers,
+} from '../../../lib/flowSteps';
+
+// TODO 10 (actual pickup time): the handover response may say the return moved.
+// Highlighted when the return actually moved or falls after hours.
+const returnShiftMessage = (res: any): { message: string; highlight: boolean } | null => {
+  const shift = res?.data?.returnShift ?? res?.data?.data?.returnShift;
+  if (typeof shift?.message !== 'string' || !shift.message.trim()) return null;
+  return { message: shift.message, highlight: !!shift.shifted || !!shift.afterHours };
+};
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -370,10 +392,17 @@ export default function PickupScreen() {
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [legacyDiscountBusy, setLegacyDiscountBusy] = useState<'apply' | 'remove' | null>(null);
   const [settling, setSettling] = useState(false);
-  // Back on the handover details with the bill open (client, Oct 25 2026): the
-  // licence choice and the note stay changeable until the pickup completes.
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsSaving, setDetailsSaving] = useState(false);
+  // Steps (client TODO 11, Nov 12 2026): Booking → Readings → Photos → Licence
+  // (→ Payment with payment sessions). Every field lives on this screen, so
+  // moving between steps never loses anything; the steps only show and hide.
+  const [step, setStepRaw] = useState<PickupStepKey>('booking');
+  const [maxReached, setMaxReached] = useState(0);
+  // Saving changed handover details to the open bill (back from Payment)
+  const [handoverSyncing, setHandoverSyncing] = useState(false);
+  // What the server holds for the handover (initiate / last update); null = unknown
+  const savedHandoverRef = useRef<HandoverSnapshot | null>(null);
+  // TODO 10: "Return moved to …" after the handover
+  const [returnShiftMsg, setReturnShiftMsg] = useState<{ message: string; highlight: boolean } | null>(null);
   // How the bill is settled: Cash / UPI (photo) / Split / Credit, or a refund (Cash / UPI)
   const pay = useCounterPayment('CASH');
   const refundPay = useCounterRefund();
@@ -431,39 +460,43 @@ export default function PickupScreen() {
     }, [refetch]),
   );
 
-  // On the bill, back (header arrow, Android back button / gesture) returns to
-  // the handover details instead of leaving the pickup; iOS swipe-back is off
-  // there. Only while this screen is focused.
-  const onBill = !!session && !detailsOpen && !editMode && !done;
+  // Steps: Android back / the header arrow go to the previous step; only the
+  // first step leaves the pickup (with the usual pause / leave handling). iOS
+  // swipe-back is off past the first step.
+  const sessionModeFlag = !!booking?.usePaymentSessions;
+  const steps = useMemo(() => pickupSteps(sessionModeFlag), [sessionModeFlag]);
+  const stepIdx = stepIndex(steps, step);
+  const goToStep = useCallback(
+    (key: PickupStepKey) => {
+      setStepRaw(key);
+      const i = stepIndex(steps, key);
+      setMaxReached((m) => Math.max(m, i));
+      setErrorMsg(null);
+      setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 0);
+    },
+    [steps],
+  );
+  const inFlow = !editMode && !done && booking?.status === 'CONFIRMED' && !booking.requiresManagerConfirmation;
+  const backTarget = inFlow ? prevStep(steps, step) : null;
   const navigation = useNavigation();
   useEffect(() => {
-    navigation.setOptions({ gestureEnabled: !onBill });
-  }, [navigation, onBill]);
+    navigation.setOptions({ gestureEnabled: !backTarget });
+  }, [navigation, backTarget]);
   useFocusEffect(
     useCallback(() => {
-      if (!onBill) return;
+      if (!backTarget) return;
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        setDetailsOpen(true);
+        goToStep(backTarget);
         return true;
       });
       return () => sub.remove();
-    }, [onBill]),
+    }, [backTarget, goToStep]),
   );
-  // Opening the details: start from the licence status the server holds (it may
-  // have been changed on the bill's DL card or on another device).
+  // A step list without the bill (legacy branch) or a bill that closed: stay on a real step
   useEffect(() => {
-    if (!detailsOpen) return;
-    const recorded = booking?.dlStatus;
-    setDlStatus(recorded && recorded !== 'DEPOSIT' ? recorded : null);
-    setDlRejected(false);
-    setErrorMsg(null);
-    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailsOpen]);
-  // The bill closed (completed elsewhere, or dropped): nothing to go back from
-  useEffect(() => {
-    if (!session) setDetailsOpen(false);
-  }, [session]);
+    const valid = clampStep(steps, step, 'licence');
+    if (valid !== step) setStepRaw(valid);
+  }, [steps, step]);
 
   const { data: captureFields = [] } = useQuery<CaptureField[]>({
     queryKey: ['employee', 'pickup', 'capture-config', bookingId],
@@ -528,7 +561,21 @@ export default function PickupScreen() {
       try {
         const res = await employeeApi.getActivePickupSession(bookingId as string);
         const s = res.data?.data as PickupSession | undefined;
-        if (mountedRef.current && s) setSession(s);
+        if (mountedRef.current && s) {
+          setSession(s);
+          // What the open bill saved, for its earlier steps (a paused draft on
+          // this phone fills them in too; typed values win)
+          if (booking.startOdometer != null) setOdo((cur) => cur || String(booking.startOdometer));
+          const savedFuel = booking.pickupFuelLevel != null ? Number(booking.pickupFuelLevel) : NaN;
+          if (Number.isFinite(savedFuel)) setFuelLevel((cur) => cur ?? savedFuel);
+          if (booking.pickupFastagBalance != null) {
+            setFastagBalance((cur) => cur || String(Number(booking.pickupFastagBalance)));
+          }
+          if (booking.dlStatus && booking.dlStatus !== 'DEPOSIT') setDlStatus((cur) => cur ?? booking.dlStatus as DlCollectionStatus);
+          // The bill is open: start on it (the earlier steps stay one tap away)
+          setStepRaw('payment');
+          setMaxReached(4);
+        }
       } catch {
         /* 404 — no open session, start fresh */
       } finally {
@@ -536,6 +583,12 @@ export default function PickupScreen() {
       }
     })();
   }, [bookingId, booking?.usePaymentSessions, booking?.status]);
+
+  // On the Payment step with no open bill (it closed, or a paused draft said
+  // Payment but the bill wasn't started): back to the last step before it.
+  useEffect(() => {
+    if (step === 'payment' && !session && !restoring && !initiating && restoreTriedRef.current) setStepRaw('licence');
+  }, [step, session, restoring, initiating]);
 
   // Pause / resume (client item 2): everything entered here is saved on the
   // server as it changes and comes back when the pickup is opened again.
@@ -547,13 +600,19 @@ export default function PickupScreen() {
     fields: {
       odo, fuelLevel, fastagBalance, dlStatus, requireManager, requestDeposit,
       depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
-      discountOpen, discountAmount, discountReason, pickupNote,
+      discountOpen, discountAmount, discountReason, pickupNote, step,
     },
     setters: {
       setOdo, setFuelLevel, setFastagBalance, setDlStatus, setRequireManager,
       setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
       setSDepositAmt, setSDepositReason, setDiscountOpen, setDiscountAmount, setDiscountReason,
       setPickupNote,
+      // The step it was paused on (TODO 11)
+      setStep: (v: string) => {
+        const k = clampStep(steps, v, 'booking');
+        setStepRaw(k);
+        setMaxReached((m) => Math.max(m, stepIndex(steps, k)));
+      },
     },
     photos,
     setPhotos,
@@ -627,6 +686,16 @@ export default function PickupScreen() {
   // (the server keeps it for old builds only).
   const dlBody = () => (dlStatus ? dlChoiceBody(dlStatus) : {});
 
+  // The handover details as on screen now (compared with what the bill saved)
+  const handoverSnapshot = (): HandoverSnapshot => ({
+    odo,
+    fuelLevel,
+    fastagBalance,
+    photos: photos.map((p) => ({ fileId: p.fileId, label: p.label ?? null })),
+    dlStatus,
+    note: pickupNote,
+  });
+
   const onPickupDone = (settled: { amount: number; method: string; credit?: boolean } | null) => {
     // Explicitly completed: the server dropped the saved draft with it.
     draft.completed();
@@ -657,7 +726,10 @@ export default function PickupScreen() {
         ...dlBody(),
       });
     },
-    onSuccess: () => onPickupDone(null),
+    onSuccess: (res) => {
+      setReturnShiftMsg(returnShiftMessage(res));
+      onPickupDone(null);
+    },
     onError: (err: any) => {
       draft.abortCompletion();
       setShowConfirm(false);
@@ -694,14 +766,21 @@ export default function PickupScreen() {
     setDlRejected(false);
     try {
       const body = { ...handoverBody(), ...dlBody() };
+      const sent = handoverSnapshot();
       const res = await employeeApi.initiatePickupSession(bookingId as string, body);
       pickupNoteSentRef.current = body.pickupNote;
       const s = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
-      if (s) setSession(s);
+      if (s) {
+        setSession(s);
+        // A first initiate saves these; one that found the bill already open
+        // (another phone) didn't — then the next Continue sends them all.
+        savedHandoverRef.current = res.status === 201 ? sent : null;
+        if (res.status !== 201) await syncHandover(s);
+        goToStep('payment');
+      }
       // startOdometer / pickup fuel are saved now — show the server's values.
       refetch();
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (err: any) {
       if (!mountedRef.current) return;
       if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
@@ -730,40 +809,87 @@ export default function PickupScreen() {
     }
   };
 
-  // Handover details → back to the bill. A changed licence choice is saved first
-  // through PATCH …/dl-status (allowed while the booking is CONFIRMED, i.e. until
-  // the pickup completes). The DL status carries no money (the DL deposit was
-  // removed), so the bill and anything already paid stay as they are. A changed
-  // note is saved when the bill is settled (settleSession).
-  const continueFromDetails = async () => {
-    if (!booking || detailsSaving) return;
+  // Back on an earlier step with the bill open (client TODO 11): whatever changed
+  // there (odometer, fuel, FASTag, photos, licence, note) is saved to the SAME
+  // open bill before it shows again — PATCH …/pickup-session/handover. None of it
+  // prices the pickup bill, so the bill and anything on it stay as they are.
+  // Photos already saved aren't sent again: the server keeps them by fileId.
+  // Returns false when the FE should stay where they are (an error is shown).
+  const syncHandover = async (open: PickupSession | null = session): Promise<boolean> => {
+    if (!booking || !open) return false;
+    const now = handoverSnapshot();
+    const changes = handoverChanges(savedHandoverRef.current, now);
+    if (changes.length === 0) return true;
     if (noteTooLong(pickupNote)) {
       setErrorMsg(`Keep the pickup note under ${OPERATION_NOTE_MAX} characters.`);
-      return;
+      return false;
     }
-    const recorded = booking.dlStatus ?? null;
-    if (!dlStatus || dlStatus === recorded) {
-      setDetailsOpen(false);
-      return;
-    }
-    setDetailsSaving(true);
+    setHandoverSyncing(true);
     setErrorMsg(null);
     setDlRejected(false);
     try {
-      await employeeApi.updateDlStatus(booking.publicId, dlChoiceBody(dlStatus));
+      const level = fuelLevel ?? 0;
+      const fastag = parseFastagBalance(fastagBalance);
+      const res = await employeeApi.updatePickupSessionHandover(booking.publicId, {
+        odo: Number(odo),
+        fuelLevel: level * 10,
+        ...(fuelLevel != null ? { pickupFuelLevel: String(fuelLevel) } : {}),
+        ...(fastag != null ? { pickupFastagBalance: fastag } : {}),
+        ...(photos.length ? { photos: now.photos } : {}),
+        ...(dlStatus ? { dlStatus } : {}),
+        pickupNote: noteForRequest(pickupNote),
+      });
+      savedHandoverRef.current = now;
+      pickupNoteSentRef.current = noteForRequest(pickupNote);
+      const s = res.data?.data as PickupSession | undefined;
+      if (mountedRef.current && s) setSession(s);
       await refetch();
       qc.invalidateQueries({ queryKey: ['employee', 'pickups'] });
-      if (mountedRef.current) setDetailsOpen(false);
+      return true;
     } catch (err: any) {
-      if (!mountedRef.current) return;
-      if (isDlErrorCode(err?.response?.data?.code)) setDlRejected(true);
-      setErrorMsg(apiErrorMessage(err, "Couldn't save the licence status. Please try again."));
-      // 409 DL_STATUS_LOCKED / 404: the pickup moved on (completed or cancelled elsewhere)
+      if (!mountedRef.current) return false;
       const status = err?.response?.status;
+      const code = err?.response?.data?.code;
+      if (isDlErrorCode(code)) setDlRejected(true);
+      // An older server without the update: the licence choice and note still
+      // save the old way; readings / photos are fixed with Edit Pickup afterwards.
+      if (status === 404 && !/pickup session|Booking not found/i.test(String(err?.response?.data?.message ?? ''))) {
+        try {
+          if (dlStatus && dlStatus !== (booking.dlStatus ?? null)) {
+            await employeeApi.updateDlStatus(booking.publicId, dlChoiceBody(dlStatus));
+            await refetch();
+          }
+        } catch (dlErr: any) {
+          if (isDlErrorCode(dlErr?.response?.data?.code)) setDlRejected(true);
+          setErrorMsg(apiErrorMessage(dlErr, "Couldn't save the licence status. Please try again."));
+          return false;
+        }
+        if (changes.some((c) => c === 'odo' || c === 'fuelLevel' || c === 'fastagBalance' || c === 'photos')) {
+          Alert.alert(
+            'Readings not updated',
+            'This server can\'t change the odometer, fuel, FASTag or photos of an open bill yet. Fix them with Edit Pickup after the handover.',
+          );
+        }
+        savedHandoverRef.current = now;
+        return true;
+      }
+      setErrorMsg(apiErrorMessage(err, "Couldn't save the changes. Please try again."));
+      // 409 / 404: the pickup moved on (paid, completed or cancelled elsewhere)
       if (status === 409 || status === 404) void reloadSession();
+      return false;
     } finally {
-      if (mountedRef.current) setDetailsSaving(false);
+      if (mountedRef.current) setHandoverSyncing(false);
     }
+  };
+
+  // Next / a tap on Payment: start the bill, or save what changed to the open one.
+  const continueToPayment = async () => {
+    if (initiating || handoverSyncing) return;
+    if (!session) {
+      await startSession();
+      return;
+    }
+    if (await syncHandover()) goToStep('payment');
   };
 
   // The bill changed: a typed split no longer adds up (the photo and collateral still apply).
@@ -981,6 +1107,7 @@ export default function PickupScreen() {
       }
       const updated = res.data?.data as PickupSession | undefined;
       if (!mountedRef.current) return;
+      setReturnShiftMsg(returnShiftMessage(res));
       if (updated && updated.status !== 'COMPLETED') {
         draft.abortCompletion();
         setSession(updated);
@@ -1091,32 +1218,42 @@ export default function PickupScreen() {
   const aadhaarPhotos = kycData?.aadhaarPhotos ?? null;
   const aadhaarPhotosMissing = !editMode && !!aadhaarPhotos && !aadhaarPhotos.ok;
 
-  // First thing still missing before the handover can go ahead (shown above the button).
-  // The DL status (X1) is optional; both licence photos aren't. The DL number
-  // is no longer asked at pickup (client, Oct 17 2026).
-  const handoverBlocker: string | null = hasRemainingBalance
-    ? 'Collect the balance due above to continue.'
-    : !editMode && kycLoading
+  // What's still missing on each step (shown above Next; a later step opens
+  // once every step before it is complete). The DL status (X1) is optional;
+  // both licence photos aren't. The DL number is no longer asked at pickup
+  // (client, Oct 17 2026).
+  const stepBlockers: StepBlockers<PickupStepKey> = {
+    booking: hasRemainingBalance
+      ? 'Collect the balance due above to continue.'
+      : !editMode && kycLoading
         ? 'Loading the customer\'s documents…'
         : dlPhotosMissing
-        ? `Capture the ${describeKycPhotoSides(dlPhotos!.missingSides)} of the driving licence.`
-        : aadhaarPhotosMissing
-        ? `Capture the ${describeKycPhotoSides(aadhaarPhotos!.missingSides)} of the Aadhaar.`
-        : !odoValid
-          ? 'Enter the odometer reading.'
-          : fuelLevel == null
-            ? 'Select the fuel level.'
-            : fastagError
-              ? fastagBalance.trim() ? fastagError : 'Enter the FASTag balance.'
-              : missingRequiredPhotos.length > 0
-              ? `Take the required photo${missingRequiredPhotos.length > 1 ? 's' : ''}: ${missingRequiredPhotos.map((f) => f.name).join(', ')}.`
-              : pendingPhotos > 0
-                ? 'Wait for the photos to upload (retry or remove failed ones).'
-                : !sessionMode && depositInvalid
-                  ? 'Enter the deposit amount and reason, or turn the request off.'
-                  : sessionMode && restoring
-                    ? 'Checking for an open payment…'
-                    : null;
+          ? `Capture the ${describeKycPhotoSides(dlPhotos!.missingSides)} of the driving licence.`
+          : aadhaarPhotosMissing
+            ? `Capture the ${describeKycPhotoSides(aadhaarPhotos!.missingSides)} of the Aadhaar.`
+            : null,
+    readings: !odoValid
+      ? 'Enter the odometer reading.'
+      : fuelLevel == null
+        ? 'Select the fuel level.'
+        : fastagError
+          ? fastagBalance.trim() ? fastagError : 'Enter the FASTag balance.'
+          : null,
+    photos: missingRequiredPhotos.length > 0
+      ? `Take the required photo${missingRequiredPhotos.length > 1 ? 's' : ''}: ${missingRequiredPhotos.map((f) => f.name).join(', ')}.`
+      : pendingPhotos > 0
+        ? 'Wait for the photos to upload (retry or remove failed ones).'
+        : null,
+    licence: !sessionMode && depositInvalid
+      ? 'Enter the deposit amount and reason, or turn the request off.'
+      : sessionMode && restoring
+        ? 'Checking for an open payment…'
+        : null,
+    payment: null,
+  };
+  // First thing still missing before the handover can go ahead.
+  const handoverBlocker: string | null =
+    stepBlockers.booking ?? stepBlockers.readings ?? stepBlockers.photos ?? stepBlockers.licence ?? null;
 
   // What was recorded for the licence: the choice sent from this screen, else the
   // server's value (a pickup session reopened after an app restart).
@@ -1309,6 +1446,17 @@ export default function PickupScreen() {
               <Ionicons name="id-card-outline" size={15} color={Colors.ink3} />
               <Text style={styles.successRowText}>{dlSummary}</Text>
             </View>
+            {/* TODO 10: the return time moved with the actual pickup time */}
+            {returnShiftMsg && (
+              <View style={styles.successRow}>
+                <Ionicons name="time-outline" size={15} color={returnShiftMsg.highlight ? Colors.orange : Colors.ink3} />
+                <Text
+                  style={[styles.successRowText, returnShiftMsg.highlight && { color: Colors.orange, fontFamily: Fonts.bodySemiBold }]}
+                >
+                  {returnShiftMsg.message}
+                </Text>
+              </View>
+            )}
             {sessionMode && (
               <View style={styles.successRow}>
                 <Ionicons name="cash-outline" size={15} color={Colors.ink3} />
@@ -1452,6 +1600,29 @@ export default function PickupScreen() {
     </View>
   ) : null;
 
+  // ── Steps ──
+  const flowBusy = initiating || handoverSyncing || settling || !!sessionAction || mutation.isPending;
+  const states = stepStates(steps, stepBlockers, step, maxReached);
+  const currentBlocker = stepBlockers[step] ?? null;
+  // A view of each step: hidden (not unmounted) when it isn't the current one —
+  // uploads in progress and every typed value carry on. Edit Pickup is one page.
+  const pane = (key: PickupStepKey) => (editMode || step === key ? undefined : styles.hiddenPane);
+  const jumpTo = (target: PickupStepKey) => {
+    if (flowBusy || target === step) return;
+    // Payment opens the bill (start it, or save the earlier steps' changes to it)
+    const r = resolveJump(steps, stepBlockers, step, target);
+    if (r.to === 'payment' && !r.blockedBy) {
+      void continueToPayment();
+      return;
+    }
+    goToStep(r.to);
+    if (r.blockedBy) setErrorMsg(r.blockedBy);
+  };
+  const goNext = () => {
+    const next = nextStep(steps, step);
+    if (next) jumpTo(next);
+  };
+
   const handleConfirm = () => {
     if (handoverBlocker) {
       Alert.alert('Not ready yet', handoverBlocker);
@@ -1560,10 +1731,10 @@ export default function PickupScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => (onBill ? setDetailsOpen(true) : router.back())}
+          onPress={() => (backTarget ? goToStep(backTarget) : router.back())}
           style={styles.back}
           hitSlop={8}
-          accessibilityLabel={onBill ? 'Back to handover details' : 'Back'}
+          accessibilityLabel={backTarget ? 'Previous step' : 'Back'}
         >
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
@@ -1574,6 +1745,9 @@ export default function PickupScreen() {
         </View>
         <ContinueLaterButton draft={draft} />
       </View>
+      {!editMode && (
+        <FlowStepper steps={steps} states={states} onSelect={jumpTo} disabled={flowBusy} />
+      )}
 
       <ScrollView
         ref={scrollRef}
@@ -1584,6 +1758,7 @@ export default function PickupScreen() {
       >
         <View ref={contentRef} collapsable={false} style={styles.contentInner}>
         <ResumedBanner draft={draft} />
+        <View style={pane('booking')}>
         {/* Manual discount (legacy): off the remaining balance, before it is collected */}
         {!sessionMode && !editMode && booking.isAdvancePayment && !booking.remainingPaidAt &&
           (num(booking.remainingBalance) > 0 || !!booking.pickupDiscount) && (
@@ -1907,9 +2082,10 @@ export default function PickupScreen() {
         {/* Payment ledger */}
         <SectionHeader title="Payment" />
         <CounterPaymentPanel bookingPublicId={booking.publicId} />
+        </View>
 
-        {session && !detailsOpen ? (
-          <>
+        {session ? (
+          <View style={pane('payment')}>
             {/* Saved with the session — the vehicle goes out when it's settled */}
             <SectionHeader title="Handover Details" />
             {savedReadingsCard}
@@ -1922,15 +2098,15 @@ export default function PickupScreen() {
                 refetch();
               }}
             />
-            {/* Back to the previous step (licence choice, note) until the pickup completes */}
+            {/* Any earlier step can be changed until the pickup completes (TODO 11) */}
             <TouchableOpacity
               style={styles.extendBtn}
-              onPress={() => setDetailsOpen(true)}
+              onPress={() => goToStep('readings')}
               disabled={sessionBusy}
               activeOpacity={0.85}
             >
-              <Ionicons name="arrow-back-outline" size={18} color={Colors.ink2} />
-              <Text style={styles.extendBtnText}>Back to handover details</Text>
+              <Ionicons name="create-outline" size={18} color={Colors.ink2} />
+              <Text style={styles.extendBtnText}>Change readings, photos or licence</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.ink4} />
             </TouchableOpacity>
 
@@ -2117,55 +2293,11 @@ export default function PickupScreen() {
                 <CounterRefundPicker ctl={refundPay} amount={Math.abs(net)} disabled={sessionBusy} />
               </View>
             )}
-          </>
-        ) : session ? (
+          </View>
+        ) : null}
+        {(
           <>
-            {/* Back on the handover details with the bill open. The readings and photos
-                were saved when the payment started; the licence choice and the note
-                can still change. Continue saves them and returns to the same bill. */}
-            <SectionHeader title="Handover Details" />
-            {savedReadingsCard}
-            <Text style={[styles.toggleSub, { marginTop: 6 }]}>
-              Odometer, fuel, FASTag and photos were saved when you continued to payment. Fix them with Edit Pickup after the handover.
-            </Text>
-
-            <SectionHeader title="Original Licence" />
-            <View style={[styles.card, dlRejected && styles.cardError]}>
-              <View style={styles.toggleRow}>
-                <View style={[styles.toggleTitleRow, styles.toggleTextWrap]}>
-                  <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
-                  <Text style={styles.optionalTag}>Optional</Text>
-                </View>
-                {/* Once recorded it can be changed, not cleared */}
-                {dlStatus && !booking.dlStatus && (
-                  <TouchableOpacity
-                    onPress={() => { setDlStatus(null); setDlRejected(false); }}
-                    disabled={detailsSaving}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.link}>Clear</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={[styles.toggleSub, styles.dlSub]}>
-                {booking.dlStatus === 'DEPOSIT'
-                  ? `Recorded as the old DL deposit${booking.dlDepositNote ? ` (${booking.dlDepositNote})` : ''}. Pick Collected or Not collected to change it.`
-                  : 'Change it here until the pickup is completed.'}
-              </Text>
-              <DlStatusSelector
-                value={dlStatus}
-                onChange={(v) => { setDlStatus(v); setDlRejected(false); }}
-                disabled={detailsSaving}
-              />
-            </View>
-
-            <SectionHeader title="Note" />
-            <View style={styles.card}>
-              <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
-            </View>
-          </>
-        ) : (
-          <>
+            <View style={pane('readings')}>
             {/* Vehicle State */}
             <SectionHeader title="Record Vehicle State" />
             <View style={styles.card}>
@@ -2258,7 +2390,10 @@ export default function PickupScreen() {
               })()}
             </View>
 
+            </View>
+
             {/* Pre-delivery photos */}
+            <View style={pane('photos')}>
             <SectionHeader title="Pre-delivery Photos" />
             <View style={styles.card}>
               {captureFields.length === 0 && (
@@ -2279,6 +2414,8 @@ export default function PickupScreen() {
                 // Paused pickup: shots kept on the phone until the saved draft has them
                 persistKey={draft.photoRecordKey}
               />
+            </View>
+
             </View>
 
             {/* Edit Pickup: the manual pickup discount (₹ off the rent incl. GST), before the deposit;
@@ -2358,6 +2495,7 @@ export default function PickupScreen() {
               </>
             )}
 
+            <View style={pane('licence')}>
             {!sessionMode && depositEnabled && !editMode && (
               <>
                 <SectionHeader title="Safety Deposit" />
@@ -2425,7 +2563,8 @@ export default function PickupScreen() {
                   <Text style={styles.toggleTitle}>What happened to the original licence?</Text>
                   <Text style={styles.optionalTag}>Optional</Text>
                 </View>
-                {dlStatus && (
+                {/* Once recorded with the open bill it can be changed, not cleared */}
+                {dlStatus && !(session && booking.dlStatus) && (
                   <TouchableOpacity
                     onPress={() => { setDlStatus(null); setDlRejected(false); }}
                     hitSlop={8}
@@ -2491,6 +2630,7 @@ export default function PickupScreen() {
                 Counter coupons need Unified Payments, which this branch doesn't use.
               </Text>
             )}
+            </View>
           </>
         )}
 
@@ -2520,68 +2660,78 @@ export default function PickupScreen() {
               </>
             )}
           </TouchableOpacity>
-        ) : session && detailsOpen ? (
-          // Handover details with the bill open: save the licence choice, back to the bill
-          <TouchableOpacity
-            style={[styles.confirmBtn, detailsSaving && styles.confirmBtnDisabled]}
-            onPress={continueFromDetails}
-            disabled={detailsSaving}
-            activeOpacity={0.85}
-          >
-            {detailsSaving ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <>
-                <Text style={styles.confirmBtnText}>Continue to Payment</Text>
-                <Ionicons name="arrow-forward" size={20} color={Colors.white} />
-              </>
-            )}
-          </TouchableOpacity>
-        ) : session ? (
-          <TouchableOpacity
-            style={[styles.confirmBtn, sessionBusy && styles.confirmBtnDisabled]}
-            onPress={settleSession}
-            disabled={sessionBusy}
-            activeOpacity={0.85}
-          >
-            {settling ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-                <Text style={styles.confirmBtnText}>
-                  {net > 0
-                    ? pay.method === 'CREDIT'
-                      ? `Put ${inr(net)} on credit & hand over`
-                      : `Collect ${inr(net)} & hand over`
-                    : net < 0 ? `Refund ${inr(net)} & hand over` : 'Complete Pickup'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
         ) : (
           <>
-            {handoverBlocker && <Text style={styles.footerHint} numberOfLines={2}>{handoverBlocker}</Text>}
-            <TouchableOpacity
-              style={[styles.confirmBtn, (!!handoverBlocker || mutation.isPending || initiating) && styles.confirmBtnDisabled]}
-              onPress={sessionMode ? startSession : handleConfirm}
-              disabled={!!handoverBlocker || mutation.isPending || initiating}
-              activeOpacity={0.85}
-            >
-              {mutation.isPending || initiating ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : sessionMode ? (
-                <>
-                  <Text style={styles.confirmBtnText}>Continue to Payment</Text>
-                  <Ionicons name="arrow-forward" size={20} color={Colors.white} />
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-                  <Text style={styles.confirmBtnText}>Confirm Pickup</Text>
-                </>
+            {step !== 'payment' && currentBlocker && (
+              <Text style={styles.footerHint} numberOfLines={2}>{currentBlocker}</Text>
+            )}
+            <View style={styles.footerRow}>
+              {backTarget && (
+                <TouchableOpacity
+                  style={[styles.stepBackBtn, flowBusy && styles.confirmBtnDisabled]}
+                  onPress={() => goToStep(backTarget)}
+                  disabled={flowBusy}
+                  activeOpacity={0.85}
+                  accessibilityLabel="Previous step"
+                >
+                  <Ionicons name="arrow-back" size={18} color={Colors.ink} />
+                  <Text style={styles.stepBackText}>Back</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+              {step === 'payment' && session ? (
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.footerMain, sessionBusy && styles.confirmBtnDisabled]}
+                  onPress={settleSession}
+                  disabled={sessionBusy}
+                  activeOpacity={0.85}
+                >
+                  {settling ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                      <Text style={styles.confirmBtnText} numberOfLines={1}>
+                        {net > 0
+                          ? pay.method === 'CREDIT'
+                            ? `Put ${inr(net)} on credit & hand over`
+                            : `Collect ${inr(net)} & hand over`
+                          : net < 0 ? `Refund ${inr(net)} & hand over` : 'Complete Pickup'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : step === 'licence' && !sessionMode ? (
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.footerMain, (!!handoverBlocker || mutation.isPending) && styles.confirmBtnDisabled]}
+                  onPress={handleConfirm}
+                  disabled={!!handoverBlocker || mutation.isPending}
+                  activeOpacity={0.85}
+                >
+                  {mutation.isPending ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+                      <Text style={styles.confirmBtnText}>Confirm Pickup</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.footerMain, (!!currentBlocker || flowBusy) && styles.confirmBtnDisabled]}
+                  onPress={goNext}
+                  disabled={!!currentBlocker || flowBusy}
+                  activeOpacity={0.85}
+                >
+                  {initiating || handoverSyncing ? <ActivityIndicator size="small" color={Colors.white} /> : (
+                    <>
+                      <Text style={styles.confirmBtnText}>
+                        {step === 'licence' ? (session ? 'Save & back to Payment' : 'Continue to Payment') : 'Next'}
+                      </Text>
+                      <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </>
         )}
       </View>
@@ -2635,6 +2785,22 @@ export default function PickupScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   loader: { marginTop: 100 },
+  // TODO 11 steps: a step that isn't shown stays mounted (nothing typed or uploading is lost)
+  hiddenPane: { display: 'none' },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  footerMain: { flex: 1 },
+  stepBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 17,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.ink4,
+    backgroundColor: Colors.white,
+  },
+  stepBackText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.ink },
 
   header: {
     flexDirection: 'row',

@@ -168,5 +168,8 @@ function returnReasonText(verdict: ScheduleVerdict): string {
   if (verdict.reason === "BEFORE_OPEN") {
     return `The branch opens at ${verdict.openingTime ?? "opening time"} that day.`;
   }
-  return `Return time is after closing (${verdict.closingTime ?? "closing time"}).`;
+  // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+  return verdict.gracePeriodEnd
+    ? `Return time is after the last return time (${verdict.gracePeriodEnd}).`
+    : `Return time is after closing (${verdict.closingTime ?? "closing time"}).`;
 }

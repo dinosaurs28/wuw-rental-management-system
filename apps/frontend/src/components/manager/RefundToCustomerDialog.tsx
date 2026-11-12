@@ -23,6 +23,7 @@ import { formatRupees, type CounterProof } from "@/lib/counterPayment";
 import { formatIstDateTime } from "@/utils/overdueReturns";
 import {
   customerRefundService,
+  type CustomerRefundKind,
   type CustomerRefundMethod,
   type CustomerRefundOptions,
   type CustomerRefundPortal,
@@ -37,6 +38,11 @@ interface RefundToCustomerDialogProps {
   portal?: CustomerRefundPortal;
   /** After the refund is recorded — refresh the booking's money. */
   onRefunded?: (result: CustomerRefundResult) => void;
+  /**
+   * Nov 2026 (TODO 9): DROP_OTHER = "Refund to customer (other reasons)" at the drop —
+   * cash or UPI, kept apart from the rent, charges, discounts and the drop bill.
+   */
+  kind?: CustomerRefundKind;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -67,17 +73,21 @@ export function RefundToCustomerDialog({
   bookingPublicId,
   portal = "manager",
   onRefunded,
+  kind = "STANDARD",
 }: RefundToCustomerDialogProps) {
+  const dropOther = kind === "DROP_OTHER";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Undo2 className="size-4 text-orange-600" />
-            Refund to customer
+            {dropOther ? "Refund to customer (other reasons)" : "Refund to customer"}
           </DialogTitle>
           <DialogDescription>
-            Pay money back to the customer now. The booking and its status stay as they are.
+            {dropOther
+              ? "Money paid back for a reason other than rent adjustments or discounts. It is kept apart from the rent, extra charges, discounts and the drop bill — the bill and the amount due don't change."
+              : "Pay money back to the customer now. The booking and its status stay as they are."}
           </DialogDescription>
         </DialogHeader>
         {/* Rendered only while open, so each opening reads the booking afresh */}
@@ -85,6 +95,7 @@ export function RefundToCustomerDialog({
           <RefundBody
             bookingPublicId={bookingPublicId}
             portal={portal}
+            kind={kind}
             onClose={() => onOpenChange(false)}
             onRefunded={onRefunded}
           />
@@ -97,11 +108,13 @@ export function RefundToCustomerDialog({
 function RefundBody({
   bookingPublicId,
   portal,
+  kind,
   onClose,
   onRefunded,
 }: {
   bookingPublicId: string;
   portal: CustomerRefundPortal;
+  kind: CustomerRefundKind;
   onClose: () => void;
   onRefunded?: (result: CustomerRefundResult) => void;
 }) {
@@ -141,6 +154,7 @@ function RefundBody({
     <RefundForm
       options={options}
       portal={portal}
+      kind={kind}
       onClose={onClose}
       onRefunded={onRefunded}
       refetch={() => void query.refetch()}
@@ -151,12 +165,14 @@ function RefundBody({
 function RefundForm({
   options,
   portal,
+  kind,
   onClose,
   onRefunded,
   refetch,
 }: {
   options: CustomerRefundOptions;
   portal: CustomerRefundPortal;
+  kind: CustomerRefundKind;
   onClose: () => void;
   onRefunded?: (result: CustomerRefundResult) => void;
   refetch: () => void;
@@ -178,7 +194,12 @@ function RefundForm({
   const netReceived = toNumber(options.money.netReceived);
   const owedBack = toNumber(options.money.owedBack);
   const overBy = amountValid ? Math.max(0, amountNum - Math.max(0, netReceived)) : 0;
-  const goodwill = amountValid ? Math.max(0, amountNum - owedBack) : 0;
+  const dropOther = kind === "DROP_OTHER";
+  // The independent drop refund never pays back what is owed: no split to explain
+  const goodwill = amountValid && !dropOther ? Math.max(0, amountNum - owedBack) : 0;
+  const methods = dropOther
+    ? (options.dropOther?.methods ?? options.methods.filter((m) => m.value === "CASH" || m.value === "UPI"))
+    : options.methods;
   const transfer = method === "UPI" || method === "BANK_TRANSFER";
   // Oct 25 2026: a UPI / bank refund needs the photo of its payment-success screen
   const proofRequired = transfer && (options.proofRequiredMethods ?? ["UPI", "BANK_TRANSFER"]).includes(method as CustomerRefundMethod);
@@ -211,6 +232,7 @@ function RefundForm({
           ...(transfer && reference.trim() ? { reference: reference.trim() } : {}),
           ...(transfer && proof ? { proofFileId: proof.proofFileId } : {}),
           ...(overBy > 0.004 ? { confirmOverReceived: true } : {}),
+          ...(dropOther ? { kind: "DROP_OTHER" as const } : {}),
           requestId,
         },
         portal,
@@ -322,8 +344,8 @@ function RefundForm({
           <Label>
             Paid back by <span className="text-red-500">*</span>
           </Label>
-          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Paid back by">
-            {options.methods.map((m) => (
+          <div className={cn("grid gap-2", methods.length === 2 ? "grid-cols-2" : "grid-cols-3")} role="radiogroup" aria-label="Paid back by">
+            {methods.map((m) => (
               <button
                 key={m.value}
                 type="button"
@@ -344,6 +366,8 @@ function RefundForm({
           {method === "CASH" &&
             (options.cashShiftOpen ? (
               <p className="text-xs text-zinc-500">Paid from your cash drawer — recorded on your open cash shift.</p>
+            ) : portal === "employee" ? (
+              <Notice tone="warning">Cash comes out of your drawer: open your cash shift first.</Notice>
             ) : (
               <Notice tone="warning">
                 You have no cash shift open. The refund is still recorded, but outside a shift — it won't be in any drawer's
@@ -392,7 +416,7 @@ function RefundForm({
             value={reason}
             maxLength={options.limits.reasonMax}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Goodwill refund for the late pickup"
+            placeholder={dropOther ? "e.g. Customer paid a toll / fuel for us" : "e.g. Goodwill refund for the late pickup"}
             className="min-h-[72px] text-sm"
           />
           <p className="text-right text-[11px] text-zinc-400">
@@ -408,6 +432,7 @@ function RefundForm({
                 <li key={r.publicId} className="flex justify-between gap-2">
                   <span className={cn(r.voided && "text-zinc-400")}>
                     <span className={cn(r.voided && "line-through")}>
+                      {r.kind === "DROP_OTHER" ? `${r.kindLabel ?? "Drop refund (other)"} · ` : ""}
                       {formatIstDateTime(r.at)}
                       {r.by ? ` · ${r.by}` : ""}
                       {r.cashOutsideShift ? " · outside a shift" : ""}

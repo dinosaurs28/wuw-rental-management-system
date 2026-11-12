@@ -25,8 +25,8 @@ export const PAYMENT_PURPOSE_LABELS: Record<string, string> = {
 
 const METHOD_LABELS: Record<string, string> = { CASH: "Cash", ONLINE: "Online", SPLIT: "Split" };
 
-export const paymentRowLabel = (t: Pick<BookingPaymentRow, "purpose" | "method" | "isCustomerRefund" | "onlineGateway">) => {
-  const purpose = t.isCustomerRefund ? "Refund to customer" : (PAYMENT_PURPOSE_LABELS[t.purpose] ?? t.purpose);
+export const paymentRowLabel = (t: Pick<BookingPaymentRow, "purpose" | "method" | "isCustomerRefund" | "isDropOtherRefund" | "onlineGateway">) => {
+  const purpose = t.isDropOtherRefund ? "Drop refund (other)" : t.isCustomerRefund ? "Refund to customer" : (PAYMENT_PURPOSE_LABELS[t.purpose] ?? t.purpose);
   // Credit Card (Nov 2026) and UPI by name; other gateways as before
   const method =
     t.method === "ONLINE" && isCardPayment(t.onlineGateway)

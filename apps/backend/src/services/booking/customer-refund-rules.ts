@@ -45,6 +45,29 @@ export const CUSTOMER_REFUND_KEY_PREFIX = "ctr:";
 /** RefundRequest.reason prefix of a "Refund to customer". */
 export const CUSTOMER_REFUND_REASON_PREFIX = "Refund to customer";
 
+/**
+ * Client TODO 9 (Nov 2026): a refund during the vehicle drop for reasons OTHER
+ * than rent adjustments or discounts. Same endpoint, `kind: "DROP_OTHER"`:
+ *   - independent of the booking's money: the WHOLE amount is goodwill (it never
+ *     pays back an over-payment or a deposit the booking owes the customer back),
+ *     so the balance due / owed back and the drop bill don't move;
+ *   - cash or UPI only (UPI needs the payment-success photo(s));
+ *   - key `ctr:drop:<booking>:<request>` — still a `ctr:` row, so the refund history,
+ *     void, shift and reports read it like every "Refund to customer", and the
+ *     `drop:` marker (a booking publicId is 21 chars, never "drop") labels it.
+ */
+export const CUSTOMER_REFUND_KINDS = ["STANDARD", "DROP_OTHER"] as const;
+export type CustomerRefundKind = (typeof CUSTOMER_REFUND_KINDS)[number];
+export const DROP_OTHER_REFUND_KEY_PREFIX = "ctr:drop:";
+export const DROP_OTHER_REFUND_LABEL = "Drop refund (other)";
+export const DROP_OTHER_REFUND_METHODS = ["CASH", "UPI"] as const;
+export const CUSTOMER_REFUND_KIND_LABELS: Record<CustomerRefundKind, string> = {
+  STANDARD: "Refund to customer",
+  DROP_OTHER: DROP_OTHER_REFUND_LABEL,
+};
+/** Most payment-success photos on one refund (as a UPI payment). */
+export const CUSTOMER_REFUND_MAX_PROOFS = 3;
+
 /** How the money goes back to the customer — all paid out now by the branch. */
 export const CUSTOMER_REFUND_METHODS = ["CASH", "UPI", "BANK_TRANSFER"] as const;
 export type CustomerRefundMethod = (typeof CUSTOMER_REFUND_METHODS)[number];
@@ -91,6 +114,10 @@ export interface ParsedCustomerRefund {
   reference: string | null;
   /** UPI / bank transfer only: the uploaded payment-success photo id (required for them since Oct 25 2026) */
   proofFileId: string | null;
+  /** Additive (Nov 2026): every payment-success photo, in order (1–3); [proofFileId] for older clients */
+  proofFileIds: string[];
+  /** Additive (Nov 2026): STANDARD (default) or DROP_OTHER — the independent drop refund */
+  kind: CustomerRefundKind;
   /** The actor saw the "more than received" warning and ticked it */
   confirmOverReceived: boolean;
   /** Client-generated id of this submission: a retry of the same one is refused, not paid twice */
@@ -118,7 +145,19 @@ export function parseCustomerRefundBody(body: unknown): ParsedCustomerRefund {
     throw invalid(`The refund can be at most ₹${CUSTOMER_REFUND_AMOUNT_MAX.toFixed(2)}.`, "amount");
   }
 
-  if (!CUSTOMER_REFUND_METHODS.includes(b.method as CustomerRefundMethod)) {
+  let kind: CustomerRefundKind = "STANDARD";
+  if (b.kind != null && b.kind !== "") {
+    if (!CUSTOMER_REFUND_KINDS.includes(b.kind as CustomerRefundKind)) {
+      throw invalid("kind must be STANDARD or DROP_OTHER.", "kind");
+    }
+    kind = b.kind as CustomerRefundKind;
+  }
+
+  if (kind === "DROP_OTHER") {
+    if (!(DROP_OTHER_REFUND_METHODS as readonly string[]).includes(b.method as string)) {
+      throw invalid("Choose how the money is paid back: cash or UPI.", "method");
+    }
+  } else if (!CUSTOMER_REFUND_METHODS.includes(b.method as CustomerRefundMethod)) {
     throw invalid("Choose how the money is paid back: cash, UPI or bank transfer.", "method");
   }
   const method = b.method as CustomerRefundMethod;
@@ -135,6 +174,7 @@ export function parseCustomerRefundBody(body: unknown): ParsedCustomerRefund {
   // Reference and photo describe a transfer: ignored for cash
   let reference: string | null = null;
   let proofFileId: string | null = null;
+  let proofFileIds: string[] = [];
   if (method !== "CASH") {
     if (b.reference != null && b.reference !== "") {
       if (typeof b.reference !== "string") throw invalid("The reference must be text.", "reference");
@@ -155,6 +195,22 @@ export function parseCustomerRefundBody(body: unknown): ParsedCustomerRefund {
       }
       proofFileId = b.proofFileId.trim();
     }
+    // Additive (Nov 2026): several photos (a refund paid in more than one UPI transfer)
+    if (b.proofFileIds != null) {
+      if (!Array.isArray(b.proofFileIds) || b.proofFileIds.length > CUSTOMER_REFUND_MAX_PROOFS) {
+        throw invalid(`proofFileIds must list at most ${CUSTOMER_REFUND_MAX_PROOFS} uploaded photos.`, "proofFileIds");
+      }
+      for (const id of b.proofFileIds) {
+        if (typeof id !== "string" || id.trim().length === 0 || id.trim().length > 64) {
+          throw invalid("proofFileIds must be the ids of the uploaded photos.", "proofFileIds");
+        }
+        const t = id.trim();
+        if (proofFileIds.includes(t)) throw invalid("The same photo is listed twice.", "proofFileIds");
+        proofFileIds.push(t);
+      }
+    }
+    if (proofFileIds.length === 0 && proofFileId) proofFileIds = [proofFileId];
+    if (proofFileIds.length > 0) proofFileId = proofFileIds[0]!;
     // Oct 25 2026: a refund paid by UPI / bank transfer needs the photo of its
     // payment-success screen (old builds without the photo get this 400)
     const noProof = refundProofRefusal(method, proofFileId !== null);
@@ -177,6 +233,8 @@ export function parseCustomerRefundBody(body: unknown): ParsedCustomerRefund {
     reason,
     reference,
     proofFileId,
+    proofFileIds,
+    kind,
     confirmOverReceived: b.confirmOverReceived === true,
     requestId,
   };
@@ -194,7 +252,13 @@ export function owedBack(netPayable: Decimal): Decimal {
  * (`covered` — a plain refund) and the goodwill beyond it (`goodwill` — also
  * taken off what the booking owes).
  */
-export function splitCustomerRefund(amount: Decimal, owedBackNow: Decimal): { covered: Decimal; goodwill: Decimal } {
+export function splitCustomerRefund(
+  amount: Decimal,
+  owedBackNow: Decimal,
+  kind: CustomerRefundKind = "STANDARD",
+): { covered: Decimal; goodwill: Decimal } {
+  // The independent drop refund never pays back what the booking owes: all goodwill
+  if (kind === "DROP_OTHER") return { covered: ZERO, goodwill: amount };
   const covered = Decimal.min(amount, Decimal.max(ZERO, owedBackNow));
   return { covered, goodwill: amount.sub(covered) };
 }
@@ -230,8 +294,8 @@ export function overReceivedRefusal(amount: Decimal, received: Decimal, confirme
  * goodwill part off both what was paid and what is owed — so only `covered`
  * moves it, and it never rises above 0 because of a refund.
  */
-export function netPayableAfterRefund(netPayable: Decimal, amount: Decimal): Decimal {
-  const { covered } = splitCustomerRefund(amount, owedBack(netPayable));
+export function netPayableAfterRefund(netPayable: Decimal, amount: Decimal, kind: CustomerRefundKind = "STANDARD"): Decimal {
+  const { covered } = splitCustomerRefund(amount, owedBack(netPayable), kind);
   return netPayable.add(covered);
 }
 
@@ -259,8 +323,19 @@ export function customerRefundRecord(method: CustomerRefundMethod): { method: "C
 }
 
 /** The idempotencyKey of a refund row: a retried submission (same requestId) hits the unique key. */
-export function customerRefundKey(bookingPublicId: string, requestId: string): string {
-  return `${CUSTOMER_REFUND_KEY_PREFIX}${bookingPublicId}:${requestId}`;
+export function customerRefundKey(bookingPublicId: string, requestId: string, kind: CustomerRefundKind = "STANDARD"): string {
+  const prefix = kind === "DROP_OTHER" ? DROP_OTHER_REFUND_KEY_PREFIX : CUSTOMER_REFUND_KEY_PREFIX;
+  return `${prefix}${bookingPublicId}:${requestId}`;
+}
+
+/** Whether a PaymentTransaction is the independent drop refund (TODO 9, `ctr:drop:`). */
+export function isDropOtherRefundKey(idempotencyKey: string | null | undefined): boolean {
+  return (idempotencyKey ?? "").startsWith(DROP_OTHER_REFUND_KEY_PREFIX);
+}
+
+/** The kind of a "Refund to customer" row from its key. */
+export function customerRefundKindOf(idempotencyKey: string | null | undefined): CustomerRefundKind {
+  return isDropOtherRefundKey(idempotencyKey) ? "DROP_OTHER" : "STANDARD";
 }
 
 /** Whether a PaymentTransaction is a "Refund to customer" row. */
@@ -282,7 +357,11 @@ export function isCashRefundOutsideShift(t: {
 }
 
 /** The note on the refund row (and the RefundRequest reason). */
-export function customerRefundNote(input: Pick<ParsedCustomerRefund, "method" | "reason">, cashOutsideShift: boolean): string {
+export function customerRefundNote(
+  input: Pick<ParsedCustomerRefund, "method" | "reason"> & { kind?: CustomerRefundKind },
+  cashOutsideShift: boolean,
+): string {
   const label = CUSTOMER_REFUND_METHOD_LABELS[input.method];
-  return `${CUSTOMER_REFUND_REASON_PREFIX} (${label}${cashOutsideShift ? ", no cash shift open" : ""}): ${input.reason}`.slice(0, 1000);
+  const prefix = input.kind === "DROP_OTHER" ? DROP_OTHER_REFUND_LABEL : CUSTOMER_REFUND_REASON_PREFIX;
+  return `${prefix} (${label}${cashOutsideShift ? ", no cash shift open" : ""}): ${input.reason}`.slice(0, 1000);
 }

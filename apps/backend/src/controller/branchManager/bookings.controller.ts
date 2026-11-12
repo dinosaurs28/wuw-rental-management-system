@@ -5,6 +5,7 @@ import { prisma, BookingStatus, VehicleStatus, PaymentStatus } from "@repo/datab
 import { managerConfirmPickupSchema } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
+import { applyActualPickupShift, type ReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
@@ -723,6 +724,7 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         .json({ message: "User not found" });
     }
 
+    let returnShift: ReturnShift | null = null;
     await prisma.$transaction(async (tx) => {
       // Booking row lock first (shared with the manual cancel), then still
       // CONFIRMED? — a booking cancelled meanwhile is refused (409 BOOKING_CANCELLED)
@@ -743,13 +745,17 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         },
       });
 
+      // Handed over on the manager's confirmation: the rental runs from now
+      // (client TODO 10) — a late handover slides the return by the delay
+      returnShift = await applyActualPickupShift(tx, booking.id, new Date());
+
       await staffActivityService.logFromRequest(req, {
         actionType: StaffActionType.CONFIRMED,
         entityType: StaffEntityType.BOOKING,
         entityRef: booking.publicId,
         description: `Manager confirmed vehicle pickup for booking ${booking.publicId}`,
       }, tx);
-    });
+    }, { timeout: 15000 });
 
     void notifyEvents.pickupCompleted({ bookingId: booking.id, actorUserId: actingUser.id });
     void notifyEvents.approvalResolved({
@@ -762,9 +768,14 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       actorUserId: actingUser.id,
     });
 
+    const shift = returnShift as ReturnShift | null;
+    if (shift?.shifted) invalidateVehicleAvailability(redis, vehicleIds).catch(() => undefined);
+
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Pickup confirmed successfully. Vehicle is now OUT_FOR_RENTAL.",
+      // Additive (client TODO 10): the return after the handover, moved by a late pickup
+      returnShift: shift,
     });
   } catch (error: any) {
     if (error instanceof PickupStateError) {

@@ -98,6 +98,7 @@ async function loadBooking(bookingId: number) {
       isAdvancePayment: true,
       advanceAmount: true,
       requiresManagerConfirmation: true,
+      scheduledEndAt: true,
       customer: { select: { userId: true, user: { select: { name: true } } } },
       items: {
         take: 1,
@@ -540,7 +541,11 @@ export const notifyEvents = {
         data: bookingData(booking),
         dedupeKey: `pickup:${booking.publicId}`,
         title: "Trip started",
-        body: `Enjoy your ${vehicleName(booking.items[0]?.vehicle)}! Please return it by ${when(booking.endAt)} (booking ${ref(booking.publicId)}).`,
+        // A late handover moved the return (client TODO 10): say so, with the old time
+        body:
+          booking.scheduledEndAt && booking.scheduledEndAt.getTime() !== booking.endAt.getTime()
+            ? `Enjoy your ${vehicleName(booking.items[0]?.vehicle)}! Your rental runs from the handover, so your return time is now ${when(booking.endAt)} (was ${when(booking.scheduledEndAt)}) (booking ${ref(booking.publicId)}).`
+            : `Enjoy your ${vehicleName(booking.items[0]?.vehicle)}! Please return it by ${when(booking.endAt)} (booking ${ref(booking.publicId)}).`,
       });
     });
   },

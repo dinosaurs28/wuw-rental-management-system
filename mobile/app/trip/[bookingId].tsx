@@ -118,7 +118,7 @@ export default function TripDetail() {
     discountInclGst?: string;
   }>();
 
-  const { bookingId, id, make, model, thumbnail, startAt, vehiclesJson } = params;
+  const { bookingId, id, make, model, thumbnail, vehiclesJson } = params;
 
   // The params are a snapshot from the trips list. Re-read the booking whenever
   // the screen regains focus, so a new return time (extension) or status shows.
@@ -129,6 +129,9 @@ export default function TripDetail() {
   });
   const status: string = live?.status ?? params.status;
   const endAt: string = live?.endAt ?? params.endAt;
+  // A late handover moves the pickup and return (client TODO 10): read them live
+  const startAt: string = live?.startAt ?? params.startAt;
+  const returnShift = live?.returnShift ?? null;
   const total: string = live ? String(live.total) : params.total;
   const paymentStatus: string = live?.paymentStatus ?? params.paymentStatus;
 
@@ -374,6 +377,14 @@ export default function TripDetail() {
         {/* Itinerary — reservation # + pickup/return datetimes (no station: bookings carry no branch) */}
         <View style={styles.section}>
           <ItineraryTimeline reservationNumber={bookingId} start={startAt} end={endAt} />
+          {returnShift?.shifted ? (
+            <View style={styles.monthlyRow}>
+              <Ionicons name="time-outline" size={15} color={Colors.ink3} />
+              <Text style={styles.shiftText}>
+                Your rental runs from the handover, so your return moved to {fmtWhen(endAt)} (booked {fmtWhen(returnShift.scheduledEndAt)}).
+              </Text>
+            </View>
+          ) : null}
           {(live?.plan ?? params.plan) === 'MONTHLY' ? (
             <View style={styles.monthlyRow}>
               <Ionicons name="calendar-number-outline" size={15} color={Colors.ink3} />
@@ -587,6 +598,7 @@ export default function TripDetail() {
 const styles = StyleSheet.create({
   monthlyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   monthlyText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.ink2 },
+  shiftText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.ink2 },
   root: { flex: 1, backgroundColor: Colors.bg },
 
   header: {

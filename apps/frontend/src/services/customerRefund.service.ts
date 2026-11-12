@@ -4,9 +4,15 @@ import type { ProofPhotoInfo } from "@/components/payment/counter/ProofPhotoThum
 /** How the money goes back to the customer (backend CUSTOMER_REFUND_METHODS) — paid out now. */
 export type CustomerRefundMethod = "CASH" | "UPI" | "BANK_TRANSFER";
 
+/** Additive (Nov 2026, TODO 9): STANDARD, or DROP_OTHER — the independent "Drop refund (other)". */
+export type CustomerRefundKind = "STANDARD" | "DROP_OTHER";
+
 /** A "Refund to customer" already recorded on the booking. */
 export interface CustomerRefundRow {
   publicId: string;
+  /** Additive (Nov 2026) */
+  kind?: CustomerRefundKind;
+  kindLabel?: string;
   amount: string;
   /** Part beyond what the booking owed the customer back (goodwill) */
   goodwillAmount: string;
@@ -57,6 +63,11 @@ export interface CustomerRefundOptions {
   proofPhotoSupported: boolean;
   /** Additive (Oct 25 2026): methods whose refund needs the payment-success photo */
   proofRequiredMethods?: CustomerRefundMethod[];
+  /** Additive (Nov 2026, TODO 9): the independent drop refund — cash or UPI */
+  dropOther?: { label: string; methods: { value: CustomerRefundMethod; label: string }[] };
+  maxProofPhotos?: number;
+  /** Additive (Oct 2026): MANAGER / ADMIN / STAFF */
+  actorRole?: string;
   limits: { reasonMin: number; reasonMax: number; referenceMax: number };
   refunds: CustomerRefundRow[];
 }
@@ -67,6 +78,10 @@ export interface CustomerRefundBody {
   reason: string;
   reference?: string;
   proofFileId?: string;
+  /** Additive (Nov 2026): several payment-success photos (1–3) */
+  proofFileIds?: string[];
+  /** Additive (Nov 2026): DROP_OTHER = the independent drop refund (bill and amount due unchanged) */
+  kind?: CustomerRefundKind;
   confirmOverReceived?: boolean;
   /** Same id for retries of one submission — the server refuses a second recording */
   requestId: string;
@@ -74,6 +89,8 @@ export interface CustomerRefundBody {
 
 export interface CustomerRefundResult {
   paymentTransactionPublicId: string;
+  kind?: CustomerRefundKind;
+  kindLabel?: string;
   refundRequestPublicId: string;
   bookingPublicId: string;
   bookingStatus: string;
@@ -92,11 +109,13 @@ export interface CustomerRefundResult {
   refundedAt: string;
 }
 
-/** Branch manager (own branch) or admin (any branch). */
-export type CustomerRefundPortal = "manager" | "admin";
+/** Branch manager (own branch), admin (any branch) or (Nov 2026) the Fleet Executive (own branch, open shift). */
+export type CustomerRefundPortal = "manager" | "admin" | "employee";
+
+const PORTAL_BASE: Record<CustomerRefundPortal, string> = { manager: "branchManager", admin: "admin", employee: "employee" };
 
 const path = (portal: CustomerRefundPortal, bookingPublicId: string) =>
-  `/${portal === "admin" ? "admin" : "branchManager"}/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`;
+  `/${PORTAL_BASE[portal]}/bookings/${encodeURIComponent(bookingPublicId)}/refund-to-customer`;
 
 export const customerRefundService = {
   getOptions: (bookingPublicId: string, portal: CustomerRefundPortal = "manager") =>

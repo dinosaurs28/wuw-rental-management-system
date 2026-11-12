@@ -264,6 +264,20 @@ export interface BookingTrip {
   paymentStatus: string;
   startAt: string;
   endAt: string;
+  /**
+   * Set once the car is handed over (client TODO 10): the rental runs from the
+   * handover, so a late pickup moved startAt / endAt. Absent on older servers.
+   */
+  returnShift?: {
+    pickedUpAt: string;
+    scheduledStartAt: string;
+    scheduledEndAt: string;
+    delayMinutes: number;
+    appliedMinutes: number;
+    shifted: boolean;
+    capped: boolean;
+    message: string;
+  } | null;
   days: number;
   /** MONTHLY = a monthly booking ("Monthly · 30 days"); absent on older servers */
   plan?: 'STANDARD' | 'MONTHLY';

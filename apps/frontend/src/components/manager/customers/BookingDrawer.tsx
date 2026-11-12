@@ -261,7 +261,7 @@ export function BookingDrawer({
                         <div key={t.publicId} className={`rounded-lg border p-2.5 text-sm ${t.voided ? "bg-zinc-50" : ""}`}>
                           <div className="flex justify-between gap-2">
                             <span className={`font-medium ${t.voided ? "text-zinc-400 line-through" : ""}`}>
-                              {t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} ·{" "}
+                              {t.isDropOtherRefund ? "Drop refund (other)" : t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} ·{" "}
                               {methodLabel(t.method, t.onlineGateway)}
                             </span>
                             <span className={`tabular-nums font-semibold ${t.voided ? "text-zinc-400 line-through" : ""}`}>
@@ -325,7 +325,7 @@ export function BookingDrawer({
                                     transactionPublicId: t.publicId,
                                     bookingPublicId: bookingId!,
                                     amount: t.totalAmount,
-                                    label: `${t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · ${methodLabel(t.method, t.onlineGateway)}`,
+                                    label: `${t.isDropOtherRefund ? "Drop refund (other)" : t.isCustomerRefund ? "Refund to customer" : t.isRefund ? "Refund" : t.purpose.replace(/_/g, " ")} · ${methodLabel(t.method, t.onlineGateway)}`,
                                     isRefund: t.isRefund,
                                   })
                                 }

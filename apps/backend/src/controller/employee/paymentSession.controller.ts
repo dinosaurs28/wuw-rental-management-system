@@ -34,6 +34,7 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { notifyEvents } from "../../services/notification/notification.events.js";
 import { redis } from "../../lib/redisconfig.js";
+import { applyActualPickupShift, loadReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
 import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
@@ -1035,7 +1036,10 @@ export const RecordPayment = async (req: Request, res: Response) => {
         // Additive (Oct 25 2026): the deposit refund was left to the branch manager
         depositRefundDeferred: depositRefundDeferred ? depositRefundDue!.toFixed(2) : null,
         bookingCredit: serializeCreditSummary(creditSummary),
+        // Additive (client TODO 10): a settled PICKUP bill hands the car over — the return it now has
+        ...(await pickupReturnShiftField(session)),
       },
+      ...(await pickupReturnShiftField(session)),
     });
   } catch (err: any) {
     if (err instanceof CounterGuardError) {
@@ -1320,9 +1324,11 @@ export const RecordRefund = async (req: Request, res: Response) => {
     void notifyEvents.paymentSessionCompleted({ sessionId: session.id, actorUserId: actor.id });
 
     const updatedSession = await paymentSessionService.getSession(session.publicId);
+    const shiftField = await pickupReturnShiftField(session);
     return res.status(StatusCode.OK).json({
       message: "Refund recorded successfully",
-      data: serializeSession(updatedSession!),
+      data: { ...serializeSession(updatedSession!), ...shiftField },
+      ...shiftField,
     });
   } catch (err: any) {
     if (err instanceof CounterGuardError) {
@@ -1335,6 +1341,36 @@ export const RecordRefund = async (req: Request, res: Response) => {
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
   }
 };
+
+/**
+ * `returnShift` for a PICKUP session that just handed the car over (client
+ * TODO 10) — {} for other sessions or a pickup bill not settled yet. A moved
+ * return clears the cars' availability cache. Cached per session for the
+ * response (it's read twice: data.returnShift and returnShift).
+ */
+const shiftFieldCache = new WeakMap<object, Promise<{ returnShift?: Awaited<ReturnType<typeof loadReturnShift>> }>>();
+function pickupReturnShiftField(session: { sessionType: string; bookingId: number }) {
+  let p = shiftFieldCache.get(session);
+  if (!p) {
+    p = (async () => {
+      if (session.sessionType !== PaymentSessionType.PICKUP) return {};
+      try {
+        const returnShift = await loadReturnShift(session.bookingId);
+        if (!returnShift) return {};
+        if (returnShift.shifted) {
+          const items = await prisma.bookingItem.findMany({ where: { bookingId: session.bookingId }, select: { vehicleId: true } });
+          invalidateVehicleAvailability(redis, items.map((i) => i.vehicleId)).catch(() => undefined);
+        }
+        return { returnShift };
+      } catch (err) {
+        console.warn("[pickup] returnShift read failed (non-fatal):", err);
+        return {};
+      }
+    })();
+    shiftFieldCache.set(session, p);
+  }
+  return p;
+}
 
 // ── Post-completion hooks ─────────────────────────────────────────────────────
 
@@ -1445,6 +1481,10 @@ async function runPostCompletionHooks(
         }
       }
     }
+
+    // Handed over now: the rental runs from here (client TODO 10). After the
+    // extension on this bill is confirmed, so its end slides with the window.
+    await applyActualPickupShift(tx, bookingId, new Date());
 
     // Case 3: Counter coupon on the pickup bill — re-checked under a rule lock,
     // then folded into the booking (totals, item, invoice, DiscountApplication)

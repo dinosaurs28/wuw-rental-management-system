@@ -47,6 +47,7 @@ const makeHandlers = (role: "MANAGER" | "ADMIN" | "STAFF") => ({
       const data = await recordCustomerRefund(req, scopeFromRequest(req, role), req.params.publicId!);
       const message =
         `₹${data.amount} refunded to the customer (${data.methodLabel}).` +
+        (data.kind === "DROP_OTHER" ? " Recorded as a drop refund (other) — the bill and the amount due are unchanged." : "") +
         (data.cashOutsideShift ? " No cash shift was open, so it is recorded outside a shift." : "");
       return res.status(StatusCode.CREATED).json({ success: true, message, data });
     } catch (error) {

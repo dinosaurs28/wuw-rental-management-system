@@ -23,6 +23,9 @@ import {
 import { discardOperationDraft } from "../../services/booking/operation-draft.service.js";
 import { cancelledPickupRefusal, lockBookingForPickup, PickupStateError } from "../../services/booking/booking-row-lock.js";
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
+import { applyActualPickupShift, type ReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { redis } from "../../lib/redisconfig.js";
 import { z } from "zod";
 import { fuelBarsField } from "../../services/charges/fuel-bars.js";
 import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
@@ -186,6 +189,7 @@ export const PickupController = async (req: Request, res: Response) => {
       ? dlStatusUpdateData(dlChoice, actingUser.id, booking)
       : {};
 
+    let returnShift: ReturnShift | null = null;
     await prisma.$transaction(async (tx) => {
       // Deposit taken now: the executive's open shift is locked first (FOR SHARE —
       // never a shift being closed), so the lock order is shift → booking
@@ -230,6 +234,10 @@ export const PickupController = async (req: Request, res: Response) => {
             fuelLevel: parsedVehicleDetails.fuelLevel,
           },
         });
+
+        // Handed over now: the rental runs from here (client TODO 10) — a late
+        // handover slides the return by the delay, capped before the car's next booking
+        returnShift = await applyActualPickupShift(tx, booking.id, new Date());
       }
 
       // The pickup is submitted (handed over, or sent to a manager): drop the
@@ -395,7 +403,12 @@ export const PickupController = async (req: Request, res: Response) => {
           });
         }
       }
-    });
+    }, { timeout: 15000 });
+
+    const shift = returnShift as ReturnShift | null;
+    if (shift?.shifted) {
+      invalidateVehicleAvailability(redis, vehicleIds).catch(() => undefined);
+    }
 
     // Logging outside the transaction — neither audit nor activity logs need
     // to be atomic with the booking state change, and both add enough latency
@@ -448,7 +461,10 @@ export const PickupController = async (req: Request, res: Response) => {
         dlDepositNote: dlChoice ? dlChoice.dlDepositNote : booking.dlDepositNote ?? null,
         // The customer's DL number on file (kept for older builds; not asked at pickup)
         drivingLicenceNumber: booking.customer.drivingLicenceNumber ?? null,
+        // The return after the handover (client TODO 10): moved by a late pickup, and why
+        returnShift: shift,
       },
+      returnShift: shift,
     });
   } catch (error) {
     if (error instanceof CounterGuardError) {

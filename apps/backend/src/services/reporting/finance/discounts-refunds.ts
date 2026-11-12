@@ -354,8 +354,9 @@ export function sumDiscounts(lines: DiscountLine[]): DiscountTotals {
 
 // ── Refunds ───────────────────────────────────────────────────────────────────
 
-export type RefundKind = "CUSTOMER_REFUND" | "MANUAL_CANCEL" | "DEPOSIT_LEGACY" | "DROP_OVERPAYMENT" | "SESSION" | "CANCELLATION" | "OVERPAYMENT";
+export type RefundKind = "DROP_OTHER_REFUND" | "CUSTOMER_REFUND" | "MANUAL_CANCEL" | "DEPOSIT_LEGACY" | "DROP_OVERPAYMENT" | "SESSION" | "CANCELLATION" | "OVERPAYMENT";
 export const REFUND_KIND_LABELS: Record<RefundKind, string> = {
+  DROP_OTHER_REFUND: "Drop refund (other)",
   CUSTOMER_REFUND: "Refund to customer",
   MANUAL_CANCEL: "Manual cancel refund",
   DEPOSIT_LEGACY: "Deposit refund (settlement)",
@@ -366,6 +367,8 @@ export const REFUND_KIND_LABELS: Record<RefundKind, string> = {
 };
 
 export function refundKindOf(idempotencyKey: string, purpose: string): RefundKind {
+  // TODO 9 (Nov 2026): the independent drop refund (all goodwill) — before the plain ctr:
+  if (idempotencyKey.startsWith("ctr:drop:")) return "DROP_OTHER_REFUND";
   if (idempotencyKey.startsWith("ctr:")) return "CUSTOMER_REFUND";
   if (idempotencyKey.startsWith("mcr:")) return "MANUAL_CANCEL";
   if (idempotencyKey.startsWith("sdr:")) return "DEPOSIT_LEGACY";

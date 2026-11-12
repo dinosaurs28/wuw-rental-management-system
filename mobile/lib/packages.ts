@@ -152,9 +152,14 @@ export function heldReturnNote(endAt: Date, now: Date = new Date()): string {
  * that hits it — e.g. "the return would be at 6:00 AM, before the branch opens
  * (8:00 AM)". null when the branch takes returns then.
  */
-export function returnIssue(config: BranchScheduleConfig | null | undefined, at: Date): string | null {
+export function returnIssue(
+  config: BranchScheduleConfig | null | undefined,
+  at: Date,
+  /** The pickup: a late-window pickup may return at its own clock time (client TODO 4). */
+  pickupAt?: Date | null,
+): string | null {
   if (!hasOfficeHours(config)) return null;
-  const v = validateReturnTime(config, at);
+  const v = validateReturnTime(config, at, { pickupAt });
   if (v.status !== 'RETURN_OUTSIDE_HOURS') return null;
   if (v.reason === 'CLOSED_DAY') {
     return `the branch is closed on the return day (${v.closedDayName ?? SHORT_DAYS[getBranchLocalTime(at).dayOfWeek]})`;
@@ -162,8 +167,9 @@ export function returnIssue(config: BranchScheduleConfig | null | undefined, at:
   if (v.reason === 'BEFORE_OPEN') {
     return `the return would be at ${clockLabel(at)}, before the branch opens (${v.openingTime ?? 'opening time'})`;
   }
-  const until = v.gracePeriodEnd && v.gracePeriodEnd !== v.closingTime ? `, returns until ${v.gracePeriodEnd}` : '';
-  return `the return would be at ${clockLabel(at)}, after the branch closes (${v.closingTime ?? 'closing time'}${until})`;
+  // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+  if (v.gracePeriodEnd) return `the return would be at ${clockLabel(at)}, after the last return time (${v.gracePeriodEnd})`;
+  return `the return would be at ${clockLabel(at)}, after the branch closes (${v.closingTime ?? 'closing time'})`;
 }
 
 /**
@@ -183,7 +189,7 @@ export function customerPackageChoices(
       hours: p.hours,
       label: p.label,
       endAt,
-      issue: returnIssue(config, endAt),
+      issue: returnIssue(config, endAt, start),
       ...(endAt.getTime() !== p.endAt.getTime() && { note: heldReturnNote(endAt, now) }),
     };
   });
@@ -278,7 +284,7 @@ export function walkinExtraIssue(
 ): string | null {
   const end = packageRangeEnd({ start, hours: packageHours }, extra, config);
   if (end.getTime() > maxReturnFor(start, now).getTime()) return `past the ${MAX_RENTAL_DAYS}-day limit`;
-  return returnIssue(config, end);
+  return returnIssue(config, end, start);
 }
 
 /** Packages for a walk-in pickup with `extra` hours on top, each checked with them. */

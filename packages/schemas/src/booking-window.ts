@@ -418,3 +418,30 @@ export function istMinuteOfDay(d: Date | string): number {
   const t = new Date(d).getTime() + IST_OFFSET_MS;
   return Math.floor((((t % DAY_MS) + DAY_MS) % DAY_MS) / 60_000);
 }
+
+// ── Last return (client TODO 4, Nov 2026) ───────────────────────────────────
+/**
+ * Returns end at the LAST RETURN, closing − RETURN_CUTOFF_MINUTES (8:00 AM –
+ * 11:00 PM → last return 10:30 PM, the same time as the last pickup). The
+ * branch's return grace (Branch.graceMinutes, 0 by default) extends it.
+ * No return time picker offers a later slot, and the server refuses one.
+ *
+ * One exception: a booking picked up in tonight's late window (after 10:30 PM,
+ * up to closing) may return at that same clock time on a later day (a whole-day
+ * package from a 10:45 PM pickup returns at 10:45 PM). Pass `pickupMin`, the
+ * pickup's minute of the day, to allow it.
+ * Mirrored in mobile/lib/bookingWindow.ts.
+ */
+export const RETURN_CUTOFF_MINUTES = 30;
+
+/** Last return minute of a day without grace (closing − 30 min). */
+export function lastReturnMinute(closeMin: number): number {
+  return closeMin - RETURN_CUTOFF_MINUTES;
+}
+
+/** Latest minute a return is accepted that day (see RETURN_CUTOFF_MINUTES). */
+export function returnWindowEndMinute(closeMin: number, graceMinutes: number, pickupMin?: number | null): number {
+  const end = lastReturnMinute(closeMin) + graceMinutes;
+  if (pickupMin == null) return end;
+  return Math.max(end, Math.min(pickupMin, closeMin + graceMinutes));
+}

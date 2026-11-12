@@ -420,3 +420,21 @@ export function istMinuteOfDay(d: Date | string): number {
   const t = new Date(d).getTime() + IST_OFFSET_MS;
   return Math.floor((((t % DAY_MS) + DAY_MS) % DAY_MS) / 60_000);
 }
+
+// ── Last return (client TODO 4, Nov 2026) ───────────────────────────────────
+// Mirror of @repo/schemas: returns end at closing − RETURN_CUTOFF_MINUTES
+// (10:30 PM for 8 AM – 11 PM) + the branch's return grace. A booking picked up
+// in tonight's late window may return at that same clock time on a later day.
+export const RETURN_CUTOFF_MINUTES = 30;
+
+/** Last return minute of a day without grace (closing − 30 min). */
+export function lastReturnMinute(closeMin: number): number {
+  return closeMin - RETURN_CUTOFF_MINUTES;
+}
+
+/** Latest minute a return is accepted that day; pass the pickup's minute for the late-pickup exception. */
+export function returnWindowEndMinute(closeMin: number, graceMinutes: number, pickupMin?: number | null): number {
+  const end = lastReturnMinute(closeMin) + graceMinutes;
+  if (pickupMin == null) return end;
+  return Math.max(end, Math.min(pickupMin, closeMin + graceMinutes));
+}

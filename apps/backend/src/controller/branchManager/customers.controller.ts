@@ -70,7 +70,7 @@ import {
   invalidateCustomerSearchCache,
   maskDrivingLicence,
 } from "../../services/customer/customer-blacklist.service.js";
-import { isCashRefundOutsideShift, isCustomerRefundKey } from "../../services/booking/customer-refund-rules.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey, isDropOtherRefundKey } from "../../services/booking/customer-refund-rules.js";
 import { VOID_FIELDS_SELECT, voidView } from "../../services/payment/payment-void-rules.js";
 
 const ZERO = new Decimal(0);
@@ -981,6 +981,8 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
           isRefund: (REFUND_PAYMENT_PURPOSES as string[]).includes(t.purpose),
           // Additive (Oct 2026): "Refund to customer" rows, and cash refunds paid out with no shift open
           isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+          // Additive (Nov 2026, TODO 9): the independent "Drop refund (other)"
+          isDropOtherRefund: isDropOtherRefundKey(t.idempotencyKey),
           cashOutsideShift: isCashRefundOutsideShift(t),
           goodwillAmount: money(t.goodwillAmount),
           totalAmount: money(t.totalAmount),

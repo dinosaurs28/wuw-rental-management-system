@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, GitCompare, ImageOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, ImageOff, Images, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
+import { PhotoLightbox, ZoomBadge, type LightboxItem } from "@/components/ui/PhotoLightbox";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SWAP_PHOTOS_MISSING_NOTE } from "@/components/swap/SwapPhotoStrip";
-import { PhotoCompareDialog, type ComparePhoto } from "./PhotoCompareDialog";
 import { usePhotoFallback } from "./usePhotoFallback";
 
 /** A photo's number in its set (the order taken): #1 at pickup is compared with #1 at the drop. */
@@ -100,25 +101,32 @@ function setTitle(set: ConditionPhotoSet): string {
   return set.replaced ? `Original pickup — ${reg ?? "first vehicle"} (replaced)` : `Pickup${reg ? ` — ${reg}` : ""}`;
 }
 
-/** The photos come in the order they were taken (older ones: as saved), numbered #1, #2… */
+/** Photos shown on the drop screen itself; the rest are behind "View all" (client TODO 8). */
+export const PREVIEW_COUNT = 2;
+
+/** "Photo 3 · Front left": the photos come in the order they were taken (older ones: as saved). */
+export function photoCaption(index: number, label: string | null | undefined): string {
+  return `Photo ${index + 1}${label ? ` · ${label}` : ""}`;
+}
+
 function lightboxItems(set: ConditionPhotoSet): LightboxItem[] {
-  const prefix = set.source === "SWAP" ? `${set.vehicle?.regNo ?? "Swap"} at swap` : "Pickup";
+  const prefix = set.source === "SWAP" ? `${set.vehicle?.regNo ?? "Swap"} at swap · ` : "";
   return set.photos.map((p, i) => ({
     url: p.url,
     previewUrl: p.displayUrl && p.displayUrl !== p.url ? p.displayUrl : null,
     mime: p.mime,
-    label: `${prefix} #${i + 1}${p.captureLabel ? ` · ${p.captureLabel}` : ""}`,
+    label: `${prefix}${photoCaption(i, p.captureLabel)}`,
   }));
 }
 
 /**
- * A strip photo: loading skeleton; the display copy first, the original if it
+ * A photo: loading skeleton; the display copy first, the original if it
  * fails, two automatic retries with backoff, then a "Retry" button
  * (usePhotoFallback). The original is offered through srcset for screens
  * dense enough to use it. Off-screen photos load lazily (fewer requests at
  * once to the photo host).
  */
-function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
+function PhotoImage({ photo, alt, sizes }: { photo: ConditionPhoto; alt: string; sizes: string }) {
   const { src, usingDisplay, attempt, status, onLoad, onError, retry: restart } = usePhotoFallback(photo.url, photo.displayUrl);
   const retry = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -151,7 +159,7 @@ function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
           key={attempt}
           src={src}
           srcSet={withOriginal ? `${src} 1200w, ${photo.url} 2000w` : undefined}
-          sizes={withOriginal ? "(min-width: 640px) 520px, 85vw" : undefined}
+          sizes={withOriginal ? sizes : undefined}
           alt={alt}
           className={cn(
             "absolute inset-0 h-full w-full object-cover cursor-zoom-in transition-opacity",
@@ -167,161 +175,115 @@ function StripImage({ photo, alt }: { photo: ConditionPhoto; alt: string }) {
   );
 }
 
-/**
- * Large handover photos (client item 6): a horizontal, snapping strip of
- * ~520 px 4:3 photos (85% wide on phones), label and time under each, with a
- * "3 / 8" counter and previous / next buttons.
- */
-function PhotoStrip({
-  set,
+/** One photo with its number, and its caption and time under it. Click = zoomable viewer. */
+function PhotoCard({
+  photo,
+  index,
+  total,
+  sizes,
   onOpen,
 }: {
-  set: ConditionPhotoSet;
-  onOpen: (items: LightboxItem[], index: number) => void;
+  photo: ConditionPhoto;
+  index: number;
+  total: number;
+  sizes: string;
+  onOpen: () => void;
 }) {
-  const items = lightboxItems(set);
-  const scroller = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(0);
-  const total = set.photos.length;
-
-  const step = () => {
-    const el = scroller.current;
-    const first = el?.firstElementChild as HTMLElement | null;
-    return first ? first.offsetWidth + 12 : 1;
-  };
-  const onScroll = () => {
-    const el = scroller.current;
-    if (!el) return;
-    setIndex(Math.min(Math.max(Math.round(el.scrollLeft / step()), 0), total - 1));
-  };
-  const go = (to: number) => {
-    scroller.current?.scrollTo({ left: Math.min(Math.max(to, 0), total - 1) * step(), behavior: "smooth" });
-  };
-
   return (
-    <div className="space-y-2">
-      <div
-        ref={scroller}
-        onScroll={onScroll}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 [scrollbar-width:thin]"
+    <div className="rounded-lg overflow-hidden border bg-white">
+      <button
+        type="button"
+        className="relative block w-full group"
+        onClick={onOpen}
+        aria-label={`View handover photo ${index + 1} of ${total}${photo.captureLabel ? `, ${photo.captureLabel}` : ""}`}
       >
-        {set.photos.map((photo, i) => (
-          <div
-            key={photo.publicId}
-            className="snap-start shrink-0 w-[85%] sm:w-[520px] rounded-lg overflow-hidden border bg-white"
-          >
-            <button
-              type="button"
-              className="relative block w-full group"
-              onClick={() => onOpen(items, i)}
-              aria-label={`View handover photo ${i + 1} of ${total}${photo.captureLabel ? `, ${photo.captureLabel}` : ""}`}
-            >
-              <StripImage photo={photo} alt={photo.captureLabel ?? "Handover photo"} />
-              <PhotoNumber n={i + 1} className="top-2 left-2 min-w-6 h-6 text-xs" />
-              <ZoomBadge />
-            </button>
-            <div className="flex items-baseline gap-2 px-3 py-2 border-t">
-              <p className="flex-1 text-sm font-medium truncate">
-                {photo.captureLabel ? `#${i + 1} · ${photo.captureLabel}` : `Photo #${i + 1}`}
-              </p>
-              {photo.takenAt && <p className="text-xs text-gray-500 shrink-0">{fmt(photo.takenAt)}</p>}
-            </div>
-          </div>
-        ))}
+        <PhotoImage photo={photo} alt={photo.captureLabel ?? "Handover photo"} sizes={sizes} />
+        <PhotoNumber n={index + 1} className="top-2 left-2 min-w-6 h-6 text-xs" />
+        <ZoomBadge />
+      </button>
+      <div className="flex items-baseline gap-2 px-3 py-2 border-t">
+        <p className="flex-1 text-sm font-medium truncate">{photoCaption(index, photo.captureLabel)}</p>
+        {photo.takenAt && <p className="text-xs text-gray-500 shrink-0">{fmt(photo.takenAt)}</p>}
       </div>
-      {total > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => go(index - 1)}
-            disabled={index === 0}
-            aria-label="Previous photo"
-            className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          {total <= 12 && (
-            <div className="flex items-center gap-1.5">
+    </div>
+  );
+}
+
+/**
+ * "View all": every photo, one full-width photo per row in the order taken —
+ * the returning car's set first, then (after a swap) the earlier cars' sets.
+ * Its own lightbox, nested so it stacks above this dialog.
+ */
+function AllPhotosDialog({
+  open,
+  onOpenChange,
+  current,
+  earlier,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  current: ConditionPhotoSet;
+  earlier: ConditionPhotoSet[];
+}) {
+  const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
+  const sets = [current, ...earlier].filter((s) => s.photos.length > 0);
+  const total = current.photos.length;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogHeader className="px-4 pt-4 pb-3 border-b">
+          <DialogTitle>
+            {current.source === "SWAP" ? "Handover photos" : "Pickup photos"}
+            {total > 0 ? ` (${total})` : ""}
+          </DialogTitle>
+          <DialogDescription>In the order they were taken. Click a photo to zoom.</DialogDescription>
+        </DialogHeader>
+        <div className="overflow-y-auto px-4 py-4 space-y-5">
+          {sets.map((set, si) => (
+            <div key={set.swapPublicId ?? `pickup-${si}`} className="space-y-4">
+              {(si > 0 || set.source === "SWAP" || earlier.length > 0) && (
+                <p className="text-sm font-semibold text-gray-700">
+                  {setTitle(set)} · {set.photos.length} photo{set.photos.length === 1 ? "" : "s"}
+                </p>
+              )}
               {set.photos.map((photo, i) => (
-                <button
+                <PhotoCard
                   key={photo.publicId}
-                  type="button"
-                  onClick={() => go(i)}
-                  aria-label={`Go to photo ${i + 1}`}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all",
-                    i === index ? "w-4 bg-[#ff6a1f]" : "w-1.5 bg-gray-300 hover:bg-gray-400",
-                  )}
+                  photo={photo}
+                  index={i}
+                  total={set.photos.length}
+                  sizes="(min-width: 672px) 640px, 90vw"
+                  onOpen={() => setLightbox({ items: lightboxItems(set), index: i })}
                 />
               ))}
             </div>
-          )}
-          <span className="text-xs font-medium text-gray-500 tabular-nums">
-            {index + 1} / {total}
-          </span>
-          <button
-            type="button"
-            onClick={() => go(index + 1)}
-            disabled={index === total - 1}
-            aria-label="Next photo"
-            className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-function EarlierSet({
-  set,
-  onOpen,
-}: {
-  set: ConditionPhotoSet;
-  onOpen: (items: LightboxItem[], index: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-lg border border-gray-200">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
-        aria-expanded={open}
-      >
-        {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-        <span className="flex-1 font-medium">{setTitle(set)}</span>
-        <span className="text-xs text-gray-400">
-          {set.photos.length} photo{set.photos.length === 1 ? "" : "s"}
-        </span>
-      </button>
-      {open && (
-        <div className="px-3 pb-3">
-          <PhotoStrip set={set} onOpen={onOpen} />
-        </div>
-      )}
-    </div>
+        <PhotoLightbox
+          open={!!lightbox}
+          onOpenChange={(o) => !o && setLightbox(null)}
+          items={lightbox?.items ?? []}
+          startIndex={lightbox?.index ?? 0}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /**
- * Drop screen reference photos (client item 2): the handover photos of the car
- * actually being returned — after a mid-rental swap, the replacement's photos
- * taken at the swap (or a warning when none were taken) — with the swapped-out
- * cars' photos collapsed below.
+ * Drop screen reference photos (client item 2; TODO 8): the first photos of the
+ * car actually being returned — after a mid-rental swap, the replacement's
+ * photos taken at the swap (or a warning when none were taken) — and
+ * "View all (N)", a dialog with every photo, the swapped-out cars' sets below.
  */
 export function HandoverConditionPhotos({
   data,
   onOpen,
-  dropPhotos,
 }: {
   data: ReturnConditionCaptures;
   onOpen: (items: LightboxItem[], index: number) => void;
-  /** The drop photos taken so far, in the order taken: offers "Compare" (#n beside #n) */
-  dropPhotos?: ComparePhoto[];
 }) {
-  const [comparing, setComparing] = useState(false);
+  const [allOpen, setAllOpen] = useState(false);
   const current: ConditionPhotoSet = data.currentVehicleCaptures ?? {
     source: "PICKUP",
     vehicle: null,
@@ -331,7 +293,10 @@ export function HandoverConditionPhotos({
     replaced: false,
     photos: data.photos,
   };
-  const earlier = data.earlierCaptures ?? [];
+  const earlier = (data.earlierCaptures ?? []).filter((s) => s.photos.length > 0);
+  const preview = current.photos.slice(0, PREVIEW_COUNT);
+  const total = current.photos.length;
+  const earlierCount = earlier.reduce((n, s) => n + s.photos.length, 0);
 
   return (
     <div className="space-y-3">
@@ -344,35 +309,37 @@ export function HandoverConditionPhotos({
           </p>
         </div>
       )}
-      {current.photos.length > 0 && (
+      {preview.length > 0 && (
         <>
-          {current.source === "SWAP" && (
-            <p className="text-xs font-medium text-gray-600">{setTitle(current)}</p>
-          )}
-          <PhotoStrip set={current} onOpen={onOpen} />
-          {(dropPhotos?.length ?? 0) > 0 && (
-            <button
-              type="button"
-              onClick={() => setComparing(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50"
-            >
-              <GitCompare className="h-3.5 w-3.5" />
-              Compare with drop photos
-            </button>
-          )}
-          <PhotoCompareDialog
-            open={comparing}
-            onOpenChange={setComparing}
-            before={current.photos.map((p) => ({ url: p.url, displayUrl: p.displayUrl, label: p.captureLabel }))}
-            after={dropPhotos ?? []}
-            beforeTitle={current.source === "SWAP" ? "At swap" : "Pickup"}
-            afterTitle="Drop"
-          />
+          {current.source === "SWAP" && <p className="text-xs font-medium text-gray-600">{setTitle(current)}</p>}
+          <div className={cn("grid gap-3", preview.length > 1 ? "grid-cols-2" : "grid-cols-1 max-w-[520px]")}>
+            {preview.map((photo, i) => (
+              <PhotoCard
+                key={photo.publicId}
+                photo={photo}
+                index={i}
+                total={total}
+                sizes={preview.length > 1 ? "(min-width: 640px) 320px, 45vw" : "(min-width: 640px) 520px, 90vw"}
+                onOpen={() => onOpen(lightboxItems(current), i)}
+              />
+            ))}
+          </div>
         </>
       )}
-      {earlier.map((set) => (
-        <EarlierSet key={set.swapPublicId ?? "pickup"} set={set} onOpen={onOpen} />
-      ))}
+      {(total > preview.length || earlierCount > 0) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setAllOpen(true)}>
+            <Images className="h-4 w-4" />
+            {total > 0 ? `View all (${total})` : `View earlier photos (${earlierCount})`}
+          </Button>
+          {earlierCount > 0 && total > 0 && (
+            <span className="text-xs text-gray-500">
+              The earlier car{earlier.length === 1 ? "'s" : "s'"} photos ({earlierCount}) are in View all.
+            </span>
+          )}
+        </div>
+      )}
+      <AllPhotosDialog open={allOpen} onOpenChange={setAllOpen} current={current} earlier={earlier} />
     </div>
   );
 }

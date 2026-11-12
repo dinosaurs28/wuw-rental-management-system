@@ -36,9 +36,9 @@ import { computeBookingOwed, creditOutstanding, getBookingMoney } from "../payme
 import { getBookingCreditSummary } from "../payment/customer-credit.service.js";
 import { depositToRefund } from "../payment/settlement-engine.service.js";
 import {
-  claimPaymentProof,
+  claimPaymentProofs,
   proofPhotosCreate,
-  resolvePaymentProof,
+  resolvePaymentProofs,
   proofPhotoFields,
   PROOF_FILE_RELATION_SELECT,
   PROOF_PHOTOS_RELATION_SELECT,
@@ -48,7 +48,11 @@ import { assertOpenShift, lockShiftForPayment } from "../payment/counter-guard.s
 import { voidView } from "../payment/payment-void-rules.js";
 import {
   CUSTOMER_REFUND_KEY_PREFIX,
+  CUSTOMER_REFUND_KIND_LABELS,
+  CUSTOMER_REFUND_MAX_PROOFS,
   CUSTOMER_REFUND_METHODS,
+  DROP_OTHER_REFUND_METHODS,
+  customerRefundKindOf,
   CUSTOMER_REFUND_METHOD_LABELS,
   CUSTOMER_REFUND_REASON_MAX,
   CUSTOMER_REFUND_REASON_MIN,
@@ -65,6 +69,7 @@ import {
   owedBack,
   parseCustomerRefundBody,
   splitCustomerRefund,
+  type CustomerRefundKind,
   type CustomerRefundMethod,
 } from "./customer-refund-rules.js";
 
@@ -186,6 +191,9 @@ export async function listCustomerRefunds(bookingId: number, db: Db = prisma) {
   });
   return Promise.all(rows.map(async (t) => ({
     publicId: t.publicId,
+    // Additive (Nov 2026, TODO 9): STANDARD or DROP_OTHER (the independent drop refund) + its label
+    kind: customerRefundKindOf(t.idempotencyKey),
+    kindLabel: CUSTOMER_REFUND_KIND_LABELS[customerRefundKindOf(t.idempotencyKey)],
     amount: new Decimal(t.totalAmount.toString()).toFixed(2),
     goodwillAmount: new Decimal(t.goodwillAmount.toString()).toFixed(2),
     method: t.method,
@@ -249,6 +257,16 @@ export async function getCustomerRefundOptions(req: Request, scope: CustomerRefu
     proofPhotoSupported: true,
     /** Additive (Oct 25 2026): methods whose refund needs the payment-success photo */
     proofRequiredMethods: ["UPI", "BANK_TRANSFER"],
+    /**
+     * Additive (Nov 2026, TODO 9): the independent drop refund (`kind: "DROP_OTHER"`) —
+     * cash or UPI, the whole amount kept apart from the booking's money (owed back,
+     * amount due and the drop bill don't move). Up to maxProofPhotos photos (proofFileIds).
+     */
+    dropOther: {
+      label: CUSTOMER_REFUND_KIND_LABELS.DROP_OTHER,
+      methods: DROP_OTHER_REFUND_METHODS.map((value) => ({ value, label: CUSTOMER_REFUND_METHOD_LABELS[value] })),
+    },
+    maxProofPhotos: CUSTOMER_REFUND_MAX_PROOFS,
     /** Additive (Oct 2026): the actor's role — a Fleet Executive needs an open cash shift for a cash refund */
     actorRole: scope.role,
     limits: {
@@ -264,6 +282,9 @@ export async function getCustomerRefundOptions(req: Request, scope: CustomerRefu
 
 export interface CustomerRefundResult {
   paymentTransactionPublicId: string;
+  /** Additive (Nov 2026): STANDARD or DROP_OTHER */
+  kind: CustomerRefundKind;
+  kindLabel: string;
   refundRequestPublicId: string;
   bookingPublicId: string;
   bookingStatus: string;
@@ -299,7 +320,8 @@ export async function recordCustomerRefund(
   // their drawer; UPI / bank as the shift's non-cash refunds) — SHIFT_REQUIRED otherwise
   if (scope.role === "STAFF") await assertOpenShift(actor);
   // The photo must be one uploaded in the booking's branch and not backing another payment
-  const proof = input.proofFileId ? await resolvePaymentProof(input.proofFileId, booking.branchId) : null;
+  const proofs = input.proofFileIds.length > 0 ? await resolvePaymentProofs(null, input.proofFileIds, booking.branchId) : [];
+  const proof = proofs[0] ?? null;
   const requestId = input.requestId ?? createID();
   const record = customerRefundRecord(input.method);
   const methodLabel = CUSTOMER_REFUND_METHOD_LABELS[input.method];
@@ -321,10 +343,10 @@ export async function recordCustomerRefund(
         const m = await readMoney(locked.id, tx);
         const refusal = overReceivedRefusal(input.amount, m.received, input.confirmOverReceived);
         if (refusal) throw refusal;
-        const { covered, goodwill } = splitCustomerRefund(input.amount, m.owedBack);
+        const { covered, goodwill } = splitCustomerRefund(input.amount, m.owedBack, input.kind);
         const overBy = overReceivedBy(input.amount, m.received);
 
-        if (proof) await claimPaymentProof(proof, tx);
+        if (proofs.length > 0) await claimPaymentProofs(proofs, tx);
         const cashShift = record.method === "CASH" ? lockedShift : null;
         const link = cashShiftLink(input.method, cashShift);
         // A Fleet Executive's UPI / bank refund is in their shift too (non-cash)
@@ -333,11 +355,12 @@ export async function recordCustomerRefund(
         const now = new Date();
         const amount = input.amount.toFixed(2);
         const note = customerRefundNote(input, cashOutsideShift);
+        const kindLabel = CUSTOMER_REFUND_KIND_LABELS[input.kind];
 
         const txn = await tx.paymentTransaction.create({
           data: {
             publicId: createID(),
-            idempotencyKey: customerRefundKey(locked.publicId, requestId),
+            idempotencyKey: customerRefundKey(locked.publicId, requestId, input.kind),
             bookingId: locked.id,
             branchId: locked.branchId,
             purpose: PaymentPurpose.OVERPAYMENT_REFUND,
@@ -349,7 +372,7 @@ export async function recordCustomerRefund(
             onlineGateway: record.onlineGateway,
             onlineTransactionRef: input.reference,
             proofFileId: proof?.id ?? null,
-            proofPhotos: proofPhotosCreate(proof ? [proof] : null),
+            proofPhotos: proofPhotosCreate(proofs),
             goodwillAmount: goodwill.toFixed(2),
             collectedById: actor.id,
             collectedAt: now,
@@ -382,6 +405,8 @@ export async function recordCustomerRefund(
 
         const out: CustomerRefundResult = {
           paymentTransactionPublicId: txn.publicId,
+          kind: input.kind,
+          kindLabel,
           refundRequestPublicId: request.publicId,
           bookingPublicId: locked.publicId,
           bookingStatus: locked.status,
@@ -410,7 +435,7 @@ export async function recordCustomerRefund(
             category: AuditCategory.PAYMENT,
             severity: overBy.gt(0) ? AuditSeverity.CRITICAL : AuditSeverity.WARNING,
             description:
-              `₹${amount} refunded to the customer (${methodLabel}) on booking ${locked.publicId} (${locked.status}). Reason: ${input.reason}` +
+              `${input.kind === "DROP_OTHER" ? `${kindLabel}: ` : ""}₹${amount} refunded to the customer (${methodLabel}) on booking ${locked.publicId} (${locked.status}). Reason: ${input.reason}` +
               (input.reference ? ` Ref ${input.reference}.` : "") +
               (cashOutsideShift ? " Cash paid out with no cash shift open." : "") +
               (overBy.gt(0) ? ` ₹${overBy.toFixed(2)} more than the money received (confirmed).` : "") +
@@ -428,6 +453,8 @@ export async function recordCustomerRefund(
               reason: input.reason,
               reference: input.reference,
               proofFileId: proof?.publicId ?? null,
+              proofFileIds: proofs.map((p) => p.publicId),
+              kind: input.kind,
               coveredAmount: out.coveredAmount,
               goodwillAmount: out.goodwillAmount,
               netReceivedBefore: out.netReceivedBefore,
@@ -463,12 +490,13 @@ export async function recordCustomerRefund(
     actionType: StaffActionType.REFUNDED,
     entityType: StaffEntityType.BOOKING,
     entityRef: result.bookingPublicId,
-    description: `₹${result.amount} refunded to the customer (${result.methodLabel})${result.cashOutsideShift ? " — no cash shift open" : ""}: ${result.reason}`,
+    description: `${result.kind === "DROP_OTHER" ? `${result.kindLabel}: ` : ""}₹${result.amount} refunded to the customer (${result.methodLabel})${result.cashOutsideShift ? " — no cash shift open" : ""}: ${result.reason}`,
     metadata: {
       amount: result.amount,
       method: result.method,
       reference: result.reference,
       goodwillAmount: result.goodwillAmount,
+      kind: result.kind,
       overReceivedBy: result.overReceivedBy,
       cashOutsideShift: result.cashOutsideShift,
     },

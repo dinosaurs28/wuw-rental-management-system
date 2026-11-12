@@ -24,6 +24,7 @@ import { RentalTimelineCard } from "@/components/employee/drop/RentalTimelineCar
 import { LateReturnPanel, type LateReturnOptions } from "@/components/employee/drop/LateReturnPanel";
 import { DropBillSummary, LegacyReturnChargesSummary } from "@/components/employee/drop/DropBillSummary";
 import { DropRefundCard } from "@/components/employee/drop/DropRefundCard";
+import { DropOtherRefundCard } from "@/components/employee/drop/DropOtherRefundCard";
 import { SwapChargesNote } from "@/components/employee/drop/SwapChargesNote";
 import { DropOdometerFields } from "@/components/employee/drop/DropOdometerFields";
 import { DropSwapSection } from "@/components/employee/drop/DropSwapSection";
@@ -1310,7 +1311,7 @@ export default function ReturnProcessPage() {
             isLocked={false}
           >
             <CardContent className="pt-4">
-              <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} dropPhotos={returnPhotos.map((p) => ({ url: p.url }))} />
+              <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} />
             </CardContent>
           </StepCard>
         )}
@@ -1782,6 +1783,9 @@ export default function ReturnProcessPage() {
           </CardContent>
         </StepCard>
 
+        {/* TODO 9 (Nov 2026): refund for other reasons — independent of the drop bill */}
+        <DropOtherRefundCard bookingPublicId={booking.publicId} />
+
         {/* ── Navigate to dashboard ────────────────────────────────────────── */}
         {paymentSettled && (
           <Button
@@ -1846,6 +1850,10 @@ export default function ReturnProcessPage() {
             )}
             {/* Oct 25 2026: the Fleet Executive refunds what is owed back now, or leaves it to the manager */}
             <DropRefundCard bookingPublicId={booking.publicId} />
+            {/* TODO 9 (Nov 2026): refund for other reasons — independent of the drop bill */}
+            <div className="text-left mt-4">
+              <DropOtherRefundCard bookingPublicId={booking.publicId} />
+            </div>
             <Button className="w-full mt-4 bg-green-600 hover:bg-green-700" onClick={() => navigate("/employee/dashboard")}>
               Return to Dashboard
             </Button>
@@ -1871,7 +1879,7 @@ export default function ReturnProcessPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} dropPhotos={returnPhotos.map((p) => ({ url: p.url }))} />
+            <HandoverConditionPhotos data={pickupCapturesData} onOpen={openLightbox} />
           </CardContent>
         </Card>
       )}
@@ -2434,7 +2442,6 @@ function ReturnEditForm({
             <HandoverConditionPhotos
               data={pickupCaptures}
               onOpen={(items, index) => setLightbox({ items, index })}
-              dropPhotos={photos.map((p) => ({ url: p.url, label: p.label }))}
             />
           </CardContent>
         </StepCard>

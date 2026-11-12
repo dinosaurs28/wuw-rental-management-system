@@ -167,6 +167,8 @@ export interface CustomerBookingTransaction extends PaymentVoidState {
   isRefund: boolean;
   // "Refund to customer" row / cash refund with no cash shift open (Oct 2026). Absent on older servers.
   isCustomerRefund?: boolean;
+  /** Additive (Nov 2026, TODO 9) */
+  isDropOtherRefund?: boolean;
   cashOutsideShift?: boolean;
   goodwillAmount?: string;
   totalAmount: string;

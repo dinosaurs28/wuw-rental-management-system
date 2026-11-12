@@ -66,6 +66,8 @@ import {
 import { checkVehiclesReadyForPickup } from "../../utils/availability/outForRental.js";
 import { OperationNoteError, parseOperationNote } from "../../utils/booking/operationNote.js";
 import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
+import { isPrivateFile } from "../../utils/file-url.js";
+import { uploadedFromBranch } from "../../services/booking-photo-file.service.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -1256,3 +1258,248 @@ function serializePickupSession(session: any) {
     })),
   };
 }
+
+// ── PATCH /employee/bookings/:bookingId/pickup-session/handover ────────────────
+//
+// Client TODO 11 (Nov 12 2026): free back / forward navigation in the pickup.
+// The handover details (odometer, fuel, FASTag balance, photos, licence choice,
+// note) were saved when the bill opened (initiate) and a re-initiate leaves them
+// as they are. This updates them on the SAME open session — never a new one —
+// while the pickup isn't completed. None of them prices the pickup bill (rent
+// balance, deposit, coupon, discount), so the bill is returned unchanged.
+//
+// `photos` is the full list as it is now, in the order taken: photos already on
+// the pickup are kept (never attached twice), new ones are attached, the ones
+// left out are taken off, and the order is rewritten to match.
+
+const updatePickupHandoverSchema = z.object({
+  odo: z.coerce.number().int("The odometer reading must be a whole number").min(1, "Enter the odometer reading").optional(),
+  // percent 0..100 (vehicle row), as on initiate
+  fuelLevel: z.coerce.number().min(0).max(100).optional(),
+  pickupFuelLevel: fuelBarsField.optional(),
+  pickupFastagBalance: fastagBalanceField,
+  photos: z
+    .array(z.object({ fileId: z.string().trim().min(1), label: z.string().trim().min(1).max(80).nullish() }))
+    .min(1, "Keep at least one pickup photo")
+    .max(60)
+    .optional(),
+  dlStatus: z.enum(DL_COLLECTION_STATUSES).nullish(),
+});
+
+export const UpdatePickupSessionHandover = async (req: Request, res: Response) => {
+  try {
+    const parsed = updatePickupHandoverSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      const dlError = dlValidationError(parsed.error);
+      if (dlError) return res.status(dlError.status).json(dlError.toJSON());
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: parsed.error.format() });
+    }
+    const input = parsed.data;
+    const pickupNote = parseOperationNote(req.body?.pickupNote, "pickupNote");
+    const dlChoice = input.dlStatus ? resolvePickupDlStatus({ dlStatus: input.dlStatus }) : null;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const found = await openPickupSessionFor(req.params.bookingId!, actor.branchId);
+    if (!found.ok) return res.status(found.status).json(found.body);
+    const { booking, session } = found;
+
+    const full = await prisma.booking.findUniqueOrThrow({
+      where: { id: booking.id },
+      select: {
+        startOdometer: true,
+        pickupFastagBalance: true,
+        frozenChargeConfig: true,
+        licenseCollectedAt: true,
+        dlStatus: true,
+        fuelRecord: { select: { pickupFuelLevel: true } },
+        items: { select: { vehicleId: true } },
+      },
+    });
+    const frozenConfig = (full.frozenChargeConfig as FrozenChargeConfig | null) ?? DEFAULT_FROZEN_CHARGE_CONFIG;
+
+    // ── Photos: diff the sent list against what the pickup holds ──
+    const existing = await prisma.bookingPhoto.findMany({
+      where: { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY },
+      select: { id: true, captureLabel: true, file: { select: { id: true, publicId: true } } },
+    });
+    let photoPlan: {
+      remove: number[];
+      add: Array<{ fileId: string; fileRowId: number; label: string | null }>;
+      order: Array<{ fileId: string; label: string | null }>;
+    } | null = null;
+    if (input.photos) {
+      const sent = [...new Map(input.photos.map((p) => [p.fileId, { fileId: p.fileId, label: p.label ?? null }])).values()];
+      const sentIds = new Set(sent.map((p) => p.fileId));
+      const existingIds = new Set(existing.map((p) => p.file.publicId));
+      const newOnes = sent.filter((p) => !existingIds.has(p.fileId));
+      const files = newOnes.length
+        ? await prisma.fileObject.findMany({
+            where: { publicId: { in: newOnes.map((p) => p.fileId) } },
+            select: {
+              id: true, publicId: true, key: true, url: true, uploadedBranchId: true,
+              _count: { select: { bookingPhotos: true } },
+            },
+          })
+        : [];
+      const byId = new Map(files.map((f) => [f.publicId, f]));
+      const unusable = newOnes
+        .map((p) => p.fileId)
+        .filter((id) => {
+          const f = byId.get(id);
+          return !f || isPrivateFile(f) || !f.key.startsWith("pickup/") ||
+            !uploadedFromBranch(f, actor.branchId ?? undefined) || f._count.bookingPhotos > 0;
+        });
+      if (unusable.length > 0) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          code: "INVALID_PHOTO",
+          message: "Some new photos couldn't be used. Remove them and take them again.",
+          fileIds: unusable,
+        });
+      }
+      photoPlan = {
+        remove: existing.filter((p) => !sentIds.has(p.file.publicId)).map((p) => p.id),
+        add: newOnes.map((p) => ({ ...p, fileRowId: byId.get(p.fileId)!.id })),
+        order: sent,
+      };
+    }
+
+    const changed: string[] = [];
+    await prisma.$transaction(async (tx) => {
+      // Serialised with this bill's payment (same row lock); refused once it's paid / closed
+      await lockOpenPickupSession(tx, booking.id, session.id);
+
+      const update: Record<string, unknown> = {};
+      if (input.odo !== undefined && input.odo !== full.startOdometer) {
+        update.startOdometer = input.odo;
+        changed.push("odometer");
+      }
+      if (input.pickupFastagBalance !== undefined) {
+        const before = full.pickupFastagBalance == null ? null : new Decimal(full.pickupFastagBalance.toString());
+        if (!before || !before.eq(input.pickupFastagBalance)) {
+          update.pickupFastagBalance = input.pickupFastagBalance.toFixed(2);
+          changed.push("fastagBalance");
+        }
+      }
+      if (dlChoice && dlChoice.dlStatus !== full.dlStatus) {
+        Object.assign(update, dlStatusUpdateData(dlChoice, actor.id, full));
+        changed.push("dlStatus");
+      }
+      if (Object.keys(update).length > 0) {
+        await tx.booking.update({ where: { id: booking.id }, data: update });
+      }
+      // The car is still at the branch: its last known odometer / fuel follow the reading
+      const vehicleIds = full.items.map((i) => i.vehicleId);
+      if (vehicleIds.length > 0 && (input.odo !== undefined || input.fuelLevel !== undefined)) {
+        await tx.vehicle.updateMany({
+          where: { id: { in: vehicleIds } },
+          data: {
+            ...(input.odo !== undefined && { odo: input.odo }),
+            ...(input.fuelLevel !== undefined && { fuelLevel: input.fuelLevel }),
+          },
+        });
+      }
+      if (input.pickupFuelLevel && input.pickupFuelLevel !== full.fuelRecord?.pickupFuelLevel) {
+        if (full.fuelRecord || frozenConfig.fuelModuleEnabled) {
+          await tx.fuelRecord.upsert({
+            where: { bookingId: booking.id },
+            create: {
+              publicId: createID(),
+              bookingId: booking.id,
+              pickupFuelLevel: input.pickupFuelLevel,
+              capturedByPickupId: actor.id,
+              pickupAt: new Date(),
+            },
+            update: { pickupFuelLevel: input.pickupFuelLevel },
+          });
+          changed.push("fuelLevel");
+        }
+      }
+      if (photoPlan) {
+        if (photoPlan.remove.length > 0) {
+          await tx.bookingPhoto.deleteMany({ where: { id: { in: photoPlan.remove }, bookingId: booking.id } });
+        }
+        if (photoPlan.add.length > 0) {
+          const start = await captureOrderStart(tx as any, { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY });
+          await tx.bookingPhoto.createMany({
+            data: photoPlan.add.map((p, i) => ({
+              publicId: createID(),
+              bookingId: booking.id,
+              fileId: p.fileRowId,
+              type: BookingPhotoType.PRE_DELIVERY,
+              captureLabel: p.label,
+              captureOrder: start + i,
+            })),
+          });
+        }
+        // The order taken (and a relabelled slot), as sent
+        const rows = await tx.bookingPhoto.findMany({
+          where: { bookingId: booking.id, type: BookingPhotoType.PRE_DELIVERY },
+          select: { id: true, captureOrder: true, captureLabel: true, file: { select: { publicId: true } } },
+        });
+        const rowByFile = new Map(rows.map((r) => [r.file.publicId, r]));
+        let reordered = false;
+        for (const [i, p] of photoPlan.order.entries()) {
+          const row = rowByFile.get(p.fileId);
+          if (!row) continue;
+          if (row.captureOrder !== i || (row.captureLabel ?? null) !== p.label) {
+            await tx.bookingPhoto.update({ where: { id: row.id }, data: { captureOrder: i, captureLabel: p.label } });
+            reordered = true;
+          }
+        }
+        if (photoPlan.remove.length > 0 || photoPlan.add.length > 0 || reordered) changed.push("photos");
+      }
+      const note = await saveOperationNote(tx, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actor.id, mode: "OPERATION" });
+      if (note.changed) changed.push("pickupNote");
+    }, { timeout: 30000 });
+
+    if (changed.length > 0) {
+      await auditService.log({
+        actorId: actor.id,
+        actorName: actor.name,
+        actorRole: actor.role,
+        actorBranchId: actor.branchId ?? undefined,
+        action: "PICKUP_HANDOVER_UPDATED",
+        category: AuditCategory.PAYMENT,
+        description: `Pickup handover details updated before the handover for booking ${booking.publicId}: ${changed.join(", ")}`,
+        entity: "PaymentSession",
+        entityId: session.publicId,
+        metadata: {
+          changed,
+          before: {
+            odometer: full.startOdometer,
+            fuelLevel: full.fuelRecord?.pickupFuelLevel ?? null,
+            fastagBalance: full.pickupFastagBalance?.toString() ?? null,
+            photos: existing.map((p) => p.file.publicId),
+          },
+          after: {
+            odometer: input.odo ?? null,
+            fuelLevel: input.pickupFuelLevel ?? null,
+            fastagBalance: input.pickupFastagBalance ?? null,
+            photos: photoPlan?.order.map((p) => p.fileId) ?? null,
+          },
+        },
+      });
+    }
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: changed.length ? "Handover details updated" : "Nothing to change",
+      changed,
+      data: serializePickupSession(updatedSession!),
+    });
+  } catch (err: any) {
+    if (err instanceof OperationNoteError || err instanceof DlStatusError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    if (err instanceof PickupStateError || err instanceof PickupBillClosedError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    console.error("UpdatePickupSessionHandover Error:", err);
+    return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
+  }
+};

@@ -13,6 +13,10 @@ import {
   halfDayPackageReturn,
   isClampedHalfDayReturn,
   istDayNumber,
+  istMinuteOfDay,
+  lastReturnMinute,
+  RETURN_CUTOFF_MINUTES,
+  returnWindowEndMinute,
   sameDayPickupStatus,
   type HalfDayReturn,
 } from "@repo/schemas";
@@ -25,7 +29,9 @@ export const DEFAULT_BRANCH_HOURS = { openTime: "08:00", closeTime: "23:00" } as
 
 /**
  * A booking's pickup time must be at least this many minutes before closing
- * (default hours → last pickup 10:30 PM). Returns keep [open, close + grace].
+ * (default hours → last pickup 10:30 PM). Returns end at the last return,
+ * closing − RETURN_CUTOFF_MINUTES (10:30 PM) + the branch's return grace
+ * (client TODO 4, Nov 2026 — @repo/schemas returnWindowEndMinute).
  * Tonight only, after the last pickup and until closing, a pickup from now up
  * to closing is taken; after closing, today takes no pickups
  * (sameDayPickupStatus in @repo/schemas — pass `now` to validateBookingSchedule).
@@ -65,6 +71,8 @@ export interface ScheduleVerdict {
   status: ScheduleVerdictStatus;
   /** Effective closing time display string (e.g. "10:00 PM") — set on PICKUP_AT_OR_AFTER_CLOSE / RETURN_GRACE / RETURN_BUMPED / RETURN_OUTSIDE_HOURS */
   closingTime?: string;
+  /** Last return that day without grace (closing − RETURN_CUTOFF_MINUTES), e.g. "10:30 PM" — set with the return verdicts */
+  lastReturnTime?: string;
   /** Grace window end as display string — set on RETURN_GRACE / RETURN_OUTSIDE_HOURS */
   gracePeriodEnd?: string;
   /** Adjusted return date when status is RETURN_BUMPED — never earlier than the requested return */
@@ -200,7 +208,7 @@ function bumpVerdict(
   config: BranchScheduleConfig,
   pickupLocal: Date,
   returnLocal: Date,
-  extra: Pick<ScheduleVerdict, "reason" | "closingTime" | "openingTime" | "closedDayName">,
+  extra: Pick<ScheduleVerdict, "reason" | "closingTime" | "openingTime" | "closedDayName" | "lastReturnTime" | "gracePeriodEnd">,
 ): ScheduleVerdict {
   const bumpTarget = findBumpTarget(config, pickupLocal, returnLocal);
   if (!bumpTarget) {
@@ -218,7 +226,8 @@ function bumpVerdict(
  * Opening window of one branch-local day, for pickers and checks.
  * null = no restriction that day (24-hour branch only — a day without saved
  * hours uses DEFAULT_BRANCH_HOURS). Minutes are since local midnight; pickups
- * are allowed in [openMin, lastPickupMin], returns in [openMin, graceEndMin].
+ * are allowed in [openMin, lastPickupMin], returns in [openMin, graceEndMin]
+ * (graceEndMin = the last return, closing − 30 min, + the branch's grace).
  */
 export function getDayWindow(
   config: BranchScheduleConfig,
@@ -231,7 +240,8 @@ export function getDayWindow(
     isOpen: day.isOpen,
     openMin: day.openMinutes,
     closeMin: day.closeMinutes,
-    graceEndMin: day.closeMinutes + config.graceMinutes,
+    // Latest return: the last return (closing − 30 min) + grace (client TODO 4)
+    graceEndMin: returnWindowEndMinute(day.closeMinutes, config.graceMinutes),
     lastPickupMin: day.closeMinutes - PICKUP_CUTOFF_MINUTES,
   };
 }
@@ -283,6 +293,8 @@ export function buildScheduleResponse(branch: BranchScheduleConfig) {
     is24Hours: branch.is24Hours,
     defaultHours: branch.schedules.length === 0,
     pickupCutoffMinutes: PICKUP_CUTOFF_MINUTES,
+    // Additive (client TODO 4): returns end this many minutes before closing (+ grace)
+    returnCutoffMinutes: RETURN_CUTOFF_MINUTES,
     effectiveSchedules: getEffectiveSchedules(branch.schedules),
   };
 }
@@ -376,7 +388,10 @@ export function validateBookingSchedule(
 
   const returnMins = returnHours * 60 + returnMinsVal;
   const closeMins = returnDay.closeMinutes;
-  const graceEndMins = closeMins + config.graceMinutes;
+  // Last return 10:30 PM (closing − 30 min) + grace; a late-window pickup may
+  // return at its own clock time (client TODO 4, returnWindowEndMinute)
+  const lastReturnMins = lastReturnMinute(closeMins);
+  const graceEndMins = returnWindowEndMinute(closeMins, config.graceMinutes, pickupMins);
 
   // Return before opening (e.g. an overnight 12 h trip) is treated like one after closing
   if (returnMins < returnDay.openMinutes) {
@@ -386,7 +401,7 @@ export function validateBookingSchedule(
     });
   }
 
-  if (returnMins <= closeMins) {
+  if (returnMins <= Math.max(lastReturnMins, Math.min(graceEndMins, pickupMins))) {
     return { status: "OK" };
   }
 
@@ -394,6 +409,7 @@ export function validateBookingSchedule(
     return {
       status: "RETURN_GRACE",
       closingTime: minutesToDisplay(closeMins),
+      lastReturnTime: minutesToDisplay(lastReturnMins),
       gracePeriodEnd: minutesToDisplay(graceEndMins),
     };
   }
@@ -402,6 +418,8 @@ export function validateBookingSchedule(
   return bumpVerdict(config, pickupLocal, returnLocal, {
     reason: "AFTER_CLOSE",
     closingTime: minutesToDisplay(closeMins),
+    lastReturnTime: minutesToDisplay(lastReturnMins),
+    gracePeriodEnd: minutesToDisplay(graceEndMins),
   });
 }
 
@@ -411,7 +429,15 @@ export function validateBookingSchedule(
  * offered (staff and customers pick the new end explicitly).
  * Returns OK / RETURN_GRACE, or RETURN_OUTSIDE_HOURS with a reason.
  */
-export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Date): ScheduleVerdict {
+export function validateReturnTime(
+  config: BranchScheduleConfig,
+  returnLocal: Date,
+  /**
+   * The booking's pickup (its startAt): a pickup in tonight's late window
+   * (after the last return) may return at that same clock time on a later day.
+   */
+  opts: { pickupAt?: Date | null } = {},
+): ScheduleVerdict {
   // 24-hour branch only — no saved rows means default hours apply
   if (config.is24Hours) {
     return { status: "OK" };
@@ -423,13 +449,16 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
     return { status: "RETURN_OUTSIDE_HOURS", reason: "CLOSED_DAY", closedDayName: DAY_NAMES[dayOfWeek] };
   }
   const returnMins = hours * 60 + minutes;
-  const graceEndMins = day.closeMinutes + config.graceMinutes;
+  const pickupMin = opts.pickupAt ? istMinuteOfDay(opts.pickupAt) : null;
+  const lastReturnMins = lastReturnMinute(day.closeMinutes);
+  const graceEndMins = returnWindowEndMinute(day.closeMinutes, config.graceMinutes, pickupMin);
   if (returnMins < day.openMinutes) {
     return {
       status: "RETURN_OUTSIDE_HOURS",
       reason: "BEFORE_OPEN",
       openingTime: minutesToDisplay(day.openMinutes),
       closingTime: minutesToDisplay(day.closeMinutes),
+      lastReturnTime: minutesToDisplay(lastReturnMins),
     };
   }
   if (returnMins > graceEndMins) {
@@ -438,13 +467,15 @@ export function validateReturnTime(config: BranchScheduleConfig, returnLocal: Da
       reason: "AFTER_CLOSE",
       openingTime: minutesToDisplay(day.openMinutes),
       closingTime: minutesToDisplay(day.closeMinutes),
+      lastReturnTime: minutesToDisplay(lastReturnMins),
       gracePeriodEnd: minutesToDisplay(graceEndMins),
     };
   }
-  if (returnMins > day.closeMinutes) {
+  if (returnMins > Math.max(lastReturnMins, Math.min(graceEndMins, pickupMin ?? -1))) {
     return {
       status: "RETURN_GRACE",
       closingTime: minutesToDisplay(day.closeMinutes),
+      lastReturnTime: minutesToDisplay(lastReturnMins),
       gracePeriodEnd: minutesToDisplay(graceEndMins),
     };
   }
@@ -467,14 +498,20 @@ export async function loadBranchScheduleConfig(branchId: number): Promise<Branch
 
 // ── 12 hours from a late pickup (client item 6) ─────────────────────────────
 
-/** Closing time on the branch-local day of `at`; null on a closed day or for a 24-hour branch. */
-function closingOnDayOf(config: BranchScheduleConfig, at: Date): Date | null {
+/**
+ * The latest return on the branch-local day of `at` (the last return, closing −
+ * 30 min, + grace — client TODO 4; `legacyClosing` = closing itself, what
+ * held 12-hour returns were before Nov 2026); null on a closed day or for a
+ * 24-hour branch.
+ */
+function closingOnDayOf(config: BranchScheduleConfig, at: Date, legacyClosing = false): Date | null {
   if (config.is24Hours) return null;
   const { dayOfWeek, hours, minutes } = getBranchLocalTime(at);
   const day = getScheduleForDay(config, dayOfWeek);
   if (!day.isOpen) return null;
   const minuteStart = Math.floor(at.getTime() / 60_000) * 60_000;
-  return new Date(minuteStart + (day.closeMinutes - (hours * 60 + minutes)) * 60_000);
+  const endMin = legacyClosing ? day.closeMinutes : returnWindowEndMinute(day.closeMinutes, config.graceMinutes);
+  return new Date(minuteStart + (endMin - (hours * 60 + minutes)) * 60_000);
 }
 
 /**
@@ -491,7 +528,13 @@ export function halfDayReturnFor(config: BranchScheduleConfig, pickupLocal: Date
 
 /** Is pickup → return the 12-hour package held to closing on the pickup day? */
 export function isClampedHalfDay(config: BranchScheduleConfig, pickupLocal: Date, returnLocal: Date): boolean {
-  return isClampedHalfDayReturn(halfDayReturnFor(config, pickupLocal), returnLocal);
+  if (isClampedHalfDayReturn(halfDayReturnFor(config, pickupLocal), returnLocal)) return true;
+  // Booked before the last return moved to 10:30 PM (client TODO 4): held to closing
+  const legacy = halfDayPackageReturn(pickupLocal, {
+    returnAllowed: (at) => validateReturnTime(config, at).status !== "RETURN_OUTSIDE_HOURS",
+    closingAt: closingOnDayOf(config, pickupLocal, true),
+  });
+  return isClampedHalfDayReturn(legacy, returnLocal);
 }
 
 const HALF_DAY_MS = HALF_DAY_PACKAGE_HOURS * 60 * 60 * 1000;
@@ -613,11 +656,10 @@ export function buildScheduleErrorMessage(verdict: ScheduleVerdict): string {
       if (verdict.reason === "BEFORE_OPEN") {
         return `Branch opens at ${verdict.openingTime ?? "opening time"} that day. Please choose a later return time.`;
       }
-      return `Branch closes at ${verdict.closingTime ?? "closing time"} that day${
-        verdict.gracePeriodEnd && verdict.gracePeriodEnd !== verdict.closingTime
-          ? ` (returns accepted until ${verdict.gracePeriodEnd})`
-          : ""
-      }. Please choose an earlier return time.`;
+      // Returns end at the last return (closing − 30 min, + grace) — client TODO 4
+      return verdict.gracePeriodEnd
+        ? `Returns are taken until ${verdict.gracePeriodEnd} that day (the branch closes at ${verdict.closingTime ?? "closing time"}). Please choose an earlier return time.`
+        : `Branch closes at ${verdict.closingTime ?? "closing time"} that day. Please choose an earlier return time.`;
     case "RETURN_BUMPED":
       return `Return time adjusted to ${verdict.nextOpenLabel ?? "the next available time"} due to branch operating hours.`;
     default:

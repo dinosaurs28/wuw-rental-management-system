@@ -1082,6 +1082,17 @@ model Booking {
   // Actual vehicle return time (drop completed).
   returnedAt           DateTime?
 
+  // Actual handover (client TODO 10, Nov 2026): the rental runs from the handover.
+  // A late handover slides startAt/endAt by the delay (capped before the car's
+  // next booking / lock); the scheduled times are kept here, set once at pickup.
+  pickedUpAt            DateTime?
+  scheduledStartAt      DateTime?
+  scheduledEndAt        DateTime?
+  // Whole minutes the handover came after the scheduled pickup (0 = on time / early)
+  pickupDelayMinutes    Int?
+  // Why the slide was cut short: NEXT_BOOKING | CHECKOUT | BOOKING_LOCK (null = full slide)
+  pickupShiftCapReason  String?
+
   // Discount Tracking
   couponCode            String?
   discountRuleId        Int?

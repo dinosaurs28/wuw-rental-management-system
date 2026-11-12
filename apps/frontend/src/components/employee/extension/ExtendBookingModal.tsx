@@ -223,7 +223,8 @@ export function ExtendBookingModal({
     });
     return res.ok ? null : res.message;
   })();
-  const hoursVerdict = newEndAt && officeHours ? validateReturnTime(officeHours, newEndAt) : null;
+  const pickupAt = eligibility?.bookingStartAt ? new Date(eligibility.bookingStartAt) : null;
+  const hoursVerdict = newEndAt && officeHours ? validateReturnTime(officeHours, newEndAt, { pickupAt }) : null;
   const hoursMessage =
     hoursVerdict?.status === "RETURN_OUTSIDE_HOURS" ? buildScheduleUserMessage(hoursVerdict) : null;
 
@@ -266,7 +267,7 @@ export function ExtendBookingModal({
     const hour = String(Math.floor(total / 60)).padStart(2, "0");
     const minute = String(total % 60).padStart(2, "0");
     const at = istInstant(parts.day, `${hour}:${minute}`);
-    const verdict = officeHours ? validateReturnTime(officeHours, at) : null;
+    const verdict = officeHours ? validateReturnTime(officeHours, at, { pickupAt }) : null;
     const blocked = (!!maxEndAt && at > maxEndAt) || verdict?.status === "RETURN_OUTSIDE_HOURS";
     const past = !!availableUntil && at > availableUntil;
     return { day: parts.day, hour, minute, at, blocked, past };

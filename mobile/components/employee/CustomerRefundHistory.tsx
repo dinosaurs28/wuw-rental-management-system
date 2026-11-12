@@ -11,6 +11,9 @@ import type { CustomerRefundRow } from '../../types/completedOperation';
 const num = (x: unknown) => Number(x ?? 0) || 0;
 const inr = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
+const typeLabel = (r: CustomerRefundRow) =>
+  r.kind === 'DROP_OTHER' ? (r.kindLabel ?? 'Drop refund (other)') : 'Refund to customer';
+
 const methodLabel = (r: CustomerRefundRow) =>
   r.method === 'CASH' ? 'Cash' : r.onlineGateway === 'BANK_TRANSFER' ? 'Bank transfer' : 'UPI';
 
@@ -27,7 +30,7 @@ export default function CustomerRefundHistory({
       {refunds.map((r) => (
         <View key={r.publicId} style={styles.item}>
           <View style={styles.row}>
-            <Text style={[styles.label, r.voided && styles.struck]}>Refund to customer · {methodLabel(r)}</Text>
+            <Text style={[styles.label, r.voided && styles.struck]}>{typeLabel(r)} · {methodLabel(r)}</Text>
             <Text style={[styles.amount, r.voided && styles.struck]}>− {inr(num(r.amount))}</Text>
           </View>
           <Text style={styles.note}>
@@ -47,7 +50,7 @@ export default function CustomerRefundHistory({
           {onVoid && r.voidable ? (
             <TouchableOpacity
               style={styles.voidBtn}
-              onPress={() => onVoid(r, `Refund to customer · ${methodLabel(r)}`)}
+              onPress={() => onVoid(r, `${typeLabel(r)} · ${methodLabel(r)}`)}
               hitSlop={6}
               activeOpacity={0.7}
             >

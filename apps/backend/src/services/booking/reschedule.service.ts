@@ -437,7 +437,7 @@ function hoursError(
       verdict: pickupVerdict,
     });
   }
-  const returnVerdict: ScheduleVerdict = validateReturnTime(schedule, newEnd);
+  const returnVerdict: ScheduleVerdict = validateReturnTime(schedule, newEnd, { pickupAt: newStart });
   if (returnVerdict.status !== "RETURN_OUTSIDE_HOURS") return null;
   const at = `The booking keeps its length, so the return would move to ${formatIstShort(newEnd)}`;
   let message: string;
@@ -1310,7 +1310,7 @@ function periodHoursError(
       verdict: pickupVerdict,
     });
   }
-  const returnVerdict: ScheduleVerdict = validateReturnTime(schedule, newEnd);
+  const returnVerdict: ScheduleVerdict = validateReturnTime(schedule, newEnd, { pickupAt: newStart });
   if (returnVerdict.status !== "RETURN_OUTSIDE_HOURS") return null;
   const at = `The return (${formatIstShort(newEnd)})`;
   const message =

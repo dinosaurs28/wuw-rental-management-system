@@ -31,7 +31,7 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../staff
 import { financialStateService } from "./financial-state.service.js";
 import { LEGACY_DEPOSIT_REFUND_KEY_PREFIX } from "./safety-deposit.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
-import { isCashRefundOutsideShift, isCustomerRefundKey } from "../booking/customer-refund-rules.js";
+import { isCashRefundOutsideShift, isCustomerRefundKey, isDropOtherRefundKey } from "../booking/customer-refund-rules.js";
 import {
   PaymentVoidError,
   SHIFT_CLOSED_VOID_WARNING,
@@ -122,6 +122,8 @@ export function paymentHistoryRow(t: TxnRow) {
     status: t.status,
     isRefund: isRefundPurpose(t.purpose),
     isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+    // Additive (Nov 2026, TODO 9): the independent "Drop refund (other)"
+    isDropOtherRefund: isDropOtherRefundKey(t.idempotencyKey),
     cashOutsideShift: isCashRefundOutsideShift(t),
     totalAmount: new Decimal(t.totalAmount.toString()).toFixed(2),
     cashAmount: new Decimal(t.cashAmount.toString()).toFixed(2),
@@ -343,6 +345,8 @@ export async function voidPayment(req: Request, scope: PaymentStaffScope, transa
             onlineAmount: new Decimal(t.onlineAmount.toString()).toFixed(2),
             goodwillAmount: new Decimal(t.goodwillAmount.toString()).toFixed(2),
             isCustomerRefund: isCustomerRefundKey(t.idempotencyKey),
+            // Additive (Nov 2026, TODO 9): the independent "Drop refund (other)"
+            isDropOtherRefund: isDropOtherRefundKey(t.idempotencyKey),
             reason: input.reason,
             cashShiftPublicId: t.cashShift?.publicId ?? null,
             shiftClosed,
