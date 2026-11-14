@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
+  type LayoutChangeEvent,
   Platform,
   ScrollView,
   StyleSheet,
@@ -42,6 +44,35 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 type FormField = keyof FormData;
 const FORM_FIELDS: readonly string[] = Object.keys(schema.shape);
+
+const FIELD_LABELS: Record<FormField, string> = {
+  name: 'name',
+  phone: 'phone',
+  age: 'age',
+  addressLine1: 'address',
+  city: 'city',
+  state: 'state',
+  country: 'country',
+  zipCode: 'PIN code',
+  alternatePhone: 'alternate phone',
+};
+const BASIC_FIELDS: readonly FormField[] = ['name', 'phone', 'alternatePhone', 'age'];
+type AddressField = 'addressLine1' | 'city' | 'state' | 'country' | 'zipCode';
+
+// Walk-in customers can have "+91 98765 43210" / "919876543210" stored. The
+// phone inputs only take 10 digits, so prefill the bare number — otherwise the
+// form failed validation on a field the customer wasn't looking at and the
+// address could never be saved (Nov 2026).
+function toTenDigitMobile(raw: string | null | undefined): string {
+  const trimmed = String(raw ?? '').trim();
+  if (!trimmed) return '';
+  let digits = trimmed.replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  // Longer (a foreign number) is left whole so the 10-digit check flags it,
+  // never silently cut to a different number that a save would store.
+  return digits;
+}
 
 // ─── PhoneInput ───────────────────────────────────────────────────────────────
 function PhoneInput({
@@ -94,6 +125,40 @@ export default function EditProfile() {
   const updateUser = useAuthStore((s) => s.updateUser);
   const [toast, setToast] = useState<{ title: string; message?: string; type?: 'error' | 'success' } | null>(null);
 
+  // iOS doesn't scroll a focused input above the keyboard by itself, so the
+  // Country / PIN fields at the bottom were typed into blind behind the
+  // keyboard (Nov 2026). Scroll the focused address field into view once the
+  // keyboard is up.
+  const scrollRef = useRef<ScrollView>(null);
+  const addressCardY = useRef(0);
+  const fieldY = useRef<Partial<Record<AddressField, number>>>({});
+  const keyboardUp = useRef(false);
+  const pendingScrollY = useRef<number | null>(null);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      keyboardUp.current = true;
+      if (pendingScrollY.current != null) {
+        scrollRef.current?.scrollTo({ y: pendingScrollY.current, animated: true });
+        pendingScrollY.current = null;
+      }
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardUp.current = false;
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const onAddressFocus = (field: AddressField) => () => {
+    const y = Math.max(0, addressCardY.current + (fieldY.current[field] ?? 0) - 24);
+    if (keyboardUp.current) scrollRef.current?.scrollTo({ y, animated: true });
+    else pendingScrollY.current = y;
+  };
+  const onFieldLayout = (field: AddressField) => (e: LayoutChangeEvent) => {
+    fieldY.current[field] = e.nativeEvent.layout.y;
+  };
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => userApi.profile(),
@@ -104,19 +169,24 @@ export default function EditProfile() {
     resolver: zodResolver(schema),
     values: profile ? {
       name: profile.name ?? user?.name ?? '',
-      phone: profile.phone ?? '',
+      phone: toTenDigitMobile(profile.phone),
       age: profile.age != null ? String(profile.age) : '',
       addressLine1: profile.addressLine1 ?? '',
       city: profile.city ?? '',
       state: profile.state ?? '',
-      country: profile.country ?? 'India',
+      // The server sends "" (not null) for an empty country, so `??` never
+      // applied the default.
+      country: profile.country || 'India',
       zipCode: profile.zipCode ?? '',
-      alternatePhone: profile.alternatePhone ?? '',
+      alternatePhone: toTenDigitMobile(profile.alternatePhone),
     } : undefined,
   });
 
   // Fields the server still needs before this customer can book (#1).
   const missingText = joinProfileFieldLabels(profile?.missingFields ?? []);
+  // A prefilled value (e.g. Country = India) doesn't make the form dirty, so an
+  // incomplete profile must stay saveable without editing anything.
+  const canSave = isDirty || (profile?.missingFields?.length ?? 0) > 0;
 
   const mutation = useMutation({
     // The age goes as a number; stored DL / Aadhaar numbers and dob are kept.
@@ -165,11 +235,16 @@ export default function EditProfile() {
         <View style={{ width: 22 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* iOS: the ScrollView insets itself by the keyboard height (no KAV padding,
+          which left the focused field under the keyboard). Android: KAV as before. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="height" enabled={Platform.OS !== 'ios'}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
           {missingText ? (
             <View style={styles.missingBanner}>
@@ -208,18 +283,98 @@ export default function EditProfile() {
           </View>
 
           <Text style={styles.section}>Address</Text>
-          <View style={styles.card}>
-            <Input control={control} name="addressLine1" label="Address" placeholder="123 Main Street" error={errors.addressLine1?.message} />
-            <Input control={control} name="city" label="City" placeholder="Bengaluru" error={errors.city?.message} />
-            <Input control={control} name="state" label="State" placeholder="Karnataka" error={errors.state?.message} />
-            <Input control={control} name="country" label="Country" placeholder="India" error={errors.country?.message} />
-            <Input control={control} name="zipCode" label="ZIP / PIN code" placeholder="560001" keyboardType="number-pad" error={errors.zipCode?.message} />
+          <View style={styles.card} onLayout={(e) => { addressCardY.current = e.nativeEvent.layout.y; }}>
+            <View onLayout={onFieldLayout('addressLine1')}>
+              <Input
+                control={control}
+                name="addressLine1"
+                label="Address"
+                placeholder="House no., street, area"
+                autoCapitalize="words"
+                textContentType="fullStreetAddress"
+                autoComplete="street-address"
+                returnKeyType="done"
+                onFocus={onAddressFocus('addressLine1')}
+                error={errors.addressLine1?.message}
+              />
+            </View>
+            <View onLayout={onFieldLayout('city')}>
+              <Input
+                control={control}
+                name="city"
+                label="City"
+                placeholder="Bengaluru"
+                autoCapitalize="words"
+                textContentType="addressCity"
+                autoComplete="postal-address-locality"
+                returnKeyType="done"
+                onFocus={onAddressFocus('city')}
+                error={errors.city?.message}
+              />
+            </View>
+            <View onLayout={onFieldLayout('state')}>
+              <Input
+                control={control}
+                name="state"
+                label="State"
+                placeholder="Karnataka"
+                autoCapitalize="words"
+                textContentType="addressState"
+                autoComplete="postal-address-region"
+                returnKeyType="done"
+                onFocus={onAddressFocus('state')}
+                error={errors.state?.message}
+              />
+            </View>
+            <View onLayout={onFieldLayout('country')}>
+              <Input
+                control={control}
+                name="country"
+                label="Country"
+                placeholder="India"
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="countryName"
+                autoComplete="postal-address-country"
+                returnKeyType="done"
+                onFocus={onAddressFocus('country')}
+                error={errors.country?.message}
+              />
+            </View>
+            <View onLayout={onFieldLayout('zipCode')}>
+              <Input
+                control={control}
+                name="zipCode"
+                label="ZIP / PIN code"
+                placeholder="560001"
+                keyboardType="number-pad"
+                textContentType="postalCode"
+                autoComplete="postal-code"
+                onFocus={onAddressFocus('zipCode')}
+                error={errors.zipCode?.message}
+              />
+            </View>
           </View>
 
           <TouchableOpacity
-            style={[styles.saveBtn, (!isDirty || mutation.isPending) && styles.saveBtnDisabled]}
-            onPress={handleSubmit((data) => mutation.mutate(data))}
-            disabled={!isDirty || mutation.isPending}
+            style={[styles.saveBtn, (!canSave || mutation.isPending) && styles.saveBtnDisabled]}
+            onPress={() => {
+              Keyboard.dismiss();
+              handleSubmit(
+                (data) => mutation.mutate(data),
+                // Say what's wrong — the error may sit off-screen above.
+                (errs) => {
+                  const bad = (Object.keys(errs) as FormField[]).filter((f) => f in FIELD_LABELS);
+                  if (bad.some((f) => BASIC_FIELDS.includes(f))) scrollRef.current?.scrollTo({ y: 0, animated: true });
+                  setToast({
+                    title: 'Check your details',
+                    message: `Fix the ${bad.map((f) => FIELD_LABELS[f]).join(', ')} field${bad.length > 1 ? 's' : ''}.`,
+                    type: 'error',
+                  });
+                },
+              )();
+            }}
+            disabled={!canSave || mutation.isPending}
             activeOpacity={0.85}
           >
             {mutation.isPending ? (

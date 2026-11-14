@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import { createHmac, timingSafeEqual } from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { config } from "dotenv";
+import { isAlreadyCapturedError, resolveOrderState } from "./razorpay-order-state.js";
 config();
 
 const KEY_ID = process.env.RAZORPAY_KEY_ID;
@@ -127,41 +128,34 @@ export async function fetchOrderStatus(
     const payments: any = await rzp.orders.fetchPayments(orderId);
     const items: any[] = payments?.items ?? [];
 
-    // A captured (or authorized) payment wins over any number of failed ones.
-    const settled =
-      items.find((p) => p.status === "captured") ??
-      items.find((p) => p.status === "authorized");
+    const resolved = resolveOrderState(order?.status, items);
 
-    if (settled) {
+    if (resolved.state === "SUCCESS") {
+      const settled: any = resolved.payment;
+      // Authorized only: capture it now. Left uncaptured, Razorpay refunds it
+      // after a few days and the customer sees a "failed" payment on a
+      // confirmed booking. Unknown capture outcome = unknown state (retry).
+      if (resolved.needsCapture) {
+        const captured = await captureAuthorizedPayment(settled.id, Number(settled.amount), settled.currency ?? "INR");
+        if (!captured) return null;
+      }
       return {
         state: "SUCCESS",
         orderId,
         paymentId: settled.id,
-        amountPaid: settled.amount,
+        amountPaid: Number(settled.amount),
         method: settled.method ?? null,
         raw: { order, payment: settled },
       };
     }
 
-    const pending = items.find((p) => p.status === "created" || p.status === "pending");
-    if (pending || order?.status === "created" || order?.status === "attempted") {
-      return {
-        state: "PENDING",
-        orderId,
-        paymentId: pending?.id ?? null,
-        amountPaid: 0,
-        method: pending?.method ?? null,
-        raw: { order, payments: items },
-      };
-    }
-
-    const failed = items.find((p) => p.status === "failed");
+    const p: any = resolved.payment;
     return {
-      state: "FAILED",
+      state: resolved.state,
       orderId,
-      paymentId: failed?.id ?? null,
+      paymentId: p?.id ?? null,
       amountPaid: 0,
-      method: failed?.method ?? null,
+      method: p?.method ?? null,
       raw: { order, payments: items },
     };
   } catch (error: any) {
@@ -170,6 +164,62 @@ export async function fetchOrderStatus(
       error?.error?.description ?? error?.message,
     );
     return null;
+  }
+}
+
+/**
+ * Captures an AUTHORIZED payment (orders are created with payment_capture,
+ * but the account's Dashboard capture settings can still leave a payment
+ * authorized). True when the payment is captured afterwards — including when
+ * someone else captured it first — false when that could not be established.
+ */
+export async function captureAuthorizedPayment(
+  paymentId: string,
+  amountInPaise: number,
+  currency = "INR",
+): Promise<boolean> {
+  try {
+    await getClient().payments.capture(paymentId, amountInPaise, currency);
+    console.log(`[razorpay] captured authorized payment ${paymentId} (${amountInPaise} paise)`);
+    return true;
+  } catch (error: any) {
+    const detail = error?.error?.description ?? error?.message;
+    if (isAlreadyCapturedError(detail)) return true;
+    // Re-read it: a concurrent capture may have won with a different message.
+    try {
+      const p: any = await getClient().payments.fetch(paymentId);
+      if (p?.status === "captured") return true;
+    } catch {
+      /* unknown */
+    }
+    console.error(`[razorpay] capture failed paymentId=${paymentId}: ${detail}`);
+    return false;
+  }
+}
+
+/**
+ * Best-effort: makes sure a payment the Checkout handler reported is captured,
+ * capturing it when it is only authorized. "unknown" when Razorpay could not
+ * be asked — callers that already hold a valid checkout signature carry on.
+ */
+export async function ensurePaymentCaptured(
+  paymentId: string,
+): Promise<"captured" | "not_settled" | "unknown"> {
+  try {
+    const p: any = await getClient().payments.fetch(paymentId);
+    if (p?.status === "captured") return "captured";
+    if (p?.status === "authorized") {
+      return (await captureAuthorizedPayment(paymentId, Number(p.amount), p.currency ?? "INR"))
+        ? "captured"
+        : "unknown";
+    }
+    return "not_settled";
+  } catch (error: any) {
+    console.error(
+      `[razorpay] payment fetch failed paymentId=${paymentId}:`,
+      error?.error?.description ?? error?.message,
+    );
+    return "unknown";
   }
 }
 

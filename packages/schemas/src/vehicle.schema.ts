@@ -287,6 +287,31 @@ const swapFuelBarsSchema = z.preprocess(
     .regex(FUEL_BARS_PATTERN, FUEL_BARS_MESSAGE)
     .optional(),
 );
+/**
+ * Most photos of the replacement one mid-rental swap takes (after repeats of the
+ * same file are dropped). Sized above a full pickup set: the pickup itself has
+ * no cap and its draft keeps up to 60.
+ */
+export const SWAP_REPLACEMENT_PHOTOS_MAX = 100;
+
+export function swapPhotosTooManyMessage(count: number): string {
+  return `Too many photos of the replacement vehicle: ${count} sent, at most ${SWAP_REPLACEMENT_PHOTOS_MAX}. Remove some extra photos and try again.`;
+}
+
+/** Drops later entries repeating an earlier entry's fileId (a non-array passes through untouched). */
+function dedupeSwapPhotosByFileId(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  const seen = new Set<string>();
+  return value.filter((item) => {
+    const raw = item && typeof item === "object" ? (item as { fileId?: unknown }).fileId : undefined;
+    if (typeof raw !== "string" || raw.trim() === "") return true; // the field rule reports it
+    const id = raw.trim();
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 export const vehicleSwapSchema = z
   .object({
     newVehicleId: z.coerce
@@ -321,18 +346,35 @@ export const vehicleSwapSchema = z
     // by current clients: the server then requires the photos and FASTag
     // balances (400 SWAP_PHOTOS_REQUIRED / FASTAG_BALANCE_REQUIRED). Omitted
     // (app 1.0.0/1.0.1) = the swap goes ahead, flagged as without photos.
-    replacementPhotos: z
-      .array(
-        z.object({
-          fileId: z.string().trim().min(1, "Photo file id is required"),
-          label: z.preprocess(
-            (v) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v),
-            z.string().trim().max(100).optional(),
-          ),
-        }),
-      )
-      .max(30, "Too many photos")
-      .optional(),
+    // Nov 14 2026: the cap was 30, below what staff take of a car at pickup
+    // (no cap there): a full set of the replacement was refused with "Too many
+    // photos". The same file sent twice counts once (dropped here), and the cap
+    // is SWAP_REPLACEMENT_PHOTOS_MAX with a message that says the numbers.
+    replacementPhotos: z.preprocess(
+      dedupeSwapPhotosByFileId,
+      z
+        .array(
+          z.object({
+            fileId: z.string().trim().min(1, "Photo file id is required"),
+            label: z.preprocess(
+              (v) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v),
+              z.string().trim().max(100).optional(),
+            ),
+          }),
+        )
+        .superRefine((photos, ctx) => {
+          if (photos.length > SWAP_REPLACEMENT_PHOTOS_MAX) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.too_big,
+              type: "array",
+              maximum: SWAP_REPLACEMENT_PHOTOS_MAX,
+              inclusive: true,
+              message: swapPhotosTooManyMessage(photos.length),
+            });
+          }
+        })
+        .optional(),
+    ),
     // FASTag balances at a mid-rental swap: the returning car's closing
     // balance and the replacement's opening balance (cars with a FASTag)
     // (same 0 … 1,00,000 rule as the pickup / drop balances)

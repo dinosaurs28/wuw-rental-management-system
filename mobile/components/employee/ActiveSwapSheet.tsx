@@ -72,6 +72,19 @@ const MISSING_FIELD: Record<string, Field> = {
 // Without a capture config the server asks for this many photos (it also sends it per car).
 const NO_CONFIG_REQUIREMENT: SwapPhotoRequirement = { fields: [], minPhotos: 4 };
 
+// Most photos of the replacement the server takes at one swap (repeats of a file
+// count once) — @repo/schemas SWAP_REPLACEMENT_PHOTOS_MAX. Servers before Nov 14
+// 2026 refused more than 30 with "Too many photos".
+const SWAP_PHOTOS_MAX = 100;
+
+/** The photos as sent: one entry per file, in the order taken. */
+function photosToSend(photos: CapturedPhoto[]) {
+  const seen = new Set<string>();
+  return photos
+    .filter((p) => (p.fileId && !seen.has(p.fileId) ? (seen.add(p.fileId), true) : false))
+    .map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) }));
+}
+
 /** Required shots still missing, and how many photos short of the minimum. */
 function photoShortfall(photos: CapturedPhoto[], requirement: SwapPhotoRequirement) {
   const taken = new Set(photos.map((p) => p.label?.toLowerCase()).filter(Boolean));
@@ -220,17 +233,22 @@ export default function ActiveSwapSheet({
   const newHasFastag = photosRequired && selected?.hasFastag === true;
   const newFastagShown = photosRequired && !!selected;
   const shortfall = photoShortfall(photos, requirement);
-  const photosIncomplete = photosRequired && (shortfall.missingLabels.length > 0 || shortfall.short > 0);
+  const photosToSendCount = photosToSend(photos).length;
+  const photosOverCap = photosRequired && photosToSendCount > SWAP_PHOTOS_MAX;
+  const photosIncomplete =
+    photosRequired && (shortfall.missingLabels.length > 0 || shortfall.short > 0 || photosOverCap);
   // Why "Swap vehicle" is still off because of the photos (shown above it).
   const photoBlocker = !photosRequired || !selected
     ? null
     : pendingPhotos > 0
       ? 'Wait for the photos to upload (retry or remove failed ones).'
-      : shortfall.missingLabels.length > 0
-        ? `Take the required photo${shortfall.missingLabels.length > 1 ? 's' : ''} of ${selected.regNo}: ${shortfall.missingLabels.join(', ')}.`
-        : shortfall.short > 0
-          ? `Take at least ${requirement.minPhotos} photos of ${selected.regNo} (${photos.length} taken).`
-          : null;
+      : photosOverCap
+        ? `Too many photos: ${photosToSendCount} taken, at most ${SWAP_PHOTOS_MAX}. Remove some extra photos.`
+        : shortfall.missingLabels.length > 0
+          ? `Take the required photo${shortfall.missingLabels.length > 1 ? 's' : ''} of ${selected.regNo}: ${shortfall.missingLabels.join(', ')}.`
+          : shortfall.short > 0
+            ? `Take at least ${requirement.minPhotos} photos of ${selected.regNo} (${photos.length} taken).`
+            : null;
 
   const pickVehicle = (v: SwapCandidate) => {
     setSelected(v);
@@ -310,7 +328,7 @@ export default function ActiveSwapSheet({
       chargeDifference,
       // Mid-rental: sending the photos (and balances) makes the server require them.
       ...(photosRequired
-        ? { replacementPhotos: photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) })) }
+        ? { replacementPhotos: photosToSend(photos) }
         : {}),
       ...(oldFastagShown && parseFastagBalance(oldFastag) != null
         ? { oldVehicleFastagBalance: parseFastagBalance(oldFastag)! }

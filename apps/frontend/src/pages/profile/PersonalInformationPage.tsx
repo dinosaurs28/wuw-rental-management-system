@@ -49,7 +49,7 @@ const toFormValues = (
   addressLine1: profile.addressLine1 || "",
   city: profile.city || "",
   state: profile.state || "",
-  country: profile.country || "",
+  country: profile.country || "India",
   zipCode: profile.zipCode || "",
   alternatePhone: profile.alternatePhone || "",
 });

@@ -21,6 +21,14 @@ import { recordBookingSpecialRules } from "../../services/pricing/branch-special
 import { discountApplicationService } from "../discount/discount-application.service.js";
 import { initialInvoiceGstData, refreshInvoiceTotals } from "../invoice-totals.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
+import { lockAndFindBlockedVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import {
+  lateCaptureLogReason,
+  lateCaptureRefusal,
+  needsLateCaptureCheck,
+  rebookingsOf,
+  type LateCaptureRefusal,
+} from "./late-capture-rules.js";
 
 interface ConfirmBookingPaymentParams {
   /** Internal Booking.id (not publicId). */
@@ -190,12 +198,84 @@ export async function confirmBookingPayment(
         ? null
         : DepositMethod.ONLINE_RAZORPAY;
 
+  const late: { refusal: LateCaptureRefusal | null; raced: "CONFIRMED" | "CANCELLED" | null } = { refusal: null, raced: null };
   try {
     console.log(
       `[confirmBookingPayment] starting Prisma transaction to confirm booking=${booking.publicId}`,
     );
     await prisma.$transaction(
       async (tx) => {
+        // A gateway payment landing on a lapsed (HOLD_EXPIRED) hold: its car may
+        // have been booked since, or the customer booked again. Re-checked under
+        // the same vehicle row locks the booking-create path takes, so a racing
+        // checkout can't slip in; not free → refund path, never a double booking.
+        if (needsLateCaptureCheck(booking, !isCash && !isCounterNoGateway)) {
+          const vehicleIds = booking.items.map((item) => item.vehicleId);
+          const blocked = await lockAndFindBlockedVehicleIds(tx, vehicleIds, booking.startAt, booking.endAt, {
+            forStaff: !!paymentActor?.role && paymentActor.role !== Role.CUSTOMER,
+          });
+          // The vehicle locks serialise racing confirms of this same booking
+          // (webhook payment.captured + order.paid + sweep): re-read it, or a
+          // second caller would see this booking's own CONFIRMED items as
+          // "taken" and cancel a paid booking / send a second refund notice.
+          const fresh = await tx.booking.findUnique({
+            where: { id: booking.id },
+            select: { status: true, paymentStatus: true },
+          });
+          if (fresh?.paymentStatus === PaymentStatus.SUCCESS) {
+            late.raced = "CONFIRMED";
+            return;
+          }
+          if (fresh?.status !== BookingStatus.HOLD_EXPIRED) {
+            late.raced = "CANCELLED";
+            return;
+          }
+          const rebooked = await tx.booking.findMany({
+            where: {
+              customerId: booking.customerId,
+              id: { not: booking.id },
+              startAt: { lt: booking.endAt },
+              endAt: { gt: booking.startAt },
+              OR: [
+                { status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] } },
+                { status: BookingStatus.HOLD, holdExpiresAt: { gt: new Date() } },
+              ],
+            },
+            select: {
+              publicId: true,
+              createdAt: true,
+              items: { select: { vehicle: { select: { categoryId: true, category: { select: { typeClass: true } } } } } },
+            },
+          });
+          const kinds = await tx.vehicle.findMany({
+            where: { id: { in: vehicleIds } },
+            select: { categoryId: true, category: { select: { typeClass: true } } },
+          });
+          const kindOf = (v: { categoryId: number; category: { typeClass: string } }) => ({
+            categoryId: v.categoryId,
+            typeClass: String(v.category.typeClass),
+          });
+          late.refusal = lateCaptureRefusal({
+            vehicleIds,
+            blockedVehicleIds: blocked,
+            // Only a later booking for the same kind of vehicle is a re-book
+            overlappingCustomerBookings: rebookingsOf(
+              { createdAt: booking.createdAt, vehicles: kinds.map(kindOf) },
+              rebooked.map((b) => ({
+                publicId: b.publicId,
+                createdAt: b.createdAt,
+                vehicles: b.items.map((i) => kindOf(i.vehicle)),
+              })),
+            ),
+          });
+          if (late.refusal) {
+            // Dead booking with money on it: CANCELLED keeps the sweep and
+            // retries from re-checking (and re-notifying) it
+            await tx.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CANCELLED } });
+            return;
+          }
+        }
+
         // The creator's open shift first, locked FOR SHARE (never a shift being
         // closed). Counter money (cash / UPI / split) taken by a Fleet Executive
         // needs one; a gateway payment links when one is open, never refused.
@@ -409,6 +489,24 @@ export async function confirmBookingPayment(
       return { alreadyConfirmed: false, skipped: error.code };
     }
     throw error;
+  }
+
+  if (late.raced === "CONFIRMED") return { alreadyConfirmed: true };
+  if (late.raced === "CANCELLED") {
+    console.error(
+      `[confirmBookingPayment] booking=${booking.publicId} txn=${transactionId} was cancelled by a racing call — not confirming (refund already raised)`,
+    );
+    return { alreadyConfirmed: false, skipped: "CANCELLED" };
+  }
+  if (late.refusal) {
+    console.error(
+      `[confirmBookingPayment] REFUND REQUIRED booking=${booking.publicId} txn=${transactionId} ` +
+        `gatewayPaymentId=${gatewayPaymentId ?? "none"} — ${lateCaptureLogReason(late.refusal)}; not confirming, booking set CANCELLED`,
+    );
+    if (!callerNotifiesRefund) {
+      void notifyEvents.paymentNeedsRefund({ bookingId: booking.id, transactionId });
+    }
+    return { alreadyConfirmed: false, skipped: "CANCELLED" };
   }
 
   console.log(

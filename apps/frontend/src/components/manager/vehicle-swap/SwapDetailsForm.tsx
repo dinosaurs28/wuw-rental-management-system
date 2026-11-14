@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle, Gauge, IndianRupee } from "lucide-react";
+import { SWAP_REPLACEMENT_PHOTOS_MAX } from "@repo/schemas";
 import { cn } from "@/lib/utils";
 import {
   SwapReplacementPhotos,
@@ -172,8 +173,14 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
   const showFastagError = (field: "old" | "new", typed: string) =>
     attempted || typed.trim() !== "" ? fastagErrors[field] : undefined;
   const photoShortfall = swapPhotosShortfall(photos, photoRequirement);
+  // One entry per file, in the order taken (a repeat would count against the cap)
+  const photosToSend = photos
+    .filter((p, i) => photos.findIndex((q) => q.fileId === p.fileId) === i)
+    .map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) }));
+  const photosOverCap = photosRequired && photosToSend.length > SWAP_REPLACEMENT_PHOTOS_MAX;
   const photosIncomplete =
-    photosRequired && (photoShortfall.missingLabels.length > 0 || photoShortfall.short > 0);
+    photosRequired &&
+    (photoShortfall.missingLabels.length > 0 || photoShortfall.short > 0 || photosOverCap);
 
   const maintenanceNotesMissing = markOriginalForMaintenance && !originalVehicleNotes.trim();
   const canSubmit =
@@ -218,9 +225,7 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
     data.chargeDifference = priceKnown && chargeable ? chargeDifference : false;
     // Always sent from the web, so the server holds mid-rental swaps to the
     // photo + FASTag rule (it ignores both before pickup)
-    data.replacementPhotos = photosRequired
-      ? photos.map((p) => ({ fileId: p.fileId, ...(p.label ? { label: p.label } : {}) }))
-      : [];
+    data.replacementPhotos = photosRequired ? photosToSend : [];
     if (oldFastagShown && oldFastagValue !== null) data.oldVehicleFastagBalance = oldFastagValue;
     if (newFastagShown && newFastagValue !== null) data.newVehicleFastagBalance = newFastagValue;
     onSubmit(data);
@@ -561,7 +566,9 @@ export const SwapDetailsForm: React.FC<SwapDetailsFormProps> = ({
         <p className="text-xs text-gray-500 sm:text-right">
           {photosUploading > 0
             ? "Wait for the photos to finish uploading."
-            : `Take the photos of ${newVehicle.regNo} to complete the swap.`}
+            : photosOverCap
+              ? `Too many photos: ${photosToSend.length} taken, at most ${SWAP_REPLACEMENT_PHOTOS_MAX}. Remove some extra photos.`
+              : `Take the photos of ${newVehicle.regNo} to complete the swap.`}
         </p>
       )}
 

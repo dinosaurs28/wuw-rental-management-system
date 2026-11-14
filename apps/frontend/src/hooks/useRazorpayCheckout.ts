@@ -20,6 +20,8 @@ import {
 const MERCHANT_NAME = "WUW Rentals";
 /** Brand orange — matches `--primary` in src/index.css. */
 const THEME_COLOR = "#FF5F00";
+/** Re-checks after a dismissal that followed a failed attempt (Nov 2026). */
+const DISMISS_RECHECK_DELAYS_MS = [1500, 2000, 3000, 3000, 3000];
 
 export interface RazorpayPrefill {
   name?: string;
@@ -203,7 +205,14 @@ export const useRazorpayCheckout = () => {
             // The user may have paid and closed the modal before the handler
             // fired, so confirm with the server before calling it cancelled.
             try {
-              const status = await pollStatus(transactionId);
+              let status = await pollStatus(transactionId);
+              // A failed attempt was seen, but a later one (UPI app, QR) may
+              // still be landing: re-check for ~12 s before calling it failed
+              for (const delay of DISMISS_RECHECK_DELAYS_MS) {
+                if (status.status !== "Pending" || gatewayError === null) break;
+                await new Promise((r) => setTimeout(r, delay));
+                status = await pollStatus(transactionId);
+              }
               if (status.status === "Success") {
                 await onSuccess(null);
                 return;

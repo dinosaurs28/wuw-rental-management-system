@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma } from "@repo/database/client";
+import { prisma, ExtensionStatus } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
-import { verifyWebhookSignature } from "../../services/payment/razorpay.service.js";
+import {
+  captureAuthorizedPayment,
+  verifyWebhookSignature,
+} from "../../services/payment/razorpay.service.js";
 import {
   confirmBookingPayment,
   confirmExtensionPayment,
@@ -11,9 +14,15 @@ import {
   flagCheckoutPaymentAfterQr,
   handleUpiQrWebhookEvent,
 } from "../../services/payment/upi-qr.service.js";
+import { isReconcilableOnlineHold } from "../../services/payment/razorpay-order-state.js";
 
-/** Events we act on. Everything else is acknowledged and dropped. */
-const CONFIRM_EVENTS = new Set(["payment.captured", "order.paid"]);
+/**
+ * Events we act on. Everything else is acknowledged and dropped.
+ * payment.authorized: when the account's capture settings leave a payment
+ * authorized, it is captured here first — never confirmed uncaptured, since
+ * Razorpay refunds an uncaptured payment after a few days.
+ */
+const CONFIRM_EVENTS = new Set(["payment.captured", "order.paid", "payment.authorized"]);
 const FAIL_EVENTS = new Set(["payment.failed"]);
 const QR_EVENTS = new Set(["qr_code.credited", "qr_code.closed"]);
 
@@ -109,6 +118,47 @@ export const razorpayWebhook = async (req: Request, res: Response) => {
       ip: req.ip,
       userAgent: req.headers["user-agent"] as string | undefined,
     };
+
+    // Authorized only: capture before confirming anything. When the capture
+    // can't be done now, acknowledge — the status poll, the hold-release check
+    // and the reconcile sweep capture and confirm it through fetchOrderStatus.
+    if (eventName === "payment.authorized") {
+      if (!paymentId || paymentEntity?.status !== "authorized") {
+        await markProcessed();
+        return res.status(StatusCode.OK).json({ message: "Acknowledged" });
+      }
+      // Only capture for an order that can still be applied: an unpaid online
+      // hold or a pending extension. Anything else (already paid, cancelled, not
+      // ours, a remaining-payment order) is left authorized, so Razorpay
+      // auto-refunds it instead of it becoming a manual refund.
+      const [holdTarget, extTarget] = await Promise.all([
+        prisma.booking.findUnique({
+          where: { transactionId: orderId },
+          select: { status: true, paymentStatus: true, transactionId: true },
+        }),
+        prisma.bookingExtension.findUnique({
+          where: { gatewayTransactionId: orderId },
+          select: { extensionStatus: true },
+        }),
+      ]);
+      const capturable =
+        (holdTarget && isReconcilableOnlineHold(holdTarget)) ||
+        extTarget?.extensionStatus === ExtensionStatus.PENDING_PAYMENT;
+      if (!capturable) {
+        console.warn(`[razorpayWebhook] authorized payment=${paymentId} order=${orderId} has no open hold / extension — not capturing`);
+        await markProcessed();
+        return res.status(StatusCode.OK).json({ message: "Acknowledged — not capturable" });
+      }
+      const captured = await captureAuthorizedPayment(
+        paymentId,
+        Number(paymentEntity?.amount),
+        paymentEntity?.currency ?? "INR",
+      );
+      if (!captured) {
+        console.error(`[razorpayWebhook] could not capture authorized payment=${paymentId} order=${orderId} — left to reconcile`);
+        return res.status(StatusCode.OK).json({ message: "Acknowledged — capture pending" });
+      }
+    }
 
     // ── Extension payment path ───────────────────────────────────────────────
     // Check if this order belongs to a BookingExtension before the booking path

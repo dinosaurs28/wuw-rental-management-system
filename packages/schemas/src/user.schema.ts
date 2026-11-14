@@ -110,17 +110,51 @@ export function hasCustomerAgeRequirement(source: {
     return !!String(source.drivingLicenceNumber ?? "").trim() && !!String(source.aadhaarNumber ?? "").trim();
 }
 
+// ── Profile input normalisers (Nov 2026: "can't enter the address") ─────────
+// Walk-in customers can have their phone stored as "+91 98765 43210" /
+// "919876543210". The profile form prefilled that and the 10-character check
+// rejected it, so the customer could never save their address. Reduce the
+// common spellings to the bare 10 digits before validating; anything that
+// still isn't 10 characters is rejected as before.
+
+/** "+91 98765-43210", "919876543210", "09876543210" → "9876543210"; other input trimmed. */
+export function normalizeIndianMobileInput(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed || !/^\+?[\d\s\-().]+$/.test(trimmed)) return trimmed;
+    let digits = trimmed.replace(/\D/g, "");
+    if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+    else if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+    return digits;
+}
+
+/** "IN", "IND", "india", "Bharat" → "India"; other input trimmed. */
+export function normalizeCountryInput(value: string): string {
+    const trimmed = value.trim();
+    return /^(in|ind|india|bharat)$/i.test(trimmed) ? "India" : trimmed;
+}
+
+// string → string (transform + pipe) so the form's input and output types stay
+// plain strings for react-hook-form's zodResolver.
+const trimmedString = (message: string) =>
+    z.string().transform((v) => v.trim()).pipe(z.string().min(1, message));
+
+const profilePhoneSchema = z
+    .string()
+    .transform(normalizeIndianMobileInput)
+    .pipe(z.string().min(10, "Phone number must be at least 10 digits").max(10, "Phone number must be at most 10 digits"));
+
 /** Customer profile form (web; mobile mirrors it). No DL / Aadhaar / date of birth. */
 export const updateProfileSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-    phone: z.string().min(10, "Phone number must be at least 10 digits").max(10, "Phone number must be at most 10 digits"),
+    name: trimmedString("Name is required"),
+    phone: profilePhoneSchema,
     age: customerAgeSchema,
-    addressLine1: z.string().min(1, "Address Line 1 is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
-    country: z.string().min(1, "Country is required"),
-    zipCode: z.string().min(1, "Zip Code is required"),
-    alternatePhone: z.string().min(10, "Phone number must be at least 10 digits").max(10, "Phone number must be at most 10 digits").optional().or(z.literal("")),
+    addressLine1: trimmedString("Address Line 1 is required"),
+    city: trimmedString("City is required"),
+    state: trimmedString("State is required"),
+    country: z.string().transform(normalizeCountryInput).pipe(z.string().min(1, "Country is required")),
+    // "560 001" → "560001"
+    zipCode: z.string().transform((v) => v.replace(/\s+/g, "")).pipe(z.string().min(1, "Zip Code is required")),
+    alternatePhone: profilePhoneSchema.optional().or(z.literal("")),
 });
 
 /** Date of birth as old app builds send it ("" allowed); must be 18+ when given. */

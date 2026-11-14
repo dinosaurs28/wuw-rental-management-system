@@ -6,7 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { vehicleSwapSchema } from "@repo/schemas";
+import { SWAP_REPLACEMENT_PHOTOS_MAX, swapPhotosTooManyMessage, vehicleSwapSchema } from "@repo/schemas";
 import {
   MIN_SWAP_PHOTOS_WITHOUT_CONFIG,
   fastagBalancesToStore,
@@ -145,6 +145,37 @@ test("request schema: replacementPhotos optional, FASTag balances ≥ 0 with 2 d
   assert.equal(vehicleSwapSchema.safeParse({ ...base, newVehicleFastagBalance: 100000 }).success, true);
   assert.equal(vehicleSwapSchema.safeParse({ ...base, newVehicleFastagBalance: 100000.01 }).success, false);
   assert.equal(vehicleSwapSchema.safeParse({ ...base, replacementPhotos: [{ fileId: "" }] }).success, false);
+});
+
+test("request schema (Nov 14 bug): a full photo set is accepted; repeats count once; over the cap says the numbers", () => {
+  const base = { newVehicleId: 5, reason: "MAINTENANCE" };
+  // The old cap was 30: 12 labelled shots + 24 extras (36, what app 1.0.8 sends
+  // for a car photographed like at pickup) came back "Too many photos".
+  const fullSet = [
+    ...Array.from({ length: 12 }, (_, i) => ({ fileId: `l${i}`, label: `Shot ${i}` })),
+    ...Array.from({ length: 24 }, (_, i) => ({ fileId: `x${i}` })),
+  ];
+  const ok = vehicleSwapSchema.safeParse({ ...base, replacementPhotos: fullSet });
+  assert.equal(ok.success, true);
+  assert.equal(ok.success && ok.data.replacementPhotos?.length, 36);
+
+  // The same file sent twice (a re-sent batch) is dropped before counting, order kept
+  const repeated = Array.from({ length: SWAP_REPLACEMENT_PHOTOS_MAX }, (_, i) => ({ fileId: `f${i}` }));
+  const doubled = vehicleSwapSchema.safeParse({ ...base, replacementPhotos: [...repeated, ...repeated] });
+  assert.equal(doubled.success, true);
+  assert.deepEqual(
+    doubled.success && doubled.data.replacementPhotos?.map((p) => p.fileId),
+    repeated.map((p) => p.fileId),
+  );
+
+  const over = Array.from({ length: SWAP_REPLACEMENT_PHOTOS_MAX + 1 }, (_, i) => ({ fileId: `o${i}` }));
+  const refused = vehicleSwapSchema.safeParse({ ...base, replacementPhotos: over });
+  assert.equal(refused.success, false);
+  assert.equal(
+    !refused.success && refused.error.errors[0]?.message,
+    swapPhotosTooManyMessage(SWAP_REPLACEMENT_PHOTOS_MAX + 1),
+  );
+  assert.deepEqual(!refused.success && refused.error.errors[0]?.path, ["replacementPhotos"]);
 });
 
 // ── Which photos stand for the car being returned ───────────────────────────

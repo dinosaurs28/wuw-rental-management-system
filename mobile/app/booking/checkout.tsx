@@ -30,6 +30,7 @@ import { durationDiscountText, quoteDiscountLines } from '../../lib/discounts';
 import {
   CHECKING_PAYMENT_TEXT,
   QR_CANCEL_POLL_DELAYS,
+  CHECKOUT_REJECT_POLL_DELAYS,
   openRazorpayCheckout,
   isCheckoutCancelled,
   type CheckoutMode,
@@ -420,11 +421,13 @@ export default function Checkout() {
       // Razorpay rejects for both user cancellation and real failures.
       const cancelled = isCheckoutCancelled(rzpErr);
       // A QR cancel is often this phone's sheet being closed after the QR was
-      // paid from another phone — check before releasing the hold.
-      if (cancelled && mode === 'qr') {
+      // paid from another phone, and in default mode a UPI app can report a
+      // cancel / failure after the money went through — so always check with
+      // the server before releasing the hold (cancelHold also re-checks).
+      {
         setCheckingPayment(true);
         let paid = false;
-        for (const delay of QR_CANCEL_POLL_DELAYS) {
+        for (const delay of mode === 'qr' && cancelled ? QR_CANCEL_POLL_DELAYS : CHECKOUT_REJECT_POLL_DELAYS) {
           if (!mountedRef.current) return;
           try {
             const status = (await paymentApi.status(transactionId)).data?.status;

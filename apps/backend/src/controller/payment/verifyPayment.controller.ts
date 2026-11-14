@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { verifyCheckoutSignature } from "../../services/payment/razorpay.service.js";
+import {
+  ensurePaymentCaptured,
+  verifyCheckoutSignature,
+} from "../../services/payment/razorpay.service.js";
 import {
   confirmBookingPayment,
   confirmExtensionPayment,
@@ -41,6 +44,15 @@ export const verifyPayment = async (req: Request, res: Response) => {
       ip: req.ip,
       userAgent: req.headers["user-agent"] as string | undefined,
     };
+
+    // Checkout calls the success handler once the payment is AUTHORIZED. If the
+    // account's capture settings leave it there, capture it now — an uncaptured
+    // payment is refunded by Razorpay after a few days. Best effort: the signed
+    // handler response is the proof of payment, so an unknown answer still confirms.
+    const capture = await ensurePaymentCaptured(razorpay_payment_id);
+    if (capture !== "captured") {
+      console.warn(`[verifyPayment] payment=${razorpay_payment_id} capture check=${capture} — confirming on the signature`);
+    }
 
     const booking = await prisma.booking.findUnique({
       where: { transactionId: razorpay_order_id },

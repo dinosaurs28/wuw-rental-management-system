@@ -26,6 +26,10 @@ export function isCheckoutCancelled(err: any): boolean {
 // as a cancel. So a QR "cancel" polls the flow's status for ~30s before it is
 // treated as one.
 export const QR_CANCEL_POLL_DELAYS = [2000, 3000, 5000, 5000, 5000, 5000, 5000];
+// Default (UPI app / card) mode: the UPI app can hand back a "cancelled" or an
+// error after the money already went through, so the sheet's rejection is
+// checked against the server for ~12 s before the hold is released.
+export const CHECKOUT_REJECT_POLL_DELAYS = [1500, 2000, 3000, 3000, 3000];
 export const CHECKING_PAYMENT_TEXT = 'Checking if the payment went through…';
 
 // iOS can only probe schemes listed in LSApplicationQueriesSchemes (app.json):

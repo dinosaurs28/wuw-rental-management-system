@@ -32,7 +32,11 @@ Dashboard → **Settings → Webhooks → Add New Webhook**.
 
 - **URL:** `https://<your-api-host>/api/payment/razorpay/webhook`
 - **Secret:** the same value as `RAZORPAY_WEBHOOK_SECRET`
-- **Active events:** `payment.captured`, `payment.failed`, `order.paid`
+- **Active events:** `payment.captured`, `payment.authorized`, `payment.failed`, `order.paid`,
+  `qr_code.credited`, `qr_code.closed` (UPI QR)
+
+Razorpay disables a webhook that keeps failing (wrong secret, 4xx/5xx) — check
+it still shows **Active** after any secret or server change.
 
 The endpoint verifies the `X-Razorpay-Signature` header against the **raw**
 request body. It is unauthenticated by design — the signature is the auth — and
@@ -118,6 +122,14 @@ Either alone is sufficient. Both are idempotent, so whichever arrives second is
 a no-op. This is deliberate: the verify call gives the user an immediate result,
 and the webhook still settles the payment if the user closes the app, loses
 connectivity, or blocks the callback.
+
+A third path needs neither (Nov 2026): before a hold is released (hold expiry,
+customer / staff "cancel hold") the backend asks Razorpay about the order, and
+a sweep every 5 minutes re-checks unpaid online holds from the last 72 hours
+(`[razorpayReconcile]` in the logs). A captured — or authorized, which is then
+captured — payment confirms the booking even when no webhook or client call
+ever arrived. An authorized-only payment is always captured before confirming:
+Razorpay refunds uncaptured payments after a few days.
 
 A failed attempt (`payment.failed`) deliberately does **not** cancel anything.
 Razorpay fires it on every failed attempt and Checkout lets the user retry

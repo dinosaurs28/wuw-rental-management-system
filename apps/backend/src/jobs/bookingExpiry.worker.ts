@@ -4,6 +4,10 @@ import { createID } from "../utils/nanoID.js";
 import { auditService } from "../services/audit/audit.service.js";
 import { discountApplicationService } from "../services/discount/discount-application.service.js";
 import { reconcileBookingUpiQrs } from "../services/payment/upi-qr.service.js";
+import {
+  reconcileBookingRazorpayOrder,
+  runRazorpayReconcileSweep,
+} from "../services/payment/razorpay-reconcile.service.js";
 import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Lazy initialization - connections created when needed, after env vars are loaded
@@ -11,6 +15,7 @@ let redis: Redis | null = null;
 let redisSubscriber: Redis | null = null;
 
 const FALLBACK_CRON_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const RAZORPAY_RECONCILE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 function getRedisConfig() {
   const REDIS_URL = process.env.REDIS_URL;
@@ -177,6 +182,18 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
       }
     } catch (qrErr) {
       console.error(`[BookingExpiry] UPI QR reconcile failed for ${bookingPublicId}:`, qrErr);
+    }
+
+    // Same for a Razorpay Checkout payment that was captured but whose webhook
+    // and client confirmation never landed: confirm it instead of expiring it
+    try {
+      const rzp = await reconcileBookingRazorpayOrder(booking.id, { userAgent: "booking-expiry" });
+      if (rzp === "CONFIRMED" || rzp === "ALREADY_CONFIRMED") {
+        console.log(`[BookingExpiry] Booking ${bookingPublicId} was paid on Razorpay — confirmed, not expiring`);
+        return;
+      }
+    } catch (rzpErr) {
+      console.error(`[BookingExpiry] Razorpay reconcile failed for ${bookingPublicId}:`, rzpErr);
     }
 
     // Cancel the booking
@@ -410,6 +427,15 @@ async function initBookingExpiryWorker(): Promise<void> {
 
   // Always run the fallback sweep as the safety net
   startFallbackCron();
+
+  // Late Razorpay payments (Nov 2026 "paid but not confirmed"): online holds
+  // that lapsed or were released unpaid are re-checked against Razorpay, so a
+  // capture confirms the booking even when no webhook or client call arrives.
+  setTimeout(() => void runRazorpayReconcileSweep().catch((e) => console.error("[razorpayReconcile] sweep error:", e)), 60 * 1000);
+  setInterval(
+    () => void runRazorpayReconcileSweep().catch((e) => console.error("[razorpayReconcile] sweep error:", e)),
+    RAZORPAY_RECONCILE_INTERVAL_MS,
+  );
 
   console.log(
     `[BookingExpiry] Booking expiry worker initialized (${instant ? "instant events + fallback sweep" : "fallback sweep only"})`,

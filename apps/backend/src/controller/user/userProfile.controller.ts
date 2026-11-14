@@ -9,6 +9,7 @@ import {
   updateProfileSchema,
 } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
+import { normalizeIndianMobile } from "../../utils/phone.js";
 import {
   displayEmail,
   effectiveCustomerAge,
@@ -57,7 +58,10 @@ export const getUserProfile = async (req: Request, res: Response) => {
       name: user.name,
       // null when the account only has a walk-in placeholder address.
       email: displayEmail(user.email),
-      phone: user.phone,
+      // Bare 10 digits when the stored number has a +91 / 91 / 0 prefix (walk-in
+      // form): the profile forms prefill this and only accept 10 digits, so a
+      // prefixed number used to block saving the address (Nov 2026).
+      phone: normalizeIndianMobile(user.phone) ?? user.phone,
       dob: user.customerProfile?.dob || null,
       // Entered age, else derived from an older customer's date of birth
       age: effectiveCustomerAge(user.customerProfile),
@@ -66,7 +70,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
       state: user.customerProfile?.state || "",
       country: user.customerProfile?.country || "",
       zipCode: user.customerProfile?.zipCode || "",
-      alternatePhone: user.customerProfile?.alternatePhone || "",
+      alternatePhone:
+        normalizeIndianMobile(user.customerProfile?.alternatePhone) ??
+        (user.customerProfile?.alternatePhone || ""),
       // Full numbers: this is the owner's own profile (prefills the form).
       drivingLicenceNumber: user.customerProfile?.drivingLicenceNumber ?? null,
       aadhaarNumber: user.customerProfile?.aadhaarNumber ?? null,
