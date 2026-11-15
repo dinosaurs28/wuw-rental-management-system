@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Car, Loader2, Pencil, Search } from "lucide-react";
+import { ArrowRightLeft, Car, Loader2, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { UseCaseBadges, UseCaseFilterChips } from "@/components/vehicles/UseCaseChips";
 import { adminService } from "@/services/admin.service";
+import { VehicleTransferDialog } from "@/components/vehicles/VehicleBranchTransfer";
 import type { VehicleUseCase } from "@/services/vehicle.service";
 import { normalizeUseCases } from "@repo/schemas";
 
@@ -31,9 +32,10 @@ interface AdminVehicleRow {
   model: string;
   regNo: string;
   status: string;
+  odo?: number;
   useCases?: VehicleUseCase[];
   category?: { name: string } | null;
-  branch?: { name: string } | null;
+  branch?: { name: string; publicId?: string } | null;
 }
 
 export const AdminVehiclesPage = () => {
@@ -43,6 +45,7 @@ export const AdminVehiclesPage = () => {
   const [editing, setEditing] = useState<AdminVehicleRow | null>(null);
   const [draft, setDraft] = useState<VehicleUseCase[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [transferring, setTransferring] = useState<AdminVehicleRow | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -102,7 +105,7 @@ export const AdminVehiclesPage = () => {
           Vehicles
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Tag vehicles with trip types (Udupi/Manipal, Out of Udupi) so customers can filter by them.
+          Tag vehicles with trip types (Udupi/Manipal, Out of Udupi) so customers can filter by them, or transfer a vehicle to another branch.
         </p>
       </div>
 
@@ -137,7 +140,7 @@ export const AdminVehiclesPage = () => {
                   <TableHead>Category</TableHead>
                   <TableHead>Branch</TableHead>
                   <TableHead>Trip types</TableHead>
-                  <TableHead className="w-16" />
+                  <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -156,7 +159,7 @@ export const AdminVehiclesPage = () => {
                         <span className="text-xs text-gray-400">Untagged</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -164,6 +167,15 @@ export const AdminVehiclesPage = () => {
                         onClick={() => openEditor(v)}
                       >
                         <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Transfer ${v.regNo} to another branch`}
+                        title="Transfer to another branch / transfer history"
+                        onClick={() => setTransferring(v)}
+                      >
+                        <ArrowRightLeft className="size-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -173,6 +185,34 @@ export const AdminVehiclesPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <VehicleTransferDialog
+        open={!!transferring}
+        onOpenChange={(open) => !open && setTransferring(null)}
+        scope="admin"
+        vehicle={
+          transferring
+            ? {
+                publicId: transferring.publicId,
+                regNo: transferring.regNo,
+                make: transferring.make,
+                model: transferring.model,
+                branchName: transferring.branch?.name ?? null,
+                branchPublicId: transferring.branch?.publicId ?? null,
+                odo: transferring.odo ?? null,
+              }
+            : null
+        }
+        onTransferred={(result, to) =>
+          setVehicles((prev) =>
+            prev.map((v) =>
+              v.publicId === result.vehicle.publicId
+                ? { ...v, odo: result.vehicle.odo, branch: { name: to.name, publicId: to.publicId } }
+                : v,
+            ),
+          )
+        }
+      />
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && !isSaving && setEditing(null)}>
         <DialogContent>

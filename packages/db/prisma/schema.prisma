@@ -296,6 +296,7 @@ model User {
   specialPricingRulesUpdated SpecialPricingRule[] @relation("SpecialPricingRuleUpdater")
   bookingLocksCreated   BookingLock[]          @relation("BookingLockCreator")
   vehicleExpensesCreated VehicleExpense[]      @relation("VehicleExpenseCreator")
+  vehicleBranchTransfers VehicleBranchTransfer[] @relation("VehicleBranchTransferActor")
   bookingLocksCancelled BookingLock[]          @relation("BookingLockCanceller")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -486,6 +487,8 @@ model Branch {
   promoBanners            PromoBanner[]
   specialPricingRules     SpecialPricingRule[]
   bookingLocks            BookingLock[]
+  vehicleTransfersOut     VehicleBranchTransfer[]  @relation("VehicleTransferFrom")
+  vehicleTransfersIn      VehicleBranchTransfer[]  @relation("VehicleTransferTo")
   graceMinutes            Int                      @default(0)
   is24Hours               Boolean                  @default(false)
   bookingRestrictionMode  BookingRestrictionMode   @default(SAME_CATEGORY)
@@ -759,6 +762,7 @@ model Vehicle {
   bookingPhotos    BookingPhoto[]
   statusHistory    VehicleStatusHistory[]
   expenses         VehicleExpense[]
+  branchTransfers  VehicleBranchTransfer[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -897,6 +901,40 @@ model VehicleStatusHistory {
 
   @@index([vehicleId, changedAt])
   @@index([changedAt])
+}
+
+// A vehicle moved from one branch to another (Nov 14 2026, client: "Vehicle
+// transfer from one branch to another") by an admin or the manager of the
+// vehicle's branch; Vehicle.branchId changes in the same transaction
+// (services/vehicle-transfer). Past bookings keep their Booking.branchId, so
+// booking / finance reports and the BM rent history stay with the branch where
+// the rental happened. Names are snapshots (ids go NULL if a branch / user is
+// hard-deleted). Migration 20261114120000_vehicle_branch_transfer.
+model VehicleBranchTransfer {
+  id                  Int      @id @default(autoincrement())
+  publicId            String   @unique
+  vehicleId           Int
+  fromBranchId        Int?
+  toBranchId          Int?
+  fromBranchName      String
+  toBranchName        String
+  transferredByUserId Int?
+  transferredByName   String?
+  // ADMIN / MANAGER
+  transferredByRole   String?
+  reason              String
+  // Odometer reading (km) taken at the transfer, optional
+  odometer            Int?
+  createdAt           DateTime @default(now())
+
+  vehicle       Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  fromBranch    Branch? @relation("VehicleTransferFrom", fields: [fromBranchId], references: [id], onDelete: SetNull)
+  toBranch      Branch? @relation("VehicleTransferTo", fields: [toBranchId], references: [id], onDelete: SetNull)
+  transferredBy User?   @relation("VehicleBranchTransferActor", fields: [transferredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, createdAt])
+  @@index([fromBranchId])
+  @@index([toBranchId])
 }
 
 enum VehicleExpenseCategory {

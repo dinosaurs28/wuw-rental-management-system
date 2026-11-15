@@ -540,14 +540,21 @@ export async function lockAndFindBlockedVehicleIds(
   vehicleIds: number[],
   start: Date,
   end: Date,
-  options: { forStaff?: boolean } = {},
+  options: {
+    forStaff?: boolean;
+    /**
+     * The booking's branch: a car no longer at it (moved by a vehicle branch
+     * transfer that committed after the candidates were read) is blocked.
+     */
+    branchId?: number;
+  } = {},
 ): Promise<Set<number>> {
   const blocked = new Set<number>();
   if (vehicleIds.length === 0) return blocked;
   const ids = [...new Set(vehicleIds)].sort((a, b) => a - b);
 
-  const locked = await tx.$queryRaw<Array<{ id: number; status: string; deletedAt: Date | null }>>`
-    SELECT "id", "status"::text AS "status", "deletedAt" FROM "Vehicle"
+  const locked = await tx.$queryRaw<Array<{ id: number; status: string; deletedAt: Date | null; branchId: number }>>`
+    SELECT "id", "status"::text AS "status", "deletedAt", "branchId" FROM "Vehicle"
     WHERE "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`;
 
   const now = new Date();
@@ -564,6 +571,7 @@ export async function lockAndFindBlockedVehicleIds(
   for (const v of locked) {
     const manualOutForRental = v.status === "OUT_FOR_RENTAL" && !onRental.has(v.id);
     if (v.deletedAt || !isListableStatus(v.status) || manualOutForRental) blocked.add(v.id);
+    if (options.branchId != null && v.branchId !== options.branchId) blocked.add(v.id);
   }
   for (const i of items) blocked.add(i.vehicleId);
   const lockBlocked = await findBlockingLocks(ids, start, end, { forStaff: options.forStaff, db: tx });

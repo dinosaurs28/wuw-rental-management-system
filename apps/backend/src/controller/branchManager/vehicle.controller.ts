@@ -6,7 +6,8 @@ import { imageQueue } from "../../lib/queue.client.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability, invalidateVehiclePricing, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
-import { VehicleStatus } from "@repo/database/client";
+import { VehicleStatus, BookingStatus } from "@repo/database/client";
+import { bookingsBlockingDelete, vehicleDeleteBlockedMessage } from "../../services/vehicle-history/vehicle-delete.js";
 import { createVehicleSchema, editVehicleSchema, CHARGE_RATE_FIELDS, normalizeUseCases } from "@repo/schemas";
 import { z } from "zod";
 import Decimal from "decimal.js";
@@ -830,19 +831,46 @@ export const DeleteVehicle = async (req: Request, res: Response) => {
       where: { publicId: vehicleId },
     });
 
-    if (!vehicle || vehicle.branchId !== branchId) {
+    if (!vehicle || vehicle.branchId !== branchId || vehicle.deletedAt) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "Vehicle not found or access denied",
       });
     }
 
-    await prisma.vehicle.update({
-      where: { id: vehicle.id },
-      data: {
-        deletedAt: new Date(),
-        status: VehicleStatus.INACTIVE,
-      },
-    });
+    // Soft delete only (Nov 14 2026): the car's rentals, photos, damage and
+    // payments keep pointing at it. Refused while a booking still needs it —
+    // a live hold, a confirmed booking or a car out on rent.
+    const blockedMessage = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Vehicle" WHERE id = ${vehicle.id} FOR UPDATE`;
+      const active = await tx.booking.findMany({
+        where: {
+          deletedAt: null,
+          status: { in: [BookingStatus.HOLD, BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
+          items: { some: { vehicleId: vehicle.id } },
+        },
+        orderBy: { startAt: "asc" },
+        select: { publicId: true, status: true, holdExpiresAt: true },
+      });
+      const message = vehicleDeleteBlockedMessage(
+        vehicle.regNo,
+        bookingsBlockingDelete(
+          active.map((b) => ({ ...b, status: b.status as "HOLD" | "CONFIRMED" | "PICKED_UP" })),
+          new Date(),
+        ),
+      );
+      if (message) return message;
+      await tx.vehicle.update({
+        where: { id: vehicle.id },
+        data: {
+          deletedAt: new Date(),
+          status: VehicleStatus.INACTIVE,
+        },
+      });
+      return null;
+    }, { timeout: 15000 });
+    if (blockedMessage) {
+      return res.status(StatusCode.CONFLICT).json({ code: "VEHICLE_HAS_ACTIVE_BOOKINGS", message: blockedMessage });
+    }
 
     // Clear vehicle list cache for this branch
     const keys = await redis.keys(`vehicles:${branchId}:*`);

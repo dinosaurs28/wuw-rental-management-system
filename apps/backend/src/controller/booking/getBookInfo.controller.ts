@@ -222,7 +222,7 @@ async function resolveVehicleFromGroup(
     throw Object.assign(new Error("No vehicles available for this group"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
   }
 
-  const blocked = await lockAndFindBlockedVehicleIds(tx, candidates.map((c) => c.id), startDate, endDate);
+  const blocked = await lockAndFindBlockedVehicleIds(tx, candidates.map((c) => c.id), startDate, endDate, { branchId });
   const free = candidates.find((c) => !blocked.has(c.id));
   if (free) return free as any;
 
@@ -938,7 +938,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       // racing for it can't both hold it (the later one sees the first's HOLD)
       if (vehiclesData.length > 0) {
         const blocked = await lockAndFindBlockedVehicleIds(
-          tx, vehiclesData.map((v) => v.id), startDate, endDate,
+          tx, vehiclesData.map((v) => v.id), startDate, endDate, { branchId: bookingBranchId },
         );
         const taken = vehiclesData.find((v) => blocked.has(v.id));
         if (taken) {

@@ -94,6 +94,7 @@ import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import whatsappConfigRouter from "./whatsapp-config.routes.js";
 import userTransferRouter from "./userTransfer.routes.js";
+import vehicleTransferRouter from "./vehicleTransfer.routes.js";
 import {
   AdminListSpecialRules,
   AdminGetSpecialRuleOptions,
@@ -276,6 +277,8 @@ router.use("/staff-activity", staffActivityRouter);
 
 // Cross-branch user staffing overview & transfer
 router.use("/dashboard/user-transfer", userTransferRouter);
+// Vehicle transfer between branches + history (Nov 14 2026)
+router.use("/dashboard/vehicle-transfer", vehicleTransferRouter);
 
 // Discount Rules
 router.use("/discount-rules", discountRouter);

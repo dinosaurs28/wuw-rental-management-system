@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
+import { VehicleTransferDialog, VehicleTransferHistory } from "@/components/vehicles/VehicleBranchTransfer";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -70,6 +71,7 @@ import {
   VEHICLE_USE_CASE_LABELS,
 } from "@/services/vehicle.service";
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
+import { DeleteVehicleDialog } from "@/components/manager/vehicles/DeleteVehicleDialog";
 import { fetchGSTRule } from "@/services/gst.service";
 import { fetchWeekendDays, weekendDaysLabel } from "@/services/weekendDays.service";
 import { normalizeUseCases, splitRentTotal, type GstRates } from "@repo/schemas";
@@ -193,6 +195,9 @@ export const ManagerVehicleFormPage = () => {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!vehicleId;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  // Transfer to another branch (Nov 14 2026)
+  const [transferOpen, setTransferOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(isEditMode);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -1228,6 +1233,53 @@ export const ManagerVehicleFormPage = () => {
               </div>
             </div>
 
+            {/* Branch transfer (Nov 14 2026): move the car to another branch + its transfer history */}
+            {isEditMode && vehicleId && (
+              <div className="mt-6 rounded-xl border border-neutral-200 bg-white px-6 py-4 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-semibold text-neutral-900 text-[15px]">Transfer to another branch</h2>
+                    <p className="text-xs text-neutral-600">
+                      Moves the vehicle to another branch. Not possible while it is out on rent, has upcoming bookings,
+                      is in maintenance or has a drop still open. Past rentals stay with this branch.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 shrink-0"
+                    disabled={isLoading || isFetching}
+                    onClick={() => setTransferOpen(true)}
+                  >
+                    Transfer to branch
+                  </Button>
+                </div>
+                <VehicleTransferHistory scope="manager" vehiclePublicId={vehicleId} />
+              </div>
+            )}
+
+            {/* Danger zone (Nov 14 2026): delete from the edit page too */}
+            {isEditMode && vehicleId && (
+              <div className="mt-6 rounded-xl border border-red-200 bg-red-50/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-semibold text-red-700 text-[15px]">Delete vehicle</h2>
+                  <p className="text-xs text-neutral-600">
+                    Removes it from the fleet; its rent history is kept. Not possible while it has an upcoming booking
+                    or is out on rent.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-10 shrink-0"
+                  disabled={isLoading || isFetching}
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  Delete Vehicle
+                </Button>
+              </div>
+            )}
+
             {/* Sticky Footer Actions */}
             <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 px-4 py-3 flex items-center justify-end gap-3">
               <div className="max-w-[1440px] w-full mx-auto flex items-center justify-end gap-3">
@@ -1261,6 +1313,38 @@ export const ManagerVehicleFormPage = () => {
             </div>
           </form>
         </Form>
+        <DeleteVehicleDialog
+          vehicle={
+            deleteOpen && vehicleId
+              ? {
+                  publicId: vehicleId,
+                  make: form.getValues("make"),
+                  model: form.getValues("model"),
+                  regNo: form.getValues("licensePlate"),
+                }
+              : null
+          }
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => navigate("/manager/vehicles")}
+        />
+        <VehicleTransferDialog
+          open={transferOpen}
+          onOpenChange={setTransferOpen}
+          scope="manager"
+          vehicle={
+            vehicleId
+              ? {
+                  publicId: vehicleId,
+                  make: form.getValues("make"),
+                  model: form.getValues("model"),
+                  regNo: form.getValues("licensePlate"),
+                  odo: form.getValues("odo"),
+                }
+              : null
+          }
+          // The car is no longer this branch's: back to the list
+          onTransferred={() => navigate("/manager/vehicles")}
+        />
       </div>
     </ManagerLayout>
   );

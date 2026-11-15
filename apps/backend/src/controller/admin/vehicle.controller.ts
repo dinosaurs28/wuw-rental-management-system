@@ -26,6 +26,8 @@ export const GetAllVehicles = async (req: Request, res: Response) => {
         branch: {
           select: {
             name: true,
+            // For the branch transfer dialog (Nov 14 2026)
+            publicId: true,
           },
         },
       },

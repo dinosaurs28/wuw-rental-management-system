@@ -14,6 +14,7 @@ import { OperationNotesCard, hasOperationNotes, type OperationNotesView } from "
 import { BookingDrawer } from "@/components/manager/customers/BookingDrawer";
 import { MANAGER_CUSTOMERS_PORTAL, customersTabKey } from "@/components/manager/customers/portal";
 import { apiMessage, istDateTime } from "@/components/manager/customers/format";
+import { DamageSection, PhotoStrip, type RentHistoryDamage, type RentHistoryPhoto } from "./RentHistoryMedia";
 
 export interface VehicleRental {
   bookingPublicId: string;
@@ -28,6 +29,11 @@ export interface VehicleRental {
   swappedOut: { at: string; toRegNo: string } | null;
   swappedIn: { at: string; fromRegNo: string } | null;
   operationNotes: OperationNotesView;
+  /** This car's photos (Nov 14 2026; absent on older servers) */
+  pickupPhotos?: RentHistoryPhoto[];
+  dropPhotos?: RentHistoryPhoto[];
+  /** This car's damage on the rental (Nov 14 2026; absent on older servers) */
+  damages?: RentHistoryDamage[];
 }
 
 interface RentHistoryResponse {
@@ -78,7 +84,7 @@ export function VehicleRentHistorySheet({
           <SheetHeader className="p-4 border-b">
             <SheetTitle>Rent history</SheetTitle>
             <SheetDescription>
-              {vehicle ? `${vehicle.make} ${vehicle.model} · ${vehicle.regNo}` : ""} — rentals with the pickup and drop notes
+              {vehicle ? `${vehicle.make} ${vehicle.model} · ${vehicle.regNo}` : ""} — rentals with the pickup and drop notes, photos and damage
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-50">
@@ -123,6 +129,24 @@ export function VehicleRentHistorySheet({
                       {r.swappedIn && <span>Swapped in for {r.swappedIn.fromRegNo}, {istDateTime(r.swappedIn.at)}</span>}
                       {r.swappedOut && <span>Swapped out to {r.swappedOut.toRegNo}, {istDateTime(r.swappedOut.at)}</span>}
                     </div>
+                    <div className="grid gap-2 rounded-lg border bg-zinc-50/60 p-2.5">
+                      <PhotoStrip
+                        title={r.swappedIn ? `Handover photos (at swap)` : "Pickup photos"}
+                        photos={r.pickupPhotos ?? []}
+                      />
+                      <PhotoStrip
+                        title="Drop photos"
+                        photos={r.dropPhotos ?? []}
+                        emptyText={
+                          r.swappedOut
+                            ? `Swapped out to ${r.swappedOut.toRegNo} mid-rental — no drop photos of this car`
+                            : r.status === "PICKED_UP"
+                              ? "Not dropped yet"
+                              : "No photos recorded"
+                        }
+                      />
+                    </div>
+                    <DamageSection damages={r.damages ?? []} />
                     {hasOperationNotes(r.operationNotes) ? (
                       <OperationNotesCard notes={r.operationNotes} title="Pickup & drop notes" />
                     ) : (

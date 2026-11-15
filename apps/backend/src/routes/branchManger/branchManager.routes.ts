@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { GetVehicleRentHistory } from "../../controller/branchManager/vehicle-rent-history.controller.js";
+import { GetBranchVehicleTransfers, TransferBranchVehicle } from "../../controller/branchManager/vehicle-transfer.controller.js";
 import { Login } from "../../controller/branchManager/login.controller.js";
 import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
 import {
@@ -347,6 +348,9 @@ router.put(
 router.get("/dashboard/vehicle/:vehicleId", ManagerCheck, GetVehicleById);
 // The vehicle's rent history with the Fleet pickup / drop notes (Oct 20 2026)
 router.get("/dashboard/vehicle/:vehicleId/rent-history", ManagerCheck, GetVehicleRentHistory);
+// Transfer the vehicle to another branch + its transfer history (Nov 14 2026)
+router.post("/dashboard/vehicle/:vehicleId/transfer", ManagerCheck, TransferBranchVehicle);
+router.get("/dashboard/vehicle/:vehicleId/transfers", ManagerCheck, GetBranchVehicleTransfers);
 router.delete("/dashboard/vehicle/:vehicleId", ManagerCheck, DeleteVehicle);
 router.get("/dashboard/categories", ManagerCheck, GetVehicleCategories);
 // Staff activity routes

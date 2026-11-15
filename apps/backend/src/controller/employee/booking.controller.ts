@@ -947,6 +947,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       // one sees the first's HOLD row
       const blocked = await lockAndFindBlockedVehicleIds(tx, vehiclesData.map((v) => v.id), startDate, endDate, {
         forStaff: true,
+        branchId: req.branch_Id,
       });
       const taken = vehiclesData.find((v) => blocked.has(v.id));
       if (taken) {

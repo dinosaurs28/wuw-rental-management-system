@@ -213,6 +213,9 @@ export async function confirmBookingPayment(
           const vehicleIds = booking.items.map((item) => item.vehicleId);
           const blocked = await lockAndFindBlockedVehicleIds(tx, vehicleIds, booking.startAt, booking.endAt, {
             forStaff: !!paymentActor?.role && paymentActor.role !== Role.CUSTOMER,
+            // A car moved to another branch since the hold lapsed (vehicle branch
+            // transfer) is no longer this booking's to confirm → refund path
+            branchId: booking.branchId,
           });
           // The vehicle locks serialise racing confirms of this same booking
           // (webhook payment.captured + order.paid + sweep): re-read it, or a

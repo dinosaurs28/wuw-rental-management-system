@@ -36,7 +36,6 @@ import {
 import {
   fetchManagerVehicles,
   fetchVehicleCategories,
-  deleteVehicle,
   VEHICLE_HIDDEN_REASON_LABEL,
   type ManagerVehicle,
   type Category,
@@ -50,6 +49,8 @@ import {
 } from "@/components/ui/select";
 import { PricingSlabList } from "@/components/manager/pricing/PricingSlabList";
 import { VehicleRentHistorySheet } from "@/components/manager/vehicles/VehicleRentHistorySheet";
+import { DeleteVehicleDialog } from "@/components/manager/vehicles/DeleteVehicleDialog";
+import { VehicleTransferDialog } from "@/components/vehicles/VehicleBranchTransfer";
 import { toast } from "sonner";
 
 export const ManagerVehiclesPage = () => {
@@ -58,6 +59,9 @@ export const ManagerVehiclesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   // Rent history with the Fleet pickup / drop notes (Oct 20 2026)
   const [historyVehicle, setHistoryVehicle] = useState<ManagerVehicle | null>(null);
+  const [deletingVehicle, setDeletingVehicle] = useState<ManagerVehicle | null>(null);
+  // Transfer to another branch (Nov 14 2026)
+  const [transferVehicle, setTransferVehicle] = useState<ManagerVehicle | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   // "hidden" = only cars customers can't see or book (item 7)
@@ -335,18 +339,12 @@ export const ManagerVehiclesPage = () => {
                             <DropdownMenuItem onClick={() => setHistoryVehicle(vehicle)}>
                               Rent history
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTransferVehicle(vehicle)}>
+                              Transfer to branch
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600 focus:text-red-600"
-                              onClick={async () => {
-                                try {
-                                  if (!confirm("Are you sure?")) return;
-                                  await deleteVehicle(vehicle.publicId);
-                                  toast.success("Vehicle deleted");
-                                  loadVehicles();
-                                } catch (e) {
-                                  toast.error("Failed to delete");
-                                }
-                              }}
+                              onClick={() => setDeletingVehicle(vehicle)}
                             >
                               Delete
                             </DropdownMenuItem>
@@ -451,6 +449,30 @@ export const ManagerVehiclesPage = () => {
               : null
           }
           onClose={() => setHistoryVehicle(null)}
+        />
+
+        <DeleteVehicleDialog
+          vehicle={deletingVehicle}
+          onClose={() => setDeletingVehicle(null)}
+          onDeleted={() => loadVehicles()}
+        />
+
+        <VehicleTransferDialog
+          open={!!transferVehicle}
+          onOpenChange={(open) => !open && setTransferVehicle(null)}
+          scope="manager"
+          vehicle={
+            transferVehicle
+              ? {
+                  publicId: transferVehicle.publicId,
+                  regNo: transferVehicle.regNo ?? "",
+                  make: transferVehicle.make,
+                  model: transferVehicle.model,
+                }
+              : null
+          }
+          // The car leaves this branch's list
+          onTransferred={() => loadVehicles()}
         />
 
         {/* Pricing View */}
