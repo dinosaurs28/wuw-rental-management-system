@@ -17,6 +17,7 @@ import {
   RemoveDepositFromPickupSession,
   SetPickupSessionManualDiscount,
   RemovePickupSessionManualDiscount,
+  SetPickupSessionOtherCharges,
   UpdatePickupSessionHandover,
 } from "../../controller/employee/pickupSession.controller.js";
 import {
@@ -47,6 +48,8 @@ router.delete("/bookings/:bookingId/pickup-session/remove-discount", EmployeeChe
 // Manual pickup discount (flat ₹ off the rent payable at pickup)
 router.post("/bookings/:bookingId/pickup-session/manual-discount", EmployeeCheck, SetPickupSessionManualDiscount);
 router.delete("/bookings/:bookingId/pickup-session/manual-discount", EmployeeCheck, RemovePickupSessionManualDiscount);
+// Other charges at pickup (Nov 15 2026): the whole set, replaced
+router.put("/bookings/:bookingId/pickup-session/other-charges", EmployeeCheck, SetPickupSessionOtherCharges);
 // TODO 11: change the handover details (readings, photos, licence, note) of the open bill
 router.patch("/bookings/:bookingId/pickup-session/handover", EmployeeCheck, UpdatePickupSessionHandover);
 router.post("/bookings/:bookingId/pickup-session/add-deposit", EmployeeCheck, AddDepositToPickupSession);

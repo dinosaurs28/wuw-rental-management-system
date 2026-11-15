@@ -7,6 +7,7 @@ import { DL_SELECTABLE_STATUSES, type DlCollectionStatus } from '../lib/dlStatus
 import { draftBool, draftNumber, draftOneOf, draftString, proofDraftId, proofDraftIds, draftStrings } from '../lib/operationDraft';
 import { mergeKeepPhotos, mergeRestoredPhotos } from '../lib/draftPhotos';
 import { fuelBarsNumber } from '../lib/fuel';
+import { draftCharges, type PickupChargeInput } from '../lib/pickupCharges';
 import { useOperationDraft, type OperationDraftController } from './useOperationDraft';
 
 // Paused pickup (client item 2): which pickup-screen fields are kept and how
@@ -37,6 +38,9 @@ export interface PickupDraftFields {
   discountReason: string;
   // Optional Fleet pickup note (Oct 20 2026) — absent in drafts saved by older builds
   pickupNote: string;
+  // Other charges on the pickup bill (Nov 15 2026) — absent in older drafts; the bill
+  // on the server is the truth, this carries them into a bill opened again
+  otherCharges: PickupChargeInput[];
   // The step it was paused on (client TODO 11) — absent in older drafts
   step: string;
 }
@@ -88,6 +92,7 @@ export function usePickupDraft({
     !f.discountAmount &&
     !f.discountReason &&
     !f.pickupNote.trim() &&
+    f.otherCharges.length === 0 &&
     (f.odo === '' || f.odo === odoPrefill);
 
   return useOperationDraft({
@@ -148,6 +153,7 @@ export function usePickupDraft({
       s.setDiscountAmount(draftString(d, 'discountAmount'));
       s.setDiscountReason(draftString(d, 'discountReason'));
       s.setPickupNote(draftString(d, 'pickupNote'));
+      s.setOtherCharges(draftCharges(d as Record<string, unknown>));
       const savedStep = draftString(d, 'step');
       if (savedStep) s.setStep(savedStep);
       // How the bill was going to be settled (the amounts come from the server

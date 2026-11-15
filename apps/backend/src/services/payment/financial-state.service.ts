@@ -56,6 +56,8 @@ export interface FinancialState {
   transactions: PaymentTransactionSummary[];
   /** Drop / return charges outside totalFinal (drop bill or legacy return charges, incl. GST, after the drop discount) */
   returnCharges: Decimal;
+  /** Other charges added at the pickup (additive, Nov 15 2026; no GST) — inside totalOwed */
+  pickupCharges: Decimal;
   /** Refundable safety deposit taken and not yet credited back on a drop bill */
   safetyDepositHeld: Decimal;
   /** What the booking owes: totalFinal + returnCharges + safety deposit taken − deposit credited at drop */
@@ -146,6 +148,8 @@ class FinancialStateService {
       lifecycleState,
       transactions,
       returnCharges: owed.returnCharges,
+      // Other charges added at the pickup (additive, Nov 15 2026) — inside totalOwed
+      pickupCharges: owed.pickupCharges,
       safetyDepositHeld: owed.safetyDepositHeld,
       totalOwed,
       creditPending: Decimal.min(amountDue, credit?.pending ?? ZERO),

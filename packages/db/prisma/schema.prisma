@@ -1280,6 +1280,9 @@ model DamageReport {
   expenses      VehicleExpense[]
 
   createdAt DateTime @default(now())
+
+  // Nov 2026: settlement / owed reads filter damages by booking (Pending Settlements list)
+  @@index([bookingId])
 }
 
 // DEPOSIT & PAYMENTS

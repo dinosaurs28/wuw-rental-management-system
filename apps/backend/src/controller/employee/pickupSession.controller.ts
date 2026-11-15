@@ -4,6 +4,7 @@
  * Endpoints:
  *   POST /employee/bookings/:bookingId/pickup-session/initiate
  *   GET  /employee/bookings/:bookingId/pickup-session
+ *   PUT  /employee/bookings/:bookingId/pickup-session/other-charges  (Nov 15 2026)
  *
  * Only active when BranchChargeConfig.usePaymentSessions = true.
  * Falls back gracefully when the flag is off (returns 409 with message).
@@ -68,6 +69,12 @@ import { OperationNoteError, parseOperationNote } from "../../utils/booking/oper
 import { saveOperationNote } from "../../services/booking/operation-notes.service.js";
 import { isPrivateFile } from "../../utils/file-url.js";
 import { uploadedFromBranch } from "../../services/booking-photo-file.service.js";
+import {
+  PickupChargeError,
+  parsePickupOtherCharges,
+  pickupChargesView,
+} from "../../services/charges/pickup-other-charges.js";
+import { replaceSessionPickupCharges } from "../../services/charges/pickup-other-charges.service.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -136,6 +143,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     } = validation.data;
     // Optional pickup note (Oct 20 2026): absent = left as saved (older builds), blank = none
     const pickupNote = parseOperationNote(req.body?.pickupNote, "pickupNote");
+    // Optional other charges at pickup (Nov 15 2026): the whole set; absent = left as they are
+    const otherCharges = parsePickupOtherCharges(req.body?.otherCharges);
 
     // Resolve actor
     const actor = await prisma.user.findUnique({
@@ -242,6 +251,21 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         });
       }
       await saveOperationNote(prisma, { bookingId: booking.id, kind: "PICKUP", note: pickupNote, actorId: actor.id, mode: "OPERATION" });
+      // Other charges sent again (a resumed draft): the same set changes nothing
+      if (
+        otherCharges !== undefined &&
+        (session.status === PaymentSessionStatus.OPEN || session.status === PaymentSessionStatus.AWAITING_PAYMENT)
+      ) {
+        await prisma.$transaction(async (tx) => {
+          await lockOpenPickupSession(tx, booking.id, session.id);
+          await replaceSessionPickupCharges(tx as any, {
+            sessionId: session.id,
+            bookingId: booking.id,
+            charges: otherCharges,
+            actor: { id: actor.id, role: String(actor.role) },
+          });
+        }, { timeout: 15000 });
+      }
       // Already awaiting payment (staff pressed initiate again): no transition —
       // AWAITING_PAYMENT → AWAITING_PAYMENT is not an allowed move and used to 500.
       if (session.status !== PaymentSessionStatus.AWAITING_PAYMENT) {
@@ -428,6 +452,19 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         });
       }
 
+      // ── Other charges (no GST, like the drop's) ──────────────────────────
+      if (otherCharges && otherCharges.length > 0) {
+        // Booking lock: a concurrent (double-tapped / retried) initiate waits here and then
+        // finds this set already written (replace is a no-op) instead of adding it twice
+        await lockOpenPickupSession(tx, booking.id, session.id);
+        await replaceSessionPickupCharges(tx as any, {
+          sessionId: session.id,
+          bookingId: booking.id,
+          charges: otherCharges,
+          actor: { id: actor.id, role: String(actor.role) },
+        });
+      }
+
       // ── Handover metadata ────────────────────────────────────────────────
       // Save odo/fuel/photos now; vehicle status is updated by runPostCompletionHooks
       // when payment is recorded.
@@ -547,6 +584,9 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         dlStatus: dlChoice?.dlStatus ?? null,
         dlDepositNote: dlChoice?.dlDepositNote ?? null,
         ...(pickupNote !== undefined && { pickupNote }),
+        ...(otherCharges && otherCharges.length > 0 && {
+          otherCharges: otherCharges.map((c) => ({ label: c.label, amount: c.amount.toFixed(2) })),
+        }),
       },
     });
 
@@ -575,6 +615,9 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     }
     if (err instanceof PickupDiscountError) {
       return res.status(err.status).json({ ...err.toJSON(), pickupDiscountRejected: true });
+    }
+    if (err instanceof PickupChargeError || err instanceof PickupBillClosedError || err instanceof PickupStateError) {
+      return res.status(err.status).json(err.toJSON());
     }
     console.error("InitiatePickupSession Error:", err);
     return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({
@@ -1002,6 +1045,77 @@ export const RemovePickupSessionManualDiscount = async (req: Request, res: Respo
   }
 };
 
+// ── PUT /employee/bookings/:bookingId/pickup-session/other-charges ───────────
+// Body: { charges: [{ label, amount }] } — the WHOLE set of other charges on the
+// open pickup bill (replace, never append; [] removes them all). Each: a reason
+// (≤ 120 chars) and ₹ > 0 with up to 2 decimals, no GST (like the drop's other
+// charges). The same set again changes nothing, so back / forward navigation
+// and retries never duplicate a charge. 400 PICKUP_CHARGES_INVALID; 409
+// PICKUP_BILL_CLOSED once the bill is paid / closed. Returns the bill.
+
+export const SetPickupSessionOtherCharges = async (req: Request, res: Response) => {
+  try {
+    if (!Array.isArray(req.body?.charges)) {
+      throw new PickupChargeError("Send the other charges as a list (charges).");
+    }
+    const charges = parsePickupOtherCharges(req.body.charges) ?? [];
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const found = await openPickupSessionFor(req.params.bookingId!, actor.branchId);
+    if (!found.ok) return res.status(found.status).json(found.body);
+    const { booking, session } = found;
+
+    const result = await prisma.$transaction(async (tx) => {
+      await lockOpenPickupSession(tx, booking.id, session.id);
+      return replaceSessionPickupCharges(tx as any, {
+        sessionId: session.id,
+        bookingId: booking.id,
+        charges,
+        actor: { id: actor.id, role: String(actor.role) },
+      });
+    }, { timeout: 15000 });
+
+    if (result.changed) {
+      await auditService.log({
+        actorId: actor.id,
+        actorName: actor.name,
+        actorRole: actor.role,
+        actorBranchId: actor.branchId ?? undefined,
+        action: "PICKUP_OTHER_CHARGES_SET",
+        category: AuditCategory.PAYMENT,
+        description: `Pickup other charges on booking ${booking.publicId}: ₹${result.total} (${result.after.length} line(s))`,
+        entity: "PaymentSession",
+        entityId: session.publicId,
+        metadata: { before: result.before, after: result.after, total: result.total },
+      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.UPDATED,
+        entityType: StaffEntityType.PAYMENT_SESSION,
+        entityRef: session.publicId,
+        description: `Pickup other charges on booking ${booking.publicId}: ₹${result.total}`,
+        metadata: { bookingId: booking.publicId, otherCharges: result.after },
+      });
+    }
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: result.changed ? "Other charges saved on the pickup bill" : "Other charges unchanged",
+      data: serializePickupSession(updatedSession!),
+    });
+  } catch (err: any) {
+    if (err instanceof PickupChargeError || err instanceof PickupStateError || err instanceof PickupBillClosedError) {
+      return res.status(err.status).json(err.toJSON());
+    }
+    console.error("SetPickupSessionOtherCharges Error:", err);
+    return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
+  }
+};
+
 // ── POST /employee/bookings/:bookingId/pickup-session/add-deposit ─────────────
 
 const addDepositSchema = z.object({
@@ -1237,6 +1351,8 @@ function serializePickupSession(session: any) {
     // Manual pickup discount (additive): rental balance on this bill incl. GST (no extension), the
     // discount on it and the most it may be (rent due less a counter coupon)
     ...pickupDiscountView(session.entries ?? []),
+    // Other charges at pickup (additive, Nov 15 2026): { publicId, label, amount }[] + total, no GST
+    ...pickupChargesView(session.entries ?? []),
     entries: (session.entries ?? []).map((e: any) => ({
       publicId: e.publicId,
       entryType: e.entryType,

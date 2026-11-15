@@ -3,7 +3,8 @@
  * with rpt-fleet for extra km / damages). Read-only, two SQL statements per chunk.
  *
  * CHARGED — what the bills recorded for the type, per booking:
- *   - the booking's non-voided LedgerEntry lines of the type (Unified Payments drop bill,
+ *   - the booking's non-voided LedgerEntry lines of the type on bills not abandoned
+ *     (Unified Payments drop bill, other charges added at the pickup — Nov 15 2026 —
  *     plus the signed delta lines an ADJUSTMENT session wrote when the drop was edited);
  *   - else, when the booking has NO ledger line of that type, its legacy ChargeEntry rows
  *     of the type (pre-ledger drops / legacy CompleteReturn). Ledger first, so a booking
@@ -67,6 +68,8 @@ WITH l AS (
   FROM "LedgerEntry" e
   WHERE e."bookingId" IN (${ids}) AND NOT e."isVoided"
     AND e."entryType"::text IN (${raw(sqlList(ALLOCATABLE_LEDGER_TYPES))})
+    -- a bill that was abandoned charged nothing (e.g. a pickup bill re-opened with its other charges)
+    AND NOT EXISTS (SELECT 1 FROM "PaymentSession" ps WHERE ps.id = e."sessionId" AND ps.status::text = 'ABANDONED')
   GROUP BY 1, 2
 ),
 c AS (

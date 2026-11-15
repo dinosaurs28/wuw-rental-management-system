@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
+  FlatList,
   Modal,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -151,6 +151,17 @@ function AllPhotosSheet({
   const photoWidth = Math.min(screenWidth, 720) - SHEET_PAD * 2;
   const sets = [current, ...earlier].filter((s) => s.photos.length > 0);
   const total = current.photos.length;
+  // One row per photo (and set title), rendered as the sheet scrolls: a set
+  // can hold 100+ photos, and mounting them all at once started every
+  // download together (Nov 15 2026, full-size photo black).
+  const rows: SheetRow[] = sets.flatMap((set, si) => {
+    const out: SheetRow[] = [];
+    if (si > 0 || set.source === 'SWAP' || earlier.length > 0) {
+      out.push({ kind: 'title', key: `t-${set.swapPublicId ?? `pickup-${si}`}`, set });
+    }
+    set.photos.forEach((p, i) => out.push({ kind: 'photo', key: `p-${si}-${p.publicId}`, set, photo: p, index: i }));
+    return out;
+  });
 
   return (
     <Modal transparent animationType="slide" visible={visible} statusBarTranslucent onRequestClose={onClose}>
@@ -175,30 +186,31 @@ function AllPhotosSheet({
               <Ionicons name="close" size={20} color={Colors.ink} />
             </TouchableOpacity>
           </View>
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: SHEET_PAD, paddingBottom: Math.max(insets.bottom, 16) + 8, gap: 18 }}
+          <FlatList
+            data={rows}
+            keyExtractor={(r) => r.key}
+            contentContainerStyle={{ paddingHorizontal: SHEET_PAD, paddingBottom: Math.max(insets.bottom, 16) + 8 }}
+            ItemSeparatorComponent={RowGap}
             showsVerticalScrollIndicator
-          >
-            {sets.map((set, si) => (
-              <View key={set.swapPublicId ?? `pickup-${si}`} style={{ gap: 18 }}>
-                {(si > 0 || set.source === 'SWAP' || earlier.length > 0) && (
-                  <Text style={styles.sheetSetTitle}>
-                    {setTitle(set)} · {set.photos.length} photo{set.photos.length === 1 ? '' : 's'}
-                  </Text>
-                )}
-                {set.photos.map((p, i) => (
-                  <PhotoTile
-                    key={p.publicId}
-                    photo={p}
-                    index={i}
-                    total={set.photos.length}
-                    width={photoWidth}
-                    onPress={() => setViewer({ images: viewerImages(set), index: i })}
-                  />
-                ))}
-              </View>
-            ))}
-          </ScrollView>
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={5}
+            renderItem={({ item: r }) =>
+              r.kind === 'title' ? (
+                <Text style={styles.sheetSetTitle}>
+                  {setTitle(r.set)} · {r.set.photos.length} photo{r.set.photos.length === 1 ? '' : 's'}
+                </Text>
+              ) : (
+                <PhotoTile
+                  photo={r.photo}
+                  index={r.index}
+                  total={r.set.photos.length}
+                  width={photoWidth}
+                  onPress={() => setViewer({ images: viewerImages(r.set), index: r.index })}
+                />
+              )
+            }
+          />
         </View>
         <ImageViewer
           visible={!!viewer}
@@ -323,6 +335,14 @@ export default function HandoverConditionPhotos({
 
 const GAP = 10;
 const SHEET_PAD = 16;
+
+type SheetRow =
+  | { kind: 'title'; key: string; set: ConditionPhotoSet }
+  | { kind: 'photo'; key: string; set: ConditionPhotoSet; photo: ConditionPhoto; index: number };
+
+function RowGap() {
+  return <View style={{ height: 18 }} />;
+}
 
 const styles = StyleSheet.create({
   sectionHeader: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.ink3, textTransform: 'uppercase', letterSpacing: 1, marginTop: 8, marginBottom: 4 },

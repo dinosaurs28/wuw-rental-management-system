@@ -51,6 +51,9 @@ export interface PaymentSession {
   pickupDiscountMax?: string;
   /** PICKUP: the manual discount on the bill (₹ off the rent incl. GST) */
   pickupDiscount?: { amount: string; reason: string | null; entryPublicId: string } | null;
+  /** PICKUP: other charges on the bill (Nov 15 2026; absent on older servers), no GST */
+  otherCharges?: { publicId: string; label: string; amount: string }[];
+  otherChargesTotal?: string;
 }
 
 export interface ReturnChargeEntry {
@@ -229,6 +232,8 @@ export const paymentSessionService = {
       dlDepositNote?: string | null;
       /** Optional Fleet note (≤ 1000 chars); null / blank = none. */
       pickupNote?: string | null;
+      /** Other charges on the bill (Nov 15 2026), the whole set — ignored by older servers */
+      otherCharges?: { label: string; amount: number }[];
     },
   ): Promise<PaymentSession> {
     const { data } = await apiClient.post(
@@ -302,6 +307,26 @@ export const paymentSessionService = {
       payload,
     );
     return data.data;
+  },
+
+  /**
+   * Other charges on the PICKUP bill (Nov 15 2026): the WHOLE set — replaced, never
+   * appended ([] removes them); no GST. 400 PICKUP_CHARGES_INVALID, 409 PICKUP_BILL_CLOSED.
+   */
+  async setPickupSessionOtherCharges(
+    bookingPublicId: string,
+    charges: { label: string; amount: number }[],
+  ): Promise<PaymentSession> {
+    const { data } = await apiClient.put(
+      `/employee/bookings/${bookingPublicId}/pickup-session/other-charges`,
+      { charges },
+    );
+    return data.data;
+  },
+
+  /** Saves the Fleet pickup note while the pickup is in progress (null clears it). */
+  async savePickupNote(bookingPublicId: string, pickupNote: string | null): Promise<void> {
+    await apiClient.put(`/employee/pickup/${bookingPublicId}/note`, { pickupNote });
   },
 
   async removePickupSessionDiscount(bookingPublicId: string): Promise<PaymentSession> {

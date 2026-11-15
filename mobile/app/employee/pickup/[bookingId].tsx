@@ -65,6 +65,16 @@ import {
 } from '../../../lib/counterErrors';
 import type { ReturnSession } from '../../../types/api';
 import { usePickupDraft } from '../../../hooks/usePickupDraft';
+import {
+  chargeInputError,
+  chargesBody,
+  chargesFromSession,
+  chargesTotal,
+  cleanChargeAmount,
+  sameCharges,
+  type PickupChargeInput,
+  type PickupChargeView,
+} from '../../../lib/pickupCharges';
 import EditReviewSheet from '../../../components/employee/edit/EditReviewSheet';
 import type { EditPickupBody, EditPreview, PickupSummary } from '../../../types/completedOperation';
 import { ContinueLaterButton, DraftSaveStatus, ResumedBanner } from '../../../components/employee/OperationDraftParts';
@@ -102,6 +112,9 @@ type PickupSession = ReturnSession & {
   rentDue?: string;
   pickupDiscountMax?: string;
   pickupDiscount?: { amount: string; reason: string | null } | null;
+  // Other charges on the bill (Nov 15 2026; absent on older servers — no editor then)
+  otherCharges?: PickupChargeView[];
+  otherChargesTotal?: string;
 };
 
 // Manual pickup discount recorded on the booking (legacy: already off remainingBalance)
@@ -194,7 +207,7 @@ function kycDocLabel(doc: KycDoc) {
 // Settlement methods (#3 / #11): Cash · UPI (photo of the customer's payment
 // screen) · Split · Credit — components/employee/CounterPaymentPicker.
 
-type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon' | 'discount' | 'removeDiscount';
+type SessionAction = 'deposit' | 'removeDeposit' | 'coupon' | 'removeCoupon' | 'discount' | 'removeDiscount' | 'charges';
 
 const LEDGER_LABELS: Record<string, string> = {
   BOOKING_BASE: 'Booking balance',
@@ -280,6 +293,9 @@ function SessionBill({ session }: { session: PickupSession }) {
                 <Text style={styles.billSub} numberOfLines={1}>{e.description}</Text>
               )}
               {isGstInclusive(e) && <Text style={styles.billSub}>GST already included</Text>}
+              {e.entryType === 'DAMAGE' && e.referenceType === 'OTHER_CHARGE' && (
+                <Text style={styles.billSub}>Other charge · no GST</Text>
+              )}
               {e.classification === 'TAXABLE' && !isGstInclusive(e) && num(e.gstAmount) > 0 && (
                 <Text style={styles.billSub}>Rent without GST — its GST is shown below</Text>
               )}
@@ -389,6 +405,13 @@ export default function PickupScreen() {
   // handover, and saved before settling when changed after the session opened
   const [pickupNote, setPickupNote] = useState('');
   const pickupNoteSentRef = useRef<string | null | undefined>(undefined);
+  // Other charges on the pickup bill (Nov 15 2026): mirrors the open bill (every
+  // add / remove saves the whole set there), kept in the draft so a bill opened
+  // again gets them back; plus the add-a-charge form
+  const [otherCharges, setOtherCharges] = useState<PickupChargeInput[]>([]);
+  const [chargeLabel, setChargeLabel] = useState('');
+  const [chargeAmount, setChargeAmount] = useState('');
+  const [chargeError, setChargeError] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [legacyDiscountBusy, setLegacyDiscountBusy] = useState<'apply' | 'remove' | null>(null);
   const [settling, setSettling] = useState(false);
@@ -600,13 +623,14 @@ export default function PickupScreen() {
     fields: {
       odo, fuelLevel, fastagBalance, dlStatus, requireManager, requestDeposit,
       depositAmount, depositReason, couponCode, depositOpen, sDepositAmt, sDepositReason,
-      discountOpen, discountAmount, discountReason, pickupNote, step,
+      discountOpen, discountAmount, discountReason, pickupNote, otherCharges, step,
     },
     setters: {
       setOdo, setFuelLevel, setFastagBalance, setDlStatus, setRequireManager,
       setRequestDeposit, setDepositAmount, setDepositReason, setCouponCode, setDepositOpen,
       setSDepositAmt, setSDepositReason, setDiscountOpen, setDiscountAmount, setDiscountReason,
       setPickupNote,
+      setOtherCharges,
       // The step it was paused on (TODO 11)
       setStep: (v: string) => {
         const k = clampStep(steps, v, 'booking');
@@ -621,6 +645,13 @@ export default function PickupScreen() {
     refundPay,
     onGone: () => { refetch(); },
   });
+
+  // The open bill is the truth for its other charges (newer servers return them)
+  useEffect(() => {
+    if (!session || session.otherCharges === undefined) return;
+    const next = chargesFromSession(session.otherCharges);
+    setOtherCharges((cur) => (sameCharges(cur, next) ? cur : next));
+  }, [session]);
 
   // A pickup session reopened later: the note it saved (Edit Pickup prefills from its summary)
   const savedPickupNote = booking?.operationNotes?.pickup?.note;
@@ -765,7 +796,12 @@ export default function PickupScreen() {
     setErrorMsg(null);
     setDlRejected(false);
     try {
-      const body = { ...handoverBody(), ...dlBody() };
+      // Other charges kept from a bill opened before (a paused draft) go on the new one
+      const body = {
+        ...handoverBody(),
+        ...dlBody(),
+        ...(otherCharges.length > 0 ? { otherCharges: chargesBody(otherCharges) } : {}),
+      };
       const sent = handoverSnapshot();
       const res = await employeeApi.initiatePickupSession(bookingId as string, body);
       pickupNoteSentRef.current = body.pickupNote;
@@ -986,6 +1022,34 @@ export default function PickupScreen() {
       setCouponError,
       'Could not remove the coupon.',
     );
+  };
+
+  // Other charges (Nov 15 2026): every add / remove sends the WHOLE set, which
+  // replaces what the bill has — a retry or a second tap never adds one twice.
+  const saveCharges = (next: PickupChargeInput[], onOk: () => void) => {
+    void runSessionAction(
+      'charges',
+      () => employeeApi.setPickupSessionOtherCharges(bookingId as string, { charges: chargesBody(next) }),
+      () => { setOtherCharges(next); setChargeError(null); onOk(); },
+      (message) => setChargeError(message),
+      'Could not save the other charges.',
+    );
+  };
+
+  const addCharge = () => {
+    const problem = chargeInputError(chargeLabel, chargeAmount, otherCharges.length);
+    if (problem) {
+      setChargeError(problem);
+      return;
+    }
+    saveCharges([...otherCharges, { label: chargeLabel.trim(), amount: chargeAmount.trim() }], () => {
+      setChargeLabel('');
+      setChargeAmount('');
+    });
+  };
+
+  const removeCharge = (index: number) => {
+    saveCharges(otherCharges.filter((_, i) => i !== index), () => {});
   };
 
   // Manual pickup discount on the bill: the server checks it against the rent
@@ -2114,6 +2178,70 @@ export default function PickupScreen() {
             <SectionHeader title="Bill" />
             <SessionBill session={session} />
 
+            {/* Other charges (Nov 15 2026) — reason + amount, several, each removable; no GST */}
+            {session.otherCharges !== undefined && (
+              <View style={[styles.card, { marginTop: 8 }]}>
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleTextWrap}>
+                    <Text style={styles.toggleTitle}>Other charges</Text>
+                    <Text style={styles.toggleSub}>Added to what the customer pays now. No GST.</Text>
+                  </View>
+                  {otherCharges.length > 0 && (
+                    <Text style={styles.toggleTitle}>{inr(chargesTotal(otherCharges))}</Text>
+                  )}
+                </View>
+                {otherCharges.map((c, i) => (
+                  <View key={`${i}-${c.label}`} style={[styles.billRow, { marginTop: 8 }]}>
+                    <View style={styles.billLabelWrap}>
+                      <Text style={styles.billLabel} numberOfLines={2}>{c.label}</Text>
+                    </View>
+                    <Text style={styles.billValue}>{inr(num(c.amount))}</Text>
+                    <TouchableOpacity
+                      onPress={() => removeCharge(i)}
+                      disabled={sessionBusy}
+                      hitSlop={8}
+                      accessibilityLabel={`Remove ${c.label}`}
+                    >
+                      <Ionicons name="close-circle" size={20} color={sessionBusy ? Colors.ink4 : '#dc3545'} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Reason</Text>
+                <TextInput
+                  style={styles.odoInput}
+                  value={chargeLabel}
+                  onChangeText={(t) => { setChargeLabel(t); setChargeError(null); }}
+                  placeholder="e.g. Child seat, doorstep delivery"
+                  placeholderTextColor={Colors.ink4}
+                  maxLength={120}
+                />
+                <Text style={[styles.fieldLabelSolo, { marginTop: 12 }]}>Amount (₹)</Text>
+                <View style={styles.couponRow}>
+                  <TextInput
+                    style={[styles.odoInput, styles.couponInput]}
+                    value={chargeAmount}
+                    onChangeText={(t) => { setChargeAmount(cleanChargeAmount(t)); setChargeError(null); }}
+                    placeholder="e.g. 250"
+                    placeholderTextColor={Colors.ink4}
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    onSubmitEditing={addCharge}
+                  />
+                  <TouchableOpacity
+                    style={[styles.couponBtn, (sessionBusy || !chargeLabel.trim() || !chargeAmount) && styles.btnDisabled]}
+                    onPress={addCharge}
+                    disabled={sessionBusy || !chargeLabel.trim() || !chargeAmount}
+                    activeOpacity={0.85}
+                  >
+                    {sessionAction === 'charges'
+                      ? <ActivityIndicator size="small" color={Colors.white} />
+                      : <Text style={styles.couponBtnText}>Add</Text>}
+                  </TouchableOpacity>
+                </View>
+                {chargeError && <Text style={styles.fieldError}>{chargeError}</Text>}
+              </View>
+            )}
+
             {/* Manual discount — a flat ₹ off the rent, after the rent and before the safety deposit */}
             <PickupDiscountCard
               applied={manualDiscount}
@@ -2261,6 +2389,13 @@ export default function PickupScreen() {
                 </>
               )}
               {couponError && <Text style={styles.fieldError}>{couponError}</Text>}
+            </View>
+
+            {/* Optional Fleet note (Oct 20 2026), on the Payment step (client, Nov 15 2026) —
+                saved with the bill before it is settled */}
+            <SectionHeader title="Note" />
+            <View style={styles.card}>
+              <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
             </View>
 
             {/* How the customer pays */}
@@ -2586,11 +2721,16 @@ export default function PickupScreen() {
               )}
             </View>
 
-            {/* Optional Fleet note (Oct 20 2026) — shown at the drop and to the branch manager */}
-            <SectionHeader title="Note" />
-            <View style={styles.card}>
-              <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
-            </View>
+            {/* Optional Fleet note (Oct 20 2026) — shown at the drop and to the branch manager.
+                With payment sessions it is on the Payment step (client, Nov 15 2026). */}
+            {(!sessionMode || editMode) && (
+              <>
+                <SectionHeader title="Note" />
+                <View style={styles.card}>
+                  <OperationNoteInput label="Pickup note" value={pickupNote} onChange={setPickupNote} />
+                </View>
+              </>
+            )}
 
             {/* Manager confirmation escalation (#50) — legacy flow only */}
             {!sessionMode && !editMode && (

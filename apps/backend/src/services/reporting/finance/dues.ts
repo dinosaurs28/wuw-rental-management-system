@@ -144,7 +144,7 @@ export async function getOutstandingDues(scope: FinanceScope & { now?: Date }): 
       vehicle: v ? `${v.regNo} · ${v.make} ${v.model}` : "Not recorded",
       category: v?.category.name ?? "Not recorded",
       totalFinal: r2(Number(b.totalFinal)),
-      extras: r2(Number(owed.returnCharges)),
+      extras: r2(Number(owed.returnCharges) + Number(owed.pickupCharges ?? 0)),
       lastPaymentAt: lastPay.get(b.id) ?? null,
     });
   }

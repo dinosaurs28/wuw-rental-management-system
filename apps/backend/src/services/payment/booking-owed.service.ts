@@ -12,6 +12,8 @@
  *          - legacy drop: extra km / late return / swap difference ChargeEntry rows
  *            with the GST frozen on them (collected by the BM in Settlements)
  *          - approved damage charged at drop that no drop bill carries
+ *      + other charges added at the pickup (Nov 15 2026): the PICKUP session's
+ *        OTHER_CHARGE lines (no GST), sessions not abandoned (pickupCharges)
  *      + refundable safety deposit put on a payment-session bill or taken as a
  *        standalone SAFETY_DEPOSIT payment
  *      − safety deposit credited back on a drop bill.
@@ -58,6 +60,7 @@ import {
 } from "@repo/database/client";
 import type { TxClient } from "./paymentSession.service.js";
 import { PICKUP_DISCOUNT_REF } from "../discount/pickup-discount-rules.js";
+import { PICKUP_OTHER_CHARGE_REF } from "../charges/pickup-other-charges.js";
 import {
   LEGACY_RETURN_CHARGE_TYPES,
   legacyReturnChargesTotal,
@@ -99,13 +102,15 @@ export interface BookingOwed {
   dropDamageOutsideBill: Decimal;
   /** dropBillCharges + legacyReturnCharges + dropDamageOutsideBill — all outside totalFinal */
   returnCharges: Decimal;
+  /** Other charges added at the pickup (PICKUP session OTHER_CHARGE lines, no GST) — outside totalFinal */
+  pickupCharges: Decimal;
   /** Safety deposit put on a session bill or taken as a standalone SAFETY_DEPOSIT payment */
   safetyDepositCharged: Decimal;
   /** Safety deposit credited back on a drop bill */
   safetyDepositCredited: Decimal;
   /** max(0, charged − credited) — the refundable deposit still held */
   safetyDepositHeld: Decimal;
-  /** totalFinal + returnCharges + safetyDepositCharged − safetyDepositCredited − refundsGoodwill */
+  /** totalFinal + returnCharges + pickupCharges + safetyDepositCharged − safetyDepositCredited − refundsGoodwill */
   totalOwed: Decimal;
   /**
    * "Refund to customer" paid beyond what the booking owed back (goodwill,
@@ -150,6 +155,7 @@ export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
   let safetyDepositCharged = ZERO;
   let safetyDepositCredited = ZERO;
   let adjustmentPending = ZERO;
+  let pickupCharges = ZERO;
   const damagesOnBill = new Set<string>();
 
   for (const e of entries) {
@@ -163,6 +169,13 @@ export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
         safetyDepositCharged = safetyDepositCharged.add(amount);
       } else if (e.classification === LedgerEntryClassification.PAYMENT) {
         safetyDepositCredited = safetyDepositCredited.add(amount.abs());
+      }
+      continue;
+    }
+    // Other charges added at the pickup (no GST): owed beside the rent
+    if (e.session.sessionType === PaymentSessionType.PICKUP) {
+      if (e.entryType === LedgerEntryType.DAMAGE && e.referenceType === PICKUP_OTHER_CHARGE_REF) {
+        pickupCharges = pickupCharges.add(amount);
       }
       continue;
     }
@@ -197,7 +210,7 @@ export function tallyOwedEntries(entries: OwedLedgerEntry[]) {
     if (unsettled) adjustmentPending = adjustmentPending.add(charge);
     if (e.referenceType === DROP_DAMAGE_REF && e.referenceId) damagesOnBill.add(e.referenceId);
   }
-  return { dropBillCharges, safetyDepositCharged, safetyDepositCredited, adjustmentPending, damagesOnBill };
+  return { dropBillCharges, pickupCharges, safetyDepositCharged, safetyDepositCredited, adjustmentPending, damagesOnBill };
 }
 
 export async function computeBookingOwed(bookingId: number, tx?: TxClient): Promise<BookingOwed> {
@@ -252,6 +265,8 @@ const OWED_LEDGER_WHERE = {
   OR: [
     { entryType: LedgerEntryType.DEPOSIT },
     { session: { sessionType: { in: [PaymentSessionType.RETURN, PaymentSessionType.ADJUSTMENT] } } },
+    // Other charges added at the pickup
+    { entryType: LedgerEntryType.DAMAGE, referenceType: PICKUP_OTHER_CHARGE_REF, session: { sessionType: PaymentSessionType.PICKUP } },
   ],
 };
 const OWED_LEDGER_SELECT = {
@@ -297,7 +312,7 @@ export function assembleBookingOwed(input: BookingOwedInput): BookingOwed {
   const totalFinal = dec(input.totalFinal).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
   const tally = tallyOwedEntries(input.entries);
-  const { dropBillCharges, damagesOnBill, adjustmentPending } = tally;
+  const { dropBillCharges, damagesOnBill, adjustmentPending, pickupCharges } = tally;
   let { safetyDepositCharged, safetyDepositCredited } = tally;
 
   for (const t of input.standaloneDeposits) safetyDepositCharged = safetyDepositCharged.add(dec(t));
@@ -321,7 +336,12 @@ export function assembleBookingOwed(input: BookingOwedInput): BookingOwed {
   const legacyReturnCharges = input.legacyReturnCharges;
   const returnCharges = dropBillCharges.add(legacyReturnCharges).add(dropDamageOutsideBill);
   const refundsGoodwill = dec(input.goodwill);
-  const totalOwed = totalFinal.add(returnCharges).add(safetyDepositCharged).sub(safetyDepositCredited).sub(refundsGoodwill);
+  const totalOwed = totalFinal
+    .add(returnCharges)
+    .add(pickupCharges)
+    .add(safetyDepositCharged)
+    .sub(safetyDepositCredited)
+    .sub(refundsGoodwill);
 
   return {
     totalFinal,
@@ -329,6 +349,7 @@ export function assembleBookingOwed(input: BookingOwedInput): BookingOwed {
     legacyReturnCharges,
     dropDamageOutsideBill,
     returnCharges,
+    pickupCharges,
     safetyDepositCharged,
     safetyDepositCredited,
     safetyDepositHeld: Decimal.max(ZERO, safetyDepositCharged.sub(safetyDepositCredited)),
@@ -487,4 +508,23 @@ export async function getBookingMoney(bookingId: number, tx?: TxClient): Promise
     select: { purpose: true, status: true, totalAmount: true },
   });
   return summarizeBookingMoney(txns);
+}
+
+/** getBookingMoney for many bookings in one query (Pending Settlements list); every id gets an entry. */
+export async function getBookingsMoney(bookingIds: number[], tx?: TxClient): Promise<Map<number, BookingMoney>> {
+  const db = tx ?? prisma;
+  const out = new Map<number, BookingMoney>();
+  if (bookingIds.length === 0) return out;
+  const txns = await db.paymentTransaction.findMany({
+    where: { bookingId: { in: bookingIds } },
+    select: { bookingId: true, purpose: true, status: true, totalAmount: true },
+  });
+  const byBooking = new Map<number, typeof txns>();
+  for (const t of txns) {
+    const l = byBooking.get(t.bookingId);
+    if (l) l.push(t);
+    else byBooking.set(t.bookingId, [t]);
+  }
+  for (const id of bookingIds) out.set(id, summarizeBookingMoney(byBooking.get(id) ?? []));
+  return out;
 }

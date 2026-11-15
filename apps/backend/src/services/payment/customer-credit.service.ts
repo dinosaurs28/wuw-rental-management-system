@@ -301,9 +301,40 @@ export interface BookingCreditSummary {
 export async function getBookingCreditSummary(bookingId: number, db: Db = prisma): Promise<BookingCreditSummary | null> {
   const entry = await db.customerCreditEntry.findUnique({
     where: { bookingId },
-    select: { publicId: true, status: true, sections: true, totalAmount: true, clearedAmount: true, pendingAmount: true },
+    select: CREDIT_SUMMARY_SELECT,
   });
-  if (!entry) return null;
+  return entry ? toBookingCreditSummary(entry) : null;
+}
+
+const CREDIT_SUMMARY_SELECT = {
+  publicId: true,
+  status: true,
+  sections: true,
+  totalAmount: true,
+  clearedAmount: true,
+  pendingAmount: true,
+} as const;
+
+/**
+ * getBookingCreditSummary for many bookings in one query (Pending Settlements list).
+ * Bookings with nothing ever put on credit are absent from the map.
+ */
+export async function getBookingCreditSummaries(
+  bookingIds: number[],
+  db: Db = prisma,
+): Promise<Map<number, BookingCreditSummary>> {
+  const out = new Map<number, BookingCreditSummary>();
+  if (bookingIds.length === 0) return out;
+  const entries = await db.customerCreditEntry.findMany({
+    where: { bookingId: { in: bookingIds } },
+    select: { bookingId: true, ...CREDIT_SUMMARY_SELECT },
+  });
+  for (const e of entries) out.set(e.bookingId, toBookingCreditSummary(e));
+  return out;
+}
+
+/** The credit summary of one CustomerCreditEntry row (pure). */
+function toBookingCreditSummary(entry: Prisma.CustomerCreditEntryGetPayload<{ select: typeof CREDIT_SUMMARY_SELECT }>): BookingCreditSummary {
   const sections = (entry.sections as CreditSection[] | null) ?? [];
   const pendingSections = sections.filter((s) => !s.isCleared);
   return {

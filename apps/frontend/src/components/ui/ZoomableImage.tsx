@@ -11,7 +11,7 @@ interface ZoomableImageProps {
   canvasClassName?: string;
   /** Max height of the image area (CSS value). Defaults to 65vh. */
   maxHeight?: string;
-  /** Smaller copy shown until `src` has loaded (kept if `src` fails). */
+  /** Smaller copy shown until `src` has loaded, and kept if `src` fails. */
   placeholderSrc?: string | null;
 }
 
@@ -22,7 +22,14 @@ const ZOOM_STEP = 0.5;
 export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight = "65vh", placeholderSrc }: ZoomableImageProps) {
   const usePlaceholder = !!placeholderSrc && placeholderSrc !== src;
   const [fullReady, setFullReady] = useState(!usePlaceholder);
+  // The full photo failed to load: keep the smaller copy on screen (Nov 15
+  // 2026 — it used to swap to the broken full image and show nothing)
+  const [fullFailed, setFullFailed] = useState(false);
+  // The image element itself failed: try the other copy once
+  const [swapped, setSwapped] = useState(false);
   useEffect(() => {
+    setFullFailed(false);
+    setSwapped(false);
     if (!usePlaceholder) {
       setFullReady(true);
       return;
@@ -30,15 +37,19 @@ export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight 
     setFullReady(false);
     const full = new Image();
     full.onload = () => setFullReady(true);
-    // The preload failed: show the full image element itself (never stuck on a broken preview)
-    full.onerror = () => setFullReady(true);
+    full.onerror = () => setFullFailed(true);
     full.src = src;
     return () => {
       full.onload = null;
       full.onerror = null;
     };
   }, [src, usePlaceholder]);
-  const shownSrc = fullReady || !placeholderSrc ? src : placeholderSrc;
+  const primary = usePlaceholder && (!fullReady || fullFailed) ? placeholderSrc! : src;
+  const other = usePlaceholder ? (primary === src ? placeholderSrc! : src) : null;
+  const shownSrc = swapped && other ? other : primary;
+  const onImgError = () => {
+    if (!swapped && other) setSwapped(true);
+  };
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -257,6 +268,7 @@ export function ZoomableImage({ src, alt, className, canvasClassName, maxHeight 
           ref={imgRef}
           src={shownSrc}
           alt={alt}
+          onError={onImgError}
           draggable={false}
           className="max-w-full object-contain pointer-events-none"
           style={{

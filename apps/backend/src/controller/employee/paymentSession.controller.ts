@@ -36,7 +36,7 @@ import { notifyEvents } from "../../services/notification/notification.events.js
 import { redis } from "../../lib/redisconfig.js";
 import { applyActualPickupShift, loadReturnShift } from "../../services/booking/actual-pickup-shift.service.js";
 import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
-import { finalizeInvoice } from "../../services/invoice-finalization.service.js";
+import { finalizeInvoice, syncPickupChargesInvoice } from "../../services/invoice-finalization.service.js";
 import { refreshInvoiceTotals } from "../../services/invoice-totals.service.js";
 import { refreshBookingPeriodFields } from "../../utils/booking/rentalPeriod.js";
 import { recordBookingSpecialRules } from "../../services/pricing/branch-special-rules.service.js";
@@ -969,10 +969,15 @@ export const RecordPayment = async (req: Request, res: Response) => {
         console.error("[record-payment] Invoice finalization error:", err),
       );
     } else {
-      // An extension confirmed by this session changes the invoice totals
-      refreshInvoiceTotals(session.bookingId).catch((err) =>
-        console.error("[record-payment] Invoice refresh error:", err),
-      );
+      // An extension confirmed by this session changes the invoice totals; a
+      // pickup's other charges (Nov 15 2026) also add their invoice lines
+      const refresh =
+        session.sessionType === PaymentSessionType.PICKUP
+          ? syncPickupChargesInvoice(session.bookingId, session.id).then((rebuilt) =>
+              rebuilt ? undefined : refreshInvoiceTotals(session.bookingId),
+            )
+          : refreshInvoiceTotals(session.bookingId);
+      refresh.catch((err) => console.error("[record-payment] Invoice refresh error:", err));
     }
 
     // Audit + activity outside transaction
@@ -1305,6 +1310,11 @@ export const RecordRefund = async (req: Request, res: Response) => {
       const creditOpen = (await getBookingCreditSummary(session.bookingId))?.pending.gt(0) ?? false;
       finalizeInvoice(session.bookingId, { markPaid: !creditOpen }).catch((err) =>
         console.error("[record-refund] Invoice finalization error:", err),
+      );
+    } else if (session.sessionType === PaymentSessionType.PICKUP) {
+      // A pickup's other charges (Nov 15 2026) add their invoice lines
+      syncPickupChargesInvoice(session.bookingId, session.id).catch((err) =>
+        console.error("[record-refund] Invoice refresh error:", err),
       );
     }
 

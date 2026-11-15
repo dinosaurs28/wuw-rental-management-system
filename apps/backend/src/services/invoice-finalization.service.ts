@@ -11,6 +11,7 @@ import { DROP_DAMAGE_REF, DROP_DISCOUNT_REF } from "./damage/drop-damage.service
 import { chargeEntryGst, chargeEntryGstRemoved } from "./charges/legacy-return-charges.service.js";
 import { settlementEngineService } from "./payment/settlement-engine.service.js";
 import { netDropEntries } from "./booking/operation-adjustment.js";
+import { pickupChargeLines } from "./charges/pickup-other-charges.js";
 import {
   computeInvoiceGstTotals,
   invoiceTotalsData,
@@ -139,6 +140,33 @@ function dropDiscountItems(entry: any): ChargeItem[] {
  * PaymentSession. Legacy is the fallback.
  */
 async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
+  const [pickup, ret] = await Promise.all([buildPickupChargeItems(bookingId), buildReturnChargeItems(bookingId)]);
+  return [...pickup, ...ret];
+}
+
+/**
+ * Other charges added at the pickup (Nov 15 2026): the OTHER_CHARGE lines of
+ * the booking's COMPLETED PICKUP session — billed at face value, no GST, like
+ * the drop's other charges (ADDITIONAL_CHARGES).
+ */
+async function buildPickupChargeItems(bookingId: number): Promise<ChargeItem[]> {
+  const sessions = await prisma.paymentSession.findMany({
+    where: { bookingId, sessionType: PaymentSessionType.PICKUP, status: PaymentSessionStatus.COMPLETED },
+    include: { entries: { where: { isVoided: false }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
+  });
+  return sessions.flatMap((s) =>
+    pickupChargeLines(s.entries as any[]).map((entry: any) => ({
+      label: `${String(entry.description)} (at pickup)`,
+      amount: new Decimal(entry.amount.toString()).toFixed(2),
+      isTaxable: false,
+      chargeType: "ADDITIONAL_CHARGES",
+      taxAmount: "0.00",
+      sourceRef: `${INVOICE_SOURCE.LEDGER}${entry.publicId}`,
+    })),
+  );
+}
+
+async function buildReturnChargeItems(bookingId: number): Promise<ChargeItem[]> {
   // ── 1. Session-based return flow ──────────────────────────────────────────
   const returnSession = await prisma.paymentSession.findFirst({
     where: {
@@ -310,9 +338,11 @@ async function buildChargeItems(bookingId: number): Promise<ChargeItem[]> {
  */
 export async function finalizeInvoice(
   bookingId: number,
-  opts: { markPaid?: boolean } = {},
+  opts: { markPaid?: boolean; keepStatus?: boolean } = {},
 ): Promise<void> {
   const markPaid = opts.markPaid !== false;
+  // keepStatus: rebuild the lines and totals only (a pickup's other charges)
+  const keepStatus = opts.keepStatus === true;
   console.log(`[finalizeInvoice] Starting for booking ${bookingId}${markPaid ? "" : " (balance still owed)"}`);
 
   const booking = await prisma.booking.findUnique({
@@ -379,7 +409,7 @@ export async function finalizeInvoice(
       where: { id: invoiceId },
       data: {
         ...invoiceTotalsData(totals),
-        status: markPaid ? "PAID" : "PENDING",
+        ...(!keepStatus && { status: markPaid ? "PAID" : "PENDING" }),
         invoicePdfFileId: null,
         generatedAt: null,
       },
@@ -416,5 +446,20 @@ export async function syncLegacyReturnInvoice(bookingId: number): Promise<boolea
 
   const { isSettled } = await settlementEngineService.calculateSettlement(bookingId);
   await finalizeInvoice(bookingId, { markPaid: isSettled });
+  return true;
+}
+
+/**
+ * A pickup that billed other charges (Nov 15 2026): their invoice lines and
+ * the invoice totals are rebuilt at once, the invoice status left as it is
+ * (the drop's finalization sets it). Nothing to do without such charges.
+ * Callers run it fire-and-forget after the pickup settles.
+ */
+export async function syncPickupChargesInvoice(bookingId: number, sessionId: number): Promise<boolean> {
+  const count = await prisma.ledgerEntry.count({
+    where: { sessionId, isVoided: false, entryType: "DAMAGE", referenceType: "OTHER_CHARGE" },
+  });
+  if (count === 0) return false;
+  await finalizeInvoice(bookingId, { keepStatus: true });
   return true;
 }

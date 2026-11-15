@@ -1068,6 +1068,8 @@ export const GetCustomerBooking = async (req: Request, res: Response) => {
             damageOutsideBill: money(owed.dropDamageOutsideBill),
             total: money(owed.returnCharges),
           },
+          /** Other charges added at the pickup (additive, Nov 15 2026; no GST) — outside totalFinal */
+          pickupCharges: money(owed.pickupCharges),
           safetyDeposit: {
             amount: money(booking.safetyDeposit),
             charged: money(owed.safetyDepositCharged),

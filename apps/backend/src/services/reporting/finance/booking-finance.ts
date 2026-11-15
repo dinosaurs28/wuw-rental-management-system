@@ -9,7 +9,8 @@
  *             The refundable category deposit inside totalFinal is not revenue.
  *   extras  = computeBookingOwed().returnCharges — drop bill charges net of the
  *             drop discount (+ edits), legacy return charges, drop damage outside
- *             a bill. No GST on them since Oct 3 2026 (older ones keep theirs).
+ *             a bill — plus other charges added at the pickup (pickupCharges,
+ *             Nov 15 2026). No GST on them since Oct 3 2026 (older ones keep theirs).
  *   revenue = rent + extras − refundsGoodwill ("Refund to customer" beyond what was
  *             owed back: given up, so it lowers revenue as it lowers what is owed).
  *   bookingValue = totalFinal — the Sales report / old dashboard figure, kept so a
@@ -61,7 +62,7 @@ export interface BookingRevenue {
 /** The revenue arithmetic (pure). Cancelled / hold bookings → all zero except bookingValue. */
 export function revenueOf(
   b: { status: string; totalFinal: number; totalDeposit: number },
-  owed: Pick<BookingOwed, "returnCharges" | "refundsGoodwill"> | null | undefined,
+  owed: (Pick<BookingOwed, "returnCharges" | "refundsGoodwill"> & Partial<Pick<BookingOwed, "pickupCharges">>) | null | undefined,
   gst = 0,
 ): BookingRevenue {
   if (!(REVENUE_STATUSES as string[]).includes(b.status)) {
@@ -69,7 +70,7 @@ export function revenueOf(
   }
   const deposit = r2(b.totalDeposit);
   const rent = r2(b.totalFinal - deposit);
-  const extras = r2(num(owed?.returnCharges));
+  const extras = r2(num(owed?.returnCharges) + num(owed?.pickupCharges));
   const goodwill = r2(num(owed?.refundsGoodwill));
   return {
     rent,

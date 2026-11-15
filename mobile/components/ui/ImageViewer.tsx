@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors, Fonts } from '../../constants/colors';
+import { slideSources, slideView, viewerRetryDelayMs, type LoadStatus } from '../../lib/photoViewer';
 
 export interface ViewerImage {
   url: string;
@@ -34,6 +35,12 @@ interface Props {
   images: ViewerImage[];
   startIndex?: number;
   onClose: () => void;
+  /**
+   * Fresh links for photo `index`, asked for when every copy failed and the
+   * user taps Retry — e.g. re-fetch a presigned URL that has expired. Optional:
+   * without it Retry loads the same links again.
+   */
+  onRefreshImage?: (index: number) => Promise<ViewerImage | null>;
 }
 
 const MIN_SCALE = 1;
@@ -41,38 +48,93 @@ const MAX_SCALE = 5;
 const SPRING = { damping: 20, stiffness: 200 };
 
 interface SlideProps {
-  url: string;
-  previewUrl?: string | null;
+  image: ViewerImage;
   width: number;
   height: number;
   active: boolean;
   onZoomChange: (zoomed: boolean) => void;
+  /** Fresh links for this photo (e.g. a presigned URL that has expired), asked for on Retry. */
+  onRefresh?: () => Promise<ViewerImage | null>;
+}
+
+// One copy of a photo (full size or smaller): its load status, automatic
+// retries with backoff (an immediate retry against a throttled host just
+// fails again), then 'error' until reset.
+function useRemoteCopy(uri: string | null) {
+  const [status, setStatus] = useState<LoadStatus>(uri ? 'loading' : 'idle');
+  // Bumped to remount the image element (a new request)
+  const [attempt, setAttempt] = useState(0);
+  const failures = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clear = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+
+  useEffect(() => {
+    clear();
+    failures.current = 0;
+    setStatus(uri ? 'loading' : 'idle');
+  }, [uri]);
+  useEffect(() => clear, []);
+
+  const onLoad = useCallback(() => {
+    clear();
+    failures.current = 0;
+    setStatus('loaded');
+  }, []);
+  const onError = useCallback(() => {
+    failures.current += 1;
+    const delay = viewerRetryDelayMs(failures.current);
+    if (delay == null) {
+      setStatus('error');
+      return;
+    }
+    clear();
+    timer.current = setTimeout(() => setAttempt((n) => n + 1), delay);
+  }, []);
+  const reset = useCallback(() => {
+    clear();
+    failures.current = 0;
+    setStatus(uri ? 'loading' : 'idle');
+    setAttempt((n) => n + 1);
+  }, [uri]);
+
+  return { status, attempt, onLoad, onError, reset };
 }
 
 // One zoomable page: pinch, pan (clamped to the zoomed bounds) and double-tap.
 // Pan only claims the touch while zoomed, so at 1x a horizontal swipe falls
-// through to the pager.
-function ZoomSlide({ url, previewUrl, width, height, active, onZoomChange }: SlideProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  // Bumped to remount the image: one silent retry, then the Retry button.
-  const [attempt, setAttempt] = useState(0);
+// through to the pager. The smaller copy shows while the full-size photo
+// loads and stays if it fails; only when every copy fails is there an error
+// panel (Nov 15 2026: it used to leave a black page with a Retry pill).
+function ZoomSlide({ image, width, height, active, onZoomChange, onRefresh }: SlideProps) {
+  // Links re-fetched on Retry (onRefresh), replacing the ones passed in
+  const [fresh, setFresh] = useState<ViewerImage | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => setFresh(null), [image.url, image.previewUrl]);
 
-  const retry = () => {
-    setError(false);
-    setLoading(true);
-    setAttempt((n) => n + 1);
-  };
+  const sources = slideSources(fresh ?? image, active);
+  const full = useRemoteCopy(sources.full);
+  const preview = useRemoteCopy(sources.preview);
+  const view = slideView(sources, full.status, preview.status);
 
-  const onLoadError = () => {
-    if (attempt === 0) {
-      retry();
-      return;
+  const retryFull = () => full.reset();
+  const retryAll = async () => {
+    if (onRefresh) {
+      setRefreshing(true);
+      try {
+        const next = await onRefresh();
+        if (next?.url) setFresh(next);
+      } catch {
+        // Keep the links we have
+      } finally {
+        setRefreshing(false);
+      }
     }
-    setLoading(false);
-    setError(true);
+    full.reset();
+    preview.reset();
   };
-
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -168,54 +230,63 @@ function ZoomSlide({ url, previewUrl, width, height, active, onZoomChange }: Sli
   return (
     <GestureDetector gesture={gesture}>
       <View style={{ width, height, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {previewUrl && (loading || error) && (
+        {view.showPreview && sources.preview && !refreshing && (
           <Animated.Image
-            source={{ uri: previewUrl }}
+            key={`p${preview.attempt}`}
+            source={{ uri: sources.preview }}
             style={[{ width, height, position: 'absolute' }, animatedStyle]}
             resizeMode="contain"
+            onLoad={preview.onLoad}
+            onError={preview.onError}
           />
         )}
-        {loading && !error && (
-          <View style={styles.centerOverlay}>
+        {view.showFull && sources.full && !refreshing && (
+          <Animated.Image
+            key={`f${full.attempt}`}
+            source={{ uri: sources.full }}
+            style={[{ width, height, position: 'absolute' }, animatedStyle]}
+            resizeMode="contain"
+            onLoad={full.onLoad}
+            onError={full.onError}
+          />
+        )}
+        {(view.spinner || refreshing) && view.notice !== 'failed' && (
+          <View style={styles.centerOverlay} pointerEvents="none">
             <ActivityIndicator color={Colors.orange} size="large" />
           </View>
         )}
-        {error && previewUrl ? (
+        {view.notice === 'smaller-copy' && !refreshing && (
           <TouchableOpacity
-            onPress={retry}
+            onPress={retryFull}
             style={styles.previewRetry}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Retry loading the full-size photo"
+            accessibilityLabel="Showing a smaller copy. Retry loading the full-size photo"
           >
             <Ionicons name="refresh" size={15} color="#fff" />
-            <Text style={styles.retryText}>Full-size photo didn't load · Retry</Text>
+            <Text style={styles.retryText}>Smaller copy shown · Retry full size</Text>
           </TouchableOpacity>
-        ) : error ? (
-          <View style={styles.errorInner}>
-            <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.errorText}>Failed to load photo</Text>
-            <TouchableOpacity
-              onPress={retry}
-              style={styles.retryBtn}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Retry loading photo"
-            >
-              <Ionicons name="refresh" size={16} color="#fff" />
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <Animated.Image
-            key={attempt}
-            source={{ uri: url }}
-            style={[{ width, height }, animatedStyle]}
-            resizeMode="contain"
-            onLoad={() => setLoading(false)}
-            onError={onLoadError}
-          />
         )}
+        {view.notice === 'failed' &&
+          (refreshing ? (
+            <ActivityIndicator color={Colors.orange} size="large" />
+          ) : (
+            <View style={styles.errorInner}>
+              <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.errorText}>This photo didn't load</Text>
+              <Text style={styles.errorHint}>Check the connection, then try again.</Text>
+              <TouchableOpacity
+                onPress={retryAll}
+                style={styles.retryBtn}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading photo"
+              >
+                <Ionicons name="refresh" size={16} color="#fff" />
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
       </View>
     </GestureDetector>
   );
@@ -225,7 +296,7 @@ function ZoomSlide({ url, previewUrl, width, height, active, onZoomChange }: Sli
  * Full-screen photo viewer: horizontal paging between photos, pinch-zoom, pan
  * and double-tap on each, with a counter, caption and close button.
  */
-export default function ImageViewer({ visible, images, startIndex = 0, onClose }: Props) {
+export default function ImageViewer({ visible, images, startIndex = 0, onClose, onRefreshImage }: Props) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const listRef = useRef<FlatList<ViewerImage>>(null);
@@ -287,12 +358,12 @@ export default function ImageViewer({ visible, images, startIndex = 0, onClose }
             onMomentumScrollEnd={onMomentumEnd}
             renderItem={({ item, index: i }) => (
               <ZoomSlide
-                url={item.url}
-                previewUrl={item.previewUrl}
+                image={item}
                 width={width}
                 height={height}
                 active={i === index}
                 onZoomChange={i === index ? setZoomed : noop}
+                onRefresh={onRefreshImage ? () => onRefreshImage(i) : undefined}
               />
             )}
           />
@@ -373,7 +444,8 @@ const styles = StyleSheet.create({
   captionText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: '#fff', textAlign: 'center' },
   centerOverlay: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   errorInner: { alignItems: 'center', justifyContent: 'center', gap: 16 },
-  errorText: { fontFamily: Fonts.body, fontSize: 14, color: 'rgba(255,255,255,0.6)' },
+  errorText: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: 'rgba(255,255,255,0.85)' },
+  errorHint: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: -8 },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -114,6 +114,7 @@ import {
 } from "@/services/completedOperation.service";
 import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
 import { PickupDiscountPanel, cleanDiscountInput, pickupDiscountInputError } from "@/components/payment/PickupDiscountPanel";
+import { PickupOtherChargesPanel } from "@/components/payment/PickupOtherChargesPanel";
 import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { LegacyRemainingPaymentCard } from "@/components/payment/counter/LegacyRemainingPaymentCard";
 
@@ -2223,13 +2224,7 @@ export default function StaffPickupsPage() {
                       />
                     </div>
 
-                    <OperationNoteField
-                      id="pickup-note-session"
-                      label="Pickup note"
-                      value={pickupNote}
-                      onChange={setPickupNote}
-                      disabled={initiatePickupSessionMutation.isPending}
-                    />
+                    {/* The pickup note is on the payment step (client, Nov 15 2026) */}
 
                     <Button
                       type="button"
@@ -2275,6 +2270,20 @@ export default function StaffPickupsPage() {
                           ? removeManualDiscountMutation.mutate()
                           : removeDiscountMutation.mutate()
                       }
+                    />
+                    {/* Other charges (Nov 15 2026): reason + amount, several, no GST */}
+                    <PickupOtherChargesPanel
+                      bookingPublicId={booking.publicId}
+                      session={pickupSession}
+                      onUpdated={setPickupSession}
+                    />
+                    {/* Optional Fleet note, on the payment step (client, Nov 15 2026) */}
+                    <PickupNoteAtPayment
+                      bookingPublicId={booking.publicId}
+                      value={pickupNote}
+                      onChange={setPickupNote}
+                      saved={booking.operationNotes?.pickup?.note ?? ""}
+                      onSaved={() => queryClient.invalidateQueries({ queryKey: ["booking", bookingId] })}
                     />
                     <RecordPaymentPanel
                       session={pickupSession}
@@ -3139,6 +3148,60 @@ function PickupEditForm({ booking, summary, pricingRules, isLoadingPricing }: Pi
       </main>
 
       {flow.dialog}
+    </div>
+  );
+}
+
+/**
+ * The pickup note on the payment step (client, Nov 15 2026): saved to the open
+ * pickup when the field loses focus or with "Save note" (PUT …/pickup/:id/note,
+ * the same field as before), so it is on the booking before the payment.
+ */
+function PickupNoteAtPayment({
+  bookingPublicId,
+  value,
+  onChange,
+  saved,
+  onSaved,
+}: {
+  bookingPublicId: string;
+  value: string;
+  onChange: (v: string) => void;
+  saved: string;
+  onSaved: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  // A note saved on the pickup before (another screen / an earlier visit) fills an empty field
+  useEffect(() => {
+    if (saved && !value) onChange(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
+  const dirty = (noteForRequest(value) ?? "") !== saved;
+  const tooLong = value.trim().length > OPERATION_NOTE_MAX;
+  const save = async () => {
+    if (!dirty || tooLong || busy) return;
+    setBusy(true);
+    try {
+      await paymentSessionService.savePickupNote(bookingPublicId, noteForRequest(value));
+      onSaved();
+      toast.success("Pickup note saved");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not save the pickup note.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2" onBlur={(e) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) void save();
+    }}>
+      <OperationNoteField id="pickup-note-session" label="Pickup note" value={value} onChange={onChange} disabled={busy} />
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-xs text-muted-foreground">{dirty ? "Not saved yet" : saved ? "Saved" : ""}</span>
+        <Button type="button" size="sm" variant="outline" onClick={() => void save()} disabled={!dirty || tooLong || busy}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save note"}
+        </Button>
+      </div>
     </div>
   );
 }

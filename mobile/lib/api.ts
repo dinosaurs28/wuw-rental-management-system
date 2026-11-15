@@ -949,6 +949,8 @@ export const employeeApi = {
       licenseCollected?: boolean;
       // Optional Fleet note (≤ 1000 chars, Oct 20 2026); null / blank = none
       pickupNote?: string | null;
+      // Other charges on the pickup bill (Nov 15 2026), the whole set — ignored by older servers
+      otherCharges?: { label: string; amount: number }[];
     },
   ) => api.post(`/api/employee/bookings/${bookingId}/pickup-session/initiate`, body),
   // Fleet changes the original-licence status (#3) — CONFIRMED / PICKED_UP only
@@ -995,6 +997,11 @@ export const employeeApi = {
     api.post(`/api/employee/bookings/${bookingId}/pickup-session/manual-discount`, body),
   removePickupSessionDiscount: (bookingId: string) =>
     api.delete(`/api/employee/bookings/${bookingId}/pickup-session/manual-discount`),
+  // Other charges on the pickup bill (Nov 15 2026): the WHOLE set (replaced, never
+  // appended; [] removes them), no GST. Returns the bill. 400 PICKUP_CHARGES_INVALID,
+  // 409 PICKUP_BILL_CLOSED; 404 on servers without it.
+  setPickupSessionOtherCharges: (bookingId: string, body: { charges: { label: string; amount: number }[] }) =>
+    api.put(`/api/employee/bookings/${bookingId}/pickup-session/other-charges`, body),
   // Legacy branches (no payment sessions): taken off the remaining balance before it is collected
   setLegacyPickupDiscount: (bookingId: string, body: { amount: number; reason?: string | null }) =>
     api.put(`/api/employee/pickup/${bookingId}/discount`, body),
