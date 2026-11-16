@@ -81,6 +81,7 @@ export const GetBookingSummaryReport = async (req: Request, res: Response) => {
         columns: [
           ...bookingCols<R>(),
           { header: "Status", value: (r) => r.statusLabel },
+          { header: "Cancel reason", value: (r) => r.cancellationReason ?? "" },
           { header: "Created", value: (r) => r.createdAt, type: "datetime" },
           { header: "Pickup (scheduled)", value: (r) => r.startAt, type: "datetime" },
           { header: "Return (scheduled)", value: (r) => r.endAt, type: "datetime" },
@@ -151,6 +152,7 @@ export const GetBookingSourceReport = async (req: Request, res: Response) => {
           ...bookingCols<R>(),
           { header: "Created by", value: (r) => r.createdByName ?? "" },
           { header: "Status", value: (r) => r.statusLabel },
+          { header: "Cancel reason", value: (r) => r.cancellationReason ?? "" },
           { header: "Created", value: (r) => r.createdAt, type: "datetime" },
           { header: "Pickup (scheduled)", value: (r) => r.startAt, type: "datetime" },
           { header: "Booking value", value: (r) => r.bookingValue, type: "money" },
@@ -296,6 +298,7 @@ export const GetCustomerLtvReport = async (req: Request, res: Response) => {
           columns: [
             ...bookingCols<R>(),
             { header: "Status", value: (r) => r.statusLabel },
+            { header: "Cancel reason", value: (r) => r.cancellationReason ?? "" },
             { header: "Pickup (scheduled)", value: (r) => r.startAt, type: "datetime" },
             { header: "Return (scheduled)", value: (r) => r.endAt, type: "datetime" },
             { header: "Returned", value: (r) => r.returnedAt, type: "datetime" },

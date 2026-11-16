@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, CheckCircle, Clock, Shield, Car } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -96,6 +96,9 @@ export const InsurancePermitExpiryReport = () => {
     Array<{ value: string; label: string }>
   >([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Only the newest request may fill the table: a slow "All branches" reply
+  // must not overwrite a single-branch view with other branches' vehicles.
+  const requestSeq = useRef(0);
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -131,6 +134,7 @@ export const InsurancePermitExpiryReport = () => {
   };
 
   const fetchReportData = async () => {
+    const seq = ++requestSeq.current;
     setIsLoading(true);
     try {
       const params: {
@@ -149,12 +153,14 @@ export const InsurancePermitExpiryReport = () => {
       }
 
       const result = await adminService.getInsurancePermitExpiryReport(params);
+      if (seq !== requestSeq.current) return;
       setReportData(result.data);
     } catch (error) {
+      if (seq !== requestSeq.current) return;
       console.error("Error fetching report:", error);
       toast.error("Failed to load insurance expiry report. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (seq === requestSeq.current) setIsLoading(false);
     }
   };
 

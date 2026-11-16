@@ -42,6 +42,8 @@ export interface BookingBase {
   category: string;
   source: "APP" | "WALK_IN";
   createdByName: string | null;
+  /** Set only on cancelled bookings (older servers omit it). */
+  cancellationReason?: string | null;
 }
 
 /** GET /admin/dashboard/reports/{path} with the filter params (+ compare=1, page …). */
@@ -152,6 +154,19 @@ export function ShareBars({ items }: { items: Array<{ key: string; label: string
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Status text, with the cancel reason under it on a cancelled booking. */
+export function StatusWithReason({ label, reason }: { label: string; reason?: string | null }) {
+  if (!reason) return <>{label}</>;
+  return (
+    <div className="min-w-0">
+      <div>{label}</div>
+      <div className="mt-0.5 max-w-[240px] truncate text-xs text-neutral-500" title={reason}>
+        Reason: {reason}
+      </div>
     </div>
   );
 }

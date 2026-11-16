@@ -267,6 +267,9 @@ export const GetVehicleHistory = async (req: Request, res: Response) => {
       revenue: Number(item.finalTotal),
       depositAmount: Number(item.booking.totalDeposit),
       status: item.booking.status,
+      // Cancel reason (branch manager's typed reason …), cancelled rows only
+      cancellationReason:
+        item.booking.status === "CANCELLED" ? item.booking.cancellationReason?.trim() || null : null,
       damageReported: item.booking.damages.length > 0,
       returnCondition: item.booking.damages.length > 0 ? "Damaged" : "Good",
       // Additive: { note, writtenBy, writtenAt, editedBy, editedAt } | null

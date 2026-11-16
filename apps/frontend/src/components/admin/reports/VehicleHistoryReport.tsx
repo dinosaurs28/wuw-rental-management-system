@@ -122,7 +122,19 @@ export const VehicleHistoryReport = ({
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <StatusBadge status={row.original.status} />
+          {row.original.cancellationReason && (
+            <div
+              className="mt-1 max-w-[220px] truncate text-xs text-gray-500"
+              title={row.original.cancellationReason}
+            >
+              Reason: {row.original.cancellationReason}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: "returnCondition",

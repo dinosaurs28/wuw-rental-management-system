@@ -130,6 +130,8 @@ export interface SalesReportBooking {
     transactionId?: string;
   };
   status: string;
+  /** Cancel reason, on cancelled bookings only (older servers omit it). */
+  cancellationReason?: string | null;
   branch: string;
   createdBy: string;
 }

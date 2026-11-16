@@ -1015,8 +1015,8 @@ export const DOC_STATUS_LABELS: Record<DocStatus, string> = {
 
 /**
  * Expired documents + documents expiring within `withinDays` (default 30), for
- * active (non-deleted, non-inactive) vehicles. Insurance = the latest
- * VehicleInsurance.validTill, else Vehicle.insuranceExpiry. RC / permit / PUC /
+ * active (non-deleted, non-inactive) vehicles. Insurance = Vehicle.insuranceExpiry
+ * (what the branch manager saved — same as the BM portal). RC / permit / PUC /
  * fitness = the Vehicle columns (null = not recorded, counted in `notRecorded`).
  */
 export async function getDocumentExpiry(opts: {
@@ -1049,14 +1049,13 @@ export async function getDocumentExpiry(opts: {
       fitnessExpiry: true,
       branch: { select: { name: true } },
       category: { select: { name: true } },
-      insuranceRecords: { orderBy: { validTill: "desc" }, take: 1, select: { validTill: true } },
     },
   });
   const rows: DocExpiryRow[] = [];
   const notRecorded: Record<DocType, number> = { INSURANCE: 0, RC: 0, PERMIT: 0, PUC: 0, FITNESS: 0 };
   for (const v of vehicles) {
     const dates: Record<DocType, Date | null> = {
-      INSURANCE: v.insuranceRecords[0]?.validTill ?? v.insuranceExpiry,
+      INSURANCE: v.insuranceExpiry,
       RC: v.rcExpiry,
       PERMIT: v.permitExpiry,
       PUC: v.pucExpiry,

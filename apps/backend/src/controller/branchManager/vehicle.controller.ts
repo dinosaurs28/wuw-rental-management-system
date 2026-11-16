@@ -15,6 +15,7 @@ import { branchRentRates, rentColumns, weekendRentColumns } from "../../services
 import { ACTIVE_RENTAL_ITEM_WHERE, findActiveRental } from "../../utils/availability/outForRental.js";
 import { isDropRecorded, vehicleHiddenReasons } from "../../utils/availability/vehicleEligibility.js";
 import { getBatchFallbackPrices } from "../../utils/pricing/batchListingPrice.js";
+import { CURRENT_INSURANCE_ORDER } from "../../services/vehicle-insurance/current-insurance.js";
 const updateVehicleFastagSchema = z.object({
   fastagNumber: z.string().min(1).nullable(),
   hasFastag: z.boolean(),
@@ -278,7 +279,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
       include: {
         images: true,
         insuranceRecords: {
-          orderBy: { validTill: "desc" },
+          orderBy: CURRENT_INSURANCE_ORDER,
           take: 1,
         },
       },
@@ -580,7 +581,7 @@ export const GetVehicleById = async (req: Request, res: Response) => {
         },
         customPricing: true,
         insuranceRecords: {
-          orderBy: { validTill: "desc" },
+          orderBy: CURRENT_INSURANCE_ORDER,
           take: 1,
         },
       },
@@ -663,7 +664,7 @@ export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
             take: 1,
           },
           insuranceRecords: {
-            orderBy: { validTill: "desc" },
+            orderBy: CURRENT_INSURANCE_ORDER,
             take: 1,
             select: { policyNumber: true, provider: true, validTill: true },
           },

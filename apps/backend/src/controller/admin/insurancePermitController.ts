@@ -8,6 +8,10 @@ import {
   summaryRow,
   csvDate,
 } from "../../utils/reporting/index.js";
+import {
+  CURRENT_INSURANCE_ORDER,
+  currentInsurance,
+} from "../../services/vehicle-insurance/current-insurance.js";
 
 /**
  * Insurance Expiry Report (spec §4.7) — compliance, no revenue.
@@ -21,7 +25,9 @@ import {
  *     Expired       = expiry <  today
  *     Expiring Soon = today <= expiry <= today+30
  *     Valid         = expiry >  today+30
- * - Expiry source = latest VehicleInsurance.validTill, fallback Vehicle.insuranceExpiry.
+ * - Expiry = Vehicle.insuranceExpiry (what the branch manager saved); policy /
+ *   provider = the newest-written VehicleInsurance row (Nov 16 2026 — it used
+ *   to take the row with the furthest validTill, which disagreed with the BM).
  * - Filters: branch, category, Expiry Status (All / Expiring Soon / Expired / Valid).
  * - Summary: X Expired, Y Expiring within 30 days, Z Valid. Sort: Days Until
  *   Expiry ascending. CSV implemented inline in spec column order.
@@ -82,7 +88,7 @@ export const GetInsurancePermitExpiry = async (req: Request, res: Response) => {
       include: {
         category: { select: { name: true } },
         branch: { select: { name: true, publicId: true } },
-        insuranceRecords: { orderBy: { validTill: "desc" }, take: 1 },
+        insuranceRecords: { orderBy: CURRENT_INSURANCE_ORDER, take: 1 },
       },
     });
 
@@ -100,9 +106,8 @@ export const GetInsurancePermitExpiry = async (req: Request, res: Response) => {
     };
 
     const processedVehicles = vehicles.map((vehicle) => {
-      const latestRecord = vehicle.insuranceRecords[0] || null;
-      // Expiry = latest VehicleInsurance.validTill, fallback Vehicle.insuranceExpiry.
-      const expiry = latestRecord?.validTill ?? vehicle.insuranceExpiry;
+      const current = currentInsurance(vehicle, vehicle.insuranceRecords[0]);
+      const expiry = current.expiry ?? vehicle.insuranceExpiry;
 
       const daysUntilExpiry = Math.ceil(
         (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
@@ -121,8 +126,8 @@ export const GetInsurancePermitExpiry = async (req: Request, res: Response) => {
         status: vehicle.status,
         // spec §4.7 fields
         insuranceStatus: status,
-        provider: latestRecord?.provider ?? "",
-        policyNumber: latestRecord?.policyNumber ?? "",
+        provider: current.provider ?? "",
+        policyNumber: current.policyNumber ?? "",
         insuranceStartDate: "", // not stored (no validFrom) — blank per spec
         insuranceExpiryDate: expiry.toISOString(),
         daysUntilExpiry,
@@ -131,8 +136,8 @@ export const GetInsurancePermitExpiry = async (req: Request, res: Response) => {
           expiryDate: expiry.toISOString(),
           daysRemaining: daysUntilExpiry,
           alertLevel: alert,
-          policyNumber: latestRecord?.policyNumber ?? null,
-          provider: latestRecord?.provider ?? null,
+          policyNumber: current.policyNumber,
+          provider: current.provider,
         },
         permit: {
           expiryDate: null,

@@ -218,6 +218,8 @@ export type VehicleHistoryBooking = {
     /** Fleet notes written at the pickup / drop (Oct 20 2026); absent on older servers */
     pickupNote?: OperationNoteView | null;
     dropNote?: OperationNoteView | null;
+    /** Cancel reason, on cancelled bookings only; absent on older servers */
+    cancellationReason?: string | null;
 };
 
 export type VehicleHistoryMaintenance = {

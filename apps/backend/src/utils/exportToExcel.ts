@@ -272,6 +272,7 @@ export const exportSalesReportToExcel = async (
     "Days",
     "Amount",
     "Status",
+    "Cancel Reason",
     "Branch",
   ];
   createHeaderRow(detailsSheet, headers);
@@ -288,6 +289,7 @@ export const exportSalesReportToExcel = async (
       booking.period.days,
       formatCurrencyForExcel(booking.financial.totalAmount),
       booking.status,
+      booking.cancellationReason ?? "",
       booking.branch,
     ]);
   });
@@ -362,6 +364,7 @@ export const exportVehicleHistoryToExcel = async (
     "Days",
     "Revenue",
     "Status",
+    "Cancel Reason",
     "Return Condition",
   ];
   createHeaderRow(bookingsSheet, bookingHeaders);
@@ -376,6 +379,7 @@ export const exportVehicleHistoryToExcel = async (
       booking.days,
       formatCurrencyForExcel(booking.revenue),
       booking.status,
+      booking.cancellationReason ?? "",
       booking.returnCondition,
     ]);
   });

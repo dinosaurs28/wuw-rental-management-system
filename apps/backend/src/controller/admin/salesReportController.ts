@@ -243,6 +243,9 @@ export const GetSalesReport = async (req: Request, res: Response) => {
           status: b.status,
           statusLabel: DB_STATUS_TO_SPEC[b.status] ?? b.status,
           isCancelled: e.isCancelled,
+          // The branch manager's (or system's) cancel reason, on cancelled rows only
+          cancellationReason:
+            b.status === "CANCELLED" ? b.cancellationReason?.trim() || null : null,
           branch: b.branch.name,
           createdBy: b.createdBy.name,
         };
@@ -341,7 +344,7 @@ export const GetSalesReport = async (req: Request, res: Response) => {
         "Booking ID", "Booking Date", "Start Date", "End Date", "Customer Name",
         "Phone", "Vehicle Reg", "Vehicle Name", "Category", "Branch", "Duration",
         "Base Amount", "Discount", "GST Amount", "Total Amount", "Amount Paid",
-        "Outstanding", "Payment Mode", "Status",
+        "Outstanding", "Payment Mode", "Status", "Cancel Reason",
       ];
       const rows = formatted.map((r) => ({
         "Booking ID": r.bookingId,
@@ -363,6 +366,7 @@ export const GetSalesReport = async (req: Request, res: Response) => {
         Outstanding: csvCurrency(r.financial.outstanding),
         "Payment Mode": r.paymentMode,
         Status: r.statusLabel,
+        "Cancel Reason": r.cancellationReason ?? "",
       }));
       const summary = summaryRow(columns, "TOTAL", {
         "Total Amount": csvCurrency(totalRevenue),

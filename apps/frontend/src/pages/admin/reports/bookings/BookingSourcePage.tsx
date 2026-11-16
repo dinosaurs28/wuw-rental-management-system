@@ -16,8 +16,7 @@ import {
   type BookingBase,
   type BookingPagination,
   type Deltas,
-  type PeriodInfo,
-} from "./bookingsShared";
+  type PeriodInfo, StatusWithReason } from "./bookingsShared";
 
 interface SourceRow {
   source: "APP" | "WALK_IN";
@@ -132,7 +131,7 @@ export function BookingSourcePage() {
                 { header: "Booking", cell: (r) => r.bookingId },
                 { header: "Source", cell: (r) => sourceLabel(r.source) },
                 { header: "Created by", cell: (r) => r.createdByName ?? "Not recorded" },
-                { header: "Status", cell: (r) => r.statusLabel },
+                { header: "Status", cell: (r) => <StatusWithReason label={r.statusLabel} reason={r.cancellationReason} /> },
                 { header: "Created", cell: (r) => istDateTime(r.createdAt) },
                 { header: "Pickup", cell: (r) => istDateTime(r.startAt) },
                 { header: "Customer", cell: (r) => r.customerName },

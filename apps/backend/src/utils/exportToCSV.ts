@@ -209,6 +209,7 @@ export const exportVehicleHistoryToCSV = (
     Revenue: formatCurrencyForCSV(booking.revenue),
     Deposit: formatCurrencyForCSV(booking.depositAmount),
     Status: booking.status,
+    "Cancel Reason": booking.cancellationReason ?? "",
     "Damage Reported": booking.damageReported ? "Yes" : "No",
     "Return Condition": booking.returnCondition,
   }));
@@ -223,6 +224,7 @@ export const exportVehicleHistoryToCSV = (
     "Revenue",
     "Deposit",
     "Status",
+    "Cancel Reason",
     "Damage Reported",
     "Return Condition",
   ];

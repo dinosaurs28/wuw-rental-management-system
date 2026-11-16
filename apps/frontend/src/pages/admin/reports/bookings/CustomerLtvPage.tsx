@@ -17,8 +17,7 @@ import {
   usePageReset,
   type BookingBase,
   type BookingPagination,
-  type PeriodInfo,
-} from "./bookingsShared";
+  type PeriodInfo, StatusWithReason } from "./bookingsShared";
 
 interface LtvRow {
   customerId: string;
@@ -124,7 +123,7 @@ export function CustomerLtvPage() {
                 rowKey={(r) => r.bookingId}
                 columns={[
                   { header: "Booking", cell: (r) => r.bookingId },
-                  { header: "Status", cell: (r) => r.statusLabel },
+                  { header: "Status", cell: (r) => <StatusWithReason label={r.statusLabel} reason={r.cancellationReason} /> },
                   { header: "Pickup", cell: (r) => istDateTime(r.startAt) },
                   { header: "Returned", cell: (r) => istDateTime(r.returnedAt ?? r.cancelledAt) },
                   { header: "Vehicle", cell: (r) => r.vehicle || "Not recorded" },

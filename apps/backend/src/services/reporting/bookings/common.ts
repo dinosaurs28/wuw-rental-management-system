@@ -107,6 +107,9 @@ export function bookingDisplay(b: BookingRow) {
     source,
     createdByName: b.createdBy?.name ?? null,
     createdByRole: b.createdBy?.role ?? null,
+    // Why it was cancelled (branch manager's typed reason, auto-cancel note …),
+    // shown next to the status wherever admin lists a cancelled booking.
+    cancellationReason: b.status === "CANCELLED" ? b.cancellationReason?.trim() || null : null,
   };
 }
 

@@ -17,8 +17,7 @@ import {
   type BookingBase,
   type BookingPagination,
   type Deltas,
-  type PeriodInfo,
-} from "./bookingsShared";
+  type PeriodInfo, StatusWithReason } from "./bookingsShared";
 
 interface StatusCounts {
   total: number;
@@ -121,7 +120,7 @@ export function BookingSummaryPage() {
               rowKey={(r) => r.bookingId}
               columns={[
                 { header: "Booking", cell: (r) => r.bookingId },
-                { header: "Status", cell: (r) => r.statusLabel },
+                { header: "Status", cell: (r) => <StatusWithReason label={r.statusLabel} reason={r.cancellationReason} /> },
                 { header: "Pickup", cell: (r) => istDateTime(r.startAt) },
                 { header: "Return", cell: (r) => istDateTime(r.endAt) },
                 { header: "Customer", cell: (r) => r.customerName },
