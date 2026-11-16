@@ -13,6 +13,8 @@ import {
   csvDate,
   getExtraOutputGstByBooking,
   emptyExtraOutputGst,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -226,8 +228,8 @@ export const GetGSTReport = async (req: Request, res: Response) => {
       metadata: {
         generatedAt: new Date().toISOString(),
         dateRange: {
-          startDate: start.toISOString().split("T")[0],
-          endDate: end.toISOString().split("T")[0],
+          startDate: csvIsoDate(start),
+          endDate: csvIsoDate(end),
         },
         branch: branchPublicId ?? "All Branches",
         gstType: inputOnly ? "Input Only" : gstTypeNorm === "output" || gstTypeNorm === "output only" ? "Output Only" : "Both",
@@ -263,7 +265,7 @@ export const GetGSTReport = async (req: Request, res: Response) => {
     // ------------------------------------------------------------------
     // Exports
     // ------------------------------------------------------------------
-    const filename = `gst-report-${csvDate(start)}-${csvDate(end)}`;
+    const filename = `gst-report-${csvIstDate(start)}-${csvIstDate(end)}`;
 
     if (exportFormat === "xlsx") {
       return await exportGSTToExcel(res, reportData, filename);

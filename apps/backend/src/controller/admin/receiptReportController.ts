@@ -11,6 +11,8 @@ import {
   COLLECTED_PAYMENT_STATUSES,
   REVENUE_PAYMENT_PURPOSES,
   type SpecPaymentMode,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -268,7 +270,7 @@ export const GetReceiptReport = async (req: Request, res: Response) => {
         columns,
         rows: csvRows,
         summaryRows: [totalRow],
-        filename: `receipt-report-${csvDate(start)}-${csvDate(end)}`,
+        filename: `receipt-report-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 
@@ -282,8 +284,8 @@ export const GetReceiptReport = async (req: Request, res: Response) => {
         metadata: {
           generatedAt: new Date().toISOString(),
           dateRange: {
-            startDate: start.toISOString().split("T")[0],
-            endDate: end.toISOString().split("T")[0],
+            startDate: csvIsoDate(start),
+            endDate: csvIsoDate(end),
           },
           branch: branchPublicId ?? "All Branches",
           paymentMode: modeFilter ?? "All",
@@ -322,8 +324,8 @@ const emptyReport = (
   metadata: {
     generatedAt: new Date().toISOString(),
     dateRange: {
-      startDate: start.toISOString().split("T")[0],
-      endDate: end.toISOString().split("T")[0],
+      startDate: csvIsoDate(start),
+      endDate: csvIsoDate(end),
     },
     branch: branchPublicId ?? "All Branches",
     paymentMode: modeFilter ?? "All",

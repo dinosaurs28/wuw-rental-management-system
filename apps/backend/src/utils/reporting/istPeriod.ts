@@ -4,10 +4,9 @@ import { SYSTEM_TIMEZONE } from "../../services/timezone/timezone.service.js";
 /**
  * IST (Asia/Kolkata) date ranges and trend buckets for branch reports.
  *
- * The admin `resolveReportRange` (range.ts) builds day boundaries in the Node
- * process timezone, which is UTC on the VPS. Branch-facing reports must cut
- * days at IST midnight regardless of where the server runs, so every boundary
- * here is computed with Luxon in SYSTEM_TIMEZONE.
+ * Reports must cut days at IST midnight regardless of where the server runs
+ * (UTC on the VPS), so every boundary here is computed with Luxon in
+ * SYSTEM_TIMEZONE. The admin `resolveReportRange` (range.ts) uses the same rule.
  */
 
 /** Longest selectable range, inclusive of both end dates. */

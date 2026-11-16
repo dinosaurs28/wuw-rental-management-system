@@ -1,19 +1,16 @@
-import {
-  startOfDay,
-  endOfDay,
-  subDays,
-  startOfMonth,
-  endOfMonth,
-  subMonths,
-  differenceInCalendarDays,
-  isValid,
-  parseISO,
-} from "date-fns";
+import { DateTime } from "luxon";
+import { SYSTEM_TIMEZONE } from "../../services/timezone/timezone.service.js";
+import { parseIstDate } from "./istPeriod.js";
 
+/**
+ * Admin report date range. Every day boundary is cut at IST (Asia/Kolkata)
+ * midnight regardless of the Node process timezone (UTC on the VPS), the same
+ * way the finance reports do it (istPeriod.ts / previousPeriod.ts).
+ */
 export interface ReportRange {
-  /** Inclusive start of selected range (00:00:00.000). */
+  /** Inclusive start of selected range (00:00:00.000 IST). */
   start: Date;
-  /** Inclusive end of selected range (23:59:59.999). */
+  /** Inclusive end of selected range (23:59:59.999 IST). */
   end: Date;
   /** Start of the same-duration window immediately before the selected range. */
   prevStart: Date;
@@ -21,6 +18,10 @@ export interface ReportRange {
   prevEnd: Date;
   /** Number of calendar days in the selected range (inclusive). */
   days: number;
+  /** First IST calendar day of the range, yyyy-MM-dd. */
+  from: string;
+  /** Last IST calendar day of the range, yyyy-MM-dd. */
+  to: string;
 }
 
 export type DateRangePreset =
@@ -31,11 +32,17 @@ export type DateRangePreset =
   | "lastMonth"
   | "custom";
 
-const parseDate = (value: unknown): Date | null => {
+/**
+ * A query date as an IST calendar day. `yyyy-MM-dd` is taken as that IST day;
+ * a full timestamp is converted to the IST day containing that instant.
+ */
+const parseDay = (value: unknown): DateTime | null => {
   if (!value) return null;
   const str = String(value);
-  const d = str.length <= 10 ? parseISO(str) : new Date(str);
-  return isValid(d) ? d : null;
+  if (str.length <= 10) return parseIstDate(str);
+  const dt = DateTime.fromISO(str, { setZone: true });
+  const parsed = dt.isValid ? dt : DateTime.fromJSDate(new Date(str));
+  return parsed.isValid ? parsed.setZone(SYSTEM_TIMEZONE).startOf("day") : null;
 };
 
 /**
@@ -52,56 +59,73 @@ export const resolveReportRange = (query: {
   to?: unknown;
   now?: Date;
 }): ReportRange => {
-  const now = query.now ?? new Date();
+  const today = DateTime.fromJSDate(query.now ?? new Date())
+    .setZone(SYSTEM_TIMEZONE)
+    .startOf("day");
   const preset = query.preset
     ? (String(query.preset) as DateRangePreset)
     : undefined;
 
-  let start: Date;
-  let end: Date;
+  let fromDay: DateTime;
+  let toDay: DateTime;
 
-  const explicitStart = parseDate(query.startDate ?? query.from);
-  const explicitEnd = parseDate(query.endDate ?? query.to);
+  const explicitStart = parseDay(query.startDate ?? query.from);
+  const explicitEnd = parseDay(query.endDate ?? query.to);
 
   switch (preset) {
     case "today":
-      start = startOfDay(now);
-      end = endOfDay(now);
+      fromDay = today;
+      toDay = today;
       break;
     case "last7":
-      end = endOfDay(now);
-      start = startOfDay(subDays(now, 6));
+      fromDay = today.minus({ days: 6 });
+      toDay = today;
       break;
     case "thisMonth":
-      start = startOfMonth(now);
-      end = endOfDay(now);
+      fromDay = today.startOf("month");
+      toDay = today;
       break;
     case "lastMonth": {
-      const lastMonth = subMonths(now, 1);
-      start = startOfMonth(lastMonth);
-      end = endOfMonth(lastMonth);
+      fromDay = today.startOf("month").minus({ months: 1 });
+      toDay = fromDay.endOf("month").startOf("day");
       break;
     }
     case "last30":
-      end = endOfDay(now);
-      start = startOfDay(subDays(now, 29));
+      fromDay = today.minus({ days: 29 });
+      toDay = today;
       break;
     case "custom":
     default:
       if (explicitStart && explicitEnd) {
-        start = startOfDay(explicitStart);
-        end = endOfDay(explicitEnd);
+        fromDay = explicitStart;
+        toDay = explicitEnd;
       } else {
         // Default: Last 30 Days
-        end = endOfDay(now);
-        start = startOfDay(subDays(now, 29));
+        fromDay = today.minus({ days: 29 });
+        toDay = today;
       }
       break;
   }
 
-  const days = differenceInCalendarDays(end, start) + 1;
-  const prevEnd = endOfDay(subDays(start, 1));
-  const prevStart = startOfDay(subDays(prevEnd, days - 1));
+  // IST has no DST, so the day difference is always a whole number.
+  const days = Math.round(toDay.diff(fromDay, "days").days) + 1;
+  const prevToDay = fromDay.minus({ days: 1 });
+  const prevFromDay = prevToDay.minus({ days: days - 1 });
 
-  return { start, end, prevStart, prevEnd, days };
+  return {
+    start: fromDay.startOf("day").toJSDate(),
+    end: toDay.endOf("day").toJSDate(),
+    prevStart: prevFromDay.startOf("day").toJSDate(),
+    prevEnd: prevToDay.endOf("day").toJSDate(),
+    days,
+    from: fromDay.toFormat("yyyy-MM-dd"),
+    to: toDay.toFormat("yyyy-MM-dd"),
+  };
+};
+
+/** IST calendar-day index of `d` relative to the range start (may be <0 or ≥days). */
+export const istDayIndex = (d: Date, rangeStart: Date): number => {
+  const a = DateTime.fromJSDate(d, { zone: SYSTEM_TIMEZONE }).startOf("day");
+  const b = DateTime.fromJSDate(rangeStart, { zone: SYSTEM_TIMEZONE }).startOf("day");
+  return Math.round(a.diff(b, "days").days);
 };

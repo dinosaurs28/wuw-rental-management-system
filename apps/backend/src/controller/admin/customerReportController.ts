@@ -13,6 +13,8 @@ import {
   summaryRow,
   csvCurrency,
   csvDate,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -106,8 +108,8 @@ export const GetCustomerReport = async (req: Request, res: Response) => {
             generatedAt: new Date().toISOString(),
             period: { start: start.toISOString(), end: end.toISOString() },
             dateRange: {
-              startDate: start.toISOString().split("T")[0] ?? null,
-              endDate: end.toISOString().split("T")[0] ?? null,
+              startDate: csvIsoDate(start),
+              endDate: csvIsoDate(end),
             },
             filters: {
               branch: branchPublicId ?? "All Branches",
@@ -293,8 +295,8 @@ export const GetCustomerReport = async (req: Request, res: Response) => {
           generatedAt: new Date().toISOString(),
           period: { start: start.toISOString(), end: end.toISOString() },
           dateRange: {
-            startDate: start.toISOString().split("T")[0] ?? null,
-            endDate: end.toISOString().split("T")[0] ?? null,
+            startDate: csvIsoDate(start),
+            endDate: csvIsoDate(end),
           },
           filters: {
             branch: branchPublicId ?? "All Branches",
@@ -385,6 +387,6 @@ const exportCustomerCSV = (
     columns,
     rows: csvRows,
     summaryRows: [summary],
-    filename: `customer-report-${csvDate(start)}-${csvDate(end)}`,
+    filename: `customer-report-${csvIstDate(start)}-${csvIstDate(end)}`,
   });
 };

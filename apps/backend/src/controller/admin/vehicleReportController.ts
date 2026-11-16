@@ -11,6 +11,7 @@ import {
   summaryRow,
   csvCurrency,
   csvDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -237,7 +238,7 @@ export const GetVehicleReportList = async (req: Request, res: Response) => {
         columns,
         rows: csvRows,
         summaryRows: [summaryCsv],
-        filename: `vehicle-report-${csvDate(start)}-${csvDate(end)}`,
+        filename: `vehicle-report-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 

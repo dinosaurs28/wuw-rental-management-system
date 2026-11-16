@@ -23,41 +23,44 @@ const eq = (name: string, actual: unknown, expected: unknown) => {
 };
 
 const iso = (d: Date) => d.toISOString();
-// Fixed "now" so the test is deterministic: Fri 2026-05-15 10:30 local.
-const now = new Date(2026, 4, 15, 10, 30, 0);
+/** An IST wall-clock instant (month 0-based), independent of the process TZ. */
+const istD = (y: number, mo: number, d: number, h = 0, mi = 0, s = 0, ms = 0) =>
+  new Date(Date.UTC(y, mo, d, h, mi, s, ms) - 330 * 60_000);
+// Fixed "now" so the test is deterministic: Fri 2026-05-15 10:30 IST.
+const now = istD(2026, 4, 15, 10, 30, 0);
 
 // --- Last 30 days (default) ---
 {
   const r = resolveReportRange({ now });
   eq("last30 days count", r.days, 30);
-  eq("last30 start", iso(r.start), iso(new Date(2026, 3, 16, 0, 0, 0, 0)));
-  eq("last30 end", iso(r.end), iso(new Date(2026, 4, 15, 23, 59, 59, 999)));
+  eq("last30 start", iso(r.start), iso(istD(2026, 3, 16, 0, 0, 0, 0)));
+  eq("last30 end", iso(r.end), iso(istD(2026, 4, 15, 23, 59, 59, 999)));
   // previous = same duration immediately before
-  eq("last30 prevEnd", iso(r.prevEnd), iso(new Date(2026, 3, 15, 23, 59, 59, 999)));
-  eq("last30 prevStart", iso(r.prevStart), iso(new Date(2026, 2, 17, 0, 0, 0, 0)));
+  eq("last30 prevEnd", iso(r.prevEnd), iso(istD(2026, 3, 15, 23, 59, 59, 999)));
+  eq("last30 prevStart", iso(r.prevStart), iso(istD(2026, 2, 17, 0, 0, 0, 0)));
 }
 
 // --- Today ---
 {
   const r = resolveReportRange({ preset: "today", now });
   eq("today count", r.days, 1);
-  eq("today start", iso(r.start), iso(new Date(2026, 4, 15, 0, 0, 0, 0)));
-  eq("today prevEnd is yesterday end", iso(r.prevEnd), iso(new Date(2026, 4, 14, 23, 59, 59, 999)));
-  eq("today prevStart is yesterday start", iso(r.prevStart), iso(new Date(2026, 4, 14, 0, 0, 0, 0)));
+  eq("today start", iso(r.start), iso(istD(2026, 4, 15, 0, 0, 0, 0)));
+  eq("today prevEnd is yesterday end", iso(r.prevEnd), iso(istD(2026, 4, 14, 23, 59, 59, 999)));
+  eq("today prevStart is yesterday start", iso(r.prevStart), iso(istD(2026, 4, 14, 0, 0, 0, 0)));
 }
 
 // --- This month ---
 {
   const r = resolveReportRange({ preset: "thisMonth", now });
-  eq("thisMonth start", iso(r.start), iso(new Date(2026, 4, 1, 0, 0, 0, 0)));
+  eq("thisMonth start", iso(r.start), iso(istD(2026, 4, 1, 0, 0, 0, 0)));
   eq("thisMonth count (15 days)", r.days, 15);
 }
 
 // --- Last month ---
 {
   const r = resolveReportRange({ preset: "lastMonth", now });
-  eq("lastMonth start", iso(r.start), iso(new Date(2026, 3, 1, 0, 0, 0, 0)));
-  eq("lastMonth end", iso(r.end), iso(new Date(2026, 3, 30, 23, 59, 59, 999)));
+  eq("lastMonth start", iso(r.start), iso(istD(2026, 3, 1, 0, 0, 0, 0)));
+  eq("lastMonth end", iso(r.end), iso(istD(2026, 3, 30, 23, 59, 59, 999)));
   eq("lastMonth count (April=30)", r.days, 30);
 }
 
@@ -66,8 +69,8 @@ const now = new Date(2026, 4, 15, 10, 30, 0);
   const r = resolveReportRange({ startDate: "2026-01-01", endDate: "2026-01-10", now });
   eq("custom count", r.days, 10);
   eq("custom prev count equals range", r.prevStart < r.prevEnd, true);
-  eq("custom prevEnd is day before start", iso(r.prevEnd), iso(new Date(2025, 11, 31, 23, 59, 59, 999)));
-  eq("custom prevStart", iso(r.prevStart), iso(new Date(2025, 11, 22, 0, 0, 0, 0)));
+  eq("custom prevEnd is day before start", iso(r.prevEnd), iso(istD(2025, 11, 31, 23, 59, 59, 999)));
+  eq("custom prevStart", iso(r.prevStart), iso(istD(2025, 11, 22, 0, 0, 0, 0)));
 }
 
 // --- Online classification heuristic ---

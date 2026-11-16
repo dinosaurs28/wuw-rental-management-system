@@ -10,6 +10,8 @@ import {
   csvDate,
   type CollectionTxn,
   type SpecPaymentMode,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -220,8 +222,8 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
       metadata: {
         generatedAt: new Date().toISOString(),
         dateRange: {
-          startDate: start.toISOString().split("T")[0],
-          endDate: end.toISOString().split("T")[0],
+          startDate: csvIsoDate(start),
+          endDate: csvIsoDate(end),
         },
         branch: branchPublicId ?? "All Branches",
         paymentMode: modeFilter ?? "All",
@@ -286,7 +288,7 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
         columns,
         rows: csvRows,
         summaryRows,
-        filename: `collection-report-${csvDate(start)}-${csvDate(end)}`,
+        filename: `collection-report-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 
@@ -312,8 +314,8 @@ const emptyReport = (
   metadata: {
     generatedAt: new Date().toISOString(),
     dateRange: {
-      startDate: start.toISOString().split("T")[0],
-      endDate: end.toISOString().split("T")[0],
+      startDate: csvIsoDate(start),
+      endDate: csvIsoDate(end),
     },
     branch: branchPublicId ?? "All Branches",
     paymentMode: modeFilter ?? "All",

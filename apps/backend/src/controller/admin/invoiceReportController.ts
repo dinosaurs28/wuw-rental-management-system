@@ -8,6 +8,8 @@ import {
   summaryRow,
   csvCurrency,
   csvDate,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -211,7 +213,7 @@ export const GetInvoiceReport = async (req: Request, res: Response) => {
       ? filteredRows
       : filteredRows.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
-    const filename = `invoice-report-${csvDate(start)}-${csvDate(end)}`;
+    const filename = `invoice-report-${csvIstDate(start)}-${csvIstDate(end)}`;
 
     if (exportFormat === "csv") {
       // Spec §4.10 column order. CSV omits the PDF link (uses Invoice No).
@@ -272,8 +274,8 @@ export const GetInvoiceReport = async (req: Request, res: Response) => {
         metadata: {
           generatedAt: new Date().toISOString(),
           dateRange: {
-            startDate: start.toISOString().split("T")[0],
-            endDate: end.toISOString().split("T")[0],
+            startDate: csvIsoDate(start),
+            endDate: csvIsoDate(end),
           },
           branch: branchPublicId ?? "All Branches",
           paymentStatus: statusFilter ?? "All",

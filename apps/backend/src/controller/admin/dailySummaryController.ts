@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { differenceInCalendarDays } from "date-fns";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus } from "@repo/database/client";
 import {
   resolveReportRange,
+  istDayIndex,
   parseCategoryIds,
   buildBookingWhere,
   getCollections,
@@ -12,7 +12,7 @@ import {
   exportRowsToCSV,
   summaryRow,
   csvCurrency,
-  csvDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -33,8 +33,8 @@ import {
  *   5. getCollections (payment-date anchored)          -> Cash / UPI Collected
  *   + getPaidByBooking over set (1) ids                -> Outstanding
  *
- * All per-day bucketing uses differenceInCalendarDays against the range start
- * (the SAME local calendar resolveReportRange uses to build start/end), so every
+ * All per-day bucketing uses istDayIndex against the range start
+ * (the SAME IST calendar resolveReportRange uses to build start/end), so every
  * in-range anchor lands in exactly one bucket.
  *
  * INVARIANT: Σ(per-day Revenue) over the range == aggregate of
@@ -90,7 +90,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
     // Index of a date into the per-day buckets (0 .. days-1), or -1 if outside.
     const dayIndex = (d: Date | null | undefined): number => {
       if (!d) return -1;
-      const idx = differenceInCalendarDays(d, start);
+      const idx = istDayIndex(d, start);
       return idx >= 0 && idx < days ? idx : -1;
     };
 
@@ -161,10 +161,10 @@ export const GetDailySummary = async (req: Request, res: Response) => {
 
     // ── Bucket per calendar day ──────────────────────────────────────────────
     const rows: DayRow[] = Array.from({ length: days }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(d.getDate() + i);
+      // IST has no DST: day i starts exactly i×24h after the IST range start.
+      const d = new Date(start.getTime() + i * 86_400_000);
       return {
-        date: csvDate(d),
+        date: csvIstDate(d),
         newBookings: 0,
         activeTrips: 0,
         completed: 0,
@@ -190,8 +190,8 @@ export const GetDailySummary = async (req: Request, res: Response) => {
 
     // (2) Active Trips — a PICKED_UP booking is active on every day its interval covers.
     for (const b of activeBookings) {
-      const firstIdx = Math.max(0, differenceInCalendarDays(b.startAt, start));
-      const lastIdx = Math.min(days - 1, differenceInCalendarDays(b.endAt, start));
+      const firstIdx = Math.max(0, istDayIndex(b.startAt, start));
+      const lastIdx = Math.min(days - 1, istDayIndex(b.endAt, start));
       for (let i = firstIdx; i <= lastIdx; i++) rows[i]!.activeTrips += 1;
     }
 
@@ -298,7 +298,7 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         columns,
         rows: csvRows,
         summaryRows: [total],
-        filename: `daily-summary-${csvDate(start)}-${csvDate(end)}`,
+        filename: `daily-summary-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 

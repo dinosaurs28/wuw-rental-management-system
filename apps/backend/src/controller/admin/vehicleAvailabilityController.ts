@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
+import { DateTime } from "luxon";
+import { SYSTEM_TIMEZONE } from "../../services/timezone/timezone.service.js";
 import { exportVehicleAvailabilityToExcel } from "../../utils/exportToExcel.js";
 import {
   resolveReportRange,
   parseCategoryIds,
   buildVehicleWhere,
   exportRowsToCSV,
-  csvDate,
+  csvIsoDate,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -31,19 +34,13 @@ import {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-/** Start-of-day clone. */
-const dayStart = (d: Date): Date => {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
-};
+/** 00:00 IST of the IST calendar day containing `d` (independent of server TZ). */
+const dayStart = (d: Date): Date =>
+  DateTime.fromJSDate(d, { zone: SYSTEM_TIMEZONE }).startOf("day").toJSDate();
 
 /** A "DD-MM" date label for the "Booked Dates in Range" ranges (no year, spec). */
-const ddmm = (d: Date): string => {
-  const day = d.getDate().toString().padStart(2, "0");
-  const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  return `${day}-${month}`;
-};
+const ddmm = (d: Date): string =>
+  DateTime.fromJSDate(d, { zone: SYSTEM_TIMEZONE }).toFormat("dd-MM");
 
 const ACTIVE_BOOKING_STATUSES = ["CONFIRMED", "PICKED_UP"] as const;
 
@@ -208,8 +205,8 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
         const maxEnd = new Date(
           Math.max(...futureEnds.map((d) => d.getTime())),
         );
-        const dayAfter = dayStart(maxEnd);
-        dayAfter.setDate(dayAfter.getDate() + 1);
+        // IST has no DST, so the next IST day starts exactly 24h later.
+        const dayAfter = new Date(dayStart(maxEnd).getTime() + MS_PER_DAY);
         nextAvailableFrom = dayAfter > todayStart ? dayAfter : todayStart;
       }
 
@@ -309,8 +306,8 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
       metadata: {
         generatedAt: new Date().toISOString(),
         dateRange: {
-          startDate: start.toISOString().split("T")[0],
-          endDate: end.toISOString().split("T")[0],
+          startDate: csvIsoDate(start),
+          endDate: csvIsoDate(end),
         },
         branch: branchPublicId ?? "All Branches",
         availableOnly: showOnlyAvailable,
@@ -322,7 +319,7 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
 
     // ----- Export -------------------------------------------------------------
     if (exportFormat === "xlsx") {
-      const filename = `vehicle-availability-${csvDate(start)}-${csvDate(end)}`;
+      const filename = `vehicle-availability-${csvIstDate(start)}-${csvIstDate(end)}`;
       return await exportVehicleAvailabilityToExcel(res, reportData, filename);
     }
 
@@ -350,7 +347,7 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
           dayStart(new Date(v.nextAvailableFrom)).getTime() ===
             todayStart.getTime()
             ? "Available"
-            : csvDate(v.nextAvailableFrom),
+            : csvIstDate(v.nextAvailableFrom),
         "Booked Dates in Range": v.bookedDatesInRange,
         "Total Booked Days": v.bookedDays,
         "Total Free Days": v.freeDays,
@@ -358,7 +355,7 @@ export const GetVehicleAvailability = async (req: Request, res: Response) => {
       return exportRowsToCSV(res, {
         columns,
         rows,
-        filename: `vehicle-availability-${csvDate(start)}-${csvDate(end)}`,
+        filename: `vehicle-availability-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 

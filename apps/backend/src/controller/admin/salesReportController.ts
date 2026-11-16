@@ -17,6 +17,7 @@ import {
   getExtraOutputGstByBooking,
   emptyExtraOutputGst,
   type PaidAmounts,
+  csvIstDate,
 } from "../../utils/reporting/index.js";
 
 /**
@@ -331,7 +332,7 @@ export const GetSalesReport = async (req: Request, res: Response) => {
       return await exportSalesReportToExcel(
         res,
         reportData,
-        `sales-report-${csvDate(start)}-${csvDate(end)}`,
+        `sales-report-${csvIstDate(start)}-${csvIstDate(end)}`,
       );
     }
 
@@ -372,7 +373,7 @@ export const GetSalesReport = async (req: Request, res: Response) => {
         columns,
         rows,
         summaryRows: [summary],
-        filename: `sales-report-${csvDate(start)}-${csvDate(end)}`,
+        filename: `sales-report-${csvIstDate(start)}-${csvIstDate(end)}`,
       });
     }
 
