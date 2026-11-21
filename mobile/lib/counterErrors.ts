@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
+import { describeApiError } from './apiError';
 
 /**
  * Error codes the backend attaches (`{ message, code }`) when a counter rule
@@ -14,8 +15,10 @@ export function counterErrorCode(err: any): CounterErrorCode | undefined {
     : undefined;
 }
 
+// The server's message (a bare "Validation failed" → the field it named), or why
+// there was none — no connection / a timeout / the status (lib/apiError.ts).
 export function apiErrorMessage(err: any, fallback: string): string {
-  return err?.response?.data?.message ?? fallback;
+  return describeApiError(err, fallback);
 }
 
 export const SHIFT_REQUIRED_MESSAGE =

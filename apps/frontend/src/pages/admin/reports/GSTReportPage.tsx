@@ -1,3 +1,4 @@
+import { localYmd } from "@/utils/exportHelpers";
 import { useNavigate } from "react-router-dom";
 import { GSTReport } from "@/components/admin/reports/GSTReport";
 import { Button } from "@/components/ui/button";
@@ -25,8 +26,8 @@ export const GSTReportPage = () => {
             Back
           </Button>
           <GSTReport
-            startDate={startDate.toISOString().split("T")[0]}
-            endDate={endDate.toISOString().split("T")[0]}
+            startDate={localYmd(startDate)}
+            endDate={localYmd(endDate)}
           />
         </div>
       </div>

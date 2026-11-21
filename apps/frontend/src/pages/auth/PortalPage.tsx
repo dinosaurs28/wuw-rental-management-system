@@ -114,11 +114,11 @@ export default function PortalPage() {
           className="mt-20"
         >
           <Link
-            to="/"
+            to="/contact"
             className="text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-semibold flex items-center gap-2"
           >
-            <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to Customer Website
+            <ArrowRight className="w-4 h-4" />
+            Contact us
           </Link>
         </motion.div>
       </main>

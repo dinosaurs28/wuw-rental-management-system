@@ -21,8 +21,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { formatDate, formatCurrency } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import type { ColumnDef } from "@tanstack/react-table";
 import { adminService } from "@/services/admin.service";
 
@@ -139,8 +138,8 @@ export const CollectionReport = ({
         branchId: string;
         paymentMode?: string;
       } = {
-        startDate: startDate!.toISOString().split("T")[0],
-        endDate: endDate!.toISOString().split("T")[0],
+        startDate: localYmd(startDate!),
+        endDate: localYmd(endDate!),
         branchId: selectedBranch,
       };
 
@@ -160,8 +159,8 @@ export const CollectionReport = ({
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params = new URLSearchParams({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
       branchId: selectedBranch,
       export: "csv",
     });
@@ -280,7 +279,7 @@ export const CollectionReport = ({
         </div>
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`collection-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`collection-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={loading || !data}
         />
       </div>

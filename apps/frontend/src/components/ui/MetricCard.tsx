@@ -17,6 +17,8 @@ export interface MetricCardProps {
   variant?: "default" | "revenue" | "bookings" | "fleet" | "collection";
   isLoading?: boolean;
   className?: string;
+  /** Optional small line under the value (e.g. what the figure counts). */
+  subtitle?: React.ReactNode;
 }
 
 const variantStyles = {
@@ -43,6 +45,7 @@ export const MetricCard = ({
   variant = "default",
   isLoading = false,
   className,
+  subtitle,
 }: MetricCardProps) => {
   if (isLoading) {
     return (
@@ -77,6 +80,9 @@ export const MetricCard = ({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold font-mono">{value}</div>
+        {subtitle && (
+          <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+        )}
         {trend && (
           <div className="flex items-center gap-1 mt-1">
             <span

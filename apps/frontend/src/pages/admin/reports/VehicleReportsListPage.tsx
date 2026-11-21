@@ -10,8 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -116,8 +115,8 @@ export const VehicleReportsListPage = () => {
 
   const buildParams = (): Record<string, string> => {
     const params: Record<string, string> = {};
-    if (startDate) params.startDate = startDate.toISOString().split("T")[0];
-    if (endDate) params.endDate = endDate.toISOString().split("T")[0];
+    if (startDate) params.startDate = localYmd(startDate);
+    if (endDate) params.endDate = localYmd(endDate);
     if (selectedBranch !== "all") params.branchId = selectedBranch;
     if (selectedCategory !== "all") params.categories = selectedCategory;
     if (selectedStatus !== "all") params.vehicleStatus = selectedStatus;
@@ -246,7 +245,7 @@ export const VehicleReportsListPage = () => {
 
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`vehicle-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`vehicle-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={isLoading || !reportData}
         />
       </div>

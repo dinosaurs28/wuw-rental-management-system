@@ -81,6 +81,15 @@ export interface SwapWindow {
    * on time); an extension swap passes its own buffer.
    */
   turnaroundMs: number;
+  /**
+   * The replacement is handed over NOW: the Fleet Executive's swap at the
+   * pickup counter (client report, Nov 21 2026). The window starts now even
+   * when the booking starts later (an early pickup), and a car still with
+   * another customer never qualifies, whenever it is due back — the pickup
+   * would refuse it (pickupRefusalFor). Unset: a Branch Manager's swap ahead
+   * of the pickup, checked over the booked dates.
+   */
+  handoverNow?: boolean;
 }
 
 /**
@@ -94,16 +103,23 @@ export interface SwapWindow {
 export function swapAvailabilityWindow(
   booking: { status: string; startAt: Date; endAt: Date },
   now: Date,
-  opts: { availabilityEndAt?: Date | null; graceMinutes?: number | null; turnaroundMs?: number | null } = {},
+  opts: {
+    availabilityEndAt?: Date | null;
+    graceMinutes?: number | null;
+    turnaroundMs?: number | null;
+    /** The car is handed over now (SwapWindow.handoverNow); implied for a rental already out. */
+    handoverNow?: boolean;
+  } = {},
 ): SwapWindow {
   const coverUntil =
     opts.availabilityEndAt && opts.availabilityEndAt.getTime() > booking.endAt.getTime()
       ? opts.availabilityEndAt
       : booking.endAt;
   const active = booking.status === "PICKED_UP";
-  const start = active ? now : new Date(Math.max(now.getTime(), booking.startAt.getTime()));
+  const handoverNow = active || opts.handoverNow === true;
+  const start = handoverNow ? now : new Date(Math.max(now.getTime(), booking.startAt.getTime()));
   const turnaroundMs = turnaroundMsFor(active ? opts.graceMinutes : null, opts.turnaroundMs ?? BOOKING_TURNAROUND_MS);
-  return { start, end: coverUntil, coverUntil, turnaroundMs };
+  return { start, end: coverUntil, coverUntil, turnaroundMs, ...(handoverNow && { handoverNow: true }) };
 }
 
 /**
@@ -114,7 +130,11 @@ export function swapAvailabilityWindow(
  *    Rental neither (no return time).
  *  - A car out on another rental qualifies for a swap before pickup when it is
  *    back (return + turnaround) before this booking starts — the booking rule
- *    decides — but never for a mid-rental swap: it is handed over now.
+ *    decides — but never when it is handed over now (`handoverNow`: a
+ *    mid-rental swap, or the Fleet Executive's swap at the pickup counter).
+ *    Handed over now, a car whose previous return still waits for the branch
+ *    manager's confirmation (`awaitingReturnConfirmation`) is refused too, as
+ *    the pickup refuses it.
  *  - Insurance valid through the rental's last day; same or higher category.
  */
 export function swapEligibilityExclusion(
@@ -124,8 +144,18 @@ export function swapEligibilityExclusion(
     categoryName: string;
     categoryRank: number;
   },
-  ctx: { stage: SwapAvailabilityStage; currentRank: number; coverUntil: Date; onRental: boolean },
+  ctx: {
+    stage: SwapAvailabilityStage;
+    currentRank: number;
+    coverUntil: Date;
+    onRental: boolean;
+    /** Handed over now (SwapWindow.handoverNow); a mid-rental swap always is. */
+    handoverNow?: boolean;
+    /** The PICKED_UP booking holding the car has its drop recorded, waiting for the manager. */
+    awaitingReturnConfirmation?: boolean;
+  },
 ): SwapExclusion | null {
+  const handoverNow = ctx.stage === "ACTIVE_RENTAL" || ctx.handoverNow === true;
   switch (vehicle.status) {
     case "AVAILABLE":
       break;
@@ -133,7 +163,7 @@ export function swapEligibilityExclusion(
       if (!ctx.onRental) {
         return { code: "MANUAL_OUT_FOR_RENTAL", reason: "Set Out for Rental by the branch manager" };
       }
-      if (ctx.stage === "ACTIVE_RENTAL") return { code: "STATUS_OUT_FOR_RENTAL", reason: "Out on another rental" };
+      if (handoverNow) return { code: "STATUS_OUT_FOR_RENTAL", reason: "Out on another rental" };
       break;
     case "MAINTENANCE":
       return { code: "STATUS_MAINTENANCE", reason: "In maintenance" };
@@ -141,6 +171,13 @@ export function swapEligibilityExclusion(
       return { code: "DAMAGE_REVIEW_PENDING", reason: "Damage review pending with the branch manager" };
     default:
       return { code: "STATUS_INACTIVE", reason: "Inactive" };
+  }
+  // At the pickup counter only a car back at the branch can go (pickupRefusalFor):
+  // an AVAILABLE row still held by another rental is not
+  if (handoverNow && ctx.onRental) {
+    return ctx.awaitingReturnConfirmation
+      ? { code: "STILL_OUT", reason: "Its previous return is waiting for the branch manager's confirmation" }
+      : { code: "STILL_OUT", reason: "Out on another rental" };
   }
   if (!isInsuranceValid(vehicle.insuranceExpiry, ctx.coverUntil)) {
     const expiry = vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry) : null;
@@ -196,6 +233,8 @@ export function classifySwapCandidates<
     window: SwapWindow;
     /** Cars out on a PICKED_UP booking other than this one */
     onRental: ReadonlySet<number>;
+    /** Of those, the ones whose drop is recorded and waits for the manager (isDropRecorded) */
+    awaitingReturnConfirmation?: ReadonlySet<number>;
     /** The booking rule's refusals for the window */
     blockers: ReadonlyMap<number, UnavailableReason>;
   },
@@ -217,6 +256,8 @@ export function classifySwapCandidates<
           currentRank: ctx.currentRank,
           coverUntil: ctx.window.coverUntil,
           onRental: ctx.onRental.has(vehicle.id),
+          handoverNow: ctx.window.handoverNow === true,
+          awaitingReturnConfirmation: ctx.awaitingReturnConfirmation?.has(vehicle.id) ?? false,
         },
       ) ?? (blocker ? blockerExclusion(blocker) : null);
     if (exclusion) excluded.push({ vehicle, exclusion });

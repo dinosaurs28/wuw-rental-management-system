@@ -1,3 +1,4 @@
+import { localYmd } from "@/utils/exportHelpers";
 /**
  * Export utilities for dashboard data
  */
@@ -62,7 +63,7 @@ export const formatDashboardDataForExport = (data: {
   branchComparison: any[];
   paymentMethods: any[];
 }) => {
-  const timestamp = new Date().toISOString().split("T")[0];
+  const timestamp = localYmd(new Date());
 
   return {
     revenueTrends: {

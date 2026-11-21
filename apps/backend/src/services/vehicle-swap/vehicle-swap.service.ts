@@ -309,6 +309,12 @@ export interface SwapVehicleInput {
    * BOOKING_TURNAROUND_MS, 3 h; an extension swap passes its own buffer).
    */
   turnaroundMs?: number;
+  /**
+   * The replacement is handed over now (the Fleet Executive's swap at the
+   * pickup counter): checked from now, and a car still with another customer
+   * is refused whenever it is due back (SwapWindow.handoverNow).
+   */
+  handoverNow?: boolean;
 }
 
 const vehicleSummarySelect = {
@@ -502,17 +508,20 @@ export class VehicleSwapService {
    * Refuses (VehicleSwapError) exactly like the swap itself would, so the
    * screen can show why before staff pick a car. The other same-type cars of
    * the branch come back in `excluded` with the rule each one fails.
+   * `opts.handoverNow`: the Fleet Executive's list at the pickup counter — only
+   * cars that can be handed over now (SwapWindow.handoverNow).
    */
   async getAvailableVehiclesForSwap(
     bookingId: string,
     branchId: number,
+    opts: { handoverNow?: boolean } = {},
   ): Promise<SwapCandidatesResult> {
     const now = new Date();
     const booking = await this.loadBooking(bookingId, branchId);
     await this.assertSwappable(booking, { source: "STAFF", effectiveEndAt: booking.endAt, now });
 
     const currentVehicle = booking.items[0]!.vehicle;
-    const window = await swapWindowFor(booking, now);
+    const window = await swapWindowFor(booking, now, null, prisma, { handoverNow: opts.handoverNow });
 
     // Every same-type car of the branch; the rule is applied below so the ones
     // that fail come back in `excluded` with the reason
@@ -1067,7 +1076,10 @@ export class VehicleSwapService {
     // The rest of the rental (to the extension end on the extension path),
     // checked by the customer booking rule now the rows are locked: a
     // concurrent swap, booking or checkout for the car has committed or waits
-    const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx, { turnaroundMs: input.turnaroundMs });
+    const window = await swapWindowFor(locked, now, input.availabilityEndAt, tx, {
+      turnaroundMs: input.turnaroundMs,
+      handoverNow: input.handoverNow,
+    });
     await this.assertReplacementValid(tx, locked, lockedOriginal, newVehicle, window, now);
 
     // The returning car can't come back below the reading it started this segment at

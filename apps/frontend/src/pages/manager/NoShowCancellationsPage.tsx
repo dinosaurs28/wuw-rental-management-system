@@ -1,3 +1,4 @@
+import { localYmd } from "@/utils/exportHelpers";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -63,7 +64,7 @@ type FilterPreset = "today" | "7d" | "30d" | "custom";
 
 function getDateRange(preset: FilterPreset, customStart: string, customEnd: string) {
   const now = new Date();
-  const pad = (d: Date) => d.toISOString().split("T")[0];
+  const pad = (d: Date) => localYmd(d);
   if (preset === "today") {
     const s = pad(now);
     return { startDate: s, endDate: s };

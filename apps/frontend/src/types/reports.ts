@@ -31,6 +31,24 @@ export interface DailySummaryDay {
   cardCollected?: number;
   outstanding: number;
   cancellations: number;
+  // ── Nov 2026 (absent on older servers) ──
+  rent?: number;
+  extras?: number;
+  goodwill?: number;
+  deposits?: number;
+  bookingValue?: number;
+  bankCollected?: number;
+  gatewayCollected?: number;
+  collected?: number;
+  confirmed?: number;
+  awaitingConfirmation?: number;
+  rentalCollections?: number;
+  securityDeposits?: number;
+  refundsPaidOut?: number;
+  cashUpiDeposits?: number;
+  cashUpiAwaiting?: number;
+  payments?: number;
+  outstandingNotYetDue?: number;
 }
 
 export interface DailySummaryTotals {
@@ -44,6 +62,24 @@ export interface DailySummaryTotals {
   cardCollected?: number;
   outstanding: number;
   cancellations: number;
+  // ── Nov 2026 (absent on older servers) ──
+  rent?: number;
+  extras?: number;
+  goodwill?: number;
+  deposits?: number;
+  bookingValue?: number;
+  bankCollected?: number;
+  gatewayCollected?: number;
+  collected?: number;
+  confirmed?: number;
+  awaitingConfirmation?: number;
+  rentalCollections?: number;
+  securityDeposits?: number;
+  refundsPaidOut?: number;
+  cashUpiDeposits?: number;
+  cashUpiAwaiting?: number;
+  payments?: number;
+  outstandingNotYetDue?: number;
 }
 
 export interface DailySummaryReport {
@@ -55,6 +91,8 @@ export interface DailySummaryReport {
   };
   days: DailySummaryDay[];
   totals: DailySummaryTotals;
+  /** plain-language definition of each card (Nov 2026) */
+  definitions?: Record<string, string>;
 }
 
 // ============================================================================

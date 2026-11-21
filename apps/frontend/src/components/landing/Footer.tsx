@@ -10,7 +10,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: "Explore",
     links: [
-      { name: "Browse vehicles", to: "/vehicles" },
       { name: "FAQs", to: "/faq" },
       { name: "Contact us", to: "/contact" },
     ],

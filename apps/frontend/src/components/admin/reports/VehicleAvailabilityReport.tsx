@@ -23,8 +23,7 @@ import {
 import { formatDate } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { adminService } from "@/services/admin.service";
@@ -184,8 +183,8 @@ export const VehicleAvailabilityReport = () => {
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: localYmd(startDate),
+        endDate: localYmd(endDate),
       };
 
       if (selectedBranch !== "all") {
@@ -229,8 +228,8 @@ export const VehicleAvailabilityReport = () => {
     if (!startDate || !endDate) return "";
 
     const params: Record<string, any> = {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
     };
 
     if (selectedBranch !== "all") {
@@ -368,7 +367,7 @@ export const VehicleAvailabilityReport = () => {
 
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`vehicle-availability-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`vehicle-availability-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={isLoading || !reportData}
         />
       </div>

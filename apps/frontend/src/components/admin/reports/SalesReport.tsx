@@ -31,8 +31,7 @@ import {
 } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import type {
   SalesReport as SalesReportData,
@@ -114,8 +113,8 @@ export const SalesReport = () => {
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: localYmd(startDate),
+        endDate: localYmd(endDate),
         page: currentPage.toString(),
         limit: "50",
       };
@@ -154,8 +153,8 @@ export const SalesReport = () => {
     if (!startDate || !endDate) return "";
 
     const params: Record<string, any> = {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
     };
 
     if (selectedBranch !== "all") {
@@ -325,7 +324,7 @@ export const SalesReport = () => {
 
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`sales-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`sales-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={isLoading || !reportData}
         />
       </div>

@@ -179,3 +179,13 @@ export const buildApiUrl = (
 
   return url.toString();
 };
+
+/**
+ * YYYY-MM-DD of a date picked in the browser (its local calendar day). Never
+ * `toISOString().split("T")[0]`: for an IST browser that is the UTC day, so a
+ * local-midnight "Today" goes out as yesterday (Nov 21 2026 report fix).
+ */
+export function localYmd(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}

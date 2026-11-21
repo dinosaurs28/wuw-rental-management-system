@@ -72,9 +72,21 @@ const addModes = (a: ModeSplit, b: ModeSplit) => {
   for (const k of MODE_KEYS) a[k] = r2(a[k] + b[k]);
 };
 
-async function loadRows(f: ReportFilters, range: Range): Promise<CollectionRow[]> {
+/** Scope of a collections query (branch / category / vehicle) — ReportFilters satisfies it. */
+export type CollectionScope = Pick<ReportFilters, "branchPublicId" | "categoryPublicIds" | "vehiclePublicId">;
+
+/**
+ * Payment rows (COLLECTED / CONFIRMED / VOIDED / REJECTED) paid in `range` for the
+ * scope — the rows 2.2 is built from. Exported so the legacy Daily Summary can
+ * bucket the very same rows per day (summariseCollections per bucket).
+ */
+export async function loadCollectionRows(f: CollectionScope, range: Range): Promise<CollectionRow[]> {
+  return loadRows(f, range);
+}
+
+async function loadRows(f: CollectionScope, range: Range): Promise<CollectionRow[]> {
   const where: Prisma.PaymentTransactionWhereInput = {
-    AND: [paymentWhereFromFilters(f, range), { status: { in: [...LISTED_STATUSES] } }],
+    AND: [paymentWhereFromFilters({ ...f, ...range }, range), { status: { in: [...LISTED_STATUSES] } }],
   };
   const txns = await prisma.paymentTransaction.findMany({
     where,

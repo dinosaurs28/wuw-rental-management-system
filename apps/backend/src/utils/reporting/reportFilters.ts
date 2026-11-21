@@ -265,7 +265,7 @@ export const vehicleWhereFromFilters = (
  * COLLECTED_PAYMENT_STATUSES / purposes yourself (that excludes VOIDED).
  */
 export const paymentWhereFromFilters = (
-  f: ReportFilters,
+  f: Pick<ReportFilters, "branchPublicId" | "categoryPublicIds" | "vehiclePublicId"> & Range,
   range?: Range,
 ): Prisma.PaymentTransactionWhereInput => {
   const r = range ?? f;

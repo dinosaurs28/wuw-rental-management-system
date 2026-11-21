@@ -38,8 +38,7 @@ import {
 import { formatDate, formatCurrency } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface GSTReportProps {
@@ -201,8 +200,8 @@ export const GSTReport = ({
 
     try {
       const params = {
-        startDate: startDate!.toISOString().split("T")[0],
-        endDate: endDate!.toISOString().split("T")[0],
+        startDate: localYmd(startDate!),
+        endDate: localYmd(endDate!),
         branchId: selectedBranch,
         gstType: selectedGstType,
       };
@@ -219,8 +218,8 @@ export const GSTReport = ({
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params = new URLSearchParams({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
       branchId: selectedBranch,
       gstType: selectedGstType,
     });
@@ -478,7 +477,7 @@ export const GSTReport = ({
         </div>
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`gst-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`gst-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={loading || !data}
         />
       </div>

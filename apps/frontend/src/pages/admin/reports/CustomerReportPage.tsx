@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
-import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelpers";
+import { getDateRangeFromPreset, type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -73,8 +73,8 @@ export const CustomerReportPage = () => {
     setIsLoading(true);
     try {
       const params: any = { page: currentPage.toString(), limit: "50" };
-      if (startDate) params.startDate = startDate.toISOString().split("T")[0];
-      if (endDate) params.endDate = endDate.toISOString().split("T")[0];
+      if (startDate) params.startDate = localYmd(startDate);
+      if (endDate) params.endDate = localYmd(endDate);
       if (selectedBranch !== "all") params.branchId = selectedBranch;
       if (customerType !== "all") params.customerType = customerType;
       if (search.trim()) params.search = search.trim();
@@ -89,8 +89,8 @@ export const CustomerReportPage = () => {
 
   const getExportUrl = () => {
     const params: Record<string, string> = {};
-    if (startDate) params.startDate = startDate.toISOString().split("T")[0]!;
-    if (endDate) params.endDate = endDate.toISOString().split("T")[0]!;
+    if (startDate) params.startDate = localYmd(startDate);
+    if (endDate) params.endDate = localYmd(endDate);
     if (selectedBranch !== "all") params.branchId = selectedBranch;
     if (customerType !== "all") params.customerType = customerType;
     if (search.trim()) params.search = search.trim();

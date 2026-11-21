@@ -164,6 +164,7 @@ import {
   readOperationNote,
   saveOperationNote,
 } from "../../services/booking/operation-notes.service.js";
+import { pickupPhotoLabelField } from "../../services/booking/pickup-handover-input.js";
 import {
   staffActivityService,
   StaffActionType,
@@ -190,7 +191,7 @@ const editPickupSchema = z.object({
   drivingLicenceNumber: z.unknown().optional(),
   // New photos, uploaded first via POST /employee/pickup/upload; label = capture slot
   addPhotos: z
-    .array(z.object({ fileId: z.string().trim().min(1), label: z.string().trim().min(1).max(80).nullish() }))
+    .array(z.object({ fileId: z.string().trim().min(1), label: pickupPhotoLabelField }))
     .max(40)
     .optional(),
   // FileObject publicIds of saved photos to take off the pickup

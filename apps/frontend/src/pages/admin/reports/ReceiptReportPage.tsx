@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
-import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelpers";
+import { getDateRangeFromPreset, type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -73,8 +73,8 @@ export const ReceiptReportPage = () => {
     setIsLoading(true);
     try {
       const params: any = {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: localYmd(startDate),
+        endDate: localYmd(endDate),
         page: currentPage.toString(),
         limit: "50",
       };
@@ -92,8 +92,8 @@ export const ReceiptReportPage = () => {
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params = new URLSearchParams({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
       branchId: selectedBranch,
       paymentMode,
     });
@@ -206,7 +206,7 @@ export const ReceiptReportPage = () => {
 
           <ExportButton
             apiUrl={getExportUrl()}
-            filename={`receipt-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+            filename={`receipt-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
             disabled={isLoading || !reportData}
           />
         </div>

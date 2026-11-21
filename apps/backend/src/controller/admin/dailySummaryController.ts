@@ -6,41 +6,38 @@ import {
   istDayIndex,
   parseCategoryIds,
   buildBookingWhere,
-  getCollections,
-  getPaidByBooking,
-  REVENUE_BOOKING_STATUSES,
   exportRowsToCSV,
   summaryRow,
   csvCurrency,
   csvIstDate,
 } from "../../utils/reporting/index.js";
+import { loadRevenueRows, sumRevenue } from "../../services/reporting/finance/revenue.js";
+import { loadCollectionRows, summariseCollections, type CollectionRow } from "../../services/reporting/finance/collections.js";
+import { getDuesByBooking } from "../../services/reporting/finance/booking-finance.js";
 
 /**
- * Daily Summary Report — multi-day operational + cash-flow rollup (spec §4.2).
+ * Daily Summary Report — multi-day operational + cash-flow rollup (spec §4.2):
+ * one row per IST calendar day in the range, including days with no activity.
  *
- * Rebuilt from a single-day snapshot into a DATE RANGE report: one row per
- * calendar day in the selected range, including days with zero activity.
- *
- * Per-day columns (spec §4.2 exact order):
- *   Date, New Bookings, Active Trips, Completed, Revenue,
- *   Cash Collected, UPI Collected, Outstanding, Cancellations.
- *
- * Efficient fetch strategy (no N-queries-per-day):
- *   1. Revenue-status bookings with startAt in range  -> New Bookings, Revenue, Outstanding
- *   2. PICKED_UP bookings overlapping the range        -> Active Trips
- *   3. RETURNED bookings whose ReturnReceipt.createdAt -> Completed
- *   4. CANCELLED bookings with cancelledAt in range    -> Cancellations
- *   5. getCollections (payment-date anchored)          -> Cash / UPI Collected
- *   + getPaidByBooking over set (1) ids                -> Outstanding
- *
- * All per-day bucketing uses istDayIndex against the range start
- * (the SAME IST calendar resolveReportRange uses to build start/end), so every
- * in-range anchor lands in exactly one bucket.
- *
- * INVARIANT: Σ(per-day Revenue) over the range == aggregate of
- * buildBookingWhere(REVENUE_BOOKING_STATUSES, startAt range) — same status set,
- * same startAt anchor — matching the Sales Report and dashboard for identical
- * branch/date/category filters.
+ * Nov 2026: every money/count column now comes from the SAME shared helpers as
+ * the 2.x finance reports, so for the same day + branch (+ categories) the cards
+ * equal those pages exactly:
+ *   New Bookings / Revenue  = 2.1 Revenue Summary (loadRevenueRows: CONFIRMED,
+ *       PICKED_UP, RETURNED by rental START date; revenue = rent (totalFinal −
+ *       refundable deposit) + drop/pickup extras − goodwill). bookingValue keeps
+ *       the old Σ totalFinal (incl. deposits) for reference.
+ *   Cash / UPI / Card / Bank / Gateway Collected = 2.2 Payments & Collections
+ *       mode split (loadCollectionRows + summariseCollections: money IN by payment
+ *       date, COLLECTED + CONFIRMED, every purpose incl. security deposits;
+ *       refunds paid out shown apart). The deposit and awaiting-confirmation parts
+ *       are reported too so the page can say what the figure includes.
+ *   Outstanding = 2.3 dues rule (dueOf: max(0, owed − confirmed money in net of
+ *       refunds), as of now) for the bookings that START on that day; confirmed
+ *       bookings still to start are "not yet due" and reported apart.
+ *   Active Trips (PICKED_UP overlapping the day), Completed (return receipt date)
+ *   and Cancellations (cancelledAt) are unchanged.
+ * All bucketing uses istDayIndex against the IST range start (resolveReportRange
+ * cuts at IST midnight whatever the server TZ).
  */
 
 interface DayRow {
@@ -48,14 +45,101 @@ interface DayRow {
   newBookings: number;
   activeTrips: number;
   completed: number;
+  /** 2.1 revenue (rent + extras − goodwill; deposits excluded) */
   revenue: number;
+  /** cash part of money in (2.2 mode split, incl. deposits + awaiting confirmation) */
   cashCollected: number;
+  /** UPI part of money in (2.2 mode split) */
   upiCollected: number;
   /** counter Credit Card money (Nov 2026) */
   cardCollected: number;
+  /** dues as of now on bookings starting this day (2.3 rule) */
   outstanding: number;
   cancellations: number;
+  // ── additive (Nov 2026) ──
+  rent: number;
+  extras: number;
+  goodwill: number;
+  /** refundable deposits inside the bookings' totalFinal — not revenue */
+  deposits: number;
+  /** Σ totalFinal (the old "Revenue" figure: includes deposits, no extras) */
+  bookingValue: number;
+  bankCollected: number;
+  gatewayCollected: number;
+  /** all money in (2.2 "Collected") */
+  collected: number;
+  confirmed: number;
+  awaitingConfirmation: number;
+  rentalCollections: number;
+  securityDeposits: number;
+  refundsPaidOut: number;
+  /** cash + UPI part of security-deposit payments (inside cash/upiCollected) */
+  cashUpiDeposits: number;
+  /** cash + UPI still awaiting the manager's confirmation (inside cash/upiCollected) */
+  cashUpiAwaiting: number;
+  payments: number;
+  /** confirmed bookings starting later with an unpaid balance (not in outstanding) */
+  outstandingNotYetDue: number;
 }
+
+const r2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const emptyDay = (date: string): DayRow => ({
+  date,
+  newBookings: 0,
+  activeTrips: 0,
+  completed: 0,
+  revenue: 0,
+  cashCollected: 0,
+  upiCollected: 0,
+  cardCollected: 0,
+  outstanding: 0,
+  cancellations: 0,
+  rent: 0,
+  extras: 0,
+  goodwill: 0,
+  deposits: 0,
+  bookingValue: 0,
+  bankCollected: 0,
+  gatewayCollected: 0,
+  collected: 0,
+  confirmed: 0,
+  awaitingConfirmation: 0,
+  rentalCollections: 0,
+  securityDeposits: 0,
+  refundsPaidOut: 0,
+  cashUpiDeposits: 0,
+  cashUpiAwaiting: 0,
+  payments: 0,
+  outstandingNotYetDue: 0,
+});
+
+/** Fill the 2.2 money columns of `row` from that day's payment rows. */
+const applyCollections = (row: DayRow, list: CollectionRow[]) => {
+  const c = summariseCollections(list);
+  row.cashCollected = c.modes.CASH;
+  row.upiCollected = c.modes.UPI;
+  row.cardCollected = c.modes.CARD;
+  row.bankCollected = c.modes.BANK_TRANSFER;
+  row.gatewayCollected = c.modes.GATEWAY;
+  row.collected = c.collected;
+  row.confirmed = c.confirmed;
+  row.awaitingConfirmation = c.awaitingConfirmation;
+  row.rentalCollections = c.rentalCollections;
+  row.securityDeposits = c.securityDeposits;
+  row.refundsPaidOut = c.refundsPaidOut;
+  row.payments = c.transactions;
+  let dep = 0;
+  let awaiting = 0;
+  for (const r of list) {
+    if (!r.counted || r.direction !== "IN") continue;
+    const cu = r.modes.CASH + r.modes.UPI;
+    if (r.purpose === "SAFETY_DEPOSIT") dep += cu;
+    if (r.status === "COLLECTED") awaiting += cu;
+  }
+  row.cashUpiDeposits = r2(dep);
+  row.cashUpiAwaiting = r2(awaiting);
+};
 
 export const GetDailySummary = async (req: Request, res: Response) => {
   try {
@@ -96,13 +180,6 @@ export const GetDailySummary = async (req: Request, res: Response) => {
 
     const baseFilter = { branchPublicId, categoryPublicIds, from: start, to: end };
 
-    // (1) Revenue-status bookings starting in range — New Bookings + Revenue + Outstanding.
-    //     Same where the dashboard/Sales use, so per-day revenue reconciles to the aggregate.
-    const revenueWhere = buildBookingWhere({
-      ...baseFilter,
-      statuses: REVENUE_BOOKING_STATUSES,
-    });
-
     // (2) Active trips: PICKED_UP bookings whose interval overlaps the range.
     //     startAt <= range end AND endAt >= range start. Category + branch + soft-delete applied.
     const activeWhere = {
@@ -135,12 +212,11 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       dateField: "cancelledAt",
     });
 
-    const [revenueBookings, activeBookings, completedBookings, cancelledBookings, collections] =
+    const scope = { branchPublicId: branchPublicId ?? null, categoryPublicIds, vehiclePublicId: null };
+    const [revenueRows, activeBookings, completedBookings, cancelledBookings, paymentRows] =
       await Promise.all([
-        prisma.booking.findMany({
-          where: revenueWhere,
-          select: { id: true, startAt: true, totalFinal: true },
-        }),
+        // (1) 2.1 Revenue Summary rows — New Bookings + Revenue + Outstanding.
+        loadRevenueRows({ ...scope, start, end }),
         prisma.booking.findMany({
           where: activeWhere,
           select: { id: true, startAt: true, endAt: true },
@@ -153,40 +229,41 @@ export const GetDailySummary = async (req: Request, res: Response) => {
           where: cancelledWhere,
           select: { id: true, cancelledAt: true },
         }),
-        getCollections({ branchPublicId, from: start, to: end }),
+        // (5) 2.2 Payments & Collections rows — by payment date.
+        loadCollectionRows(scope, { start, end }),
       ]);
 
-    // Canonical paid amounts for the revenue-status set (for Outstanding).
-    const paidMap = await getPaidByBooking(revenueBookings.map((b) => b.id));
+    // Dues (2.3 rule, as of now) for the bookings starting in the range.
+    const dues = await getDuesByBooking(revenueRows.map((r) => r.bookingId));
 
     // ── Bucket per calendar day ──────────────────────────────────────────────
-    const rows: DayRow[] = Array.from({ length: days }, (_, i) => {
+    const rows: DayRow[] = Array.from({ length: days }, (_, i) =>
       // IST has no DST: day i starts exactly i×24h after the IST range start.
-      const d = new Date(start.getTime() + i * 86_400_000);
-      return {
-        date: csvIstDate(d),
-        newBookings: 0,
-        activeTrips: 0,
-        completed: 0,
-        revenue: 0,
-        cashCollected: 0,
-        upiCollected: 0,
-        cardCollected: 0,
-        outstanding: 0,
-        cancellations: 0,
-      };
-    });
+      emptyDay(csvIstDate(new Date(start.getTime() + i * 86_400_000))),
+    );
 
-    // (1) New Bookings + Revenue + Outstanding — anchored on startAt.
-    for (const b of revenueBookings) {
-      const i = dayIndex(b.startAt);
+    // (1) New Bookings + Revenue + Outstanding — anchored on startAt (2.1).
+    const revenueByDay: Array<typeof revenueRows> = rows.map(() => []);
+    for (const r of revenueRows) {
+      const i = dayIndex(r.startAt);
       if (i < 0) continue;
-      const total = Number(b.totalFinal);
-      const paid = paidMap.get(b.id)?.total ?? 0;
-      rows[i]!.newBookings += 1;
-      rows[i]!.revenue += total;
-      rows[i]!.outstanding += Math.max(0, total - paid);
+      revenueByDay[i]!.push(r);
+      const due = dues.get(r.bookingId);
+      if (due?.counted) rows[i]!.outstanding += due.due;
+      else if (due?.notYetDue) rows[i]!.outstandingNotYetDue += due.due;
     }
+    rows.forEach((row, i) => {
+      const t = sumRevenue(revenueByDay[i]!);
+      row.newBookings = t.bookings;
+      row.revenue = t.total;
+      row.rent = t.rent;
+      row.extras = t.extras;
+      row.goodwill = t.goodwill;
+      row.deposits = t.deposit;
+      row.bookingValue = t.bookingValue;
+      row.outstanding = r2(row.outstanding);
+      row.outstandingNotYetDue = r2(row.outstandingNotYetDue);
+    });
 
     // (2) Active Trips — a PICKED_UP booking is active on every day its interval covers.
     for (const b of activeBookings) {
@@ -209,42 +286,35 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       rows[i]!.cancellations += 1;
     }
 
-    // (5) Cash / UPI Collected — payment-date anchored (collectedAt, fallback createdAt).
-    for (const c of collections) {
-      const i = dayIndex(c.collectedAt);
-      if (i < 0) continue;
-      rows[i]!.cashCollected += c.cash;
-      rows[i]!.upiCollected += c.upi;
-      rows[i]!.cardCollected += c.card;
+    // (5) Money in by mode — payment-date anchored (collectedAt, fallback createdAt), 2.2 rows.
+    const paymentsByDay: CollectionRow[][] = rows.map(() => []);
+    for (const p of paymentRows) {
+      const i = dayIndex(p.paidAt);
+      if (i >= 0) paymentsByDay[i]!.push(p);
     }
+    rows.forEach((row, i) => applyCollections(row, paymentsByDay[i]!));
 
     // ── Totals ────────────────────────────────────────────────────────────────
-    const totals = rows.reduce(
-      (acc, r) => {
-        acc.newBookings += r.newBookings;
-        acc.completed += r.completed;
-        acc.revenue += r.revenue;
-        acc.cashCollected += r.cashCollected;
-        acc.upiCollected += r.upiCollected;
-        acc.cardCollected += r.cardCollected;
-        acc.outstanding += r.outstanding;
-        acc.cancellations += r.cancellations;
-        return acc;
-      },
-      {
-        newBookings: 0,
-        completed: 0,
-        revenue: 0,
-        cashCollected: 0,
-        upiCollected: 0,
-        cardCollected: 0,
-        outstanding: 0,
-        cancellations: 0,
-      },
-    );
+    // Computed over the whole range with the same helpers (not by adding rounded
+    // day figures), so they equal 2.1 / 2.2 for the same range to the paisa.
+    const totalsRow = emptyDay("TOTAL");
+    const revTotals = sumRevenue(revenueRows);
+    totalsRow.newBookings = revTotals.bookings;
+    totalsRow.revenue = revTotals.total;
+    totalsRow.rent = revTotals.rent;
+    totalsRow.extras = revTotals.extras;
+    totalsRow.goodwill = revTotals.goodwill;
+    totalsRow.deposits = revTotals.deposit;
+    totalsRow.bookingValue = revTotals.bookingValue;
+    applyCollections(totalsRow, paymentsByDay.flat());
+    totalsRow.outstanding = r2(rows.reduce((s, r) => s + r.outstanding, 0));
+    totalsRow.outstandingNotYetDue = r2(rows.reduce((s, r) => s + r.outstandingNotYetDue, 0));
+    totalsRow.completed = rows.reduce((s, r) => s + r.completed, 0);
+    totalsRow.cancellations = rows.reduce((s, r) => s + r.cancellations, 0);
     // Active Trips is a per-day snapshot, not a flow — its column total is the
     // sum of daily snapshots (matches the per-day rows being summed in CSV).
     const totalActiveTrips = rows.reduce((s, r) => s + r.activeTrips, 0);
+    const { date: _omit, ...totals } = totalsRow;
 
     const reportData = {
       metadata: {
@@ -255,6 +325,12 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       },
       days: rows,
       totals: { ...totals, activeTrips: totalActiveTrips },
+      definitions: {
+        newBookings: "Confirmed, active and completed bookings by rental start date (same as Revenue Summary); cancelled and held bookings are not counted.",
+        revenue: "Rent (booking total less the refundable deposit) + drop / pickup extras − goodwill refunds, by rental start date (same as Revenue Summary).",
+        cashUpi: "Cash + UPI money received by payment date, including security deposits and money awaiting the manager's confirmation (same as Payments & Collections). Card, bank transfer and Razorpay are shown apart; refunds paid out are not subtracted.",
+        outstanding: "Unpaid balance as of now on the bookings that start in the period (Outstanding Dues rule: confirmed money only; bookings still to start are not yet due).",
+      },
     };
 
     // ── CSV: one row per day, in spec column order, + TOTAL row ────────────────

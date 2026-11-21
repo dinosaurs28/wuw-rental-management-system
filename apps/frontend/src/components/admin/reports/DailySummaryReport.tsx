@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   TrendingUp,
   DollarSign,
@@ -30,13 +31,22 @@ import { toast } from "sonner";
 import type { DailySummaryReport, DailySummaryDay } from "@/types/reports";
 import type { ColumnDef } from "@tanstack/react-table";
 
+// yyyy-MM-dd of the calendar day the user picked (local wall clock). Never
+// toISOString(): in IST, local midnight is the previous day in UTC, so "Today"
+// used to be sent as yesterday → today (two days).
+const ymd = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 // ============================================================================
 // Daily Summary Report Component (multi-day: one row per calendar day)
 // ============================================================================
 
 export const DailySummaryReports = () => {
-  const [dateRangePreset, setDateRangePreset] =
-    useState<DateRangePreset>("30days");
+  const [search] = useSearchParams();
+  // Dashboard deep link (?preset=today) opens on today.
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>(
+    search.get("preset") === "today" ? "current" : "30days",
+  );
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
@@ -85,8 +95,8 @@ export const DailySummaryReports = () => {
         endDate: string;
         branchId?: string;
       } = {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: ymd(startDate),
+        endDate: ymd(endDate),
       };
       if (selectedBranch !== "all") params.branchId = selectedBranch;
       const result = await adminService.getDailySummaryReport(params);
@@ -111,8 +121,8 @@ export const DailySummaryReports = () => {
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params: Record<string, string> = {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: ymd(startDate),
+      endDate: ymd(endDate),
     };
     if (selectedBranch !== "all") params.branchId = selectedBranch;
     const queryString = new URLSearchParams(params).toString();
@@ -210,6 +220,8 @@ export const DailySummaryReports = () => {
     },
   ];
 
+  const t = reportData?.totals;
+
   const chartData =
     reportData?.days.map((d) => ({
       date: d.date,
@@ -233,7 +245,7 @@ export const DailySummaryReports = () => {
 
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`daily-summary-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`daily-summary-${startDate ? ymd(startDate) : ""}-${endDate ? ymd(endDate) : ""}`}
           disabled={isLoading || !reportData}
         />
       </div>
@@ -265,34 +277,49 @@ export const DailySummaryReports = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Total Revenue"
-            value={abbreviateAmount(reportData?.totals.revenue || 0)}
+            value={abbreviateAmount(t?.revenue || 0)}
             icon={DollarSign}
             variant="revenue"
             isLoading={isLoading}
+            subtitle={
+              t?.deposits !== undefined
+                ? `By rental start date · rent ${formatCurrency(t.rent ?? 0)} + extras ${formatCurrency(t.extras ?? 0)}${(t.goodwill ?? 0) > 0 ? ` − goodwill ${formatCurrency(t.goodwill ?? 0)}` : ""} · excl. ${formatCurrency(t.deposits)} deposits`
+                : undefined
+            }
           />
           <MetricCard
             title="New Bookings"
-            value={(reportData?.totals.newBookings || 0).toString()}
+            value={(t?.newBookings || 0).toString()}
             icon={FileText}
             variant="bookings"
             isLoading={isLoading}
+            subtitle="Confirmed, active and completed, by rental start date · cancelled and held not counted"
           />
           <MetricCard
             title="Cash + UPI Collected"
             value={abbreviateAmount(
-              (reportData?.totals.cashCollected || 0) +
-                (reportData?.totals.upiCollected || 0),
+              (t?.cashCollected || 0) + (t?.upiCollected || 0),
             )}
             icon={Receipt}
             variant="collection"
             isLoading={isLoading}
+            subtitle={
+              t?.cashUpiDeposits !== undefined
+                ? `By payment date · cash ${formatCurrency(t.cashCollected)} + UPI ${formatCurrency(t.upiCollected)} · incl. ${formatCurrency(t.cashUpiDeposits)} deposits and ${formatCurrency(t.cashUpiAwaiting ?? 0)} awaiting confirmation · card ${formatCurrency(t.cardCollected ?? 0)}, bank ${formatCurrency(t.bankCollected ?? 0)}, Razorpay ${formatCurrency(t.gatewayCollected ?? 0)} not included · refunds paid out ${formatCurrency(t.refundsPaidOut ?? 0)} not subtracted`
+                : undefined
+            }
           />
           <MetricCard
             title="Outstanding"
-            value={abbreviateAmount(reportData?.totals.outstanding || 0)}
+            value={abbreviateAmount(t?.outstanding || 0)}
             icon={DollarSign}
             variant="default"
             isLoading={isLoading}
+            subtitle={
+              t?.outstandingNotYetDue !== undefined
+                ? `Unpaid as of now on bookings starting in this period (confirmed payments only)${t.outstandingNotYetDue > 0 ? ` · ${formatCurrency(t.outstandingNotYetDue)} more on bookings not started yet` : ""}`
+                : undefined
+            }
           />
         </div>
       </div>

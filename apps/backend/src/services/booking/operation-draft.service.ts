@@ -32,7 +32,10 @@ export const DRAFT_BOOKING_STATUS: Record<OperationDraftType, BookingStatus> = {
 
 /** Serialized size cap of the form fields (express.json() refuses bodies over 100 kB anyway). */
 export const DRAFT_DATA_MAX_BYTES = 64 * 1024;
-export const DRAFT_MAX_PHOTOS = 60;
+// Same caps as the pickup handover (services/booking/pickup-handover-input.ts): the app
+// has no limit on extra photos, and slot names come from the capture config (Nov 21 2026).
+export const DRAFT_MAX_PHOTOS = 200;
+export const DRAFT_PHOTO_LABEL_MAX = 200;
 
 // Draft photos come from the pickup / return photo uploads (public bucket).
 // Anything else (a KYC or invoice file id) is never resolved to a link.
@@ -49,7 +52,7 @@ export const saveOperationDraftSchema = z.object({
       z.object({
         fileId: z.string().trim().min(1).max(64),
         // Kept exactly: it must equal the capture-config slot name (not trimmed there either).
-        label: z.string().max(100).nullish(),
+        label: z.string().max(DRAFT_PHOTO_LABEL_MAX).nullish(),
       }),
     )
     .max(DRAFT_MAX_PHOTOS)

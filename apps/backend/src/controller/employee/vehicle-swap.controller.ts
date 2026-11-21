@@ -41,8 +41,10 @@ export const GetAvailableVehiclesForEmployee = async (
   }
 
   try {
+    // Staff swap at the pickup counter: the replacement is handed over now, so a
+    // car still with another customer is never offered (client report, Nov 21 2026)
     const { vehicles, excluded, context } =
-      await vehicleSwapService.getAvailableVehiclesForSwap(bookingId, branchId);
+      await vehicleSwapService.getAvailableVehiclesForSwap(bookingId, branchId, { handoverNow: true });
 
     return res.status(StatusCode.OK).json({
       success: true,
@@ -122,6 +124,7 @@ export const SwapVehicleByEmployee = async (req: Request, res: Response) => {
       newVehicleFastagBalance: body.newVehicleFastagBalance,
       branchId: req.branch_Id,
       source: "STAFF",
+      handoverNow: true,
     });
 
     staffActivityService.logFromRequest(req, {

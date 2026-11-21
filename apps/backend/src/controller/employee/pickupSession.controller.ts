@@ -75,6 +75,8 @@ import {
   pickupChargesView,
 } from "../../services/charges/pickup-other-charges.js";
 import { replaceSessionPickupCharges } from "../../services/charges/pickup-other-charges.service.js";
+import { PICKUP_FIELD_LABELS, updatePickupHandoverSchema } from "../../services/booking/pickup-handover-input.js";
+import { fieldValidationError } from "../../utils/validation/fieldError.js";
 
 const initiatePickupSessionSchema = z.object({
   // Optional: override the computed remaining balance (e.g. after discount)
@@ -118,10 +120,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     if (!validation.success) {
       const dlError = dlValidationError(validation.error);
       if (dlError) return res.status(dlError.status).json(dlError.toJSON());
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: validation.error.format(),
-      });
+      return res.status(StatusCode.BAD_REQUEST).json(fieldValidationError(validation.error, PICKUP_FIELD_LABELS));
     }
     const {
       overrideRemainingBalance,
@@ -742,7 +741,7 @@ export const ApplyDiscountToPickupSession = async (req: Request, res: Response) 
 
     const validation = applyDiscountSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(fieldValidationError(validation.error, PICKUP_FIELD_LABELS));
     }
     const { discountCode } = validation.data;
 
@@ -1129,7 +1128,7 @@ export const AddDepositToPickupSession = async (req: Request, res: Response) => 
 
     const validation = addDepositSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(fieldValidationError(validation.error, PICKUP_FIELD_LABELS));
     }
     const { amount, reason } = validation.data;
 
@@ -1388,19 +1387,7 @@ function serializePickupSession(session: any) {
 // the pickup are kept (never attached twice), new ones are attached, the ones
 // left out are taken off, and the order is rewritten to match.
 
-const updatePickupHandoverSchema = z.object({
-  odo: z.coerce.number().int("The odometer reading must be a whole number").min(1, "Enter the odometer reading").optional(),
-  // percent 0..100 (vehicle row), as on initiate
-  fuelLevel: z.coerce.number().min(0).max(100).optional(),
-  pickupFuelLevel: fuelBarsField.optional(),
-  pickupFastagBalance: fastagBalanceField,
-  photos: z
-    .array(z.object({ fileId: z.string().trim().min(1), label: z.string().trim().min(1).max(80).nullish() }))
-    .min(1, "Keep at least one pickup photo")
-    .max(60)
-    .optional(),
-  dlStatus: z.enum(DL_COLLECTION_STATUSES).nullish(),
-});
+// The rules (and what they accept) live in services/booking/pickup-handover-input.ts
 
 export const UpdatePickupSessionHandover = async (req: Request, res: Response) => {
   try {
@@ -1408,7 +1395,7 @@ export const UpdatePickupSessionHandover = async (req: Request, res: Response) =
     if (!parsed.success) {
       const dlError = dlValidationError(parsed.error);
       if (dlError) return res.status(dlError.status).json(dlError.toJSON());
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: parsed.error.format() });
+      return res.status(StatusCode.BAD_REQUEST).json(fieldValidationError(parsed.error, PICKUP_FIELD_LABELS));
     }
     const input = parsed.data;
     const pickupNote = parseOperationNote(req.body?.pickupNote, "pickupNote");

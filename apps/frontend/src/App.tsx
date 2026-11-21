@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
 import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -12,23 +11,9 @@ import BranchManagerForgotPasswordPage from "./pages/auth/BranchManagerForgotPas
 import BranchManagerResetPasswordPage from "./pages/auth/BranchManagerResetPasswordPage";
 import AdminForgotPasswordPage from "./pages/auth/AdminForgotPasswordPage";
 import AdminResetPasswordPage from "./pages/auth/AdminResetPasswordPage";
-import OtpPage from "./pages/auth/OtpPage";
 import PortalPage from "./pages/auth/PortalPage";
-import { VehiclesPage } from "./pages/VehiclesPage";
-import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
-import VehicleGroupDetailsPage from "./pages/VehicleGroupDetailsPage";
 import AppVehicleLinkPage from "./pages/AppVehicleLinkPage";
-import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
-import { PersonalInformationPage } from "./pages/profile/PersonalInformationPage";
-import { ReviewConfirmPage } from "./pages/booking/ReviewConfirmPage";
-import { BookingStatusPage } from "./pages/booking/BookingStatusPage";
-import { BookingConfirmationPage } from "./pages/booking/BookingConfirmationPage";
-import { MyBookingsPage } from "./pages/MyBookingsPage";
-import { DocumentsPage } from "./pages/DocumentsPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
 import { EmployeeProtectedRoute } from "@/components/auth/EmployeeProtectedRoute";
 import { BranchManagerProtectedRoute } from "@/components/auth/BranchManagerProtectedRoute";
@@ -145,6 +130,28 @@ import { FaqPage } from "./pages/legal/FaqPage";
 import { RefundPolicyPage } from "./pages/legal/RefundPolicyPage";
 import { ContactPage } from "./pages/ContactPage";
 
+/** Customer pages the website no longer serves (booking is app-only). */
+const CUSTOMER_WEB_PATHS = [
+  "/vehicles",
+  "/vehicle/group/:groupKey",
+  "/vehicle/:vehicleId",
+  "/auth/sign-in",
+  "/auth/sign-up",
+  "/auth/verify-otp",
+  "/auth/user/signin",
+  "/auth/user/signup",
+  "/login",
+  "/verify-otp",
+  "/dashboard",
+  "/my-bookings",
+  "/my-bookings/:transactionId",
+  "/documents",
+  "/profile",
+  "/profile/*",
+  "/verification/kyc",
+  "/booking/*",
+];
+
 function App() {
   return (
     <BrowserRouter>
@@ -153,10 +160,13 @@ function App() {
       <Toaster richColors position="top-center" />
       <Routes>
         {/* Public Routes - No auth required  */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/vehicles" element={<VehiclesPage />} />
-        <Route path="/vehicle/group/:groupKey" element={<VehicleGroupDetailsPage />} />
-        <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
+        {/* Nov 21 2026: the website is staff-only — customers book in the app.
+            The home page is the staff / manager / admin sign-in chooser, and
+            every old customer page lands there. */}
+        <Route path="/" element={<PortalPage />} />
+        {CUSTOMER_WEB_PATHS.map((path) => (
+          <Route key={path} path={path} element={<Navigate to="/" replace />} />
+        ))}
         {/* Shared vehicle links (#16): app / store / website hand-off */}
         <Route path="/app/vehicle/:id" element={<AppVehicleLinkPage />} />
         <Route path="/terms" element={<ExternalRedirect to="/legal/terms.html" />} />
@@ -172,12 +182,6 @@ function App() {
 
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>
-          <Route path="/auth/sign-in" element={<SignInPage />} />
-          <Route
-            path="/auth/sign-up"
-            element={<SignInPage defaultTab="sign-up" />}
-          />
-          <Route path="/auth/verify-otp" element={<OtpPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
           <Route
             path="/employee/booking/status/:transactionId"
@@ -202,29 +206,6 @@ function App() {
         <Route path="/admin/reset-password/:token" element={<AdminResetPasswordPage />} />
 
         {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/my-bookings" element={<MyBookingsPage />} />
-          <Route path="/my-bookings/:transactionId" element={<MyBookingsPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/verification/kyc" element={<KycVerificationPage />} />
-          <Route
-            path="/profile/personal-information"
-            element={<PersonalInformationPage />}
-          />
-          <Route
-            path="/booking/review-confirm"
-            element={<ReviewConfirmPage />}
-          />
-          <Route
-            path="/booking/confirmation"
-            element={<BookingConfirmationPage />}
-          />
-          <Route
-            path="/booking/status/:transactionId"
-            element={<BookingStatusPage />}
-          />
-        </Route>
 
         {/* Branch Manager Protected Routes */}
         <Route element={<BranchManagerProtectedRoute />}>
@@ -483,7 +464,7 @@ function App() {
         </Route>
 
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/auth/sign-in" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

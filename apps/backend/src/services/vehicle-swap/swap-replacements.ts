@@ -6,7 +6,7 @@
  */
 import { prisma, BookingStatus, Prisma } from "@repo/database/client";
 import { explainUnavailableVehicles } from "../../utils/availability/availabilityBatch.js";
-import { automaticGraceMinutes } from "../../utils/availability/vehicleEligibility.js";
+import { automaticGraceMinutes, isDropRecorded } from "../../utils/availability/vehicleEligibility.js";
 import {
   classifySwapCandidates,
   swapAvailabilityWindow,
@@ -42,14 +42,15 @@ export const SWAP_WINDOW_BOOKING_SELECT = {
  * swapAvailabilityWindow for a booking, with its automatic grace (frozen
  * charge config, else the branch's live one) for a rental already out.
  * `opts.turnaroundMs` replaces the default 3 h turnaround (an extension swap
- * passes its own buffer).
+ * passes its own buffer). `opts.handoverNow`: the replacement is handed over
+ * now (the Fleet Executive's swap at the pickup counter, SwapWindow.handoverNow).
  */
 export async function swapWindowFor(
   booking: SwapWindowBooking,
   now: Date,
   availabilityEndAt?: Date | null,
   db: Db = prisma,
-  opts: { turnaroundMs?: number | null } = {},
+  opts: { turnaroundMs?: number | null; handoverNow?: boolean } = {},
 ): Promise<SwapWindow> {
   let graceMinutes: number | null = null;
   if (booking.status === BookingStatus.PICKED_UP) {
@@ -59,7 +60,12 @@ export async function swapWindowFor(
     });
     graceMinutes = automaticGraceMinutes(booking.frozenChargeConfig, live);
   }
-  return swapAvailabilityWindow(booking, now, { availabilityEndAt, graceMinutes, turnaroundMs: opts.turnaroundMs });
+  return swapAvailabilityWindow(booking, now, {
+    availabilityEndAt,
+    graceMinutes,
+    turnaroundMs: opts.turnaroundMs,
+    handoverNow: opts.handoverNow,
+  });
 }
 
 export function swapStageOf(status: BookingStatus): SwapAvailabilityStage {
@@ -96,7 +102,7 @@ export async function classifyReplacements<
   const [rentals, blockers] = await Promise.all([
     db.bookingItem.findMany({
       where: { vehicleId: { in: ids }, booking: { status: BookingStatus.PICKED_UP, id: { not: ctx.booking.id } } },
-      select: { vehicleId: true },
+      select: { vehicleId: true, booking: { select: { status: true, requiresManagerConfirmation: true, returnedAt: true } } },
     }),
     explainUnavailableVehicles(
       ids,
@@ -120,6 +126,12 @@ export async function classifyReplacements<
     currentRank: ctx.currentRank,
     window: ctx.window,
     onRental: new Set(rentals.map((r) => r.vehicleId)),
+    // Every rental on the car has its drop recorded (back, waiting for the manager)
+    awaitingReturnConfirmation: new Set(
+      rentals
+        .filter((r) => !rentals.some((o) => o.vehicleId === r.vehicleId && !isDropRecorded(o.booking)))
+        .map((r) => r.vehicleId),
+    ),
     blockers,
   });
 }

@@ -30,7 +30,9 @@ export function DraftSaveStatus({ draft }: { draft: OperationDraftController }) 
   if (!draft.canPause) return null;
   if (draft.saveState === 'saving') return <Text style={styles.status} numberOfLines={1}>Saving…</Text>;
   if (draft.saveState === 'error') {
-    return <Text style={[styles.status, styles.statusError]} numberOfLines={1}>Not saved — check the connection</Text>;
+    // The server's reason when it answered (e.g. a photo it refused); no answer = the connection
+    const why = draft.saveError ?? 'check the connection';
+    return <Text style={[styles.status, styles.statusError]} numberOfLines={2}>Not saved — {why}</Text>;
   }
   if (!draft.lastSavedAt) return null;
   return <Text style={styles.status} numberOfLines={1}>Saved {savedAtLabel(draft.lastSavedAt)}</Text>;

@@ -37,8 +37,7 @@ import {
 import { abbreviateAmount } from "@/utils/formatters";
 import {
   getDateRangeFromPreset,
-  type DateRangePreset,
-} from "@/utils/exportHelpers";
+  type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface FleetExecutiveReportProps {
@@ -195,8 +194,8 @@ export const FleetExecutiveReport = ({
         branchId?: string;
         executiveId?: string;
       } = {
-        startDate: startDate!.toISOString().split("T")[0],
-        endDate: endDate!.toISOString().split("T")[0],
+        startDate: localYmd(startDate!),
+        endDate: localYmd(endDate!),
       };
       if (selectedBranch !== "all") params.branchId = selectedBranch;
       if (selectedExecutive !== "all") params.executiveId = selectedExecutive;
@@ -224,8 +223,8 @@ export const FleetExecutiveReport = ({
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params = new URLSearchParams({
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
     });
     if (selectedBranch !== "all") params.set("branchId", selectedBranch);
     if (selectedExecutive !== "all")
@@ -420,7 +419,7 @@ export const FleetExecutiveReport = ({
         </div>
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`fleet-executive-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+          filename={`fleet-executive-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
           disabled={loading || !data}
         />
       </div>

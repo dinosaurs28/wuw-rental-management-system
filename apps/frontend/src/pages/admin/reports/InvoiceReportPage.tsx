@@ -10,7 +10,7 @@ import { FilterPanel } from "@/components/ui/FilterPanel";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { DataTable } from "@/components/ui/DataTable";
 import { formatCurrency, formatDate, abbreviateAmount } from "@/utils/formatters";
-import { getDateRangeFromPreset, type DateRangePreset } from "@/utils/exportHelpers";
+import { getDateRangeFromPreset, type DateRangePreset, localYmd } from "@/utils/exportHelpers";
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -77,8 +77,8 @@ export const InvoiceReportPage = () => {
     setIsLoading(true);
     try {
       const params: any = {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: localYmd(startDate),
+        endDate: localYmd(endDate),
         page: currentPage.toString(),
         limit: "50",
       };
@@ -97,8 +97,8 @@ export const InvoiceReportPage = () => {
   const getExportUrl = () => {
     if (!startDate || !endDate) return "";
     const params: Record<string, string> = {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: localYmd(startDate),
+      endDate: localYmd(endDate),
     };
     if (selectedBranch !== "all") params.branchId = selectedBranch;
     if (selectedStatus !== "all") params.paymentStatus = selectedStatus;
@@ -224,7 +224,7 @@ export const InvoiceReportPage = () => {
           </div>
           <ExportButton
             apiUrl={getExportUrl()}
-            filename={`invoice-report-${startDate?.toISOString().split("T")[0]}-${endDate?.toISOString().split("T")[0]}`}
+            filename={`invoice-report-${(startDate ? localYmd(startDate) : undefined)}-${(endDate ? localYmd(endDate) : undefined)}`}
             disabled={isLoading || !reportData}
           />
         </div>

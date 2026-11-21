@@ -15,6 +15,7 @@ import {
   swapUnavailableMessage,
 } from "./swap-availability.js";
 import type { UnavailableReason } from "../../utils/availability/availabilityBatch.js";
+import { bookingBlocksWindow } from "../../utils/availability/vehicleEligibility.js";
 
 const at = (iso: string) => new Date(iso);
 const NOW = at("2026-10-16T06:00:00.000Z"); // 16 Oct 11:30 IST
@@ -215,5 +216,87 @@ test("conflict message names the car and the reason", () => {
   assert.equal(
     swapUnavailableMessage("KA20AB1234", { code: "ON_HOLD", reason: "Checkout in progress" }),
     "KA20AB1234 is no longer available for these dates — pick another vehicle. Checkout in progress.",
+  );
+});
+
+// ── Handed over now: the Fleet Executive's swap at the pickup counter (Nov 21 2026) ──
+// Client report: the pickup "Select vehicle" sheet offered scooters still out with
+// other customers. The booking started later than now (early pickup), so the window
+// ran from the booked start and a rental due back before it (plus the 3 h
+// turnaround) read as free, though the car is handed over now and the pickup itself
+// would refuse it (pickupRefusalFor: "still out on another rental").
+
+test("window: handed over now, a booking starting later is checked from now", () => {
+  const booking = { status: "CONFIRMED", startAt: at("2026-10-16T14:30:00Z"), endAt: at("2026-10-17T14:30:00Z") };
+  assert.equal(swapAvailabilityWindow(booking, NOW).start.toISOString(), "2026-10-16T14:30:00.000Z");
+  assert.equal(swapAvailabilityWindow(booking, NOW).handoverNow, undefined);
+  const counter = swapAvailabilityWindow(booking, NOW, { handoverNow: true });
+  assert.equal(counter.start.toISOString(), NOW.toISOString());
+  assert.equal(counter.end.toISOString(), "2026-10-17T14:30:00.000Z");
+  assert.equal(counter.turnaroundMs, H3);
+  assert.equal(counter.handoverNow, true);
+  // a rental already out is always handed over now
+  assert.equal(swapAvailabilityWindow({ ...booking, status: "PICKED_UP" }, NOW).handoverNow, true);
+});
+
+test("window: a rental due back before the booked start blocks the counter swap, not the advance one", () => {
+  const booking = { status: "CONFIRMED", startAt: at("2026-10-16T14:30:00Z"), endAt: at("2026-10-17T14:30:00Z") };
+  // Another customer's scooter, picked up yesterday, due back in 2 h
+  const rental = { status: "PICKED_UP", startAt: at("2026-10-15T08:00:00Z"), endAt: at("2026-10-16T08:00:00Z") };
+  const advance = swapAvailabilityWindow(booking, NOW);
+  assert.equal(bookingBlocksWindow(rental, advance.start, advance.end, NOW, null, advance.turnaroundMs), false);
+  const counter = swapAvailabilityWindow(booking, NOW, { handoverNow: true });
+  assert.equal(bookingBlocksWindow(rental, counter.start, counter.end, NOW, null, counter.turnaroundMs), true);
+});
+
+test("eligibility: handed over now, a car with another customer never qualifies", () => {
+  const counter = (over: Partial<{ onRental: boolean; awaitingReturnConfirmation: boolean }> = {}) => ({
+    ...ctx(),
+    handoverNow: true,
+    ...over,
+  });
+  assert.equal(
+    swapEligibilityExclusion(car({ status: "OUT_FOR_RENTAL" }), counter({ onRental: true }))?.code,
+    "STATUS_OUT_FOR_RENTAL",
+  );
+  // vehicle row left AVAILABLE while a PICKED_UP booking still holds it
+  assert.deepEqual(swapEligibilityExclusion(car(), counter({ onRental: true })), {
+    code: "STILL_OUT",
+    reason: "Out on another rental",
+  });
+  // drop recorded, waiting for the manager: the pickup refuses it, so the swap does too
+  assert.match(
+    swapEligibilityExclusion(car(), counter({ onRental: true, awaitingReturnConfirmation: true }))!.reason,
+    /waiting for the branch manager's confirmation/,
+  );
+  assert.equal(swapEligibilityExclusion(car(), counter()), null);
+});
+
+test("classify: the counter window's handoverNow reaches eligibility", () => {
+  const v = (id: number, status = "AVAILABLE") => ({
+    id,
+    status,
+    insuranceExpiry: at("2027-01-01T00:00:00Z"),
+    category: { name: "Scooter", rank: 2 },
+  });
+  const booking = { status: "CONFIRMED", startAt: at("2026-10-16T14:30:00Z"), endAt: at("2026-10-17T14:30:00Z") };
+  const run = (handoverNow: boolean) =>
+    classifySwapCandidates([v(1), v(2, "OUT_FOR_RENTAL"), v(3)], {
+      stage: "PRE_PICKUP",
+      currentRank: 2,
+      window: swapAvailabilityWindow(booking, NOW, { handoverNow }),
+      onRental: new Set([2, 3]),
+      awaitingReturnConfirmation: new Set([3]),
+      blockers: new Map(),
+    });
+  assert.deepEqual(run(false).free.map((c) => c.id), [1, 2, 3], "advance swap: the booking rule decides");
+  const counter = run(true);
+  assert.deepEqual(counter.free.map((c) => c.id), [1]);
+  assert.deepEqual(
+    counter.excluded.map((e) => [e.vehicle.id, e.exclusion.code]),
+    [
+      [2, "STATUS_OUT_FOR_RENTAL"],
+      [3, "STILL_OUT"],
+    ],
   );
 });

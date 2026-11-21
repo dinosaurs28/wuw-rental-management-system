@@ -1,3 +1,4 @@
+import { localYmd } from "@/utils/exportHelpers";
 import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, CheckCircle, Clock, Shield, Car } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -289,7 +290,7 @@ export const InsurancePermitExpiryReport = () => {
 
         <ExportButton
           apiUrl={getExportUrl()}
-          filename={`insurance-expiry-${new Date().toISOString().split("T")[0]}`}
+          filename={`insurance-expiry-${localYmd(new Date())}`}
           disabled={isLoading || !reportData}
         />
       </div>

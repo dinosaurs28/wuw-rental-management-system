@@ -64,6 +64,9 @@ export interface OperationDraftController {
   resumed: { updatedAt: string; updatedByName: string | null } | null;
   dismissResumed: () => void;
   saveState: 'idle' | 'saving' | 'saved' | 'error';
+  // Why the last save was refused, when the server answered (null = no answer:
+  // offline / timed out). Shown instead of "check the connection" (Nov 21 2026).
+  saveError: string | null;
   lastSavedAt: string | null;
   // Save now and leave the screen (warns about photos still uploading).
   continueLater: () => void;
@@ -108,6 +111,7 @@ export function useOperationDraft({
   const [done, setDone] = useState(false);
   const [resumed, setResumed] = useState<OperationDraftController['resumed']>(null);
   const [saveState, setSaveState] = useState<OperationDraftController['saveState']>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   // Bumped per restore: the first state after it is what the server already has.
   const [restoreGen, setRestoreGen] = useState(0);
@@ -249,6 +253,7 @@ export function useOperationDraft({
         if (created) refreshLists();
         if (mountedRef.current) {
           setSaveState('saved');
+          setSaveError(null);
           if (meta) setLastSavedAt(meta.updatedAt);
         }
         return 'saved';
@@ -279,7 +284,10 @@ export function useOperationDraft({
           }
           return 'conflict';
         }
-        if (mountedRef.current) setSaveState('error');
+        if (mountedRef.current) {
+          setSaveState('error');
+          setSaveError(err?.response ? apiErrorMessage(err, `the server refused it`) : null);
+        }
         if (code === 'DRAFT_NOT_ALLOWED') {
           // Completed / cancelled elsewhere: nothing left to pause.
           doneRef.current = true;
@@ -527,6 +535,7 @@ export function useOperationDraft({
     resumed,
     dismissResumed: () => setResumed(null),
     saveState,
+    saveError,
     lastSavedAt,
     continueLater,
     beginCompletion,
