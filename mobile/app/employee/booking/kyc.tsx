@@ -20,6 +20,7 @@ import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../.
 import { describeKycPhotoSides, requiredKycPhotosState, type KycPhotosState } from '../../../lib/kycPhotos';
 import { useEmployeeBookingStore } from '../../../store/employeeBooking';
 import QrPhotoSection, { QR_PHOTO_LABEL } from '../../../components/employee/QrPhotoSection';
+import CameraCapture, { type CapturedSize } from '../../../components/employee/CameraCapture';
 import type { KycType, KycSide } from '../../../types/api';
 
 interface WalkinKyc {
@@ -104,23 +105,28 @@ export default function WalkinKycScreen() {
     router.push('/employee/booking/summary');
   };
 
-  const pickAndUpload = async (source: 'camera' | 'gallery') => {
+  // The camera is the in-app one (CameraCapture), not the phone's camera app:
+  // handing off to the system camera puts this app in the background, and on
+  // memory-tight Android phones the OS killed it there — the app "exited and
+  // restarted on its own" after the licence photo and the walk-in was lost.
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  const pickFromGallery = async () => {
     if (!customer) return;
     // quality 1: prepareImageForUpload re-encodes anyway, so compressing here
     // only adds a second decode/encode pass.
-    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', quality: 1, allowsEditing: false };
-    let result: ImagePicker.ImagePickerResult;
-    if (source === 'camera') {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { Alert.alert('Camera permission needed', 'Enable camera access to capture documents.'); return; }
-      result = await ImagePicker.launchCameraAsync(opts);
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync(opts);
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 1, allowsEditing: false });
     if (result.canceled) return;
     const asset = result.assets[0];
-    if (!asset) return;
+    if (asset) await uploadPhoto(asset);
+  };
 
+  const onCameraShot = (uri: string, size: CapturedSize) => {
+    void uploadPhoto({ uri, width: size.width, mimeType: 'image/jpeg' });
+  };
+
+  const uploadPhoto = async (asset: { uri: string; width: number; mimeType?: string }) => {
+    if (!customer) return;
     setUploading(true);
     try {
       // Raw camera output is 3–8 MB and is rejected by the reverse proxy
@@ -255,7 +261,7 @@ export default function WalkinKycScreen() {
           </View>
 
           <View style={styles.sourceRow}>
-            <TouchableOpacity style={[styles.sourceBtn, uploading && styles.disabled]} onPress={() => pickAndUpload('camera')} disabled={uploading} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.sourceBtn, uploading && styles.disabled]} onPress={() => setCameraOpen(true)} disabled={uploading} activeOpacity={0.85}>
               {uploading ? <ActivityIndicator size="small" color={Colors.white} /> : (
                 <>
                   <Ionicons name="camera-outline" size={16} color={Colors.white} />
@@ -263,7 +269,7 @@ export default function WalkinKycScreen() {
                 </>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.sourceBtn, styles.sourceGallery, uploading && styles.disabled]} onPress={() => pickAndUpload('gallery')} disabled={uploading} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.sourceBtn, styles.sourceGallery, uploading && styles.disabled]} onPress={pickFromGallery} disabled={uploading} activeOpacity={0.85}>
               <Ionicons name="images-outline" size={16} color={Colors.ink} />
               <Text style={[styles.sourceText, { color: Colors.ink }]}>Gallery</Text>
             </TouchableOpacity>
@@ -371,6 +377,13 @@ export default function WalkinKycScreen() {
           <Ionicons name="arrow-forward" size={18} color={Colors.white} />
         </TouchableOpacity>
       </View>
+
+      <CameraCapture
+        visible={cameraOpen}
+        title={`${TYPES.find((t) => t.type === docType)?.label ?? 'Document'} ${side === 'FRONT' ? 'front' : 'back'}`}
+        onCapture={onCameraShot}
+        onClose={() => setCameraOpen(false)}
+      />
     </View>
   );
 }

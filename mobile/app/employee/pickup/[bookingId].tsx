@@ -55,7 +55,7 @@ import { describeKycPhotoSides, type KycPhotoSide, type KycPhotoType } from '../
 type DlPhotoSide = KycPhotoSide;
 type PhotosSummary = { ok: boolean; missingSides: KycPhotoSide[]; rejectedSides: KycPhotoSide[] };
 import { prepareImageForUpload, toUploadForm, uploadErrorMessage } from '../../../lib/image';
-import * as ImagePicker from 'expo-image-picker';
+import CameraCapture, { type CapturedSize } from '../../../components/employee/CameraCapture';
 import { counterCouponCapNote } from '../../../lib/discounts';
 import PickupDiscountCard, { cleanDiscountInput, pickupDiscountInputError } from '../../../components/employee/PickupDiscountCard';
 import { rangeLengthLabel } from '../../../lib/dates';
@@ -359,6 +359,8 @@ export default function PickupScreen() {
   // Licence photo side being captured here (older bookings without DL photos)
   // "DL:FRONT", "AADHAAR:BACK"… while a missing KYC side is being captured
   const [dlPhotoUploading, setDlPhotoUploading] = useState<string | null>(null);
+  // The licence / Aadhaar side being captured with the in-app camera (null = closed).
+  const [docCamera, setDocCamera] = useState<{ side: DlPhotoSide; type: KycPhotoType } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // P4c — the Reschedule sheet (CONFIRMED bookings, not picked up yet).
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -1701,19 +1703,21 @@ export default function PickupScreen() {
     setShowConfirm(true);
   };
 
-  /** Captures a missing licence / Aadhaar side with the camera (walk-in KYC upload), then reloads the documents. */
-  const captureDlPhoto = async (side: DlPhotoSide, type: KycPhotoType = 'DL') => {
+  /**
+   * Captures a missing licence / Aadhaar side with the in-app camera (walk-in
+   * KYC upload), then reloads the documents. Not the phone's camera app: that
+   * puts this app in the background, where low-memory Android phones killed it
+   * and the app restarted on its own after the photo.
+   */
+  const captureDlPhoto = (side: DlPhotoSide, type: KycPhotoType = 'DL') => {
+    if (!kycData?.customerUserPublicId) return;
+    setDocCamera({ side, type });
+  };
+
+  const uploadDlPhoto = async (uri: string, size: CapturedSize, side: DlPhotoSide, type: KycPhotoType) => {
     const customerPublicId = kycData?.customerUserPublicId;
     if (!customerPublicId) return;
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Camera permission needed', `Enable camera access to capture the ${type === 'DL' ? 'licence' : 'Aadhaar'}.`);
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 1, allowsEditing: false });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
+    const asset = { uri, width: size.width, mimeType: 'image/jpeg' };
     setDlPhotoUploading(`${type}:${side}`);
     try {
       const file = await prepareImageForUpload(asset, `kyc_${type.toLowerCase()}_${side.toLowerCase()}_${Date.now()}`);
@@ -2888,6 +2892,14 @@ export default function PickupScreen() {
       onConfirm={() => { setShowConfirm(false); mutation.mutate(); }}
       onCancel={() => setShowConfirm(false)}
     />
+      <CameraCapture
+        visible={!!docCamera}
+        title={docCamera ? `${docCamera.type === 'DL' ? 'Licence' : 'Aadhaar'} ${docCamera.side === 'FRONT' ? 'front' : 'back'}` : undefined}
+        onCapture={(uri, size) => {
+          if (docCamera) void uploadDlPhoto(uri, size, docCamera.side, docCamera.type);
+        }}
+        onClose={() => setDocCamera(null)}
+      />
       <ImageViewer
         visible={!!kycViewer}
         images={kycViewer ? [{ url: kycViewer.url, label: kycViewer.label }] : []}
